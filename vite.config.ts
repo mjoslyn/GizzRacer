@@ -6,6 +6,10 @@ export default defineConfig({
     // three.js alone is ~550 kB minified.
     chunkSizeWarningLimit: 800,
   },
+  server: {
+    // `wrangler dev` runs the PartyKit servers on 8787 (npm run dev:party).
+    proxy: { '/parties': { target: 'http://127.0.0.1:8787', ws: true } },
+  },
   test: {
     include: ['tests/**/*.test.ts'],
   },

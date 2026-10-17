@@ -1,7 +1,7 @@
 import { AUTOPILOT_SKILL, CpuDriver, type CpuSkill, type Obstacle } from '../ai/cpuDriver';
 import { HazardSystem } from '../items/hazards';
 import { ItemSystem, type ItemEvent, type ItemHolder, type ItemKind } from '../items/items';
-import { NEUTRAL_INPUT, type InputFrame } from './input';
+import { NEUTRAL_INPUT, type InputFrame } from './inputFrame';
 import { KART_RADIUS, copyKartState, createKartState, respawnKart, stepKart, type KartState, type StepEvents } from '../physics/kart';
 import { kartParams, type EngineClass, type KartParams, type RacerDef } from '../physics/racers';
 import { LapTracker } from '../tracks/laps';

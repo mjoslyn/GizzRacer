@@ -1,4 +1,4 @@
-import { NEUTRAL_INPUT, type InputFrame } from '../core/input';
+import { NEUTRAL_INPUT, type InputFrame } from '../core/inputFrame';
 import { clamp, moveToward, wrapAngle } from '../core/math';
 import type { KartParams } from './racers';
 
@@ -65,6 +65,11 @@ export interface StepEvents {
   trick: boolean; // landed a trick
 }
 
+/**
+ * Bump whenever kart physics, racer stats or a track layout change lap
+ * times: online leaderboards and ghosts are kept per version.
+ */
+export const PHYSICS_VERSION = 1;
 export const KART_RADIUS = 1;
 export const GRAVITY = 30;
 export const HOP_VELOCITY = 4.5;

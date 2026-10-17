@@ -3,6 +3,8 @@ import type { KartState } from '../physics/kart';
 
 /** Samples per second of race time; playback interpolates between them. */
 export const GHOST_HZ = 15;
+/** Seconds a run keeps recording after the finish line, so the ghost crosses it. */
+export const GHOST_OVERRUN = 0.5;
 /** Floats per sample: x, y, z, heading, slip, steer. */
 const STRIDE = 6;
 

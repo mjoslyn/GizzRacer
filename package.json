@@ -5,20 +5,26 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && tsc --noEmit -p party/tsconfig.json && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p party/tsconfig.json",
     "test": "vitest run",
-    "balance": "vitest run --config tools/vitest.balance.config.ts --silent=false"
+    "balance": "vitest run --config tools/vitest.balance.config.ts --silent=false",
+    "dev:party": "vite build && wrangler dev",
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
+    "partyserver": "^0.5.10",
+    "partysocket": "^1.3.0",
     "three": "^0.186.1"
   },
   "devDependencies": {
     "@breezystack/lamejs": "^1.2.7",
+    "@cloudflare/workers-types": "^5.20261016.1",
     "@types/three": "^0.186.0",
     "typescript": "~5.9.3",
     "vite": "^8.3.4",
-    "vitest": "^5.0.5"
+    "vitest": "^5.0.5",
+    "wrangler": "^4.151.1"
   }
 }

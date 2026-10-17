@@ -6,7 +6,10 @@ import { clamp, damp, lerp, lerpAngle } from './core/math';
 import { CPU_SKILL, CpuDriver } from './ai/cpuDriver';
 import { MusicPlayer, type MusicCue } from './audio/music';
 import { Sfx } from './audio/sfx';
-import { GhostRecorder, decodeGhost, encodeGhost, ghostPose, type GhostRun } from './core/ghost';
+import { GHOST_OVERRUN, GhostRecorder, decodeGhost, encodeGhost, ghostPose, type GhostRun } from './core/ghost';
+import { identity } from './net/identity';
+import { fetchGhost, uploadRun } from './net/trials';
+import { LeaderboardPanel } from './ui/leaderboard';
 import { GrandPrix } from './core/grandPrix';
 import { Race, ordinal, type RaceKart } from './core/race';
 import { copyKartState, createKartState, driftTier, respawnKart, type KartState, type StepEvents } from './physics/kart';
@@ -90,7 +93,14 @@ let podium: Podium | null = null;
 let trialNote = '';
 /** Time Trial: the run being recorded, and the best run replaying as a see-through kart. */
 let recorder: GhostRecorder | null = null;
-let ghost: { run: GhostRun; view: KartView; state: KartState } | null = null;
+interface Ghost {
+  run: GhostRun;
+  view: KartView;
+  state: KartState;
+  /** Who set it, for the HUD: "you" or a leaderboard name. */
+  label: string;
+}
+let ghosts: Ghost[] = [];
 let track: Track;
 let trackView: TrackView | null = null;
 let race: Race;
@@ -121,7 +131,27 @@ const menu = new Menu(document.body, choice, onMenuChange, (c) => {
   startRace(true);
 });
 const touch = new TouchControls(document.body, input, () => input.requestPause());
-const screenFit = new ScreenFit(document.body);
+const screenFit = new ScreenFit(document.body, fitRenderer);
+const board = new LeaderboardPanel(document.body);
+
+/** The leaderboard shows beside the picker in Time Trial mode. */
+function updateBoard(refresh = false): void {
+  const on = mode === 'menu' && choice.mode === 'timeTrial';
+  board.show(on);
+  document.body.classList.toggle('board-open', on);
+  if (on) board.load(TRACK_LIST[choice.track].id, TRACK_LIST[choice.track].name, choice.engine, refresh);
+}
+
+/** Matches the drawing buffer and camera to the viewport. */
+function fitRenderer(): void {
+  const width = document.documentElement.clientWidth || window.innerWidth;
+  const height = document.documentElement.clientHeight || window.innerHeight;
+  if (!width || !height) return;
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+  // CSS sizes the canvas; only the drawing buffer changes here.
+  renderer.setSize(width, height, false);
+}
 
 function setMode(next: Mode): void {
   mode = next;
@@ -131,11 +161,14 @@ function setMode(next: Mode): void {
   touch.setVisible(next === 'race');
   loop.paused = false;
   if (next === 'title' || next === 'menu') music.play('title');
+  // Back at the picker: fetch the board again, it may include the run just posted.
+  updateBoard(true);
 }
 
 function onMenuChange(c: MenuChoice, row: string): void {
   choice = { ...c };
   sfx.menu();
+  updateBoard();
   if (row === 'track' || row === 'mode') {
     const idx = menuTrack();
     if (track.def.id !== TRACK_LIST[idx].id) loadTrack(idx);
@@ -225,38 +258,49 @@ function startRace(withPlayer: boolean): void {
 
 const ghostKey = () => `gizzracer.ghost.${track.def.id}.${choice.engine}`;
 
-/** In Time Trial, starts recording and brings back the best run so far as a ghost. */
+/** In Time Trial, starts recording and brings back your best run, and any leaderboard run you picked, as ghosts. */
 function setupGhost(trial: boolean): void {
-  if (ghost) scene.remove(ghost.view.root, ghost.view.fx);
-  ghost = null;
+  for (const g of ghosts) scene.remove(g.view.root, g.view.fx);
+  ghosts = [];
   recorder = trial ? new GhostRecorder() : null;
   if (!trial) return;
-  let run: GhostRun | null = null;
   try {
     const text = localStorage.getItem(ghostKey());
-    run = text ? decodeGhost(text) : null;
+    const run = text ? decodeGhost(text) : null;
+    if (run) addGhost(run, 'you');
   } catch {
-    // Storage blocked: race without a ghost.
+    // Storage blocked: race without your ghost.
   }
-  if (!run) return;
+  const picked = board.picked;
+  if (picked) {
+    const raceAtStart = race;
+    fetchGhost(track.def.id, choice.engine, picked.runId)
+      .then((run) => race === raceAtStart && addGhost(run, picked.name, 0xff5ad0))
+      .catch(() => hud.flash('GHOST UNAVAILABLE'));
+  }
+}
+
+/** A see-through kart replaying `run`, optionally tinted so two ghosts can be told apart. */
+function addGhost(run: GhostRun, label: string, tint?: number): void {
   const id = run.racerId;
-  const racer = RACERS.find((r) => r.id === id) ?? choice.racer;
-  const view = new KartView(racer);
-  // See-through, no shadow or sparks: it isn't really there.
+  const view = new KartView(RACERS.find((r) => r.id === id) ?? choice.racer);
+  const tintColor = tint === undefined ? null : new THREE.Color(tint);
   view.root.traverse((o) => {
     if (!(o instanceof THREE.Mesh)) return;
     const mats = (Array.isArray(o.material) ? o.material : [o.material]).map((m: THREE.Material) => {
-      const c = m.clone();
+      const c = m.clone() as THREE.MeshPhongMaterial;
       c.transparent = true;
       c.opacity = 0.38;
       c.depthWrite = false;
+      if (tintColor && c.color) c.color.lerp(tintColor, 0.6);
       return c;
     });
     o.material = Array.isArray(o.material) ? mats : mats[0];
   });
+  // No shadow or sparks: it isn't really there.
   view.fx.visible = false;
   scene.add(view.root, view.fx);
-  ghost = { run, view, state: createKartState() };
+  ghosts.push({ run, view, state: createKartState(), label });
 }
 
 /** Swoops along the last stretch of the lap down onto the grid. */
@@ -308,7 +352,8 @@ function step(dt: number): void {
   if (player.respawned) chase.snap();
   playerSounds(player, ev);
   checkWrongWay(player, dt);
-  if (recorder && player.finishTime === null) recorder.record(race.time, player.state);
+  // Record a little past the line so the ghost visibly crosses it.
+  if (recorder && (player.finishTime === null || race.time - player.finishTime < GHOST_OVERRUN)) recorder.record(race.time, player.state);
   for (const e of race.events) {
     if (e.type === 'pickup' && e.kart === player) sfx.pickup();
     if (e.type === 'use' && e.kart === player) sfx.use(e.item);
@@ -323,7 +368,10 @@ function step(dt: number): void {
     }
   }
   if (mode === 'race' && player.finishTime !== null && race.time - player.finishTime > RESULTS_DELAY) {
-    if (choice.mode === 'timeTrial') trialNote = saveTrial(player.finishTime, Math.min(...player.lapTimes), player.racer.id);
+    if (choice.mode === 'timeTrial') {
+      trialNote = saveTrial(player.finishTime, Math.min(...player.lapTimes), player.racer.id);
+      postTrial(player);
+    }
     setMode('results');
   }
   updateMusic(player);
@@ -467,9 +515,9 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
   const snaps = race.karts.map((k) => interpolate(k, alpha));
   const f = focus();
   const s = snaps[race.karts.indexOf(f)];
-  if (ghost) {
-    ghostPose(ghost.run, Math.max(0, race.time - (1 - alpha) * PHYSICS_DT), ghost.state);
-    ghost.view.update(ghost.state, 30, dt, elapsed);
+  for (const g of ghosts) {
+    ghostPose(g.run, Math.max(0, race.time - (1 - alpha) * PHYSICS_DT), g.state);
+    g.view.update(g.state, 30, dt, elapsed);
   }
   if (podium) {
     podium.update(dt, elapsed, camera);
@@ -499,7 +547,7 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
       lapTimes: f.lapTimes,
       racerName: f.racer.name,
       engineClass: choice.engine,
-      trackName: gp && !gp.finished ? `${track.def.name} · race ${gp.round + 1}/${gp.tracks.length}` : ghost ? `${track.def.name} · ghost ${formatTime(ghost.run.total)}` : track.def.name,
+      trackName: gp && !gp.finished ? `${track.def.name} · race ${gp.round + 1}/${gp.tracks.length}` : ghosts.length ? `${track.def.name} · ${ghosts.map((g) => `${g.label} ${formatTime(g.run.total)}`).join(' · ')}` : track.def.name,
       section: f.section,
       autoAccelerate: input.autoAccelerate,
       finished,
@@ -590,6 +638,20 @@ function saveTrial(total: number, bestLap: number, racerId: string): string {
   if (!prev) return `First record set! Best lap ${formatTime(bestLap)}`;
   if (total < prev.total) return `NEW RECORD! ${formatTime(prev.total - total).replace(/^0:0?/, '-')}s`;
   return `Record ${formatTime(prev.total)} · best lap ${formatTime(best.lap)}`;
+}
+
+/** Sends a finished Time Trial to the online leaderboard and adds the outcome to the results note. */
+function postTrial(p: RaceKart): void {
+  if (!recorder) return;
+  if (!identity().name) {
+    trialNote += ' · set a name in the picker to post runs online';
+    return;
+  }
+  const local = trialNote;
+  trialNote = `${local} · posting...`;
+  uploadRun(track.def.id, choice.engine, p.lapTimes, recorder.finish(p.racer.id, p.finishTime!))
+    .then((r) => (trialNote = `${local} · ${r.best ? 'posted! ' : ''}online #${r.rank}`))
+    .catch((err: Error) => (trialNote = `${local} · not posted: ${err.message}`));
 }
 
 /** Back to the picker, with the attract race on the picker's track. */
@@ -687,11 +749,6 @@ window.addEventListener('keydown', (e) => {
   else if (e.code === 'KeyB') sfxMuted = sfx.toggleMute();
 });
 
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-});
 
 // Debug handle for the console and automated screenshots: gizz.warp(0.4) jumps to 40% of the lap.
 Object.assign(window, {

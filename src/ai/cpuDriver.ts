@@ -1,4 +1,4 @@
-import { NEUTRAL_INPUT, type InputFrame } from '../core/input';
+import { NEUTRAL_INPUT, type InputFrame } from '../core/inputFrame';
 import { clamp, seededRandom, wrapAngle } from '../core/math';
 import type { ItemKind } from '../items/items';
 import { DRIFT_MIN_SPEED, driftTier, type KartState } from '../physics/kart';

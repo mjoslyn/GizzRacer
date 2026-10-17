@@ -46,7 +46,7 @@ No sign-up. On first online use the game makes a guest identity: a random `playe
 
 | Phase | Ships |
 |---|---|
-| 8a | Online Time Trial: guest identity, run uploads, leaderboards, ghost downloads |
+| 8a | Online Time Trial: guest identity, run uploads, leaderboards, ghost downloads. **Built** |
 | 8b | Rooms: create or join by code, lobby, host settings, ready up |
 | 8c | Online races: the room runs the race; clients drive their own karts |
 | 8d | Hardening: disconnects, reconnect into a running race, phone testing, load test |
@@ -74,9 +74,11 @@ One instance per board: `{track}.{engine}.v{physics}`. HTTP endpoints (`onReques
 
 - `GET /` returns the top 50 (name, racer, total, laps, run id) and, with `?player=`, that player's rank and best.
 - `GET /ghost/{runId}` returns the ghost blob.
-- `POST /` (identity token required) checks the run (5.4), stores it, and keeps at most 3 runs per player per board (best first). Ghosts are kept only for each player's best run and for the top 50.
+- `POST /` (identity token required) checks the run (5.4) and keeps it only if it beats that player's best; the reply has the rank either way. Each player has one run (their best) and its ghost per board.
 
-SQLite tables in the instance: `runs (id, player_id, name, racer_id, total_ms, laps_ms, created_at)` and `ghosts (run_id, data blob)`.
+SQLite tables in the instance: `runs (player_id primary key, run_id, name, racer_id, total_ms, laps_ms, created_at)` and `ghosts (run_id, data)`.
+
+As built: `party/trials.ts`, `party/players.ts`, `party/index.ts` (routing; everything else is the game's static files), checks in `src/net/runCheck.ts` (shared with the tests), client in `src/net/` and `src/ui/leaderboard.ts`. The input stream (5.2) isn't uploaded yet; the ghost path is what gets checked.
 
 ### 5.4 Validation (cheap, not bulletproof)
 

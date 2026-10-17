@@ -1,5 +1,10 @@
-/** Phones and tablets: anything with a coarse pointer. */
-const COARSE = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches;
+/** Phones and tablets: a coarse pointer, or touch with no hover. */
+const COARSE =
+  typeof matchMedia !== 'undefined' &&
+  (matchMedia('(pointer: coarse)').matches || (navigator.maxTouchPoints > 0 && matchMedia('(hover: none)').matches));
+
+/** iOS reports the new size a beat after a rotation; look again at these delays (ms). */
+const SETTLE_CHECKS = [0, 120, 350, 800];
 
 interface FullscreenElement extends HTMLElement {
   webkitRequestFullscreen?: () => Promise<void> | void;
@@ -22,23 +27,64 @@ export const IOS_BROWSER =
  * a phone is held upright.
  */
 export class ScreenFit {
-  private readonly portraitQuery = typeof matchMedia !== 'undefined' ? matchMedia('(orientation: portrait)') : null;
+  private isPortrait = false;
+  private timers: number[] = [];
 
-  constructor(parent: HTMLElement) {
+  /** `onChange` runs whenever the screen settles on a new size or orientation. */
+  constructor(
+    parent: HTMLElement,
+    private readonly onChange: () => void = () => {},
+  ) {
     const el = document.createElement('div');
     el.className = 'rotate';
     el.innerHTML = `
       <div class="rotate-phone"><div class="rotate-screen"></div></div>
       <div class="rotate-text hud-big">TURN YOUR PHONE SIDEWAYS</div>
+      <div class="rotate-hint">Already sideways? Turn off rotation lock${IOS_BROWSER ? ' in Control Center' : ''}.</div>
       ${IOS_BROWSER ? '<div class="rotate-hint">For full screen: Share &rarr; Add to Home Screen</div>' : ''}`;
     parent.appendChild(el);
     if (COARSE) document.body.classList.add('coarse');
     if (IOS_BROWSER) document.body.classList.add('ios-browser');
+
+    // Every signal a phone might give for a rotation, each followed by re-checks
+    // while the browser settles.
+    const settle = () => {
+      for (const t of this.timers) clearTimeout(t);
+      this.timers = SETTLE_CHECKS.map((ms) => window.setTimeout(() => this.update(), ms));
+    };
+    window.addEventListener('resize', settle);
+    window.addEventListener('orientationchange', settle);
+    screen.orientation?.addEventListener?.('change', settle);
+    window.visualViewport?.addEventListener('resize', settle);
+    document.addEventListener('visibilitychange', settle);
+    this.update();
   }
 
   /** A phone held upright. */
   get portrait(): boolean {
-    return COARSE && !!this.portraitQuery?.matches;
+    return COARSE && this.isPortrait;
+  }
+
+  /** The viewport the game actually has, which is what decides the layout. */
+  viewport(): { width: number; height: number } {
+    const el = document.documentElement;
+    return { width: el.clientWidth || window.innerWidth, height: el.clientHeight || window.innerHeight };
+  }
+
+  private update(): void {
+    const { width, height } = this.viewport();
+    // The viewport's shape is the truth for layout; the orientation APIs only
+    // break a tie (a square-ish viewport while the browser is mid-rotation).
+    let portrait = height > width * 1.05;
+    if (Math.abs(height - width) <= width * 0.05) {
+      const type = screen.orientation?.type;
+      const legacy = (window as Window & { orientation?: number }).orientation;
+      if (type) portrait = type.startsWith('portrait');
+      else if (typeof legacy === 'number') portrait = legacy === 0 || legacy === 180;
+    }
+    this.isPortrait = portrait;
+    document.body.classList.toggle('portrait', portrait);
+    this.onChange();
   }
 
   /** Call from inside a touch handler: browsers only allow fullscreen from a user gesture. */

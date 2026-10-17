@@ -1,30 +1,7 @@
 import { clamp } from './math';
+import { NEUTRAL_INPUT, type InputFrame } from './inputFrame';
 
-/**
- * One tick of player intent. Pure data so it can be recorded, replayed,
- * or sent over the network independently of simulation state.
- */
-export interface InputFrame {
-  throttle: number; // 0..1
-  brake: number; // 0..1
-  steer: number; // -1 (left) .. 1 (right)
-  drift: boolean;
-  driftPressed: boolean; // rising edge this tick
-  item: boolean;
-  itemPressed: boolean;
-  lookBack: boolean;
-}
-
-export const NEUTRAL_INPUT: Readonly<InputFrame> = {
-  throttle: 0,
-  brake: 0,
-  steer: 0,
-  drift: false,
-  driftPressed: false,
-  item: false,
-  itemPressed: false,
-  lookBack: false,
-};
+export { NEUTRAL_INPUT, type InputFrame };
 
 const KEYS = {
   throttle: ['KeyW', 'ArrowUp'],
