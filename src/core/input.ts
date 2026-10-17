@@ -27,7 +27,7 @@ const PREVENT_DEFAULT = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRigh
 export class InputManager {
   autoAccelerate = true;
   /** Written by the on-screen touch controls. */
-  readonly touch = { steer: 0, drift: false, brake: false, item: false };
+  readonly touch = { steer: 0, tilt: 0, drift: false, brake: false, item: false };
   private readonly down = new Set<string>();
   /** Keys pressed since the last sample, so sub-tick taps aren't lost. */
   private readonly latched = new Set<string>();
@@ -58,7 +58,7 @@ export class InputManager {
     let item = key(KEYS.item);
     let lookBack = key(KEYS.lookBack);
 
-    steer += this.touch.steer;
+    steer += this.touch.steer + this.touch.tilt;
     drift ||= this.touch.drift;
     brake = Math.max(brake, this.touch.brake ? 1 : 0);
     item ||= this.touch.item;

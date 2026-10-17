@@ -12,6 +12,9 @@ import { TRIAL_LAPS } from './net/runCheck';
 import { fetchGhost, uploadRun } from './net/trials';
 import { LeaderboardPanel } from './ui/leaderboard';
 import { LobbyScreen } from './ui/lobby';
+import { SettingsScreen } from './ui/settings';
+import { TiltSteering } from './ui/tilt';
+import { onSettings, settings, updateSettings } from './core/settings';
 import type { RoomStart } from './net/protocol';
 import type { RoomClient } from './net/room';
 import { GrandPrix } from './core/grandPrix';
@@ -155,6 +158,18 @@ const linkedRoom = new URLSearchParams(location.search).get('room');
 const touch = new TouchControls(document.body, input, () => input.requestPause());
 const screenFit = new ScreenFit(document.body, fitRenderer);
 const board = new LeaderboardPanel(document.body);
+const tilt = new TiltSteering(input);
+const settingsScreen = new SettingsScreen(document.body, tilt);
+/** The mix that sits right: music under the effects (see the audio commit). */
+const MUSIC_LEVEL = 0.63;
+onSettings((s) => {
+  music.setVolume(s.music * MUSIC_LEVEL);
+  sfx.setVolume(s.sfx);
+  input.autoAccelerate = s.autoAccelerate;
+});
+// Android allows the sensor straight away; iPhones need a tap (see touchend below).
+if (settings().tilt) void tilt.start();
+hud.onTitleSettings = () => settingsScreen.open();
 
 /** The leaderboard shows beside the picker in Time Trial mode. */
 function updateBoard(refresh = false): void {
@@ -283,6 +298,8 @@ function startRace(withPlayer: boolean): void {
   });
   snapshots.clear();
   chase.snap();
+  // Straight ahead is however the phone is held as the race begins.
+  if (withPlayer) tilt.recenter();
   intro = withPlayer && !net ? INTRO_TIME : 0;
   // Online, everyone's GO is the room's: count down to it on the room clock.
   if (net) race.time = Math.max(-10, -(net.start.at - net.client.serverNow()) / 1000);
@@ -772,6 +789,8 @@ hud.onPauseAction = (action) => {
   } else if (action === 'restart') {
     // An online race runs on the room's clock: no restarts.
     if (!online) startRace(true);
+  } else if (action === 'settings') {
+    settingsScreen.open();
   } else if (action === 'quit') {
     if (online) backToLobby();
     else toMenu();
@@ -785,16 +804,27 @@ window.addEventListener(
   () => {
     music.unlock();
     screenFit.enter();
+    if (settings().tilt && !tilt.running) void tilt.start();
   },
   { passive: true },
 );
 window.addEventListener('pointerup', (e) => {
+  if (settingsScreen.visible) return;
+  if ((e.target as HTMLElement).closest('.settings, .hud-title-settings, .lobby, .board')) return music.unlock();
   if (skipIntro()) return;
   if ((e.target as HTMLElement).closest('.menu, .touch, .hud-pause')) return music.unlock();
   advance();
 });
 
 window.addEventListener('keydown', (e) => {
+  if (settingsScreen.visible) {
+    if (e.code === 'Escape') {
+      settingsScreen.close();
+      // That Escape closes Settings; it isn't also a pause toggle.
+      input.consumePause();
+    }
+    return;
+  }
   if (advance()) return;
   if (!e.repeat && skipIntro()) return;
   if (menu.key(e.code)) return;
@@ -805,7 +835,7 @@ window.addEventListener('keydown', (e) => {
     return;
   }
   if (e.code === 'KeyR') hud.onPauseAction?.('restart');
-  else if (e.code === 'KeyM') input.autoAccelerate = !input.autoAccelerate;
+  else if (e.code === 'KeyM') updateSettings({ autoAccelerate: !settings().autoAccelerate });
   else if (e.code === 'KeyN') musicMuted = music.toggleMute();
   else if (e.code === 'KeyB') sfxMuted = sfx.toggleMute();
 });

@@ -45,7 +45,7 @@ Flow: title, then a picker (mode, track, racer, class). Grand Prix: race, result
 
 Controls: auto-accelerate, arrows steer, Down brakes/reverses, Shift/Space hop+drift (tap at a ramp lip for a trick), E (or X, gamepad L1) item, Q look back, Esc pause. Touch: drag on the left half to steer, DRIFT, BRAKE and ITEM on the right.
 
-Phones: the first tap goes fullscreen and locks to landscape where the browser allows it (Android Chrome). Held upright, the game shows a "turn your phone sideways" card and pauses the race. iPhone Safari can't go fullscreen from a page, so the title suggests Share, Add to Home Screen; the web app manifest launches it fullscreen in landscape from there.
+Settings (title screen and pause menu): music and effects volume, automatic or manual throttle, and tilt steering for phones (turn the phone like a wheel; sensitivity, invert, recentre; it recentres at every race start). Phones: the first tap goes fullscreen and locks to landscape where the browser allows it (Android Chrome). Held upright, the game shows a "turn your phone sideways" card and pauses the race. iPhone Safari can't go fullscreen from a page, so the title suggests Share, Add to Home Screen; the web app manifest launches it fullscreen in landscape from there.
 
 In a race: `R` restart, `M` manual throttle, `N` music on/off, `B` sound effects on/off. `?showroom` shows every racer on a turntable. In the console, `gizz.warp(0.5)` jumps halfway round the lap and `gizz.autopilot()` lets the CPU drive your kart, `gizz.give('riffMissile')` fills the item slot.
 

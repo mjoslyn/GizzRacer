@@ -345,6 +345,8 @@ body {
 .menu button,
 .lobby button,
 .board button,
+.settings button,
+.hud-title-settings,
 .touch button {
   font: inherit;
   font-style: italic;
@@ -1334,4 +1336,76 @@ body:not([data-mode='lobby']) .lobby {
 /* The item slot only matters while racing. */
 body:not([data-mode='race']) .hud-item {
   display: none;
+}
+
+/* ---- Settings (title screen and pause menu) ---- */
+.settings {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--hud-font);
+  font-style: italic;
+  color: var(--hud-fg);
+  background: rgba(20, 0, 30, 0.72);
+}
+
+.settings.show {
+  display: flex;
+}
+
+.settings-panel {
+  padding: 16px 20px 18px;
+  background: linear-gradient(180deg, rgba(60, 15, 75, 0.95), rgba(25, 5, 40, 0.95));
+  box-shadow: 0 0 0 3px #ffd23a, 0 0 0 6px #3a0f45, 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.settings .lobby-row {
+  grid-template-columns: 96px 44px 1fr 44px;
+}
+
+.settings .lobby-row.off {
+  opacity: 0.4;
+}
+
+.settings .menu-arrow {
+  padding: 4px 0;
+  font-size: 14px;
+}
+
+.settings-group {
+  margin-top: 6px;
+  font-size: 12px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #fff27a;
+}
+
+.settings-toggle {
+  padding: 6px 10px !important;
+  font-size: 15px;
+}
+
+.settings-toggle.on {
+  background: linear-gradient(180deg, #2a9a5a, #0f4525) !important;
+}
+
+.settings-recenter {
+  align-self: center;
+  padding: 6px 16px !important;
+  font-size: 14px;
+}
+
+.settings button:disabled {
+  opacity: 0.45;
+}
+
+/* The title screen's settings button: the title itself is click-through. */
+.hud-title-settings {
+  pointer-events: auto;
+  margin-top: 18px;
+  padding: 8px 22px !important;
+  font-size: 16px;
 }

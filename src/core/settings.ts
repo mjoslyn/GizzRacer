@@ -1,0 +1,48 @@
+/** Player settings, kept in this browser (Settings screen: ui/settings.ts). */
+export interface Settings {
+  /** 0..1 */
+  music: number;
+  /** 0..1 */
+  sfx: number;
+  /** Steer by turning the phone like a wheel. */
+  tilt: boolean;
+  /** Degrees of turn for full steering lock: lower is twitchier. */
+  tiltRange: number;
+  tiltInvert: boolean;
+  autoAccelerate: boolean;
+}
+
+export const DEFAULT_SETTINGS: Settings = { music: 0.6, sfx: 1, tilt: false, tiltRange: 24, tiltInvert: false, autoAccelerate: true };
+export const TILT_RANGES = [16, 24, 34] as const;
+
+const KEY = 'gizzracer.settings';
+let current: Settings = load();
+const listeners: ((s: Settings) => void)[] = [];
+
+function load(): Settings {
+  try {
+    return { ...DEFAULT_SETTINGS, ...(JSON.parse(localStorage.getItem(KEY) ?? '{}') as Partial<Settings>) };
+  } catch {
+    return { ...DEFAULT_SETTINGS };
+  }
+}
+
+export function settings(): Readonly<Settings> {
+  return current;
+}
+
+export function updateSettings(change: Partial<Settings>): void {
+  current = { ...current, ...change };
+  try {
+    localStorage.setItem(KEY, JSON.stringify(current));
+  } catch {
+    // Storage blocked: settings last for this visit.
+  }
+  for (const l of listeners) l(current);
+}
+
+/** Runs now and on every change. */
+export function onSettings(listener: (s: Settings) => void): void {
+  listeners.push(listener);
+  listener(current);
+}

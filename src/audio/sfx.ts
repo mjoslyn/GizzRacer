@@ -48,6 +48,11 @@ export class Sfx {
     return ctx;
   }
 
+  setVolume(v: number): void {
+    this.volume = v;
+    if (this.out && !this.muted) this.out.gain.value = v;
+  }
+
   toggleMute(): boolean {
     this.muted = !this.muted;
     if (this.out) this.out.gain.value = this.muted ? 0 : this.volume;

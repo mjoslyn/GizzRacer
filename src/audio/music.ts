@@ -128,6 +128,11 @@ export class MusicPlayer {
     return this.ctx !== null;
   }
 
+  setVolume(v: number): void {
+    this.volume = v;
+    if (this.master && this.ctx && !this.muted) this.master.gain.setTargetAtTime(v, this.ctx.currentTime, 0.05);
+  }
+
   toggleMute(): boolean {
     this.muted = !this.muted;
     if (this.master && this.ctx) this.master.gain.setTargetAtTime(this.muted ? 0 : this.volume, this.ctx.currentTime, 0.05);

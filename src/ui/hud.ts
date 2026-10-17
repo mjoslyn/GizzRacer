@@ -82,7 +82,7 @@ export interface HudData {
   rolling: number;
 }
 
-export type PauseAction = 'resume' | 'restart' | 'quit';
+export type PauseAction = 'resume' | 'restart' | 'quit' | 'settings';
 
 export class Hud {
   readonly minimap = new Minimap();
@@ -156,6 +156,7 @@ export class Hud {
         <div class="hud-pause-buttons">
           <button data-act="resume">Resume <small>Esc</small></button>
           <button data-act="restart">Restart <small>R</small></button>
+          <button data-act="settings">Settings</button>
           <button data-act="quit">Quit to menu <small>Backspace</small></button>
         </div>
       </div>
@@ -163,6 +164,7 @@ export class Hud {
         <div class="hud-title-logo hud-big">GIZZRACER</div>
         <div class="hud-title-sub">psychedelic garage-rock kart racing</div>
         <div class="hud-title-press">${'ontouchstart' in window ? 'tap to start' : 'press any key'}</div>
+        <button class="hud-title-settings">SETTINGS</button>
         <div class="hud-title-ios">For full screen: Share &rarr; Add to Home Screen</div>
       </div>`;
     parent.appendChild(this.el);
@@ -182,6 +184,7 @@ export class Hud {
     this.count = q('.hud-count');
     this.standings = q('.hud-standings');
     this.title = q('.hud-title');
+    q('.hud-title-settings').addEventListener('click', () => this.onTitleSettings?.());
     this.itemSlot = q('.hud-item');
     this.itemImg = q('.hud-item img') as HTMLImageElement;
     this.itemName = q('.hud-item-name');
@@ -199,6 +202,9 @@ export class Hud {
     this.flashText = text;
     this.flashPending = true;
   }
+
+  /** The title screen's Settings button. */
+  onTitleSettings: (() => void) | null = null;
 
   showTitle(show: boolean): void {
     this.title.classList.toggle('show', show);
