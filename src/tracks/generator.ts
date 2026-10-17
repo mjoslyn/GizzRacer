@@ -156,7 +156,7 @@ const PALETTES: Record<GenTheme, Palette> = {
     landmarks: ['dragonFlight'],
     tallWalls: 5,
     places: ['Wyrm', 'Derrick', 'Ashen', 'Scorch', 'Brimstone', 'Crude', 'Cinder', 'Talon', 'Doom'],
-    music: { lap: 'volcano-fortress' },
+    music: { lap: 'petrodragonic-apocalypse', finalLap: 'petrodragonic-apocalypse-final-lap' },
   },
 };
 

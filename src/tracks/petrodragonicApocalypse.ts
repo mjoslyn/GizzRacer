@@ -90,7 +90,6 @@ export function buildPetrodragonicApocalypse(): TrackDef {
       { kind: 'oilBombs', at: [at('coil', 30), at('coil', 95)], period: 6 },
     ],
     theme: 'petro',
-    // Stand-in until its own songs are rendered.
-    music: { lap: 'volcano-fortress' },
+    music: { lap: 'petrodragonic-apocalypse', finalLap: 'petrodragonic-apocalypse-final-lap' },
   };
 }

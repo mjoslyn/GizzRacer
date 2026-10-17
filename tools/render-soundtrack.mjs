@@ -27,7 +27,8 @@ const KBPS = 160;
 
 /** Game cue -> seqbaby song title (account `gizzracer`), and how many chain passes to record. */
 const CUES = [
-  { id: 'title', title: 'gizzracer title theme' },
+  // Ice V's idiom: 7/8 patterns of two bars, so the loop length is given outright.
+  { id: 'title', title: 'gizzracer title theme', bars: 16 },
   { id: 'infinite-loop-speedway', title: 'infinite loop speedway' },
   { id: 'rattlesnake-run', title: 'rattlesnake run' },
   { id: 'rattlesnake-run-final-lap', title: 'rattlesnake run (final lap)' },
@@ -41,6 +42,9 @@ const CUES = [
   { id: 'cyboogie-city', title: 'cyboogie city' },
   { id: 'butterfly-skyway', title: 'butterfly 3000 skyway', bars: 16 },
   { id: 'butterfly-skyway-final-lap', title: 'butterfly 3000 skyway (final lap)', bars: 16 },
+  // The Apocalypse Cup's finale.
+  { id: 'petrodragonic-apocalypse', title: 'petrodragonic apocalypse', bars: 16 },
+  { id: 'petrodragonic-apocalypse-final-lap', title: 'petrodragonic apocalypse (final lap)', bars: 14 },
 ];
 
 process.env.SEQBABY_DIR = SEQBABY_DIR;

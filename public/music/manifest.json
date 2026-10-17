@@ -15,9 +15,9 @@
   },
   "title": {
     "title": "gizzracer title theme",
-    "bpm": 128,
-    "bars": 8,
-    "loopSamples": 661500,
+    "bpm": 126,
+    "bars": 16,
+    "loopSamples": 1176000,
     "sampleRate": 44100
   },
   "infinite-loop-speedway": {
@@ -81,6 +81,20 @@
     "bpm": 136,
     "bars": 16,
     "loopSamples": 1245176,
+    "sampleRate": 44100
+  },
+  "petrodragonic-apocalypse": {
+    "title": "petrodragonic apocalypse",
+    "bpm": 188,
+    "bars": 16,
+    "loopSamples": 900766,
+    "sampleRate": 44100
+  },
+  "petrodragonic-apocalypse-final-lap": {
+    "title": "petrodragonic apocalypse (final lap)",
+    "bpm": 204,
+    "bars": 14,
+    "loopSamples": 726353,
     "sampleRate": 44100
   }
 }

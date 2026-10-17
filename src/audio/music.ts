@@ -17,11 +17,13 @@ export type MusicCue =
   | 'cyboogie-city'
   | 'butterfly-skyway'
   | 'butterfly-skyway-final-lap'
+  | 'petrodragonic-apocalypse'
+  | 'petrodragonic-apocalypse-final-lap'
   | 'podium';
 
 /** Tempo of each song in seqbaby (seqbaby-seed people.mjs), for beat-synced visuals. */
 const BPM: Record<MusicCue, number> = {
-  title: 128,
+  title: 126,
   'infinite-loop-speedway': 164,
   'rattlesnake-run': 148,
   'rattlesnake-run-final-lap': 156,
@@ -33,6 +35,8 @@ const BPM: Record<MusicCue, number> = {
   'butterfly-skyway': 128,
   'butterfly-skyway-final-lap': 136,
   podium: 96,
+  'petrodragonic-apocalypse': 188,
+  'petrodragonic-apocalypse-final-lap': 204,
 };
 
 interface ManifestEntry {
