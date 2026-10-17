@@ -41,13 +41,23 @@ function materials(theme: Theme): Materials {
     meadow: () => tex.stoneTexture([96, 100, 92], [160, 164, 150]),
     volcanic: tex.basaltTexture,
     jungle: () => tex.stoneTexture([60, 80, 52], [120, 140, 100]),
+    lagoon: () => tex.stoneTexture([170, 150, 120], [230, 214, 180]),
+    glacier: () => tex.stoneTexture([110, 130, 150], [200, 215, 230]),
+    city: () => tex.stoneTexture([40, 34, 56], [90, 80, 110]),
+    sky: () => tex.stoneTexture([220, 200, 240], [255, 250, 255]),
   };
+  const neon = tex.neonRoadTexture();
+  const rainbow = tex.rainbowTexture();
   return {
     road: {
       asphalt: lambert(tex.asphaltTexture()),
       salt: lambert(tex.saltTexture()),
       rock: lambert(tex.dirtTexture()),
       sand: lambert(sand),
+      boards: lambert(tex.boardsTexture()),
+      ice: new THREE.MeshPhongMaterial({ map: tex.iceTexture(), shininess: 60, specular: 0x4a5a6a }),
+      neon: lambert(neon, { emissive: 0xffffff, emissiveMap: neon, emissiveIntensity: 0.7 }),
+      rainbow: lambert(rainbow, { emissive: 0xffffff, emissiveMap: rainbow, emissiveIntensity: 0.35 }),
     },
     curb: lambert(tex.curbTexture()),
     strata: lambert(theme.cliff(), { side: THREE.DoubleSide }),
@@ -67,10 +77,15 @@ export function buildTrackView(track: Track): TrackView {
   const theme = THEMES[track.def.theme];
   const mats = materials(theme);
 
+  const abyss = !!track.def.abyss;
   group.add(sky(theme));
-  group.add(ground(track, theme));
-  for (const pit of track.def.pits) group.add(pitMesh(pit, mats));
-  for (const ribbon of [track.main, ...track.branches]) group.add(ribbonMeshes(ribbon, mats));
+  // The sky track floats over a sea of cloud far below; everywhere else has ground, with pits cut in it.
+  if (abyss) group.add(cloudSea(theme));
+  else {
+    group.add(ground(track, theme));
+    for (const pit of track.def.pits) group.add(pitMesh(pit, mats));
+  }
+  for (const ribbon of [track.main, ...track.branches]) group.add(ribbonMeshes(ribbon, mats, abyss));
 
   const animated: ((time: number) => void)[] = [];
   const padTexture = tex.chevronTexture();
@@ -96,13 +111,21 @@ export function buildTrackView(track: Track): TrackView {
     if (lm.kind === 'fortressGate') group.add(fortressGate(ribbon, s, mats));
     if (lm.kind === 'templeGate') group.add(templeGate(ribbon, s, mats));
     if (lm.kind === 'gantry') group.add(gantry(ribbon, s, track.def.name));
+    if (lm.kind === 'iceArch') group.add(iceArch(ribbon, s));
+    if (lm.kind === 'neonArch') group.add(neonArch(ribbon, s));
+    if (lm.kind === 'rainbowArch') group.add(rainbowArch(ribbon, s));
+    if (lm.kind === 'lighthouse') {
+      const l = lighthouse(ribbon, s);
+      group.add(l.group);
+      animated.push(l.update);
+    }
     if (lm.kind === 'waterfall') {
       const w = waterfall(ribbon, s, mats);
       group.add(w.group);
       animated.push(w.update);
     }
   }
-  group.add(boundaryCliffs(track.def.bounds, mats));
+  if (!abyss) group.add(boundaryCliffs(track.def.bounds, mats));
   group.add(decor(track, mats, theme));
   group.add(distant(theme));
 
@@ -144,6 +167,16 @@ function sky(theme: Theme): THREE.Mesh {
   const mesh = new THREE.Mesh(new THREE.SphereGeometry(1500, 48, 24), material);
   mesh.userData.hue = hue;
   mesh.renderOrder = -1;
+  return mesh;
+}
+
+/** The sky track's floor: a sea of cloud a long way down. */
+function cloudSea(theme: Theme): THREE.Mesh {
+  const map = theme.ground();
+  map.repeat.set(2800 / theme.groundTile, 2800 / theme.groundTile);
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(2800, 2800), new THREE.MeshBasicMaterial({ map, fog: true }));
+  mesh.rotation.x = -Math.PI / 2;
+  mesh.position.y = -70;
   return mesh;
 }
 
@@ -222,7 +255,8 @@ function pitMesh(p: PitDef, mats: Materials): THREE.Group {
 }
 
 /** Builds road, curbs, walls, ramp skirts and lip faces for one ribbon. */
-function ribbonMeshes(ribbon: Ribbon, mats: Materials): THREE.Group {
+/** `floating`: every stretch is a deck with an underside (the sky track), with no pillars. */
+function ribbonMeshes(ribbon: Ribbon, mats: Materials, floating = false): THREE.Group {
   const g = new THREE.Group();
   const sp = ribbon.spline;
   const segs = sp.closed ? sp.count : sp.count - 1;
@@ -299,7 +333,7 @@ function ribbonMeshes(ribbon: Ribbon, mats: Materials): THREE.Group {
       }
     }
 
-    const deck = ribbon.def.sections[ribbon.sectionIndex[i]]?.bridge;
+    const deck = floating || ribbon.def.sections[ribbon.sectionIndex[i]]?.bridge;
     if (deck) {
       // Overpass: a slab with fascia, open underneath for the road below.
       const li = hwi + 0.6;
@@ -322,7 +356,7 @@ function ribbonMeshes(ribbon: Ribbon, mats: Materials): THREE.Group {
   g.add(tallWalls.mesh(mats.strata));
   g.add(lowWalls.mesh(mats.barrier));
   g.add(skirts.mesh(mats.strata));
-  g.add(pillars(ribbon, mats));
+  if (!floating) g.add(pillars(ribbon, mats));
   return g;
 }
 
@@ -584,6 +618,125 @@ function gantry(ribbon: Ribbon, s: number, name: string): THREE.Group {
   return g;
 }
 
+/** A striped lighthouse beside the road, its lamp sweeping a beam round. */
+function lighthouse(ribbon: Ribbon, s: number): { group: THREE.Group; update: (time: number) => void } {
+  const g = new THREE.Group();
+  const f = frameAt(ribbon, s);
+  const tower = new THREE.Group();
+  tower.position.set(-(ribbon.halfWidthAtS(s) + 14), 0, 0);
+  g.add(tower);
+  const bands = 6;
+  for (let k = 0; k < bands; k++) {
+    const r0 = 3.4 - k * 0.3;
+    const band = new THREE.Mesh(new THREE.CylinderGeometry(r0 - 0.3, r0, 4, 16), new THREE.MeshLambertMaterial({ color: k % 2 ? 0xf4f0e8 : 0xd8302a }));
+    band.position.y = 2 + k * 4;
+    tower.add(band);
+  }
+  const lamp = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.4, 2.4, 12), new THREE.MeshBasicMaterial({ color: 0xfff4c0 }));
+  lamp.position.y = 25.2;
+  const roof = new THREE.Mesh(new THREE.ConeGeometry(2, 2.4, 12), new THREE.MeshLambertMaterial({ color: 0x2a2a30 }));
+  roof.position.y = 27.6;
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex.glowTexture('rgba(255,250,210,1)', 'rgba(255,240,180,0)'), blending: THREE.AdditiveBlending, depthWrite: false }));
+  glow.position.y = 25.2;
+  glow.scale.setScalar(9);
+  const beam = new THREE.Mesh(
+    new THREE.ConeGeometry(4, 60, 16, 1, true).translate(0, -30, 0).rotateZ(Math.PI / 2),
+    new THREE.MeshBasicMaterial({ color: 0xfff4c8, transparent: true, opacity: 0.18, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }),
+  );
+  const pivot = new THREE.Group();
+  pivot.position.y = 25.2;
+  pivot.add(beam);
+  tower.add(lamp, roof, glow, pivot);
+  g.position.set(f.x, f.y, f.z);
+  g.rotation.y = f.heading;
+  return { group: g, update: (time) => (pivot.rotation.y = time * 0.9) };
+}
+
+/** Two pillars of glacier ice and a lintel, see-through and glinting. */
+function iceArch(ribbon: Ribbon, s: number): THREE.Group {
+  const g = new THREE.Group();
+  const f = frameAt(ribbon, s);
+  const hw = ribbon.halfWidthAtS(s) + 1.5;
+  const ice = new THREE.MeshPhongMaterial({ color: 0xbfe6ff, emissive: 0x1a3a5a, shininess: 140, specular: 0xffffff, transparent: true, opacity: 0.8, flatShading: true });
+  for (const side of [-1, 1]) {
+    for (let k = 0; k < 3; k++) {
+      const shard = new THREE.Mesh(new THREE.OctahedronGeometry(2.6 - k * 0.4, 0), ice);
+      shard.scale.set(1, 2.4, 1);
+      shard.position.set(side * (hw + 2 + k * 0.4), 4.5 + k * 3.6, (k - 1) * 0.6);
+      shard.rotation.y = k + side;
+      g.add(shard);
+    }
+  }
+  const lintel = new THREE.Mesh(new THREE.BoxGeometry(hw * 2 + 8, 2.2, 3), ice);
+  lintel.position.y = 13;
+  g.add(lintel);
+  for (let k = -3; k <= 3; k++) {
+    const icicle = new THREE.Mesh(new THREE.ConeGeometry(0.4, 2.4 + Math.abs(k % 2) * 1.4, 6), ice);
+    icicle.rotation.x = Math.PI;
+    icicle.position.set((k / 3) * hw, 11.2, 0);
+    g.add(icicle);
+  }
+  g.position.set(f.x, f.y, f.z);
+  g.rotation.y = f.heading;
+  return g;
+}
+
+/** A gantry of neon tubes over the road with the city's name in lights. */
+function neonArch(ribbon: Ribbon, s: number): THREE.Group {
+  const g = new THREE.Group();
+  const f = frameAt(ribbon, s);
+  const hw = ribbon.halfWidthAtS(s) + 2;
+  const tube = (color: number) => new THREE.MeshBasicMaterial({ color });
+  for (const side of [-1, 1]) {
+    const post = new THREE.Mesh(new THREE.BoxGeometry(1, 10, 1), new THREE.MeshLambertMaterial({ color: 0x1a1428 }));
+    post.position.set(side * hw, 5, 0);
+    const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.3, 10, 0.3), tube(side < 0 ? 0xff3ad8 : 0x3adcff));
+    stripe.position.set(side * hw, 5, 0.6);
+    g.add(post, stripe);
+  }
+  const c = document.createElement('canvas');
+  c.width = 1024;
+  c.height = 128;
+  const ctx = c.getContext('2d')!;
+  ctx.fillStyle = '#0a0614';
+  ctx.fillRect(0, 0, 1024, 128);
+  ctx.font = '900 80px Impact, "Arial Black", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.shadowBlur = 24;
+  ctx.shadowColor = '#ff3ad8';
+  ctx.fillStyle = '#ffd0f4';
+  ctx.fillText('CYBOOGIE CITY', 512, 68);
+  ctx.shadowColor = '#3adcff';
+  ctx.strokeStyle = '#8af0ff';
+  ctx.lineWidth = 6;
+  ctx.strokeRect(8, 8, 1008, 112);
+  const map = new THREE.CanvasTexture(c);
+  map.colorSpace = THREE.SRGBColorSpace;
+  const dark = new THREE.MeshLambertMaterial({ color: 0x1a1428 });
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(hw * 2 + 1, 2.6, 0.4), [dark, dark, dark, dark, new THREE.MeshBasicMaterial({ map }), new THREE.MeshBasicMaterial({ map })]);
+  sign.position.y = 9;
+  g.add(sign);
+  g.position.set(f.x, f.y, f.z);
+  g.rotation.y = f.heading;
+  return g;
+}
+
+/** A rainbow bowed over the road, seven bands. */
+function rainbowArch(ribbon: Ribbon, s: number): THREE.Group {
+  const g = new THREE.Group();
+  const f = frameAt(ribbon, s);
+  const r = ribbon.halfWidthAtS(s) + 4;
+  const colors = [0xff5a7a, 0xffa64a, 0xffe45a, 0x6aef7a, 0x4ad0ff, 0x7a7aff, 0xc86aff];
+  colors.forEach((color, k) => {
+    const band = new THREE.Mesh(new THREE.TorusGeometry(r + k * 0.9, 0.45, 8, 40, Math.PI), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9 }));
+    g.add(band);
+  });
+  g.position.set(f.x, f.y, f.z);
+  g.rotation.y = f.heading;
+  return g;
+}
+
 /** Fanged cave mouth swallowing the shortcut. */
 function snakeMouth(ribbon: Ribbon, s: number, mats: Materials): THREE.Group {
   const g = new THREE.Group();
@@ -667,6 +820,23 @@ function distant(theme: Theme): THREE.Group {
         mesh = new THREE.Mesh(new THREE.ConeGeometry(w, h * 2.2, 7), mat);
         mesh.position.y = h * 1.1 - 2;
         break;
+      case 'city': {
+        // A cluster of towers with lit windows.
+        mesh = new THREE.Mesh(new THREE.BoxGeometry(w * 0.3, h * 2, w * 0.3), mat);
+        mesh.position.y = h - 2;
+        for (let t = 0; t < 4; t++) {
+          const th = h * (0.8 + rand() * 1.8);
+          const tower = new THREE.Mesh(new THREE.BoxGeometry(w * 0.2, th, w * 0.2), mat);
+          tower.position.set((rand() - 0.5) * w, th / 2 - h, (rand() - 0.5) * w * 0.4);
+          mesh.add(tower);
+        }
+        break;
+      }
+      case 'cloud':
+        mesh = new THREE.Mesh(new THREE.SphereGeometry(w * 0.6, 14, 10), mat);
+        mesh.scale.set(1.6, 0.6, 1);
+        mesh.position.y = (rand() - 0.3) * 120;
+        break;
     }
     mesh.position.x = Math.cos(a) * r;
     mesh.position.z = Math.sin(a) * r;
@@ -686,8 +856,10 @@ function decor(track: Track, mats: Materials, theme: Theme): THREE.Group {
     ribbons.every((r) => nearestOnSpline(r.spline, x, z).distance > Math.max(...r.halfWidth) + 8) &&
     track.def.pits.every((p) => !inPit({ ...p, halfWidth: p.halfWidth + 6, halfLength: p.halfLength + 6 }, x, z));
 
-  const rockCount = theme.decor === 'jungle' ? 120 : 220;
-  const featureCount = theme.decor === 'jungle' ? 150 : theme.decor === 'meadow' ? 110 : 70;
+  const rockCount = { jungle: 120, city: 0, sky: 0, lagoon: 60, glacier: 140 }[theme.decor as string] ?? 220;
+  const featureCount = { jungle: 150, meadow: 110, lagoon: 120, glacier: 160, city: 90, sky: 90 }[theme.decor as string] ?? 70;
+  // Sky scenery floats at all heights; city towers need room off the road.
+  const floating = theme.decor === 'sky';
   const rocks = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 1), mats.rock, rockCount);
   const feature = featureBuilder(theme, mats);
   const m = new THREE.Matrix4();
@@ -706,7 +878,9 @@ function decor(track: Track, mats: Materials, theme: Theme): THREE.Group {
       m.compose(new THREE.Vector3(x, s * 0.35, z), q, new THREE.Vector3(s, s * (0.5 + rand() * 0.8), s));
       rocks.setMatrixAt(placed++, m);
     } else if (features < featureCount) {
-      g.add(feature(x, z, rand));
+      const obj = feature(x, z, rand);
+      if (floating) obj.position.y = -40 + rand() * 70;
+      g.add(obj);
       features++;
     }
   }
@@ -719,6 +893,105 @@ function decor(track: Track, mats: Materials, theme: Theme): THREE.Group {
 function featureBuilder(theme: Theme, mats: Materials): (x: number, z: number, rand: () => number) => THREE.Object3D {
   const trunkGeo = new THREE.CylinderGeometry(0.45, 0.55, 1, 10);
   switch (theme.decor) {
+    case 'lagoon': {
+      const bark = new THREE.MeshLambertMaterial({ color: 0x9a7a52 });
+      const frond = new THREE.MeshLambertMaterial({ color: 0x3aa04a, side: THREE.DoubleSide, flatShading: true });
+      const frondGeo = new THREE.ConeGeometry(0.7, 4.4, 4, 1, true).rotateX(Math.PI / 2).translate(0, 0, 2.2).scale(1, 0.15, 1);
+      const sand = new THREE.MeshLambertMaterial({ color: 0xe8d8a8 });
+      return (x, z, rand) => {
+        const t = new THREE.Group();
+        // A little sand islet with a palm or two leaning out over the water.
+        const islet = new THREE.Mesh(new THREE.CylinderGeometry(3 + rand() * 3, 4 + rand() * 3, 0.6, 14), sand);
+        islet.position.y = 0.2;
+        t.add(islet);
+        const palms = rand() < 0.4 ? 2 : 1;
+        for (let p = 0; p < palms; p++) t.add(palmTree(rand, trunkGeo, bark, frondGeo, frond, p * 2.2));
+        t.position.set(x, 0, z);
+        t.rotation.y = rand() * Math.PI * 2;
+        return t;
+      };
+    }
+    case 'glacier': {
+      const needles = new THREE.MeshLambertMaterial({ color: 0x2a5a48, flatShading: true });
+      const snow = new THREE.MeshLambertMaterial({ color: 0xf4f8ff, flatShading: true });
+      const ice = new THREE.MeshPhongMaterial({ color: 0xa8dcff, emissive: 0x10283a, shininess: 120, specular: 0xffffff, transparent: true, opacity: 0.85, flatShading: true });
+      return (x, z, rand) => {
+        const t = new THREE.Group();
+        if (rand() < 0.65) {
+          // A snowy pine: stacked cones, white-capped.
+          const h = 5 + rand() * 6;
+          for (let k = 0; k < 3; k++) {
+            const r = (1 - k * 0.25) * h * 0.32;
+            const cone = new THREE.Mesh(new THREE.ConeGeometry(r, h * 0.45, 7), needles);
+            cone.position.y = h * (0.3 + k * 0.22);
+            const cap = new THREE.Mesh(new THREE.ConeGeometry(r * 0.6, h * 0.2, 7), snow);
+            cap.position.y = cone.position.y + h * 0.14;
+            t.add(cone, cap);
+          }
+        } else {
+          // Ice shards breaking through the snow.
+          for (let k = 0; k < 4; k++) {
+            const h = 2 + rand() * 7;
+            const shard = new THREE.Mesh(new THREE.ConeGeometry(0.5 + rand() * 0.9, h, 5), ice);
+            shard.position.set((rand() - 0.5) * 3, h / 2, (rand() - 0.5) * 3);
+            shard.rotation.set((rand() - 0.5) * 0.6, rand() * 3, (rand() - 0.5) * 0.6);
+            t.add(shard);
+          }
+        }
+        t.position.set(x, 0, z);
+        return t;
+      };
+    }
+    case 'city': {
+      const windows = tex.windowsTexture();
+      const roofMat = new THREE.MeshLambertMaterial({ color: 0x120c1c });
+      const trims = [0xff3ad8, 0x3adcff, 0xffd23a, 0x7aff9a].map((c) => new THREE.MeshBasicMaterial({ color: c }));
+      return (x, z, rand) => {
+        const t = new THREE.Group();
+        const w = 5 + rand() * 4;
+        const d = 5 + rand() * 4;
+        const h = 12 + rand() * 50;
+        const map = windows.clone();
+        map.needsUpdate = true;
+        map.repeat.set(w / 8, h / 8);
+        const wall = new THREE.MeshLambertMaterial({ map, emissive: 0xffffff, emissiveMap: map, emissiveIntensity: 0.8 });
+        const tower = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), [wall, wall, roofMat, roofMat, wall, wall]);
+        tower.position.y = h / 2;
+        const trim = new THREE.Mesh(new THREE.BoxGeometry(w + 0.3, 0.4, d + 0.3), trims[Math.floor(rand() * trims.length)]);
+        trim.position.y = h;
+        t.add(tower, trim);
+        t.position.set(x, 0, z);
+        t.rotation.y = Math.floor(rand() * 4) * (Math.PI / 2);
+        return t;
+      };
+    }
+    case 'sky': {
+      const puff = new THREE.MeshLambertMaterial({ color: 0xffffff, emissive: 0x6a5a7a, flatShading: true });
+      const crystal = [0xff9ad8, 0x9ad8ff, 0xffe89a, 0xb89aff].map((c) => new THREE.MeshPhongMaterial({ color: c, emissive: c, emissiveIntensity: 0.35, shininess: 120, flatShading: true }));
+      const blob = new THREE.IcosahedronGeometry(1, 1);
+      return (x, z, rand) => {
+        const t = new THREE.Group();
+        if (rand() < 0.75) {
+          // A cloud: a few overlapping puffs.
+          const n = 3 + Math.floor(rand() * 4);
+          for (let k = 0; k < n; k++) {
+            const p = new THREE.Mesh(blob, puff);
+            const r = 2 + rand() * 4;
+            p.scale.set(r * 1.3, r * 0.8, r);
+            p.position.set((k - n / 2) * 3, rand() * 1.5, (rand() - 0.5) * 3);
+            t.add(p);
+          }
+        } else {
+          // A floating crystal, slowly glowing.
+          const c = new THREE.Mesh(new THREE.OctahedronGeometry(1.5 + rand() * 2.5, 0), crystal[Math.floor(rand() * crystal.length)]);
+          c.scale.y = 1.8;
+          c.rotation.y = rand() * 3;
+          t.add(c);
+        }
+        t.position.set(x, 0, z);
+        return t;
+      };
+    }
     case 'desert':
       return (x, z, rand) => cactus(x, z, 3 + rand() * 4, rand() * Math.PI, trunkGeo, mats.cactus);
     case 'meadow': {
@@ -815,6 +1088,39 @@ function featureBuilder(theme: Theme, mats: Materials): (x: number, z: number, r
       };
     }
   }
+}
+
+/** A palm with a leaning, segmented trunk and a crown of fronds; `offset` shifts it across its spot. */
+function palmTree(
+  rand: () => number,
+  trunkGeo: THREE.BufferGeometry,
+  bark: THREE.Material,
+  frondGeo: THREE.BufferGeometry,
+  frond: THREE.Material,
+  offset = 0,
+): THREE.Group {
+  const t = new THREE.Group();
+  const h = 6 + rand() * 6;
+  const lean = (rand() - 0.5) * 0.7;
+  const segs = 5;
+  let top = new THREE.Vector3();
+  for (let k = 0; k < segs; k++) {
+    const seg = new THREE.Mesh(trunkGeo, bark);
+    seg.scale.set(0.5 - k * 0.04, h / segs, 0.5 - k * 0.04);
+    seg.position.set(Math.sin(lean * (k / segs)) * k * 0.8, (k + 0.5) * (h / segs), 0);
+    seg.rotation.z = -lean * (k / segs);
+    t.add(seg);
+    top = seg.position.clone().setY(h);
+  }
+  for (let k = 0; k < 7; k++) {
+    const f = new THREE.Mesh(frondGeo, frond);
+    f.position.copy(top);
+    f.rotation.set(0.5 + rand() * 0.3, (k / 7) * Math.PI * 2, 0, 'YXZ');
+    t.add(f);
+  }
+  t.position.x = offset;
+  t.rotation.y = rand() * Math.PI * 2;
+  return t;
 }
 
 function cactus(x: number, z: number, h: number, rot: number, geo: THREE.BufferGeometry, mat: THREE.Material): THREE.Group {

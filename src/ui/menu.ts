@@ -1,5 +1,5 @@
 import { ENGINE_CLASSES, RACERS, type EngineClass, type RacerDef } from '../physics/racers';
-import { TRACK_LIST } from '../tracks/index';
+import { CUPS, TRACK_LIST } from '../tracks/index';
 
 export type RaceMode = 'grandPrix' | 'single' | 'timeTrial' | 'online';
 
@@ -14,6 +14,8 @@ const MODES = Object.keys(MODE_NAMES) as RaceMode[];
 export interface MenuChoice {
   mode: RaceMode;
   track: number;
+  /** The Grand Prix cup (index into CUPS). */
+  cup: number;
   racer: RacerDef;
   engine: EngineClass;
 }
@@ -73,18 +75,19 @@ export class Menu {
     return true;
   }
 
-  /** A Grand Prix runs every track, so its track row is skipped. */
+  /** Online picks its track in the room, so its track row is skipped. (A Grand Prix's track row picks the cup.) */
   private moveRow(dir: number): void {
     do this.row = (this.row + dir + ROWS.length) % ROWS.length;
-    while (ROWS[this.row] === 'track' && (this.choice.mode === 'grandPrix' || this.choice.mode === 'online'));
+    while (ROWS[this.row] === 'track' && this.choice.mode === 'online');
   }
 
   private change(dir: number): void {
     const c = this.choice;
     const row = ROWS[this.row];
     const step = <T>(list: readonly T[], v: T) => list[(list.indexOf(v) + dir + list.length) % list.length];
-    if (row === 'track' && (c.mode === 'grandPrix' || c.mode === 'online')) return;
+    if (row === 'track' && c.mode === 'online') return;
     if (row === 'mode') c.mode = step(MODES, c.mode);
+    else if (row === 'track' && c.mode === 'grandPrix') c.cup = (c.cup + dir + CUPS.length) % CUPS.length;
     else if (row === 'track') c.track = (c.track + dir + TRACK_LIST.length) % TRACK_LIST.length;
     else if (row === 'racer') c.racer = step(RACERS, c.racer);
     else c.engine = step(ENGINE_CLASSES, c.engine);
@@ -112,7 +115,7 @@ export class Menu {
         ${line('mode', 'Mode', MODE_NAMES[c.mode])}
         ${
           c.mode === 'grandPrix'
-            ? `<div class="menu-row menu-cup"><div class="menu-label">Cup</div><div class="menu-value">Cup 1: ${TRACK_LIST.length} races</div></div>`
+            ? line('track', 'Cup', CUPS[c.cup].name, `<div class="menu-cup-tracks">${CUPS[c.cup].tracks.map((t) => TRACK_LIST[t].name).join(' &middot; ')}</div>`)
             : c.mode === 'online'
               ? `<div class="menu-row menu-cup"><div class="menu-label">Rooms</div><div class="menu-value">Race friends with a room code</div></div>`
               : line('track', 'Track', TRACK_LIST[c.track].name)

@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { NEUTRAL_INPUT } from '../src/core/input';
 import { FixedLoop, PHYSICS_DT } from '../src/core/loop';
-import { clamp, wrapAngle } from '../src/core/math';
+import { clamp, seededRandom, wrapAngle } from '../src/core/math';
 import { Race } from '../src/core/race';
 import { createKartState, stepKart } from '../src/physics/kart';
 import { RACERS, kartParams } from '../src/physics/racers';
+import { TrackBuilder } from '../src/tracks/builder';
 import { TRACK_LIST } from '../src/tracks/index';
 import { buildRattlesnakeRun } from '../src/tracks/rattlesnakeRun';
 import { LapTracker } from '../src/tracks/laps';
@@ -245,5 +246,19 @@ describe('infinite loop speedway', () => {
     expect(kart.laps.lap).toBe(1);
     expect(maxY).toBeGreaterThan(8);
     expect(underY).toBeLessThan(0.5);
+  });
+});
+
+describe('turnTo', () => {
+  it('lands exactly on any target pose with turn-straight-turn', () => {
+    const rand = seededRandom(5);
+    for (let i = 0; i < 200; i++) {
+      const from = { x: rand() * 400 - 200, z: rand() * 400 - 200, h: rand() * 7 - 3.5 };
+      const to = { x: rand() * 400 - 200, z: rand() * 400 - 200, h: rand() * 7 - 3.5 };
+      const b = new TrackBuilder(from, 'x', { halfWidth: 5 });
+      b.turnTo(to, 30);
+      expect(Math.hypot(b.pose.x - to.x, b.pose.z - to.z)).toBeLessThan(0.05);
+      expect(Math.abs(Math.atan2(Math.sin(b.pose.h - to.h), Math.cos(b.pose.h - to.h)))).toBeLessThan(0.002);
+    }
   });
 });

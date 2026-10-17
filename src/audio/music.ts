@@ -12,6 +12,11 @@ export type MusicCue =
   | 'rattlesnake-run-final-lap'
   | 'volcano-fortress'
   | 'polygondwanaland-jungle'
+  | 'fishies-lagoon'
+  | 'ice-v-glacier'
+  | 'cyboogie-city'
+  | 'butterfly-skyway'
+  | 'butterfly-skyway-final-lap'
   | 'podium';
 
 /** Tempo of each song in seqbaby (seqbaby-seed people.mjs), for beat-synced visuals. */
@@ -22,6 +27,11 @@ const BPM: Record<MusicCue, number> = {
   'rattlesnake-run-final-lap': 156,
   'volcano-fortress': 176,
   'polygondwanaland-jungle': 132,
+  'fishies-lagoon': 120,
+  'ice-v-glacier': 140,
+  'cyboogie-city': 112,
+  'butterfly-skyway': 128,
+  'butterfly-skyway-final-lap': 136,
   podium: 96,
 };
 

@@ -30,7 +30,7 @@ import { KartView, setDustColor } from './render/kartView';
 import { PostFx } from './render/postfx';
 import { flareRingTexture, glowTexture, setTextureAnisotropy } from './render/textures';
 import { buildTrackView, type TrackView } from './render/trackView';
-import { TRACK_LIST } from './tracks/index';
+import { CUPS, TRACK_LIST } from './tracks/index';
 import { pointAt } from './tracks/spline';
 import { Track } from './tracks/track';
 import { Hud, formatTime, type Table, type TableRow } from './ui/hud';
@@ -93,7 +93,7 @@ const INTRO_TIME = 4.5;
 type Mode = 'title' | 'menu' | 'race' | 'results' | 'standings' | 'podium' | 'lobby';
 let mode: Mode = 'title';
 
-let choice: MenuChoice = { mode: 'grandPrix', track: 1, racer: RACERS[0], engine: '100cc' };
+let choice: MenuChoice = { mode: 'grandPrix', track: 1, cup: 0, racer: RACERS[0], engine: '100cc' };
 /** The cup in progress, if racing a Grand Prix. */
 let gp: GrandPrix | null = null;
 let podium: Podium | null = null;
@@ -138,7 +138,7 @@ const snapshots = new Map<RaceKart, KartState>();
 const menu = new Menu(document.body, choice, onMenuChange, (c) => {
   choice = { ...c };
   if (c.mode === 'online') return setMode('lobby');
-  gp = c.mode === 'grandPrix' ? new GrandPrix(defaultGrid(c.racer), TRACK_LIST.map((_, i) => i)) : null;
+  gp = c.mode === 'grandPrix' ? new GrandPrix(defaultGrid(c.racer), CUPS[c.cup].tracks) : null;
   startRace(true);
 });
 /** The online race in progress: the room, its start, and my side of the race once it's built. */
@@ -233,7 +233,7 @@ function onMenuChange(c: MenuChoice, row: string): void {
 
 /** The track the menu is showing: the cup's first for a Grand Prix. */
 function menuTrack(): number {
-  return choice.mode === 'grandPrix' ? 0 : choice.track;
+  return choice.mode === 'grandPrix' ? CUPS[choice.cup].tracks[0] : choice.track;
 }
 
 /** The track the next race with the player runs on. */
@@ -558,6 +558,10 @@ const HIT_TEXT: Record<ItemKind | HazardKind, string> = {
   flameJets: 'TORCHED!',
   vines: 'TIMBER!',
   rollers: "POLYGON'D!",
+  fish: 'FISHED!',
+  iceBlocks: 'ICED!',
+  lasers: 'ZAPPED!',
+  butterflies: '',
 };
 
 /** Takes a group out of the scene and frees what it built. */
@@ -639,7 +643,7 @@ function updateSounds(dt: number): void {
     }
     return best;
   };
-  sfx.hazards(dt, near('snakes'), near('dustDevils'));
+  sfx.hazards(dt, near('snakes'), near('dustDevils') ?? near('butterflies'));
 }
 
 function updateMusic(p: RaceKart): void {
@@ -781,7 +785,7 @@ function table(): Table | null {
   if (mode === 'podium' && gp) {
     const champ = gp.standings()[0];
     const me = gp.standings().findIndex((e) => e.racer === choice.racer) + 1;
-    const note = champ.racer === choice.racer ? `You win the ${choice.engine} cup!` : `You finished ${ordinal(me)}`;
+    const note = champ.racer === choice.racer ? `You win the ${CUPS[choice.cup].name}!` : `You finished ${ordinal(me)}`;
     return { kind: 'podium', title: `${champ.racer.name.toUpperCase()} WINS!`, note, rows: cupRows(3) };
   }
   return null;

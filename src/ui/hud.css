@@ -886,6 +886,15 @@ body.ios-browser .hud-title-ios {
   cursor: default;
 }
 
+.menu-cup-tracks {
+  grid-column: 2 / 5;
+  margin-top: 2px;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  text-align: center;
+  opacity: 0.75;
+}
+
 .menu-cup .menu-value {
   grid-column: 2 / 5;
   font-size: 15px;

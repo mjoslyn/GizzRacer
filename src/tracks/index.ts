@@ -1,3 +1,7 @@
+import { buildButterflySkyway } from './butterflySkyway';
+import { buildCyboogieCity } from './cyboogieCity';
+import { buildFishiesLagoon } from './fishiesLagoon';
+import { buildIceVGlacier } from './iceVGlacier';
 import { buildInfiniteLoopSpeedway } from './infiniteLoopSpeedway';
 import { buildPolygondwanalandJungle } from './polygondwanalandJungle';
 import { buildRattlesnakeRun } from './rattlesnakeRun';
@@ -10,4 +14,14 @@ export const TRACK_LIST: { id: string; name: string; build: () => TrackDef }[] =
   { id: 'rattlesnake-run', name: 'Rattlesnake Run', build: buildRattlesnakeRun },
   { id: 'volcano-fortress', name: 'Volcano Fortress', build: buildVolcanoFortress },
   { id: 'polygondwanaland-jungle', name: 'Polygondwanaland Jungle', build: buildPolygondwanalandJungle },
+  { id: 'fishies-lagoon', name: 'Fishies Lagoon', build: buildFishiesLagoon },
+  { id: 'ice-v-glacier', name: 'Ice V Glacier', build: buildIceVGlacier },
+  { id: 'cyboogie-city', name: 'Cyboogie City', build: buildCyboogieCity },
+  { id: 'butterfly-skyway', name: 'Butterfly 3000 Skyway', build: buildButterflySkyway },
+];
+
+/** Grand Prix cups: four tracks each, in race order (indexes into TRACK_LIST). */
+export const CUPS: { name: string; tracks: number[] }[] = [
+  { name: 'Nonagon Cup', tracks: [0, 1, 2, 3] },
+  { name: 'Microtonal Cup', tracks: [4, 5, 6, 7] },
 ];

@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { BOULDER_STAGES, JET_STAGES, type HazardPose } from '../items/hazards';
 import { WAVE_RANGE, type ItemSystem } from '../items/items';
 import type { HazardSystem } from '../items/hazards';
-import { basaltTexture, dustTexture, flameTexture, glowTexture, itemBoxTexture, scaleTexture, stoneTexture, warningTexture, woodTexture } from './textures';
+import { basaltTexture, dustTexture, wingTexture, flameTexture, glowTexture, itemBoxTexture, scaleTexture, stoneTexture, warningTexture, woodTexture } from './textures';
 
 const MINE_POOL = 12;
 const MISSILE_POOL = 8;
@@ -162,6 +162,24 @@ export class HazardsView {
     const logMat = new THREE.MeshLambertMaterial({ map: woodTexture() });
     const rollerGeo = new THREE.IcosahedronGeometry(1.5, 0);
     const rollerMat = new THREE.MeshPhongMaterial({ map: stoneTexture([70, 96, 60], [140, 160, 110]), flatShading: true, shininess: 10 });
+    const fishGeo = new THREE.SphereGeometry(0.6, 14, 10);
+    fishGeo.scale(0.55, 0.8, 1.6);
+    const tailGeo = new THREE.ConeGeometry(0.55, 0.9, 4);
+    tailGeo.rotateX(-Math.PI / 2);
+    tailGeo.scale(0.25, 1, 1);
+    const fishMats = [0xff8a2a, 0xffd23a, 0x3ad8ff].map((c) => new THREE.MeshPhongMaterial({ color: c, shininess: 110, specular: 0xffffff }));
+    const finMat = new THREE.MeshPhongMaterial({ color: 0xffffff, shininess: 60 });
+    const iceGeo = new THREE.BoxGeometry(2.4, 2.4, 2.4);
+    const iceMat = new THREE.MeshPhongMaterial({ color: 0xbfe6ff, emissive: 0x16344a, shininess: 140, specular: 0xffffff, transparent: true, opacity: 0.8 });
+    const beamGeo = new THREE.CylinderGeometry(0.07, 0.07, 1, 6);
+    beamGeo.rotateZ(Math.PI / 2);
+    const laserMat = new THREE.MeshBasicMaterial({ color: 0xff2a6a, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
+    const postMat = new THREE.MeshPhongMaterial({ color: 0x1a1428, emissive: 0x3a0a2a, shininess: 80 });
+    const laserGlow = glowTexture('rgba(255,90,160,1)', 'rgba(255,40,120,0)');
+    const wingGeo = new THREE.PlaneGeometry(0.7, 0.7);
+    wingGeo.translate(0.35, 0, 0);
+    const wing = wingTexture();
+    const wingMats = [0xff7ad8, 0x7ae8ff, 0xffe07a, 0xb07aff, 0x7aff9a].map((c) => new THREE.MeshBasicMaterial({ color: c, map: wing, side: THREE.DoubleSide, alphaTest: 0.5 }));
 
     for (const pose of hazards.poses) {
       const obj = new THREE.Group();
@@ -268,6 +286,64 @@ export class HazardsView {
           parts.push(r);
           break;
         }
+        case 'fish': {
+          const body = new THREE.Group();
+          const mat = fishMats[this.views.length % fishMats.length];
+          const fish = new THREE.Mesh(fishGeo, mat);
+          const tail = new THREE.Mesh(tailGeo, mat);
+          tail.position.z = -1.2;
+          const fin = new THREE.Mesh(tailGeo, finMat);
+          fin.scale.setScalar(0.5);
+          fin.rotation.z = Math.PI / 2;
+          fin.position.set(0, 0.5, 0.1);
+          body.add(fish, tail, fin);
+          obj.add(body);
+          parts.push(body, tail);
+          break;
+        }
+        case 'iceBlocks': {
+          const b = new THREE.Mesh(iceGeo, iceMat);
+          obj.add(b);
+          parts.push(b);
+          break;
+        }
+        case 'lasers': {
+          // Posts at both road edges; three beams between them, and a glow on each emitter.
+          const beams = new THREE.Group();
+          for (const y of [0.5, 1.1, 1.7]) {
+            const beam = new THREE.Mesh(beamGeo, laserMat);
+            beam.position.y = y;
+            beam.scale.x = pose.radius * 2;
+            beams.add(beam);
+          }
+          obj.add(beams);
+          const glows: THREE.Object3D[] = [];
+          for (const side of [-1, 1]) {
+            const post = new THREE.Mesh(new THREE.BoxGeometry(0.5, 2.4, 0.5), postMat);
+            post.position.set(side * pose.radius, 1.2, 0);
+            const glow = sprite(laserGlow, 0xff3a8a, 1.6);
+            glow.position.set(side * pose.radius, 1.1, 0);
+            obj.add(post, glow);
+            glows.push(glow);
+          }
+          parts.push(beams, ...glows);
+          break;
+        }
+        case 'butterflies': {
+          // A swarm: each butterfly two wings that flap, circling the centre.
+          for (let i = 0; i < 16; i++) {
+            const b = new THREE.Group();
+            const mat = wingMats[i % wingMats.length];
+            const left = new THREE.Mesh(wingGeo, mat);
+            const right = new THREE.Mesh(wingGeo, mat);
+            right.rotation.y = Math.PI;
+            b.add(left, right);
+            b.scale.setScalar(1.4 + (i % 3) * 0.4);
+            obj.add(b);
+            parts.push(b);
+          }
+          break;
+        }
       }
       this.views.push({ pose, obj, parts });
       this.group.add(obj);
@@ -335,6 +411,41 @@ export class HazardsView {
         case 'rollers':
           obj.rotation.y = p.heading;
           parts[0].rotation.x = p.phase;
+          break;
+        case 'iceBlocks':
+          // Skating, not rolling: a slow spin and a little wobble.
+          obj.rotation.y = p.heading + p.phase * 0.15;
+          parts[0].rotation.z = Math.sin(elapsed * 3 + p.phase) * 0.05;
+          break;
+        case 'fish': {
+          obj.visible = p.phase >= 0;
+          obj.rotation.y = p.heading;
+          // Nose up out of the water, level over the road, nose down back in.
+          parts[0].rotation.x = (p.phase - 0.5) * 1.6;
+          parts[1].rotation.y = Math.sin(elapsed * 20) * 0.5;
+          break;
+        }
+        case 'lasers': {
+          const [beams, ...glows] = parts;
+          obj.rotation.y = p.heading;
+          const firing = p.phase >= JET_STAGES.fire;
+          const warning = p.phase >= JET_STAGES.sputter && !firing;
+          beams.visible = firing || (warning && Math.sin(elapsed * 40) > 0);
+          beams.scale.y = firing ? 1 : 0.4;
+          ((beams.children[0] as THREE.Mesh).material as THREE.MeshBasicMaterial).opacity = firing ? 0.95 : 0.4;
+          for (const g of glows) g.scale.setScalar(firing ? 2.4 : warning ? 1.6 : 0.9);
+          break;
+        }
+        case 'butterflies':
+          parts.forEach((b, i) => {
+            const a = elapsed * (0.8 + (i % 4) * 0.15) + (i / parts.length) * Math.PI * 2;
+            const r = 1.5 + (i % 5) * 0.7;
+            b.position.set(Math.cos(a) * r, 0.8 + (i % 6) * 0.5 + Math.sin(elapsed * 2 + i) * 0.4, Math.sin(a) * r);
+            b.rotation.y = -a;
+            const flap = Math.sin(elapsed * 18 + i) * 1.1;
+            b.children[0].rotation.y = flap;
+            b.children[1].rotation.y = Math.PI - flap;
+          });
           break;
         case 'boulders':
         case 'lavaBombs': {

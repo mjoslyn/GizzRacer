@@ -47,5 +47,40 @@
     "bars": 4,
     "loopSamples": 441000,
     "sampleRate": 44100
+  },
+  "fishies-lagoon": {
+    "title": "fishies lagoon",
+    "bpm": 120,
+    "bars": 16,
+    "loopSamples": 1411200,
+    "sampleRate": 44100
+  },
+  "ice-v-glacier": {
+    "title": "ice v glacier",
+    "bpm": 140,
+    "bars": 24,
+    "loopSamples": 1587600,
+    "sampleRate": 44100
+  },
+  "cyboogie-city": {
+    "title": "cyboogie city",
+    "bpm": 112,
+    "bars": 16,
+    "loopSamples": 1512000,
+    "sampleRate": 44100
+  },
+  "butterfly-skyway": {
+    "title": "butterfly 3000 skyway",
+    "bpm": 128,
+    "bars": 16,
+    "loopSamples": 1323000,
+    "sampleRate": 44100
+  },
+  "butterfly-skyway-final-lap": {
+    "title": "butterfly 3000 skyway (final lap)",
+    "bpm": 136,
+    "bars": 16,
+    "loopSamples": 1245176,
+    "sampleRate": 44100
   }
 }

@@ -7,7 +7,8 @@ export interface Pose {
   h: number;
 }
 
-export type RoadSurface = 'asphalt' | 'salt' | 'rock' | 'sand';
+/** How the road looks; 'ice' also slides (physics/kart.ts). */
+export type RoadSurface = 'asphalt' | 'salt' | 'rock' | 'sand' | 'boards' | 'ice' | 'neon' | 'rainbow';
 
 export interface SectionProps {
   halfWidth: number;
@@ -55,6 +56,8 @@ const INTEGRATION_STEP = 0.25;
 export class TrackBuilder {
   s = 0;
   pose: Pose;
+  /** Stretches straights, arcs and turns (not ramps, gaps or bridges): a layout's size, without changing its shape. */
+  scale = 1;
   readonly pits: PitDef[] = [];
   readonly marks: Record<string, { s: number; pose: Pose }> = {};
   private readonly points: [number, number][] = [];
@@ -83,13 +86,20 @@ export class TrackBuilder {
   }
 
   straight(len: number): this {
-    return this.integrate(len, () => 0);
+    return this.integrate(len * this.scale, () => 0);
+  }
+
+  /** An unscaled straight climbing (or falling) to height `y`: a jump ramp, the same at any scale. */
+  rise(len: number, y: number): this {
+    this.integrate(len, () => 0);
+    return this.elevate(y);
   }
 
   /** Circular arc; positive degrees turn left. */
   arc(radius: number, degrees: number): this {
-    const k = Math.sign(degrees) / radius;
-    return this.integrate((radius * Math.abs(degrees) * Math.PI) / 180, () => k);
+    const r = radius * this.scale;
+    const k = Math.sign(degrees) / r;
+    return this.integrate((r * Math.abs(degrees) * Math.PI) / 180, () => k);
   }
 
   /** Arc whose radius changes linearly from r0 to r1 over the turn; positive degrees turn left. */
@@ -137,6 +147,20 @@ export class TrackBuilder {
     return this;
   }
 
+  /**
+   * Shortest turn-straight-turn path (a Dubins path) to `target` with
+   * turns of `radius`: closes a loop with real corners where a Hermite
+   * curve would kink.
+   */
+  turnTo(target: Pose, radius: number): this {
+    const r = radius * this.scale;
+    for (const [kind, len] of dubins(this.pose, target, r)) {
+      if (kind === 'S') this.integrate(len, () => 0);
+      else if (len > 1e-6) this.integrate(len, () => (kind === 'L' ? 1 : -1) / r);
+    }
+    return this;
+  }
+
   /** Sets the road height at the current position. */
   elevate(y: number): this {
     this.elevation.push([this.s, y]);
@@ -147,7 +171,7 @@ export class TrackBuilder {
   gap(len: number, pitHalfWidth: number, liquid?: PitDef['liquid'], depth = 12, overhang = 2): this {
     const from = this.s;
     this.addPit(len, pitHalfWidth, liquid, depth, overhang);
-    this.straight(len);
+    this.integrate(len, () => 0);
     this.gaps.push([from, this.s]);
     return this;
   }
@@ -155,7 +179,7 @@ export class TrackBuilder {
   /** Straight road over a pit: a bridge with nothing either side. */
   bridge(len: number, pitHalfWidth: number, liquid?: PitDef['liquid'], depth = 12): this {
     this.addPit(len, pitHalfWidth, liquid, depth, 0);
-    return this.straight(len);
+    return this.integrate(len, () => 0);
   }
 
   private addPit(len: number, halfWidth: number, liquid: PitDef['liquid'], depth: number, overhang: number): void {
@@ -227,4 +251,57 @@ export function offsetPose(p: Pose, dist: number, lateral = 0): Pose {
     z: p.z + Math.cos(p.h) * dist + Math.sin(p.h) * lateral,
     h: p.h,
   };
+}
+
+type DubinsStep = ['L' | 'R' | 'S', number];
+
+/**
+ * The shortest of the four turn-straight-turn Dubins paths between two
+ * poses, as (turn or straight, metres) steps. Worked in a plane where
+ * X = z and Y = x, so heading h is the standard angle and left is
+ * counterclockwise.
+ */
+export function dubins(from: Pose, to: Pose, radius: number): DubinsStep[] {
+  const mod = (a: number) => ((a % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+  const dx = to.z - from.z;
+  const dy = to.x - from.x;
+  const d = Math.hypot(dx, dy) / radius;
+  const phi = Math.atan2(dy, dx);
+  const a = mod(from.h - phi);
+  const b = mod(to.h - phi);
+  const sa = Math.sin(a);
+  const sb = Math.sin(b);
+  const ca = Math.cos(a);
+  const cb = Math.cos(b);
+  const cab = Math.cos(a - b);
+  const words: [string, number, number, number][] = [];
+  let p2 = 2 + d * d - 2 * cab + 2 * d * (sa - sb);
+  if (p2 >= 0) {
+    const th = Math.atan2(cb - ca, d + sa - sb);
+    words.push(['LSL', mod(-a + th), Math.sqrt(p2), mod(b - th)]);
+  }
+  p2 = 2 + d * d - 2 * cab + 2 * d * (sb - sa);
+  if (p2 >= 0) {
+    const th = Math.atan2(ca - cb, d - sa + sb);
+    words.push(['RSR', mod(a - th), Math.sqrt(p2), mod(-b + th)]);
+  }
+  p2 = -2 + d * d + 2 * cab + 2 * d * (sa + sb);
+  if (p2 >= 0) {
+    const p = Math.sqrt(p2);
+    const th = Math.atan2(-ca - cb, d + sa + sb) - Math.atan2(-2, p);
+    words.push(['LSR', mod(-a + th), p, mod(-b + th)]);
+  }
+  p2 = d * d - 2 + 2 * cab - 2 * d * (sa + sb);
+  if (p2 >= 0) {
+    const p = Math.sqrt(p2);
+    const th = Math.atan2(ca + cb, d - sa - sb) - Math.atan2(2, p);
+    words.push(['RSL', mod(a - th), p, mod(b - th)]);
+  }
+  if (!words.length) return [['S', Math.hypot(dx, dy)]];
+  const [word, t, p, q] = words.reduce((best, w) => (w[1] + w[2] + w[3] < best[1] + best[2] + best[3] ? w : best));
+  return [
+    [word[0] as 'L' | 'R', t * radius],
+    ['S', p * radius],
+    [word[2] as 'L' | 'R', q * radius],
+  ];
 }

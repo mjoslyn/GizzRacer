@@ -698,3 +698,179 @@ export function waterfallTexture(): THREE.CanvasTexture {
   ctx.putImageData(img, 0, 0);
   return finish(c);
 }
+
+/** Sun-bleached boardwalk planks running across the road. */
+export function boardsTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 2, 4, 171);
+  paint(ctx, S, S, (x, y, i) => {
+    const plank = Math.floor(y / 21);
+    const grain = Math.sin((x / S) * Math.PI * 2 * 4 + n[i] * 7 + plank * 1.7) * 0.5 + 0.5;
+    const seam = y % 21 < 2 ? 0.5 : 1;
+    const nail = (x % 64 < 4 || x % 64 > 60) && y % 21 > 8 && y % 21 < 12 ? 0.6 : 1;
+    return shade(mix([150, 122, 92], [214, 190, 150], grain * 0.5 + n[i] * 0.5), seam * nail * (0.9 + (plank % 4) * 0.04));
+  });
+  return finish(c);
+}
+
+/** Sheet ice: pale blue with white frost streaks along the road and fine cracks. */
+export function iceTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 5, 181);
+  const streak = fbm(S, 8, 3, 182);
+  paint(ctx, S, S, (x, _y, i) => {
+    const frost = Math.max(0, Math.sin((x / S) * Math.PI * 2 * 6 + streak[i] * 6)) ** 6;
+    return mix(mix([120, 170, 210], [190, 225, 245], n[i]), [248, 252, 255], frost * 0.6);
+  });
+  cracks(ctx, S, 30, 'rgba(255,255,255,0.75)', 1.2, 183);
+  cracks(ctx, S, 14, 'rgba(60,110,160,0.5)', 1.6, 184);
+  return finish(c);
+}
+
+/** Night asphalt with glowing edge and centre lines (the road shows two tiles across). */
+export function neonRoadTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 4, 191);
+  paint(ctx, S, S, (_x, _y, i) => {
+    const v = 18 + n[i] * 20;
+    return [v, v - 2, v + 10];
+  });
+  const line = (x: number, color: string, dashed: boolean) => {
+    ctx.fillStyle = color;
+    for (let y = 0; y < S; y += dashed ? 64 : S) ctx.fillRect(x, y, 6, dashed ? 34 : S);
+  };
+  ctx.shadowBlur = 14;
+  ctx.shadowColor = '#ff3ad8';
+  line(0, '#ff7ae8', true);
+  ctx.shadowColor = '#3adcff';
+  line(S - 6, '#8af0ff', false);
+  return finish(c);
+}
+
+/** Bands of the spectrum across the road, with a soft sheen. */
+export function rainbowTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const colors = ['#ff5a7a', '#ffa64a', '#ffe45a', '#6aef7a', '#4ad0ff', '#7a7aff', '#c86aff'];
+  colors.forEach((col, k) => {
+    ctx.fillStyle = col;
+    ctx.fillRect((k * S) / colors.length, 0, S / colors.length + 1, S);
+  });
+  const g = ctx.createLinearGradient(0, 0, 0, S);
+  g.addColorStop(0, 'rgba(255,255,255,0.25)');
+  g.addColorStop(0.5, 'rgba(255,255,255,0)');
+  g.addColorStop(1, 'rgba(255,255,255,0.25)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, S, S);
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  for (let y = 0; y < S; y += 64) ctx.fillRect(0, y, S, 3);
+  return finish(c);
+}
+
+/** Shallow lagoon: turquoise water over sand, with sandbars and ripples. */
+export function lagoonTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 3, 5, 201);
+  const warp = fbm(S, 2, 3, 202);
+  paint(ctx, S, S, (x, y, i) => {
+    const ripple = Math.sin(((x + warp[i] * 120) / S) * Math.PI * 2 * 14 + y * 0.01) * 0.5 + 0.5;
+    const depth = n[i];
+    if (depth > 0.68) return mix([214, 196, 150], [236, 222, 180], ripple * 0.3 + (depth - 0.68) * 2);
+    return shade(mix([40, 170, 190], [110, 220, 210], depth / 0.68), 0.92 + ripple * 0.12);
+  });
+  return finish(c);
+}
+
+/** Wind-packed snow with blue shadows. */
+export function snowTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 5, 211);
+  const rand = seededRandom(212);
+  paint(ctx, S, S, (_x, _y, i) => shade(mix([196, 212, 232], [250, 252, 255], n[i]), 0.97 + rand() * 0.05));
+  return finish(c);
+}
+
+/** A dark grid that glows, for the city's ground. */
+export function neonGridTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  ctx.fillStyle = '#0c0818';
+  ctx.fillRect(0, 0, S, S);
+  ctx.shadowBlur = 10;
+  ctx.shadowColor = '#b84aff';
+  ctx.strokeStyle = '#7a3ad8';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(1.5, 1.5, S - 3, S - 3);
+  ctx.strokeStyle = 'rgba(58,220,255,0.5)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(S / 2, 0);
+  ctx.lineTo(S / 2, S);
+  ctx.moveTo(0, S / 2);
+  ctx.lineTo(S, S / 2);
+  ctx.stroke();
+  return finish(c);
+}
+
+/** Lit windows on a dark tower, tiled up the walls. */
+export function windowsTexture(): THREE.CanvasTexture {
+  const S = 128;
+  const [c, ctx] = canvas(S);
+  const rand = seededRandom(221);
+  ctx.fillStyle = '#141020';
+  ctx.fillRect(0, 0, S, S);
+  const lit = ['#ffd27a', '#7ae8ff', '#ff7ae0', '#fff4d8'];
+  for (let y = 4; y < S; y += 16) {
+    for (let x = 4; x < S; x += 16) {
+      ctx.fillStyle = rand() < 0.55 ? lit[Math.floor(rand() * lit.length)] : '#241c34';
+      ctx.fillRect(x, y, 9, 10);
+    }
+  }
+  return finish(c);
+}
+
+/** A soft sea of cloud seen from above, for the sky track's void. */
+export function cloudSeaTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 3, 6, 231);
+  paint(ctx, S, S, (_x, _y, i) => {
+    const v = Math.min(1, Math.max(0, (n[i] - 0.3) * 1.8));
+    return mix([196, 170, 230], [255, 244, 250], v);
+  });
+  return finish(c);
+}
+
+/** One butterfly wing (body at the left edge) on a transparent ground: white, to be tinted. */
+export function wingTexture(): THREE.CanvasTexture {
+  const S = 128;
+  const [c, ctx] = canvas(S);
+  ctx.fillStyle = '#ffffff';
+  ctx.strokeStyle = '#2a1a2a';
+  ctx.lineWidth = 5;
+  for (const [cx, cy, rx, ry, rot] of [
+    [64, 42, 58, 38, -0.35],
+    [52, 92, 40, 30, 0.45],
+  ]) {
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, rx, ry, rot, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+  ctx.fillStyle = 'rgba(40,20,40,0.85)';
+  for (const [x, y, r] of [
+    [86, 34, 9],
+    [58, 92, 7],
+    [104, 52, 5],
+  ]) {
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  return finish(c, false);
+}

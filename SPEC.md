@@ -65,7 +65,7 @@ All designs are original. No likenesses of band members or album art. Every race
 - Hit karts are briefly immune (spin-outs: 1s longer than the spin)
 - CPUs use items at a good moment (a straight for the Fuzz Pedal, a kart on their tail for a mine, company for the Feedback Wave) with a chance set by class; otherwise after a random wait
 
-## 7. Tracks (Cup 1)
+## 7. Tracks (Cup 1: the Nonagon Cup)
 
 Each track has its own theme (render/themes.ts): desert (Rattlesnake Run), green speedway hills (Infinite Loop Speedway), basalt and lava (Volcano Fortress), jungle (Polygondwanaland Jungle). Not everything is desert.
 
@@ -105,6 +105,15 @@ Each track has its own theme (render/themes.ts): desert (Rattlesnake Run), green
 - Built (Milestone 6): one post pass (render/postfx.ts) for haze and kaleidoscope, skipped when neither is on. The kaleidoscope runs on every track's final lap. Extras: off-road wheel dust, a pre-race flyover with a title card
 
 **Music:** original driving motorik beat, chant-style hook, microtonal-inflected guitar; tempo rises slightly on the final lap.
+
+### Cup 2: the Microtonal Cup
+
+Four harder tracks: narrower roads, short straights, more corners, each sized for about 1:45 a race at 150cc (CPU winner times, `TrackBuilder.scale`).
+
+1. Fishies Lagoon (Fishing for Fishies): a sand road over a shallow turquoise lagoon (off-road is wading), a plank causeway low over deeper water with fish leaping across it, Fish Leap, Reef Esses, a walled pier jump, Palm Shuffle, and a striped lighthouse with a sweeping beam
+2. Ice V Glacier (Ice, Death, Planets...): ice sections where turning momentum carries karts wide (`ICE_SLIDE`), an Icicle Chicane, a crevasse jump, four hairpins between walls, and a frozen lake with ice blocks skating across. Ice arches over the road
+3. Cyboogie City (Han-Tyumi): neon downtown at night with lit towers, a tight walled alley of right angles, an elevated freeway on pillars, and laser gates that warn, then fire across the whole road, on a rhythm
+4. Butterfly 3000 Skyway (Butterfly 3000): a rainbow road in a pastel sky with no ground (leave the road and you fall to the respawn), butterfly swarms in the walled garden that buffet karts, a star leap over the void, chrysalis hairpins, and an open, unwalled Metamorphosis Mile. Rainbow arches; the cup's finale, with a final-lap music cut
 
 ## 8. CPU Racers
 - Follow a waypoint spline with per-racer lateral offset and racing line variation
@@ -148,4 +157,4 @@ Each track has its own theme (render/themes.ts): desert (Rattlesnake Run), green
 ## 13. Open Questions
 - Public release or private fan project? (affects naming and band references)
 - ~~Art style~~: decided. Early-2000s console, high res: sharp tiled textures, Phong-shaded glossy karts with sky reflections, painted skybox with lens flare, blob shadows, distance fog, chunky gradient HUD lettering
-- Music: first pass written in seqbaby (account `gizzracer`): title theme, one theme per Cup 1 track, a faster final-lap cut of Rattlesnake Run and a podium loop
+- Music: written in seqbaby (account `gizzracer`): title theme, one theme per track of both cups, faster final-lap cuts of Rattlesnake Run and Butterfly 3000 Skyway, and a podium loop

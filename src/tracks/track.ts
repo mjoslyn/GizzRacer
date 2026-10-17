@@ -18,7 +18,7 @@ export interface BranchDef extends RibbonDef {
 }
 
 export interface Landmark {
-  kind: 'skeletonArch' | 'fangs' | 'fortressGate' | 'templeGate' | 'waterfall' | 'gantry';
+  kind: 'skeletonArch' | 'fangs' | 'fortressGate' | 'templeGate' | 'waterfall' | 'gantry' | 'lighthouse' | 'iceArch' | 'neonArch' | 'rainbowArch';
   ribbon: number; // -1 = main, else branch index
   s: number; // builder units
 }
@@ -41,7 +41,9 @@ export interface TrackDef {
   itemBoxes: { s: number; count: number }[];
   hazards: HazardDef[];
   /** Visual theme (render/themes.ts). */
-  theme: 'desert' | 'speedway' | 'volcano' | 'jungle';
+  theme: 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream';
+  /** No ground: off the road is a long drop (the sky track). */
+  abyss?: boolean;
   /** Music cues (public/music/<cue>.mp3): one for the race, one for the final lap. */
   music: { lap: string; finalLap?: string };
 }
@@ -62,7 +64,15 @@ export type HazardDef =
   /** Jungle: logs swinging across the road on vines. */
   | { kind: 'vines'; at: number[]; period: number }
   /** Jungle ruins: polygon boulders rolling across the road and back. */
-  | { kind: 'rollers'; from: number; to: number; count: number; period: number };
+  | { kind: 'rollers'; from: number; to: number; count: number; period: number }
+  /** Lagoon: fish leaping across the road from one side to the other. */
+  | { kind: 'fish'; from: number; to: number; count: number; period: number }
+  /** Glacier: blocks of ice sliding across the road and back. */
+  | { kind: 'iceBlocks'; from: number; to: number; count: number; period: number }
+  /** City: laser gates across the whole road, on a rhythm. */
+  | { kind: 'lasers'; at: number[]; period: number }
+  /** Sky: swarms of butterflies that buffet karts sideways. */
+  | { kind: 'butterflies'; from: number; to: number; count: number };
 
 export interface StartSlot {
   x: number;
@@ -301,6 +311,7 @@ export class Track implements DriveEnv {
     } else if (this.onBoostPad(sup.hit)) {
       surface = 'boost';
     }
+    if (surface === 'road' && sup.ribbon.surfaceAt(sup.hit.index) === 'ice') surface = 'ice';
     return {
       hint: mainHit.index,
       progress,
@@ -374,7 +385,7 @@ export class Track implements DriveEnv {
 
   terrainHeight(x: number, z: number, y: number): number {
     // Below ground level means we're already falling into a pit.
-    if (y < -1) return PIT_FLOOR;
+    if (y < -1 || this.def.abyss) return PIT_FLOOR;
     for (const p of this.def.pits) if (inPit(p, x, z)) return -p.depth;
     return 0;
   }

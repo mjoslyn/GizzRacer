@@ -35,6 +35,18 @@ export const BOULDER_SPIN = 1.1;
 export const JET_SPIN = 1.0;
 export const VINE_SPIN = 1.0;
 export const ROLLER_SPIN = 1.0;
+export const FISH_SPIN = 0.9;
+export const ICE_BLOCK_SPIN = 1.0;
+export const LASER_SPIN = 1.0;
+/** Share of a fish's period spent in the air, crossing the road. */
+export const FISH_AIR = 0.42;
+const FISH_RADIUS = 1.0;
+/** How high a fish arcs over the road's middle. */
+const FISH_HEIGHT = 2.4;
+const ICE_BLOCK_RADIUS = 1.6;
+const BUTTERFLY_RADIUS = 5;
+/** Sideways shove inside a butterfly swarm, m/s^2: gentler than a dust devil, but there's no ground to land on. */
+export const BUTTERFLY_PUSH = 12;
 /** Flame jet cycle: quiet, then sputtering (harmless), then full fire. */
 export const JET_STAGES = { sputter: 0.45, fire: 0.62 } as const;
 const VINE_RADIUS = 1.3;
@@ -52,8 +64,11 @@ const TUMBLEWEED_SPEED = 7;
 const BOULDER_RADIUS = 1.7;
 const BOULDER_DROP = 24;
 const HIT_COOLDOWN = 1;
-const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds'>, number> = {
+const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds' | 'butterflies'>, number> = {
   snakes: SNAKE_SPIN,
+  fish: FISH_SPIN,
+  iceBlocks: ICE_BLOCK_SPIN,
+  lasers: LASER_SPIN,
   boulders: BOULDER_SPIN,
   lavaBombs: BOULDER_SPIN,
   flameJets: JET_SPIN,
@@ -96,20 +111,39 @@ export class HazardSystem {
       const z0 = p.z;
       switch (def.kind) {
         case 'snakes':
-        case 'rollers': {
+        case 'rollers':
+        case 'iceBlocks': {
           const s = def.from + ((def.to - def.from) * (i + 0.5)) / def.count;
-          const roller = def.kind === 'rollers';
+          const roller = def.kind !== 'snakes';
+          const size = def.kind === 'iceBlocks' ? ICE_BLOCK_RADIUS : ROLLER_RADIUS;
           const hw = this.halfWidth(s) + (roller ? 1 : 2.5);
           const u = (((t + 10) / def.period + i * 0.37) % 1 + 1) % 1;
           // Triangle wave: edge to edge at a steady pace, then back.
           const lat = hw * (1 - 4 * Math.abs(u - 0.5));
-          this.place(p, s, lat, roller ? ROLLER_RADIUS : 0);
+          this.place(p, s, lat, roller ? size : 0);
           const dir = u < 0.5 ? -1 : 1; // lateral direction of travel
           p.heading = p.heading + (dir * Math.PI) / 2;
-          p.radius = roller ? ROLLER_RADIUS : SNAKE_RADIUS;
+          p.radius = roller ? size : SNAKE_RADIUS;
           p.active = true;
-          // Snakes: slither phase. Rollers: roll angle (distance over radius).
-          p.phase = roller ? (lat + hw) / ROLLER_RADIUS : t * 9 + i;
+          // Snakes: slither phase. Rollers: roll angle (distance over radius). Ice slides.
+          p.phase = roller ? (lat + hw) / size : t * 9 + i;
+          break;
+        }
+        case 'fish': {
+          // Out of the water on one side, over the road, back in on the other; the next leap comes back.
+          const tt = (t + 10) / def.period + i * 0.29;
+          const cycle = Math.floor(tt);
+          const jump = (tt - cycle) / FISH_AIR;
+          const s = def.from + ((def.to - def.from) * (i + 0.5)) / def.count + Math.sin(cycle * 1.7 + i) * 6;
+          const hw = this.halfWidth(s) + 3;
+          const dir = cycle % 2 === 0 ? 1 : -1;
+          const air = jump < 1;
+          const lat = dir * hw * (air ? 2 * jump - 1 : 1);
+          this.place(p, s, lat, air ? 0.5 + FISH_HEIGHT * 4 * jump * (1 - jump) : -2);
+          p.heading -= (dir * Math.PI) / 2;
+          p.radius = FISH_RADIUS;
+          p.active = air;
+          p.phase = air ? jump : -1;
           break;
         }
         case 'vines': {
@@ -122,7 +156,8 @@ export class HazardSystem {
           p.phase = swing;
           break;
         }
-        case 'flameJets': {
+        case 'flameJets':
+        case 'lasers': {
           const at = def.at[i];
           this.place(p, at, 0, 0);
           const u = (((t + 10) / def.period + i * 0.31) % 1 + 1) % 1;
@@ -131,11 +166,12 @@ export class HazardSystem {
           p.phase = u;
           break;
         }
-        case 'dustDevils': {
+        case 'dustDevils':
+        case 'butterflies': {
           const s = def.from + (def.to - def.from) * (0.5 + 0.45 * Math.sin(t * 0.11 * (1 + i * 0.4) + i * 2.1));
           const lat = this.halfWidth(s) * 0.7 * Math.sin(t * 0.33 + i * 1.7);
           this.place(p, s, lat, 0);
-          p.radius = DEVIL_RADIUS;
+          p.radius = def.kind === 'butterflies' ? BUTTERFLY_RADIUS : DEVIL_RADIUS;
           p.active = true;
           p.phase = t * 7;
           break;
@@ -190,7 +226,7 @@ export class HazardSystem {
         if (Math.abs(s.y - p.ground) > 2.2) continue;
         const d = this.distance(p, s);
         if (d > p.radius + KART_RADIUS) continue;
-        if (p.kind === 'dustDevils') {
+        if (p.kind === 'dustDevils' || p.kind === 'butterflies') {
           this.swirl(p, s, dt);
           continue;
         }
@@ -212,7 +248,7 @@ export class HazardSystem {
   /** Circles for CPU avoidance, including boulders about to land. */
   obstacles(out: { x: number; z: number; r: number; vx: number; vz: number }[]): void {
     for (const p of this.poses) {
-      if (p.kind === 'flameJets') continue; // the whole road: nothing to steer around
+      if (p.kind === 'flameJets' || p.kind === 'lasers') continue; // the whole road: nothing to steer around
       const falling = p.kind === 'boulders' || p.kind === 'lavaBombs';
       if (falling ? p.phase > BOULDER_STAGES.crumble || p.phase < BOULDER_STAGES.fall * 0.5 : !p.active) continue;
       if (p.kind === 'snakes') {
@@ -249,7 +285,7 @@ export class HazardSystem {
    * thin sheet across the road; everything else is a circle.
    */
   private distance(p: HazardPose, s: KartState): number {
-    if (p.kind === 'flameJets') {
+    if (p.kind === 'flameJets' || p.kind === 'lasers') {
       const fx = Math.sin(p.heading);
       const fz = Math.cos(p.heading);
       const along = Math.abs((s.x - p.x) * fx + (s.z - p.z) * fz);
@@ -271,8 +307,9 @@ export class HazardSystem {
     const dz = s.z - p.z;
     const d = Math.hypot(dx, dz) || 1;
     // Mostly around (counterclockwise from above), a little outward.
-    s.extX += ((-dz / d) * 0.85 + (dx / d) * 0.5) * DEVIL_PUSH * dt;
-    s.extZ += ((dx / d) * 0.85 + (dz / d) * 0.5) * DEVIL_PUSH * dt;
+    const push = (p.kind === 'butterflies' ? BUTTERFLY_PUSH : DEVIL_PUSH) * dt;
+    s.extX += ((-dz / d) * 0.85 + (dx / d) * 0.5) * push;
+    s.extZ += ((dx / d) * 0.85 + (dz / d) * 0.5) * push;
   }
 
   private pushOut(p: HazardPose, s: KartState): void {

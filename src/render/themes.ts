@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import * as tex from './textures';
 import { DESERT_SKY, type SkyColors } from './textures';
 
-export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle';
-export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle';
+export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream';
+export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky';
 
 /** Everything that makes a track's world look like itself. */
 export interface Theme {
@@ -18,7 +18,7 @@ export interface Theme {
   /** Off-road scenery. */
   decor: DecorKind;
   /** Silhouettes on the horizon. */
-  distant: { shape: 'mesa' | 'hill' | 'volcano' | 'mountain'; color: number };
+  distant: { shape: 'mesa' | 'hill' | 'volcano' | 'mountain' | 'city' | 'cloud'; color: number };
   /** Heat haze strength on the straights, 0..1 (render/postfx.ts). */
   haze: number;
   /** The sky turns a full circle of hue over a 3-lap race. */
@@ -89,5 +89,65 @@ export const THEMES: Record<ThemeId, Theme> = {
     skyCycle: false,
     dust: 0xc0b48a,
     barrier: { map: tex.woodTexture, crawl: false },
+  },
+  lagoon: {
+    sky: { zenith: '#0a6ad8', high: '#2a9af0', low: '#9ae0ff', horizon: '#f0fbff', below: '#7ad8d0', ground: '#3aa8b0', cloud: '255,255,255', clouds: 30 },
+    fog: { color: 0xc8f0f4, near: 200, far: 950 },
+    hemi: { sky: 0xd0f4ff, ground: 0x4ab0a8, intensity: 1.6 },
+    sun: { color: 0xfff6e0, intensity: 2.3 },
+    ground: tex.lagoonTexture,
+    groundTile: 30,
+    cliff: () => tex.stoneTexture([150, 130, 100], [220, 200, 160]),
+    decor: 'lagoon',
+    distant: { shape: 'hill', color: 0x2f8a5a },
+    haze: 0.3,
+    skyCycle: false,
+    dust: 0xf0e6c8,
+    barrier: { map: tex.boardsTexture, crawl: false },
+  },
+  glacier: {
+    sky: { zenith: '#2a4a8a', high: '#5a8ac8', low: '#b8d8f0', horizon: '#f4faff', below: '#d8e8f4', ground: '#c8d8e8', cloud: '240,246,255', clouds: 36 },
+    fog: { color: 0xdceaf6, near: 110, far: 650 },
+    hemi: { sky: 0xe0f0ff, ground: 0x8aa8c8, intensity: 1.5 },
+    sun: { color: 0xf4f8ff, intensity: 2.1 },
+    ground: tex.snowTexture,
+    groundTile: 16,
+    cliff: () => tex.stoneTexture([88, 104, 124], [170, 190, 210]),
+    decor: 'glacier',
+    distant: { shape: 'mountain', color: 0xdce8f4 },
+    haze: 0,
+    skyCycle: false,
+    dust: 0xffffff,
+    barrier: { map: () => tex.stoneTexture([150, 190, 220], [220, 240, 255]), crawl: false },
+  },
+  neon: {
+    sky: { zenith: '#05020e', high: '#140a30', low: '#3a1458', horizon: '#ff4ab8', below: '#1a0a28', ground: '#0c0818', cloud: '120,60,160', clouds: 10 },
+    fog: { color: 0x241038, near: 120, far: 700 },
+    hemi: { sky: 0x8a6aff, ground: 0x2a0a3a, intensity: 1.2 },
+    sun: { color: 0xc8a8ff, intensity: 1.4 },
+    ground: tex.neonGridTexture,
+    groundTile: 12,
+    cliff: () => tex.stoneTexture([30, 24, 44], [70, 60, 96]),
+    decor: 'city',
+    distant: { shape: 'city', color: 0x1a1030 },
+    haze: 0,
+    skyCycle: false,
+    dust: 0x8a7aa8,
+    barrier: { map: tex.neonRoadTexture, crawl: true },
+  },
+  dream: {
+    sky: { zenith: '#6a4ad8', high: '#a07af0', low: '#f0b8f0', horizon: '#fff0f8', below: '#e8d0f4', ground: '#d8c0ec', cloud: '255,250,255', clouds: 44 },
+    fog: { color: 0xf4dcf4, near: 160, far: 900 },
+    hemi: { sky: 0xffe8ff, ground: 0xb8a0e0, intensity: 1.7 },
+    sun: { color: 0xfff4f0, intensity: 2.2 },
+    ground: tex.cloudSeaTexture,
+    groundTile: 60,
+    cliff: () => tex.stoneTexture([200, 180, 230], [250, 240, 255]),
+    decor: 'sky',
+    distant: { shape: 'cloud', color: 0xfff4fc },
+    haze: 0,
+    skyCycle: true,
+    dust: 0xffffff,
+    barrier: { map: tex.rainbowTexture, crawl: true },
   },
 };

@@ -34,6 +34,13 @@ const CUES = [
   { id: 'volcano-fortress', title: 'volcano fortress' },
   { id: 'polygondwanaland-jungle', title: 'polygondwanaland jungle' },
   { id: 'podium', title: 'podium', bars: 4 },
+  // Cup two, the Microtonal Cup. Chain repeats count bars, and these songs'
+  // patterns run two or four bars, so the loop length is given outright.
+  { id: 'fishies-lagoon', title: 'fishies lagoon', bars: 16 },
+  { id: 'ice-v-glacier', title: 'ice v glacier', bars: 24 },
+  { id: 'cyboogie-city', title: 'cyboogie city' },
+  { id: 'butterfly-skyway', title: 'butterfly 3000 skyway', bars: 16 },
+  { id: 'butterfly-skyway-final-lap', title: 'butterfly 3000 skyway (final lap)', bars: 16 },
 ];
 
 process.env.SEQBABY_DIR = SEQBABY_DIR;
