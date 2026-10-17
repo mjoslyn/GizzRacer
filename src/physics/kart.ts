@@ -53,6 +53,7 @@ export interface KartState {
   wobbleTime: number; // seconds of wobbly steering left (Microtonal Mine)
   slowTime: number; // seconds of reduced top speed left (Tempo Shift)
   invulnTime: number; // seconds of immunity left after being hit
+  cannonTime: number; // seconds of Woo Cannon flight left: the race flies the kart, not stepKart
 }
 
 export interface StepEvents {
@@ -145,6 +146,7 @@ export function createKartState(x = 0, z = 0, heading = 0): KartState {
     wobbleTime: 0,
     slowTime: 0,
     invulnTime: 0,
+    cannonTime: 0,
   };
 }
 

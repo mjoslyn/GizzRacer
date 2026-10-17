@@ -62,7 +62,8 @@ All designs are original. No likenesses of band members or album art. Every race
 | Microtonal Mine | Dropped trap, wobbles steering 1.5s | Front |
 | Feedback Wave | Radial spin-out, 8m range | Middle |
 | Riff Missile | Homes on next racer ahead | Middle/back |
-| Tempo Shift | Others slowed 3s | Last 2 only |
+| Tempo Shift | Others slowed: 4s for the leader down to 1.5s for last place | Last 2 only |
+| Woo Cannon | Turns you into a cannon shell that flies itself down the road at 1.6x top speed for 3.5s, immune, spinning out anyone it touches; never lets go over a pit | Last 3 only, likelier further back |
 
 - Item boxes respawn 3s after pickup
 - One item held at a time, after a 1s roulette

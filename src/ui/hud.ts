@@ -7,7 +7,6 @@ import { Minimap } from './minimap';
 const TIER_NAMES = ['', 'BLUE', 'ORANGE', 'PURPLE'];
 const TIER_COLORS = ['#fff2a8', 'var(--tier-1)', 'var(--tier-2)', 'var(--tier-3)'];
 const MAX_CHARGE = DRIFT_TIERS[DRIFT_TIERS.length - 1];
-const SECTION_BANNER_TIME = 2.2;
 const FLASH_TIME = 1.4;
 /** Seconds per face of the item roulette. */
 const ROULETTE_STEP = 0.07;
@@ -64,7 +63,6 @@ export interface HudData {
   racerName: string;
   engineClass: string;
   trackName: string;
-  section: string;
   autoAccelerate: boolean;
   finished: boolean;
   paused: boolean;
@@ -101,7 +99,6 @@ export class Hud {
   private readonly driftFill: HTMLElement;
   private readonly driftLabel: HTMLElement;
   private readonly racer: HTMLElement;
-  private readonly section: HTMLElement;
   private readonly banner: HTMLElement;
   private readonly pause: HTMLElement;
   private readonly position: HTMLElement;
@@ -121,8 +118,6 @@ export class Hud {
   private lastTable = '';
   private lastCount = '';
   private lastPosition = 0;
-  private lastSection = '';
-  private sectionShownAt = -Infinity;
 
   constructor(parent: HTMLElement) {
     this.el.className = 'hud';
@@ -137,7 +132,6 @@ export class Hud {
         <div class="hud-laps"></div>
       </div>
       <div class="hud-tr"><div class="hud-racer"></div></div>
-      <div class="hud-section hud-big"></div>
       <div class="hud-item"><img alt="" /><div class="hud-item-name"></div></div>
       <div class="hud-flash hud-big"></div>
       <div class="hud-intro"><div class="hud-intro-name hud-big"></div><div class="hud-intro-sub"></div><div class="hud-intro-skip">${'ontouchstart' in window ? 'tap' : 'press any key'} to skip</div></div>
@@ -184,7 +178,6 @@ export class Hud {
     this.driftFill = q('.hud-drift-fill');
     this.driftLabel = q('.hud-drift-label');
     this.racer = q('.hud-racer');
-    this.section = q('.hud-section');
     this.banner = q('.hud-banner');
     this.pause = q('.hud-pause');
     this.position = q('.hud-position');
@@ -256,13 +249,6 @@ export class Hud {
       void this.count.offsetWidth; // restart the pop animation
       if (count) this.count.classList.add('pop');
     }
-
-    if (d.section !== this.lastSection) {
-      this.lastSection = d.section;
-      this.sectionShownAt = now;
-      this.section.textContent = d.section.toUpperCase();
-    }
-    this.section.classList.toggle('show', now - this.sectionShownAt < SECTION_BANNER_TIME);
 
     const drifting = k.driftDir !== 0;
     const tier = drifting ? driftTier(k.driftCharge) : 0;

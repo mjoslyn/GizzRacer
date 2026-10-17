@@ -3,7 +3,7 @@ import { clamp, damp } from '../core/math';
 import type { KartState } from '../physics/kart';
 import { driftTier } from '../physics/kart';
 import type { RacerDef } from '../physics/racers';
-import { buildKartModel } from './racerModels';
+import { buildKartModel, buildWooCannon, type WooCannonModel } from './racerModels';
 import { NonagonGate } from './nonagonGate';
 import { blobShadowTexture, glowTexture } from './textures';
 
@@ -83,6 +83,11 @@ export class KartView {
   readonly fx = new THREE.Group();
   private readonly body: THREE.Group;
   private readonly frontWheels: THREE.Object3D[] = [];
+  private readonly pivots: THREE.Object3D[] = [];
+  /** The Woo Cannon shell, built the first time it's needed. */
+  private cannon: WooCannonModel | null = null;
+  private wasCannon = false;
+  private readonly racer: RacerDef;
   private readonly wheels: { mesh: THREE.Object3D; radius: number }[] = [];
   private readonly spinners: THREE.Object3D[];
   private readonly rotors: THREE.Object3D[];
@@ -140,6 +145,7 @@ export class KartView {
   constructor(racer: RacerDef) {
     sharedGlow ??= glowTexture();
     sharedShadow ??= blobShadowTexture();
+    this.racer = racer;
     const model = buildKartModel(racer);
     this.trickMove = TRICKS[racer.id] ?? DEFAULT_TRICK;
     this.body = model.body;
@@ -182,6 +188,7 @@ export class KartView {
       }
       pivot.add(spin);
       this.root.add(pivot);
+      this.pivots.push(pivot);
       this.wheels.push({ mesh: spin, radius: w.radius });
       if (w.front) this.frontWheels.push(pivot);
     }
@@ -266,6 +273,7 @@ export class KartView {
     // Tempo Shift shrinks you a little while it lasts.
     this.body.scale.setScalar(s.slowTime > 0 ? 0.8 : 1);
     this.updatePresence(s, frameDt, time);
+    this.animateCannon(s, frameDt, time);
 
     const speedRatio = clamp(Math.abs(s.speed) / topSpeed, 0, 1.5);
     const accel = frameDt > 0 ? (s.speed - this.lastSpeed) / frameDt : 0;
@@ -332,6 +340,31 @@ export class KartView {
 
     this.updateSparks(s, frameDt);
     this.updateDust(s, speedRatio, frameDt);
+  }
+
+  /** In the Woo Cannon: the vehicle is swapped for the shell, which wobbles, spins its fins and trails stars. */
+  private animateCannon(s: KartState, dt: number, time: number): void {
+    const on = s.cannonTime > 0;
+    if (on !== this.wasCannon) {
+      if (on && !this.cannon) {
+        this.cannon = buildWooCannon(this.racer);
+        this.root.add(this.cannon.group);
+      }
+      // In or out with a pop.
+      for (let i = 0; i < 16; i++) this.emitStar(1);
+      this.bounceVel += 3;
+      this.wasCannon = on;
+      this.body.visible = !on;
+      for (const p of this.pivots) p.visible = !on;
+      if (this.cannon) this.cannon.group.visible = on;
+    }
+    if (!on || !this.cannon) return;
+    const c = this.cannon;
+    c.fins.rotation.z += dt * 7;
+    c.group.rotation.set(-0.06 + Math.sin(time * 7) * 0.03, 0, Math.sin(time * 9) * 0.06);
+    const k = 0.85 + Math.random() * 0.4;
+    c.flame.scale.set(k, k, k * 1.3);
+    if (Math.random() < dt * 30) this.emitStar(0.4);
   }
 
   /** Over the edge: shrink away in a puff of stars. Through the gate: grow back, with a little overshoot. */

@@ -16,6 +16,9 @@ export class Sfx {
   private screech: Screech | null = null;
   private devil: { src: AudioBufferSourceNode; gain: GainNode; pan: StereoPannerNode } | null = null;
   private rattleWait = 0;
+  /** The Woo Cannon's shout: the one sound that's a recording (public/sfx/woo.mp3), fetched once. */
+  private wooBuffer: AudioBuffer | null = null;
+  private wooLoad: Promise<void> | null = null;
   muted = false;
   volume = 1;
 
@@ -44,6 +47,11 @@ export class Sfx {
       this.shots.gain.value = 5;
       this.shots.connect(this.out);
       this.noise = whiteNoise(ctx);
+      this.wooLoad = fetch('sfx/woo.mp3')
+        .then((r) => r.arrayBuffer())
+        .then((data) => ctx.decodeAudioData(data))
+        .then((buffer) => void (this.wooBuffer = buffer))
+        .catch(() => {});
     }
     return ctx;
   }
@@ -138,7 +146,30 @@ export class Sfx {
       case 'tempoShift':
         this.tone(880, 0.7, 'square', 0.08, 220);
         break;
+      case 'wooCannon':
+        this.woo(1);
+        this.whoosh(0.8, 300, 2400, 0.2);
+        break;
     }
+  }
+
+  /** The Woo Cannon's shout at `level` (1 for your own, quieter for someone else's nearby). */
+  woo(level: number): void {
+    const ctx = this.ctx;
+    if (!ctx || !this.out) return;
+    if (!this.wooBuffer) {
+      // Not loaded yet: shout as soon as it is, if that's soon.
+      const asked = ctx.currentTime;
+      void this.wooLoad?.then(() => this.wooBuffer && ctx.currentTime - asked < 0.4 && this.woo(level));
+      return;
+    }
+    this.onDuck(0.3, this.wooBuffer.duration);
+    const src = ctx.createBufferSource();
+    src.buffer = this.wooBuffer;
+    const gain = ctx.createGain();
+    gain.gain.value = 0.9 * level;
+    src.connect(gain).connect(this.out);
+    src.start();
   }
 
   /** The player got hit, by an item or a hazard. */

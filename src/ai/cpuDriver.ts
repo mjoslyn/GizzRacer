@@ -151,6 +151,7 @@ export class CpuDriver {
       case 'riffMissile':
         return position > 1;
       case 'tempoShift':
+      case 'wooCannon':
         return true;
     }
   }

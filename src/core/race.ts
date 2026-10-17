@@ -1,11 +1,12 @@
 import { AUTOPILOT_SKILL, CpuDriver, type CpuSkill, type Obstacle } from '../ai/cpuDriver';
 import { HazardSystem } from '../items/hazards';
-import { ItemSystem, type ItemEvent, type ItemHolder, type ItemKind } from '../items/items';
+import { CANNON_SPEED_MUL, CANNON_SPIN, ItemSystem, type ItemEvent, type ItemHolder, type ItemKind } from '../items/items';
 import { NEUTRAL_INPUT, type InputFrame } from './inputFrame';
 import { unpackKart } from '../net/wire';
-import { KART_RADIUS, copyKartState, createKartState, respawnKart, stepKart, type KartState, type StepEvents } from '../physics/kart';
+import { KART_RADIUS, copyKartState, createKartState, respawnKart, spinOut, stepKart, type KartState, type StepEvents } from '../physics/kart';
 import { kartParams, type EngineClass, type KartParams, type RacerDef } from '../physics/racers';
 import { LapTracker } from '../tracks/laps';
+import { pointAt } from '../tracks/spline';
 import type { Track } from '../tracks/track';
 
 /** Seconds below ground before a fallen kart is put back on the track (spec section 4). */
@@ -18,6 +19,11 @@ const RUBBER_BAND_RANGE = 250;
 const FALL_DEPTH = -2;
 const BUMP_RESTITUTION = 0.4;
 const BUMP_MIN = 2;
+/** A Woo Cannon flies this high over the road, and closes in on the centreline at this rate (1/s). */
+const CANNON_LIFT = 1;
+const CANNON_CENTRE = 3;
+/** Speed and boost a kart comes out of the cannon with. */
+const CANNON_EXIT_BOOST = 0.6;
 
 const NO_EVENTS: StepEvents = { hopped: false, landed: 0, driftStarted: false, boostTier: 0, wallHit: 0, launched: false, trick: false };
 
@@ -120,6 +126,8 @@ export class Race {
   /** Online client: items are run by the room; this race only shows them. */
   remoteItems = false;
   private readonly obstacles: Obstacle[] = [];
+  /** Karts knocked aside by a Woo Cannon this step, reported with the item events. */
+  private readonly cannonHits: ItemEvent[] = [];
 
   constructor(
     readonly track: Track,
@@ -166,6 +174,12 @@ export class Race {
         this.updateLaps(kart);
         return { ...NO_EVENTS };
       }
+      if (kart.state.cannonTime > 0) {
+        // In the cannon: no driving, no items, it flies itself.
+        this.flyCannon(kart, dt);
+        this.updateLaps(kart);
+        return { ...NO_EVENTS };
+      }
       const d = kart.driver;
       let input = (d ? d.drive(kart.state, kart.params, kart.progressS, this.track, states, this.obstacles, dt) : humanInputs[i]) ?? NEUTRAL_INPUT;
       if (d && kart.item && kart.rolling === 0) {
@@ -186,6 +200,8 @@ export class Race {
     this.bumps();
     this.rank();
     this.events = this.remoteItems ? [] : this.items.update(dt, this.karts, use);
+    this.events.push(...this.cannonHits);
+    this.cannonHits.length = 0;
     for (const e of this.events) if (e.type === 'use') (e.kart as RaceKart).driver?.forgetItem();
     this.hazards.update(this.time);
     if (this.started) {
@@ -203,6 +219,46 @@ export class Race {
     this.obstacles.length = 0;
     this.hazards.obstacles(this.obstacles);
     for (const m of this.items.mines) this.obstacles.push({ x: m.x, z: m.z, r: 1.2, vx: 0, vz: 0 });
+  }
+
+  /**
+   * One step of Woo Cannon flight: on down the main centreline at well over
+   * top speed, a metre up, closing in on the middle of the road, ignoring
+   * walls, gaps and everything on the ground. It never lets go over a pit:
+   * it keeps flying until there's road under it.
+   */
+  private flyCannon(kart: RaceKart, dt: number): void {
+    const s = kart.state;
+    const sp = this.track.spline;
+    const L = this.track.length;
+    const wrap = (v: number) => ((v % L) + L) % L;
+    const speed = kart.baseParams.topSpeed * CANNON_SPEED_MUL;
+    const s0 = kart.progressS;
+    const s1 = wrap(s0 + speed * dt);
+    const p0 = pointAt(sp, s0);
+    const p1 = pointAt(sp, s1);
+    // Keep the offset from the centreline, shrinking it, and carry it forward.
+    const keep = Math.exp(-CANNON_CENTRE * dt);
+    s.x = p1.x + (s.x - p0.x) * keep;
+    s.z = p1.z + (s.z - p0.z) * keep;
+    const road = this.track.main.heightAt(s1);
+    s.y += (road + CANNON_LIFT - s.y) * Math.min(1, dt * 6);
+    s.groundY = road;
+    s.heading = Math.atan2(p1.tx, p1.tz);
+    // The lookup only searches near its hint, so carry the hint along with the flight.
+    s.trackHint = Math.min(sp.count - 1, Math.floor((s1 / L) * sp.count));
+    Object.assign(s, { speed, vy: 0, extX: 0, extZ: 0, grounded: false, steer: 0, slip: 0, driftDir: 0, driftArmed: false, driftCharge: 0, boostTime: 0, spinTime: 0, spinAngle: 0, wobbleTime: 0, slowTime: 0 });
+    s.cannonTime = Math.max(0, s.cannonTime - dt);
+    s.invulnTime = Math.max(s.invulnTime, s.cannonTime + 0.8);
+    if (s.cannonTime > 0) return;
+    const main = this.track.main;
+    if (main.inGap(s1) || main.inGap(wrap(s1 + 10)) || main.inGap(wrap(s1 + 20))) {
+      s.cannonTime = dt;
+      return;
+    }
+    // Out of the barrel at top speed with a little boost; it drops the last metre onto the road.
+    s.speed = kart.params.topSpeed;
+    s.boostTime = CANNON_EXIT_BOOST;
   }
 
   /** Trailing CPUs get a little more top speed; leaders get none. */
@@ -252,7 +308,10 @@ export class Race {
     }
   }
 
-  /** Karts are discs; heavier ones shove lighter ones further (spec section 4). */
+  /**
+   * Karts are discs; heavier ones shove lighter ones further (spec section
+   * 4). A Woo Cannon moves for nobody and spins out whoever it touches.
+   */
   private bumps(): void {
     const r2 = KART_RADIUS * 2;
     for (const k of this.karts) k.bump = 0;
@@ -265,16 +324,23 @@ export class Race {
         if (Math.abs(sa.y - sb.y) > 1.5) continue;
         // A remote kart's position isn't ours to change: the other kart takes the whole bump.
         if (a.remote && b.remote) continue;
+        const ca = sa.cannonTime > 0;
+        const cb = sb.cannonTime > 0;
+        if (ca && cb) continue;
         const dx = sb.x - sa.x;
         const dz = sb.z - sa.z;
         const d = Math.hypot(dx, dz);
         if (d >= r2 || d < 1e-6) continue;
         const nx = dx / d;
         const nz = dz / d;
-        // Inverse masses: a remote kart moves for nobody.
-        const ia = a.remote ? 0 : 1 / a.params.mass;
-        const ib = b.remote ? 0 : 1 / b.params.mass;
+        // Inverse masses: a remote kart, or a cannon, moves for nobody.
+        const ia = a.remote || ca ? 0 : 1 / a.params.mass;
+        const ib = b.remote || cb ? 0 : 1 / b.params.mass;
         const total = ia + ib;
+        if (total === 0) continue;
+        // Hit by a cannon: spun out, here if it's driven here (a remote kart takes the hit where it's driven).
+        const victim = ca && !b.remote ? b : cb && !a.remote ? a : null;
+        if (victim && spinOut(victim.state, CANNON_SPIN)) this.cannonHits.push({ type: 'hit', kart: victim, by: 'wooCannon', from: victim === a ? b : a });
         const overlap = r2 - d;
         sa.x -= nx * overlap * (ia / total);
         sa.z -= nz * overlap * (ia / total);

@@ -117,6 +117,7 @@ Re-simulating from the inputs is the stronger check, and it can run in the party
 | Mines, missiles, waves, Tempo Shift, and every item hit | the room, against the latest reported kart positions | one authority for items keeps hits consistent for everyone |
 | Hazards (snakes, boulders, jets...) | each client for its own kart, from race time | already a pure function of time (`src/items/hazards.ts`); nothing to send |
 | Kart-to-kart bumps | each client for its own kart, against others' shown positions | no teleporting; bumps feel slightly soft at high ping |
+| Woo Cannon flight | the room sends a `cannon` effect to whoever fired it; their client flies it and reports `cannonTime`, so everyone sees the shell; whoever it touches is spun out where that kart is simulated (the room for CPUs, each client for its own kart) | the shell is part of the firer's kart movement |
 | Laps, finish times, results, Grand Prix points | the room, from kart reports and its own checks | |
 
 The room keeps a full `Race`, where human karts are "remote": each tick it places them at their latest reported state instead of simulating them. That way CPUs steer around them, missiles home on them and positions rank correctly.
@@ -133,7 +134,7 @@ JSON over the room WebSocket, with compact arrays for kart states.
 
 | Message | Rate | Content |
 |---|---|---|
-| `kart` | 15 Hz | race time, x, y, z, heading, speed, vy, slip, steer, driftDir, drift tier, boostTime, spinTime, wobbleTime, slowTime, lap, progress, flags (about 120 bytes) |
+| `kart` | 15 Hz | race time, x, y, z, heading, speed, vy, slip, steer, driftDir, drift tier, boostTime, spinTime, wobbleTime, slowTime, cannonTime, lap, progress, flags (about 120 bytes) |
 | `use-item` | on press | item slot only; the room checks the player really holds it |
 | `hazard-hit` | on hit | which hazard, so the room knows (for its kart copy and the HUD of others) |
 | `ping` | 0.5 Hz | timestamp |

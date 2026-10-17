@@ -90,24 +90,6 @@ body {
   box-shadow: 0 0 0 3px rgba(255, 210, 120, 0.8), 0 0 0 6px rgba(58, 15, 69, 0.8);
 }
 
-.hud-section {
-  position: absolute;
-  top: 22%;
-  left: 0;
-  right: 0;
-  text-align: center;
-  font-size: 38px;
-  letter-spacing: 3px;
-  opacity: 0;
-  transform: translateX(-30px) skewX(-8deg);
-  transition: opacity 0.35s, transform 0.35s;
-}
-
-.hud-section.show {
-  opacity: 1;
-  transform: translateX(0) skewX(-8deg);
-}
-
 .hud-br {
   position: absolute;
   right: 26px;
@@ -383,7 +365,6 @@ body:not([data-mode='race']):not([data-mode='results']) .hud-tr,
 body:not([data-mode='race']):not([data-mode='results']) .hud-br,
 body:not([data-mode='race']):not([data-mode='results']) .hud-drift,
 body:not([data-mode='race']):not([data-mode='results']) .hud-help,
-body:not([data-mode='race']):not([data-mode='results']) .hud-section,
 body:not([data-mode='race']):not([data-mode='results']) .hud-count,
 body:not([data-mode='race']):not([data-mode='results']) .hud-banner {
   display: none !important;
@@ -598,13 +579,11 @@ body.touch-mode .menu-hint {
   .hud-racer { font-size: 11px; }
   .hud-speed { font-size: 34px; }
   .hud-position { font-size: 36px; }
-  .hud-section { font-size: 24px; }
   .hud-count { font-size: 80px; }
   .hud-drift { width: 46vw; bottom: 150px; }
   body.touch-mode .hud-br { bottom: auto; top: 160px; }
 }
 
-body[data-mode='results'] .hud-section,
 body[data-mode='results'] .hud-banner {
   display: none !important;
 }

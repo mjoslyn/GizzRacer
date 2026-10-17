@@ -1,6 +1,6 @@
 import { CPU_SKILL, CpuDriver } from '../ai/cpuDriver';
 import { Race, type RaceKart } from '../core/race';
-import { FUZZ_BOOST, ITEM_KINDS, MINE_WOBBLE, MISSILE_SPIN, TEMPO_SLOW, WAVE_SPIN, type ItemKind } from '../items/items';
+import { CANNON_TIME, FUZZ_BOOST, ITEM_KINDS, MINE_WOBBLE, MISSILE_SPIN, WAVE_SPIN, tempoSlowFor, type ItemKind } from '../items/items';
 import { RACERS } from '../physics/racers';
 import { TRACK_LIST } from '../tracks/index';
 import { Track } from '../tracks/track';
@@ -10,11 +10,11 @@ import { packKart } from './wire';
 /** Humans still out this long after the first finisher are placed where they are. */
 export const FINISH_GRACE = 30;
 
+/** Tempo Shift's length depends on the victim's place, so it's worked out per hit (below). */
 const HIT_EFFECTS: Partial<Record<ItemKind, Omit<Effect, 'by'>>> = {
   feedbackWave: { k: 'spin', t: WAVE_SPIN },
   riffMissile: { k: 'spin', t: MISSILE_SPIN },
   microtonalMine: { k: 'wobble', t: MINE_WOBBLE },
-  tempoShift: { k: 'slow', t: TEMPO_SLOW },
 };
 
 const r2 = (v: number) => Math.round(v * 100) / 100;
@@ -86,7 +86,10 @@ export class RoomRace {
     for (const e of this.race.events) {
       const k = e.kart as RaceKart;
       if (e.type === 'use' && e.item === 'fuzzPedal') add(k, { k: 'boost', t: FUZZ_BOOST, by: e.item });
+      // The player's own client flies their cannon.
+      if (e.type === 'use' && e.item === 'wooCannon') add(k, { k: 'cannon', t: CANNON_TIME, by: e.item });
       if (e.type === 'hit' && e.by in HIT_EFFECTS) add(k, { ...HIT_EFFECTS[e.by as ItemKind]!, by: e.by });
+      if (e.type === 'hit' && e.by === 'tempoShift') add(k, { k: 'slow', t: tempoSlowFor(k.position, this.race.karts.length), by: e.by });
     }
     if (this.firstFinish === null && this.race.results.length) this.firstFinish = this.race.time;
     return out;

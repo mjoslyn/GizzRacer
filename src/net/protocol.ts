@@ -76,7 +76,7 @@ export interface Snap {
 
 /** Something the room did to your kart: apply it locally. */
 export interface Effect {
-  k: 'spin' | 'wobble' | 'slow' | 'boost';
+  k: 'spin' | 'wobble' | 'slow' | 'boost' | 'cannon';
   t: number;
   /** What did it (an item kind), for the HUD. */
   by: string;

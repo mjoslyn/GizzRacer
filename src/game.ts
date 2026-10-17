@@ -543,7 +543,18 @@ function step(dt: number): void {
   if (recorder && (player.finishTime === null || race.time - player.finishTime < GHOST_OVERRUN)) recorder.record(race.time, player.state);
   for (const e of race.events) {
     if (e.type === 'pickup' && e.kart === player) sfx.pickup();
-    if (e.type === 'use' && e.kart === player) sfx.use(e.item);
+    if (e.type === 'use' && e.kart === player) {
+      sfx.use(e.item);
+      if (e.item === 'wooCannon') {
+        hud.flash('WOO CANNON!');
+        chase.bump(0.8);
+      }
+    } else if (e.type === 'use' && e.item === 'wooCannon') {
+      // Someone else's cannon going off nearby: you hear it too, fading with distance.
+      const o = e.kart.state;
+      const d = Math.hypot(o.x - player.state.x, o.z - player.state.z);
+      if (d < 80) sfx.woo(0.6 * (1 - d / 80));
+    }
     if (e.type !== 'hit') continue;
     if (e.kart === player) {
       hud.flash(HIT_TEXT[e.by]);
@@ -591,6 +602,11 @@ function onEffects(fx: Effect[]): void {
   if (!net || mode !== 'race') return;
   for (const e of net.apply(fx)) {
     if (e.k === 'boost') continue;
+    if (e.k === 'cannon') {
+      hud.flash('WOO CANNON!');
+      chase.bump(0.8);
+      continue;
+    }
     const by = e.by as ItemKind;
     hud.flash(HIT_TEXT[by] ?? 'HIT!');
     sfx.hurt(by);
@@ -604,6 +620,7 @@ const HIT_TEXT: Record<ItemKind | HazardKind, string> = {
   feedbackWave: 'FEEDBACK!',
   riffMissile: 'RIFFED!',
   tempoShift: 'TEMPO SHIFT!',
+  wooCannon: 'WOOOOO!',
   snakes: 'SNAKEBITE!',
   dustDevils: 'DUST DEVIL!',
   tumbleweeds: 'TUMBLEWEED!',
@@ -773,7 +790,6 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
       racerName: f.racer.name,
       engineClass: choice.engine,
       trackName: gp && !gp.finished ? `${track.def.name} · race ${gp.round + 1}/${gp.tracks.length}` : ghosts.length ? `${track.def.name} · ${ghosts.map((g) => `${g.label} ${formatTime(g.run.total)}`).join(' · ')}` : track.def.name,
-      section: f.section,
       autoAccelerate: input.autoAccelerate,
       finished,
       paused: loop.paused && !frozen,

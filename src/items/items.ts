@@ -5,7 +5,7 @@ import type { Track } from '../tracks/track';
 import type { HazardKind } from './hazards';
 
 /** Spec section 6. */
-export type ItemKind = 'fuzzPedal' | 'microtonalMine' | 'feedbackWave' | 'riffMissile' | 'tempoShift';
+export type ItemKind = 'fuzzPedal' | 'microtonalMine' | 'feedbackWave' | 'riffMissile' | 'tempoShift' | 'wooCannon';
 
 export const ITEMS: Record<ItemKind, { name: string }> = {
   fuzzPedal: { name: 'Fuzz Pedal' },
@@ -13,15 +13,28 @@ export const ITEMS: Record<ItemKind, { name: string }> = {
   feedbackWave: { name: 'Feedback Wave' },
   riffMissile: { name: 'Riff Missile' },
   tempoShift: { name: 'Tempo Shift' },
+  wooCannon: { name: 'Woo Cannon' },
 };
 export const ITEM_KINDS = Object.keys(ITEMS) as ItemKind[];
+
+/** How long Tempo Shift slows a kart in `position` of `karts`: longest for the leader, shortest for last. */
+export function tempoSlowFor(position: number, karts: number): number {
+  const p = karts > 1 ? (position - 1) / (karts - 1) : 0;
+  return TEMPO_SLOW_FIRST + (TEMPO_SLOW_LAST - TEMPO_SLOW_FIRST) * Math.min(1, Math.max(0, p));
+}
 
 export const FUZZ_BOOST = 1.2;
 export const MINE_WOBBLE = 1.5;
 export const WAVE_RANGE = 8;
 export const WAVE_SPIN = 1.0;
 export const MISSILE_SPIN = 1.2;
-export const TEMPO_SLOW = 3;
+/** Tempo Shift slows the leader longest and the back of the field least (seconds, first to last). */
+export const TEMPO_SLOW_FIRST = 4;
+export const TEMPO_SLOW_LAST = 1.5;
+/** Woo Cannon: seconds of flight, speed as a multiple of the kart's own top speed, and the spin it gives anyone in the way. */
+export const CANNON_TIME = 3.5;
+export const CANNON_SPEED_MUL = 1.6;
+export const CANNON_SPIN = 1.0;
 export const BOX_RESPAWN = 3;
 /** Seconds the item roulette spins before the item lands in the slot. */
 export const ROULETTE = 1;
@@ -91,7 +104,8 @@ export type ItemEvent =
 /**
  * Item odds by race position (spec section 6): `p` runs from 0 (leading)
  * to 1 (last). Fuzz everywhere, mines up front, waves mid-pack, missiles
- * from the middle back, Tempo Shift for the last two only.
+ * from the middle back, Tempo Shift for the last two only, and the Woo
+ * Cannon for the last three, likelier the further back.
  */
 export function itemWeights(position: number, karts: number): Record<ItemKind, number> {
   const p = karts > 1 ? (position - 1) / (karts - 1) : 0;
@@ -101,6 +115,7 @@ export function itemWeights(position: number, karts: number): Record<ItemKind, n
     feedbackWave: 4 * Math.max(0, 1 - Math.abs(p - 0.5) * 2),
     riffMissile: position === 1 ? 0 : 3.5 * Math.min(1, p * 1.6),
     tempoShift: karts > 2 && position >= karts - 1 ? 2.5 : 0,
+    wooCannon: karts > 3 && position >= karts - 2 ? 1.5 + (position - (karts - 2)) : 0,
   };
 }
 
@@ -215,8 +230,13 @@ export class ItemSystem {
       }
       case 'tempoShift':
         for (const o of karts) {
-          if (o !== k && slowDown(o.state, TEMPO_SLOW)) events.push({ type: 'hit', kart: o, by: 'tempoShift', from: k });
+          if (o !== k && slowDown(o.state, tempoSlowFor(o.position, karts.length))) events.push({ type: 'hit', kart: o, by: 'tempoShift', from: k });
         }
+        break;
+      case 'wooCannon':
+        // The race flies it from here (Race.flyCannon); anyone it touches is knocked aside (Race.bumps).
+        s.cannonTime = CANNON_TIME;
+        s.invulnTime = Math.max(s.invulnTime, CANNON_TIME + 0.8);
         break;
     }
   }

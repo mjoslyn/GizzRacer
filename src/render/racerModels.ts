@@ -1337,3 +1337,79 @@ export function buildKartModel(racer: RacerDef): KartModel {
   const build = BUILDERS[racer.id] ?? lizardWarlock;
   return build(racer);
 }
+
+export interface WooCannonModel {
+  group: THREE.Group;
+  /** Spin with the flight. */
+  fins: THREE.Object3D;
+  flame: THREE.Mesh;
+}
+
+/**
+ * The shell a racer becomes inside the Woo Cannon: a fat glossy round in
+ * the racer's colours with rainbow fins, a face on the nose shouting WOO,
+ * and a flame out the back. Built at kart scale, centred a metre up.
+ */
+export function buildWooCannon(r: RacerDef): WooCannonModel {
+  const group = new THREE.Group();
+  group.position.y = 1.1;
+  const shell = gloss(0x3a1a6a, { shininess: 120, reflectivity: 0.35 });
+  const nose = gloss(r.color, { shininess: 120 });
+  const band = gloss(r.accent);
+  put(group, cyl(1, 1, 2.2, 28), shell, [0, 0, 0], [Math.PI / 2, 0, 0]);
+  put(group, new THREE.SphereGeometry(1, 28, 14, 0, Math.PI * 2, 0, Math.PI / 2), nose, [0, 0, 1.1], [Math.PI / 2, 0, 0]);
+  for (const z of [0.55, -0.45]) put(group, ring(1.0, 0.07), band, [0, 0, z]);
+  // The letters down both flanks.
+  const c = document.createElement('canvas');
+  c.width = 256;
+  c.height = 96;
+  const g = c.getContext('2d')!;
+  g.font = 'italic 900 82px Impact, "Arial Black", sans-serif';
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.lineWidth = 10;
+  g.strokeStyle = '#1a0620';
+  g.strokeText('WOO', 128, 50);
+  g.fillStyle = '#ffd23a';
+  g.fillText('WOO', 128, 50);
+  const letters = new THREE.CanvasTexture(c);
+  letters.colorSpace = THREE.SRGBColorSpace;
+  const decal = new THREE.MeshBasicMaterial({ map: letters, transparent: true, depthWrite: false });
+  for (const side of [-1, 1]) put(group, new THREE.PlaneGeometry(1.2, 0.45), decal, [side * 1.01, 0.05, 0.05], [0, side * (Math.PI / 2), 0]);
+  // The face: wide eyes under angry brows, a mouth open on the O.
+  const centre = new THREE.Vector3(0, 0, 1.1);
+  const onNose = (x: number, y: number, out = 1): [number, number, number] => {
+    const d = new THREE.Vector3(x, y, Math.sqrt(Math.max(0, 1 - x * x - y * y)));
+    const p = centre.clone().addScaledVector(d, out);
+    return [p.x, p.y, p.z];
+  };
+  for (const side of [-1, 1]) {
+    put(group, ball(0.2, 14, 10), matte(0xffffff), onNose(side * 0.33, 0.3, 0.93));
+    put(group, ball(0.09, 10, 8), matte(0x0a0a0a), onNose(side * 0.3, 0.28, 1.1));
+    put(group, ball(0.03, 6, 4), glow(0xffffff), onNose(side * 0.27, 0.32, 1.17));
+    put(group, box(0.32, 0.07, 0.07), matte(0x1a0620), onNose(side * 0.33, 0.52, 1.0), [0, 0, side * -0.4]);
+  }
+  put(group, new THREE.TorusGeometry(0.17, 0.05, 8, 18), matte(0x1a0620), onNose(0, -0.33, 0.98));
+  put(group, new THREE.CircleGeometry(0.16, 18), matte(0x7a0a1a), onNose(0, -0.33, 0.97));
+  // Rainbow fins round the back, turning as it flies.
+  const fins = new THREE.Group();
+  fins.position.z = -0.95;
+  const finColors = [0xff5a7a, 0xffe45a, 0x4ad0ff, 0xc86aff];
+  for (let k = 0; k < 4; k++) {
+    const arm = new THREE.Group();
+    arm.rotation.z = (k * Math.PI) / 2 + Math.PI / 4;
+    put(arm, box(0.08, 0.75, 0.9), gloss(finColors[k]), [0, 1.2, -0.1]);
+    fins.add(arm);
+  }
+  group.add(fins);
+  put(group, cyl(0.75, 0.9, 0.3, 24), chrome(), [0, 0, -1.2], [Math.PI / 2, 0, 0]);
+  const flame = put(
+    group,
+    new THREE.ConeGeometry(0.5, 1.8, 16).rotateX(-Math.PI / 2).translate(0, 0, -0.9),
+    new THREE.MeshBasicMaterial({ color: 0xffb04a, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false }),
+    [0, 0, -1.3],
+  );
+  glowSprite(group, [0, 0, -1.6], 1.4, 0xff9a40);
+  group.visible = false;
+  return { group, fins, flame };
+}

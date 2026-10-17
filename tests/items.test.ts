@@ -1,17 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { CPU_SKILL } from '../src/ai/cpuDriver';
+import { CPU_SKILL, CpuDriver } from '../src/ai/cpuDriver';
 import { NEUTRAL_INPUT } from '../src/core/input';
 import { PHYSICS_DT } from '../src/core/loop';
 import { COUNTDOWN, Race } from '../src/core/race';
 import { BOULDER_STAGES, HazardSystem, JET_STAGES } from '../src/items/hazards';
 import { buildVolcanoFortress } from '../src/tracks/volcanoFortress';
 import { buildPolygondwanalandJungle } from '../src/tracks/polygondwanalandJungle';
-import { BOX_RESPAWN, FUZZ_BOOST, ITEM_KINDS, MINE_WOBBLE, ROULETTE, TEMPO_SLOW, WAVE_RANGE, itemWeights, rollItem, type ItemKind } from '../src/items/items';
-import { createKartState, slowDown, spinOut, stepKart } from '../src/physics/kart';
+import { BOX_RESPAWN, CANNON_TIME, FUZZ_BOOST, ITEM_KINDS, MINE_WOBBLE, ROULETTE, TEMPO_SLOW_FIRST, TEMPO_SLOW_LAST, WAVE_RANGE, itemWeights, rollItem, tempoSlowFor, type ItemKind } from '../src/items/items';
+import { createKartState, respawnKart, slowDown, spinOut, stepKart } from '../src/physics/kart';
 import { FIELD_SIZE, RACERS, kartParams } from '../src/physics/racers';
 import { buildRattlesnakeRun } from '../src/tracks/rattlesnakeRun';
 import { Track } from '../src/tracks/track';
 import { seededRandom } from '../src/core/math';
+import { packKart, unpackKart } from '../src/net/wire';
+import { TRACK_LIST } from '../src/tracks/index';
 
 const track = new Track(buildRattlesnakeRun());
 const PRESS = { ...NEUTRAL_INPUT, throttle: 1, item: true, itemPressed: true };
@@ -55,6 +57,93 @@ describe('item odds', () => {
       expect(rollItem(1, 6, rand)).not.toBe('riffMissile');
       expect(rollItem(3, 6, rand)).not.toBe('tempoShift');
     }
+  });
+});
+
+describe('Woo Cannon', () => {
+  /** Puts kart `i` on the centreline `s` metres round, and lets the race see where it is. */
+  const place = (race: Race, i: number, s: number) => {
+    const k = race.karts[i];
+    const pose = race.track.respawnPose(s);
+    respawnKart(k.state, pose.x, pose.y, pose.z, pose.heading);
+    race.step(PHYSICS_DT, race.karts.map(() => NEUTRAL_INPUT));
+    return k;
+  };
+
+  it('only rolls for the last three, likelier further back', () => {
+    for (let pos = 1; pos <= 5; pos++) expect(itemWeights(pos, 8).wooCannon).toBe(0);
+    for (let pos = 6; pos <= 8; pos++) expect(itemWeights(pos, 8).wooCannon).toBeGreaterThan(0);
+    expect(itemWeights(8, 8).wooCannon).toBeGreaterThan(itemWeights(6, 8).wooCannon);
+    const rand = seededRandom(9);
+    for (let i = 0; i < 500; i++) expect(rollItem(2, 8, rand)).not.toBe('wooCannon');
+  });
+
+  it('flies the kart down the road well past top speed, immune, then lets go', () => {
+    const race = humanRace(1);
+    const k = place(race, 0, 60);
+    give(race, 0, 'wooCannon');
+    race.step(PHYSICS_DT, [PRESS]);
+    expect(k.state.cannonTime).toBeGreaterThan(CANNON_TIME - 0.1);
+    const d0 = k.distance;
+    for (let t = 0; t < CANNON_TIME + 2 && k.state.cannonTime > 0; t += PHYSICS_DT) {
+      race.step(PHYSICS_DT, [NEUTRAL_INPUT]);
+      expect(spinOut(k.state, 1)).toBe(false);
+    }
+    expect(k.state.cannonTime).toBe(0);
+    expect(k.distance - d0).toBeGreaterThan(k.baseParams.topSpeed * CANNON_TIME * 1.4);
+    expect(k.state.speed).toBeGreaterThan(k.params.topSpeed * 0.9);
+  });
+
+  it('never drops a kart into a pit or off the edge, on any track', () => {
+    for (const entry of TRACK_LIST) {
+      const t = new Track(entry.build());
+      for (let f = 0; f < 1; f += 0.125) {
+        const race = new Race(t);
+        race.addKart(RACERS[0], '150cc', null);
+        race.time = 0;
+        const k = place(race, 0, f * t.length + 2);
+        give(race, 0, 'wooCannon');
+        race.step(PHYSICS_DT, [PRESS]);
+        for (let s = 0; s < CANNON_TIME + 3 && k.state.cannonTime > 0; s += PHYSICS_DT) race.step(PHYSICS_DT, [NEUTRAL_INPUT]);
+        // Let a CPU drive on: it should land on the road and carry on without falling.
+        k.driver = new CpuDriver(CPU_SKILL['150cc'], 3);
+        let fell = false;
+        let landed = false;
+        for (let s = 0; s < 1.5; s += PHYSICS_DT) {
+          race.step(PHYSICS_DT, []);
+          fell ||= k.fallTime > 0 || k.respawned;
+          // On the road at some point (it may take a ramp straight after).
+          landed ||= k.state.grounded;
+        }
+        expect(fell, `${entry.name} at ${f}`).toBe(false);
+        expect(landed, `${entry.name} at ${f}`).toBe(true);
+      }
+    }
+  });
+
+  it('knocks aside and spins out a kart in its way, and keeps going', () => {
+    const race = humanRace(2);
+    const shell = place(race, 0, 100);
+    const victim = place(race, 1, 118);
+    give(race, 0, 'wooCannon');
+    race.step(PHYSICS_DT, [PRESS, NEUTRAL_INPUT]);
+    let hit = false;
+    for (let t = 0; t < 1.5 && !hit; t += PHYSICS_DT) {
+      race.step(PHYSICS_DT, [NEUTRAL_INPUT, NEUTRAL_INPUT]);
+      hit = race.events.some((e) => e.type === 'hit' && e.kart === victim && e.by === 'wooCannon' && e.from === shell);
+    }
+    expect(hit).toBe(true);
+    expect(victim.state.spinTime).toBeGreaterThan(0);
+    expect(shell.state.cannonTime).toBeGreaterThan(0);
+    expect(shell.state.spinTime).toBe(0);
+  });
+
+  it('goes over the wire, so others see the shell', () => {
+    const s = createKartState();
+    s.cannonTime = 2.25;
+    const back = createKartState();
+    unpackKart(packKart(s), back);
+    expect(back.cannonTime).toBe(2.25);
   });
 });
 
@@ -159,13 +248,22 @@ describe('item effects', () => {
     expect(race.items.missiles.length).toBe(0);
   });
 
-  it('Tempo Shift slows everyone else', () => {
+  it('Tempo Shift slows everyone else, the leader longest', () => {
     const race = humanRace(3);
     give(race, 2, 'tempoShift');
     race.step(PHYSICS_DT, [NEUTRAL_INPUT, NEUTRAL_INPUT, PRESS]);
-    expect(race.karts[0].state.slowTime).toBeGreaterThan(TEMPO_SLOW - 0.1);
-    expect(race.karts[1].state.slowTime).toBeGreaterThan(TEMPO_SLOW - 0.1);
-    expect(race.karts[2].state.slowTime).toBe(0);
+    const [first, second, user] = race.karts;
+    expect(first.position).toBe(1);
+    expect(first.state.slowTime).toBeGreaterThan(TEMPO_SLOW_FIRST - 0.1);
+    expect(second.state.slowTime).toBeGreaterThan(0);
+    expect(second.state.slowTime).toBeLessThan(first.state.slowTime);
+    expect(user.state.slowTime).toBe(0);
+  });
+
+  it('Tempo Shift runs from longest in first to shortest in last', () => {
+    expect(tempoSlowFor(1, 8)).toBe(TEMPO_SLOW_FIRST);
+    expect(tempoSlowFor(8, 8)).toBe(TEMPO_SLOW_LAST);
+    for (let p = 1; p < 8; p++) expect(tempoSlowFor(p, 8)).toBeGreaterThan(tempoSlowFor(p + 1, 8));
   });
 });
 

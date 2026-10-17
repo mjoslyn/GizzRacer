@@ -107,6 +107,11 @@ export class OnlineRace {
         s.boostTime = Math.max(s.boostTime, e.t);
         return true;
       }
+      if (e.k === 'cannon') {
+        s.cannonTime = Math.max(s.cannonTime, e.t);
+        s.invulnTime = Math.max(s.invulnTime, e.t + 0.8);
+        return true;
+      }
       if (e.k === 'spin') return spinOut(s, e.t);
       if (e.k === 'wobble') return wobble(s, e.t);
       return slowDown(s, e.t);

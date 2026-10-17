@@ -141,6 +141,48 @@ function draw(kind: ItemKind): string {
       outline(3);
       break;
     }
+    case 'wooCannon': {
+      // A cannon shell flying up and right, fins behind, a face shouting WOO.
+      g.rotate(-Math.PI / 7);
+      for (const y of [-1, 1]) {
+        g.beginPath();
+        g.moveTo(-30, y * 10);
+        g.lineTo(-42, y * 26);
+        g.lineTo(-20, y * 14);
+        g.closePath();
+        g.fillStyle = y < 0 ? '#3adcff' : '#ff5ad0';
+        g.fill();
+        outline(3);
+      }
+      g.beginPath();
+      g.moveTo(-34, -18);
+      g.lineTo(10, -18);
+      g.arc(10, 0, 18, -Math.PI / 2, Math.PI / 2);
+      g.lineTo(-34, 18);
+      g.closePath();
+      g.fillStyle = grad(g, '#b47aff', '#4a1a8a');
+      g.fill();
+      outline();
+      g.fillStyle = '#ffd23a';
+      g.fillRect(-14, -18, 7, 36);
+      g.beginPath();
+      g.arc(14, -6, 5, 0, Math.PI * 2);
+      g.fillStyle = '#ffffff';
+      g.fill();
+      outline(2);
+      g.beginPath();
+      g.ellipse(18, 7, 4, 5, 0, 0, Math.PI * 2);
+      g.fillStyle = '#2a0610';
+      g.fill();
+      g.font = 'italic 900 15px Impact, "Arial Black", sans-serif';
+      g.textAlign = 'center';
+      g.lineWidth = 4;
+      g.strokeStyle = '#1a0620';
+      g.strokeText('WOO', -24, 40);
+      g.fillStyle = '#ffd23a';
+      g.fillText('WOO', -24, 40);
+      break;
+    }
   }
   return c.toDataURL();
 }
