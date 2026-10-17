@@ -133,7 +133,7 @@ Each track has its own theme (render/themes.ts): desert (Rattlesnake Run), green
 - `/tracks` track data (spline, checkpoints, item boxes, hazards) as JSON + glTF meshes
 - `/ai` CPU drivers
 - `/items`, `/ui`, `/audio`
-- Network-ready: inputs and state kept separate so Supabase Realtime can be added later
+- Network-ready: inputs and state kept separate; online play runs on PartyKit (docs/MULTIPLAYER.md)
 
 ## 12. Milestones
 1. Driving feel on a flat test track
@@ -143,7 +143,7 @@ Each track has its own theme (render/themes.ts): desert (Rattlesnake Run), green
 5. Menus, racer select, Grand Prix
 6. Art and shader pass on Rattlesnake Run
 7. Remaining 3 tracks
-8. Online multiplayer: see [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md) (8a online Time Trial runs and ghosts, 8b rooms, 8c race netcode, 8d hardening)
+8. Online multiplayer on PartyKit (Cloudflare Durable Objects): see [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md) (8a online Time Trial runs and ghosts, 8b rooms, 8c race netcode, 8d hardening)
 
 ## 13. Open Questions
 - Public release or private fan project? (affects naming and band references)
