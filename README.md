@@ -13,7 +13,7 @@ npm run build     # typecheck + production build
 
 ## Status
 
-Milestones 1 to 4 are in (driving feel, the Rattlesnake Run greybox, CPU racers, items and hazards), plus a race picker, unique racer models, themed worlds, draft layouts of Volcano Fortress and Polygondwanaland Jungle, and mobile play (touch controls, fullscreen, landscape).
+Milestones 1 to 5 are in (driving feel, the Rattlesnake Run greybox, CPU racers, items and hazards, menus and Grand Prix), plus unique racer models, themed worlds, draft layouts of Volcano Fortress and Polygondwanaland Jungle, and mobile play (touch controls, fullscreen, landscape).
 
 - Fixed 60 Hz physics with interpolated rendering (`src/core/loop.ts`)
 - Keyboard + standard gamepad input as pure `InputFrame` data, auto-accelerate by default (`src/core/input.ts`)
@@ -24,16 +24,18 @@ Milestones 1 to 4 are in (driving feel, the Rattlesnake Run greybox, CPU racers,
 - CPU racers (`src/ai/cpuDriver.ts`): own racing lane, corner braking, drifts for mini-turbos, steer around karts ahead, recover when stuck; difficulty follows the class; mild rubber-banding; kart bumps by weight; positions and results
 - Items (`src/items/items.ts`): Fuzz Pedal, Microtonal Mine, Feedback Wave, Riff Missile, Tempo Shift, with position-biased odds, a 1 s roulette and item boxes that respawn after 3 s. CPUs save items for a good moment, more often at higher classes
 - Hazards on Rattlesnake Run (`src/items/hazards.ts`): snakes crossing the S-Bends, dust devils on the Salt Flat, tumbleweeds and falling boulders in Rattle Canyon. Their motion is a pure function of race time; CPUs steer around them and around mines
+- Modes (`src/ui/menu.ts`): Grand Prix (Cup 1, all four tracks, points 15/12/10/8/6/4, standings after each race, the leader starts at the back, a podium at the end; `src/core/grandPrix.ts`, `src/render/podium.ts`), Single Race, and Time Trial (alone, no items, best times kept in the browser)
+- Sound effects synthesized with Web Audio, no samples (`src/audio/sfx.ts`): engine pitched by speed with fuzz on boosts, countdown, laps, drift sparks, hops, landings, walls, item pickups and uses, hits, and panned snake rattles and dust devil wind
 - Soundtrack from seqbaby (account `gizzracer`), looping per track with a faster cut on the final lap, a title theme and a podium loop (`src/audio/music.ts`)
 - Early-2000s look: procedural high-res textures, painted sky, lens flare, glossy karts, particle sparks, blob shadows, minimap, section banners
 
-Flow: title, then a picker (track, racer, class), a 3-lap race against a CPU for every other racer, results, back to the picker.
+Flow: title, then a picker (mode, track, racer, class). Grand Prix: race, results, cup standings, next race, and a podium after the fourth. Single Race and Time Trial: race, results, back to the picker.
 
 Controls: auto-accelerate, arrows steer, Down brakes/reverses, Shift/Space hop+drift (tap at a ramp lip for a trick), E (or X, gamepad L1) item, Q look back, Esc pause. Touch: drag on the left half to steer, DRIFT, BRAKE and ITEM on the right.
 
 Phones: the first tap goes fullscreen and locks to landscape where the browser allows it (Android Chrome). Held upright, the game shows a "turn your phone sideways" card and pauses the race. iPhone Safari can't go fullscreen from a page, so the title suggests Share, Add to Home Screen; the web app manifest launches it fullscreen in landscape from there.
 
-In a race: `R` restart, `M` manual throttle, `N` music on/off. `?showroom` shows every racer on a turntable. In the console, `gizz.warp(0.5)` jumps halfway round the lap and `gizz.autopilot()` lets the CPU drive your kart, `gizz.give('riffMissile')` fills the item slot.
+In a race: `R` restart, `M` manual throttle, `N` music on/off, `B` sound effects on/off. `?showroom` shows every racer on a turntable. In the console, `gizz.warp(0.5)` jumps halfway round the lap and `gizz.autopilot()` lets the CPU drive your kart, `gizz.give('riffMissile')` fills the item slot.
 
 ## Soundtrack
 

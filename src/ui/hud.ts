@@ -12,17 +12,45 @@ const FLASH_TIME = 1.4;
 /** Seconds per face of the item roulette. */
 const ROULETTE_STEP = 0.07;
 
+function renderTable(t: Table): string {
+  const rows = t.rows
+    .map(
+      (r) =>
+        `<div class="hud-standing${r.player ? ' me' : ''}"><span class="pos">${r.place}</span><span class="dot" style="background:${r.color}"></span><span class="name">${r.name}</span><span class="time">${r.value}${r.extra ? ` <small>${r.extra}</small>` : ''}</span></div>`,
+    )
+    .join('');
+  return (
+    `<div class="hud-standings-head hud-big">${t.title}</div>` +
+    (t.note ? `<div class="hud-standings-note">${t.note}</div>` : '') +
+    rows +
+    `<div class="hud-standings-next">${'ontouchstart' in window ? 'tap' : 'press any key'} to continue</div>`
+  );
+}
+
 export function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = seconds - m * 60;
   return `${m}:${s.toFixed(3).padStart(6, '0')}`;
 }
 
-export interface Standing {
+export interface TableRow {
+  place: string;
   name: string;
   color: string;
-  time: number | null;
+  /** Right-hand column: a time or a points total. */
+  value: string;
+  /** Small note after the value, e.g. points gained. */
+  extra?: string;
   player: boolean;
+}
+
+/** A results-style panel: race results, cup standings, or the podium banner. */
+export interface Table {
+  kind: 'results' | 'cup' | 'podium';
+  title: string;
+  /** Line under the title. */
+  note?: string;
+  rows: TableRow[];
 }
 
 export interface HudData {
@@ -42,8 +70,9 @@ export interface HudData {
   karts: number;
   /** Seconds until the green light; <= 0 once racing. */
   countdown: number;
-  standings: Standing[];
+  table: Table | null;
   muted: boolean;
+  sfxMuted: boolean;
   /** Item in the slot, and roulette time left (> 0 while it spins). */
   item: ItemKind | null;
   rolling: number;
@@ -78,6 +107,7 @@ export class Hud {
   private flashAt = -Infinity;
   private flashPending = false;
   private lastIcon = '';
+  private lastTable = '';
   private lastCount = '';
   private lastSection = '';
   private sectionShownAt = -Infinity;
@@ -108,7 +138,7 @@ export class Hud {
       </div>
       <div class="hud-help">
         &larr;/&rarr; steer &middot; &darr; brake/reverse &middot; Shift/Space hop+drift (tap at a ramp lip for a trick) &middot; E item &middot; Q look back &middot; Esc pause<br />
-        R restart &middot; M auto/manual throttle &middot; N music on/off
+        R restart &middot; M auto/manual throttle &middot; N music on/off &middot; B sound effects on/off
       </div>
       <div class="hud-count hud-big"></div>
       <div class="hud-banner hud-big">FINISH!</div>
@@ -123,7 +153,7 @@ export class Hud {
       </div>
       <div class="hud-title">
         <div class="hud-title-logo hud-big">GIZZRACER</div>
-        <div class="hud-title-sub">psychedelic desert kart racing</div>
+        <div class="hud-title-sub">psychedelic garage-rock kart racing</div>
         <div class="hud-title-press">${'ontouchstart' in window ? 'tap to start' : 'press any key'}</div>
         <div class="hud-title-ios">For full screen: Share &rarr; Add to Home Screen</div>
       </div>`;
@@ -175,7 +205,7 @@ export class Hud {
       .join('<br />');
     this.speed.innerHTML = `${Math.round(Math.abs(k.speed) * 3.6)}<small>km/h</small>`;
     this.surface.innerHTML = k.boostTime > 0 ? '<span class="hud-boost">BOOST!</span>' : k.surface;
-    this.racer.innerHTML = `${d.trackName}<br />${d.racerName} &middot; ${d.engineClass}${d.autoAccelerate ? '' : ' &middot; manual'}${d.muted ? ' &middot; music off' : ''}`;
+    this.racer.innerHTML = `${d.trackName}<br />${d.racerName} &middot; ${d.engineClass}${d.autoAccelerate ? '' : ' &middot; manual'}${d.muted ? ' &middot; music off' : ''}${d.sfxMuted ? ' &middot; sfx off' : ''}`;
     this.position.innerHTML = `${ordinal(d.position)}<small>/${d.karts}</small>`;
 
     // 3, 2, 1, GO! then clear.
@@ -203,18 +233,13 @@ export class Hud {
     this.driftLabel.textContent = drifting ? TIER_NAMES[tier] || 'DRIFT' : '';
     this.driftLabel.style.color = TIER_COLORS[tier];
     this.banner.textContent = d.finished ? `FINISH! ${ordinal(d.position)}` : '';
-    this.banner.classList.toggle('show', d.finished && !d.paused && d.standings.length === 0);
-    this.standings.classList.toggle('show', d.standings.length > 0 && !d.paused);
-    if (d.standings.length) {
-      this.standings.innerHTML =
-        `<div class="hud-standings-head hud-big">RESULTS</div>` +
-        d.standings
-          .map(
-            (st, i) =>
-              `<div class="hud-standing${st.player ? ' me' : ''}"><span class="pos">${ordinal(i + 1)}</span><span class="dot" style="background:${st.color}"></span><span class="name">${st.name}</span><span class="time">${st.time === null ? '...' : formatTime(st.time)}</span></div>`,
-          )
-          .join('') +
-        `<div class="hud-standings-next">${'ontouchstart' in window ? 'tap' : 'press any key'} to continue</div>`;
+    this.banner.classList.toggle('show', d.finished && !d.paused && !d.table);
+    this.standings.classList.toggle('show', !!d.table && !d.paused);
+    this.standings.dataset.kind = d.table?.kind ?? '';
+    const html = d.table ? renderTable(d.table) : '';
+    if (html !== this.lastTable) {
+      this.lastTable = html;
+      this.standings.innerHTML = html;
     }
     this.pause.classList.toggle('show', d.paused);
     this.updateItem(d, now);

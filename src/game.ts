@@ -5,9 +5,11 @@ import { FixedLoop } from './core/loop';
 import { lerp, lerpAngle } from './core/math';
 import { CPU_SKILL, CpuDriver } from './ai/cpuDriver';
 import { MusicPlayer, type MusicCue } from './audio/music';
-import { Race, type RaceKart } from './core/race';
-import { copyKartState, createKartState, respawnKart, type KartState } from './physics/kart';
-import { RACERS } from './physics/racers';
+import { Sfx } from './audio/sfx';
+import { GrandPrix } from './core/grandPrix';
+import { Race, ordinal, type RaceKart } from './core/race';
+import { copyKartState, createKartState, driftTier, respawnKart, type KartState, type StepEvents } from './physics/kart';
+import { RACERS, type RacerDef } from './physics/racers';
 import type { HazardKind } from './items/hazards';
 import type { ItemKind } from './items/items';
 import { ChaseCamera } from './render/chaseCamera';
@@ -17,8 +19,9 @@ import { flareRingTexture, glowTexture, setTextureAnisotropy } from './render/te
 import { buildTrackView, type TrackView } from './render/trackView';
 import { TRACK_LIST } from './tracks/index';
 import { Track } from './tracks/track';
-import { Hud } from './ui/hud';
+import { Hud, formatTime, type Table, type TableRow } from './ui/hud';
 import { Menu, type MenuChoice } from './ui/menu';
+import { Podium } from './render/podium';
 import { ScreenFit } from './ui/screen';
 import { TouchControls } from './ui/touch';
 const SUN_DIR = new THREE.Vector3(-0.5, 0.55, -0.65).normalize();
@@ -55,6 +58,7 @@ scene.add(sunAnchor);
 const input = new InputManager();
 const hud = new Hud(document.body);
 const music = new MusicPlayer();
+const sfx = new Sfx(() => music.context);
 
 /** Grid slot the player starts from; CPUs fill the rest. */
 const PLAYER_SLOT = 4;
@@ -62,13 +66,19 @@ const PLAYER_SLOT = 4;
 const RESULTS_DELAY = 2.5;
 
 /**
- * title -> menu -> race -> results -> menu. Behind the title and the menu,
- * CPUs race the chosen track as an attract mode.
+ * title -> menu -> race -> results -> menu. A Grand Prix goes
+ * results -> standings -> next race, and after the last one -> podium.
+ * Behind the title and the menu, CPUs race the chosen track as an attract mode.
  */
-type Mode = 'title' | 'menu' | 'race' | 'results';
+type Mode = 'title' | 'menu' | 'race' | 'results' | 'standings' | 'podium';
 let mode: Mode = 'title';
 
-let choice: MenuChoice = { track: 1, racer: RACERS[0], engine: '100cc' };
+let choice: MenuChoice = { mode: 'grandPrix', track: 1, racer: RACERS[0], engine: '100cc' };
+/** The cup in progress, if racing a Grand Prix. */
+let gp: GrandPrix | null = null;
+let podium: Podium | null = null;
+/** Time Trial result line for the results screen. */
+let trialNote = '';
 let track: Track;
 let trackView: TrackView | null = null;
 let race: Race;
@@ -82,10 +92,14 @@ let raceSeed = 1;
 let frozen = false;
 let lastInput: InputFrame = NEUTRAL_INPUT;
 let musicMuted = false;
+let sfxMuted = false;
+/** What the player's kart was doing last tick, to turn changes into sounds. */
+const heard = { count: 0, lap: 0, tier: 0, rolling: false };
 const snapshots = new Map<RaceKart, KartState>();
 
 const menu = new Menu(document.body, choice, onMenuChange, (c) => {
   choice = { ...c };
+  gp = c.mode === 'grandPrix' ? new GrandPrix(defaultGrid(c.racer), TRACK_LIST.map((_, i) => i)) : null;
   startRace(true);
 });
 const touch = new TouchControls(document.body, input, () => input.requestPause());
@@ -103,7 +117,28 @@ function setMode(next: Mode): void {
 
 function onMenuChange(c: MenuChoice, row: string): void {
   choice = { ...c };
-  if (row === 'track') loadTrack(choice.track);
+  sfx.menu();
+  if (row === 'track' || row === 'mode') {
+    const idx = menuTrack();
+    if (track.def.id !== TRACK_LIST[idx].id) loadTrack(idx);
+  }
+}
+
+/** The track the menu is showing: the cup's first for a Grand Prix. */
+function menuTrack(): number {
+  return choice.mode === 'grandPrix' ? 0 : choice.track;
+}
+
+/** The track the next race with the player runs on. */
+function raceTrack(): number {
+  return gp ? gp.trackIndex : choice.track;
+}
+
+/** CPUs fill the grid; the player starts from PLAYER_SLOT. */
+function defaultGrid(racer: RacerDef | null): RacerDef[] {
+  const grid = RACERS.filter((r) => r !== racer);
+  if (racer) grid.splice(Math.min(PLAYER_SLOT, grid.length), 0, racer);
+  return grid;
 }
 
 function loadTrack(index: number): void {
@@ -129,19 +164,23 @@ function loadTrack(index: number): void {
   startRace(false);
 }
 
-/** One kart per racer. With a human, they take PLAYER_SLOT and CPUs take the rest; without, all CPUs. */
+/**
+ * One kart per racer: the Grand Prix grid, the default grid for a single
+ * race, the player alone in Time Trial, or all CPUs for the attract mode.
+ */
 function startRace(withPlayer: boolean): void {
-  if (withPlayer && track.def.id !== TRACK_LIST[choice.track].id) {
-    loadTrack(choice.track);
+  if (withPlayer && track.def.id !== TRACK_LIST[raceTrack()].id) {
+    loadTrack(raceTrack());
   }
-  race = new Race(track, raceSeed++);
+  const trial = withPlayer && choice.mode === 'timeTrial';
+  race = new Race(track, raceSeed++, !trial);
   player = null;
-  const racer = withPlayer ? choice.racer : null;
-  const cpus = RACERS.filter((r) => r !== racer);
-  const playerSlot = Math.min(PLAYER_SLOT, RACERS.length - 1);
-  for (let slot = 0, c = 0; slot < RACERS.length; slot++) {
-    if (racer && slot === playerSlot) player = race.addKart(racer, choice.engine, null);
-    else race.addKart(cpus[c++], choice.engine, CPU_SKILL[choice.engine]);
+  trialNote = '';
+  Object.assign(heard, { count: 0, lap: 0, tier: 0, rolling: false });
+  const grid = !withPlayer ? defaultGrid(null) : trial ? [choice.racer] : gp ? gp.grid() : defaultGrid(choice.racer);
+  for (const r of grid) {
+    if (withPlayer && r === choice.racer) player = race.addKart(r, choice.engine, null);
+    else race.addKart(r, choice.engine, CPU_SKILL[choice.engine]);
   }
   // Attract mode skips the countdown.
   if (!withPlayer) race.time = 0;
@@ -170,6 +209,7 @@ function focus(): RaceKart {
 
 function step(dt: number): void {
   lastInput = input.sample();
+  if (mode === 'podium') return;
   const inputs = race.karts.map((k) => (k === player ? lastInput : undefined));
   const events = race.step(dt, inputs);
   events.forEach((ev, i) => {
@@ -185,16 +225,24 @@ function step(dt: number): void {
   if (ev.trick) chase.bump(0.6);
   if (ev.wallHit > 0.3) chase.bump(ev.wallHit);
   if (player.respawned) chase.snap();
+  playerSounds(player, ev);
   for (const e of race.events) {
+    if (e.type === 'pickup' && e.kart === player) sfx.pickup();
+    if (e.type === 'use' && e.kart === player) sfx.use(e.item);
     if (e.type !== 'hit') continue;
     if (e.kart === player) {
       hud.flash(HIT_TEXT[e.by]);
+      sfx.hurt(e.by);
       if (e.by !== 'tempoShift') chase.bump(0.5);
     } else if (e.from === player && e.by !== 'tempoShift') {
       hud.flash(`HIT ${(e.kart as RaceKart).racer.name.toUpperCase()}!`);
+      sfx.scored();
     }
   }
-  if (mode === 'race' && player.finishTime !== null && race.time - player.finishTime > RESULTS_DELAY) setMode('results');
+  if (mode === 'race' && player.finishTime !== null && race.time - player.finishTime > RESULTS_DELAY) {
+    if (choice.mode === 'timeTrial') trialNote = saveTrial(player.finishTime, Math.min(...player.lapTimes));
+    setMode('results');
+  }
   updateMusic(player);
 }
 
@@ -216,6 +264,58 @@ function dispose(group: THREE.Group): void {
   group.traverse((o) => {
     if (o instanceof THREE.Mesh || o instanceof THREE.LineSegments) o.geometry.dispose();
   });
+}
+
+/** Countdown beeps, laps, drift sparks, hops, landings and the like for the player's kart. */
+function playerSounds(p: RaceKart, ev: StepEvents): void {
+  const count = race.time < 0 ? Math.ceil(-race.time) : 0;
+  if (count !== heard.count) {
+    if (count > 0) sfx.countdown(false);
+    else if (heard.count === 1) sfx.countdown(true);
+    heard.count = count;
+  }
+  if (p.laps.lap !== heard.lap) {
+    if (p.finishTime !== null) sfx.finish();
+    else if (p.laps.lap > heard.lap) sfx.lap(p.laps.lap === track.def.laps - 1);
+    heard.lap = p.laps.lap;
+  }
+  const s = p.state;
+  const tier = s.driftDir !== 0 ? driftTier(s.driftCharge) : 0;
+  if (tier > heard.tier) sfx.driftTier(tier);
+  heard.tier = tier;
+  const rolling = p.rolling > 0;
+  if (heard.rolling && !rolling && p.item) sfx.itemReady();
+  heard.rolling = rolling;
+  if (ev.hopped) sfx.hop();
+  if (ev.landed > 2) sfx.land(ev.landed);
+  if (ev.wallHit > 0.2) sfx.wall(ev.wallHit);
+  if (ev.boostTier > 0) sfx.boost(ev.boostTier);
+  if (ev.trick) sfx.trick();
+}
+
+/** Engine note and hazard ambience, every frame. */
+function updateSounds(dt: number): void {
+  const p = player;
+  const racing = mode === 'race' && !loop.paused && p !== null;
+  const s = p?.state;
+  sfx.updateEngine(racing ? 1 : 0, s ? Math.abs(s.speed) / p!.baseParams.topSpeed : 0, !!s && s.boostTime > 0, !!s && s.driftDir !== 0);
+  if (!racing || !s) {
+    sfx.hazards(dt, null, null);
+    return;
+  }
+  const near = (kind: HazardKind) => {
+    let best: { d: number; pan: number } | null = null;
+    for (const h of race.hazards.poses) {
+      if (h.kind !== kind) continue;
+      const dx = h.x - s.x;
+      const dz = h.z - s.z;
+      const d = Math.hypot(dx, dz);
+      // Pan by which side of the kart it's on.
+      if (!best || d < best.d) best = { d, pan: d > 0 ? (dx * -Math.cos(s.heading) + dz * Math.sin(s.heading)) / d : 0 };
+    }
+    return best;
+  };
+  sfx.hazards(dt, near('snakes'), near('dustDevils'));
 }
 
 function updateMusic(p: RaceKart): void {
@@ -256,14 +356,19 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
   elapsed += dt;
 
   const snaps = race.karts.map((k) => interpolate(k, alpha));
-  race.karts.forEach((k, i) => views[i].update(snaps[i], k.params.topSpeed, dt, elapsed));
   const f = focus();
   const s = snaps[race.karts.indexOf(f)];
-  chase.update(s, f.params.topSpeed, player ? lastInput.lookBack : false, dt);
+  if (podium) {
+    podium.update(dt, elapsed, camera);
+  } else {
+    race.karts.forEach((k, i) => views[i].update(snaps[i], k.params.topSpeed, dt, elapsed));
+    chase.update(s, f.params.topSpeed, player ? lastInput.lookBack : false, dt);
+  }
   trackView!.update(elapsed, camera.position);
   itemsView!.update(elapsed);
   hazardsView!.update(elapsed);
   sunAnchor.position.copy(camera.position).addScaledVector(SUN_DIR, 1400);
+  updateSounds(dt);
 
   const finished = f.finishTime !== null;
   hud.update(
@@ -275,7 +380,7 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
       lapTimes: f.lapTimes,
       racerName: f.racer.name,
       engineClass: choice.engine,
-      trackName: track.def.name,
+      trackName: gp && !gp.finished ? `${track.def.name} · race ${gp.round + 1}/${gp.tracks.length}` : track.def.name,
       section: f.section,
       autoAccelerate: input.autoAccelerate,
       finished,
@@ -283,13 +388,9 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
       position: f.position,
       karts: race.karts.length,
       countdown: -race.time,
-      standings:
-        mode === 'results'
-          ? [...race.karts]
-              .sort((a, b) => a.position - b.position)
-              .map((k) => ({ name: k.racer.name, color: hex(k.racer.color), time: k.finishTime, player: k === player }))
-          : [],
+      table: table(),
       muted: musicMuted,
+      sfxMuted,
       item: player?.item ?? null,
       rolling: player?.rolling ?? 0,
     },
@@ -299,13 +400,119 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
   renderer.render(scene, camera);
 });
 
-/** Any key or tap moves past the title and the results. The first one also unlocks audio. */
+/** The panel for the results, cup standings and podium screens. */
+function table(): Table | null {
+  const kartRow = (k: RaceKart, i: number): TableRow => ({
+    place: ordinal(i + 1),
+    name: k.racer.name,
+    color: hex(k.racer.color),
+    value: k.finishTime === null ? '...' : formatTime(k.finishTime),
+    player: k === player,
+  });
+  const cupRows = (n: number) =>
+    gp!
+      .standings()
+      .slice(0, n)
+      .map((e, i): TableRow => ({
+        place: ordinal(i + 1),
+        name: e.racer.name,
+        color: hex(e.racer.color),
+        value: `${e.points} pts`,
+        extra: mode === 'standings' && e.gained ? `+${e.gained}` : undefined,
+        player: e.racer === choice.racer,
+      }));
+  if (mode === 'results') {
+    const title = gp ? `RACE ${gp.round + 1}/${gp.tracks.length} RESULTS` : choice.mode === 'timeTrial' ? 'TIME TRIAL' : 'RESULTS';
+    return { kind: 'results', title, note: trialNote || undefined, rows: finishOrder().map(kartRow) };
+  }
+  if (mode === 'standings' && gp) {
+    const next = gp.finished ? 'Final standings' : `Next: ${TRACK_LIST[gp.trackIndex].name}`;
+    return { kind: 'cup', title: 'CUP STANDINGS', note: next, rows: cupRows(RACERS.length) };
+  }
+  if (mode === 'podium' && gp) {
+    const champ = gp.standings()[0];
+    const me = gp.standings().findIndex((e) => e.racer === choice.racer) + 1;
+    const note = champ.racer === choice.racer ? `You win the ${choice.engine} cup!` : `You finished ${ordinal(me)}`;
+    return { kind: 'podium', title: `${champ.racer.name.toUpperCase()} WINS!`, note, rows: cupRows(3) };
+  }
+  return null;
+}
+
+/** Karts by finishing place, unfinished ones by where they are now. */
+function finishOrder(): RaceKart[] {
+  return [...race.karts].sort((a, b) => a.position - b.position);
+}
+
+/** Stores a Time Trial run and describes it against the best so far. */
+function saveTrial(total: number, bestLap: number): string {
+  const key = `gizzracer.tt.${track.def.id}.${choice.engine}`;
+  let prev: { total: number; lap: number } | null = null;
+  try {
+    prev = JSON.parse(localStorage.getItem(key) ?? 'null');
+  } catch {
+    // Storage blocked (private mode): no records, no harm.
+  }
+  const best = { total: Math.min(total, prev?.total ?? Infinity), lap: Math.min(bestLap, prev?.lap ?? Infinity) };
+  try {
+    localStorage.setItem(key, JSON.stringify(best));
+  } catch {
+    // As above.
+  }
+  if (!prev) return `First record set! Best lap ${formatTime(bestLap)}`;
+  if (total < prev.total) return `NEW RECORD! ${formatTime(prev.total - total).replace(/^0:0?/, '-')}s`;
+  return `Record ${formatTime(prev.total)} · best lap ${formatTime(best.lap)}`;
+}
+
+/** Back to the picker, with the attract race on the picker's track. */
+function toMenu(): void {
+  gp = null;
+  endPodium();
+  setMode('menu');
+  if (track.def.id !== TRACK_LIST[menuTrack()].id) loadTrack(menuTrack());
+  else startRace(false);
+}
+
+function startPodium(): void {
+  const top3 = gp!.standings().slice(0, 3).map((e) => e.racer);
+  podium = new Podium(track, top3);
+  scene.add(podium.group);
+  for (const v of views) v.root.visible = v.fx.visible = false;
+  itemsView!.group.visible = hazardsView!.group.visible = false;
+  setMode('podium');
+  music.play('podium');
+}
+
+function endPodium(): void {
+  if (!podium) return;
+  scene.remove(podium.group);
+  podium.dispose();
+  podium = null;
+  chase.snap();
+}
+
+/** Any key or tap moves past the title, results, standings and podium. The first one also unlocks audio. */
 function advance(): boolean {
   music.unlock();
-  if (mode === 'title' || mode === 'results') {
-    setMode('menu');
-    if (track.def.id !== TRACK_LIST[choice.track].id) loadTrack(choice.track);
-    else startRace(false);
+  if (mode === 'title') {
+    toMenu();
+    return true;
+  }
+  if (mode === 'results') {
+    if (!gp) {
+      toMenu();
+      return true;
+    }
+    gp.record(finishOrder().map((k) => k.racer));
+    setMode('standings');
+    return true;
+  }
+  if (mode === 'standings') {
+    if (gp?.finished) startPodium();
+    else startRace(true);
+    return true;
+  }
+  if (mode === 'podium') {
+    toMenu();
     return true;
   }
   return false;
@@ -316,10 +523,7 @@ hud.onPauseAction = (action) => {
     loop.paused = false;
     touch.setVisible(true);
   } else if (action === 'restart') startRace(true);
-  else if (action === 'quit') {
-    setMode('menu');
-    startRace(false);
-  }
+  else if (action === 'quit') toMenu();
 };
 
 // iOS only lets audio start inside a touch, and is strictest about touchend.
@@ -349,6 +553,7 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyR') startRace(true);
   else if (e.code === 'KeyM') input.autoAccelerate = !input.autoAccelerate;
   else if (e.code === 'KeyN') musicMuted = music.toggleMute();
+  else if (e.code === 'KeyB') sfxMuted = sfx.toggleMute();
 });
 
 window.addEventListener('resize', () => {

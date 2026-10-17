@@ -90,8 +90,9 @@ export class Race {
   constructor(
     readonly track: Track,
     seed = 1,
+    items = true,
   ) {
-    this.items = new ItemSystem(track, seed);
+    this.items = new ItemSystem(track, seed, items);
     this.hazards = new HazardSystem(track);
     this.hazards.update(this.time);
   }

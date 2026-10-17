@@ -126,9 +126,11 @@ export class ItemSystem {
   constructor(
     private readonly track: Track,
     seed = 1,
+    /** False for Time Trial: no boxes on the road. */
+    withBoxes = true,
   ) {
     this.rand = seededRandom(seed);
-    for (const row of track.def.itemBoxes) {
+    for (const row of withBoxes ? track.def.itemBoxes : []) {
       const s = track.mainS(row.s);
       const p = pointAt(track.spline, s);
       const hw = track.main.halfWidthAtS(s) * 0.7;

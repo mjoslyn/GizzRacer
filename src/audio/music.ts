@@ -75,6 +75,11 @@ export class MusicPlayer {
     void ctx.resume();
   }
 
+  /** The shared AudioContext once unlocked; sound effects play on it too. */
+  get context(): AudioContext | null {
+    return this.ctx;
+  }
+
   get unlocked(): boolean {
     return this.ctx !== null;
   }

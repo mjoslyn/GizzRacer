@@ -108,12 +108,16 @@ Each track has its own theme (render/themes.ts): desert (Rattlesnake Run), green
 
 ## 9. Game Flow and UI
 - Title > Mode select > Class > Racer select > Cup/Track > Race > Results > Next race
-- Now: Title > picker (track, racer, class) > Race (3 laps) > Results > picker. CPUs race the chosen track behind the title and picker
+- Now: Title > picker (mode, track, racer, class) > Race (3 laps) > Results > Cup standings > next race ... > Podium (Grand Prix); Single Race and Time Trial go back to the picker after the results. CPUs race the chosen track behind the title and picker
+- Grand Prix grid: first race as picked (player in 5th), then the standings reversed so the leader starts at the back. Ties go to the better place in the latest race
+- Time Trial: alone, no item boxes, best total and lap per track and class saved in the browser
+- Extra mode beyond the spec: Single Race (any track, full field)
 - HUD: position, lap counter, item slot, minimap, timer, drift spark meter
 - Grand Prix points: 15, 12, 10, 8, 6, 4, 2, 1
 
 ## 10. Audio
-- Music: the seqbaby soundtrack pre-rendered to looping MP3s (tools/render-soundtrack.mjs), played with Web Audio for sample-accurate loops. Howler.js still an option for SFX
+- Music: the seqbaby soundtrack pre-rendered to looping MP3s (tools/render-soundtrack.mjs), played with Web Audio for sample-accurate loops
+- SFX: synthesized on the same AudioContext (audio/sfx.ts), no sample files
 - Engine pitch tied to speed; fuzz distortion on boosts
 - Positional audio for hazards and nearby karts
 

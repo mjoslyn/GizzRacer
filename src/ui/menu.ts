@@ -1,17 +1,27 @@
 import { ENGINE_CLASSES, RACERS, type EngineClass, type RacerDef } from '../physics/racers';
 import { TRACK_LIST } from '../tracks/index';
 
+export type RaceMode = 'grandPrix' | 'single' | 'timeTrial';
+
+export const MODE_NAMES: Record<RaceMode, string> = {
+  grandPrix: 'Grand Prix',
+  single: 'Single Race',
+  timeTrial: 'Time Trial',
+};
+const MODES = Object.keys(MODE_NAMES) as RaceMode[];
+
 export interface MenuChoice {
+  mode: RaceMode;
   track: number;
   racer: RacerDef;
   engine: EngineClass;
 }
 
-type Row = 'track' | 'racer' | 'engine';
-const ROWS: Row[] = ['track', 'racer', 'engine'];
+type Row = 'mode' | 'track' | 'racer' | 'engine';
+const ROWS: Row[] = ['mode', 'track', 'racer', 'engine'];
 const STAT_NAMES = ['speed', 'accel', 'weight', 'handling'] as const;
 
-/** Track, racer and class picker. Keyboard, gamepad-ish arrows, mouse and touch. */
+/** Mode, track, racer and class picker. Keyboard, gamepad-ish arrows, mouse and touch. */
 export class Menu {
   private readonly el = document.createElement('div');
   private row = 0;
@@ -52,8 +62,8 @@ export class Menu {
   /** Returns true if the key was used. */
   key(code: string): boolean {
     if (!this.visible) return false;
-    if (code === 'ArrowUp' || code === 'KeyW') this.row = (this.row + ROWS.length - 1) % ROWS.length;
-    else if (code === 'ArrowDown' || code === 'KeyS') this.row = (this.row + 1) % ROWS.length;
+    if (code === 'ArrowUp' || code === 'KeyW') this.moveRow(-1);
+    else if (code === 'ArrowDown' || code === 'KeyS') this.moveRow(1);
     else if (code === 'ArrowLeft' || code === 'KeyA') return this.change(-1), true;
     else if (code === 'ArrowRight' || code === 'KeyD') return this.change(1), true;
     else if (code === 'Enter' || code === 'Space') return this.onStart(this.choice), true;
@@ -62,11 +72,19 @@ export class Menu {
     return true;
   }
 
+  /** A Grand Prix runs every track, so its track row is skipped. */
+  private moveRow(dir: number): void {
+    do this.row = (this.row + dir + ROWS.length) % ROWS.length;
+    while (ROWS[this.row] === 'track' && this.choice.mode === 'grandPrix');
+  }
+
   private change(dir: number): void {
     const c = this.choice;
     const row = ROWS[this.row];
     const step = <T>(list: readonly T[], v: T) => list[(list.indexOf(v) + dir + list.length) % list.length];
-    if (row === 'track') c.track = (c.track + dir + TRACK_LIST.length) % TRACK_LIST.length;
+    if (row === 'track' && c.mode === 'grandPrix') return;
+    if (row === 'mode') c.mode = step(MODES, c.mode);
+    else if (row === 'track') c.track = (c.track + dir + TRACK_LIST.length) % TRACK_LIST.length;
     else if (row === 'racer') c.racer = step(RACERS, c.racer);
     else c.engine = step(ENGINE_CLASSES, c.engine);
     this.render();
@@ -90,7 +108,8 @@ export class Menu {
     this.el.innerHTML = `
       <div class="menu-panel">
         <div class="menu-title hud-big">CHOOSE YOUR RACE</div>
-        ${line('track', 'Track', TRACK_LIST[c.track].name)}
+        ${line('mode', 'Mode', MODE_NAMES[c.mode])}
+        ${c.mode === 'grandPrix' ? `<div class="menu-row menu-cup"><div class="menu-label">Cup</div><div class="menu-value">Cup 1: ${TRACK_LIST.length} races</div></div>` : line('track', 'Track', TRACK_LIST[c.track].name)}
         ${line('racer', 'Racer', c.racer.name, `<div class="menu-stats">${stats}</div>`)}
         ${line('engine', 'Class', c.engine)}
         <button class="menu-start hud-big" data-start>RACE!</button>
