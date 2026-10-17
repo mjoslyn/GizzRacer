@@ -115,7 +115,7 @@ Each track has its own theme (render/themes.ts): desert (Rattlesnake Run), green
 - Title > Mode select > Class > Racer select > Cup/Track > Race > Results > Next race
 - Now: Title > picker (mode, track, racer, class) > Race (3 laps) > Results > Cup standings > next race ... > Podium (Grand Prix); Single Race and Time Trial go back to the picker after the results. CPUs race the chosen track behind the title and picker
 - Grand Prix grid: first race as picked (player in 5th), then the standings reversed so the leader starts at the back. Ties go to the better place in the latest race
-- Time Trial: alone, no item boxes, best total and lap per track and class saved in the browser
+- Time Trial: alone, no item boxes, best total and lap per track and class saved in the browser. The fastest run per track and class is recorded (15 samples/s, about 75 KB) and replays as a see-through ghost
 - Extra mode beyond the spec: Single Race (any track, full field)
 - HUD: position, lap counter, item slot, minimap, timer, drift spark meter
 - Grand Prix points: 15, 12, 10, 8, 6, 4, 2, 1

@@ -1,11 +1,12 @@
 import * as THREE from 'three';
 import { Lensflare, LensflareElement } from 'three/addons/objects/Lensflare.js';
 import { InputManager, NEUTRAL_INPUT, type InputFrame } from './core/input';
-import { FixedLoop } from './core/loop';
+import { FixedLoop, PHYSICS_DT } from './core/loop';
 import { clamp, damp, lerp, lerpAngle } from './core/math';
 import { CPU_SKILL, CpuDriver } from './ai/cpuDriver';
 import { MusicPlayer, type MusicCue } from './audio/music';
 import { Sfx } from './audio/sfx';
+import { GhostRecorder, decodeGhost, encodeGhost, ghostPose, type GhostRun } from './core/ghost';
 import { GrandPrix } from './core/grandPrix';
 import { Race, ordinal, type RaceKart } from './core/race';
 import { copyKartState, createKartState, driftTier, respawnKart, type KartState, type StepEvents } from './physics/kart';
@@ -87,6 +88,9 @@ let gp: GrandPrix | null = null;
 let podium: Podium | null = null;
 /** Time Trial result line for the results screen. */
 let trialNote = '';
+/** Time Trial: the run being recorded, and the best run replaying as a see-through kart. */
+let recorder: GhostRecorder | null = null;
+let ghost: { run: GhostRun; view: KartView; state: KartState } | null = null;
 let track: Track;
 let trackView: TrackView | null = null;
 let race: Race;
@@ -107,6 +111,8 @@ let musicMuted = false;
 let sfxMuted = false;
 /** What the player's kart was doing last tick, to turn changes into sounds. */
 const heard = { count: 0, lap: 0, tier: 0, rolling: false };
+/** Seconds the player has been driving against the track. */
+let wrongWay = 0;
 const snapshots = new Map<RaceKart, KartState>();
 
 const menu = new Menu(document.body, choice, onMenuChange, (c) => {
@@ -187,6 +193,7 @@ function startRace(withPlayer: boolean): void {
   }
   const trial = withPlayer && choice.mode === 'timeTrial';
   race = new Race(track, raceSeed++, !trial);
+  setupGhost(trial);
   player = null;
   trialNote = '';
   Object.assign(heard, { count: 0, lap: 0, tier: 0, rolling: false });
@@ -214,6 +221,42 @@ function startRace(withPlayer: boolean): void {
     setMode('race');
     music.play(track.def.music.lap as MusicCue);
   }
+}
+
+const ghostKey = () => `gizzracer.ghost.${track.def.id}.${choice.engine}`;
+
+/** In Time Trial, starts recording and brings back the best run so far as a ghost. */
+function setupGhost(trial: boolean): void {
+  if (ghost) scene.remove(ghost.view.root, ghost.view.fx);
+  ghost = null;
+  recorder = trial ? new GhostRecorder() : null;
+  if (!trial) return;
+  let run: GhostRun | null = null;
+  try {
+    const text = localStorage.getItem(ghostKey());
+    run = text ? decodeGhost(text) : null;
+  } catch {
+    // Storage blocked: race without a ghost.
+  }
+  if (!run) return;
+  const id = run.racerId;
+  const racer = RACERS.find((r) => r.id === id) ?? choice.racer;
+  const view = new KartView(racer);
+  // See-through, no shadow or sparks: it isn't really there.
+  view.root.traverse((o) => {
+    if (!(o instanceof THREE.Mesh)) return;
+    const mats = (Array.isArray(o.material) ? o.material : [o.material]).map((m: THREE.Material) => {
+      const c = m.clone();
+      c.transparent = true;
+      c.opacity = 0.38;
+      c.depthWrite = false;
+      return c;
+    });
+    o.material = Array.isArray(o.material) ? mats : mats[0];
+  });
+  view.fx.visible = false;
+  scene.add(view.root, view.fx);
+  ghost = { run, view, state: createKartState() };
 }
 
 /** Swoops along the last stretch of the lap down onto the grid. */
@@ -264,6 +307,8 @@ function step(dt: number): void {
   if (ev.wallHit > 0.3) chase.bump(ev.wallHit);
   if (player.respawned) chase.snap();
   playerSounds(player, ev);
+  checkWrongWay(player, dt);
+  if (recorder && player.finishTime === null) recorder.record(race.time, player.state);
   for (const e of race.events) {
     if (e.type === 'pickup' && e.kart === player) sfx.pickup();
     if (e.type === 'use' && e.kart === player) sfx.use(e.item);
@@ -278,7 +323,7 @@ function step(dt: number): void {
     }
   }
   if (mode === 'race' && player.finishTime !== null && race.time - player.finishTime > RESULTS_DELAY) {
-    if (choice.mode === 'timeTrial') trialNote = saveTrial(player.finishTime, Math.min(...player.lapTimes));
+    if (choice.mode === 'timeTrial') trialNote = saveTrial(player.finishTime, Math.min(...player.lapTimes), player.racer.id);
     setMode('results');
   }
   updateMusic(player);
@@ -318,7 +363,11 @@ function playerSounds(p: RaceKart, ev: StepEvents): void {
   }
   if (p.laps.lap !== heard.lap) {
     if (p.finishTime !== null) sfx.finish();
-    else if (p.laps.lap > heard.lap) sfx.lap(p.laps.lap === track.def.laps - 1);
+    else if (p.laps.lap > heard.lap) {
+      const final = p.laps.lap === track.def.laps - 1;
+      sfx.lap(final);
+      hud.flash(final ? 'FINAL LAP!' : `LAP ${p.laps.lap + 1}`);
+    }
     heard.lap = p.laps.lap;
   }
   const s = p.state;
@@ -333,6 +382,16 @@ function playerSounds(p: RaceKart, ev: StepEvents): void {
   if (ev.wallHit > 0.2) sfx.wall(ev.wallHit);
   if (ev.boostTier > 0) sfx.boost(ev.boostTier);
   if (ev.trick) sfx.trick();
+}
+
+/** Warns a player who has been driving the wrong way for a second, every 1.5 s until they turn round. */
+function checkWrongWay(p: RaceKart, dt: number): void {
+  const s = p.state;
+  const a = pointAt(track.spline, p.progressS);
+  const along = Math.sin(s.heading) * a.tx + Math.cos(s.heading) * a.tz;
+  const backwards = race.started && p.finishTime === null && s.speed > 4 && along < -0.3 * Math.hypot(a.tx, a.tz);
+  wrongWay = backwards ? wrongWay + dt : 0;
+  if (wrongWay > 1 && (wrongWay - 1) % 1.5 < dt) hud.flash('WRONG WAY!');
 }
 
 /** How hard the tires squeal, 0..1: always in a drift, and on hard turns at speed. Dirt doesn't squeal. */
@@ -408,6 +467,10 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
   const snaps = race.karts.map((k) => interpolate(k, alpha));
   const f = focus();
   const s = snaps[race.karts.indexOf(f)];
+  if (ghost) {
+    ghostPose(ghost.run, Math.max(0, race.time - (1 - alpha) * PHYSICS_DT), ghost.state);
+    ghost.view.update(ghost.state, 30, dt, elapsed);
+  }
   if (podium) {
     podium.update(dt, elapsed, camera);
   } else if (intro > 0) {
@@ -436,7 +499,7 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
       lapTimes: f.lapTimes,
       racerName: f.racer.name,
       engineClass: choice.engine,
-      trackName: gp && !gp.finished ? `${track.def.name} · race ${gp.round + 1}/${gp.tracks.length}` : track.def.name,
+      trackName: gp && !gp.finished ? `${track.def.name} · race ${gp.round + 1}/${gp.tracks.length}` : ghost ? `${track.def.name} · ghost ${formatTime(ghost.run.total)}` : track.def.name,
       section: f.section,
       autoAccelerate: input.autoAccelerate,
       finished,
@@ -508,7 +571,7 @@ function finishOrder(): RaceKart[] {
 }
 
 /** Stores a Time Trial run and describes it against the best so far. */
-function saveTrial(total: number, bestLap: number): string {
+function saveTrial(total: number, bestLap: number, racerId: string): string {
   const key = `gizzracer.tt.${track.def.id}.${choice.engine}`;
   let prev: { total: number; lap: number } | null = null;
   try {
@@ -519,8 +582,10 @@ function saveTrial(total: number, bestLap: number): string {
   const best = { total: Math.min(total, prev?.total ?? Infinity), lap: Math.min(bestLap, prev?.lap ?? Infinity) };
   try {
     localStorage.setItem(key, JSON.stringify(best));
+    // The fastest run becomes the ghost to beat.
+    if (recorder && (!prev || total < prev.total)) localStorage.setItem(ghostKey(), encodeGhost(recorder.finish(racerId, total)));
   } catch {
-    // As above.
+    // As above (or out of space for the ghost).
   }
   if (!prev) return `First record set! Best lap ${formatTime(bestLap)}`;
   if (total < prev.total) return `NEW RECORD! ${formatTime(prev.total - total).replace(/^0:0?/, '-')}s`;

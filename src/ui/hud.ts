@@ -115,6 +115,7 @@ export class Hud {
   private lastIntro = '';
   private lastTable = '';
   private lastCount = '';
+  private lastPosition = 0;
   private lastSection = '';
   private sectionShownAt = -Infinity;
 
@@ -215,6 +216,15 @@ export class Hud {
     this.surface.innerHTML = k.boostTime > 0 ? '<span class="hud-boost">BOOST!</span>' : k.surface;
     this.racer.innerHTML = `${d.trackName}<br />${d.racerName} &middot; ${d.engineClass}${d.autoAccelerate ? '' : ' &middot; manual'}${d.muted ? ' &middot; music off' : ''}${d.sfxMuted ? ' &middot; sfx off' : ''}`;
     this.position.innerHTML = `${ordinal(d.position)}<small>/${d.karts}</small>`;
+    if (d.position !== this.lastPosition) {
+      // Pop on every change, green when gaining a place, red when losing one.
+      if (this.lastPosition && d.countdown <= 0) {
+        this.position.classList.remove('gain', 'lose');
+        void this.position.offsetWidth;
+        this.position.classList.add(d.position < this.lastPosition ? 'gain' : 'lose');
+      }
+      this.lastPosition = d.position;
+    }
 
     // 3, 2, 1, GO! then clear.
     const count = d.countdown > 0 ? String(Math.ceil(d.countdown)) : d.countdown > -0.8 ? 'GO!' : '';
