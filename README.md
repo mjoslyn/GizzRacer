@@ -21,4 +21,6 @@ Milestone 1 (driving feel on a flat test track):
 - Spline track with surface queries, start grid and checkpointed lap counting (`src/tracks`)
 - Chase camera, placeholder kart model with sparks/flame, HUD with drift meter and lap times
 
-Dev keys: `1`-`6` switch racer, `C` cycle class, `R` reset.
+Controls: auto-accelerate, arrows steer, Down brakes/reverses, Shift/Space hop+drift.
+
+Dev keys: `1`-`6` switch racer, `C` cycle class, `M` toggle manual throttle, `R` reset.

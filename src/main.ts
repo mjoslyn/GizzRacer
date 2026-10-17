@@ -126,6 +126,7 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
     lapTimes,
     racerName: racer.name,
     engineClass: engine,
+    autoAccelerate: input.autoAccelerate,
     paused: loop.paused,
   });
   renderer.render(scene, camera);
@@ -144,6 +145,8 @@ window.addEventListener('keydown', (e) => {
     params = kartParams(racer.stats, engine);
   } else if (e.code === 'KeyR') {
     resetRace();
+  } else if (e.code === 'KeyM') {
+    input.autoAccelerate = !input.autoAccelerate;
   }
 });
 

@@ -43,8 +43,12 @@ const STICK_DEADZONE = 0.15;
 
 const PREVENT_DEFAULT = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space']);
 
-/** Reads keyboard and the first standard gamepad into InputFrames. */
+/**
+ * Reads keyboard and the first standard gamepad into InputFrames.
+ * With auto-accelerate on, throttle is always full unless braking.
+ */
 export class InputManager {
+  autoAccelerate = true;
   private readonly down = new Set<string>();
   /** Keys pressed since the last sample, so sub-tick taps aren't lost. */
   private readonly latched = new Set<string>();
@@ -90,6 +94,8 @@ export class InputManager {
       item ||= btn(PAD.l1);
       lookBack ||= btn(PAD.y);
     }
+
+    if (this.autoAccelerate) throttle = brake > 0 ? 0 : 1;
 
     const frame: InputFrame = {
       throttle: clamp(throttle, 0, 1),

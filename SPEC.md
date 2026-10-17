@@ -15,9 +15,9 @@
 ## 3. Controls
 | Action | Keyboard | Gamepad |
 |---|---|---|
-| Accelerate | W / Up | A |
+| Accelerate | Automatic (M toggles manual: W / Up) | Automatic (manual: A) |
 | Brake / Reverse | S / Down | B |
-| Steer | A, D / Left, Right | Left stick |
+| Steer | Left, Right / A, D | Left stick |
 | Drift / Hop | Shift / Space | R1 |
 | Use item | E | L1 |
 | Look back | Q | Y |

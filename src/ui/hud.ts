@@ -18,6 +18,7 @@ export interface HudData {
   lapTimes: number[];
   racerName: string;
   engineClass: string;
+  autoAccelerate: boolean;
   paused: boolean;
 }
 
@@ -54,8 +55,8 @@ export class Hud {
         <div class="hud-surface"></div>
       </div>
       <div class="hud-help">
-        W/S accel/brake &middot; A/D steer &middot; Shift/Space hop+drift &middot; Q look back &middot; Esc pause<br />
-        1-6 racer &middot; C class &middot; R reset
+        &larr;/&rarr; steer &middot; &darr; brake/reverse &middot; Shift/Space hop+drift &middot; Q look back &middot; Esc pause<br />
+        1-6 racer &middot; C class &middot; M auto/manual throttle &middot; R reset
       </div>
       <div class="hud-pause">PAUSED</div>`;
     parent.appendChild(this.el);
@@ -81,7 +82,7 @@ export class Hud {
       .join('<br />');
     this.speed.innerHTML = `${Math.round(Math.abs(k.speed) * 3.6)}<small>km/h</small>`;
     this.surface.innerHTML = k.boostTime > 0 ? '<span class="hud-boost">BOOST</span>' : k.surface;
-    this.racer.innerHTML = `${d.racerName}<br />${d.engineClass}`;
+    this.racer.innerHTML = `${d.racerName}<br />${d.engineClass}${d.autoAccelerate ? '' : ' &middot; manual'}`;
 
     const drifting = k.driftDir !== 0;
     const tier = drifting ? driftTier(k.driftCharge) : 0;
