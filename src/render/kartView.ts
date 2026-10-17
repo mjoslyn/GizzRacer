@@ -3,14 +3,13 @@ import { clamp, damp } from '../core/math';
 import type { KartState } from '../physics/kart';
 import { driftTier } from '../physics/kart';
 import type { RacerDef } from '../physics/racers';
-import { blobShadowTexture, glowTexture, skyEnvMap } from './textures';
+import { buildKartModel } from './racerModels';
+import { blobShadowTexture, glowTexture } from './textures';
 
 const SPARK_COLORS = [0xfff2a8, 0x3fa9ff, 0xff8a1f, 0xc04bff];
-const WHEEL_RADIUS = 0.38;
 const SPARK_POOL = 48;
 const SPARK_LIFE = 0.28;
 
-let sharedEnv: THREE.CubeTexture | null = null;
 let sharedGlow: THREE.Texture | null = null;
 let sharedShadow: THREE.Texture | null = null;
 
@@ -20,106 +19,71 @@ interface Spark {
   life: number;
 }
 
-/** Glossy kart with body roll, landing bounce, particle sparks, boost flame and blob shadow. */
+/** A racer's own kart and character, with body roll, landing bounce, particle sparks, boost flames and a blob shadow. */
 export class KartView {
   readonly root = new THREE.Group();
   /** World-space effects (sparks, shadow) that shouldn't inherit kart rotation. */
   readonly fx = new THREE.Group();
-  private readonly body = new THREE.Group();
+  private readonly body: THREE.Group;
   private readonly frontWheels: THREE.Object3D[] = [];
-  private readonly wheels: THREE.Mesh[] = [];
+  private readonly wheels: { mesh: THREE.Object3D; radius: number }[] = [];
+  private readonly spinners: THREE.Object3D[];
   private readonly sparks: Spark[] = [];
-  private readonly flame: THREE.Mesh;
-  private readonly flameGlow: THREE.Sprite;
+  private readonly flames: { cone: THREE.Mesh; glow: THREE.Sprite }[] = [];
   private readonly shadow: THREE.Mesh;
-  private readonly paint: THREE.MeshPhongMaterial;
-  private readonly accent: THREE.MeshPhongMaterial;
+  private readonly rearTrack: number;
+  private readonly rearZ: number;
 
   private roll = 0;
   private pitch = 0;
   private bounce = 0;
   private bounceVel = 0;
   private lastSpeed = 0;
-  private wheelSpin = 0;
+  private wheelTravel = 0;
   private sparkCursor = 0;
   private sparkAccum = 0;
   private readonly tmp = new THREE.Vector3();
 
   constructor(racer: RacerDef) {
-    sharedEnv ??= skyEnvMap();
     sharedGlow ??= glowTexture();
     sharedShadow ??= blobShadowTexture();
+    const model = buildKartModel(racer);
+    this.body = model.body;
+    this.spinners = model.spinners;
+    this.rearTrack = model.rearTrack;
+    this.rearZ = model.rearZ;
 
-    const gloss = (color: number) =>
-      new THREE.MeshPhongMaterial({ color, shininess: 90, specular: 0x666666, envMap: sharedEnv, reflectivity: 0.28, combine: THREE.MixOperation });
-    this.paint = gloss(racer.color);
-    this.accent = gloss(racer.accent);
-    const chrome = new THREE.MeshPhongMaterial({ color: 0xcfd6e0, shininess: 120, specular: 0xffffff, envMap: sharedEnv, reflectivity: 0.7, combine: THREE.MixOperation });
     const rubber = new THREE.MeshPhongMaterial({ color: 0x1c1c1c, shininess: 12, specular: 0x222222 });
-    const seatMat = new THREE.MeshPhongMaterial({ color: 0x2a2a2a, shininess: 40 });
-    const skin = new THREE.MeshPhongMaterial({ color: 0xd9b48f, shininess: 20 });
-
-    const add = (geo: THREE.BufferGeometry, mat: THREE.Material, x: number, y: number, z: number) => {
-      const m = new THREE.Mesh(geo, mat);
-      m.position.set(x, y, z);
-      this.body.add(m);
-      return m;
-    };
-    // Tub, nose cone, side pods, rear wing.
-    add(new THREE.BoxGeometry(1.3, 0.32, 2.0), this.paint, 0, 0.45, 0);
-    const nose = add(new THREE.CylinderGeometry(0.25, 0.55, 1.0, 12), this.paint, 0, 0.42, 1.35);
-    nose.rotation.x = Math.PI / 2;
-    nose.scale.set(1.6, 1, 0.55);
-    add(new THREE.BoxGeometry(1.7, 0.12, 0.35), this.accent, 0, 0.3, 1.75);
-    for (const side of [-1, 1]) {
-      const pod = add(new THREE.CapsuleGeometry(0.22, 1.0, 6, 12), this.accent, side * 0.82, 0.42, -0.1);
-      pod.rotation.x = Math.PI / 2;
-    }
-    add(new THREE.BoxGeometry(1.5, 0.08, 0.4), this.accent, 0, 1.0, -1.15);
-    for (const side of [-1, 1]) add(new THREE.BoxGeometry(0.06, 0.45, 0.35), this.accent, side * 0.7, 0.78, -1.15);
-    add(new THREE.BoxGeometry(0.8, 0.55, 0.28), seatMat, 0, 0.82, -0.55);
-    for (const side of [-1, 1]) {
-      const pipe = add(new THREE.CylinderGeometry(0.09, 0.13, 0.6, 10), chrome, side * 0.35, 0.55, -1.25);
-      pipe.rotation.x = Math.PI / 2;
-    }
-    // Driver.
-    add(new THREE.CylinderGeometry(0.3, 0.36, 0.7, 12), this.accent, 0, 1.0, -0.25);
-    add(new THREE.SphereGeometry(0.3, 16, 12), skin, 0, 1.55, -0.2);
-    add(new THREE.SphereGeometry(0.34, 16, 12, 0, Math.PI * 2, 0, Math.PI / 1.8), this.paint, 0, 1.56, -0.22);
-    const visor = add(new THREE.SphereGeometry(0.31, 16, 8, -0.9, 1.8, 1.1, 0.5), chrome, 0, 1.55, -0.18);
-    visor.rotation.y = 0;
-    const wheelBar = add(new THREE.TorusGeometry(0.22, 0.04, 8, 18), rubber, 0, 1.0, 0.35);
-    wheelBar.rotation.x = -0.9;
-
-    const wheelGeo = new THREE.CylinderGeometry(WHEEL_RADIUS, WHEEL_RADIUS, 0.34, 18);
-    wheelGeo.rotateZ(Math.PI / 2);
-    const hubGeo = new THREE.CylinderGeometry(0.2, 0.2, 0.36, 10);
-    hubGeo.rotateZ(Math.PI / 2);
-    for (const [x, z, front] of [[-0.82, 0.85, true], [0.82, 0.85, true], [-0.82, -0.85, false], [0.82, -0.85, false]] as const) {
+    const hubMat = new THREE.MeshPhongMaterial({ color: 0xcfd6e0, shininess: 120, specular: 0xffffff });
+    for (const w of model.wheels) {
       const pivot = new THREE.Group();
-      pivot.position.set(x, WHEEL_RADIUS, z);
-      const wheel = new THREE.Mesh(wheelGeo, rubber);
-      wheel.add(new THREE.Mesh(hubGeo, chrome));
-      pivot.add(wheel);
+      pivot.position.set(w.x, w.radius, w.z);
+      const spin = new THREE.Group();
+      const tire = new THREE.Mesh(new THREE.CylinderGeometry(w.radius, w.radius, w.width, 18).rotateZ(Math.PI / 2), w.material ?? rubber);
+      const hub = new THREE.Mesh(new THREE.CylinderGeometry(w.radius * 0.5, w.radius * 0.5, w.width + 0.02, 10).rotateZ(Math.PI / 2), hubMat);
+      // A spoke so the spin reads.
+      const spoke = new THREE.Mesh(new THREE.BoxGeometry(w.width + 0.03, w.radius * 1.5, 0.06), hubMat);
+      spin.add(tire, hub, spoke);
+      pivot.add(spin);
       this.root.add(pivot);
-      this.wheels.push(wheel);
-      if (front) this.frontWheels.push(pivot);
+      this.wheels.push({ mesh: spin, radius: w.radius });
+      if (w.front) this.frontWheels.push(pivot);
     }
 
-    this.flame = new THREE.Mesh(
-      new THREE.ConeGeometry(0.26, 1.4, 12).rotateX(-Math.PI / 2).translate(0, 0, -0.7),
-      new THREE.MeshBasicMaterial({ color: 0xff9a2a, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false }),
-    );
-    this.flame.position.set(0, 0.55, -1.5);
-    this.body.add(this.flame);
-    this.flameGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: sharedGlow, color: 0xffa040, blending: THREE.AdditiveBlending, depthWrite: false }));
-    this.flameGlow.position.set(0, 0.55, -1.7);
-    this.flameGlow.scale.setScalar(2.2);
-    this.body.add(this.flameGlow);
+    const flameMat = new THREE.MeshBasicMaterial({ color: 0xff9a2a, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false });
+    const flameGeo = new THREE.ConeGeometry(0.22, 1.2, 12).rotateX(-Math.PI / 2).translate(0, 0, -0.6);
+    for (const at of model.exhausts) {
+      const cone = new THREE.Mesh(flameGeo, flameMat);
+      cone.position.copy(at);
+      const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: sharedGlow, color: 0xffa040, blending: THREE.AdditiveBlending, depthWrite: false }));
+      glow.position.copy(at).add(new THREE.Vector3(0, 0, -0.2));
+      this.body.add(cone, glow);
+      this.flames.push({ cone, glow });
+    }
     this.root.add(this.body);
 
     this.shadow = new THREE.Mesh(
-      new THREE.PlaneGeometry(2.4, 3.2).rotateX(-Math.PI / 2),
+      new THREE.PlaneGeometry(model.shadow[0], model.shadow[1]).rotateX(-Math.PI / 2),
       new THREE.MeshBasicMaterial({ map: sharedShadow, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 }),
     );
     this.fx.add(this.shadow);
@@ -130,11 +94,6 @@ export class KartView {
       this.fx.add(sprite);
       this.sparks.push({ sprite, vel: new THREE.Vector3(), life: 0 });
     }
-  }
-
-  setRacer(racer: RacerDef): void {
-    this.paint.color.setHex(racer.color);
-    this.accent.color.setHex(racer.accent);
   }
 
   /** Kick the suspension, e.g. on landing. */
@@ -162,16 +121,18 @@ export class KartView {
     this.body.position.y = this.bounce * 0.08 + rumble;
     this.body.rotation.set(this.pitch, 0, this.roll);
 
-    this.wheelSpin += (s.speed * frameDt) / WHEEL_RADIUS;
-    for (const w of this.wheels) w.rotation.x = this.wheelSpin;
+    this.wheelTravel += s.speed * frameDt;
+    for (const w of this.wheels) w.mesh.rotation.x = this.wheelTravel / w.radius;
     for (const w of this.frontWheels) w.rotation.y = -s.steer * 0.4;
+    for (const sp of this.spinners) sp.rotation.z += frameDt * (6 + Math.abs(s.speed) * 1.2);
 
     const boosting = s.boostTime > 0;
-    this.flame.visible = this.flameGlow.visible = boosting;
-    if (boosting) {
-      const f = 0.8 + Math.random() * 0.5;
-      this.flame.scale.set(f, f, f * (1 + Math.min(s.boostTime, 1)));
-      this.flameGlow.scale.setScalar(1.8 + Math.random() * 0.8);
+    for (const f of this.flames) {
+      f.cone.visible = f.glow.visible = boosting;
+      if (!boosting) continue;
+      const k = 0.8 + Math.random() * 0.5;
+      f.cone.scale.set(k, k, k * (1 + Math.min(s.boostTime, 1)));
+      f.glow.scale.setScalar(1.6 + Math.random() * 0.8);
     }
 
     // Blob shadow on the ground, fading with height.
@@ -216,9 +177,9 @@ export class KartView {
     const p = this.sparks[this.sparkCursor];
     this.sparkCursor = (this.sparkCursor + 1) % SPARK_POOL;
     const yaw = this.root.rotation.y;
-    const side = Math.random() < 0.5 ? -0.82 : 0.82;
+    const side = Math.random() < 0.5 ? -this.rearTrack : this.rearTrack;
     // Rear wheel contact point in world space.
-    this.tmp.set(side, 0.1, -0.95).applyAxisAngle(THREE.Object3D.DEFAULT_UP, yaw).add(this.root.position);
+    this.tmp.set(side, 0.1, this.rearZ).applyAxisAngle(THREE.Object3D.DEFAULT_UP, yaw).add(this.root.position);
     p.sprite.position.copy(this.tmp);
     const back = -(4 + Math.random() * 4);
     const spread = (Math.random() - 0.5) * 5;

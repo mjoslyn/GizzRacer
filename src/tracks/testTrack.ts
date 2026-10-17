@@ -1,9 +1,9 @@
 import type { TrackDef } from './track';
 
-/** Milestone 1 flat test circuit: a long straight, a hairpin, sweepers and an S. */
+/** Flat test circuit (Milestone 1), dressed as the green Speedway until Infinite Loop Speedway is built: a long straight, a hairpin, sweepers and an S. */
 export const TEST_TRACK: TrackDef = {
   id: 'test-track',
-  name: 'Test Track',
+  name: 'Speedway Test Loop',
   main: {
     points: [
       [0, -60],
@@ -36,5 +36,6 @@ export const TEST_TRACK: TrackDef = {
   laps: 3,
   bounds: 240,
   landmarks: [],
+  theme: 'speedway',
   music: { lap: 'infinite-loop-speedway' },
 };

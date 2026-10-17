@@ -4,13 +4,13 @@
 - 3D arcade kart racer in the browser, built with Three.js
 - Single player vs CPU racers, one kart per racer so every kart looks different (5 CPUs with the MVP's 6 racers; 7 once the roster reaches 8). Online multiplayer deferred
 - Psychedelic garage-rock world with original characters
-- Target: 60 fps on a mid-range laptop, Chrome/Firefox/Safari, keyboard and gamepad
+- Target: 60 fps on a mid-range laptop, Chrome/Firefox/Safari, keyboard, gamepad and touch (phones and tablets, iOS included)
 
 ## 2. MVP Scope
 - 1 cup (4 tracks), 6 racers, 5 items
 - Modes: Grand Prix, Time Trial
 - 3 difficulty classes: 50cc, 100cc, 150cc
-- Out of scope for MVP: online, battle mode, mobile touch controls
+- Out of scope for MVP: online, battle mode
 
 ## 3. Controls
 | Action | Keyboard | Gamepad |
@@ -23,11 +23,13 @@
 | Look back | Q | Y |
 | Pause | Esc | Start |
 
+Touch: drag on the left half to steer (analog), DRIFT and BRAKE buttons on the right, pause at the bottom; acceleration is automatic. The first tap also unlocks audio (iOS needs a gesture).
+
 ## 4. Kart Physics (custom arcade, not rigid body)
 - Kart is a sphere collider for ground contact plus a visual model that tilts and bounces
 - Stats per racer (1 to 5): top speed, acceleration, weight, handling, drift
 - Off-road surfaces cut top speed by 40%
-- Drift: hold while turning; sparks charge in 3 tiers (blue 0.45s, orange 0.9s, purple 1.4s) for 0.5s / 1.0s / 1.5s boosts
+- Drift: hold while turning; sparks charge in 3 tiers (blue 0.3s, orange 0.6s, purple 0.95s) for 0.5s / 1.0s / 1.5s boosts
 - Ramps: press hop at the lip for a trick boost on landing
 - Weight affects bump knockback between karts
 - Fall-off: respawn at last checkpoint after 1.5s
@@ -42,7 +44,7 @@
 | Microtonal Monk | 3 | 3 | 2 | 4 |
 | Fuzz Golem | 5 | 1 | 5 | 2 |
 
-All designs are original. No likenesses of band members or album art.
+All designs are original. No likenesses of band members or album art. Every racer has their own character model and kart body (render/racerModels.ts).
 
 ## 6. Items
 | Item | Effect | Odds bias |
@@ -57,6 +59,9 @@ All designs are original. No likenesses of band members or album art.
 - One item held at a time
 
 ## 7. Tracks (Cup 1)
+
+Each track has its own theme (render/themes.ts): desert (Rattlesnake Run), green speedway hills (Infinite Loop Speedway), basalt and lava (Volcano Fortress), jungle (Polygondwanaland Jungle). Not everything is desert.
+
 1. Infinite Loop Speedway (easy)
 2. Rattlesnake Run (medium, detailed below)
 3. Volcano Fortress (hard)
@@ -98,6 +103,7 @@ All designs are original. No likenesses of band members or album art.
 
 ## 9. Game Flow and UI
 - Title > Mode select > Class > Racer select > Cup/Track > Race > Results > Next race
+- Now: Title > picker (track, racer, class) > Race (3 laps) > Results > picker. CPUs race the chosen track behind the title and picker
 - HUD: position, lap counter, item slot, minimap, timer, drift spark meter
 - Grand Prix points: 15, 12, 10, 8, 6, 4, 2, 1
 

@@ -1,19 +1,20 @@
 import * as THREE from 'three';
 import { seededRandom } from '../core/math';
-import type { RoadSurface } from '../tracks/builder';
 import { nearestOnSpline, pointAt } from '../tracks/spline';
+import type { PitDef, RoadSurface } from '../tracks/builder';
 import { inPit, type Ribbon, type Track } from '../tracks/track';
 import * as tex from './textures';
+import { THEMES, type Theme } from './themes';
 
 const CURB_WIDTH = 1.2;
 /** Meters of road per texture repeat along the track. */
 const ROAD_TILE = 14;
-const SAND_TILE = 18;
 /** Draw roads a hair above their physical height to stay clear of the ground. */
 const ROAD_LIFT = 0.03;
 
 export interface TrackView {
   group: THREE.Group;
+  theme: Theme;
   update(time: number, cameraPos: THREE.Vector3): void;
 }
 
@@ -25,12 +26,21 @@ interface Materials {
   mud: THREE.Material;
   bone: THREE.Material;
   cactus: THREE.Material;
+  rock: THREE.Material;
+  lava: THREE.MeshBasicMaterial;
+  water: THREE.MeshPhongMaterial;
 }
 
-function materials(): Materials {
+function materials(theme: Theme): Materials {
   const lambert = (map: THREE.Texture, extra: THREE.MeshLambertMaterialParameters = {}) =>
     new THREE.MeshLambertMaterial({ map, ...extra });
   const sand = tex.sandTexture();
+  const rockMap: Record<Theme['decor'], () => THREE.Texture> = {
+    desert: tex.dirtTexture,
+    meadow: () => tex.stoneTexture([96, 100, 92], [160, 164, 150]),
+    volcanic: tex.basaltTexture,
+    jungle: () => tex.stoneTexture([60, 80, 52], [120, 140, 100]),
+  };
   return {
     road: {
       asphalt: lambert(tex.asphaltTexture()),
@@ -39,21 +49,25 @@ function materials(): Materials {
       sand: lambert(sand),
     },
     curb: lambert(tex.curbTexture()),
-    strata: lambert(tex.strataTexture(), { side: THREE.DoubleSide }),
+    strata: lambert(theme.cliff(), { side: THREE.DoubleSide }),
     diamond: lambert(tex.diamondTexture(), { side: THREE.DoubleSide }),
     mud: lambert(tex.mudTexture()),
     bone: new THREE.MeshPhongMaterial({ map: tex.boneTexture(), shininess: 30, specular: 0x333322 }),
     cactus: lambert(tex.cactusTexture()),
+    rock: new THREE.MeshLambertMaterial({ map: rockMap[theme.decor](), flatShading: true }),
+    lava: new THREE.MeshBasicMaterial({ map: tex.lavaTexture(), side: THREE.DoubleSide }),
+    water: new THREE.MeshPhongMaterial({ color: 0x2a7a8a, shininess: 120, specular: 0xffffff, transparent: true, opacity: 0.85, side: THREE.DoubleSide }),
   };
 }
 
 /** Textured visuals for a spline track, in a sharp early-2000s console style. */
 export function buildTrackView(track: Track): TrackView {
   const group = new THREE.Group();
-  const mats = materials();
+  const theme = THEMES[track.def.theme];
+  const mats = materials(theme);
 
-  group.add(sky());
-  group.add(ground(track));
+  group.add(sky(theme));
+  group.add(ground(track, theme));
   for (const pit of track.def.pits) group.add(pitMesh(pit, mats));
   for (const ribbon of [track.main, ...track.branches]) group.add(ribbonMeshes(ribbon, mats));
 
@@ -79,32 +93,34 @@ export function buildTrackView(track: Track): TrackView {
     if (lm.kind === 'fangs') group.add(snakeMouth(ribbon, s, mats));
   }
   group.add(boundaryCliffs(track.def.bounds, mats));
-  group.add(decor(track, mats));
-  group.add(distantMesas());
+  group.add(decor(track, mats, theme));
+  group.add(distant(theme));
 
   const skyMesh = group.children[0];
   return {
     group,
+    theme,
     update(time: number, cameraPos: THREE.Vector3) {
       padTexture.offset.y = -time * 2;
       // Barrier diamonds crawl along like scales.
       if (mats.diamond.map) mats.diamond.map.offset.x = -time * 0.15;
+      if (mats.lava.map) mats.lava.map.offset.set(time * 0.02, time * 0.035);
       skyMesh.position.copy(cameraPos);
     },
   };
 }
 
-function sky(): THREE.Mesh {
+function sky(theme: Theme): THREE.Mesh {
   const mesh = new THREE.Mesh(
     new THREE.SphereGeometry(1500, 48, 24),
-    new THREE.MeshBasicMaterial({ map: tex.skyTexture(), side: THREE.BackSide, fog: false, depthWrite: false }),
+    new THREE.MeshBasicMaterial({ map: tex.skyTexture(theme.sky), side: THREE.BackSide, fog: false, depthWrite: false }),
   );
   mesh.renderOrder = -1;
   return mesh;
 }
 
 /** Desert floor with holes cut for pits. */
-function ground(track: Track): THREE.Mesh {
+function ground(track: Track, theme: Theme): THREE.Mesh {
   const E = 1400;
   const shape = new THREE.Shape([
     new THREE.Vector2(-E, -E),
@@ -118,8 +134,8 @@ function ground(track: Track): THREE.Mesh {
     shape.holes.push(new THREE.Path(hole));
   }
   const geo = new THREE.ShapeGeometry(shape);
-  const map = tex.sandTexture();
-  map.repeat.set(1 / SAND_TILE, 1 / SAND_TILE);
+  const map = theme.ground();
+  map.repeat.set(1 / theme.groundTile, 1 / theme.groundTile);
   // Pushed back in depth so roads lying at ground level never z-fight it.
   const mesh = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map, polygonOffset: true, polygonOffsetFactor: 4, polygonOffsetUnits: 4 }));
   mesh.rotation.x = -Math.PI / 2;
@@ -139,7 +155,7 @@ function pitCorners(p: { x: number; z: number; heading: number; halfLength: numb
   ].map(([a, b]) => [p.x + fx * a * p.halfLength + rx * b * p.halfWidth, p.z + fz * a * p.halfLength + rz * b * p.halfWidth]);
 }
 
-function pitMesh(p: Parameters<typeof pitCorners>[0] & { depth: number }, mats: Materials): THREE.Group {
+function pitMesh(p: PitDef, mats: Materials): THREE.Group {
   const g = new THREE.Group();
   const corners = pitCorners(p);
   const floorGeo = new THREE.BufferGeometry();
@@ -149,6 +165,15 @@ function pitMesh(p: Parameters<typeof pitCorners>[0] & { depth: number }, mats: 
   floorGeo.setIndex([0, 2, 1, 0, 3, 2]);
   floorGeo.computeVertexNormals();
   g.add(new THREE.Mesh(floorGeo, mats.mud));
+  if (p.liquid) {
+    // A glowing lava or water surface a little below ground level.
+    const surface = new THREE.BufferGeometry();
+    surface.setAttribute('position', new THREE.Float32BufferAttribute(corners.map(([x, z]) => [x, -2.5, z]).flat(), 3));
+    surface.setAttribute('uv', new THREE.Float32BufferAttribute(corners.map(([x, z]) => [x / 10, z / 10]).flat(), 2));
+    surface.setIndex([0, 2, 1, 0, 3, 2]);
+    surface.computeVertexNormals();
+    g.add(new THREE.Mesh(surface, p.liquid === 'lava' ? mats.lava : mats.water));
+  }
 
   const pos: number[] = [];
   const uv: number[] = [];
@@ -403,26 +428,52 @@ function boundaryCliffs(bounds: number, mats: Materials): THREE.Group {
   return g;
 }
 
-/** Flat-topped mesas on the horizon, washed out by haze. */
-function distantMesas(): THREE.Group {
+/** Silhouettes on the horizon, washed out by haze: mesas, hills, volcanoes or peaks. */
+function distant(theme: Theme): THREE.Group {
   const g = new THREE.Group();
   const rand = seededRandom(5);
-  const mat = new THREE.MeshLambertMaterial({ color: 0xa4502e });
+  const mat = new THREE.MeshLambertMaterial({ color: theme.distant.color });
+  const glowMat = new THREE.MeshBasicMaterial({ color: 0xff6a1a, fog: false });
   for (let k = 0; k < 18; k++) {
     const a = (k / 18) * Math.PI * 2 + rand() * 0.2;
     const r = 800 + rand() * 300;
     const h = 40 + rand() * 90;
     const w = 60 + rand() * 140;
-    const mesa = new THREE.Mesh(new THREE.CylinderGeometry(w * 0.8, w, h, 7), mat);
-    mesa.position.set(Math.cos(a) * r, h / 2 - 2, Math.sin(a) * r);
-    mesa.rotation.y = rand() * 3;
-    g.add(mesa);
+    let mesh: THREE.Mesh;
+    switch (theme.distant.shape) {
+      case 'mesa':
+        mesh = new THREE.Mesh(new THREE.CylinderGeometry(w * 0.8, w, h, 7), mat);
+        mesh.position.y = h / 2 - 2;
+        break;
+      case 'hill':
+        mesh = new THREE.Mesh(new THREE.SphereGeometry(w, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), mat);
+        mesh.scale.y = (h / w) * 0.9;
+        break;
+      case 'volcano': {
+        const vh = h * 2;
+        mesh = new THREE.Mesh(new THREE.CylinderGeometry(w * 0.18, w, vh, 10), mat);
+        mesh.position.y = vh / 2 - 2;
+        const crater = new THREE.Mesh(new THREE.CircleGeometry(w * 0.16, 12), glowMat);
+        crater.rotation.x = -Math.PI / 2;
+        crater.position.y = vh / 2 + 0.5;
+        mesh.add(crater);
+        break;
+      }
+      case 'mountain':
+        mesh = new THREE.Mesh(new THREE.ConeGeometry(w, h * 2.2, 7), mat);
+        mesh.position.y = h * 1.1 - 2;
+        break;
+    }
+    mesh.position.x = Math.cos(a) * r;
+    mesh.position.z = Math.sin(a) * r;
+    mesh.rotation.y = rand() * 3;
+    g.add(mesh);
   }
   return g;
 }
 
-/** Rocks and saguaros scattered off the road, for speed perception. */
-function decor(track: Track, mats: Materials): THREE.Group {
+/** Rocks plus the theme's own scenery scattered off the road, for speed perception. */
+function decor(track: Track, mats: Materials, theme: Theme): THREE.Group {
   const g = new THREE.Group();
   const rand = seededRandom(7);
   const b = track.def.bounds - 6;
@@ -431,32 +482,135 @@ function decor(track: Track, mats: Materials): THREE.Group {
     ribbons.every((r) => nearestOnSpline(r.spline, x, z).distance > Math.max(...r.halfWidth) + 8) &&
     track.def.pits.every((p) => !inPit({ ...p, halfWidth: p.halfWidth + 6, halfLength: p.halfLength + 6 }, x, z));
 
-  const rockMat = new THREE.MeshLambertMaterial({ map: tex.dirtTexture(), flatShading: true });
-  const rocks = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 1), rockMat, 220);
-  const trunkGeo = new THREE.CylinderGeometry(0.45, 0.55, 1, 10);
+  const rockCount = theme.decor === 'jungle' ? 120 : 220;
+  const featureCount = theme.decor === 'jungle' ? 150 : theme.decor === 'meadow' ? 110 : 70;
+  const rocks = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 1), mats.rock, rockCount);
+  const feature = featureBuilder(theme, mats);
   const m = new THREE.Matrix4();
   const q = new THREE.Quaternion();
   const e = new THREE.Euler();
   let placed = 0;
-  let cacti = 0;
-  for (let tries = 0; tries < 3000 && (placed < 220 || cacti < 70); tries++) {
+  let features = 0;
+  for (let tries = 0; tries < 4000 && (placed < rockCount || features < featureCount); tries++) {
     const x = (rand() * 2 - 1) * b;
     const z = (rand() * 2 - 1) * b;
     if (!clear(x, z)) continue;
-    if (placed < 220 && rand() < 0.7) {
+    if (placed < rockCount && rand() < 0.6) {
       const s = 0.6 + rand() * 3.2;
       e.set(rand() * 3, rand() * 3, rand() * 3);
       q.setFromEuler(e);
       m.compose(new THREE.Vector3(x, s * 0.35, z), q, new THREE.Vector3(s, s * (0.5 + rand() * 0.8), s));
       rocks.setMatrixAt(placed++, m);
-    } else if (cacti < 70) {
-      g.add(cactus(x, z, 3 + rand() * 4, rand() * Math.PI, trunkGeo, mats.cactus));
-      cacti++;
+    } else if (features < featureCount) {
+      g.add(feature(x, z, rand));
+      features++;
     }
   }
   rocks.count = placed;
   g.add(rocks);
   return g;
+}
+
+/** Builds one piece of a theme's characteristic scenery. */
+function featureBuilder(theme: Theme, mats: Materials): (x: number, z: number, rand: () => number) => THREE.Object3D {
+  const trunkGeo = new THREE.CylinderGeometry(0.45, 0.55, 1, 10);
+  switch (theme.decor) {
+    case 'desert':
+      return (x, z, rand) => cactus(x, z, 3 + rand() * 4, rand() * Math.PI, trunkGeo, mats.cactus);
+    case 'meadow': {
+      const bark = new THREE.MeshLambertMaterial({ color: 0x6a4a2a });
+      const leaves = [0x3f8f3a, 0x5aa840, 0x2f7a3a].map((c) => new THREE.MeshLambertMaterial({ color: c, flatShading: true }));
+      const blob = new THREE.IcosahedronGeometry(1, 1);
+      return (x, z, rand) => {
+        const t = new THREE.Group();
+        const h = 3 + rand() * 4;
+        const trunk = new THREE.Mesh(trunkGeo, bark);
+        trunk.scale.set(0.6, h, 0.6);
+        trunk.position.y = h / 2;
+        t.add(trunk);
+        const mat = leaves[Math.floor(rand() * leaves.length)];
+        for (let k = 0; k < 3; k++) {
+          const crown = new THREE.Mesh(blob, mat);
+          const r = 1.6 + rand() * 1.4;
+          crown.scale.setScalar(r);
+          crown.position.set((rand() - 0.5) * 1.6, h + r * 0.4 + k * 0.6, (rand() - 0.5) * 1.6);
+          t.add(crown);
+        }
+        t.position.set(x, 0, z);
+        return t;
+      };
+    }
+    case 'volcanic': {
+      const lava = new THREE.MeshBasicMaterial({ color: 0xff5a10 });
+      const crust = new THREE.MeshLambertMaterial({ color: 0x1a1214, flatShading: true });
+      return (x, z, rand) => {
+        const t = new THREE.Group();
+        if (rand() < 0.45) {
+          // A bubbling lava pool with a dark crust rim.
+          const r = 2 + rand() * 4;
+          const pool = new THREE.Mesh(new THREE.CircleGeometry(r, 16), lava);
+          pool.rotation.x = -Math.PI / 2;
+          pool.position.y = 0.06;
+          const rim = new THREE.Mesh(new THREE.TorusGeometry(r, 0.5, 6, 18), crust);
+          rim.rotation.x = Math.PI / 2;
+          rim.position.y = 0.1;
+          t.add(pool, rim);
+        } else {
+          // Obsidian spikes.
+          for (let k = 0; k < 3; k++) {
+            const h = 2 + rand() * 6;
+            const spike = new THREE.Mesh(new THREE.ConeGeometry(0.6 + rand(), h, 5), crust);
+            spike.position.set((rand() - 0.5) * 3, h / 2, (rand() - 0.5) * 3);
+            spike.rotation.set((rand() - 0.5) * 0.4, rand() * 3, (rand() - 0.5) * 0.4);
+            t.add(spike);
+          }
+        }
+        t.position.set(x, 0, z);
+        return t;
+      };
+    }
+    case 'jungle': {
+      const bark = new THREE.MeshLambertMaterial({ color: 0x7a5a36 });
+      const frond = new THREE.MeshLambertMaterial({ color: 0x2f8a3a, side: THREE.DoubleSide, flatShading: true });
+      const fern = new THREE.MeshLambertMaterial({ color: 0x4aa040, flatShading: true });
+      const frondGeo = new THREE.ConeGeometry(0.7, 4, 4, 1, true).rotateX(Math.PI / 2).translate(0, 0, 2).scale(1, 0.15, 1);
+      return (x, z, rand) => {
+        const t = new THREE.Group();
+        if (rand() < 0.55) {
+          // A palm with a leaning, segmented trunk.
+          const h = 6 + rand() * 6;
+          const lean = (rand() - 0.5) * 0.5;
+          const segs = 5;
+          let top = new THREE.Vector3();
+          for (let k = 0; k < segs; k++) {
+            const seg = new THREE.Mesh(trunkGeo, bark);
+            const y = (k + 0.5) * (h / segs);
+            seg.scale.set(0.5 - k * 0.04, h / segs, 0.5 - k * 0.04);
+            seg.position.set(Math.sin(lean * (k / segs)) * k * 0.8, y, 0);
+            seg.rotation.z = -lean * (k / segs);
+            t.add(seg);
+            top = seg.position.clone().setY(h);
+          }
+          for (let k = 0; k < 7; k++) {
+            const f = new THREE.Mesh(frondGeo, frond);
+            f.position.copy(top);
+            f.rotation.set(0.5 + rand() * 0.3, (k / 7) * Math.PI * 2, 0, 'YXZ');
+            t.add(f);
+          }
+        } else {
+          for (let k = 0; k < 5; k++) {
+            const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.5, 2.4, 4), fern);
+            leaf.position.set((rand() - 0.5) * 1.5, 1, (rand() - 0.5) * 1.5);
+            leaf.rotation.set((rand() - 0.5) * 1.2, rand() * 3, (rand() - 0.5) * 1.2);
+            t.add(leaf);
+          }
+        }
+        t.position.set(x, 0, z);
+        t.rotation.y = rand() * Math.PI * 2;
+        return t;
+      };
+    }
+  }
 }
 
 function cactus(x: number, z: number, h: number, rot: number, geo: THREE.BufferGeometry, mat: THREE.Material): THREE.Group {

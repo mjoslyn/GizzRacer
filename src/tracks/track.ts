@@ -37,6 +37,8 @@ export interface TrackDef {
   /** Square play area half-extent; walls sit on its edge. */
   bounds: number;
   landmarks: Landmark[];
+  /** Visual theme (render/themes.ts). */
+  theme: 'desert' | 'speedway' | 'volcano' | 'jungle';
   /** Music cues (public/music/<cue>.mp3): one for the race, one for the final lap. */
   music: { lap: string; finalLap?: string };
 }

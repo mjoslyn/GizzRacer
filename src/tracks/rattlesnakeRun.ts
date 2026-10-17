@@ -53,6 +53,7 @@ export function buildRattlesnakeRun(): TrackDef {
       { kind: 'skeletonArch', ribbon: -1, s: 0 },
       { kind: 'fangs', ribbon: 0, s: shortcut.caveStart },
     ],
+    theme: 'desert',
     music: { lap: 'rattlesnake-run', finalLap: 'rattlesnake-run-final-lap' },
   };
 }
@@ -93,7 +94,7 @@ function buildShortcut(from: { s: number; pose: Pose }, to: { s: number; pose: P
   const chord = Math.hypot(to.pose.x - from.pose.x, to.pose.z - from.pose.z);
   const b = new TrackBuilder(from.pose, "Snake's Mouth", { halfWidth: 7 });
   b.straight(38).elevate(0).straight(16).elevate(2.2);
-  b.gap(17, 14);
+  b.gap(26, 14);
   b.elevate(0);
   const caveStart = b.s;
   b.section("Snake's Mouth Cave", { halfWidth: 7, wallHeight: 6, surface: 'rock' });

@@ -279,6 +279,144 @@ export function cactusTexture(): THREE.CanvasTexture {
   return finish(c);
 }
 
+export function grassTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 5, 131);
+  const rand = seededRandom(132);
+  paint(ctx, S, S, (_x, _y, i) => shade(mix([52, 110, 40], [118, 170, 64], n[i]), 0.85 + rand() * 0.25));
+  // Blades: short light strokes.
+  ctx.strokeStyle = 'rgba(190,230,120,0.35)';
+  ctx.lineWidth = 1;
+  for (let k = 0; k < 1800; k++) {
+    const x = rand() * S;
+    const y = rand() * S;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + (rand() - 0.5) * 3, y - 3 - rand() * 4);
+    ctx.stroke();
+  }
+  return finish(c);
+}
+
+/** Cooled lava: black basalt with faintly glowing seams. */
+export function basaltTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 5, 141);
+  paint(ctx, S, S, (_x, _y, i) => mix([22, 18, 20], [70, 58, 56], n[i]));
+  cracks(ctx, S, 26, 'rgba(255,90,20,0.55)', 2.2, 142);
+  cracks(ctx, S, 26, 'rgba(255,200,80,0.35)', 0.8, 142);
+  return finish(c);
+}
+
+/** Molten rock: bright cracks of yellow through orange and crust. */
+export function lavaTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 5, 161);
+  paint(ctx, S, S, (_x, _y, i) => {
+    const v = n[i];
+    return v > 0.55 ? mix([255, 140, 20], [255, 236, 120], (v - 0.55) * 2.5) : mix([90, 14, 6], [255, 90, 10], v / 0.55);
+  });
+  return finish(c);
+}
+
+/** Leaf litter and moss for the jungle floor. */
+export function jungleFloorTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 5, 151);
+  paint(ctx, S, S, (_x, _y, i) => mix([34, 52, 22], [92, 110, 44], n[i]));
+  const rand = seededRandom(152);
+  for (let k = 0; k < 260; k++) {
+    const x = rand() * S;
+    const y = rand() * S;
+    const r = 3 + rand() * 7;
+    const leaf = ['rgba(120,80,30,0.55)', 'rgba(70,110,40,0.6)', 'rgba(160,120,50,0.45)'][k % 3];
+    wrapStroke(ctx, S, () => {
+      ctx.fillStyle = leaf;
+      ctx.beginPath();
+      ctx.ellipse(x, y, r, r * 0.45, rand() * Math.PI, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+  return finish(c);
+}
+
+/** Overlapping reptile scales, tinted from `base` to `edge`. */
+export function scaleTexture(base: string, edge: string): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  ctx.fillStyle = edge;
+  ctx.fillRect(0, 0, S, S);
+  const r = S / 12;
+  for (let row = -1; row < 14; row++) {
+    for (let col = -1; col < 14; col++) {
+      const x = col * r * 1.6 + (row % 2) * r * 0.8;
+      const y = row * r * 0.9;
+      wrapStroke(ctx, S, () => {
+        const g = ctx.createRadialGradient(x, y - r * 0.3, r * 0.1, x, y, r);
+        g.addColorStop(0, base);
+        g.addColorStop(1, edge);
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.ellipse(x, y, r * 0.85, r * 0.7, 0, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+  }
+  return finish(c);
+}
+
+/** Gila monster beadwork: black hide with blotches of round orange beads. */
+export function beadTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = valueNoise(S, 5, 101);
+  const bead = 8;
+  ctx.fillStyle = '#1a1210';
+  ctx.fillRect(0, 0, S, S);
+  for (let y = bead / 2; y < S; y += bead) {
+    for (let x = bead / 2; x < S; x += bead) {
+      const orange = n[Math.floor(y) * S + Math.floor(x)] > 0.52;
+      const g = ctx.createRadialGradient(x - 1, y - 1, 0.5, x, y, bead * 0.55);
+      g.addColorStop(0, orange ? '#ffb070' : '#4a3a34');
+      g.addColorStop(1, orange ? '#c4501c' : '#140c0a');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(x, y, bead * 0.46, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  return finish(c);
+}
+
+/** Weathered boat planks. */
+export function woodTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 2, 4, 111);
+  paint(ctx, S, S, (x, y, i) => {
+    const plank = Math.floor(y / 32);
+    const grain = Math.sin((x / S) * Math.PI * 2 * 3 + n[i] * 9 + plank) * 0.5 + 0.5;
+    const seam = y % 32 < 2 ? 0.45 : 1;
+    return shade(mix([86, 58, 34], [140, 100, 60], grain * 0.6 + n[i] * 0.4), seam * (0.9 + (plank % 3) * 0.06));
+  });
+  return finish(c);
+}
+
+/** Rough stone with mineral flecks. */
+export function stoneTexture(base: RGB, light: RGB): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 5, 121);
+  const rand = seededRandom(122);
+  paint(ctx, S, S, (_x, _y, i) => shade(mix(base, light, n[i]), rand() > 0.985 ? 1.5 : 1));
+  cracks(ctx, S, 12, 'rgba(0,0,0,0.45)', 2, 123);
+  return finish(c);
+}
+
 export function chevronTexture(): THREE.CanvasTexture {
   const [c, ctx] = canvas(128, 128);
   const g = ctx.createLinearGradient(0, 0, 0, 128);
@@ -310,23 +448,46 @@ export function checkerTexture(): THREE.CanvasTexture {
   return finish(c, false);
 }
 
-/** Equirectangular painted sky: deep cobalt overhead, hazy at the horizon, soft cumulus. */
-export function skyTexture(): THREE.CanvasTexture {
+export interface SkyColors {
+  zenith: string;
+  high: string;
+  low: string;
+  horizon: string;
+  below: string;
+  ground: string;
+  cloud: string;
+  /** Number of cloud banks; 0 for a clear sky. */
+  clouds: number;
+}
+
+export const DESERT_SKY: SkyColors = {
+  zenith: '#0d2a9e',
+  high: '#1f4fd6',
+  low: '#7fa6ee',
+  horizon: '#f1c9a0',
+  below: '#d98c58',
+  ground: '#8a4a2a',
+  cloud: '255,255,255',
+  clouds: 26,
+};
+
+/** Equirectangular painted sky: deep overhead, hazy at the horizon, soft cumulus. */
+export function skyTexture(colors: SkyColors = DESERT_SKY): THREE.CanvasTexture {
   const W = 2048;
   const H = 1024;
   const [c, ctx] = canvas(W, H);
   const g = ctx.createLinearGradient(0, 0, 0, H);
-  g.addColorStop(0, '#0d2a9e');
-  g.addColorStop(0.3, '#1f4fd6');
-  g.addColorStop(0.47, '#7fa6ee');
-  g.addColorStop(0.5, '#f1c9a0');
-  g.addColorStop(0.52, '#d98c58');
-  g.addColorStop(1, '#8a4a2a');
+  g.addColorStop(0, colors.zenith);
+  g.addColorStop(0.3, colors.high);
+  g.addColorStop(0.47, colors.low);
+  g.addColorStop(0.5, colors.horizon);
+  g.addColorStop(0.52, colors.below);
+  g.addColorStop(1, colors.ground);
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, W, H);
 
   const rand = seededRandom(91);
-  for (let k = 0; k < 26; k++) {
+  for (let k = 0; k < colors.clouds; k++) {
     const cx = rand() * W;
     const cy = H * (0.3 + rand() * 0.15);
     const scale = 40 + rand() * 70;
@@ -336,9 +497,9 @@ export function skyTexture(): THREE.CanvasTexture {
       const r = scale * (0.5 + rand() * 0.6);
       wrapX(W, px, r, (x) => {
         const cg = ctx.createRadialGradient(x, py - r * 0.2, 0, x, py, r);
-        cg.addColorStop(0, 'rgba(255,255,255,0.85)');
-        cg.addColorStop(0.6, 'rgba(236,240,255,0.45)');
-        cg.addColorStop(1, 'rgba(220,228,255,0)');
+        cg.addColorStop(0, `rgba(${colors.cloud},0.85)`);
+        cg.addColorStop(0.6, `rgba(${colors.cloud},0.45)`);
+        cg.addColorStop(1, `rgba(${colors.cloud},0)`);
         ctx.fillStyle = cg;
         ctx.beginPath();
         ctx.ellipse(x, py, r, r * 0.55, 0, 0, Math.PI * 2);

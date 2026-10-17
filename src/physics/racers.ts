@@ -41,10 +41,10 @@ export interface KartParams {
 export function kartParams(stats: RacerStats, engine: EngineClass): KartParams {
   const m = CLASS_SPEED[engine];
   return {
-    topSpeed: (22 + 2 * stats.speed) * m,
-    accel: (6 + 2.5 * stats.accel) * m,
-    turnRate: 1.5 + 0.2 * stats.handling,
-    driftTurnRate: 1.35 + 0.12 * stats.handling,
+    topSpeed: (26.4 + 2.4 * stats.speed) * m,
+    accel: (7.2 + 3 * stats.accel) * m,
+    turnRate: 1.75 + 0.22 * stats.handling,
+    driftTurnRate: 1.55 + 0.14 * stats.handling,
     driftChargeRate: 0.85 + 0.05 * stats.drift,
     mass: 0.8 + 0.1 * stats.weight,
   };

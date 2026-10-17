@@ -49,6 +49,8 @@ const PREVENT_DEFAULT = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRigh
  */
 export class InputManager {
   autoAccelerate = true;
+  /** Written by the on-screen touch controls. */
+  readonly touch = { steer: 0, drift: false, brake: false, item: false };
   private readonly down = new Set<string>();
   /** Keys pressed since the last sample, so sub-tick taps aren't lost. */
   private readonly latched = new Set<string>();
@@ -78,6 +80,11 @@ export class InputManager {
     let drift = key(KEYS.drift);
     let item = key(KEYS.item);
     let lookBack = key(KEYS.lookBack);
+
+    steer += this.touch.steer;
+    drift ||= this.touch.drift;
+    brake = Math.max(brake, this.touch.brake ? 1 : 0);
+    item ||= this.touch.item;
 
     const pad = this.gamepad();
     if (pad) {
@@ -111,6 +118,11 @@ export class InputManager {
     this.prevItem = item;
     this.latched.clear();
     return frame;
+  }
+
+  /** Asks for a pause as if Esc were pressed (the touch pause button). */
+  requestPause(): void {
+    this.pauseRequested = true;
   }
 
   /** True once per Esc / Start press. Polled per render frame so it works while paused. */

@@ -166,9 +166,9 @@ describe('kart drift', () => {
   // Holds include ~0.3 s of hop airtime, during which nothing charges.
   it.each([
     [0.3, 0],
-    [1.0, 1],
-    [1.5, 2],
-    [2.2, 3],
+    [0.8, 1],
+    [1.1, 2],
+    [1.6, 3],
   ])('holding a drift for %ss releases tier %i', (hold, tier) => {
     const s = createKartState();
     s.speed = params.topSpeed;

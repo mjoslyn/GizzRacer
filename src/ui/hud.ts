@@ -41,8 +41,11 @@ export interface HudData {
   muted: boolean;
 }
 
+export type PauseAction = 'resume' | 'restart' | 'quit';
+
 export class Hud {
   readonly minimap = new Minimap();
+  onPauseAction: ((action: PauseAction) => void) | null = null;
   private readonly el = document.createElement('div');
   private readonly lap: HTMLElement;
   private readonly time: HTMLElement;
@@ -87,16 +90,23 @@ export class Hud {
       </div>
       <div class="hud-help">
         &larr;/&rarr; steer &middot; &darr; brake/reverse &middot; Shift/Space hop+drift (tap at a ramp lip for a trick) &middot; Q look back &middot; Esc pause<br />
-        1-6 racer &middot; C class &middot; T track &middot; M auto/manual throttle &middot; N music &middot; R restart
+        R restart &middot; M auto/manual throttle &middot; N music on/off
       </div>
       <div class="hud-count hud-big"></div>
       <div class="hud-banner hud-big">FINISH!</div>
       <div class="hud-standings"></div>
-      <div class="hud-pause hud-big">PAUSED</div>
+      <div class="hud-pause">
+        <div class="hud-big">PAUSED</div>
+        <div class="hud-pause-buttons">
+          <button data-act="resume">Resume <small>Esc</small></button>
+          <button data-act="restart">Restart <small>R</small></button>
+          <button data-act="quit">Quit to menu <small>Backspace</small></button>
+        </div>
+      </div>
       <div class="hud-title">
         <div class="hud-title-logo hud-big">GIZZRACER</div>
         <div class="hud-title-sub">psychedelic desert kart racing</div>
-        <div class="hud-title-press">press any key</div>
+        <div class="hud-title-press">${'ontouchstart' in window ? 'tap to start' : 'press any key'}</div>
       </div>`;
     parent.appendChild(this.el);
     const q = (sel: string) => this.el.querySelector<HTMLElement>(sel)!;
@@ -116,6 +126,10 @@ export class Hud {
     this.standings = q('.hud-standings');
     this.title = q('.hud-title');
     q('.hud-tr').appendChild(this.minimap.canvas);
+    this.pause.addEventListener('click', (e) => {
+      const act = (e.target as HTMLElement).closest<HTMLElement>('[data-act]')?.dataset.act as PauseAction | undefined;
+      if (act) this.onPauseAction?.(act);
+    });
   }
 
   showTitle(show: boolean): void {
@@ -170,7 +184,8 @@ export class Hud {
             (st, i) =>
               `<div class="hud-standing${st.player ? ' me' : ''}"><span class="pos">${ordinal(i + 1)}</span><span class="dot" style="background:${st.color}"></span><span class="name">${st.name}</span><span class="time">${st.time === null ? '...' : formatTime(st.time)}</span></div>`,
           )
-          .join('');
+          .join('') +
+        `<div class="hud-standings-next">${'ontouchstart' in window ? 'tap' : 'press any key'} to continue</div>`;
     }
     this.pause.classList.toggle('show', d.paused);
   }

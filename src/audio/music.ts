@@ -49,14 +49,30 @@ export class MusicPlayer {
   /** Creates the audio context; call from a user gesture (browsers require it). */
   unlock(): void {
     if (this.ctx) {
-      void this.ctx.resume();
+      if (this.ctx.state !== 'running') {
+        void this.ctx.resume();
+        this.primeIOS(this.ctx);
+      }
       return;
     }
+    // iOS: "playback" keeps music audible with the ring/silent switch on (Safari 17+).
+    const session = (navigator as Navigator & { audioSession?: { type: string } }).audioSession;
+    if (session) session.type = 'playback';
     this.ctx = new AudioContext();
+    this.primeIOS(this.ctx);
     this.master = this.ctx.createGain();
     this.master.gain.value = this.muted ? 0 : this.volume;
     this.master.connect(this.ctx.destination);
     if (this.wanted) void this.start(this.wanted);
+  }
+
+  /** iOS only opens the audio route once a sound starts inside the gesture: a one-sample silent buffer does it. */
+  private primeIOS(ctx: AudioContext): void {
+    const src = ctx.createBufferSource();
+    src.buffer = ctx.createBuffer(1, 1, ctx.sampleRate);
+    src.connect(ctx.destination);
+    src.start(0);
+    void ctx.resume();
   }
 
   get unlocked(): boolean {

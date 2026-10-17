@@ -43,6 +43,8 @@ export interface PitDef {
   halfLength: number; // along heading
   halfWidth: number;
   depth: number;
+  /** What the pit is full of, for looks; karts fall in either way. */
+  liquid?: 'water' | 'lava';
 }
 
 const INTEGRATION_STEP = 0.25;
@@ -140,15 +142,31 @@ export class TrackBuilder {
   }
 
   /** Straight jump gap with a pit underneath. */
-  gap(len: number, pitHalfWidth: number, depth = 12, overhang = 2): this {
+  gap(len: number, pitHalfWidth: number, liquid?: PitDef['liquid'], depth = 12, overhang = 2): this {
     const from = this.s;
-    const h = this.pose.h;
-    const cx = this.pose.x + Math.sin(h) * (len / 2);
-    const cz = this.pose.z + Math.cos(h) * (len / 2);
-    this.pits.push({ x: cx, z: cz, heading: h, halfLength: len / 2 + overhang, halfWidth: pitHalfWidth, depth });
+    this.addPit(len, pitHalfWidth, liquid, depth, overhang);
     this.straight(len);
     this.gaps.push([from, this.s]);
     return this;
+  }
+
+  /** Straight road over a pit: a bridge with nothing either side. */
+  bridge(len: number, pitHalfWidth: number, liquid?: PitDef['liquid'], depth = 12): this {
+    this.addPit(len, pitHalfWidth, liquid, depth, 0);
+    return this.straight(len);
+  }
+
+  private addPit(len: number, halfWidth: number, liquid: PitDef['liquid'], depth: number, overhang: number): void {
+    const h = this.pose.h;
+    this.pits.push({
+      x: this.pose.x + Math.sin(h) * (len / 2),
+      z: this.pose.z + Math.cos(h) * (len / 2),
+      heading: h,
+      halfLength: len / 2 + overhang,
+      halfWidth,
+      depth,
+      liquid,
+    });
   }
 
   mark(name: string): this {

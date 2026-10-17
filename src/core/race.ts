@@ -1,6 +1,5 @@
 import { AUTOPILOT_SKILL, CpuDriver, type CpuSkill } from '../ai/cpuDriver';
 import { NEUTRAL_INPUT, type InputFrame } from './input';
-import { wrapAngle } from './math';
 import { KART_RADIUS, copyKartState, createKartState, respawnKart, stepKart, type KartState, type StepEvents } from '../physics/kart';
 import { kartParams, type EngineClass, type KartParams, type RacerDef } from '../physics/racers';
 import { LapTracker } from '../tracks/laps';
@@ -225,4 +224,3 @@ export function ordinal(n: number): string {
   return `${n}${['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'}`;
 }
 
-export { wrapAngle };

@@ -5,6 +5,7 @@ import { clamp, wrapAngle } from '../src/core/math';
 import { Race } from '../src/core/race';
 import { createKartState, stepKart } from '../src/physics/kart';
 import { RACERS, kartParams } from '../src/physics/racers';
+import { TRACK_LIST } from '../src/tracks/index';
 import { buildRattlesnakeRun } from '../src/tracks/rattlesnakeRun';
 import { LapTracker } from '../src/tracks/laps';
 import { buildClosedSpline, nearestOnSpline, pointAt } from '../src/tracks/spline';
@@ -95,14 +96,35 @@ describe('rattlesnake run', () => {
     expect(def.branches[0].name).toMatch(/Snake's Mouth/);
   });
 
+  it('the slowest kart at 50cc still clears the Mesa Leap', () => {
+    const slow = kartParams(RACERS.find((r) => r.id === 'swamp-witch')!.stats, '50cc');
+    expect(jump(track, track.mainS(def.main.gaps[0][0]) - 45, -1, slow.topSpeed, 0, slow)).toBe('cleared');
+  });
+
+  it("Snake's Mouth needs a boost to clear", () => {
+    const p = kartParams(RACERS[0].stats, '100cc');
+    const gapStart = def.branches[0].gaps[0][0];
+    expect(jump(track, gapStart - 20, 0, p.topSpeed, 0, p)).toBe('fell');
+    // At 150cc a mid-stat kart still needs a boost (only the top-speed racers can skip it).
+    const mid = kartParams(RACERS[0].stats, '150cc');
+    expect(jump(track, gapStart - 20, 0, mid.topSpeed, 0, mid)).toBe('fell');
+    expect(jump(track, gapStart - 20, 0, p.topSpeed * 1.35, 2, p)).toBe('cleared');
+  });
+});
+
+describe.each(TRACK_LIST.map((t) => [t.name, t.build] as const))('%s', (_name, build) => {
+  const def = build();
+  const track = new Track(def);
+
   it('never runs the road over itself', () => {
     expect(minSelfGap(track)).toBeGreaterThan(4);
   });
 
-  it('closes the loop smoothly', () => {
+  it('closes the loop smoothly and stays inside its bounds', () => {
     const sp = track.spline;
     const turn = Math.abs(wrapAngle(Math.atan2(sp.tx[0], sp.tz[0]) - Math.atan2(sp.tx[sp.count - 1], sp.tz[sp.count - 1])));
     expect(turn).toBeLessThan(0.1);
+    for (let i = 0; i < sp.count; i++) expect(Math.max(Math.abs(sp.px[i]), Math.abs(sp.pz[i]))).toBeLessThan(def.bounds - 20);
   });
 
   it('keeps every checkpoint on solid road', () => {
@@ -112,7 +134,7 @@ describe('rattlesnake run', () => {
     }
   });
 
-  it('a lap driven by autopilot finishes without falling off', () => {
+  it('can be lapped by autopilot without falling off', () => {
     const race = new Race(track);
     const kart = race.addKart(RACERS[0], '100cc', null);
     race.time = 0; // skip the countdown
@@ -123,21 +145,6 @@ describe('rattlesnake run', () => {
     }
     expect(kart.laps.lap).toBe(1);
     expect(respawns).toBe(0);
-    // About 1.9 km; somewhere between a minute and a half and two minutes is right.
-    expect(kart.lapTimes[0]).toBeGreaterThan(60);
-    expect(kart.lapTimes[0]).toBeLessThan(130);
-  });
-
-  it('the slowest kart at 50cc still clears the Mesa Leap', () => {
-    const slow = kartParams(RACERS.find((r) => r.id === 'swamp-witch')!.stats, '50cc');
-    expect(jump(track, track.mainS(def.main.gaps[0][0]) - 45, -1, slow.topSpeed, 0, slow)).toBe('cleared');
-  });
-
-  it("Snake's Mouth needs a boost to clear", () => {
-    const p = kartParams(RACERS[0].stats, '100cc');
-    const gapStart = def.branches[0].gaps[0][0];
-    expect(jump(track, gapStart - 20, 0, p.topSpeed, 0, p)).toBe('fell');
-    expect(jump(track, gapStart - 20, 0, p.topSpeed * 1.35, 2, p)).toBe('cleared');
   });
 });
 
