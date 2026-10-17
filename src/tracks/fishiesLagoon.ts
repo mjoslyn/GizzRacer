@@ -33,7 +33,7 @@ export function buildFishiesLagoon(): TrackDef {
   b.section('Pier Jump', { halfWidth: 8.5, wallHeight: 1.2, surface: 'boards' });
   b.mark('pier');
   b.straight(40).elevate(0).rise(20, 3);
-  b.gap(16, 30, 'water');
+  b.gap(14, 30, 'water');
   b.elevate(0).straight(45);
 
   b.section('Palm Shuffle', { halfWidth: 9, surface: 'sand' });
