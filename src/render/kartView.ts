@@ -53,6 +53,20 @@ const TRICKS: Record<string, TrickMove> = {
   },
   // A twisting backflip, arms everywhere.
   'octo-organist': (u, d) => [-u * TAU, 0, d * u * TAU, Math.sin(u * Math.PI) * 1.0],
+  // The band. A stage dive, all the way round.
+  'stu-mackenzie': (u, d) => [-u * TAU, d * u * TAU, 0, Math.sin(u * Math.PI) * 1.1],
+  // A harmonica blast that spins him like a top.
+  'ambrose-kenny-smith': (u, d) => [0, d * u * TAU * 2, Math.sin(u * Math.PI * 4) * 0.2, Math.sin(u * Math.PI) * 0.9],
+  // Stomping on the pedal: a hop and a heel-kick roll.
+  'cook-craig': (u, d) => [0, 0, d * u * TAU, Math.sin(u * Math.PI) * 0.8],
+  // A synth sweep: a slow flat spin with a wobble.
+  'joey-walker': (u, d) => [Math.sin(u * Math.PI * 3) * 0.15, d * u * TAU, 0, Math.sin(u * Math.PI) * 0.8],
+  // The heaviest cab on the grid: a solid backflip.
+  'lucas-harwood': (u) => [-u * TAU, 0, 0, Math.sin(u * Math.PI) * 0.9],
+  // A light show: a backflip with two spins in it, beams everywhere.
+  'jason-galea': (u, d) => [-u * TAU, d * u * TAU * 2, 0, Math.sin(u * Math.PI) * 1.1],
+  // A drum roll: a front flip bounced on the rimshots.
+  'michael-cavanagh': (u) => [u * TAU, 0, 0, Math.sin(u * Math.PI) * 0.9 + Math.abs(Math.sin(u * Math.PI * 4)) * 0.15],
 };
 const DEFAULT_TRICK: TrickMove = TRICKS['gila-rider'];
 
@@ -95,6 +109,7 @@ export class KartView {
   private readonly head: THREE.Object3D | null;
   private readonly treads: { map: THREE.Texture; perMeter: number }[];
   private readonly flappers: THREE.Object3D[];
+  private readonly sweepers: THREE.Object3D[];
   private readonly sparks: Spark[] = [];
   private readonly dust: Spark[] = [];
   private dustCursor = 0;
@@ -155,6 +170,7 @@ export class KartView {
     this.head = model.head ?? null;
     this.treads = model.treads ?? [];
     this.flappers = model.flappers ?? [];
+    this.sweepers = model.sweepers ?? [];
     this.rearTrack = model.rearTrack;
     this.rearZ = model.rearZ;
 
@@ -315,6 +331,8 @@ export class KartView {
     // Wings beat lazily at rest and hard under boost.
     const beat = Math.sin(time * (s.boostTime > 0 ? 22 : 7 + speedRatio * 6) + this.phase);
     for (const f of this.flappers) f.rotation.z = (f.userData.side as number) * (0.12 + beat * 0.3);
+    // Moving heads sweep their beams, faster under boost.
+    for (const w of this.sweepers) w.rotation.y = Math.sin(time * (s.boostTime > 0 ? 4 : 1.4) + (w.userData.phase as number)) * 0.9;
     if (this.head) {
       // Lean into the turn and look along it; tucked back under boost.
       this.head.rotation.set(s.boostTime > 0 ? -0.18 : 0, -s.steer * 0.35 - s.driftDir * 0.15, this.roll * 1.6);

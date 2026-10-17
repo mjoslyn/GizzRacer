@@ -6,7 +6,7 @@ import { COUNTDOWN, Race } from '../src/core/race';
 import { BOULDER_STAGES, HazardSystem, JET_STAGES } from '../src/items/hazards';
 import { buildVolcanoFortress } from '../src/tracks/volcanoFortress';
 import { buildPolygondwanalandJungle } from '../src/tracks/polygondwanalandJungle';
-import { BOX_RESPAWN, CANNON_PAST_MAX, CANNON_PAST_MIN, CANNON_TIME, FUZZ_BOOST, ITEM_KINDS, MINE_WOBBLE, ROULETTE, TEMPO_SLOW_FIRST, TEMPO_SLOW_LAST, WAVE_RANGE, itemWeights, rollItem, tempoSlowFor, type ItemKind } from '../src/items/items';
+import { BOX_RESPAWN, FAR_BEHIND, CANNON_PAST_MAX, CANNON_PAST_MIN, CANNON_TIME, FUZZ_BOOST, ITEM_KINDS, MINE_WOBBLE, ROULETTE, TEMPO_SLOW_FIRST, TEMPO_SLOW_LAST, WAVE_RANGE, itemWeights, rollItem, tempoSlowFor, type ItemKind } from '../src/items/items';
 import { createKartState, respawnKart, slowDown, spinOut, stepKart } from '../src/physics/kart';
 import { FIELD_SIZE, RACERS, kartParams } from '../src/physics/racers';
 import { buildRattlesnakeRun } from '../src/tracks/rattlesnakeRun';
@@ -120,6 +120,24 @@ describe('Woo Cannon', () => {
     }
     // A different amount past the pack each time.
     expect(new Set(pasts.map((p) => p.toFixed(2))).size).toBe(3);
+  });
+
+  it('always comes out of the box for a kart far behind the pack', () => {
+    for (let seed = 1; seed <= 12; seed++) {
+      const race = new Race(track, seed);
+      for (let i = 0; i < 4; i++) race.addKart(RACERS[i], '100cc', null);
+      race.time = 0;
+      const box = race.items.boxes[0];
+      const boxS = track.locate(box.x, box.z, box.y).progress;
+      [boxS + FAR_BEHIND + 60, boxS + FAR_BEHIND + 70, boxS + FAR_BEHIND + 80].forEach((s, i) => place(race, i, s));
+      const last = race.karts[3];
+      last.state.x = box.x;
+      last.state.z = box.z;
+      last.state.y = last.state.groundY = box.y - 1.1;
+      race.step(PHYSICS_DT, race.karts.map(() => NEUTRAL_INPUT));
+      expect(last.behind).toBeGreaterThan(FAR_BEHIND);
+      expect(last.item).toBe('wooCannon');
+    }
   });
 
   it('never drops a kart into a pit or off the edge, on any track', () => {
@@ -431,9 +449,9 @@ describe('a CPU race with items', () => {
     expect(pickups).toBeGreaterThan(20);
     expect(uses.size).toBeGreaterThanOrEqual(4);
     expect(itemHits).toBeGreaterThan(3);
-    // Hazards bite, but not every corner of all 18 laps.
+    // Hazards bite, but not every corner of every lap (three laps per kart; the bound was 60 for eight karts).
     expect(hazardHits).toBeGreaterThan(5);
-    expect(hazardHits).toBeLessThan(60);
+    expect(hazardHits).toBeLessThan((60 * FIELD_SIZE) / 8);
   });
 });
 

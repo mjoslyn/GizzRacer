@@ -1,7 +1,7 @@
 import type { RacerDef } from '../physics/racers';
 
 /** Points by finishing place (spec section 9). */
-export const GP_POINTS = [15, 12, 10, 8, 6, 4, 2, 1];
+export const GP_POINTS = [15, 12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
 
 export interface GpEntry {
   racer: RacerDef;

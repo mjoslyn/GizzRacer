@@ -43,6 +43,8 @@ export const CANNON_PAST_MIN = 5;
 export const CANNON_PAST_MAX = 45;
 export const CANNON_SPEED_MUL = 1.9;
 export const CANNON_SPIN = 1.0;
+/** Metres behind the middle of the field past which an item box always gives a Woo Cannon. */
+export const FAR_BEHIND = 250;
 export const BOX_RESPAWN = 3;
 /** Seconds the item roulette spins before the item lands in the slot. */
 export const ROULETTE = 1;
@@ -65,6 +67,8 @@ export interface ItemHolder {
   rolling: number;
   /** Seconds the current item has been held. */
   held: number;
+  /** Metres behind the middle of the field (0 when level or ahead). */
+  behind: number;
 }
 
 export interface ItemBox {
@@ -201,7 +205,8 @@ export class ItemSystem {
         box.respawn = BOX_RESPAWN;
         // One item at a time: a full slot just pops the box.
         if (!k.item) {
-          k.item = rollItem(k.position, karts.length, this.rand);
+          // Far behind everyone: always the cannon, to get back in the race.
+          k.item = k.behind > FAR_BEHIND && karts.length > 3 ? 'wooCannon' : rollItem(k.position, karts.length, this.rand);
           k.rolling = ROULETTE;
           k.held = 0;
           events.push({ type: 'pickup', kart: k });

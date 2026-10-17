@@ -2,7 +2,7 @@
 
 ## 1. Overview
 - 3D arcade kart racer in the browser, built with Three.js
-- Single player vs CPU racers, one kart per racer so every kart looks different: a roster of 12, eight to a race, so 7 CPUs drawn from the rest (a new draw each time the picker starts a race or cup; a restart keeps the field). Online multiplayer deferred
+- Single player vs CPU racers, one kart per racer so every kart looks different: a roster of 19, twelve to a race, so 11 CPUs drawn at random from the rest with no repeats (a new draw each time the picker starts a race or cup; a restart keeps the field, and a cup keeps the same twelve for every race). Online rooms fill the places humans leave with CPUs the same way
 - Psychedelic garage-rock world with original characters
 - Target: 60 fps on a mid-range laptop, Chrome/Firefox/Safari, keyboard, gamepad and touch (phones and tablets, iOS included)
 - Phones play in landscape, fullscreen where the browser allows it (installable web app for iPhone)
@@ -50,10 +50,17 @@ Touch: drag on the left half to steer (analog), DRIFT and BRAKE buttons on the r
 | Gator Drummer | 4 | 2 | 4 | 2 | 3 |
 | Mushroom Sage | 3 | 3 | 2 | 4 | 4 |
 | Octo Organist | 4 | 2 | 3 | 2 | 3 |
+| Stu | 3 | 3 | 3 | 3 | 4 |
+| Amby | 3 | 5 | 2 | 3 | 3 |
+| Cookie | 3 | 2 | 3 | 5 | 4 |
+| Joey | 3 | 3 | 2 | 4 | 3 |
+| Lukey | 4 | 2 | 4 | 2 | 3 |
+| Cavs | 4 | 2 | 3 | 2 | 3 |
+| Jason | 3 | 4 | 2 | 3 | 4 |
 
-Tuned with `npm run balance` (all-CPU races on every track at 100cc and 150cc) so no stat dominates: average finishing places run from about 3.5 to 5.5 of 8, and every racer reaches the podium. A speed point is worth about 2.7% top speed.
+Tuned with `npm run balance` (all-CPU races on every track at 100cc and 150cc, twelve-kart fields drawn round the roster) so no stat dominates: average finishing places run from about 5.3 to 8.2 of 12, and every racer reaches the podium. A speed point is worth about 2.7% top speed.
 
-All designs are original. No likenesses of band members or album art. Every racer has their own character model and vehicle (render/racerModels.ts), and not every vehicle is a kart: Gila Rider flies a rotor chopper, Swamp Witch a fan hovercraft, Microtonal Monk a levitating lotus, Mushroom Sage a toadstool saucer, Mantis Shredder rides a monowheel and Gator Drummer a tracked kick-drum tank. All of them drive with the same kart physics; the difference is in the look (hovering craft bob and bank, leave no skid marks, and their drift kicks up ground instead of tire smoke). Drivers lean into turns and look where they steer, and every racer has their own trick move.
+All designs are original, with no album art. The band races too, with their blessing, under their nicknames: Stu (a guitar-body kart, a flute on his back), Amby (a chrome harmonica racer, harmonica raised), Cookie (a synth-guitar hybrid: a keytar body with a keyboard down the deck and a fretted neck out front), Joey (a modular-synth buggy with patch cables), Lukey (an 8x10 bass cab on wheels) and Cavs (rolling on two bass drums, sticks up), plus Jason, their visual artist, riding a rolling lighting rig with moving heads sweeping their beams. They're drawn in the NBA Jam manner, big sculpted heads on smaller bodies, all in work coveralls with their names on the patch. Every racer has their own character model and vehicle (render/racerModels.ts), and not every vehicle is a kart: Gila Rider flies a rotor chopper, Swamp Witch a fan hovercraft, Microtonal Monk a levitating lotus, Mushroom Sage a toadstool saucer, Mantis Shredder rides a monowheel and Gator Drummer a tracked kick-drum tank. All of them drive with the same kart physics; the difference is in the look (hovering craft bob and bank, leave no skid marks, and their drift kicks up ground instead of tire smoke). Drivers lean into turns and look where they steer, and every racer has their own trick move.
 
 ## 6. Items
 | Item | Effect | Odds bias |
@@ -140,7 +147,7 @@ The Track Generator mode builds a track at race time from a seed and three dials
 - Time Trial: a single lap, alone, no item boxes, best total and lap per track and class saved in the browser. The fastest run per track and class is recorded (15 samples/s, about 75 KB) and replays as a see-through ghost
 - Extra mode beyond the spec: Single Race (any track, full field)
 - HUD: position, lap counter, item slot, minimap, timer, drift spark meter
-- Grand Prix points: 15, 12, 10, 8, 6, 4, 2, 1
+- Grand Prix points: 15, 12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 (twelve to a race)
 
 ## 10. Audio
 - Music: the seqbaby soundtrack pre-rendered to looping MP3s (tools/render-soundtrack.mjs), played with Web Audio for sample-accurate loops

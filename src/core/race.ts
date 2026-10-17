@@ -53,6 +53,8 @@ export class RaceKart implements ItemHolder {
   item: ItemKind | null = null;
   rolling = 0;
   held = 0;
+  /** Metres behind the middle of the field, for the far-behind Woo Cannon. */
+  behind = 0;
   /** In the Woo Cannon: the kart it's chasing, and how far past it to fly before letting go. */
   cannonGoal: { target: RaceKart; past: number } | null = null;
   /**
@@ -387,6 +389,8 @@ export class Race {
   private rank(): void {
     const order = [...this.results, ...this.karts.filter((k) => k.finishTime === null).sort((a, b) => b.distance - a.distance)];
     order.forEach((k, i) => (k.position = i + 1));
+    const middle = order[Math.ceil(order.length / 2) - 1];
+    for (const k of order) k.behind = middle && k.finishTime === null ? Math.max(0, middle.distance - k.distance) : 0;
   }
 }
 

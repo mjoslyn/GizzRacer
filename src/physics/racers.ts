@@ -30,10 +30,18 @@ export const RACERS: readonly RacerDef[] = [
   { id: 'gator-drummer', name: 'Gator Drummer', stats: { speed: 4, accel: 2, weight: 4, handling: 2, drift: 3 }, color: 0xb8202a, accent: 0xf2e6c8 },
   { id: 'mushroom-sage', name: 'Mushroom Sage', stats: { speed: 3, accel: 3, weight: 2, handling: 4, drift: 4 }, color: 0x7a5adf, accent: 0xf4e8d0 },
   { id: 'octo-organist', name: 'Octo Organist', stats: { speed: 4, accel: 2, weight: 3, handling: 2, drift: 3 }, color: 0xff7aa8, accent: 0x2ad8b0 },
+  // The band, with their blessing.
+  { id: 'stu-mackenzie', name: 'Stu', stats: { speed: 3, accel: 3, weight: 3, handling: 3, drift: 4 }, color: 0xd8a83a, accent: 0x7a2a8a },
+  { id: 'ambrose-kenny-smith', name: 'Amby', stats: { speed: 3, accel: 5, weight: 2, handling: 3, drift: 3 }, color: 0x2a8ad8, accent: 0xff5a3a },
+  { id: 'cook-craig', name: 'Cookie', stats: { speed: 3, accel: 2, weight: 3, handling: 5, drift: 4 }, color: 0x3aa04a, accent: 0xffe14d },
+  { id: 'joey-walker', name: 'Joey', stats: { speed: 3, accel: 3, weight: 2, handling: 4, drift: 3 }, color: 0xe85a9a, accent: 0x3adcff },
+  { id: 'lucas-harwood', name: 'Lukey', stats: { speed: 4, accel: 2, weight: 4, handling: 2, drift: 3 }, color: 0x8a5a3a, accent: 0xd84a2a },
+  { id: 'jason-galea', name: 'Jason', stats: { speed: 3, accel: 4, weight: 2, handling: 3, drift: 4 }, color: 0x1a1a22, accent: 0x3adcff },
+  { id: 'michael-cavanagh', name: 'Cavs', stats: { speed: 4, accel: 2, weight: 3, handling: 2, drift: 3 }, color: 0x1a3a6a, accent: 0xffd23a },
 ];
 
 /** Karts in one race: the player (or the room's players) and CPUs drawn from the roster. */
-export const FIELD_SIZE = 8;
+export const FIELD_SIZE = 12;
 
 /** `count` racers not in `taken`, drawn and ordered by `seed`: a seed always draws the same rivals. */
 export function pickRivals(taken: ReadonlySet<string>, count: number, seed: number): RacerDef[] {

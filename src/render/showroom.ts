@@ -28,8 +28,8 @@ export function startShowroom(app: HTMLElement): void {
     camera.position.set(0, 2.6, 6.5);
     camera.lookAt(0, 0.9, 0);
   } else {
-    camera.position.set(0, 6.5, 15);
-    camera.lookAt(0, 0.6, -2.4);
+    camera.position.set(0, 8.5, 19);
+    camera.lookAt(0, 0.6, -4);
   }
 
   const floor = new THREE.Mesh(new THREE.CircleGeometry(30, 48), new THREE.MeshLambertMaterial({ color: 0x3a2a4a }));
@@ -37,7 +37,7 @@ export function startShowroom(app: HTMLElement): void {
   floor.position.y = -0.2;
   scene.add(floor);
 
-  const cols = Math.min(4, shown.length);
+  const cols = Math.min(6, shown.length);
   const spacing = 4.4;
   const stands = shown.map((racer, i) => {
     const view = new KartView(racer);

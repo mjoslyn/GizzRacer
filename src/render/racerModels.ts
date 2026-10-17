@@ -55,6 +55,8 @@ export interface KartModel {
   treads?: { map: THREE.Texture; perMeter: number }[];
   /** Wings that beat about their z axis; `userData.side` is -1 or 1. Built unrotated. */
   flappers?: THREE.Object3D[];
+  /** Moving-head lights that sweep side to side about their y axis. Built unrotated. */
+  sweepers?: THREE.Object3D[];
 }
 
 let env: THREE.CubeTexture | null = null;
@@ -1318,6 +1320,589 @@ function octoOrganist(r: RacerDef): KartModel {
   };
 }
 
+// ---- The band: stylized cartoons, each in a vehicle built from his instrument --
+
+interface Look {
+  skin: number;
+  hair: number;
+  style: 'long' | 'curly' | 'short' | 'shaggy';
+  /** Coveralls: the colour, the trim (patch border, cuffs, collar) and the name on the patch. */
+  shirt: number;
+  trim?: number;
+  name: string;
+  iris?: number;
+  beard?: number;
+  hat?: { color: number; kind: 'bucket' | 'cap' | 'beanie' };
+  headphones?: number;
+}
+
+/** Big-head mode: how much larger than life the heads are. */
+const BIG_HEAD = 1.45;
+
+/** Work coveralls wrapped round a cylinder: a zip down the front, a chest pocket, a name patch. */
+function coverallTexture(color: number, trim: number, name: string): THREE.CanvasTexture {
+  const c = document.createElement('canvas');
+  c.width = c.height = 256;
+  const g = c.getContext('2d')!;
+  const hex = (n: number) => `#${n.toString(16).padStart(6, '0')}`;
+  g.fillStyle = hex(color);
+  g.fillRect(0, 0, 256, 256);
+  // Seams down the sides and a darker fold or two, so it reads as cloth.
+  g.fillStyle = 'rgba(0,0,0,0.18)';
+  g.fillRect(62, 0, 4, 256);
+  g.fillRect(190, 0, 4, 256);
+  // The zip.
+  g.fillStyle = '#c8c8c8';
+  g.fillRect(126, 0, 4, 256);
+  g.fillStyle = 'rgba(0,0,0,0.35)';
+  for (let y = 4; y < 256; y += 8) g.fillRect(124, y, 8, 2);
+  // A chest pocket with a flap on the left, the name patch on the right.
+  g.strokeStyle = 'rgba(0,0,0,0.35)';
+  g.lineWidth = 3;
+  g.strokeRect(84, 60, 32, 36);
+  g.fillStyle = 'rgba(0,0,0,0.15)';
+  g.fillRect(84, 60, 32, 10);
+  g.fillStyle = '#f8f4e8';
+  g.beginPath();
+  g.ellipse(160, 74, 26, 14, 0, 0, Math.PI * 2);
+  g.fill();
+  g.lineWidth = 4;
+  g.strokeStyle = hex(trim);
+  g.stroke();
+  g.font = 'italic 900 15px "Arial Black", sans-serif';
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillStyle = hex(trim);
+  g.fillText(name.toUpperCase(), 160, 75, 46);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = THREE.RepeatWrapping;
+  // A cylinder's seam is at the front: turn the zip round to face forward.
+  t.offset.x = 0.5;
+  return t;
+}
+
+/**
+ * A cartoon musician from the waist up at `d`, facing +z, in the NBA Jam
+ * manner: a big sculpted head on a smaller body, here in work coveralls.
+ * Returns the head (unrotated, for the lean animation).
+ */
+function musician(d: THREE.Group, look: Look): THREE.Group {
+  const skin = matte(look.skin, { shininess: 25, specular: 0x221a14 });
+  const shade = matte(new THREE.Color(look.skin).multiplyScalar(0.82).getHex());
+  const hair = matte(look.hair, { flatShading: true, shininess: 40, specular: 0x333333 });
+  const suit = matte(0xffffff, { map: coverallTexture(look.shirt, look.trim ?? 0xffffff, look.name) });
+  const cloth = matte(look.shirt);
+  const collar = matte(look.trim ?? look.shirt);
+  // Torso in coveralls, shoulders rounded, a collar folded down round the neck.
+  put(d, cyl(0.25, 0.3, 0.58, 20), suit, [0, 0.34, 0]);
+  for (const side of [-1, 1]) {
+    put(d, ball(0.11, 12, 8), cloth, [side * 0.27, 0.58, 0]);
+    put(d, box(0.13, 0.03, 0.1), collar, [side * 0.07, 0.66, 0.15], [0.5, 0, side * -0.5]);
+  }
+  put(d, cyl(0.14, 0.14, 0.05, 16), collar, [0, 0.65, 0]);
+  put(d, cyl(0.1, 0.12, 0.16, 12), skin, [0, 0.72, 0]);
+
+  const head = new THREE.Group();
+  head.position.set(0, 1.0, 0.02);
+  head.scale.setScalar(BIG_HEAD);
+  // Skull, jaw, cheekbones, brow.
+  put(head, ball(0.25, 20, 16), skin, [0, 0.02, -0.01], [0, 0, 0], [0.92, 1.06, 1]);
+  put(head, ball(0.2, 16, 12), skin, [0, -0.1, 0.04], [0, 0, 0], [0.95, 0.8, 1]);
+  for (const side of [-1, 1]) put(head, ball(0.075, 10, 8), skin, [side * 0.12, -0.04, 0.17]);
+  put(head, box(0.32, 0.04, 0.07), skin, [0, 0.095, 0.2]);
+  // Eyes: sclera, iris, pupil, a glint, and a lid over the top.
+  const iris = matte(look.iris ?? 0x4a3020, { shininess: 80, specular: 0xffffff });
+  for (const side of [-1, 1]) {
+    const x = side * 0.085;
+    put(head, ball(0.05, 12, 10), matte(0xfaf6ec, { shininess: 60 }), [x, 0.035, 0.205], [0, 0, 0], [1.25, 0.85, 0.7]);
+    put(head, ball(0.028, 10, 8), iris, [x, 0.035, 0.235]);
+    put(head, ball(0.014, 8, 6), matte(0x050505), [x, 0.035, 0.252]);
+    put(head, ball(0.007, 6, 4), glow(0xffffff), [x + 0.008, 0.045, 0.258]);
+    put(head, new THREE.SphereGeometry(0.054, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2.2), skin, [x, 0.04, 0.203], [-0.25, 0, 0], [1.25, 0.8, 0.75]);
+    // Brows: the hair colour, thick and arched.
+    put(head, box(0.11, 0.026, 0.03), hair, [x, 0.125, 0.225], [0, 0, side * -0.18]);
+    // Ears with a shaded hollow.
+    put(head, ball(0.06, 10, 8), skin, [side * 0.24, 0, 0], [0, 0, 0], [0.45, 1, 0.7]);
+    put(head, ball(0.035, 8, 6), shade, [side * 0.255, 0, 0.01], [0, 0, 0], [0.3, 0.8, 0.5]);
+  }
+  // Nose: bridge, tip, nostril wings.
+  put(head, box(0.045, 0.12, 0.05), skin, [0, 0.0, 0.245], [-0.2, 0, 0]);
+  put(head, ball(0.04, 10, 8), skin, [0, -0.055, 0.27]);
+  for (const side of [-1, 1]) put(head, ball(0.024, 8, 6), shade, [side * 0.032, -0.065, 0.255]);
+  // A wide open grin with teeth showing.
+  put(head, ball(0.07, 12, 8), matte(0x3a0a0a), [0, -0.125, 0.215], [0, 0, 0], [1.25, 0.55, 0.45]);
+  put(head, box(0.11, 0.026, 0.02), matte(0xffffff, { shininess: 80 }), [0, -0.105, 0.243]);
+  put(head, new THREE.TorusGeometry(0.075, 0.014, 6, 16, Math.PI), matte(0xb8605a), [0, -0.118, 0.22], [0.25, 0, Math.PI]);
+  if (look.beard !== undefined) {
+    const beard = matte(look.beard, { flatShading: true });
+    put(head, ball(0.2, 14, 10), beard, [0, -0.17, 0.08], [0, 0, 0], [1.05, 0.62, 0.85]);
+    for (const side of [-1, 1]) put(head, ball(0.09, 10, 8), beard, [side * 0.15, -0.09, 0.1], [0, 0, 0], [0.6, 1.1, 1]);
+    for (const side of [-1, 1]) put(head, ball(0.05, 10, 8), beard, [side * 0.045, -0.085, 0.25], [0, 0, side * 0.3], [1.3, 0.55, 0.6]);
+  }
+  // Hair, built up from clumps so it has some volume and shape.
+  const clump = (pos: [number, number, number], size: number, stretch: [number, number, number], rot: [number, number, number] = [0, 0, 0]) => put(head, ball(size, 8, 6), hair, pos, rot, stretch);
+  put(head, new THREE.SphereGeometry(0.265, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), hair, [0, 0.06, -0.02], [-0.15, 0, 0], [1, 0.95, 1.05]);
+  switch (look.style) {
+    case 'long':
+      for (let k = 0; k < 14; k++) {
+        const a = Math.PI * (0.15 + (k / 13) * 0.7);
+        const x = Math.cos(a) * 0.25;
+        clump([x, -0.18 - (k % 3) * 0.03, -Math.sin(a) * 0.17 - 0.02], 0.08, [0.75, 2.6, 0.8], [0, 0, x * 0.5]);
+      }
+      for (const side of [-1, 1]) clump([side * 0.12, 0.17, 0.16], 0.08, [1.4, 0.6, 0.8], [0, 0, side * 0.5]);
+      break;
+    case 'curly':
+      for (let k = 0; k < 34; k++) {
+        const a = (k * 2.399) % (Math.PI * 2);
+        const h = (k * 0.618) % 1;
+        const r = 0.24 + 0.03 * Math.sin(k * 3.1);
+        const up = 0.05 + h * 0.25;
+        if (Math.sin(a) > 0.55 && up < 0.18) continue; // keep the face clear
+        clump([Math.cos(a) * r, up, Math.sin(a) * r - 0.04], 0.075, [1, 1, 1]);
+      }
+      break;
+    case 'shaggy':
+      for (let k = 0; k < 10; k++) {
+        const a = Math.PI * (0.05 + (k / 9) * 0.9);
+        clump([Math.cos(a) * 0.25, -0.05 - (k % 2) * 0.04, -Math.sin(a) * 0.16], 0.07, [0.8, 1.8, 0.8]);
+      }
+      for (let k = -2; k <= 2; k++) clump([k * 0.07, 0.16, 0.19], 0.05, [0.8, 1.4, 0.6], [0.6, 0, k * 0.25]);
+      break;
+    case 'short':
+      for (let k = 0; k < 7; k++) clump([-0.15 + k * 0.05, 0.24, 0.05 - (k % 2) * 0.05], 0.06, [0.8, 1.2, 0.8]);
+      break;
+  }
+  if (look.hat) {
+    const hat = matte(look.hat.color);
+    if (look.hat.kind === 'bucket') {
+      put(head, cyl(0.2, 0.26, 0.2, 18), hat, [0, 0.28, -0.01]);
+      put(head, cyl(0.42, 0.42, 0.03, 22), hat, [0, 0.18, -0.01], [0.08, 0, 0]);
+      put(head, ring(0.215, 0.015), matte(0x1a1a1a), [0, 0.22, -0.01], [Math.PI / 2, 0, 0]);
+    } else if (look.hat.kind === 'cap') {
+      put(head, new THREE.SphereGeometry(0.275, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), hat, [0, 0.1, -0.02]);
+      put(head, box(0.32, 0.03, 0.24), hat, [0, 0.11, 0.27], [0.15, 0, 0]);
+      put(head, ball(0.025, 6, 4), hat, [0, 0.37, -0.02]);
+    } else {
+      put(head, new THREE.SphereGeometry(0.275, 16, 8, 0, Math.PI * 2, 0, Math.PI / 1.9), hat, [0, 0.08, -0.02], [0, 0, 0], [1.03, 1.15, 1.03]);
+      put(head, ring(0.265, 0.04), hat, [0, 0.1, -0.02], [Math.PI / 2, 0, 0]);
+    }
+  }
+  if (look.headphones !== undefined) {
+    const hp = gloss(look.headphones);
+    put(head, ring(0.3, 0.025, Math.PI), hp, [0, 0.03, 0], [0, Math.PI / 2, 0]);
+    for (const side of [-1, 1]) {
+      put(head, cyl(0.09, 0.09, 0.07, 16), hp, [side * 0.29, 0, 0], [0, 0, Math.PI / 2]);
+      put(head, cyl(0.07, 0.07, 0.072, 16), matte(0x111111), [side * 0.295, 0, 0], [0, 0, Math.PI / 2]);
+    }
+  }
+  d.add(head);
+  return head;
+}
+
+/** A hand closed round a grip: palm, four curled fingers and a thumb, the sleeve's cuff behind. */
+function hand(parent: THREE.Object3D, at: [number, number, number], skin: THREE.Material, band: THREE.Material): void {
+  const h = new THREE.Group();
+  h.position.set(...at);
+  put(h, ball(0.065, 10, 8), skin, [0, 0, 0], [0, 0, 0], [1, 0.8, 1.1]);
+  for (let k = 0; k < 4; k++) put(h, cyl(0.02, 0.018, 0.08, 6), skin, [-0.045 + k * 0.03, 0.035, 0.05], [1.2, 0, 0]);
+  put(h, cyl(0.022, 0.02, 0.07, 6), skin, [0.06, 0.02, 0.02], [0.6, 0, -0.8]);
+  put(h, cyl(0.06, 0.06, 0.06, 12), band, [0, -0.02, -0.08], [Math.PI / 2, 0, 0]);
+  parent.add(h);
+}
+
+/** Coverall sleeves from a musician's shoulders (torso at `d`) to two grips, cuffs in the trim colour, hands bare. */
+function musicianArms(d: THREE.Group, look: Look, grips: [number, number, number][]): void {
+  const skin = matte(look.skin, { shininess: 25, specular: 0x221a14 });
+  const sleeve = matte(look.shirt);
+  const cuff = matte(look.trim ?? look.shirt);
+  grips.forEach((g, k) => {
+    const side = k ? 1 : -1;
+    const shoulder: [number, number, number] = [side * 0.29, 0.56, 0.0];
+    const elbow: [number, number, number] = [(shoulder[0] + g[0]) / 2 + side * 0.09, Math.min(shoulder[1], g[1]) - 0.08, (shoulder[2] + g[2]) / 2];
+    rod(d, shoulder, elbow, 0.085, sleeve, 0.075);
+    put(d, ball(0.075, 8, 6), sleeve, elbow);
+    rod(d, elbow, g, 0.072, sleeve, 0.065);
+    hand(d, g, skin, cuff);
+  });
+}
+
+/** A guitar body as a flat slab: two overlapping lobes and a waist. */
+function guitarBody(parent: THREE.Object3D, mat: THREE.Material, pos: [number, number, number], scale: number, thickness: number): void {
+  const g = new THREE.Group();
+  g.position.set(...pos);
+  g.scale.setScalar(scale);
+  put(g, cyl(0.62, 0.62, thickness, 28), mat, [0, 0, -0.35]);
+  put(g, cyl(0.48, 0.48, thickness, 28), mat, [0, 0, 0.45]);
+  put(g, box(0.7, thickness, 0.6), mat, [0, 0, 0.05]);
+  parent.add(g);
+}
+
+// Stu Mackenzie: frontman, guitar and flute, in a kart built from a guitar.
+function stuMackenzie(r: RacerDef): KartModel {
+  const body = new THREE.Group();
+  const finish = gloss(r.color);
+  const wood = matte(0x7a4a22, { shininess: 50, specular: 0x553322 });
+  const steel = chrome();
+  // The kart is the guitar: a body for the tub, the neck run out as the nose, the headstock up front.
+  guitarBody(body, finish, [0, 0.45, -0.1], 1.25, 0.32);
+  put(body, cyl(0.28, 0.28, 0.33, 20), matte(0x111111), [0, 0.46, 0.25]);
+  put(body, box(0.9, 0.04, 0.2), matte(0x1a1a1a), [0, 0.62, -0.65]);
+  put(body, box(0.22, 0.1, 1.2), wood, [0, 0.55, 1.15]);
+  for (let k = 0; k < 9; k++) put(body, box(0.24, 0.015, 0.02), steel, [0, 0.61, 0.62 + k * 0.12]);
+  for (let k = 0; k < 4; k++) put(body, box(0.006, 0.006, 2.2), steel, [-0.06 + k * 0.04, 0.63, 0.4]);
+  put(body, box(0.32, 0.1, 0.36), finish, [0, 0.56, 1.85], [-0.2, 0, 0]);
+  for (const side of [-1, 1]) for (let k = 0; k < 2; k++) put(body, cyl(0.03, 0.03, 0.12, 8), steel, [side * 0.2, 0.6, 1.78 + k * 0.14], [0, 0, Math.PI / 2]);
+  headlights(body, 0.45, 0.5, 0.95, 0.08);
+
+  const look: Look = { skin: 0xf0c8a0, hair: 0x3a2618, style: 'long', shirt: 0x2a5a8a, trim: 0xffd23a, name: 'Stu', iris: 0x3a5a3a };
+  const d = new THREE.Group();
+  d.position.set(0, 0.55, -0.35);
+  const head = musician(d, look);
+  const grips = steeringWheel(d, 0.42, 0.62, 0.2);
+  musicianArms(d, look, grips);
+  // A flute slung across his back.
+  put(d, cyl(0.035, 0.035, 1.3, 10), steel, [0, 0.55, -0.32], [0, 0, 1.1]);
+  for (let k = 0; k < 5; k++) put(d, cyl(0.02, 0.02, 0.02, 6), matte(0x222222), [-0.3 + k * 0.13, 0.42 + k * 0.06, -0.36], [Math.PI / 2, 0, 0]);
+  body.add(d);
+  return {
+    body,
+    wheels: [
+      { x: 0.7, z: 0.95, radius: 0.32, width: 0.26, front: true },
+      { x: -0.7, z: 0.95, radius: 0.32, width: 0.26, front: true },
+      { x: 0.82, z: -0.8, radius: 0.44, width: 0.38, front: false },
+      { x: -0.82, z: -0.8, radius: 0.44, width: 0.38, front: false },
+    ],
+    exhausts: pipes(body, 0.32, 0.5, -1.3),
+    rearTrack: 0.82,
+    rearZ: -0.9,
+    spinners: [],
+    shadow: [2.4, 3.6],
+    head,
+  };
+}
+
+// Ambrose Kenny-Smith: harmonica and keys, in a racer that is one long chrome harmonica.
+function ambroseKennySmith(r: RacerDef): KartModel {
+  const body = new THREE.Group();
+  const plate = chrome();
+  const comb = gloss(r.color);
+  // The comb (coloured) between two chrome cover plates, the holes along both flanks.
+  put(body, box(1.0, 0.36, 2.7), comb, [0, 0.5, 0]);
+  for (const y of [0.31, 0.69]) put(body, box(1.08, 0.06, 2.8), plate, [0, y, 0]);
+  for (const side of [-1, 1]) for (let k = 0; k < 10; k++) put(body, box(0.02, 0.16, 0.16), matte(0x0a0a0a), [side * 0.51, 0.5, -1.15 + k * 0.255]);
+  // Rounded plate ends, a keyboard on the dash.
+  for (const z of [1.4, -1.4]) put(body, cyl(0.2, 0.2, 1.08, 12), plate, [0, 0.5, z], [0, 0, Math.PI / 2], [1, 1, 0.6]);
+  const keys = new THREE.Group();
+  keys.position.set(0, 0.74, 0.75);
+  for (let k = 0; k < 8; k++) put(keys, box(0.09, 0.04, 0.3), matte(0xf4f0e4), [-0.35 + k * 0.1, 0, 0]);
+  for (const k of [0, 1, 3, 4, 5]) put(keys, box(0.05, 0.05, 0.18), matte(0x111111), [-0.3 + k * 0.1, 0.03, -0.06]);
+  body.add(keys);
+  headlights(body, 0.35, 0.5, 1.55, 0.08);
+
+  const look: Look = { skin: 0xe8b890, hair: 0x2a1a10, style: 'curly', shirt: r.accent, trim: 0xffffff, name: 'Amby' };
+  const d = new THREE.Group();
+  d.position.set(0, 0.7, -0.35);
+  const head = musician(d, look);
+  // One hand on the keys, the other raising a harmonica to the sky.
+  musicianArms(d, look, [[-0.25, 0.1, 1.05], [0.5, 1.3, 0.3]]);
+  put(d, box(0.32, 0.08, 0.1), plate, [0.5, 1.4, 0.32]);
+  body.add(d);
+  return {
+    body,
+    wheels: [0.72, -0.72].flatMap((x) => [
+      { x, z: 0.95, radius: 0.32, width: 0.24, front: true },
+      { x, z: -0.95, radius: 0.36, width: 0.3, front: false },
+    ]),
+    exhausts: pipes(body, 0.3, 0.5, -1.55, 0.09),
+    rearTrack: 0.72,
+    rearZ: -1.05,
+    spinners: [],
+    shadow: [2.2, 3.4],
+    head,
+  };
+}
+
+// Cook Craig: guitar and synth, riding a hybrid of the two: an angular keytar
+// body with a keyboard down the deck, synth knobs and a pitch wheel, strings
+// running over the keys and a fretted neck out front.
+function cookCraig(r: RacerDef): KartModel {
+  const body = new THREE.Group();
+  const finish = gloss(r.color, { shininess: 110 });
+  const steel = chrome();
+  // The wedge body: two angled slabs meeting at the tail, a pointed horn either side.
+  put(body, box(1.3, 0.3, 2.1), finish, [0, 0.48, -0.15]);
+  for (const side of [-1, 1]) {
+    put(body, box(0.5, 0.3, 1.1), finish, [side * 0.72, 0.48, 0.25], [0, side * 0.45, 0]);
+    put(body, cone(0.12, 0.5, 4), finish, [side * 0.72, 0.62, 0.95], [Math.PI / 2 - 0.3, 0, 0]);
+  }
+  // A keyboard down the middle of the deck, two octaves.
+  const keys = new THREE.Group();
+  keys.position.set(0, 0.645, -0.05);
+  for (let k = 0; k < 14; k++) put(keys, box(0.075, 0.035, 0.36), matte(0xf4f0e4, { shininess: 60 }), [-0.49 + k * 0.077, 0, 0]);
+  for (let k = 0; k < 13; k++) if (k % 7 !== 2 && k % 7 !== 6) put(keys, box(0.045, 0.04, 0.22), matte(0x111111), [-0.45 + k * 0.077, 0.025, -0.07]);
+  body.add(keys);
+  // Strings running the length of it, over the keys and up the neck.
+  for (let k = 0; k < 6; k++) put(body, box(0.005, 0.005, 3.0), steel, [-0.12 + k * 0.048, 0.69, 0.55]);
+  // Synth controls: a row of knobs, LEDs, a pitch wheel and a mod wheel.
+  for (let k = 0; k < 6; k++) {
+    put(body, cyl(0.045, 0.05, 0.05, 12), matte([0xffffff, 0xff5a3a, 0x3adcff][k % 3]), [-0.4 + k * 0.16, 0.66, -0.48]);
+    put(body, ball(0.018, 6, 4), glow(k % 2 ? 0x7aff7a : 0xff3a3a), [-0.4 + k * 0.16, 0.65, -0.62]);
+  }
+  for (const x of [-0.58, -0.48]) put(body, cyl(0.07, 0.07, 0.035, 16), matte(0x2a2a2a), [x, 0.64, 0.25], [0, 0, Math.PI / 2]);
+  // The neck: frets, inlays, a headstock with tuners up front.
+  put(body, box(0.26, 0.08, 1.1), matte(0x3a2210, { shininess: 50 }), [0, 0.6, 1.4]);
+  for (let k = 0; k < 10; k++) put(body, box(0.27, 0.012, 0.015), steel, [0, 0.645, 0.9 + k * 0.1]);
+  for (const z of [1.05, 1.25, 1.45, 1.75]) put(body, ball(0.018, 6, 4), matte(0xf4f0e4), [0, 0.645, z]);
+  put(body, box(0.36, 0.08, 0.32), finish, [0, 0.6, 2.05], [-0.15, 0, 0.2]);
+  for (const side of [-1, 1]) for (let k = 0; k < 3; k++) put(body, cyl(0.025, 0.025, 0.1, 8), steel, [side * 0.22, 0.62, 1.95 + k * 0.08], [0, 0, Math.PI / 2]);
+  // A coiled cable off the tail.
+  for (let k = 0; k < 6; k++) put(body, ring(0.08, 0.016), matte(0x111111), [0.5, 0.45, -1.25 - k * 0.06]);
+  headlights(body, 0.55, 0.45, 0.95, 0.07, 0xd8ffd8);
+
+  const look: Look = { skin: 0xf2cfae, hair: 0x7a4a24, style: 'shaggy', shirt: 0xe8dcc0, trim: 0x2a6a3a, name: 'Cookie', iris: 0x5a7a9a, hat: { color: 0x3a5a3a, kind: 'bucket' } };
+  const d = new THREE.Group();
+  d.position.set(0, 0.62, -0.75);
+  const head = musician(d, look);
+  const grips = steeringWheel(d, 0.42, 0.6, 0.2);
+  musicianArms(d, look, grips);
+  body.add(d);
+  return {
+    body,
+    wheels: [0.96, -0.96].flatMap((x) => [
+      { x, z: 0.85, radius: 0.38, width: 0.34, front: true },
+      { x, z: -0.85, radius: 0.42, width: 0.38, front: false },
+    ]),
+    exhausts: pipes(body, 0.4, 0.55, -1.3),
+    rearTrack: 0.96,
+    rearZ: -0.9,
+    spinners: [],
+    shadow: [2.6, 3.2],
+    head,
+  };
+}
+
+// Joey Walker: guitar and synths, in a buggy built around a modular synth, patch cables everywhere.
+function joeyWalker(r: RacerDef): KartModel {
+  const body = new THREE.Group();
+  const frame = gloss(0x2a2a30);
+  put(body, box(1.2, 0.25, 2.4), gloss(r.color), [0, 0.4, 0]);
+  // The rack: two rows of modules with knobs and blinking LEDs.
+  const rack = new THREE.Group();
+  rack.position.set(0, 0.95, -0.85);
+  rack.rotation.x = -0.25;
+  put(rack, box(1.3, 0.85, 0.3), frame, [0, 0, 0]);
+  const knobColors = [0xffffff, 0xff5a3a, 0x3adcff, 0xffd23a];
+  for (let row = 0; row < 2; row++)
+    for (let k = 0; k < 7; k++) {
+      put(rack, cyl(0.04, 0.045, 0.05, 10), matte(knobColors[(k + row) % 4]), [-0.54 + k * 0.18, 0.2 - row * 0.36, 0.17], [Math.PI / 2, 0, 0]);
+      put(rack, ball(0.02, 6, 4), glow(k % 2 ? 0x7aff7a : 0xff3a3a), [-0.54 + k * 0.18, 0.08 - row * 0.36, 0.16]);
+    }
+  // Patch cables drooping between jacks.
+  const cableColors = [0xff3a8a, 0x3adcff, 0xffd23a, 0x7aff7a, 0xff8a2a];
+  for (let k = 0; k < 5; k++) {
+    const a = new THREE.Vector3(-0.5 + k * 0.22, 0.32, 0.18);
+    const b = new THREE.Vector3(-0.3 + ((k * 3) % 5) * 0.2, -0.32, 0.18);
+    const curve = new THREE.QuadraticBezierCurve3(a, new THREE.Vector3((a.x + b.x) / 2, (a.y + b.y) / 2 - 0.1, 0.45), b);
+    put(rack, new THREE.TubeGeometry(curve, 10, 0.018, 6, false), matte(cableColors[k]), [0, 0, 0]);
+  }
+  body.add(rack);
+  // Roll bars over the seat.
+  for (const side of [-1, 1]) rod(body, [side * 0.55, 0.5, -0.5], [side * 0.45, 1.75, -0.3], 0.04, chrome());
+  rod(body, [-0.45, 1.75, -0.3], [0.45, 1.75, -0.3], 0.04, chrome());
+  headlights(body, 0.4, 0.45, 1.22, 0.08, 0xc8f0ff);
+
+  const look: Look = { skin: 0xf0c49a, hair: 0x1a1210, style: 'short', shirt: 0x3a3a42, trim: r.accent, name: 'Joey', headphones: r.accent };
+  const d = new THREE.Group();
+  d.position.set(0, 0.5, -0.1);
+  const head = musician(d, look);
+  const grips = steeringWheel(d, 0.42, 0.62, 0.2);
+  musicianArms(d, look, grips);
+  body.add(d);
+  return {
+    body,
+    wheels: [0.8, -0.8].flatMap((x) => [
+      { x, z: 0.95, radius: 0.4, width: 0.36, front: true },
+      { x, z: -0.9, radius: 0.46, width: 0.42, front: false },
+    ]),
+    exhausts: pipes(body, 0.35, 0.45, -1.25),
+    rearTrack: 0.8,
+    rearZ: -1.0,
+    spinners: [],
+    shadow: [2.5, 3.3],
+    head,
+  };
+}
+
+// Lucas Harwood: bass, driving an 8x10 bass cabinet on wheels, his bass neck up as an aerial.
+function lucasHarwood(r: RacerDef): KartModel {
+  const body = new THREE.Group();
+  const tolex = matte(0x161616, { shininess: 30 });
+  const grille = matte(0xffffff, { map: tex('grille', grilleTexture) });
+  put(body, box(1.4, 0.3, 2.6), gloss(r.color), [0, 0.4, 0]);
+  // The cab stands at the back, its eight speakers facing out behind.
+  put(body, box(1.3, 1.25, 0.7), tolex, [0, 1.15, -0.85]);
+  put(body, box(1.2, 1.15, 0.02), grille, [0, 1.15, -1.21]);
+  for (let row = 0; row < 4; row++)
+    for (const col of [-1, 1]) put(body, cyl(0.2, 0.22, 0.04, 18), matte(0x0a0a0a), [col * 0.28, 0.72 + row * 0.29, -1.23], [Math.PI / 2, 0, 0], [1, 1, 1]);
+  for (const side of [-1, 1]) put(body, box(0.06, 1.3, 0.06), chrome(), [side * 0.66, 1.15, -0.5]);
+  put(body, box(1.32, 0.06, 0.72), chrome(), [0, 1.8, -0.85]);
+  // A bass guitar neck standing up off the cab.
+  put(body, box(0.1, 1.4, 0.06), matte(0x6a3a1a), [0.5, 2.5, -0.85], [0, 0, -0.15]);
+  put(body, box(0.2, 0.26, 0.06), gloss(r.accent), [0.6, 3.25, -0.85], [0, 0, -0.15]);
+  headlights(body, 0.45, 0.5, 1.32, 0.09);
+
+  const look: Look = { skin: 0xe8bc94, hair: 0x5a3a20, style: 'shaggy', shirt: r.accent, trim: 0xf4e8d0, name: 'Lukey', beard: 0x4a2e18 };
+  const d = new THREE.Group();
+  d.position.set(0, 0.55, -0.05);
+  const head = musician(d, look);
+  const grips = steeringWheel(d, 0.42, 0.62, 0.2);
+  musicianArms(d, look, grips);
+  body.add(d);
+  const tire = matte(0x1c1c1c);
+  return {
+    body,
+    wheels: [0.86, -0.86].flatMap((x) => [
+      { x, z: 0.95, radius: 0.42, width: 0.4, front: true, material: tire },
+      { x, z: -0.95, radius: 0.46, width: 0.44, front: false, material: tire },
+    ]),
+    exhausts: pipes(body, 0.45, 0.5, -1.35),
+    rearTrack: 0.86,
+    rearZ: -1.0,
+    spinners: [],
+    shadow: [2.7, 3.4],
+    head,
+  };
+}
+
+// Michael Cavanagh: drums, rolling on two bass drums with a cymbal for a spoiler, sticks up.
+function michaelCavanagh(r: RacerDef): KartModel {
+  const body = new THREE.Group();
+  const wrap = matte(0xffffff, { map: tex('cav-wrap', () => sparkleTexture([40, 120, 200])), shininess: 80, specular: 0x888888 });
+  const brassMat = brass();
+  put(body, box(1.0, 0.28, 2.3), gloss(r.color), [0, 0.42, 0.1]);
+  // A snare on the nose, a floor tom beside the seat, a cymbal spoiler.
+  put(body, cyl(0.3, 0.3, 0.22, 20), wrap, [0, 0.68, 0.9]);
+  put(body, cyl(0.29, 0.29, 0.01, 20), matte(0xf4f0e4), [0, 0.8, 0.9]);
+  put(body, cyl(0.28, 0.28, 0.42, 20), wrap, [0.62, 0.75, -0.1]);
+  put(body, cyl(0.27, 0.27, 0.01, 20), matte(0xf4f0e4), [0.62, 0.97, -0.1]);
+  rod(body, [0, 0.55, -1.1], [0, 1.25, -1.15], 0.03, chrome());
+  put(body, cyl(0.03, 0.62, 0.04, 28), brassMat, [0, 1.28, -1.15], [0.15, 0, 0]);
+  rod(body, [-0.6, 0.55, 0.4], [-0.85, 1.05, 0.65], 0.02, chrome());
+  put(body, cyl(0.02, 0.36, 0.03, 24), brassMat, [-0.85, 1.07, 0.65], [0.2, 0, 0.2]);
+
+  const look: Look = { skin: 0xf0c8a4, hair: 0xb8864a, style: 'long', shirt: 0xe8642a, trim: 0x1a3a6a, name: 'Cavs', iris: 0x4a7aa8, hat: { color: r.accent, kind: 'cap' } };
+  const d = new THREE.Group();
+  d.position.set(0, 0.55, -0.35);
+  const head = musician(d, look);
+  // Sticks up mid-fill.
+  const grips: [number, number, number][] = [[-0.38, 0.9, 0.45], [0.38, 0.9, 0.45]];
+  musicianArms(d, look, grips);
+  for (const [k, g] of grips.entries()) rod(d, g, [(k ? 1 : -1) * 0.5, 1.35, 0.75], 0.015, matte(0xe8c890));
+  body.add(d);
+  // The rear wheels are bass drums, heads out.
+  const drum = wrap;
+  return {
+    body,
+    wheels: [
+      { x: 0.7, z: 0.95, radius: 0.3, width: 0.24, front: true },
+      { x: -0.7, z: 0.95, radius: 0.3, width: 0.24, front: true },
+      { x: 0.85, z: -0.85, radius: 0.55, width: 0.42, front: false, material: drum },
+      { x: -0.85, z: -0.85, radius: 0.55, width: 0.42, front: false, material: drum },
+    ],
+    exhausts: pipes(body, 0.3, 0.5, -1.15),
+    rearTrack: 0.85,
+    rearZ: -0.95,
+    spinners: [],
+    shadow: [2.5, 3.2],
+    head,
+  };
+}
+
+// Jason: the band's visual artist, riding a rolling lighting rig: a truss
+// frame with moving heads sweeping their beams, par cans across the front,
+// a strobe, and the desk he plays it from.
+function jasonGalea(r: RacerDef): KartModel {
+  const body = new THREE.Group();
+  const truss = matte(0xc8ccd4, { shininess: 90, specular: 0xffffff });
+  const black = matte(0x16161c);
+  put(body, box(1.4, 0.26, 2.5), gloss(r.color), [0, 0.4, 0]);
+  // A box truss on four corner posts, rails along the top, cross-braces down the sides.
+  const corners: [number, number][] = [[-0.62, -1.1], [0.62, -1.1], [-0.62, 0.95], [0.62, 0.95]];
+  for (const [x, z] of corners) rod(body, [x, 0.5, z], [x, 2.1, z], 0.035, truss);
+  for (const z of [-1.1, 0.95]) rod(body, [-0.62, 2.1, z], [0.62, 2.1, z], 0.035, truss);
+  for (const x of [-0.62, 0.62]) {
+    rod(body, [x, 2.1, -1.1], [x, 2.1, 0.95], 0.035, truss);
+    for (let k = 0; k < 3; k++) rod(body, [x, 0.55 + k * 0.52, -1.1], [x, 1.05 + k * 0.52, 0.95], 0.015, truss);
+  }
+  // Moving heads on the four top corners: a yoke and a head, its beam a soft cone of light.
+  const beamColors = [r.accent, 0xff3ad8, 0xffd23a, 0x7aff9a];
+  const sweepers: THREE.Object3D[] = [];
+  corners.forEach(([x, z], k) => {
+    const yoke = new THREE.Group();
+    yoke.position.set(x, 2.15, z);
+    put(yoke, cyl(0.1, 0.12, 0.08, 12), black, [0, 0.04, 0]);
+    for (const side of [-1, 1]) put(yoke, box(0.03, 0.22, 0.06), black, [side * 0.1, 0.15, 0]);
+    const headGroup = new THREE.Group();
+    headGroup.position.y = 0.2;
+    headGroup.rotation.x = 0.5 + (k % 2) * 0.3;
+    put(headGroup, cyl(0.08, 0.1, 0.22, 12), black, [0, 0, 0], [Math.PI / 2, 0, 0]);
+    put(headGroup, cyl(0.075, 0.075, 0.01, 12), glow(beamColors[k]), [0, 0, 0.115], [Math.PI / 2, 0, 0]);
+    const beam = put(
+      headGroup,
+      new THREE.ConeGeometry(0.5, 3, 16, 1, true).translate(0, -1.5, 0).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({ color: beamColors[k], transparent: true, opacity: 0.12, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }),
+      [0, 0, 0.12],
+    );
+    beam.renderOrder = 2;
+    yoke.add(headGroup);
+    yoke.userData.phase = k * 1.3;
+    body.add(yoke);
+    sweepers.push(yoke);
+  });
+  // Par cans along the front bar, a strobe in the middle.
+  for (let k = 0; k < 4; k++) {
+    const x = -0.45 + k * 0.3;
+    put(body, cyl(0.07, 0.09, 0.18, 12), black, [x, 1.95, 1.0], [Math.PI / 2 - 0.4, 0, 0]);
+    put(body, cyl(0.065, 0.065, 0.01, 12), glow(beamColors[k]), [x, 1.92, 1.09], [Math.PI / 2 - 0.4, 0, 0]);
+  }
+  put(body, box(0.3, 0.1, 0.08), glow(0xffffff), [0, 2.1, 1.0]);
+  // The desk: a console of faders and buttons in front of him.
+  const desk = new THREE.Group();
+  desk.position.set(0, 0.85, 0.55);
+  desk.rotation.x = -0.35;
+  put(desk, box(0.9, 0.06, 0.45), black, [0, 0, 0]);
+  for (let k = 0; k < 8; k++) {
+    put(desk, box(0.02, 0.01, 0.2), matte(0x333333), [-0.36 + k * 0.1, 0.035, 0.05]);
+    put(desk, box(0.05, 0.03, 0.03), matte(0xf4f4f4), [-0.36 + k * 0.1, 0.05, 0.05 + Math.sin(k * 1.9) * 0.07]);
+    put(desk, box(0.04, 0.02, 0.04), glow(beamColors[k % 4]), [-0.36 + k * 0.1, 0.04, -0.15]);
+  }
+  body.add(desk);
+  headlights(body, 0.45, 0.45, 1.27, 0.08, 0xffffff);
+
+  const look: Look = { skin: 0xf0c8a0, hair: 0x2a1c14, style: 'shaggy', shirt: 0x22222a, trim: r.accent, name: 'Jason', beard: 0x2a1c14 };
+  const d = new THREE.Group();
+  d.position.set(0, 0.5, -0.2);
+  const head = musician(d, look);
+  // Both hands on the faders.
+  musicianArms(d, look, [[-0.2, 0.45, 0.68], [0.2, 0.45, 0.68]]);
+  body.add(d);
+  return {
+    body,
+    wheels: [0.8, -0.8].flatMap((x) => [
+      { x, z: 0.95, radius: 0.36, width: 0.3, front: true },
+      { x, z: -0.95, radius: 0.4, width: 0.34, front: false },
+    ]),
+    exhausts: pipes(body, 0.35, 0.45, -1.3),
+    rearTrack: 0.8,
+    rearZ: -1.0,
+    spinners: [],
+    shadow: [2.5, 3.4],
+    head,
+    sweepers,
+  };
+}
+
 const BUILDERS: Record<string, (r: RacerDef) => KartModel> = {
   'lizard-warlock': lizardWarlock,
   'cyborg-gourmand': cyborgGourmand,
@@ -1331,6 +1916,13 @@ const BUILDERS: Record<string, (r: RacerDef) => KartModel> = {
   'gator-drummer': gatorDrummer,
   'mushroom-sage': mushroomSage,
   'octo-organist': octoOrganist,
+  'stu-mackenzie': stuMackenzie,
+  'ambrose-kenny-smith': ambroseKennySmith,
+  'cook-craig': cookCraig,
+  'joey-walker': joeyWalker,
+  'lucas-harwood': lucasHarwood,
+  'michael-cavanagh': michaelCavanagh,
+  'jason-galea': jasonGalea,
 };
 
 export function buildKartModel(racer: RacerDef): KartModel {

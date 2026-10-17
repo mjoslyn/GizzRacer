@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="60%"><stop offset="0" stop-color="#5a1a8a"/><stop offset="1" stop-color="#1a0626"/></radialGradient>
+    <linearGradient id="gr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe14d"/><stop offset="1" stop-color="#ff7a1a"/></linearGradient>
+    <clipPath id="c"><rect width="64" height="64" rx="14"/></clipPath>
+  </defs>
+  <g clip-path="url(#c)">
+    <rect width="64" height="64" fill="url(#bg)"/>
+    <g opacity="0.55"><path d="M32 32 L92.0 32.0 L90.8 43.9 Z" fill="#7a2ab0"/><path d="M32 32 L86.1 58.0 L79.8 68.3 Z" fill="#7a2ab0"/><path d="M32 32 L69.4 78.9 L59.3 85.4 Z" fill="#7a2ab0"/><path d="M32 32 L45.4 90.5 L33.5 92.0 Z" fill="#7a2ab0"/><path d="M32 32 L18.6 90.5 L7.3 86.7 Z" fill="#7a2ab0"/><path d="M32 32 L-5.4 78.9 L-14.0 70.5 Z" fill="#7a2ab0"/><path d="M32 32 L-22.1 58.0 L-26.2 46.8 Z" fill="#7a2ab0"/><path d="M32 32 L-28.0 32.0 L-26.8 20.1 Z" fill="#7a2ab0"/><path d="M32 32 L-22.1 6.0 L-15.8 -4.3 Z" fill="#7a2ab0"/><path d="M32 32 L-5.4 -14.9 L4.7 -21.4 Z" fill="#7a2ab0"/><path d="M32 32 L18.6 -26.5 L30.5 -28.0 Z" fill="#7a2ab0"/><path d="M32 32 L45.4 -26.5 L56.7 -22.7 Z" fill="#7a2ab0"/><path d="M32 32 L69.4 -14.9 L78.0 -6.5 Z" fill="#7a2ab0"/><path d="M32 32 L86.1 6.0 L90.2 17.2 Z" fill="#7a2ab0"/></g>
+  </g>
+  <text x="32" y="44" text-anchor="middle" font-family="Impact, 'Arial Black', sans-serif" font-weight="900" font-style="italic" font-size="34" fill="url(#gr)" stroke="#1a0620" stroke-width="3" paint-order="stroke" letter-spacing="-1">GR</text>
+</svg>

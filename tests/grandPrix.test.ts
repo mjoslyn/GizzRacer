@@ -5,6 +5,18 @@ import { FIELD_SIZE, RACERS } from '../src/physics/racers';
 describe('grand prix', () => {
   const grid = RACERS.slice(0, FIELD_SIZE);
 
+  it('keeps the same twelve racers for every race of the cup', () => {
+    const gp = new GrandPrix(grid, [0, 1, 2, 3]);
+    expect(grid.length).toBe(12);
+    const field = new Set(grid);
+    while (!gp.finished) {
+      const g = gp.grid();
+      expect(g.length).toBe(12);
+      expect(new Set(g)).toEqual(field);
+      gp.record([...g].reverse());
+    }
+  });
+
   it('runs every track in order, then finishes', () => {
     const gp = new GrandPrix(grid, [0, 1, 2, 3]);
     const seen: number[] = [];
