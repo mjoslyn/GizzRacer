@@ -71,6 +71,8 @@ export interface HudData {
   /** Online: who paused the race for everyone. */
   pausedBy: string;
   online: boolean;
+  /** Time Trial: seconds behind (+) or ahead (-) of the ghost being chased. */
+  ghostGap: { label: string; gap: number } | null;
   position: number;
   karts: number;
   /** Seconds until the green light; <= 0 once racing. */
@@ -131,6 +133,7 @@ export class Hud {
       <div class="hud-tl">
         <div class="hud-lap hud-big"></div>
         <div class="hud-time"></div>
+        <div class="hud-ghost-gap"></div>
         <div class="hud-laps"></div>
       </div>
       <div class="hud-tr"><div class="hud-racer"></div></div>
@@ -218,6 +221,14 @@ export class Hud {
     const k = d.kart;
     this.lap.textContent = d.finished ? 'FINISH' : `LAP ${d.lap + 1}/${d.totalLaps}`;
     this.time.textContent = formatTime(d.raceTime);
+    const gapEl = this.el.querySelector<HTMLElement>('.hud-ghost-gap')!;
+    if (d.ghostGap) {
+      const g = d.ghostGap.gap;
+      gapEl.textContent = `${g > 0 ? '+' : '-'}${Math.abs(g).toFixed(2)}s vs ${d.ghostGap.label}`;
+      gapEl.classList.toggle('ahead', g < 0);
+    } else {
+      gapEl.textContent = '';
+    }
     const best = d.lapTimes.length ? Math.min(...d.lapTimes) : 0;
     this.laps.innerHTML = d.lapTimes
       .map((t, i) => `L${i + 1} ${formatTime(t)}${t === best ? ' &#9733;' : ''}`)

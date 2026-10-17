@@ -1,3 +1,5 @@
+import { nameMessage, nameProblem } from './nameFilter';
+
 /**
  * Guest identity (docs/MULTIPLAYER.md section 3): a random player id and
  * secret token kept in this browser, plus a display name once chosen.
@@ -33,6 +35,8 @@ function store(id: Identity): void {
 /** Claims or renames this browser's identity on the server. Returns the cleaned name, or throws with the reason. */
 export async function setName(name: string): Promise<string> {
   const id = identity();
+  const problem = nameProblem(name.trim().replace(/\s+/g, ' '));
+  if (problem) throw new Error(nameMessage(problem));
   const res = await fetch(`${PARTY_BASE}/players/global`, { method: 'POST', body: JSON.stringify({ playerId: id.playerId, token: id.token, name }) });
   const body = (await res.json().catch(() => ({}))) as { name?: string; error?: string };
   if (!res.ok || !body.name) throw new Error(body.error ?? `server said ${res.status}`);

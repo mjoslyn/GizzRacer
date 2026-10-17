@@ -6,7 +6,7 @@ import { clamp, damp, lerp, lerpAngle } from './core/math';
 import { CPU_SKILL, CpuDriver } from './ai/cpuDriver';
 import { MusicPlayer, type MusicCue } from './audio/music';
 import { Sfx } from './audio/sfx';
-import { GHOST_OVERRUN, GhostRecorder, decodeGhost, encodeGhost, ghostPose, type GhostRun } from './core/ghost';
+import { GHOST_HZ, GHOST_OVERRUN, GhostRecorder, decodeGhost, encodeGhost, ghostPose, type GhostRun } from './core/ghost';
 import { identity } from './net/identity';
 import { TRIAL_LAPS } from './net/runCheck';
 import { fetchGhost, uploadRun } from './net/trials';
@@ -106,6 +106,8 @@ interface Ghost {
   state: KartState;
   /** Who set it, for the HUD: "you" or a leaderboard name. */
   label: string;
+  /** Race distance (m, like RaceKart.distance) at each sample, never decreasing: for the live gap. */
+  dist: Float32Array;
 }
 let ghosts: Ghost[] = [];
 let track: Track;
@@ -157,7 +159,15 @@ lobby.onStart = (start, client) => {
 const linkedRoom = new URLSearchParams(location.search).get('room');
 const touch = new TouchControls(document.body, input, () => input.requestPause());
 const screenFit = new ScreenFit(document.body, fitRenderer);
-const board = new LeaderboardPanel(document.body);
+const board = new LeaderboardPanel(document.body, () => {
+  // The local record for the board showing (the picker's track and class).
+  try {
+    const rec = JSON.parse(localStorage.getItem(`gizzracer.tt.${TRACK_LIST[choice.track].id}.${choice.engine}.v${PHYSICS_VERSION}`) ?? 'null') as { total: number } | null;
+    return rec ? Math.round(rec.total * 1000) : null;
+  } catch {
+    return null;
+  }
+});
 const tilt = new TiltSteering(input);
 const settingsScreen = new SettingsScreen(document.body, tilt);
 /** The mix that sits right: music under the effects (see the audio commit). */
@@ -326,7 +336,8 @@ function setupGhost(trial: boolean): void {
   } catch {
     // Storage blocked: race without your ghost.
   }
-  const picked = board.picked;
+  // The picked run, or the leader's: there's always someone to chase.
+  const picked = board.target;
   if (picked) {
     const raceAtStart = race;
     fetchGhost(track.def.id, choice.engine, picked.runId)
@@ -355,7 +366,60 @@ function addGhost(run: GhostRun, label: string, tint?: number): void {
   // No shadow or sparks: it isn't really there.
   view.fx.visible = false;
   scene.add(view.root, view.fx);
-  ghosts.push({ run, view, state: createKartState(), label });
+  ghosts.push({ run, view, state: createKartState(), label, dist: ghostDistances(run) });
+}
+
+/** How far round the course a ghost had got at each sample, measured like RaceKart.distance. */
+function ghostDistances(run: GhostRun): Float32Array {
+  const d = run.samples;
+  const n = d.length / 6;
+  const out = new Float32Array(n);
+  const L = track.length;
+  let hint = -1;
+  let prev = 0;
+  let dist = 0;
+  for (let i = 0; i < n; i++) {
+    const o = i * 6;
+    const loc = track.locate(d[o], d[o + 2], d[o + 1], hint);
+    hint = loc.hint;
+    if (i === 0) {
+      dist = loc.progress > L / 2 ? loc.progress - L : loc.progress;
+    } else {
+      let step = loc.progress - prev;
+      if (step > L / 2) step -= L;
+      else if (step < -L / 2) step += L;
+      dist += step;
+    }
+    prev = loc.progress;
+    out[i] = i === 0 ? dist : Math.max(out[i - 1], dist);
+  }
+  return out;
+}
+
+/** Seconds the player is behind (positive) or ahead of (negative) a ghost, or null before it's comparable. */
+function ghostGap(g: Ghost, p: RaceKart): number | null {
+  if (p.finishTime !== null) return p.finishTime - g.run.total;
+  if (race.time <= 0) return null;
+  const want = p.distance;
+  const dist = g.dist;
+  if (want <= dist[0] || want > dist[dist.length - 1]) return null;
+  // First sample at or past the player's distance, then interpolate.
+  let lo = 0;
+  let hi = dist.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (dist[mid] < want) lo = mid + 1;
+    else hi = mid;
+  }
+  const a = dist[lo - 1];
+  const b = dist[lo];
+  const t = (lo - 1 + (b > a ? (want - a) / (b - a) : 1)) / GHOST_HZ;
+  return race.time - t;
+}
+
+/** The ghost the HUD compares against: the leaderboard one if racing it, else your own. */
+function rivalGhost(): Ghost | null {
+  return ghosts.find((g) => g.label !== 'you') ?? ghosts[0] ?? null;
 }
 
 /** Swoops along the last stretch of the lap down onto the grid. */
@@ -427,6 +491,12 @@ function step(dt: number): void {
   if (mode === 'race' && player.finishTime !== null && race.time - player.finishTime > RESULTS_DELAY) {
     if (choice.mode === 'timeTrial') {
       trialNote = saveTrial(player.finishTime, Math.min(...player.lapTimes), player.racer.id);
+      const rival = rivalGhost();
+      if (rival) {
+        const gap = player.finishTime - rival.run.total;
+        const who = rival.label === 'you' ? 'your best' : rival.label;
+        trialNote += gap < 0 ? ` · beat ${who} by ${(-gap).toFixed(2)}s` : ` · ${gap.toFixed(2)}s behind ${who}`;
+      }
       postTrial(player);
     }
     setMode('results');
@@ -605,6 +675,11 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
       paused: loop.paused && !frozen,
       pausedBy,
       online: !!online,
+      ghostGap: (() => {
+        const g = rivalGhost();
+        const gap = g && player ? ghostGap(g, player) : null;
+        return g && gap !== null ? { label: g.label === 'you' ? 'your best' : g.label, gap } : null;
+      })(),
       position: f.position,
       karts: race.karts.length,
       countdown: intro > 0 ? -1 : -race.time,

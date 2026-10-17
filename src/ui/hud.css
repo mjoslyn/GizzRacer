@@ -1604,3 +1604,28 @@ button.hud-big {
     font-size: 20px;
   }
 }
+
+/* Time Trial: the live gap to the ghost under the race clock. */
+.hud-ghost-gap {
+  font-size: 15px;
+  font-weight: bold;
+  font-variant-numeric: tabular-nums;
+  color: #ff8a8a;
+  text-shadow: 2px 2px 0 #3a0f45;
+}
+
+.hud-ghost-gap.ahead {
+  color: #7affb0;
+}
+
+.ghost-tag {
+  font-style: normal;
+  font-size: 9px;
+  font-weight: 900;
+  padding: 1px 4px;
+  margin-left: 4px;
+  border-radius: 3px;
+  background: #ff5ad0;
+  color: #fff;
+  vertical-align: middle;
+}

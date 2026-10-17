@@ -128,7 +128,7 @@ export class LobbyScreen {
       this.editingName = false;
       this.status = '';
     } catch (err) {
-      this.status = `Name not saved: ${(err as Error).message}`;
+      this.status = (err as Error).message;
     }
     this.render();
   }

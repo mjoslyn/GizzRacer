@@ -1,17 +1,5 @@
 import { Server } from 'partyserver';
-
-/** Display names: 3 to 16 letters, digits, spaces, dashes or underscores. */
-const NAME = /^[\p{L}\p{N} _-]{3,16}$/u;
-/** A short blocklist; names are also trimmed and squashed. Extend as needed. */
-const BLOCKED = ['fuck', 'shit', 'cunt', 'nigg', 'fag', 'rape', 'nazi'];
-
-export function cleanName(raw: unknown): string | null {
-  if (typeof raw !== 'string') return null;
-  const name = raw.trim().replace(/\s+/g, ' ');
-  if (!NAME.test(name)) return null;
-  const flat = name.toLowerCase().replace(/[^a-z]/g, '');
-  return BLOCKED.some((b) => flat.includes(b)) ? null : name;
-}
+import { nameMessage, nameProblem } from '../src/net/nameFilter';
 
 export async function hashToken(token: string): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token));
@@ -32,9 +20,11 @@ export class Players extends Server<Env> {
   async onRequest(req: Request): Promise<Response> {
     if (req.method !== 'POST') return new Response('POST only', { status: 405 });
     const body = (await req.json().catch(() => null)) as { playerId?: unknown; token?: unknown; name?: unknown } | null;
-    const name = cleanName(body?.name);
     if (!body || !validId(body.playerId) || !validId(body.token)) return json({ error: 'bad identity' }, 400);
-    if (!name) return json({ error: 'bad name' }, 400);
+    const raw = typeof body.name === 'string' ? body.name.trim().replace(/\s+/g, ' ') : '';
+    const problem = nameProblem(raw);
+    if (problem) return json({ error: nameMessage(problem) }, 400);
+    const name = raw;
     const hash = await hashToken(body.token);
     const [row] = this.sql<{ token_hash: string }>`SELECT token_hash FROM players WHERE id = ${body.playerId}`;
     if (row && row.token_hash !== hash) return json({ error: 'not yours' }, 403);
@@ -47,7 +37,9 @@ export class Players extends Server<Env> {
   async verify(playerId: string, token: string): Promise<string | null> {
     if (!validId(playerId) || !validId(token)) return null;
     const [row] = this.sql<{ token_hash: string; name: string }>`SELECT token_hash, name FROM players WHERE id = ${playerId}`;
-    return row && row.token_hash === (await hashToken(token)) ? row.name : null;
+    if (!row || row.token_hash !== (await hashToken(token))) return null;
+    // A name the filter has since learned to refuse has to be changed before playing online.
+    return nameProblem(row.name) ? null : row.name;
   }
 }
 

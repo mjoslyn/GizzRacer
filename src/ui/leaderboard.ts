@@ -12,6 +12,28 @@ const ROWS = 10;
 export class LeaderboardPanel {
   /** The run picked to race as a ghost, if any. */
   picked: BoardEntry | null = null;
+
+  /**
+   * The ghost to race: the picked run, or else the next one up from you,
+   * the run just faster than your best (2nd chases 1st). With no time yet,
+   * the slowest on the board; if you lead, none (your own best ghost races).
+   */
+  get target(): BoardEntry | null {
+    if (this.picked) return this.picked;
+    const top = this.board?.top ?? [];
+    if (!top.length) return null;
+    const me = identity().playerId;
+    const best = this.myBest();
+    if (best === null) return top[top.length - 1];
+    const faster = top.filter((r) => r.playerId !== me && r.totalMs < best);
+    return faster[faster.length - 1] ?? null;
+  }
+
+  /** Your best on this board in ms: posted, or this browser's local record if faster. */
+  private myBest(): number | null {
+    const times = [this.board?.me?.totalMs, this.localBest()].filter((t): t is number => typeof t === 'number');
+    return times.length ? Math.min(...times) : null;
+  }
   private readonly el = document.createElement('div');
   private board: Board | null = null;
   private status = '';
@@ -19,7 +41,11 @@ export class LeaderboardPanel {
   private editing = false;
   private request = 0;
 
-  constructor(parent: HTMLElement) {
+  constructor(
+    parent: HTMLElement,
+    /** This browser's best time on the showing board (ms), if any. */
+    private readonly localBest: () => number | null = () => null,
+  ) {
     this.el.className = 'board';
     parent.appendChild(this.el);
     this.el.addEventListener('click', (e) => {
@@ -76,6 +102,15 @@ export class LeaderboardPanel {
 
   private title = '';
 
+  private hint(): string {
+    const t = this.target;
+    if (!this.board?.top.length) return '';
+    if (this.picked && t) return `Racing ${escape(t.name)}'s ghost`;
+    if (!t) return "You're the fastest here: racing your own best. Pick a run to race it.";
+    if (this.myBest() === null) return `Racing ${escape(t.name)}, the slowest here: beat them to climb. Pick any run to change.`;
+    return `Racing ${escape(t.name)}, the next one up from you. Pick any run to change.`;
+  }
+
   private async saveName(): Promise<void> {
     const input = this.el.querySelector<HTMLInputElement>('input');
     if (!input) return;
@@ -84,7 +119,7 @@ export class LeaderboardPanel {
       this.editing = false;
       this.status = '';
     } catch (err) {
-      this.status = `Name not saved: ${(err as Error).message}`;
+      this.status = (err as Error).message;
     }
     this.render();
   }
@@ -97,9 +132,9 @@ export class LeaderboardPanel {
       .slice(0, ROWS)
       .map(
         (r, i) => `
-        <div class="board-row${r.playerId === me.playerId ? ' me' : ''}${this.picked?.runId === r.runId ? ' picked' : ''}" data-run="${r.runId}">
+        <div class="board-row${r.playerId === me.playerId ? ' me' : ''}${this.target?.runId === r.runId ? ' picked' : ''}" data-run="${r.runId}">
           <span class="pos">${i + 1}</span><span class="dot" style="background:${color(r.racerId)}"></span>
-          <span class="name">${escape(r.name)}</span><span class="time">${formatTime(r.totalMs / 1000)}</span>
+          <span class="name">${escape(r.name)}${this.target?.runId === r.runId ? ' <i class="ghost-tag">GHOST</i>' : ''}</span><span class="time">${formatTime(r.totalMs / 1000)}</span>
         </div>`,
       )
       .join('');
@@ -114,7 +149,7 @@ export class LeaderboardPanel {
       ${rows}
       ${mine}
       ${this.status ? `<div class="board-status">${escape(this.status)}</div>` : ''}
-      <div class="board-hint">${this.board?.top.length ? 'Pick a run to race its ghost' : ''}</div>`;
+      <div class="board-hint">${this.hint()}</div>`;
   }
 }
 
