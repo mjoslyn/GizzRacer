@@ -32,9 +32,12 @@ import { flareRingTexture, glowTexture, setTextureAnisotropy } from './render/te
 import { buildTrackView, type TrackView } from './render/trackView';
 import { CUPS, TRACK_LIST } from './tracks/index';
 import { pointAt } from './tracks/spline';
-import { Track } from './tracks/track';
+import { generateTrack, trackId } from './tracks/generator';
+import { Track, type TrackDef } from './tracks/track';
 import { Hud, formatTime, type Table, type TableRow } from './ui/hud';
-import { Menu, type MenuChoice } from './ui/menu';
+import { deleteSaved, findSaved, saveTrack, savedTracks } from './core/savedTracks';
+import { Menu, newSeed, type MenuChoice } from './ui/menu';
+import { SaveTrackPanel } from './ui/saveTrack';
 import { Podium } from './render/podium';
 import { ScreenFit } from './ui/screen';
 import { TouchControls } from './ui/touch';
@@ -93,7 +96,14 @@ const INTRO_TIME = 4.5;
 type Mode = 'title' | 'menu' | 'race' | 'results' | 'standings' | 'podium' | 'lobby';
 let mode: Mode = 'title';
 
-let choice: MenuChoice = { mode: 'grandPrix', track: 1, cup: 0, racer: RACERS[0], engine: '100cc' };
+let choice: MenuChoice = {
+  mode: 'grandPrix',
+  track: 1,
+  cup: 0,
+  gen: { slot: -1, params: { seed: newSeed(), theme: 'lagoon', complexity: 3, length: 'medium' } },
+  racer: RACERS[0],
+  engine: '100cc',
+};
 /** The cup in progress, if racing a Grand Prix. */
 let gp: GrandPrix | null = null;
 let podium: Podium | null = null;
@@ -135,12 +145,27 @@ const heard = { count: 0, lap: 0, tier: 0, rolling: false };
 let wrongWay = 0;
 const snapshots = new Map<RaceKart, KartState>();
 
-const menu = new Menu(document.body, choice, onMenuChange, (c) => {
-  choice = { ...c };
-  if (c.mode === 'online') return setMode('lobby');
-  gp = c.mode === 'grandPrix' ? new GrandPrix(defaultGrid(c.racer), CUPS[c.cup].tracks) : null;
-  startRace(true);
-});
+const menu = new Menu(
+  document.body,
+  choice,
+  onMenuChange,
+  (c) => {
+    choice = { ...c };
+    if (c.mode === 'online') return setMode('lobby');
+    gp = c.mode === 'grandPrix' ? new GrandPrix(defaultGrid(c.racer), CUPS[c.cup].tracks) : null;
+    startRace(true);
+  },
+  savedTracks,
+  (t) => deleteSaved(t),
+);
+/** After a race on a generated track: keep it. */
+const savePanel = new SaveTrackPanel(document.body);
+savePanel.onSave = (name) => {
+  const slot = saveTrack(choice.gen.params, name);
+  menu.selectSaved(slot);
+  choice = { ...choice, gen: menu.choice.gen };
+  track.def.name = savedTracks()[slot].name;
+};
 /** The online race in progress: the room, its start, and my side of the race once it's built. */
 let online: { client: RoomClient; start: RoomStart; net: OnlineRace | null } | null = null;
 /** Physics ticks this online race, for reporting my kart 15 times a second. */
@@ -151,7 +176,7 @@ const lobby = new LobbyScreen(document.body, () => choice.racer);
 lobby.onBack = () => setMode('menu');
 lobby.onSettings = (s) => {
   // The attract race behind the lobby shows the room's track.
-  if (mode === 'lobby' && track.def.id !== TRACK_LIST[s.track].id) loadTrack(s.track);
+  if (mode === 'lobby' && track.def.id !== TRACK_LIST[s.track].id) loadTrack(TRACK_LIST[s.track]);
 };
 lobby.onStart = (start, client) => {
   online = { client, start, net: null };
@@ -159,7 +184,7 @@ lobby.onStart = (start, client) => {
   client.onFx = (fx) => online?.client === client && onEffects(fx);
   gp = null;
   choice = { ...choice, engine: start.settings.engine };
-  if (track.def.id !== TRACK_LIST[start.settings.track].id) loadTrack(start.settings.track);
+  if (track.def.id !== TRACK_LIST[start.settings.track].id) loadTrack(TRACK_LIST[start.settings.track]);
   startRace(true);
 };
 /** A ?room= link opens the lobby and joins once past the title. */
@@ -214,6 +239,9 @@ function setMode(next: Mode): void {
   hud.showTitle(next === 'title');
   menu.show(next === 'menu');
   lobby.show(next === 'lobby');
+  // A generated track can be kept once it's been raced.
+  const generated = next === 'results' && choice.mode === 'generator' && !online;
+  savePanel.show(generated ? track.def.name : null, generated && !!findSaved(choice.gen.params));
   touch.setVisible(next === 'race');
   loop.paused = false;
   if (next === 'title' || next === 'menu' || next === 'lobby') music.play('title');
@@ -225,20 +253,40 @@ function onMenuChange(c: MenuChoice, row: string): void {
   choice = { ...c };
   sfx.menu();
   updateBoard();
-  if (row === 'track' || row === 'mode') {
-    const idx = menuTrack();
-    if (track.def.id !== TRACK_LIST[idx].id) loadTrack(idx);
+  if (row !== 'racer' && row !== 'engine') {
+    const entry = menuTrack();
+    if (track.def.id !== entry.id) loadTrack(entry);
   }
 }
 
+/** A track to load: one of the list, or a generated one. */
+interface TrackEntry {
+  id: string;
+  build: () => TrackDef;
+}
+
+/** The generator's current track, under its saved name if it has one. */
+function generatedTrack(): TrackEntry {
+  const params = { ...choice.gen.params };
+  return {
+    id: trackId(params),
+    build: () => {
+      const def = generateTrack(params);
+      return { ...def, name: findSaved(params)?.name ?? def.name };
+    },
+  };
+}
+
 /** The track the menu is showing: the cup's first for a Grand Prix. */
-function menuTrack(): number {
-  return choice.mode === 'grandPrix' ? CUPS[choice.cup].tracks[0] : choice.track;
+function menuTrack(): TrackEntry {
+  if (choice.mode === 'generator') return generatedTrack();
+  return TRACK_LIST[choice.mode === 'grandPrix' ? CUPS[choice.cup].tracks[0] : choice.track];
 }
 
 /** The track the next race with the player runs on. */
-function raceTrack(): number {
-  return gp ? gp.trackIndex : choice.track;
+function raceTrack(): TrackEntry {
+  if (gp) return TRACK_LIST[gp.trackIndex];
+  return choice.mode === 'generator' ? generatedTrack() : TRACK_LIST[choice.track];
 }
 
 /** CPUs fill the grid; the player starts from PLAYER_SLOT. */
@@ -248,14 +296,14 @@ function defaultGrid(racer: RacerDef | null): RacerDef[] {
   return grid;
 }
 
-function loadTrack(index: number): void {
+function loadTrack(entry: TrackEntry): void {
   if (trackView) {
     scene.remove(trackView.group);
     trackView.group.traverse((o) => {
       if (o instanceof THREE.Mesh) o.geometry.dispose();
     });
   }
-  track = new Track(TRACK_LIST[index].build());
+  track = new Track(entry.build());
   trackView = buildTrackView(track);
   scene.add(trackView.group);
   const t = trackView.theme;
@@ -278,9 +326,7 @@ function loadTrack(index: number): void {
  */
 function startRace(withPlayer: boolean): void {
   const net = withPlayer ? online : null;
-  if (withPlayer && !net && track.def.id !== TRACK_LIST[raceTrack()].id) {
-    loadTrack(raceTrack());
-  }
+  if (withPlayer && !net && track.def.id !== raceTrack().id) loadTrack(raceTrack());
   const trial = withPlayer && !net && choice.mode === 'timeTrial';
   race = new Race(track, net ? net.start.seed : raceSeed++, !trial, trial ? TRIAL_LAPS : track.def.laps);
   setupGhost(trial);
@@ -856,7 +902,7 @@ function toMenu(): void {
   gp = null;
   endPodium();
   setMode('menu');
-  if (track.def.id !== TRACK_LIST[menuTrack()].id) loadTrack(menuTrack());
+  if (track.def.id !== menuTrack().id) loadTrack(menuTrack());
   else startRace(false);
 }
 
@@ -988,7 +1034,7 @@ window.addEventListener(
 );
 window.addEventListener('pointerup', (e) => {
   if (settingsScreen.visible) return;
-  if ((e.target as HTMLElement).closest('.settings, .hud-title-settings, .lobby, .board')) return music.unlock();
+  if ((e.target as HTMLElement).closest('.settings, .hud-title-settings, .lobby, .board, .savetrack')) return music.unlock();
   if (skipIntro()) return;
   if ((e.target as HTMLElement).closest('.menu, .touch, .hud-pause')) return music.unlock();
   advance();
@@ -1069,12 +1115,12 @@ Object.assign(window, {
     race_: (trackIndex: number) => {
       choice.track = trackIndex;
       setMode('menu');
-      loadTrack(trackIndex);
+      loadTrack(TRACK_LIST[trackIndex]);
       startRace(true);
     },
   },
 });
 
-loadTrack(choice.track);
+loadTrack(TRACK_LIST[choice.track]);
 setMode('title');
 loop.start();

@@ -1,30 +1,42 @@
+import type { SavedTrack } from '../core/savedTracks';
 import { ENGINE_CLASSES, RACERS, type EngineClass, type RacerDef } from '../physics/racers';
+import { GEN_COMPLEXITY_MAX, GEN_LENGTHS, GEN_THEMES, GEN_THEME_NAMES, trackName, type GenParams } from '../tracks/generator';
 import { CUPS, TRACK_LIST } from '../tracks/index';
 
-export type RaceMode = 'grandPrix' | 'single' | 'timeTrial' | 'online';
+export type RaceMode = 'grandPrix' | 'single' | 'timeTrial' | 'generator' | 'online';
 
 export const MODE_NAMES: Record<RaceMode, string> = {
   grandPrix: 'Grand Prix',
   single: 'Single Race',
   timeTrial: 'Time Trial',
+  generator: 'Track Generator',
   online: 'Online',
 };
 const MODES = Object.keys(MODE_NAMES) as RaceMode[];
+
+/** The generator's pick: a new track from the dials (slot -1) or a saved one. */
+export interface GenChoice {
+  slot: number;
+  params: GenParams;
+}
 
 export interface MenuChoice {
   mode: RaceMode;
   track: number;
   /** The Grand Prix cup (index into CUPS). */
   cup: number;
+  gen: GenChoice;
   racer: RacerDef;
   engine: EngineClass;
 }
 
-type Row = 'mode' | 'track' | 'racer' | 'engine';
-const ROWS: Row[] = ['mode', 'track', 'racer', 'engine'];
+export type MenuRow = 'mode' | 'track' | 'gen' | 'theme' | 'complexity' | 'length' | 'racer' | 'engine';
 const STAT_NAMES = ['speed', 'accel', 'weight', 'handling'] as const;
+const LENGTH_NAMES = { short: 'Short', medium: 'Medium', long: 'Long' };
 
-/** Mode, track, racer and class picker. Keyboard, gamepad-ish arrows, mouse and touch. */
+export const newSeed = () => Math.floor(Math.random() * 1e9);
+
+/** Mode, track, racer and class picker (and the track generator's dials). Keyboard, gamepad-ish arrows, mouse and touch. */
 export class Menu {
   private readonly el = document.createElement('div');
   private row = 0;
@@ -33,20 +45,28 @@ export class Menu {
   constructor(
     parent: HTMLElement,
     initial: MenuChoice,
-    private readonly onChange: (c: MenuChoice, row: Row) => void,
+    private readonly onChange: (c: MenuChoice, row: MenuRow) => void,
     private readonly onStart: (c: MenuChoice) => void,
+    /** The generator's saved tracks. */
+    private readonly saved: () => SavedTrack[],
+    /** Forgets a saved track. */
+    private readonly onDelete: (t: SavedTrack) => void,
   ) {
     this.choice = { ...initial };
     this.el.className = 'menu';
     parent.appendChild(this.el);
     this.el.addEventListener('click', (e) => {
-      const t = (e.target as HTMLElement).closest<HTMLElement>('[data-row], [data-start]');
+      const t = (e.target as HTMLElement).closest<HTMLElement>('[data-row], [data-start], [data-delete]');
       if (!t) return;
       if (t.dataset.start !== undefined) {
         this.onStart(this.choice);
         return;
       }
-      this.row = ROWS.indexOf(t.dataset.row as Row);
+      if (t.dataset.delete !== undefined) {
+        this.deleteSaved();
+        return;
+      }
+      this.row = this.rows().indexOf(t.dataset.row as MenuRow);
       if (t.dataset.dir) this.change(Number(t.dataset.dir));
       else this.render();
     });
@@ -75,19 +95,64 @@ export class Menu {
     return true;
   }
 
-  /** Online picks its track in the room, so its track row is skipped. (A Grand Prix's track row picks the cup.) */
+  /** The rows this mode shows. Online picks its track in the room; a Grand Prix's track row picks the cup. */
+  private rows(): MenuRow[] {
+    const m = this.choice.mode;
+    if (m === 'generator') return ['mode', 'gen', 'theme', 'complexity', 'length', 'racer', 'engine'];
+    if (m === 'online') return ['mode', 'racer', 'engine'];
+    return ['mode', 'track', 'racer', 'engine'];
+  }
+
   private moveRow(dir: number): void {
-    do this.row = (this.row + dir + ROWS.length) % ROWS.length;
-    while (ROWS[this.row] === 'track' && this.choice.mode === 'online');
+    const n = this.rows().length;
+    this.row = (this.row + dir + n) % n;
+  }
+
+  /** Points the generator at a saved track (after saving one, say). */
+  selectSaved(slot: number): void {
+    const t = this.saved()[slot];
+    if (!t) return;
+    this.choice.gen = { slot, params: { seed: t.seed, theme: t.theme, complexity: t.complexity, length: t.length } };
+    this.render();
+  }
+
+  private deleteSaved(): void {
+    const g = this.choice.gen;
+    const t = this.saved()[g.slot];
+    if (!t) return;
+    this.onDelete(t);
+    // The track's still here to race, just not saved.
+    this.choice.gen = { slot: -1, params: { ...g.params } };
+    this.render();
+    this.onChange(this.choice, 'gen');
   }
 
   private change(dir: number): void {
     const c = this.choice;
-    const row = ROWS[this.row];
+    const row = this.rows()[this.row];
     const step = <T>(list: readonly T[], v: T) => list[(list.indexOf(v) + dir + list.length) % list.length];
-    if (row === 'track' && c.mode === 'online') return;
-    if (row === 'mode') c.mode = step(MODES, c.mode);
-    else if (row === 'track' && c.mode === 'grandPrix') c.cup = (c.cup + dir + CUPS.length) % CUPS.length;
+    const g = c.gen;
+    // Turning a dial on a saved track starts a new one from it.
+    const dial = (change: () => void) => {
+      change();
+      g.slot = -1;
+    };
+    if (row === 'mode') {
+      c.mode = step(MODES, c.mode);
+      this.row = 0;
+    } else if (row === 'track' && c.mode === 'grandPrix') c.cup = (c.cup + dir + CUPS.length) % CUPS.length;
+    else if (row === 'gen') {
+      // New, then each saved track; landing on New rolls a fresh one.
+      const saved = this.saved();
+      g.slot = ((g.slot + 1 + dir + saved.length + 1) % (saved.length + 1)) - 1;
+      if (g.slot < 0) g.params = { ...g.params, seed: newSeed() };
+      else {
+        const t = saved[g.slot];
+        g.params = { seed: t.seed, theme: t.theme, complexity: t.complexity, length: t.length };
+      }
+    } else if (row === 'theme') dial(() => (g.params = { ...g.params, theme: step(GEN_THEMES, g.params.theme) }));
+    else if (row === 'complexity') dial(() => (g.params = { ...g.params, complexity: Math.min(GEN_COMPLEXITY_MAX, Math.max(1, g.params.complexity + dir)) }));
+    else if (row === 'length') dial(() => (g.params = { ...g.params, length: step(GEN_LENGTHS, g.params.length) }));
     else if (row === 'track') c.track = (c.track + dir + TRACK_LIST.length) % TRACK_LIST.length;
     else if (row === 'racer') c.racer = step(RACERS, c.racer);
     else c.engine = step(ENGINE_CLASSES, c.engine);
@@ -101,8 +166,9 @@ export class Menu {
     const stats = STAT_NAMES.map(
       (k) => `<div class="menu-stat"><span>${k}</span><i style="width:${c.racer.stats[k] * 20}%;background:${color}"></i></div>`,
     ).join('');
-    const line = (row: Row, label: string, value: string, extra = '') => `
-      <div class="menu-row${ROWS[this.row] === row ? ' on' : ''}" data-row="${row}">
+    const rows = this.rows();
+    const line = (row: MenuRow, label: string, value: string, extra = '', small = false) => `
+      <div class="menu-row${rows[this.row] === row ? ' on' : ''}${small ? ' small' : ''}" data-row="${row}">
         <div class="menu-label">${label}</div>
         <button class="menu-arrow" data-row="${row}" data-dir="-1">&#9664;</button>
         <div class="menu-value hud-big">${value}</div>
@@ -118,7 +184,9 @@ export class Menu {
             ? line('track', 'Cup', CUPS[c.cup].name, `<div class="menu-cup-tracks">${CUPS[c.cup].tracks.map((t) => TRACK_LIST[t].name).join(' &middot; ')}</div>`)
             : c.mode === 'online'
               ? `<div class="menu-row menu-cup"><div class="menu-label">Rooms</div><div class="menu-value">Race friends with a room code</div></div>`
-              : line('track', 'Track', TRACK_LIST[c.track].name)
+              : c.mode === 'generator'
+                ? this.generatorRows(line)
+                : line('track', 'Track', TRACK_LIST[c.track].name)
         }
         ${line('racer', 'Racer', c.racer.name, `<div class="menu-stats">${stats}</div>`)}
         ${line('engine', 'Class', c.engine)}
@@ -126,4 +194,25 @@ export class Menu {
         <div class="menu-hint">&uarr;&darr; choose &middot; &larr;&rarr; change &middot; Enter race</div>
       </div>`;
   }
+
+  private generatorRows(line: (row: MenuRow, label: string, value: string, extra?: string, small?: boolean) => string): string {
+    const g = this.choice.gen;
+    const saved = this.saved();
+    const t = saved[g.slot];
+    const name = t ? esc(t.name) : `${esc(trackName(g.params))} <small class="menu-new">NEW</small>`;
+    const extra = t
+      ? `<div class="menu-cup-tracks">Saved track ${g.slot + 1} of ${saved.length} <button class="menu-delete" data-delete>Delete</button></div>`
+      : `<div class="menu-cup-tracks">${saved.length ? `&#9664;&#9654; your ${saved.length} saved track${saved.length > 1 ? 's' : ''}; back here rolls a new one` : '&#9664;&#9654; rolls another'}</div>`;
+    const dots = Array.from({ length: GEN_COMPLEXITY_MAX }, (_, i) => (i < g.params.complexity ? '&#9679;' : '&#9675;')).join('');
+    return (
+      line('gen', 'Track', name, extra) +
+      line('theme', 'Theme', GEN_THEME_NAMES[g.params.theme], '', true) +
+      line('complexity', 'Twists', dots, '', true) +
+      line('length', 'Length', LENGTH_NAMES[g.params.length], '', true)
+    );
+  }
+}
+
+function esc(s: string): string {
+  return s.replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`);
 }

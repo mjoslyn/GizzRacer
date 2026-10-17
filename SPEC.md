@@ -115,6 +115,10 @@ Four harder tracks: narrower roads, short straights, more corners, each sized fo
 3. Cyboogie City (Han-Tyumi): neon downtown at night with lit towers, a tight walled alley of right angles, an elevated freeway on pillars, and laser gates that warn, then fire across the whole road, on a rhythm
 4. Butterfly 3000 Skyway (Butterfly 3000): a rainbow road in a pastel sky with no ground (leave the road and you fall to the respawn), butterfly swarms in the walled garden that buffet karts, a star leap over the void, chrysalis hairpins, and an open, unwalled Metamorphosis Mile. Rainbow arches; the cup's finale, with a final-lap music cut
 
+### Generated tracks
+
+The Track Generator mode builds a track at race time from a seed and three dials: theme (desert, speedway, volcano, jungle, lagoon, glacier, neon city, sky), twists (complexity 1 to 5) and length (short about 0.85 km, medium 1.2 km, long 1.7 km). Each theme brings its road surfaces, liquid for bridges and jumps, hazards, landmarks, music and words for names. The layout is a rectangle skeleton whose sides are filled with modules (straights, S-bends, esses, chicanes, switchback hairpins, jumps, bridges), each measured before it's placed so the sides keep their length; the last two sides aim for the final corner, which a Dubins path closes onto the finish line. A layout that crosses itself or needs a loop to get home is re-rolled from the same seed, so a seed always builds the same track. Every track gets a name (Gizzard-ish adjective, theme place, kind of course); after a race it can be saved under that name or another. Saved tracks are kept in the browser as seed and dials.
+
 ## 8. CPU Racers
 - Follow a waypoint spline with per-racer lateral offset and racing line variation
 - Difficulty controls top speed cap, drift usage, and item intelligence

@@ -1638,3 +1638,80 @@ button.hud-big {
   color: #fff;
   vertical-align: middle;
 }
+
+/* Track generator rows in the picker */
+.menu-row.small {
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+.menu-row.small .menu-value {
+  font-size: 18px;
+}
+
+.menu-new {
+  font-size: 11px;
+  letter-spacing: 1px;
+  padding: 1px 5px;
+  vertical-align: middle;
+  background: #ffd23a;
+  color: #3a0f45;
+  -webkit-text-stroke: 0;
+  text-shadow: none;
+}
+
+.menu-delete {
+  margin-left: 8px;
+  padding: 1px 8px;
+  font: inherit;
+  font-size: 11px;
+  border: 2px solid #ff7a9a;
+  background: rgba(60, 10, 30, 0.8);
+  color: #ffd0dc;
+  cursor: pointer;
+}
+
+/* Keep a generated track, after its race */
+.savetrack {
+  position: absolute;
+  left: 50%;
+  bottom: max(18px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(25, 5, 40, 0.92);
+  box-shadow: 0 0 0 3px #ffd23a, 0 6px 24px rgba(0, 0, 0, 0.5);
+  z-index: 30;
+  max-width: calc(100vw - 32px);
+}
+
+.savetrack.show {
+  display: flex;
+}
+
+.savetrack-label {
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.savetrack-name {
+  width: 220px;
+  min-width: 0;
+  flex: 1;
+  font: inherit;
+  font-size: 16px;
+  padding: 6px 8px;
+  border: 3px solid #ffd23a;
+  background: rgba(20, 0, 30, 0.85);
+  color: #fff6e0;
+}
+
+.savetrack button {
+  padding: 6px 14px;
+  font-size: 16px;
+  cursor: pointer;
+}
