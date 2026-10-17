@@ -67,7 +67,7 @@ All designs are original. No likenesses of band members or album art.
 
 **Layout**
 - Track shape is a giant coiled snake seen from above: serpentine S-curves that tighten into a spiral near the end of each lap
-- About 1.4 km per lap, 3 laps, ~70s per lap at 100cc
+- About 1.9 km per lap, 3 laps, ~90s per lap at 100cc (longer than the first draft by choice)
 - Start line under an arch made from a huge bleached snake skeleton
 
 **Sections**
@@ -127,5 +127,5 @@ All designs are original. No likenesses of band members or album art.
 
 ## 13. Open Questions
 - Public release or private fan project? (affects naming and band references)
-- Art style: flat low-poly or textured cel-shaded?
-- Music: commission original tracks or generate procedurally?
+- ~~Art style~~: decided. Early-2000s console, high res: sharp tiled textures, Phong-shaded glossy karts with sky reflections, painted skybox with lens flare, blob shadows, distance fog, chunky gradient HUD lettering
+- Music: first pass written in seqbaby (account `gizzracer`): title theme, one theme per Cup 1 track, a faster final-lap cut of Rattlesnake Run and a podium loop

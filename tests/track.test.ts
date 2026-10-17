@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import { NEUTRAL_INPUT } from '../src/core/input';
 import { FixedLoop, PHYSICS_DT } from '../src/core/loop';
+import { clamp, wrapAngle } from '../src/core/math';
+import { Race } from '../src/core/race';
+import { createKartState, stepKart } from '../src/physics/kart';
+import { RACERS, kartParams } from '../src/physics/racers';
+import { buildRattlesnakeRun } from '../src/tracks/rattlesnakeRun';
 import { LapTracker } from '../src/tracks/laps';
 import { buildClosedSpline, nearestOnSpline, pointAt } from '../src/tracks/spline';
 import { TEST_TRACK } from '../src/tracks/testTrack';
@@ -37,41 +43,125 @@ describe('spline', () => {
   });
 });
 
+const surfaceAt = (track: Track, x: number, z: number) => track.locate(x, z, 0).surface;
+
 describe('test track', () => {
   const track = new Track(TEST_TRACK);
 
   it('reports road on the centerline and offroad far away', () => {
     const p = pointAt(track.spline, 300);
-    expect(track.surfaceAt(p.x, p.z)).toBe('road');
-    expect(track.surfaceAt(p.x - p.tz * 20, p.z + p.tx * 20)).toBe('offroad');
+    expect(surfaceAt(track, p.x, p.z)).toBe('road');
+    expect(surfaceAt(track, p.x - p.tz * 20, p.z + p.tx * 20)).toBe('offroad');
   });
 
   it('has boost pads', () => {
     const pad = TEST_TRACK.boostPads[0];
     const p = pointAt(track.spline, pad.s + pad.length / 2);
-    expect(track.surfaceAt(p.x - p.tz * pad.lateral, p.z + p.tx * pad.lateral)).toBe('boost');
+    expect(surfaceAt(track, p.x - p.tz * pad.lateral, p.z + p.tx * pad.lateral)).toBe('boost');
   });
 
   it('places start slots on the road, behind the line', () => {
     for (let i = 0; i < 8; i++) {
       const slot = track.startSlot(i);
-      expect(track.surfaceAt(slot.x, slot.z)).not.toBe('offroad');
+      expect(surfaceAt(track, slot.x, slot.z)).not.toBe('offroad');
       expect(nearestOnSpline(track.spline, slot.x, slot.z).s).toBeGreaterThan(track.spline.length / 2);
     }
   });
+});
 
-  it('centerline does not come close to overlapping itself', () => {
+/** Minimum centerline separation between stretches of road that are far apart along the track. */
+function minSelfGap(track: Track): number {
+  const sp = track.spline;
+  let min = Infinity;
+  for (let i = 0; i < sp.count; i += 2) {
+    for (let j = 0; j < sp.count; j += 2) {
+      const along = Math.abs(sp.dist[i] - sp.dist[j]);
+      if (Math.min(along, sp.length - along) < 120) continue;
+      const gap = Math.hypot(sp.px[i] - sp.px[j], sp.pz[i] - sp.pz[j]) - track.main.halfWidth[i] - track.main.halfWidth[j];
+      min = Math.min(min, gap);
+    }
+  }
+  return min;
+}
+
+describe('rattlesnake run', () => {
+  const def = buildRattlesnakeRun();
+  const track = new Track(def);
+
+  it('is a long lap with every section from the spec', () => {
+    expect(track.length).toBeGreaterThan(1400);
+    const names = def.main.sections.map((s) => s.name);
+    for (const n of ['Salt Flat Straight', 'Sidewinder S-Bends', 'Rattle Canyon', 'The Coil', 'Mesa Leap']) expect(names).toContain(n);
+    expect(def.branches[0].name).toMatch(/Snake's Mouth/);
+  });
+
+  it('never runs the road over itself', () => {
+    expect(minSelfGap(track)).toBeGreaterThan(4);
+  });
+
+  it('closes the loop smoothly', () => {
     const sp = track.spline;
-    const minGap = TEST_TRACK.roadHalfWidth * 2 + 6;
-    for (let i = 0; i < sp.count; i += 3) {
-      for (let j = 0; j < sp.count; j += 3) {
-        const along = Math.abs(sp.dist[i] - sp.dist[j]);
-        if (Math.min(along, sp.length - along) < minGap * 3) continue;
-        expect(Math.hypot(sp.px[i] - sp.px[j], sp.pz[i] - sp.pz[j])).toBeGreaterThan(minGap);
-      }
+    const turn = Math.abs(wrapAngle(Math.atan2(sp.tx[0], sp.tz[0]) - Math.atan2(sp.tx[sp.count - 1], sp.tz[sp.count - 1])));
+    expect(turn).toBeLessThan(0.1);
+  });
+
+  it('keeps every checkpoint on solid road', () => {
+    for (const cp of def.checkpoints) {
+      const pose = track.respawnPose(cp * track.length + 2);
+      expect(track.locate(pose.x, pose.z, pose.y).onRoad).toBe(true);
     }
   });
+
+  it('a lap driven by autopilot finishes without falling off', () => {
+    const race = new Race(track);
+    const kart = race.addKart(RACERS[0], '100cc');
+    let respawns = 0;
+    for (let t = 0; t < 200 && kart.laps.lap < 1; t += PHYSICS_DT) {
+      race.step(PHYSICS_DT, [autopilot(track, kart.state, kart.progressS)]);
+      if (kart.respawned) respawns++;
+    }
+    expect(kart.laps.lap).toBe(1);
+    expect(respawns).toBe(0);
+    // About 1.9 km; somewhere between a minute and a half and two minutes is right.
+    expect(kart.lapTimes[0]).toBeGreaterThan(60);
+    expect(kart.lapTimes[0]).toBeLessThan(130);
+  });
+
+  it('the slowest kart at 50cc still clears the Mesa Leap', () => {
+    const slow = kartParams(RACERS.find((r) => r.id === 'swamp-witch')!.stats, '50cc');
+    expect(jump(track, track.mainS(def.main.gaps[0][0]) - 45, -1, slow.topSpeed, 0, slow)).toBe('cleared');
+  });
+
+  it("Snake's Mouth needs a boost to clear", () => {
+    const p = kartParams(RACERS[0].stats, '100cc');
+    const gapStart = def.branches[0].gaps[0][0];
+    expect(jump(track, gapStart - 20, 0, p.topSpeed, 0, p)).toBe('fell');
+    expect(jump(track, gapStart - 20, 0, p.topSpeed * 1.35, 2, p)).toBe('cleared');
+  });
 });
+
+/** Steers toward a point a little further along the main centerline. */
+function autopilot(track: Track, s: ReturnType<typeof createKartState>, progress: number) {
+  const p = pointAt(track.spline, progress + 14);
+  const desired = Math.atan2(p.x - s.x, p.z - s.z);
+  const err = wrapAngle(desired - s.heading);
+  return { ...NEUTRAL_INPUT, throttle: 1, steer: clamp(-err * 2.5, -1, 1) };
+}
+
+/** Drives straight down a ribbon from arc length `s` and reports whether the kart landed or fell. */
+function jump(track: Track, s: number, ribbon: number, speed: number, boost: number, p: ReturnType<typeof kartParams>) {
+  const r = track.ribbon(ribbon);
+  const pt = pointAt(r.spline, s);
+  const kart = createKartState(pt.x, pt.z, Math.atan2(pt.tx, pt.tz));
+  kart.y = kart.groundY = r.heightAt(s);
+  kart.speed = speed;
+  kart.boostTime = boost;
+  for (let t = 0; t < 4; t += PHYSICS_DT) {
+    stepKart(kart, { ...NEUTRAL_INPUT, throttle: 1 }, p, track, PHYSICS_DT);
+    if (kart.y < -2) return 'fell';
+  }
+  return 'cleared';
+}
 
 describe('laps', () => {
   const L = 1000;

@@ -10,11 +10,16 @@ export interface WallHit {
   depth: number;
 }
 
+export interface GroundInfo {
+  height: number;
+  surface: SurfaceType;
+}
+
 /** What the kart controller needs to know about the world. */
 export interface DriveEnv {
-  surfaceAt(x: number, z: number): SurfaceType;
-  groundHeight(x: number, z: number): number;
-  collide(x: number, z: number, radius: number): WallHit | null;
+  /** Ground under the kart's current position. May update `s.trackHint`. */
+  probe(s: KartState): GroundInfo;
+  collide(s: KartState, radius: number): WallHit | null;
 }
 
 /**
@@ -38,6 +43,11 @@ export interface KartState {
   driftCharge: number; // seconds
   boostTime: number; // seconds remaining
   slip: number; // visual yaw offset toward drift inside, radians
+  groundY: number; // ground height under the kart last tick
+  hopAge: number; // seconds since the last hop
+  trickWindow: number; // seconds left to press hop for a trick after leaving a ledge
+  trick: boolean; // trick performed, boost on landing
+  trackHint: number; // opaque lookup hint owned by the track, -1 = none
 }
 
 export interface StepEvents {
@@ -46,6 +56,8 @@ export interface StepEvents {
   driftStarted: boolean;
   boostTier: number; // 0 none, 1..3 drift tier released this tick
   wallHit: number; // 0..1 severity
+  launched: boolean; // left a ledge or ramp lip
+  trick: boolean; // landed a trick
 }
 
 export const KART_RADIUS = 1;
@@ -59,8 +71,17 @@ export const DRIFT_MIN_SPEED = 10;
 /** Charge thresholds (s) and boost durations (s) for blue, orange, purple sparks. */
 export const DRIFT_TIERS = [0.7, 1.4, 2.2] as const;
 export const DRIFT_BOOSTS = [0.5, 1, 1.5] as const;
+export const TRICK_WINDOW = 0.3;
+export const TRICK_BOOST = 0.7;
 
-const STEER_RESPONSE = 8;
+/** Steering ramps in gradually (fine taps) and recenters quickly. */
+const STEER_IN_RATE = 3.5;
+const STEER_OUT_RATE = 10;
+/** Response curve exponent: small inputs turn gently, full lock is unchanged. */
+const STEER_EXPO = 1.6;
+/** A drop bigger than this under the kart counts as leaving a ledge. */
+const LEDGE_DROP = 0.3;
+const MAX_GROUND_VY = 20;
 const TURN_FULL_SPEED = 6;
 const AIR_STEER = 0.6;
 const BRAKE_DECEL = 24;
@@ -92,6 +113,11 @@ export function createKartState(x = 0, z = 0, heading = 0): KartState {
     driftCharge: 0,
     boostTime: 0,
     slip: 0,
+    groundY: 0,
+    hopAge: 99,
+    trickWindow: 0,
+    trick: false,
+    trackHint: -1,
   };
 }
 
@@ -106,21 +132,40 @@ export function driftTier(charge: number): number {
   return tier;
 }
 
+/** Maps steer -1..1 through the response curve. */
+export function steerCurve(v: number): number {
+  return Math.sign(v) * Math.abs(v) ** STEER_EXPO;
+}
+
+/** Recenters at the fast rate before ramping toward a new direction at the slow one. */
+function approachSteer(current: number, target: number, dt: number): number {
+  if (current !== 0 && Math.sign(target) !== Math.sign(current)) return moveToward(current, 0, STEER_OUT_RATE * dt);
+  const rate = Math.abs(target) > Math.abs(current) ? STEER_IN_RATE : STEER_OUT_RATE;
+  return moveToward(current, target, rate * dt);
+}
+
 /** Advances one kart by dt, mutating `s`. */
 export function stepKart(s: KartState, input: InputFrame, p: KartParams, env: DriveEnv, dt: number): StepEvents {
-  const ev: StepEvents = { hopped: false, landed: 0, driftStarted: false, boostTier: 0, wallHit: 0 };
+  const ev: StepEvents = { hopped: false, landed: 0, driftStarted: false, boostTier: 0, wallHit: 0, launched: false, trick: false };
   const steerIn = clamp(input.steer, -1, 1);
-  s.steer = moveToward(s.steer, steerIn, STEER_RESPONSE * dt);
+  s.steer = approachSteer(s.steer, steerIn, dt);
+  const steer = steerCurve(s.steer);
 
-  s.surface = env.surfaceAt(s.x, s.z);
+  // s.surface comes from last tick's probe.
   if (s.grounded && s.surface === 'boost') s.boostTime = Math.max(s.boostTime, PAD_BOOST_TIME);
 
-  // Hop and drift.
+  // Hop, tricks and drift.
+  s.hopAge += dt;
+  s.trickWindow = Math.max(0, s.trickWindow - dt);
   if (input.driftPressed && s.grounded) {
-    s.vy = HOP_VELOCITY;
+    s.vy = Math.max(s.vy, 0) + HOP_VELOCITY;
     s.grounded = false;
     s.driftArmed = true;
+    s.hopAge = 0;
     ev.hopped = true;
+  } else if (input.driftPressed && s.trickWindow > 0) {
+    s.trick = true;
+    s.trickWindow = 0;
   }
   if (!input.drift) {
     if (s.driftDir !== 0) ev.boostTier = releaseDrift(s);
@@ -169,11 +214,11 @@ export function stepKart(s: KartState, input: InputFrame, p: KartParams, env: Dr
   // Yaw.
   let yawRate: number;
   if (s.driftDir !== 0) {
-    yawRate = s.driftDir * p.driftTurnRate * (0.75 + 0.55 * steerIn * s.driftDir);
+    yawRate = s.driftDir * p.driftTurnRate * (0.75 + 0.55 * steer * s.driftDir);
   } else {
     const lowSpeed = clamp(Math.abs(s.speed) / TURN_FULL_SPEED, 0, 1);
     const highSpeedDamp = 1 - 0.25 * clamp(Math.abs(s.speed) / p.topSpeed, 0, 1);
-    yawRate = s.steer * p.turnRate * lowSpeed * highSpeedDamp * (s.speed < 0 ? -1 : 1);
+    yawRate = steer * p.turnRate * lowSpeed * highSpeedDamp * (s.speed < 0 ? -1 : 1);
   }
   if (!s.grounded) yawRate *= AIR_STEER;
   s.heading = wrapAngle(s.heading - yawRate * dt);
@@ -188,24 +233,45 @@ export function stepKart(s: KartState, input: InputFrame, p: KartParams, env: Dr
   s.extX *= decay;
   s.extZ *= decay;
 
-  // Vertical.
-  const ground = env.groundHeight(s.x, s.z);
-  if (s.grounded && s.y > ground + 0.05) s.grounded = false;
+  // Vertical. Grounded karts follow the road and carry its slope as vy,
+  // so a ramp lip launches them.
+  const ground = env.probe(s);
+  s.surface = ground.surface;
+  const drop = s.groundY - ground.height;
+  s.groundY = ground.height;
+  if (s.grounded) {
+    if (ground.height < s.y - LEDGE_DROP) {
+      s.grounded = false;
+    } else {
+      s.vy = clamp((ground.height - s.y) / dt, -MAX_GROUND_VY, MAX_GROUND_VY);
+      s.y = ground.height;
+    }
+  }
+  if (!s.grounded && drop > 1) {
+    // Ground fell away beneath us: a lip. A hop just before it counts as a trick.
+    ev.launched = true;
+    if (s.hopAge < TRICK_WINDOW) s.trick = true;
+    else s.trickWindow = TRICK_WINDOW;
+  }
   if (!s.grounded) {
     s.vy -= GRAVITY * dt;
     s.y += s.vy * dt;
-    if (s.y <= ground) {
+    if (s.y <= ground.height) {
       ev.landed = Math.max(0.01, -s.vy);
-      s.y = ground;
+      s.y = ground.height;
       s.vy = 0;
       s.grounded = true;
+      s.trickWindow = 0;
+      if (s.trick) {
+        s.trick = false;
+        s.boostTime = Math.max(s.boostTime, TRICK_BOOST);
+        ev.trick = true;
+      }
     }
-  } else {
-    s.y = ground;
   }
 
   // Walls.
-  const hit = env.collide(s.x, s.z, KART_RADIUS);
+  const hit = env.collide(s, KART_RADIUS);
   if (hit) {
     s.x += hit.nx * hit.depth;
     s.z += hit.nz * hit.depth;
@@ -232,6 +298,15 @@ function releaseDrift(s: KartState): number {
   s.driftDir = 0;
   s.driftCharge = 0;
   return tier;
+}
+
+/** Places a kart at rest, e.g. after falling off the track. */
+export function respawnKart(s: KartState, x: number, y: number, z: number, heading: number): void {
+  const hint = s.trackHint;
+  Object.assign(s, createKartState(x, z, heading));
+  s.y = y;
+  s.groundY = y;
+  s.trackHint = hint;
 }
 
 /** Adds an external velocity impulse, scaled down by the kart's mass. */

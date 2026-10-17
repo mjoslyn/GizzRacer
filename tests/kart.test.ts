@@ -4,10 +4,12 @@ import { PHYSICS_DT } from '../src/core/loop';
 import {
   BOOST_SPEED_MUL,
   DRIFT_BOOSTS,
+  TRICK_BOOST,
   DRIFT_TIERS,
   OFFROAD_SPEED_MUL,
   createKartState,
   driftTier,
+  steerCurve,
   stepKart,
   type DriveEnv,
   type KartState,
@@ -17,13 +19,15 @@ import { RACERS, kartParams } from '../src/physics/racers';
 
 const params = kartParams(RACERS[0].stats, '100cc');
 
-function flatEnv(surface: SurfaceType = 'road', wallZ = Infinity): DriveEnv {
+function flatEnv(surface: SurfaceType = 'road', wallZ = Infinity, ground: (z: number) => number = () => 0): DriveEnv {
   return {
-    surfaceAt: () => surface,
-    groundHeight: () => 0,
-    collide: (_x, z, r) => (z > wallZ - r ? { nx: 0, nz: -1, depth: z - (wallZ - r) } : null),
+    probe: (s) => ({ height: ground(s.z), surface }),
+    collide: (s, r) => (s.z > wallZ - r ? { nx: 0, nz: -1, depth: s.z - (wallZ - r) } : null),
   };
 }
+
+/** A 20 m ramp rising to 2.5 m, a 12 m gap over a pit, then flat again. */
+const rampGround = (z: number) => (z < 0 ? 0 : z < 20 ? z * 0.125 : z < 32 ? -12 : 0);
 
 const input = (over: Partial<InputFrame>): InputFrame => ({ ...NEUTRAL_INPUT, ...over });
 
@@ -105,6 +109,30 @@ describe('kart steering', () => {
     expect(s.x).toBeLessThan(0);
   });
 
+  it('ramps steering in gradually so taps give small corrections', () => {
+    const s = createKartState();
+    s.speed = 20;
+    run(s, flatEnv(), 0.05, input({ throttle: 1, steer: 1 }));
+    expect(s.steer).toBeGreaterThan(0.1);
+    expect(s.steer).toBeLessThan(0.3);
+    run(s, flatEnv(), 0.5, input({ throttle: 1, steer: 1 }));
+    expect(s.steer).toBe(1);
+  });
+
+  it('recenters faster than it ramps in', () => {
+    const s = createKartState();
+    s.speed = 20;
+    s.steer = 1;
+    run(s, flatEnv(), 0.12, input({ throttle: 1 }));
+    expect(s.steer).toBe(0);
+  });
+
+  it('response curve softens small inputs but keeps full lock', () => {
+    expect(steerCurve(0.5)).toBeLessThan(0.4);
+    expect(steerCurve(-0.5)).toBeGreaterThan(-0.4);
+    expect(steerCurve(1)).toBe(1);
+  });
+
   it('does not turn while stationary', () => {
     const s = createKartState();
     run(s, flatEnv(), 0.5, input({ steer: 1 }));
@@ -169,6 +197,43 @@ describe('kart drift', () => {
     drift.speed = params.topSpeed;
     run(drift, flatEnv(), 1, driftRight(2));
     expect(Math.abs(drift.heading)).toBeGreaterThan(Math.abs(plain.heading));
+  });
+});
+
+describe('kart ramps', () => {
+  it('launches off a lip and clears the gap at speed', () => {
+    const s = createKartState(0, -10);
+    s.speed = params.topSpeed;
+    const events = run(s, flatEnv('road', Infinity, rampGround), 2, input({ throttle: 1 }));
+    expect(events.some((e) => e.launched)).toBe(true);
+    expect(s.z).toBeGreaterThan(32);
+    expect(s.y).toBe(0);
+  });
+
+  it('falls into the pit when too slow', () => {
+    const s = createKartState(0, -10);
+    s.speed = 10;
+    let lowest = 0;
+    run(s, flatEnv('road', Infinity, rampGround), 5, () => {
+      lowest = Math.min(lowest, s.y);
+      return input({ throttle: 0.35 });
+    });
+    expect(lowest).toBeLessThan(-2);
+  });
+
+  it('hop at the lip lands a trick boost', () => {
+    const s = createKartState(0, -10);
+    s.speed = params.topSpeed;
+    // Press hop just after leaving the lip at z = 20.
+    let pressed = false;
+    const events = run(s, flatEnv('road', Infinity, rampGround), 2, () => {
+      const press = !pressed && s.z > 20.5;
+      if (press) pressed = true;
+      return input({ throttle: 1, drift: press, driftPressed: press });
+    });
+    expect(events.some((e) => e.trick)).toBe(true);
+    expect(s.boostTime).toBeGreaterThan(0);
+    expect(s.boostTime).toBeLessThanOrEqual(TRICK_BOOST);
   });
 });
 

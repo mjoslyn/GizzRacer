@@ -1,0 +1,210 @@
+import type { Vec2 } from './spline';
+
+/** Heading h uses the physics convention: forward is (sin h, cos h); +h turns left. */
+export interface Pose {
+  x: number;
+  z: number;
+  h: number;
+}
+
+export type RoadSurface = 'asphalt' | 'salt' | 'rock' | 'sand';
+
+export interface SectionProps {
+  halfWidth: number;
+  /** Barrier height on both edges; 0 = open edges. */
+  wallHeight?: number;
+  surface?: RoadSurface;
+}
+
+export interface SectionDef extends SectionProps {
+  name: string;
+  from: number;
+  to: number;
+}
+
+/** A road ribbon: centerline plus arc-length keyed attributes. Serializable. */
+export interface RibbonDef {
+  points: Vec2[];
+  closed: boolean;
+  /** Arc length as laid out by the builder; attributes below are keyed against it. */
+  length: number;
+  sections: SectionDef[];
+  /** [s, y] keys, linearly interpolated. */
+  elevation: [number, number][];
+  /** [from, to] ranges with no road surface (jumps). */
+  gaps: [number, number][];
+}
+
+/** A rectangular hole in the terrain (riverbed, chasm). Karts that fall in respawn. */
+export interface PitDef {
+  x: number;
+  z: number;
+  heading: number;
+  halfLength: number; // along heading
+  halfWidth: number;
+  depth: number;
+}
+
+const INTEGRATION_STEP = 0.25;
+
+/** Turtle-style builder for track centerlines. */
+export class TrackBuilder {
+  s = 0;
+  pose: Pose;
+  readonly pits: PitDef[] = [];
+  readonly marks: Record<string, { s: number; pose: Pose }> = {};
+  private readonly points: [number, number][] = [];
+  private readonly sections: SectionDef[] = [];
+  private readonly elevation: [number, number][] = [];
+  private readonly gaps: [number, number][] = [];
+  private current: SectionDef;
+  private sinceEmit = 0;
+
+  constructor(
+    start: Pose,
+    name: string,
+    props: SectionProps,
+    private readonly emitEvery = 4,
+  ) {
+    this.pose = { ...start };
+    this.points.push([start.x, start.z]);
+    this.current = { name, from: 0, to: 0, ...props };
+  }
+
+  /** Ends the current section and starts a new one here. */
+  section(name: string, props: SectionProps): this {
+    this.closeSection();
+    this.current = { name, from: this.s, to: this.s, ...props };
+    return this;
+  }
+
+  straight(len: number): this {
+    return this.integrate(len, () => 0);
+  }
+
+  /** Circular arc; positive degrees turn left. */
+  arc(radius: number, degrees: number): this {
+    const k = Math.sign(degrees) / radius;
+    return this.integrate((radius * Math.abs(degrees) * Math.PI) / 180, () => k);
+  }
+
+  /** Arc whose radius changes linearly from r0 to r1 over the turn; positive degrees turn left. */
+  spiral(r0: number, r1: number, degrees: number): this {
+    const total = (Math.abs(degrees) * Math.PI) / 180;
+    const dir = Math.sign(degrees);
+    // Integrate by angle so curvature follows the radius schedule exactly.
+    const steps = Math.ceil((total * Math.max(r0, r1)) / INTEGRATION_STEP);
+    const dPhi = total / steps;
+    for (let i = 0; i < steps; i++) {
+      const r = r0 + (r1 - r0) * ((i + 0.5) / steps);
+      this.advance(r * dPhi, dir / r);
+    }
+    return this;
+  }
+
+  /** Smooth cubic Hermite curve to `target`, matching its heading. */
+  hermiteTo(target: Pose, tension = 1): this {
+    const a = { ...this.pose };
+    const d = Math.hypot(target.x - a.x, target.z - a.z) * tension;
+    const m0x = Math.sin(a.h) * d;
+    const m0z = Math.cos(a.h) * d;
+    const m1x = Math.sin(target.h) * d;
+    const m1z = Math.cos(target.h) * d;
+    const steps = Math.ceil((d * 2) / INTEGRATION_STEP);
+    let px = a.x;
+    let pz = a.z;
+    for (let i = 1; i <= steps; i++) {
+      const t = i / steps;
+      const t2 = t * t;
+      const t3 = t2 * t;
+      const h00 = 2 * t3 - 3 * t2 + 1;
+      const h10 = t3 - 2 * t2 + t;
+      const h01 = -2 * t3 + 3 * t2;
+      const h11 = t3 - t2;
+      const x = h00 * a.x + h10 * m0x + h01 * target.x + h11 * m1x;
+      const z = h00 * a.z + h10 * m0z + h01 * target.z + h11 * m1z;
+      const ds = Math.hypot(x - px, z - pz);
+      this.pose = { x, z, h: Math.atan2(x - px, z - pz) };
+      this.moved(ds);
+      px = x;
+      pz = z;
+    }
+    this.pose = { ...target };
+    return this;
+  }
+
+  /** Sets the road height at the current position. */
+  elevate(y: number): this {
+    this.elevation.push([this.s, y]);
+    return this;
+  }
+
+  /** Straight jump gap with a pit underneath. */
+  gap(len: number, pitHalfWidth: number, depth = 12, overhang = 2): this {
+    const from = this.s;
+    const h = this.pose.h;
+    const cx = this.pose.x + Math.sin(h) * (len / 2);
+    const cz = this.pose.z + Math.cos(h) * (len / 2);
+    this.pits.push({ x: cx, z: cz, heading: h, halfLength: len / 2 + overhang, halfWidth: pitHalfWidth, depth });
+    this.straight(len);
+    this.gaps.push([from, this.s]);
+    return this;
+  }
+
+  mark(name: string): this {
+    this.marks[name] = { s: this.s, pose: { ...this.pose } };
+    return this;
+  }
+
+  finish(closed: boolean): RibbonDef {
+    this.closeSection();
+    const pts = this.points.slice();
+    if (this.sinceEmit > 0.5) pts.push([this.pose.x, this.pose.z]);
+    if (closed && pts.length > 2) {
+      const [fx, fz] = pts[0];
+      const [lx, lz] = pts[pts.length - 1];
+      if (Math.hypot(fx - lx, fz - lz) < this.emitEvery * 0.75) pts.pop();
+    }
+    const elevation = this.elevation.length ? this.elevation.slice() : [[0, 0] as [number, number]];
+    return { points: pts, closed, length: this.s, sections: this.sections.slice(), elevation, gaps: this.gaps.slice() };
+  }
+
+  private integrate(len: number, curvature: (u: number) => number): this {
+    const steps = Math.max(1, Math.ceil(len / INTEGRATION_STEP));
+    const ds = len / steps;
+    for (let i = 0; i < steps; i++) this.advance(ds, curvature((i + 0.5) / steps));
+    return this;
+  }
+
+  private advance(ds: number, k: number): void {
+    const p = this.pose;
+    p.h += (k * ds) / 2;
+    p.x += Math.sin(p.h) * ds;
+    p.z += Math.cos(p.h) * ds;
+    p.h += (k * ds) / 2;
+    this.moved(ds);
+  }
+
+  private moved(ds: number): void {
+    this.s += ds;
+    this.sinceEmit += ds;
+    if (this.sinceEmit >= this.emitEvery) {
+      this.points.push([this.pose.x, this.pose.z]);
+      this.sinceEmit = 0;
+    }
+  }
+
+  private closeSection(): void {
+    this.current.to = this.s;
+    if (this.current.to > this.current.from) this.sections.push({ ...this.current });
+  }
+}
+
+/** Pose `dist` meters ahead of (or behind, if negative) `p`. */
+export function offsetPose(p: Pose, dist: number, lateral = 0): Pose {
+  return {
+    x: p.x + Math.sin(p.h) * dist - Math.cos(p.h) * lateral,
+    z: p.z + Math.cos(p.h) * dist + Math.sin(p.h) * lateral,
+    h: p.h,
+  };
+}

@@ -1,9 +1,9 @@
 :root {
   --hud-fg: #fff7e6;
-  --hud-shadow: 0 2px 0 #3a1240, 0 0 12px rgba(0, 0, 0, 0.45);
   --tier-1: #3fa9ff;
   --tier-2: #ff8a1f;
   --tier-3: #c04bff;
+  --hud-font: 'Arial Black', 'Arial Bold', Gadget, sans-serif;
 }
 
 html,
@@ -12,7 +12,7 @@ body {
   height: 100%;
   overflow: hidden;
   background: #1f3fbf;
-  font-family: 'Trebuchet MS', system-ui, sans-serif;
+  font-family: var(--hud-font);
   color: var(--hud-fg);
 }
 
@@ -24,56 +24,99 @@ body {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  text-shadow: var(--hud-shadow);
+  font-style: italic;
+}
+
+/* Chunky gradient lettering with a hard outline, console-era style. */
+.hud-big {
+  font-weight: 900;
+  background: linear-gradient(180deg, #fffbe0 0%, #ffd23a 45%, #ff7a00 55%, #ffb000 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-stroke: 2px #3a0f45;
+  filter: drop-shadow(3px 3px 0 rgba(30, 0, 40, 0.75));
 }
 
 .hud-tl {
   position: absolute;
-  top: 16px;
-  left: 20px;
-}
-
-.hud-tr {
-  position: absolute;
-  top: 16px;
-  right: 20px;
-  text-align: right;
-  font-size: 14px;
+  top: 14px;
+  left: 22px;
 }
 
 .hud-lap {
-  font-size: 34px;
-  font-weight: 800;
+  font-size: 42px;
   letter-spacing: 1px;
 }
 
 .hud-time {
-  font-size: 22px;
+  font-size: 24px;
   font-variant-numeric: tabular-nums;
+  text-shadow: 2px 2px 0 #3a0f45, -1px -1px 0 #3a0f45;
 }
 
 .hud-laps {
   margin-top: 6px;
   font-size: 14px;
-  opacity: 0.85;
   font-variant-numeric: tabular-nums;
+  text-shadow: 2px 2px 0 #3a0f45;
+}
+
+.hud-tr {
+  position: absolute;
+  top: 14px;
+  right: 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.hud-racer {
+  text-align: right;
+  font-size: 15px;
+  text-shadow: 2px 2px 0 #3a0f45;
+}
+
+.hud-minimap {
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 220, 160, 0.35), rgba(60, 20, 70, 0.45));
+  box-shadow: 0 0 0 3px rgba(255, 210, 120, 0.8), 0 0 0 6px rgba(58, 15, 69, 0.8);
+}
+
+.hud-section {
+  position: absolute;
+  top: 22%;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 38px;
+  letter-spacing: 3px;
+  opacity: 0;
+  transform: translateX(-30px) skewX(-8deg);
+  transition: opacity 0.35s, transform 0.35s;
+}
+
+.hud-section.show {
+  opacity: 1;
+  transform: translateX(0) skewX(-8deg);
 }
 
 .hud-br {
   position: absolute;
-  right: 24px;
-  bottom: 20px;
+  right: 26px;
+  bottom: 18px;
   text-align: right;
 }
 
 .hud-speed {
-  font-size: 48px;
-  font-weight: 800;
+  font-size: 56px;
   font-variant-numeric: tabular-nums;
+  line-height: 1;
 }
 
 .hud-speed small {
-  font-size: 16px;
+  font-size: 18px;
   margin-left: 4px;
 }
 
@@ -81,30 +124,30 @@ body {
   font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 2px;
-  opacity: 0.8;
+  text-shadow: 2px 2px 0 #3a0f45;
 }
 
 .hud-drift {
   position: absolute;
   left: 50%;
-  bottom: 28px;
+  bottom: 26px;
   width: min(320px, 60vw);
-  transform: translateX(-50%);
+  transform: translateX(-50%) skewX(-12deg);
 }
 
 .hud-drift-bar {
   position: relative;
-  height: 12px;
-  border-radius: 6px;
-  background: rgba(0, 0, 0, 0.35);
+  height: 14px;
+  background: rgba(30, 0, 40, 0.55);
   overflow: hidden;
-  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.35);
+  box-shadow: 0 0 0 2px #ffd23a, 0 0 0 4px #3a0f45;
 }
 
 .hud-drift-fill {
   height: 100%;
   width: 0;
   background: #fff2a8;
+  box-shadow: 0 0 12px currentColor;
 }
 
 .hud-drift-tick {
@@ -112,44 +155,51 @@ body {
   top: 0;
   bottom: 0;
   width: 2px;
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.7);
 }
 
 .hud-drift-label {
   text-align: center;
-  font-size: 12px;
-  letter-spacing: 2px;
-  margin-top: 4px;
-  min-height: 15px;
+  font-size: 13px;
+  letter-spacing: 3px;
+  margin-top: 5px;
+  min-height: 16px;
+  text-shadow: 2px 2px 0 #3a0f45;
 }
 
 .hud-help {
   position: absolute;
-  left: 20px;
-  bottom: 18px;
-  font-size: 12px;
-  line-height: 1.5;
-  opacity: 0.75;
+  left: 22px;
+  bottom: 16px;
+  font-family: Verdana, sans-serif;
+  font-style: normal;
+  font-size: 11px;
+  line-height: 1.6;
+  text-shadow: 1px 1px 0 #3a0f45;
+  opacity: 0.85;
 }
 
-.hud-pause {
+.hud-pause,
+.hud-banner {
   position: absolute;
   inset: 0;
   display: none;
   align-items: center;
   justify-content: center;
-  font-size: 56px;
-  font-weight: 800;
+  font-size: 72px;
   letter-spacing: 6px;
+}
+
+.hud-pause {
   background: rgba(20, 0, 40, 0.45);
 }
 
-.hud-pause.show {
+.hud-pause.show,
+.hud-banner.show {
   display: flex;
 }
 
 .hud-boost {
   color: #ffb347;
-  font-weight: 700;
   letter-spacing: 2px;
 }
