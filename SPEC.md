@@ -5,6 +5,7 @@
 - Single player vs CPU racers, one kart per racer so every kart looks different (5 CPUs with the MVP's 6 racers; 7 once the roster reaches 8). Online multiplayer deferred
 - Psychedelic garage-rock world with original characters
 - Target: 60 fps on a mid-range laptop, Chrome/Firefox/Safari, keyboard, gamepad and touch (phones and tablets, iOS included)
+- Phones play in landscape, fullscreen where the browser allows it (installable web app for iPhone)
 
 ## 2. MVP Scope
 - 1 cup (4 tracks), 6 racers, 5 items
@@ -56,7 +57,9 @@ All designs are original. No likenesses of band members or album art. Every race
 | Tempo Shift | Others slowed 3s | Last 2 only |
 
 - Item boxes respawn 3s after pickup
-- One item held at a time
+- One item held at a time, after a 1s roulette
+- Hit karts are briefly immune (spin-outs: 1s longer than the spin)
+- CPUs use items at a good moment (a straight for the Fuzz Pedal, a kart on their tail for a mine, company for the Feedback Wave) with a chance set by class; otherwise after a random wait
 
 ## 7. Tracks (Cup 1)
 
@@ -86,7 +89,9 @@ Each track has its own theme (render/themes.ts): desert (Rattlesnake Run), green
 **Hazards**
 - Rattlesnakes slithering across the S-Bends on a loop (spin-out on contact)
 - Dust devils that wander the Salt Flat and push karts sideways
-- Tumbleweeds bouncing through Rattle Canyon
+- Tumbleweeds bouncing through Rattle Canyon (slow you down)
+- Boulders that fall into Rattle Canyon on a rhythm: a warning ring, the drop, then a rock on the road until it crumbles
+- Hazard motion is a pure function of race time, so it replays and syncs by the clock alone
 
 **Psychedelic layer**
 - Heat haze distortion shader, stronger on the straights

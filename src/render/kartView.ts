@@ -104,13 +104,16 @@ export class KartView {
   /** `s` is an interpolated render snapshot; `frameDt` is real time since the last frame. */
   update(s: KartState, topSpeed: number, frameDt: number, time: number): void {
     this.root.position.set(s.x, s.y, s.z);
-    this.root.rotation.y = s.heading - s.slip;
+    this.root.rotation.y = s.heading - s.slip + s.spinAngle;
+    // Tempo Shift shrinks you a little while it lasts.
+    this.body.scale.setScalar(s.slowTime > 0 ? 0.8 : 1);
 
     const speedRatio = clamp(Math.abs(s.speed) / topSpeed, 0, 1.5);
     const accel = frameDt > 0 ? (s.speed - this.lastSpeed) / frameDt : 0;
     this.lastSpeed = s.speed;
 
-    const targetRoll = s.driftDir !== 0 ? s.driftDir * 0.12 : s.steer * 0.07 * speedRatio;
+    const wobbleRoll = s.wobbleTime > 0 ? Math.sin(time * 18) * 0.18 : 0;
+    const targetRoll = (s.driftDir !== 0 ? s.driftDir * 0.12 : s.steer * 0.07 * speedRatio) + wobbleRoll;
     this.roll += (targetRoll - this.roll) * damp(10, frameDt);
     const airPitch = s.grounded ? 0 : clamp(-s.vy * 0.02, -0.25, 0.25);
     this.pitch += (clamp(-accel * 0.006, -0.08, 0.08) + airPitch - this.pitch) * damp(6, frameDt);

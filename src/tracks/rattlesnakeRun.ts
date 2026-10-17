@@ -53,6 +53,18 @@ export function buildRattlesnakeRun(): TrackDef {
       { kind: 'skeletonArch', ribbon: -1, s: 0 },
       { kind: 'fangs', ribbon: 0, s: shortcut.caveStart },
     ],
+    itemBoxes: [
+      { s: 95, count: 4 },
+      { s: b.marks.canyon.s - 18, count: 3 },
+      { s: b.marks.wash.s + 25, count: 4 },
+      { s: b.marks.mesa.s + 8, count: 4 },
+    ],
+    hazards: [
+      { kind: 'dustDevils', from: 20, to: 165, count: 2 },
+      { kind: 'snakes', from: b.marks.sBends.s + 25, to: b.marks.canyon.s - 40, count: 3, period: 8 },
+      { kind: 'tumbleweeds', from: b.marks.canyon.s + 5, to: b.marks.coil.s - 5, count: 3 },
+      { kind: 'boulders', at: [b.marks.canyon.s + 55, b.marks.canyon.s + 115], period: 7 },
+    ],
     theme: 'desert',
     music: { lap: 'rattlesnake-run', finalLap: 'rattlesnake-run-final-lap' },
   };

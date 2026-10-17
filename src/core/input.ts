@@ -32,7 +32,7 @@ const KEYS = {
   left: ['KeyA', 'ArrowLeft'],
   right: ['KeyD', 'ArrowRight'],
   drift: ['ShiftLeft', 'ShiftRight', 'Space'],
-  item: ['KeyE'],
+  item: ['KeyE', 'KeyX', 'TouchItem'],
   lookBack: ['KeyQ'],
   pause: ['Escape'],
 } as const;
@@ -118,6 +118,11 @@ export class InputManager {
     this.prevItem = item;
     this.latched.clear();
     return frame;
+  }
+
+  /** Fires the item as if E were tapped (the touch ITEM button). */
+  pressItem(): void {
+    this.latched.add('TouchItem');
   }
 
   /** Asks for a pause as if Esc were pressed (the touch pause button). */

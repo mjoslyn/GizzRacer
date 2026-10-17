@@ -47,6 +47,12 @@ export function buildVolcanoFortress(): TrackDef {
     laps: 3,
     bounds: 420,
     landmarks: [],
+    itemBoxes: [
+      { s: 95, count: 4 },
+      { s: b.marks.fortress.s + 30, count: 3 },
+      { s: b.marks.caldera.s + 25, count: 4 },
+    ],
+    hazards: [],
     theme: 'volcano',
     music: { lap: 'volcano-fortress' },
   };

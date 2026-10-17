@@ -37,11 +37,24 @@ export interface TrackDef {
   /** Square play area half-extent; walls sit on its edge. */
   bounds: number;
   landmarks: Landmark[];
+  /** Rows of item boxes across the road, at main-ribbon arc lengths (builder units). */
+  itemBoxes: { s: number; count: number }[];
+  hazards: HazardDef[];
   /** Visual theme (render/themes.ts). */
   theme: 'desert' | 'speedway' | 'volcano' | 'jungle';
   /** Music cues (public/music/<cue>.mp3): one for the race, one for the final lap. */
   music: { lap: string; finalLap?: string };
 }
+
+/**
+ * Track hazards, positioned along the main ribbon (builder units). Their
+ * motion is a pure function of race time (items/hazards.ts).
+ */
+export type HazardDef =
+  | { kind: 'snakes'; from: number; to: number; count: number; period: number }
+  | { kind: 'dustDevils'; from: number; to: number; count: number }
+  | { kind: 'tumbleweeds'; from: number; to: number; count: number }
+  | { kind: 'boulders'; at: number[]; period: number };
 
 export interface StartSlot {
   x: number;

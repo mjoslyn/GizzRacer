@@ -573,3 +573,81 @@ export function skyEnvMap(): THREE.CubeTexture {
   tex.needsUpdate = true;
   return tex;
 }
+
+/** Item box face: a psychedelic swirl with a big question mark. */
+export function itemBoxTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const img = ctx.createImageData(S, S);
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const dx = x - S / 2;
+      const dy = y - S / 2;
+      const a = Math.atan2(dy, dx);
+      const r = Math.hypot(dx, dy) / S;
+      const h = (a / (Math.PI * 2) + r * 3) % 1;
+      const [cr, cg, cb] = hsl(h < 0 ? h + 1 : h, 0.9, 0.58);
+      const i = (y * S + x) * 4;
+      img.data[i] = cr;
+      img.data[i + 1] = cg;
+      img.data[i + 2] = cb;
+      img.data[i + 3] = 255;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  ctx.lineWidth = 14;
+  ctx.strokeStyle = '#fff6d0';
+  ctx.strokeRect(7, 7, S - 14, S - 14);
+  ctx.font = 'bold 190px Impact, "Arial Black", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.lineWidth = 16;
+  ctx.strokeStyle = '#2a0636';
+  ctx.strokeText('?', S / 2, S / 2 + 10);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('?', S / 2, S / 2 + 10);
+  return finish(c, false);
+}
+
+/** Streaky sand for dust devil funnels; tiles horizontally. */
+export function dustTexture(): THREE.CanvasTexture {
+  const W = 128;
+  const H = 128;
+  const [c, ctx] = canvas(W, H);
+  const n = fbm(W, 4, 4, 211);
+  const img = ctx.createImageData(W, H);
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const i = y * W + x;
+      const streak = n[(y * W + ((x + y * 2) % W)) % (W * W)];
+      img.data[i * 4] = 214;
+      img.data[i * 4 + 1] = 168;
+      img.data[i * 4 + 2] = 118;
+      img.data[i * 4 + 3] = Math.max(0, Math.min(255, (streak - 0.3) * 420));
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  return finish(c);
+}
+
+/** Red warning ring painted under a falling boulder. */
+export function warningTexture(): THREE.CanvasTexture {
+  const S = 128;
+  const [c, ctx] = canvas(S);
+  const g = ctx.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
+  g.addColorStop(0, 'rgba(0,0,0,0.65)');
+  g.addColorStop(0.7, 'rgba(40,0,0,0.5)');
+  g.addColorStop(0.82, 'rgba(255,40,30,0.95)');
+  g.addColorStop(0.92, 'rgba(255,200,60,0.9)');
+  g.addColorStop(1, 'rgba(255,40,30,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, S, S);
+  return finish(c, false);
+}
+
+function hsl(h: number, s: number, l: number): RGB {
+  const k = (n: number) => (n + h * 12) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const f = (n: number) => l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1));
+  return [f(0) * 255, f(8) * 255, f(4) * 255];
+}

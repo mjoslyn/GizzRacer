@@ -47,6 +47,13 @@ export function buildPolygondwanalandJungle(): TrackDef {
     laps: 3,
     bounds: 420,
     landmarks: [],
+    itemBoxes: [
+      { s: 80, count: 4 },
+      { s: b.marks.river.s + 15, count: 4 },
+      { s: b.marks.ruins.s + 30, count: 3 },
+      { s: b.marks.waterfall.s + 20, count: 4 },
+    ],
+    hazards: [],
     theme: 'jungle',
     music: { lap: 'polygondwanaland-jungle' },
   };

@@ -36,6 +36,12 @@ export const TEST_TRACK: TrackDef = {
   laps: 3,
   bounds: 240,
   landmarks: [],
+  itemBoxes: [
+    { s: 120, count: 4 },
+    { s: 430, count: 4 },
+    { s: 700, count: 4 },
+  ],
+  hazards: [],
   theme: 'speedway',
   music: { lap: 'infinite-loop-speedway' },
 };

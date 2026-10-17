@@ -1,11 +1,16 @@
 import { DRIFT_TIERS, driftTier, type KartState } from '../physics/kart';
 import { ordinal } from '../core/race';
+import { ITEMS, ITEM_KINDS, type ItemKind } from '../items/items';
+import { itemIcon } from './itemIcons';
 import { Minimap } from './minimap';
 
 const TIER_NAMES = ['', 'BLUE', 'ORANGE', 'PURPLE'];
 const TIER_COLORS = ['#fff2a8', 'var(--tier-1)', 'var(--tier-2)', 'var(--tier-3)'];
 const MAX_CHARGE = DRIFT_TIERS[DRIFT_TIERS.length - 1];
 const SECTION_BANNER_TIME = 2.2;
+const FLASH_TIME = 1.4;
+/** Seconds per face of the item roulette. */
+const ROULETTE_STEP = 0.07;
 
 export function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -39,6 +44,9 @@ export interface HudData {
   countdown: number;
   standings: Standing[];
   muted: boolean;
+  /** Item in the slot, and roulette time left (> 0 while it spins). */
+  item: ItemKind | null;
+  rolling: number;
 }
 
 export type PauseAction = 'resume' | 'restart' | 'quit';
@@ -62,6 +70,14 @@ export class Hud {
   private readonly count: HTMLElement;
   private readonly standings: HTMLElement;
   private readonly title: HTMLElement;
+  private readonly itemSlot: HTMLElement;
+  private readonly itemImg: HTMLImageElement;
+  private readonly itemName: HTMLElement;
+  private readonly flashEl: HTMLElement;
+  private flashText = '';
+  private flashAt = -Infinity;
+  private flashPending = false;
+  private lastIcon = '';
   private lastCount = '';
   private lastSection = '';
   private sectionShownAt = -Infinity;
@@ -79,6 +95,8 @@ export class Hud {
       </div>
       <div class="hud-tr"><div class="hud-racer"></div></div>
       <div class="hud-section hud-big"></div>
+      <div class="hud-item"><img alt="" /><div class="hud-item-name"></div></div>
+      <div class="hud-flash hud-big"></div>
       <div class="hud-drift">
         <div class="hud-drift-bar"><div class="hud-drift-fill"></div>${ticks}</div>
         <div class="hud-drift-label"></div>
@@ -89,7 +107,7 @@ export class Hud {
         <div class="hud-surface"></div>
       </div>
       <div class="hud-help">
-        &larr;/&rarr; steer &middot; &darr; brake/reverse &middot; Shift/Space hop+drift (tap at a ramp lip for a trick) &middot; Q look back &middot; Esc pause<br />
+        &larr;/&rarr; steer &middot; &darr; brake/reverse &middot; Shift/Space hop+drift (tap at a ramp lip for a trick) &middot; E item &middot; Q look back &middot; Esc pause<br />
         R restart &middot; M auto/manual throttle &middot; N music on/off
       </div>
       <div class="hud-count hud-big"></div>
@@ -107,6 +125,7 @@ export class Hud {
         <div class="hud-title-logo hud-big">GIZZRACER</div>
         <div class="hud-title-sub">psychedelic desert kart racing</div>
         <div class="hud-title-press">${'ontouchstart' in window ? 'tap to start' : 'press any key'}</div>
+        <div class="hud-title-ios">For full screen: Share &rarr; Add to Home Screen</div>
       </div>`;
     parent.appendChild(this.el);
     const q = (sel: string) => this.el.querySelector<HTMLElement>(sel)!;
@@ -125,11 +144,21 @@ export class Hud {
     this.count = q('.hud-count');
     this.standings = q('.hud-standings');
     this.title = q('.hud-title');
+    this.itemSlot = q('.hud-item');
+    this.itemImg = q('.hud-item img') as HTMLImageElement;
+    this.itemName = q('.hud-item-name');
+    this.flashEl = q('.hud-flash');
     q('.hud-tr').appendChild(this.minimap.canvas);
     this.pause.addEventListener('click', (e) => {
       const act = (e.target as HTMLElement).closest<HTMLElement>('[data-act]')?.dataset.act as PauseAction | undefined;
       if (act) this.onPauseAction?.(act);
     });
+  }
+
+  /** Big callout in the middle of the screen: hits taken and landed. */
+  flash(text: string): void {
+    this.flashText = text;
+    this.flashPending = true;
   }
 
   showTitle(show: boolean): void {
@@ -188,5 +217,29 @@ export class Hud {
         `<div class="hud-standings-next">${'ontouchstart' in window ? 'tap' : 'press any key'} to continue</div>`;
     }
     this.pause.classList.toggle('show', d.paused);
+    this.updateItem(d, now);
+  }
+
+  private updateItem(d: HudData, now: number): void {
+    const kind = d.rolling > 0 ? ITEM_KINDS[Math.floor(now / ROULETTE_STEP) % ITEM_KINDS.length] : d.item;
+    const icon = kind ?? '';
+    if (icon !== this.lastIcon) {
+      this.lastIcon = icon;
+      if (kind) this.itemImg.src = itemIcon(kind);
+      this.itemImg.style.visibility = kind ? 'visible' : 'hidden';
+    }
+    this.itemName.textContent = d.item && d.rolling === 0 ? ITEMS[d.item].name : '';
+    this.itemSlot.classList.toggle('rolling', d.rolling > 0);
+    this.itemSlot.classList.toggle('ready', !!d.item && d.rolling === 0);
+
+    if (this.flashPending) {
+      this.flashPending = false;
+      this.flashAt = now;
+      this.flashEl.textContent = this.flashText;
+      this.flashEl.classList.remove('pop');
+      void this.flashEl.offsetWidth;
+      this.flashEl.classList.add('pop');
+    }
+    this.flashEl.classList.toggle('show', now - this.flashAt < FLASH_TIME && !d.paused);
   }
 }

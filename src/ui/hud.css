@@ -642,3 +642,202 @@ body.touch-mode .hud-drift {
   bottom: 70px;
   width: min(260px, 40vw);
 }
+
+/* Item slot: top centre on desktop, under the lap counter on touch. */
+.hud-item {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 84px;
+  height: 84px;
+  border-radius: 16px;
+  background: radial-gradient(circle at 50% 40%, rgba(80, 20, 110, 0.55), rgba(20, 0, 30, 0.7));
+  box-shadow: 0 0 0 4px #ffd23a, 0 0 0 7px #3a0f45, 0 4px 14px rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hud-item img {
+  width: 70px;
+  height: 70px;
+  visibility: hidden;
+}
+
+.hud-item.rolling,
+.hud-item.ready {
+  background: radial-gradient(circle at 50% 45%, rgba(255, 246, 220, 0.85), rgba(150, 90, 200, 0.75) 60%, rgba(40, 0, 60, 0.8));
+}
+
+.hud-item.rolling img {
+  filter: blur(0.6px) saturate(1.4);
+}
+
+.hud-item.ready {
+  animation: hud-item-glow 0.9s ease-in-out infinite alternate;
+}
+
+@keyframes hud-item-glow {
+  to { box-shadow: 0 0 0 4px #fff27a, 0 0 0 7px #3a0f45, 0 0 22px #ff5ad0; }
+}
+
+.hud-item-name {
+  position: absolute;
+  top: 100%;
+  margin-top: 12px;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: bold;
+  color: #fff6d0;
+  text-shadow: 0 2px 0 #3a0f45, 0 0 6px #3a0f45;
+}
+
+.hud-flash {
+  position: absolute;
+  top: 44%;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 54px;
+  letter-spacing: 3px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+.hud-flash.show {
+  opacity: 1;
+}
+
+.hud-flash.pop {
+  animation: hud-flash-pop 0.35s ease-out;
+}
+
+@keyframes hud-flash-pop {
+  from { transform: scale(1.8) skewX(-8deg); }
+  to { transform: scale(1) skewX(-8deg); }
+}
+
+body[data-mode='title'] .hud-item,
+body[data-mode='menu'] .hud-item,
+body[data-mode='results'] .hud-item,
+body:not([data-mode='race']) .hud-flash {
+  display: none;
+}
+
+body.touch-mode .hud-item {
+  top: 96px;
+  left: 18px;
+  transform: none;
+  width: 64px;
+  height: 64px;
+}
+
+body.touch-mode .hud-item img {
+  width: 54px;
+  height: 54px;
+}
+
+body.touch-mode .hud-item-name {
+  left: 0;
+  font-size: 11px;
+  margin-top: 10px;
+}
+
+.touch-item {
+  right: 46px;
+  bottom: 160px;
+  width: 78px !important;
+  height: 78px !important;
+  font-size: 13px !important;
+}
+
+@media (max-width: 700px) {
+  .hud-flash { font-size: 34px; }
+}
+
+/* ---- Phones: keep clear of notches, and ask for landscape ---- */
+.hud,
+.touch {
+  inset: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) env(safe-area-inset-bottom, 0) env(safe-area-inset-left, 0);
+}
+
+html,
+body {
+  height: 100dvh;
+  overscroll-behavior: none;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.rotate {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  padding: 24px;
+  text-align: center;
+  background: radial-gradient(circle at 50% 35%, #6a1a9a, #1a0626 75%);
+}
+
+@media (orientation: portrait) {
+  body.coarse .rotate {
+    display: flex;
+  }
+}
+
+.rotate-text {
+  font-size: 30px;
+  letter-spacing: 2px;
+  line-height: 1.2;
+}
+
+.rotate-hint {
+  font-size: 15px;
+  color: #fff6d0;
+  opacity: 0.85;
+}
+
+.rotate-phone {
+  width: 70px;
+  height: 120px;
+  border-radius: 14px;
+  border: 5px solid #ffd23a;
+  box-shadow: 0 0 0 4px #3a0f45, 0 0 24px #ff5ad0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: rotate-phone 2.2s ease-in-out infinite;
+}
+
+.rotate-screen {
+  width: 52px;
+  height: 92px;
+  border-radius: 6px;
+  background: linear-gradient(160deg, #3ad8ff, #ff5ad0 60%, #ffd23a);
+}
+
+@keyframes rotate-phone {
+  0%, 25% { transform: rotate(0deg); }
+  55%, 100% { transform: rotate(-90deg); }
+}
+
+/* iPhone Safari can't go full screen from a page: say how on the title. */
+.hud-title-ios {
+  display: none;
+  margin-top: 14px;
+  font-size: 14px;
+  font-style: normal;
+  opacity: 0.85;
+}
+
+body.ios-browser .hud-title-ios {
+  display: block;
+}

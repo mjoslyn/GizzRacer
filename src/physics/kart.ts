@@ -1,4 +1,4 @@
-import type { InputFrame } from '../core/input';
+import { NEUTRAL_INPUT, type InputFrame } from '../core/input';
 import { clamp, moveToward, wrapAngle } from '../core/math';
 import type { KartParams } from './racers';
 
@@ -48,6 +48,11 @@ export interface KartState {
   trickWindow: number; // seconds left to press hop for a trick after leaving a ledge
   trick: boolean; // trick performed, boost on landing
   trackHint: number; // opaque lookup hint owned by the track, -1 = none
+  spinTime: number; // seconds of spin-out left: no control, bleeding speed
+  spinAngle: number; // visual yaw added by a spin-out, radians
+  wobbleTime: number; // seconds of wobbly steering left (Microtonal Mine)
+  slowTime: number; // seconds of reduced top speed left (Tempo Shift)
+  invulnTime: number; // seconds of immunity left after being hit
 }
 
 export interface StepEvents {
@@ -71,6 +76,12 @@ export const DRIFT_MIN_SPEED = 10;
 /** Charge thresholds (s) and boost durations (s) for blue, orange, purple sparks. */
 export const DRIFT_TIERS = [0.3, 0.6, 0.95] as const;
 export const DRIFT_BOOSTS = [0.5, 1, 1.5] as const;
+/** Top speed multiplier while slowed by Tempo Shift. */
+export const SLOW_MUL = 0.6;
+const SPIN_DECEL = 22;
+const SPIN_RATE = 14; // rad/s of visual spin
+const WOBBLE_FREQ = 15; // rad/s
+const WOBBLE_DEPTH = 0.85;
 export const TRICK_WINDOW = 0.3;
 export const TRICK_BOOST = 0.7;
 
@@ -118,6 +129,11 @@ export function createKartState(x = 0, z = 0, heading = 0): KartState {
     trickWindow: 0,
     trick: false,
     trackHint: -1,
+    spinTime: 0,
+    spinAngle: 0,
+    wobbleTime: 0,
+    slowTime: 0,
+    invulnTime: 0,
   };
 }
 
@@ -147,7 +163,23 @@ function approachSteer(current: number, target: number, dt: number): number {
 /** Advances one kart by dt, mutating `s`. */
 export function stepKart(s: KartState, input: InputFrame, p: KartParams, env: DriveEnv, dt: number): StepEvents {
   const ev: StepEvents = { hopped: false, landed: 0, driftStarted: false, boostTier: 0, wallHit: 0, launched: false, trick: false };
-  const steerIn = clamp(input.steer, -1, 1);
+  s.invulnTime = Math.max(0, s.invulnTime - dt);
+  s.slowTime = Math.max(0, s.slowTime - dt);
+  const spinning = s.spinTime > 0;
+  if (spinning) {
+    // A spun-out kart is a passenger: no throttle, steer or drift until it stops.
+    s.spinTime = Math.max(0, s.spinTime - dt);
+    s.spinAngle += SPIN_RATE * dt * Math.min(1, s.spinTime + 0.3);
+    if (s.spinTime === 0) s.spinAngle = 0;
+    input = NEUTRAL_INPUT;
+    s.speed = moveToward(s.speed, 0, SPIN_DECEL * dt);
+  }
+  let rawSteer = input.steer;
+  if (s.wobbleTime > 0) {
+    s.wobbleTime = Math.max(0, s.wobbleTime - dt);
+    rawSteer += Math.sin(s.wobbleTime * WOBBLE_FREQ) * WOBBLE_DEPTH;
+  }
+  const steerIn = clamp(rawSteer, -1, 1);
   s.steer = approachSteer(s.steer, steerIn, dt);
   const steer = steerCurve(s.steer);
 
@@ -190,8 +222,9 @@ export function stepKart(s: KartState, input: InputFrame, p: KartParams, env: Dr
   let top = p.topSpeed;
   if (boosting) top *= BOOST_SPEED_MUL;
   else if (s.surface === 'offroad') top *= OFFROAD_SPEED_MUL;
+  if (s.slowTime > 0) top *= SLOW_MUL;
 
-  if (s.grounded) {
+  if (s.grounded && !spinning) {
     const drive = boosting ? 1 : input.throttle - input.brake;
     if (drive > 0) {
       const target = top * drive;
@@ -298,6 +331,33 @@ function releaseDrift(s: KartState): number {
   s.driftDir = 0;
   s.driftCharge = 0;
   return tier;
+}
+
+/** Spins a kart out (items, hazards). Returns false if it was immune. */
+export function spinOut(s: KartState, duration: number): boolean {
+  if (s.invulnTime > 0) return false;
+  s.spinTime = duration;
+  s.invulnTime = duration + 1;
+  s.driftDir = 0;
+  s.driftCharge = 0;
+  s.driftArmed = false;
+  s.boostTime = 0;
+  return true;
+}
+
+/** Makes steering wobble for `duration` (Microtonal Mine). Returns false if immune. */
+export function wobble(s: KartState, duration: number): boolean {
+  if (s.invulnTime > 0) return false;
+  s.wobbleTime = duration;
+  s.invulnTime = 0.6;
+  return true;
+}
+
+/** Cuts top speed for `duration` (Tempo Shift). Returns false if immune. */
+export function slowDown(s: KartState, duration: number): boolean {
+  if (s.invulnTime > 0) return false;
+  s.slowTime = duration;
+  return true;
 }
 
 /** Places a kart at rest, e.g. after falling off the track. */

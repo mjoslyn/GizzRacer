@@ -1,4 +1,6 @@
-import { AUTOPILOT_SKILL, CpuDriver, type CpuSkill } from '../ai/cpuDriver';
+import { AUTOPILOT_SKILL, CpuDriver, type CpuSkill, type Obstacle } from '../ai/cpuDriver';
+import { HazardSystem } from '../items/hazards';
+import { ItemSystem, type ItemEvent, type ItemHolder, type ItemKind } from '../items/items';
 import { NEUTRAL_INPUT, type InputFrame } from './input';
 import { KART_RADIUS, copyKartState, createKartState, respawnKart, stepKart, type KartState, type StepEvents } from '../physics/kart';
 import { kartParams, type EngineClass, type KartParams, type RacerDef } from '../physics/racers';
@@ -16,7 +18,7 @@ const FALL_DEPTH = -2;
 const BUMP_RESTITUTION = 0.4;
 const BUMP_MIN = 2;
 
-export class RaceKart {
+export class RaceKart implements ItemHolder {
   readonly state: KartState;
   /** Previous tick's state, for render interpolation. */
   readonly prev: KartState;
@@ -34,6 +36,9 @@ export class RaceKart {
   finishTime: number | null = null;
   fallTime = 0;
   respawned = false;
+  item: ItemKind | null = null;
+  rolling = 0;
+  held = 0;
   /** CPU brain, or null while a human drives. A finished human gets one. */
   driver: CpuDriver | null;
 
@@ -76,8 +81,20 @@ export class Race {
   readonly karts: RaceKart[] = [];
   /** Finish order. */
   readonly results: RaceKart[] = [];
+  readonly items: ItemSystem;
+  readonly hazards: HazardSystem;
+  /** Item pickups, uses and hits (items and hazards) from the last step. */
+  events: ItemEvent[] = [];
+  private readonly obstacles: Obstacle[] = [];
 
-  constructor(readonly track: Track) {}
+  constructor(
+    readonly track: Track,
+    seed = 1,
+  ) {
+    this.items = new ItemSystem(track, seed);
+    this.hazards = new HazardSystem(track);
+    this.hazards.update(this.time);
+  }
 
   addKart(racer: RacerDef, engine: EngineClass, cpu: CpuSkill | null): RaceKart {
     const kart = new RaceKart(racer, engine, this.track, this.karts.length, cpu);
@@ -99,12 +116,23 @@ export class Race {
     this.time += dt;
     this.rubberBand();
     const states = this.karts.map((k) => k.state);
+    this.updateObstacles();
+    const use = this.karts.map(() => false);
     const events = this.karts.map((kart, i) => {
       copyKartState(kart.state, kart.prev);
       kart.respawned = false;
-      let input = (kart.driver ? kart.driver.drive(kart.state, kart.params, kart.progressS, this.track, states, dt) : humanInputs[i]) ?? NEUTRAL_INPUT;
+      const d = kart.driver;
+      let input = (d ? d.drive(kart.state, kart.params, kart.progressS, this.track, states, this.obstacles, dt) : humanInputs[i]) ?? NEUTRAL_INPUT;
+      if (d && kart.item && kart.rolling === 0) {
+        use[i] = d.wantsItem(kart.item, kart.held, kart.state, kart.position, kart.progressS, this.track, states);
+      } else if (!d) {
+        use[i] = input.itemPressed;
+      }
       // Hold everyone on the grid until the lights go green.
-      if (!this.started) input = { ...NEUTRAL_INPUT, drift: input.drift, driftPressed: input.driftPressed };
+      if (!this.started) {
+        input = { ...NEUTRAL_INPUT, drift: input.drift, driftPressed: input.driftPressed };
+        use[i] = false;
+      }
       const ev = stepKart(kart.state, input, kart.params, this.track, dt);
       this.updateFall(kart, dt);
       this.updateLaps(kart);
@@ -112,7 +140,22 @@ export class Race {
     });
     this.bumps();
     this.rank();
+    this.events = this.items.update(dt, this.karts, use);
+    for (const e of this.events) if (e.type === 'use') (e.kart as RaceKart).driver?.forgetItem();
+    this.hazards.update(this.time);
+    if (this.started) {
+      for (const h of this.hazards.collide(states, dt)) {
+        this.events.push({ type: 'hit', kart: this.karts.find((k) => k.state === h.kart)!, by: h.by });
+      }
+    }
     return events;
+  }
+
+  /** Hazards and armed mines, for CPUs to steer around. */
+  private updateObstacles(): void {
+    this.obstacles.length = 0;
+    this.hazards.obstacles(this.obstacles);
+    for (const m of this.items.mines) this.obstacles.push({ x: m.x, z: m.z, r: 1.2, vx: 0, vz: 0 });
   }
 
   /** Trailing CPUs get a little more top speed; leaders get none. */
