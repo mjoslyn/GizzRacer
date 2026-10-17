@@ -183,6 +183,22 @@ describe('kart drift', () => {
     }
   });
 
+  it('drifting off the road loses the drift and its charge', () => {
+    const s = createKartState();
+    s.speed = params.topSpeed;
+    let surface: SurfaceType = 'road';
+    const env: DriveEnv = { probe: () => ({ height: 0, surface }), collide: () => null };
+    const hold = driftRight(2);
+    const first = run(s, env, 0.9, hold);
+    expect(first.some((e) => e.driftStarted)).toBe(true);
+    expect(s.driftDir).not.toBe(0);
+    surface = 'offroad';
+    const rest = run(s, env, 0.5, (t) => hold(t + 0.9));
+    expect(s.driftDir).toBe(0);
+    expect(s.driftCharge).toBe(0);
+    expect(rest.some((e) => e.boostTier > 0)).toBe(false);
+  });
+
   it('needs speed to drift', () => {
     const s = createKartState();
     s.speed = 5;

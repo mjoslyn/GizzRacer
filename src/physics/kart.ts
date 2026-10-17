@@ -2,7 +2,7 @@ import { NEUTRAL_INPUT, type InputFrame } from '../core/inputFrame';
 import { clamp, moveToward, wrapAngle } from '../core/math';
 import type { KartParams } from './racers';
 
-export type SurfaceType = 'road' | 'offroad' | 'boost';
+export type SurfaceType = 'road' | 'offroad' | 'boost' | 'ice';
 
 export interface WallHit {
   nx: number; // push-out normal
@@ -108,6 +108,8 @@ const REVERSE_ACCEL = 10;
 const DRIFT_SLIP_ANGLE = 0.45;
 const SLIP_RESPONSE = 3;
 const EXT_DAMPING = 4;
+/** On ice, the share of each turn's momentum that keeps going the old way. */
+const ICE_SLIDE = 0.45;
 const WALL_SPEED_LOSS = 0.7;
 const WALL_BOUNCE = 4;
 
@@ -212,7 +214,8 @@ export function stepKart(s: KartState, input: InputFrame, p: KartParams, env: Dr
     s.driftCharge = 0;
     ev.driftStarted = true;
   }
-  if (s.driftDir !== 0 && s.speed < DRIFT_MIN_SPEED * 0.6) {
+  // Too slow, or off the road: the drift is lost, charge and all.
+  if (s.driftDir !== 0 && (s.speed < DRIFT_MIN_SPEED * 0.6 || (s.grounded && s.surface === 'offroad'))) {
     s.driftDir = 0;
     s.driftCharge = 0;
     s.driftArmed = false;
@@ -259,12 +262,18 @@ export function stepKart(s: KartState, input: InputFrame, p: KartParams, env: Dr
     yawRate = steer * p.turnRate * lowSpeed * highSpeedDamp * (s.speed < 0 ? -1 : 1);
   }
   if (!s.grounded) yawRate *= AIR_STEER;
-  s.heading = wrapAngle(s.heading - yawRate * dt);
+  const turned = yawRate * dt;
+  s.heading = wrapAngle(s.heading - turned);
   s.slip = moveToward(s.slip, s.driftDir * DRIFT_SLIP_ANGLE, SLIP_RESPONSE * dt);
 
   // Translate.
   const fx = Math.sin(s.heading);
   const fz = Math.cos(s.heading);
+  if (s.grounded && s.surface === 'ice' && turned !== 0) {
+    // Ice: the kart turns but its momentum doesn't all follow, so it slides wide.
+    s.extX += (Math.sin(s.heading + turned) - fx) * s.speed * ICE_SLIDE;
+    s.extZ += (Math.cos(s.heading + turned) - fz) * s.speed * ICE_SLIDE;
+  }
   s.x += (fx * s.speed + s.extX) * dt;
   s.z += (fz * s.speed + s.extZ) * dt;
   const decay = Math.exp(-EXT_DAMPING * dt);
