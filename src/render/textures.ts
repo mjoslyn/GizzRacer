@@ -1252,3 +1252,62 @@ export function corrugatedTexture(): THREE.CanvasTexture {
   ctx.fillRect(0, 24, S, 3);
   return finish(c);
 }
+
+/** Pink with "Yikes" in a hand-lettered script, drawn as one stroke so it reads the same without any script font installed. */
+export function yikesTexture(): THREE.CanvasTexture {
+  const W = 512;
+  const H = 256;
+  const [c, ctx] = canvas(W, H);
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#ff8ad0');
+  g.addColorStop(1, '#ff4aa8');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+  // One continuous script stroke, Y-i-k-e-s, then the i's dot.
+  const word = () => {
+    ctx.beginPath();
+    // Y: left arm down into a cup, up to the right arm's top.
+    ctx.moveTo(70, 72);
+    ctx.bezierCurveTo(78, 60, 92, 66, 92, 84);
+    ctx.bezierCurveTo(92, 120, 104, 142, 122, 142);
+    ctx.bezierCurveTo(140, 142, 150, 110, 154, 70);
+    // ...the right arm runs down into a descender loop and swings back up to the i.
+    ctx.bezierCurveTo(150, 130, 146, 196, 118, 214);
+    ctx.bezierCurveTo(98, 226, 92, 200, 112, 186);
+    ctx.bezierCurveTo(136, 170, 160, 160, 178, 128);
+    // i
+    ctx.bezierCurveTo(176, 148, 170, 164, 184, 166);
+    ctx.bezierCurveTo(196, 166, 206, 150, 214, 132);
+    // k: a tall looped ascender, then the arm and leg.
+    ctx.bezierCurveTo(232, 96, 244, 46, 226, 40);
+    ctx.bezierCurveTo(208, 36, 206, 100, 204, 166);
+    ctx.bezierCurveTo(212, 140, 236, 118, 252, 124);
+    ctx.bezierCurveTo(266, 130, 254, 146, 226, 146);
+    ctx.bezierCurveTo(248, 150, 250, 166, 270, 166);
+    // e
+    ctx.bezierCurveTo(286, 166, 300, 150, 304, 140);
+    ctx.bezierCurveTo(312, 120, 294, 114, 286, 130);
+    ctx.bezierCurveTo(278, 148, 288, 168, 304, 166);
+    ctx.bezierCurveTo(318, 164, 328, 150, 336, 136);
+    // s, and a flourish off the end.
+    ctx.bezierCurveTo(338, 126, 344, 120, 348, 122);
+    ctx.bezierCurveTo(352, 140, 370, 150, 358, 162);
+    ctx.bezierCurveTo(350, 170, 334, 168, 330, 160);
+    ctx.bezierCurveTo(350, 172, 400, 168, 440, 120);
+  };
+  ctx.lineCap = ctx.lineJoin = 'round';
+  word();
+  ctx.strokeStyle = '#7a0a4a';
+  ctx.lineWidth = 22;
+  ctx.stroke();
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 11;
+  ctx.stroke();
+  for (const [w, color] of [[22, '#7a0a4a'], [11, '#ffffff']] as const) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(186, 100, w / 2 + 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  return finish(c, false);
+}

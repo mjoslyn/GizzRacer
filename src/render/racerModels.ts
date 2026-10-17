@@ -13,6 +13,7 @@ import {
   stoneTexture,
   treadTexture,
   woodTexture,
+  yikesTexture,
 } from './textures';
 
 /**
@@ -1692,6 +1693,9 @@ function joeyWalker(r: RacerDef): KartModel {
   rack.position.set(0, 0.95, -0.85);
   rack.rotation.x = -0.25;
   put(rack, box(1.3, 0.85, 0.3), frame, [0, 0, 0]);
+  // The back of the rack, facing whoever's behind: pink, signed "Yikes".
+  put(rack, new THREE.PlaneGeometry(1.31, 0.86), gloss(0xff6ac0), [0, 0, -0.152], [0, Math.PI, 0]);
+  put(rack, new THREE.PlaneGeometry(1.24, 0.62), matte(0xffffff, { map: tex('yikes', yikesTexture), emissive: 0x401028 }), [0, 0, -0.16], [0, Math.PI, 0]);
   const knobColors = [0xffffff, 0xff5a3a, 0x3adcff, 0xffd23a];
   for (let row = 0; row < 2; row++)
     for (let k = 0; k < 7; k++) {
@@ -1710,6 +1714,8 @@ function joeyWalker(r: RacerDef): KartModel {
   // Roll bars over the seat.
   for (const side of [-1, 1]) rod(body, [side * 0.55, 0.5, -0.5], [side * 0.45, 1.75, -0.3], 0.04, chrome());
   rod(body, [-0.45, 1.75, -0.3], [0.45, 1.75, -0.3], 0.04, chrome());
+  // A pink tail across the back.
+  put(body, box(1.3, 0.34, 0.14), gloss(0xff6ac0), [0, 0.45, -1.22]);
   headlights(body, 0.4, 0.45, 1.22, 0.08, 0xc8f0ff);
 
   const look: Look = { skin: 0xf0c49a, hair: 0x1a1210, style: 'short', shirt: 0x3a3a42, trim: r.accent, name: 'Joey', headphones: r.accent };
