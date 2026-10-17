@@ -143,7 +143,7 @@ Each track has its own theme (render/themes.ts): desert (Rattlesnake Run), green
 5. Menus, racer select, Grand Prix
 6. Art and shader pass on Rattlesnake Run
 7. Remaining 3 tracks
-8. Online multiplayer
+8. Online multiplayer: see [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md) (8a online Time Trial runs and ghosts, 8b rooms, 8c race netcode, 8d hardening)
 
 ## 13. Open Questions
 - Public release or private fan project? (affects naming and band references)
