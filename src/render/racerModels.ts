@@ -2081,8 +2081,8 @@ function curls(parent: THREE.Object3D, mat: THREE.Material, at: [number, number,
   put(parent, ball(1, 16, 12), mat, at, [0, 0, 0], [radii[0] * 0.95, radii[1] * 0.95, radii[2] * 0.95]);
 }
 
-// The poodle: an apricot standard poodle in a plush grey dog bed on wheels, ears flapping, tail going.
-function apricotPoodle(r: RacerDef): KartModel {
+// Arlo: an apricot standard poodle in a plush grey dog bed on wheels, ears flapping, tail going.
+function arlo(r: RacerDef): KartModel {
   const body = new THREE.Group();
   const coat = matte(r.color, { shininess: 6 });
   const face = matte(0xe8c69a, { shininess: 10 });
@@ -2194,7 +2194,7 @@ const BUILDERS: Record<string, (r: RacerDef) => KartModel> = {
   'lucas-harwood': lucasHarwood,
   'michael-cavanagh': michaelCavanagh,
   'jason-galea': jasonGalea,
-  'apricot-poodle': apricotPoodle,
+  'arlo': arlo,
 };
 
 export function buildKartModel(racer: RacerDef): KartModel {
