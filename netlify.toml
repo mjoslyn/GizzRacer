@@ -1,0 +1,11 @@
+# GizzRacer moved to Cloudflare. Netlify now only forwards every path
+# (and query, e.g. ?room=) to the same place on the new site.
+[build]
+  publish = "public"
+  command = ""
+
+[[redirects]]
+  from = "/*"
+  to = "https://gizzracer.mike-42e.workers.dev/:splat"
+  status = 301
+  force = true
