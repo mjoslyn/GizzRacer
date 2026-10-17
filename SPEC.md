@@ -83,7 +83,7 @@ Each track has its own theme (render/themes.ts): desert (Rattlesnake Run), green
 2. Sidewinder S-Bends: six alternating curves built for chained drifts
 3. Rattle Canyon: narrow red rock walls; giant rattle tails shake and drop boulders on a rhythm
 4. The Coil: inward spiral with banked walls, built for mini-turbos
-5. Snake's Mouth Shortcut: jump ramp into a fanged cave, needs a boost to clear the gap
+5. Snake's Mouth Shortcut: jump ramp into a fanged cave over a 20 m gap; at 50cc it takes a boost to clear, from 100cc a kart at full speed makes it
 6. Mesa Leap: big ramp over a dry riverbed into the finish straight
 
 **Hazards**
@@ -94,9 +94,10 @@ Each track has its own theme (render/themes.ts): desert (Rattlesnake Run), green
 - Hazard motion is a pure function of race time, so it replays and syncs by the clock alone
 
 **Psychedelic layer**
-- Heat haze distortion shader, stronger on the straights
+- Sky slowly cycles through hues: a full turn of the color wheel over the 3 laps, back to normal at the flag
 - Sky slowly cycles through hues each lap
 - Lap 3: kaleidoscope pulse on screen edges synced to the music beat
+- Built (Milestone 6): one post pass (render/postfx.ts) for haze and kaleidoscope, skipped when neither is on. The kaleidoscope runs on every track's final lap. Extras: off-road wheel dust, a pre-race flyover with a title card
 - Diamond-back patterned textures scroll along the track barriers
 
 **Music:** original driving motorik beat, chant-style hook, microtonal-inflected guitar; tempo rises slightly on the final lap.
@@ -117,7 +118,7 @@ Each track has its own theme (render/themes.ts): desert (Rattlesnake Run), green
 
 ## 10. Audio
 - Music: the seqbaby soundtrack pre-rendered to looping MP3s (tools/render-soundtrack.mjs), played with Web Audio for sample-accurate loops
-- SFX: synthesized on the same AudioContext (audio/sfx.ts), no sample files
+- SFX: synthesized on the same AudioContext (audio/sfx.ts), no sample files. Mix: music around -22 dB RMS, one-shots around -20 dB with the music ducking under them, engine a quieter bed; tires squeal in drifts and hard turns on tarmac
 - Engine pitch tied to speed; fuzz distortion on boosts
 - Positional audio for hazards and nearby karts
 

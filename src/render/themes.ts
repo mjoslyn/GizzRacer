@@ -19,6 +19,12 @@ export interface Theme {
   decor: DecorKind;
   /** Silhouettes on the horizon. */
   distant: { shape: 'mesa' | 'hill' | 'volcano' | 'mountain'; color: number };
+  /** Heat haze strength on the straights, 0..1 (render/postfx.ts). */
+  haze: number;
+  /** The sky turns a full circle of hue over a 3-lap race. */
+  skyCycle: boolean;
+  /** Dust kicked up off-road and on loose surfaces. */
+  dust: number;
 }
 
 export const THEMES: Record<ThemeId, Theme> = {
@@ -32,6 +38,9 @@ export const THEMES: Record<ThemeId, Theme> = {
     cliff: tex.strataTexture,
     decor: 'desert',
     distant: { shape: 'mesa', color: 0xa4502e },
+    haze: 1,
+    skyCycle: true,
+    dust: 0xf4e4c8,
   },
   speedway: {
     sky: { zenith: '#1a4fd8', high: '#3b7cf0', low: '#9cc8ff', horizon: '#e8f4ff', below: '#a8d890', ground: '#4a7a30', cloud: '255,255,255', clouds: 34 },
@@ -43,6 +52,9 @@ export const THEMES: Record<ThemeId, Theme> = {
     cliff: () => tex.stoneTexture([90, 96, 84], [150, 156, 140]),
     decor: 'meadow',
     distant: { shape: 'hill', color: 0x3f7a3a },
+    haze: 0,
+    skyCycle: false,
+    dust: 0xd8d0b0,
   },
   volcano: {
     sky: { zenith: '#1a0608', high: '#3c0c0c', low: '#8a2410', horizon: '#ff7a2a', below: '#5a1a10', ground: '#1a0a08', cloud: '70,50,50', clouds: 20 },
@@ -54,6 +66,9 @@ export const THEMES: Record<ThemeId, Theme> = {
     cliff: () => tex.stoneTexture([30, 24, 26], [80, 64, 60]),
     decor: 'volcanic',
     distant: { shape: 'volcano', color: 0x2a1614 },
+    haze: 0.7,
+    skyCycle: false,
+    dust: 0x8a7a76,
   },
   jungle: {
     sky: { zenith: '#1a5a7a', high: '#3a8aa0', low: '#a0d0c0', horizon: '#e0f0d8', below: '#6a9a5a', ground: '#2a4a20', cloud: '240,250,245', clouds: 40 },
@@ -65,5 +80,8 @@ export const THEMES: Record<ThemeId, Theme> = {
     cliff: () => tex.stoneTexture([50, 70, 46], [110, 130, 96]),
     decor: 'jungle',
     distant: { shape: 'mountain', color: 0x2e5a3a },
+    haze: 0,
+    skyCycle: false,
+    dust: 0xc0b48a,
   },
 };

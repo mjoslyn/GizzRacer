@@ -15,7 +15,8 @@ const ROAD_LIFT = 0.03;
 export interface TrackView {
   group: THREE.Group;
   theme: Theme;
-  update(time: number, cameraPos: THREE.Vector3): void;
+  /** `skyHue` rotates the sky's colors, in radians. */
+  update(time: number, cameraPos: THREE.Vector3, skyHue?: number): void;
 }
 
 interface Materials {
@@ -96,11 +97,13 @@ export function buildTrackView(track: Track): TrackView {
   group.add(decor(track, mats, theme));
   group.add(distant(theme));
 
-  const skyMesh = group.children[0];
+  const skyMesh = group.children[0] as THREE.Mesh;
+  const skyHue = skyMesh.userData.hue as { value: number };
   return {
     group,
     theme,
-    update(time: number, cameraPos: THREE.Vector3) {
+    update(time: number, cameraPos: THREE.Vector3, hue = 0) {
+      skyHue.value = hue;
       padTexture.offset.y = -time * 2;
       // Barrier diamonds crawl along like scales.
       if (mats.diamond.map) mats.diamond.map.offset.x = -time * 0.15;
@@ -111,10 +114,25 @@ export function buildTrackView(track: Track): TrackView {
 }
 
 function sky(theme: Theme): THREE.Mesh {
-  const mesh = new THREE.Mesh(
-    new THREE.SphereGeometry(1500, 48, 24),
-    new THREE.MeshBasicMaterial({ map: tex.skyTexture(theme.sky), side: THREE.BackSide, fog: false, depthWrite: false }),
-  );
+  const material = new THREE.MeshBasicMaterial({ map: tex.skyTexture(theme.sky), side: THREE.BackSide, fog: false, depthWrite: false });
+  const hue = { value: 0 };
+  // Hue rotation about the grey axis, for the psychedelic sky cycle.
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.uHue = hue;
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nuniform float uHue;')
+      .replace(
+        '#include <map_fragment>',
+        `#include <map_fragment>
+        {
+          const vec3 k = vec3(0.57735);
+          float c = cos(uHue);
+          diffuseColor.rgb = diffuseColor.rgb * c + cross(k, diffuseColor.rgb) * sin(uHue) + k * dot(k, diffuseColor.rgb) * (1.0 - c);
+        }`,
+      );
+  };
+  const mesh = new THREE.Mesh(new THREE.SphereGeometry(1500, 48, 24), material);
+  mesh.userData.hue = hue;
   mesh.renderOrder = -1;
   return mesh;
 }

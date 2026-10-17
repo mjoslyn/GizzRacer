@@ -9,14 +9,21 @@ import type { ItemKind } from '../items/items';
  */
 export class Sfx {
   private out: GainNode | null = null;
+  /** One-shot effects ride louder than the engine bed. */
+  private shots: GainNode | null = null;
   private noise: AudioBuffer | null = null;
   private engine: Engine | null = null;
+  private screech: Screech | null = null;
   private devil: { src: AudioBufferSourceNode; gain: GainNode; pan: StereoPannerNode } | null = null;
   private rattleWait = 0;
   muted = false;
-  volume = 0.55;
+  volume = 1;
 
-  constructor(private readonly context: () => AudioContext | null) {}
+  constructor(
+    private readonly context: () => AudioContext | null,
+    /** Called for the big sounds, so the music can dip under them. */
+    private readonly onDuck: (level: number, hold: number) => void = () => {},
+  ) {}
 
   private get ctx(): AudioContext | null {
     const ctx = this.context();
@@ -24,7 +31,18 @@ export class Sfx {
     if (!this.out) {
       this.out = ctx.createGain();
       this.out.gain.value = this.muted ? 0 : this.volume;
-      this.out.connect(ctx.destination);
+      // A compressor lets quiet effects sit louder without stacked ones clipping.
+      const comp = ctx.createDynamicsCompressor();
+      comp.threshold.value = -18;
+      comp.ratio.value = 4;
+      comp.attack.value = 0.003;
+      comp.release.value = 0.15;
+      const makeup = ctx.createGain();
+      makeup.gain.value = 1.6;
+      this.out.connect(comp).connect(makeup).connect(ctx.destination);
+      this.shots = ctx.createGain();
+      this.shots.gain.value = 5;
+      this.shots.connect(this.out);
       this.noise = whiteNoise(ctx);
     }
     return ctx;
@@ -37,17 +55,21 @@ export class Sfx {
   }
 
   /**
-   * The player's engine. `level` 0 silences it (menus, pause); speed is
-   * a 0..1 fraction of top speed.
+   * The player's engine and tires. `level` 0 silences them (menus, pause);
+   * speed is a 0..1 fraction of top speed; `screech` 0..1 is how hard the
+   * tires are sliding (drifts, hard turns).
    */
-  updateEngine(level: number, speed: number, boosting: boolean, drifting: boolean): void {
+  updateEngine(level: number, speed: number, boosting: boolean, drifting: boolean, screech = 0): void {
     const ctx = this.ctx;
     if (!ctx) return;
     this.engine ??= new Engine(ctx, this.out!);
     this.engine.set(ctx, level, speed, boosting, drifting);
+    this.screech ??= new Screech(ctx, this.out!, this.noise!);
+    this.screech.set(ctx, level * screech, speed);
   }
 
   countdown(go: boolean): void {
+    this.onDuck(0.5, go ? 0.6 : 0.25);
     this.tone(go ? 880 : 440, go ? 0.5 : 0.18, 'square', 0.16);
     if (go) this.tone(1320, 0.5, 'square', 0.06);
   }
@@ -72,6 +94,7 @@ export class Sfx {
   }
 
   boost(tier: number): void {
+    this.onDuck(0.65, 0.4);
     this.whoosh(0.35 + tier * 0.1, 500, 2600, 0.22);
   }
 
@@ -80,6 +103,7 @@ export class Sfx {
   }
 
   pickup(): void {
+    this.onDuck(0.6, 0.3);
     [1047, 1319, 1568, 2093].forEach((f, i) => this.tone(f, 0.07, 'triangle', 0.08, undefined, i * 0.045));
   }
 
@@ -89,6 +113,7 @@ export class Sfx {
   }
 
   use(item: ItemKind): void {
+    this.onDuck(0.5, 0.6);
     switch (item) {
       case 'fuzzPedal':
         // A fuzzed power chord, the boost's own engine fuzz follows.
@@ -118,6 +143,7 @@ export class Sfx {
       return;
     }
     if (by === 'dustDevils') return;
+    this.onDuck(0.4, 0.8);
     if (by === 'boulders') this.hit(0.3, 180, 0.5);
     this.tone(700, 0.55, 'sawtooth', 0.09, 140);
     this.tone(720, 0.55, 'sawtooth', 0.07, 150);
@@ -125,16 +151,19 @@ export class Sfx {
 
   /** The player's item hit someone. */
   scored(): void {
+    this.onDuck(0.55, 0.4);
     this.tone(523, 0.1, 'square', 0.08);
     this.tone(784, 0.18, 'square', 0.08, undefined, 0.08);
   }
 
   lap(final: boolean): void {
+    this.onDuck(0.45, final ? 0.7 : 0.4);
     const notes = final ? [659, 784, 988, 1319] : [784, 1047];
     notes.forEach((f, i) => this.tone(f, 0.16, 'square', 0.08, undefined, i * 0.1));
   }
 
   finish(): void {
+    this.onDuck(0.35, 1.2);
     [523, 659, 784, 1047, 784, 1047].forEach((f, i) => this.tone(f, i === 5 ? 0.6 : 0.14, 'square', 0.08, undefined, i * 0.12));
   }
 
@@ -191,7 +220,7 @@ export class Sfx {
     gain.gain.setValueAtTime(0, t + 0.33);
     const p = ctx.createStereoPanner();
     p.pan.value = Math.max(-1, Math.min(1, pan));
-    src.connect(hp).connect(gain).connect(p).connect(this.out!);
+    src.connect(hp).connect(gain).connect(p).connect(this.shots!);
     src.start(t, Math.random());
     src.stop(t + 0.35);
   }
@@ -214,7 +243,7 @@ export class Sfx {
       shaper.curve = fuzzCurve();
       node = node.connect(shaper);
     }
-    node.connect(gain).connect(this.out!);
+    node.connect(gain).connect(this.shots!);
     osc.start(t);
     osc.stop(t + dur + 0.05);
   }
@@ -232,7 +261,7 @@ export class Sfx {
     const gain = ctx.createGain();
     gain.gain.setValueAtTime(level, t);
     gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
-    src.connect(lp).connect(gain).connect(this.out!);
+    src.connect(lp).connect(gain).connect(this.shots!);
     src.start(t, Math.random());
     src.stop(t + dur + 0.05);
   }
@@ -253,7 +282,7 @@ export class Sfx {
     gain.gain.setValueAtTime(0, t);
     gain.gain.linearRampToValueAtTime(level, t + dur * 0.2);
     gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
-    src.connect(bp).connect(gain).connect(this.out!);
+    src.connect(bp).connect(gain).connect(this.shots!);
     src.start(t, Math.random());
     src.stop(t + dur + 0.05);
   }
@@ -300,8 +329,51 @@ class Engine {
     this.a.frequency.setTargetAtTime(f, t, 0.06);
     this.b.frequency.setTargetAtTime(f * 0.501, t, 0.06);
     this.filter.frequency.setTargetAtTime(380 + v * 1500, t, 0.08);
-    this.clean.gain.setTargetAtTime(level * (0.05 + v * 0.05), t, 0.08);
-    this.dirty.gain.setTargetAtTime(boosting ? level * 0.07 : 0, t, 0.05);
+    this.clean.gain.setTargetAtTime(level * (0.03 + v * 0.025), t, 0.08);
+    this.dirty.gain.setTargetAtTime(boosting ? level * 0.035 : 0, t, 0.05);
+  }
+}
+
+/**
+ * Tire squeal: noise through two narrow band-passes (the pitched squeal)
+ * wobbled by a slow LFO, so it chirps rather than hisses.
+ */
+class Screech {
+  private readonly gain: GainNode;
+  private readonly bands: BiquadFilterNode[];
+
+  constructor(ctx: AudioContext, out: AudioNode, noise: AudioBuffer) {
+    const src = ctx.createBufferSource();
+    src.buffer = noise;
+    src.loop = true;
+    this.gain = ctx.createGain();
+    this.gain.gain.value = 0;
+    this.bands = [2300, 3400].map((f) => {
+      const bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = f;
+      bp.Q.value = 14;
+      src.connect(bp).connect(this.gain);
+      return bp;
+    });
+    const lfo = ctx.createOscillator();
+    lfo.frequency.value = 9;
+    const depth = ctx.createGain();
+    depth.gain.value = 120;
+    lfo.connect(depth);
+    for (const b of this.bands) depth.connect(b.frequency);
+    this.gain.connect(out);
+    src.start();
+    lfo.start();
+  }
+
+  set(ctx: AudioContext, amount: number, speed: number): void {
+    const t = ctx.currentTime;
+    // Narrow bands are quiet: they need a lot of gain to be heard.
+    this.gain.gain.setTargetAtTime(Math.min(1, amount) * 0.6, t, amount > 0 ? 0.04 : 0.09);
+    const pitch = 0.85 + Math.min(1.2, speed) * 0.25;
+    this.bands[0].frequency.setTargetAtTime(2300 * pitch, t, 0.1);
+    this.bands[1].frequency.setTargetAtTime(3400 * pitch, t, 0.1);
   }
 }
 

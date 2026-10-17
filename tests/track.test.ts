@@ -101,14 +101,16 @@ describe('rattlesnake run', () => {
     expect(jump(track, track.mainS(def.main.gaps[0][0]) - 45, -1, slow.topSpeed, 0, slow)).toBe('cleared');
   });
 
-  it("Snake's Mouth needs a boost to clear", () => {
-    const p = kartParams(RACERS[0].stats, '100cc');
+  it("Snake's Mouth takes a boost at 50cc, and any mini-turbo at 100cc", () => {
     const gapStart = def.branches[0].gaps[0][0];
+    for (const r of RACERS) {
+      const slow = kartParams(r.stats, '50cc');
+      expect(jump(track, gapStart - 20, 0, slow.topSpeed * 1.35, 2, slow), r.id).toBe('cleared');
+      const mid = kartParams(r.stats, '100cc');
+      expect(jump(track, gapStart - 20, 0, mid.topSpeed, 0.5, mid), r.id).toBe('cleared');
+    }
+    const p = kartParams(RACERS[0].stats, '50cc');
     expect(jump(track, gapStart - 20, 0, p.topSpeed, 0, p)).toBe('fell');
-    // At 150cc a mid-stat kart still needs a boost (only the top-speed racers can skip it).
-    const mid = kartParams(RACERS[0].stats, '150cc');
-    expect(jump(track, gapStart - 20, 0, mid.topSpeed, 0, mid)).toBe('fell');
-    expect(jump(track, gapStart - 20, 0, p.topSpeed * 1.35, 2, p)).toBe('cleared');
   });
 });
 

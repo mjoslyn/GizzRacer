@@ -907,3 +907,54 @@ body[data-mode='podium'] .hud-item {
   .menu-stats { margin-top: 0; gap: 0 14px; }
   .menu .menu-start { margin-top: 4px; font-size: 22px; padding: 6px; }
 }
+
+/* Track title card over the pre-race flyover. */
+.hud-intro {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 18%;
+  text-align: center;
+  opacity: 0;
+  transform: translateX(-40px) skewX(-8deg);
+  transition: opacity 0.4s, transform 0.4s;
+}
+
+.hud-intro.show {
+  opacity: 1;
+  transform: translateX(0) skewX(-8deg);
+}
+
+.hud-intro-name {
+  font-size: min(64px, 10vw);
+  letter-spacing: 3px;
+}
+
+.hud-intro-sub {
+  margin-top: 4px;
+  font-size: 20px;
+  font-weight: bold;
+  color: #fff27a;
+  text-shadow: 2px 2px 0 #3a0f45;
+}
+
+.hud-intro-skip {
+  margin-top: 14px;
+  font-size: 13px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  animation: hud-blink 1.1s steps(2, start) infinite;
+}
+
+body:not([data-mode='race']) .hud-intro {
+  display: none;
+}
+
+body.intro .hud-tl,
+body.intro .hud-tr,
+body.intro .hud-br,
+body.intro .hud-drift,
+body.intro .hud-item,
+body.intro .hud-help {
+  visibility: hidden;
+}

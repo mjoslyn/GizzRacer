@@ -14,6 +14,17 @@ export type MusicCue =
   | 'polygondwanaland-jungle'
   | 'podium';
 
+/** Tempo of each song in seqbaby (seqbaby-seed people.mjs), for beat-synced visuals. */
+const BPM: Record<MusicCue, number> = {
+  title: 128,
+  'infinite-loop-speedway': 164,
+  'rattlesnake-run': 148,
+  'rattlesnake-run-final-lap': 156,
+  'volcano-fortress': 176,
+  'polygondwanaland-jungle': 132,
+  podium: 96,
+};
+
 interface ManifestEntry {
   loopSamples: number;
   sampleRate: number;
@@ -29,6 +40,9 @@ interface Playing {
   cue: MusicCue;
   source: AudioBufferSourceNode;
   gain: GainNode;
+  /** Context time the loop's first beat played, and the loop length. */
+  startedAt: number;
+  length: number;
 }
 
 const BASE = 'music/';
@@ -44,7 +58,9 @@ export class MusicPlayer {
   private current: Playing | null = null;
   private wanted: MusicCue | null = null;
   private muted = false;
-  volume = 0.7;
+  /** Kept well under the sound effects so they cut through. */
+  volume = 0.38;
+  private duckGain: GainNode | null = null;
 
   /** Creates the audio context; call from a user gesture (browsers require it). */
   unlock(): void {
@@ -62,7 +78,8 @@ export class MusicPlayer {
     this.primeIOS(this.ctx);
     this.master = this.ctx.createGain();
     this.master.gain.value = this.muted ? 0 : this.volume;
-    this.master.connect(this.ctx.destination);
+    this.duckGain = this.ctx.createGain();
+    this.master.connect(this.duckGain).connect(this.ctx.destination);
     if (this.wanted) void this.start(this.wanted);
   }
 
@@ -73,6 +90,33 @@ export class MusicPlayer {
     src.connect(ctx.destination);
     src.start(0);
     void ctx.resume();
+  }
+
+  /**
+   * Where the music is within its beat: 0 on the beat, rising to 1 just
+   * before the next. -1 when nothing is playing.
+   */
+  beatPhase(): number {
+    const c = this.current;
+    if (!c || !this.ctx) return -1;
+    const pos = (((this.ctx.currentTime - c.startedAt) % c.length) + c.length) % c.length;
+    const beats = (pos * BPM[c.cue]) / 60;
+    return beats - Math.floor(beats);
+  }
+
+  /**
+   * Dips the music under a sound effect: down to `level` quickly, back up
+   * over `hold` seconds.
+   */
+  duck(level: number, hold: number): void {
+    if (!this.ctx || !this.duckGain) return;
+    const g = this.duckGain.gain;
+    const t = this.ctx.currentTime;
+    if (g.value < level) return; // already ducked deeper
+    g.cancelScheduledValues(t);
+    g.setValueAtTime(g.value, t);
+    g.linearRampToValueAtTime(level, t + 0.03);
+    g.setTargetAtTime(1, t + 0.03 + hold * 0.4, hold * 0.3);
   }
 
   /** The shared AudioContext once unlocked; sound effects play on it too. */
@@ -129,7 +173,7 @@ export class MusicPlayer {
     gain.gain.linearRampToValueAtTime(1, ctx.currentTime + FADE);
     source.connect(gain).connect(this.master);
     source.start(ctx.currentTime, loop.start);
-    this.current = { cue, source, gain };
+    this.current = { cue, source, gain, startedAt: ctx.currentTime, length: loop.end - loop.start };
   }
 
   private fadeOut(): void {

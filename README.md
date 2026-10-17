@@ -13,19 +13,20 @@ npm run build     # typecheck + production build
 
 ## Status
 
-Milestones 1 to 5 are in (driving feel, the Rattlesnake Run greybox, CPU racers, items and hazards, menus and Grand Prix), plus unique racer models, themed worlds, draft layouts of Volcano Fortress and Polygondwanaland Jungle, and mobile play (touch controls, fullscreen, landscape).
+Milestones 1 to 6 are in (driving feel, the Rattlesnake Run greybox, CPU racers, items and hazards, menus and Grand Prix, the psychedelic art pass), plus unique racer models, themed worlds, draft layouts of Volcano Fortress and Polygondwanaland Jungle, and mobile play (touch controls, fullscreen, landscape).
 
 - Fixed 60 Hz physics with interpolated rendering (`src/core/loop.ts`)
 - Keyboard + standard gamepad input as pure `InputFrame` data, auto-accelerate by default (`src/core/input.ts`)
 - Arcade kart controller: per-racer stats, engine classes, off-road penalty, fine steering (gradual ramp-in, response curve), hop, 3-tier drift boosts, ramps that launch off their lip, trick boosts, boost pads, walls (`src/physics/kart.ts`)
 - Track model: turtle-style builder (`src/tracks/builder.ts`), ribbons with per-section width, walls, surface and elevation, jump gaps over pits, branch shortcuts (`src/tracks/track.ts`)
-- Rattlesnake Run: Salt Flat Straight, Sidewinder S-Bends, Rattle Canyon, The Coil (a double spiral), Dry Wash with the boost-only Snake's Mouth shortcut, Mesa Leap (`src/tracks/rattlesnakeRun.ts`)
+- Rattlesnake Run: Salt Flat Straight, Sidewinder S-Bends, Rattle Canyon, The Coil (a double spiral), Dry Wash with the Snake's Mouth shortcut (a 20 m jump: a boost at 50cc, flat out from 100cc), Mesa Leap (`src/tracks/rattlesnakeRun.ts`)
 - Race: checkpointed laps, fall detection and respawn at the last checkpoint after 1.5 s (`src/core/race.ts`)
 - CPU racers (`src/ai/cpuDriver.ts`): own racing lane, corner braking, drifts for mini-turbos, steer around karts ahead, recover when stuck; difficulty follows the class; mild rubber-banding; kart bumps by weight; positions and results
 - Items (`src/items/items.ts`): Fuzz Pedal, Microtonal Mine, Feedback Wave, Riff Missile, Tempo Shift, with position-biased odds, a 1 s roulette and item boxes that respawn after 3 s. CPUs save items for a good moment, more often at higher classes
 - Hazards on Rattlesnake Run (`src/items/hazards.ts`): snakes crossing the S-Bends, dust devils on the Salt Flat, tumbleweeds and falling boulders in Rattle Canyon. Their motion is a pure function of race time; CPUs steer around them and around mines
 - Modes (`src/ui/menu.ts`): Grand Prix (Cup 1, all four tracks, points 15/12/10/8/6/4, standings after each race, the leader starts at the back, a podium at the end; `src/core/grandPrix.ts`, `src/render/podium.ts`), Single Race, and Time Trial (alone, no items, best times kept in the browser)
-- Sound effects synthesized with Web Audio, no samples (`src/audio/sfx.ts`): engine pitched by speed with fuzz on boosts, countdown, laps, drift sparks, hops, landings, walls, item pickups and uses, hits, and panned snake rattles and dust devil wind
+- Psychedelic layer (`src/render/postfx.ts`): heat haze that shimmers hardest on the straights (desert, and lighter on the volcano), the Rattlesnake Run sky turning a full circle of hue over the race, a kaleidoscope on the screen edges on the final lap pulsing with the music's beat, diamond-back barriers that crawl like scales, wheel dust off-road, and a camera flyover with a title card before each race
+- Sound effects synthesized with Web Audio, no samples (`src/audio/sfx.ts`): engine pitched by speed with fuzz on boosts, tire squeal in drifts and hard turns, countdown, laps, drift sparks, hops, landings, walls, item pickups and uses, hits, and panned snake rattles and dust devil wind. The music sits under the effects and ducks for the big ones
 - Soundtrack from seqbaby (account `gizzracer`), looping per track with a faster cut on the final lap, a title theme and a podium loop (`src/audio/music.ts`)
 - Early-2000s look: procedural high-res textures, painted sky, lens flare, glossy karts, particle sparks, blob shadows, minimap, section banners
 

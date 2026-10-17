@@ -12,6 +12,8 @@ const FLASH_TIME = 1.4;
 /** Seconds per face of the item roulette. */
 const ROULETTE_STEP = 0.07;
 
+const q = (el: HTMLElement, sel: string) => el.querySelector<HTMLElement>(sel)!;
+
 function renderTable(t: Table): string {
   const rows = t.rows
     .map(
@@ -71,6 +73,8 @@ export interface HudData {
   /** Seconds until the green light; <= 0 once racing. */
   countdown: number;
   table: Table | null;
+  /** Track title card during the pre-race flyover. */
+  intro: { name: string; sub: string } | null;
   muted: boolean;
   sfxMuted: boolean;
   /** Item in the slot, and roulette time left (> 0 while it spins). */
@@ -107,6 +111,8 @@ export class Hud {
   private flashAt = -Infinity;
   private flashPending = false;
   private lastIcon = '';
+  private readonly introEl: HTMLElement;
+  private lastIntro = '';
   private lastTable = '';
   private lastCount = '';
   private lastSection = '';
@@ -127,6 +133,7 @@ export class Hud {
       <div class="hud-section hud-big"></div>
       <div class="hud-item"><img alt="" /><div class="hud-item-name"></div></div>
       <div class="hud-flash hud-big"></div>
+      <div class="hud-intro"><div class="hud-intro-name hud-big"></div><div class="hud-intro-sub"></div><div class="hud-intro-skip">${'ontouchstart' in window ? 'tap' : 'press any key'} to skip</div></div>
       <div class="hud-drift">
         <div class="hud-drift-bar"><div class="hud-drift-fill"></div>${ticks}</div>
         <div class="hud-drift-label"></div>
@@ -178,6 +185,7 @@ export class Hud {
     this.itemImg = q('.hud-item img') as HTMLImageElement;
     this.itemName = q('.hud-item-name');
     this.flashEl = q('.hud-flash');
+    this.introEl = q('.hud-intro');
     q('.hud-tr').appendChild(this.minimap.canvas);
     this.pause.addEventListener('click', (e) => {
       const act = (e.target as HTMLElement).closest<HTMLElement>('[data-act]')?.dataset.act as PauseAction | undefined;
@@ -243,6 +251,15 @@ export class Hud {
     }
     this.pause.classList.toggle('show', d.paused);
     this.updateItem(d, now);
+    const intro = d.intro ? `${d.intro.name}|${d.intro.sub}` : '';
+    if (intro !== this.lastIntro) {
+      this.lastIntro = intro;
+      if (d.intro) {
+        q(this.introEl, '.hud-intro-name').textContent = d.intro.name.toUpperCase();
+        q(this.introEl, '.hud-intro-sub').textContent = d.intro.sub;
+      }
+      this.introEl.classList.toggle('show', !!d.intro);
+    }
   }
 
   private updateItem(d: HudData, now: number): void {

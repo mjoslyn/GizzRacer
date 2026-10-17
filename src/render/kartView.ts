@@ -9,6 +9,14 @@ import { blobShadowTexture, glowTexture } from './textures';
 const SPARK_COLORS = [0xfff2a8, 0x3fa9ff, 0xff8a1f, 0xc04bff];
 const SPARK_POOL = 48;
 const SPARK_LIFE = 0.28;
+const DUST_POOL = 28;
+const DUST_LIFE = 0.75;
+
+/** Dust takes the color of the ground; set per track theme. */
+let dustColor = 0xd8a878;
+export function setDustColor(color: number): void {
+  dustColor = color;
+}
 
 let sharedGlow: THREE.Texture | null = null;
 let sharedShadow: THREE.Texture | null = null;
@@ -29,6 +37,9 @@ export class KartView {
   private readonly wheels: { mesh: THREE.Object3D; radius: number }[] = [];
   private readonly spinners: THREE.Object3D[];
   private readonly sparks: Spark[] = [];
+  private readonly dust: Spark[] = [];
+  private dustCursor = 0;
+  private dustAccum = 0;
   private readonly flames: { cone: THREE.Mesh; glow: THREE.Sprite }[] = [];
   private readonly shadow: THREE.Mesh;
   private readonly rearTrack: number;
@@ -94,11 +105,18 @@ export class KartView {
       this.fx.add(sprite);
       this.sparks.push({ sprite, vel: new THREE.Vector3(), life: 0 });
     }
+    for (let k = 0; k < DUST_POOL; k++) {
+      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: sharedGlow, color: dustColor, transparent: true, depthWrite: false }));
+      sprite.visible = false;
+      this.fx.add(sprite);
+      this.dust.push({ sprite, vel: new THREE.Vector3(), life: 0 });
+    }
   }
 
-  /** Kick the suspension, e.g. on landing. */
+  /** Kick the suspension, e.g. on landing; a hard one throws up dust. */
   impact(strength: number): void {
     this.bounceVel -= clamp(strength, 0, 12) * 0.6;
+    for (let i = 0; i < Math.min(10, strength); i++) this.emitDust(0, (Math.random() - 0.5) * 7, 1 + Math.random() * 2);
   }
 
   /** `s` is an interpolated render snapshot; `frameDt` is real time since the last frame. */
@@ -148,6 +166,51 @@ export class KartView {
     (this.shadow.material as THREE.MeshBasicMaterial).opacity = shrink;
 
     this.updateSparks(s, frameDt);
+    this.updateDust(s, speedRatio, frameDt);
+  }
+
+  /** Dust plumes behind the rear wheels off-road. */
+  private updateDust(s: KartState, speedRatio: number, dt: number): void {
+    if (s.grounded && s.surface === 'offroad' && Math.abs(s.speed) > 5) {
+      this.dustAccum += dt * 26 * speedRatio;
+      while (this.dustAccum >= 1) {
+        this.dustAccum -= 1;
+        this.emitDust(Math.random() < 0.5 ? -this.rearTrack : this.rearTrack, (Math.random() - 0.5) * 2, 0.6 + Math.random(), s);
+      }
+    } else {
+      this.dustAccum = 0;
+    }
+    for (const p of this.dust) {
+      if (p.life <= 0) continue;
+      p.life -= dt;
+      if (p.life <= 0) {
+        p.sprite.visible = false;
+        continue;
+      }
+      p.vel.multiplyScalar(Math.exp(-1.6 * dt));
+      p.sprite.position.addScaledVector(p.vel, dt);
+      const k = p.life / DUST_LIFE;
+      p.sprite.material.opacity = 0.75 * k;
+      p.sprite.scale.setScalar(1.2 + 2.6 * (1 - k));
+    }
+  }
+
+  /** `s` given, the puff keeps some of the kart's speed so it trails as a plume. */
+  private emitDust(lateral: number, spread: number, up: number, s?: KartState): void {
+    const p = this.dust[this.dustCursor];
+    this.dustCursor = (this.dustCursor + 1) % DUST_POOL;
+    const yaw = this.root.rotation.y;
+    this.tmp.set(lateral, 0.3, this.rearZ).applyAxisAngle(THREE.Object3D.DEFAULT_UP, yaw).add(this.root.position);
+    p.sprite.position.copy(this.tmp);
+    const back = -(1.5 + Math.random() * 2);
+    p.vel.set(Math.sin(yaw) * back + Math.cos(yaw) * spread, up, Math.cos(yaw) * back - Math.sin(yaw) * spread);
+    if (s) {
+      p.vel.x += Math.sin(s.heading) * s.speed * 0.55;
+      p.vel.z += Math.cos(s.heading) * s.speed * 0.55;
+    }
+    p.sprite.material.color.setHex(dustColor);
+    p.sprite.visible = true;
+    p.life = DUST_LIFE * (0.7 + Math.random() * 0.3);
   }
 
   private updateSparks(s: KartState, dt: number): void {

@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { Lensflare, LensflareElement } from 'three/addons/objects/Lensflare.js';
 import { InputManager, NEUTRAL_INPUT, type InputFrame } from './core/input';
 import { FixedLoop } from './core/loop';
-import { lerp, lerpAngle } from './core/math';
+import { clamp, damp, lerp, lerpAngle } from './core/math';
 import { CPU_SKILL, CpuDriver } from './ai/cpuDriver';
 import { MusicPlayer, type MusicCue } from './audio/music';
 import { Sfx } from './audio/sfx';
@@ -14,10 +14,12 @@ import type { HazardKind } from './items/hazards';
 import type { ItemKind } from './items/items';
 import { ChaseCamera } from './render/chaseCamera';
 import { HazardsView, ItemsView } from './render/itemViews';
-import { KartView } from './render/kartView';
+import { KartView, setDustColor } from './render/kartView';
+import { PostFx } from './render/postfx';
 import { flareRingTexture, glowTexture, setTextureAnisotropy } from './render/textures';
 import { buildTrackView, type TrackView } from './render/trackView';
 import { TRACK_LIST } from './tracks/index';
+import { pointAt } from './tracks/spline';
 import { Track } from './tracks/track';
 import { Hud, formatTime, type Table, type TableRow } from './ui/hud';
 import { Menu, type MenuChoice } from './ui/menu';
@@ -55,15 +57,21 @@ const sunAnchor = new THREE.Object3D();
 sunAnchor.add(flare);
 scene.add(sunAnchor);
 
+const postFx = new PostFx(renderer);
 const input = new InputManager();
 const hud = new Hud(document.body);
 const music = new MusicPlayer();
-const sfx = new Sfx(() => music.context);
+const sfx = new Sfx(
+  () => music.context,
+  (level, hold) => music.duck(level, hold),
+);
 
 /** Grid slot the player starts from; CPUs fill the rest. */
 const PLAYER_SLOT = 4;
 /** Seconds after crossing the line before the results table. */
 const RESULTS_DELAY = 2.5;
+/** Seconds of camera flyover before the countdown. */
+const INTRO_TIME = 4.5;
 
 /**
  * title -> menu -> race -> results -> menu. A Grand Prix goes
@@ -88,6 +96,10 @@ let views: KartView[] = [];
 let itemsView: ItemsView | null = null;
 let hazardsView: HazardsView | null = null;
 let raceSeed = 1;
+/** Flyover seconds left before the countdown starts. */
+let intro = 0;
+/** Smoothed post effect levels. */
+const fx = { haze: 0, kaleido: 0 };
 /** Debug: the simulation stands still without the pause menu (gizz.freeze). */
 let frozen = false;
 let lastInput: InputFrame = NEUTRAL_INPUT;
@@ -152,6 +164,7 @@ function loadTrack(index: number): void {
   trackView = buildTrackView(track);
   scene.add(trackView.group);
   const t = trackView.theme;
+  setDustColor(t.dust);
   fog.color.setHex(t.fog.color);
   fog.near = t.fog.near;
   fog.far = t.fog.far;
@@ -196,10 +209,30 @@ function startRace(withPlayer: boolean): void {
   });
   snapshots.clear();
   chase.snap();
+  intro = withPlayer ? INTRO_TIME : 0;
   if (withPlayer) {
     setMode('race');
     music.play(track.def.music.lap as MusicCue);
   }
+}
+
+/** Swoops along the last stretch of the lap down onto the grid. */
+function introCamera(): void {
+  const u = 1 - intro / INTRO_TIME;
+  const e = u * u * (3 - 2 * u);
+  const s = lerp(-240, -36, e);
+  const p = pointAt(track.spline, s);
+  const a = pointAt(track.spline, s + 30);
+  const lateral = lerp(16, 0, e);
+  camera.position.set(p.x - p.tz * lateral, track.main.heightAt(((s % track.length) + track.length) % track.length) + lerp(24, 4.5, e), p.z + p.tx * lateral);
+  camera.lookAt(a.x, track.main.heightAt(((s + 30 + track.length) % track.length)) + 1.5, a.z);
+}
+
+function skipIntro(): boolean {
+  if (mode !== 'race' || intro <= 0) return false;
+  intro = 0;
+  chase.snap();
+  return true;
 }
 
 /** The kart the camera follows: the player, or the leader in attract mode. */
@@ -210,6 +243,11 @@ function focus(): RaceKart {
 function step(dt: number): void {
   lastInput = input.sample();
   if (mode === 'podium') return;
+  if (intro > 0) {
+    intro = Math.max(0, intro - dt);
+    if (intro === 0) chase.snap();
+    return;
+  }
   const inputs = race.karts.map((k) => (k === player ? lastInput : undefined));
   const events = race.step(dt, inputs);
   events.forEach((ev, i) => {
@@ -293,12 +331,20 @@ function playerSounds(p: RaceKart, ev: StepEvents): void {
   if (ev.trick) sfx.trick();
 }
 
-/** Engine note and hazard ambience, every frame. */
+/** How hard the tires squeal, 0..1: always in a drift, and on hard turns at speed. Dirt doesn't squeal. */
+function tireScreech(s: KartState, speedRatio: number): number {
+  if (!s.grounded || s.surface === 'offroad' || Math.abs(s.speed) < 8 || s.spinTime > 0) return 0;
+  if (s.driftDir !== 0) return 0.6 + 0.4 * Math.min(1, Math.abs(s.slip) * 2);
+  return clamp((Math.abs(s.steer) * speedRatio - 0.55) / 0.4, 0, 1) * 0.55;
+}
+
+/** Engine note, tire squeal and hazard ambience, every frame. */
 function updateSounds(dt: number): void {
   const p = player;
   const racing = mode === 'race' && !loop.paused && p !== null;
   const s = p?.state;
-  sfx.updateEngine(racing ? 1 : 0, s ? Math.abs(s.speed) / p!.baseParams.topSpeed : 0, !!s && s.boostTime > 0, !!s && s.driftDir !== 0);
+  const speedRatio = s ? Math.abs(s.speed) / p!.baseParams.topSpeed : 0;
+  sfx.updateEngine(racing ? 1 : 0, speedRatio, !!s && s.boostTime > 0, !!s && s.driftDir !== 0, s ? tireScreech(s, speedRatio) : 0);
   if (!racing || !s) {
     sfx.hazards(dt, null, null);
     return;
@@ -360,11 +406,17 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
   const s = snaps[race.karts.indexOf(f)];
   if (podium) {
     podium.update(dt, elapsed, camera);
+  } else if (intro > 0) {
+    race.karts.forEach((k, i) => views[i].update(snaps[i], k.params.topSpeed, dt, elapsed));
+    introCamera();
   } else {
     race.karts.forEach((k, i) => views[i].update(snaps[i], k.params.topSpeed, dt, elapsed));
     chase.update(s, f.params.topSpeed, player ? lastInput.lookBack : false, dt);
   }
-  trackView!.update(elapsed, camera.position);
+  document.body.classList.toggle('intro', intro > 0);
+  const theme = trackView!.theme;
+  const L = track.length;
+  trackView!.update(elapsed, camera.position, theme.skyCycle ? Math.PI * 2 * clamp(f.distance / (L * track.def.laps), 0, 1) : 0);
   itemsView!.update(elapsed);
   hazardsView!.update(elapsed);
   sunAnchor.position.copy(camera.position).addScaledVector(SUN_DIR, 1400);
@@ -387,7 +439,8 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
       paused: loop.paused && !frozen,
       position: f.position,
       karts: race.karts.length,
-      countdown: -race.time,
+      countdown: intro > 0 ? -1 : -race.time,
+      intro: intro > 0 ? { name: track.def.name, sub: gp ? `Race ${gp.round + 1} of ${gp.tracks.length}` : choice.mode === 'timeTrial' ? 'Time Trial' : `${choice.engine}` } : null,
       table: table(),
       muted: musicMuted,
       sfxMuted,
@@ -397,7 +450,14 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
     elapsed,
   );
   hud.minimap.draw(race.karts.map((k, i) => ({ x: snaps[i].x, z: snaps[i].z, color: hex(k.racer.color), player: k === player })));
-  renderer.render(scene, camera);
+  // Heat haze shimmers hardest on the straights; the kaleidoscope runs on the player's final lap.
+  const straight = 1 - clamp(track.main.maxCurvature(f.progressS, f.progressS + 80) * 25, 0, 1);
+  const hazeTarget = podium ? 0 : theme.haze * (0.3 + 0.7 * straight);
+  const finalLap = mode === 'race' && player !== null && player.finishTime === null && intro === 0 && player.laps.lap === track.def.laps - 1;
+  fx.haze += (hazeTarget - fx.haze) * damp(2, frameDt);
+  fx.kaleido += ((finalLap ? 1 : 0) - fx.kaleido) * damp(1.5, frameDt);
+  const beat = music.beatPhase();
+  postFx.render(scene, camera, { haze: fx.haze, kaleido: fx.kaleido, beat: beat >= 0 ? beat : (elapsed * 2.4) % 1, time: elapsed });
 });
 
 /** The panel for the results, cup standings and podium screens. */
@@ -537,12 +597,14 @@ window.addEventListener(
   { passive: true },
 );
 window.addEventListener('pointerup', (e) => {
+  if (skipIntro()) return;
   if ((e.target as HTMLElement).closest('.menu, .touch, .hud-pause')) return music.unlock();
   advance();
 });
 
 window.addEventListener('keydown', (e) => {
   if (advance()) return;
+  if (!e.repeat && skipIntro()) return;
   if (menu.key(e.code)) return;
   if (e.repeat || mode !== 'race') return;
   if (loop.paused) {

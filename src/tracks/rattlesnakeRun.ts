@@ -101,12 +101,12 @@ function layout(washLength: number): TrackBuilder {
   return b;
 }
 
-/** Snake's Mouth: a straight cut across the Dry Wash bulge with a boost-only jump into a cave. */
+/** Snake's Mouth: a straight cut across the Dry Wash bulge with a jump into a cave: at 50cc it takes a boost. */
 function buildShortcut(from: { s: number; pose: Pose }, to: { s: number; pose: Pose }) {
   const chord = Math.hypot(to.pose.x - from.pose.x, to.pose.z - from.pose.z);
   const b = new TrackBuilder(from.pose, "Snake's Mouth", { halfWidth: 7 });
   b.straight(38).elevate(0).straight(16).elevate(2.2);
-  b.gap(26, 14);
+  b.gap(20, 14);
   b.elevate(0);
   const caveStart = b.s;
   b.section("Snake's Mouth Cave", { halfWidth: 7, wallHeight: 6, surface: 'rock' });
