@@ -6,7 +6,7 @@ import { COUNTDOWN, Race } from '../src/core/race';
 import { BOULDER_STAGES, HazardSystem, JET_STAGES } from '../src/items/hazards';
 import { buildVolcanoFortress } from '../src/tracks/volcanoFortress';
 import { buildPolygondwanalandJungle } from '../src/tracks/polygondwanalandJungle';
-import { BOX_RESPAWN, CANNON_TIME, FUZZ_BOOST, ITEM_KINDS, MINE_WOBBLE, ROULETTE, TEMPO_SLOW_FIRST, TEMPO_SLOW_LAST, WAVE_RANGE, itemWeights, rollItem, tempoSlowFor, type ItemKind } from '../src/items/items';
+import { BOX_RESPAWN, CANNON_PAST_MAX, CANNON_PAST_MIN, CANNON_TIME, FUZZ_BOOST, ITEM_KINDS, MINE_WOBBLE, ROULETTE, TEMPO_SLOW_FIRST, TEMPO_SLOW_LAST, WAVE_RANGE, itemWeights, rollItem, tempoSlowFor, type ItemKind } from '../src/items/items';
 import { createKartState, respawnKart, slowDown, spinOut, stepKart } from '../src/physics/kart';
 import { FIELD_SIZE, RACERS, kartParams } from '../src/physics/racers';
 import { buildRattlesnakeRun } from '../src/tracks/rattlesnakeRun';
@@ -92,6 +92,34 @@ describe('Woo Cannon', () => {
     expect(k.state.cannonTime).toBe(0);
     expect(k.distance - d0).toBeGreaterThan(k.baseParams.topSpeed * CANNON_TIME * 1.4);
     expect(k.state.speed).toBeGreaterThan(k.params.topSpeed * 0.9);
+  });
+
+  it('flies last place up to the pack and a varying way past it, then lets go', () => {
+    const pasts: number[] = [];
+    for (const seed of [1, 2, 3]) {
+      const race = new Race(track, seed);
+      for (let i = 0; i < 4; i++) race.addKart(RACERS[i], '100cc', null);
+      race.time = 0;
+      // Three karts bunched up the road, the fourth far behind them.
+      [300, 310, 320].forEach((s, i) => place(race, i, s));
+      const last = place(race, 3, 40);
+      expect(last.position).toBe(4);
+      give(race, 3, 'wooCannon');
+      race.step(PHYSICS_DT, [NEUTRAL_INPUT, NEUTRAL_INPUT, NEUTRAL_INPUT, PRESS]);
+      const goal = last.cannonGoal!;
+      expect(goal.target.position).toBe(2);
+      expect(goal.past).toBeGreaterThanOrEqual(CANNON_PAST_MIN);
+      expect(goal.past).toBeLessThanOrEqual(CANNON_PAST_MAX);
+      pasts.push(goal.past);
+      const target = goal.target;
+      for (let t = 0; t < CANNON_TIME + 1 && last.state.cannonTime > 0; t += PHYSICS_DT) race.step(PHYSICS_DT, race.karts.map(() => NEUTRAL_INPUT));
+      expect(last.state.cannonTime).toBe(0);
+      const ahead = last.distance - target.distance;
+      expect(ahead).toBeGreaterThan(goal.past - 1);
+      expect(ahead).toBeLessThan(goal.past + 15);
+    }
+    // A different amount past the pack each time.
+    expect(new Set(pasts.map((p) => p.toFixed(2))).size).toBe(3);
   });
 
   it('never drops a kart into a pit or off the edge, on any track', () => {

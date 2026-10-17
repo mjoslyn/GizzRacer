@@ -627,6 +627,8 @@ const HIT_TEXT: Record<ItemKind | HazardKind, string> = {
   boulders: 'ROCKFALL!',
   lavaBombs: 'LAVA BOMB!',
   flameJets: 'TORCHED!',
+  dragonFire: 'DRAGONFIRE!',
+  oilBombs: 'OILED!',
   vines: 'TIMBER!',
   rollers: "POLYGON'D!",
   fish: 'FISHED!',
@@ -698,6 +700,7 @@ function updateSounds(dt: number): void {
   const s = p?.state;
   const speedRatio = s ? Math.abs(s.speed) / p!.baseParams.topSpeed : 0;
   sfx.updateEngine(racing ? 1 : 0, speedRatio, !!s && s.boostTime > 0, !!s && s.driftDir !== 0, s ? tireScreech(s, speedRatio) : 0);
+  sfx.cannonLoop(racing && !!s && s.cannonTime > 0);
   if (!racing || !s) {
     sfx.hazards(dt, null, null);
     return;

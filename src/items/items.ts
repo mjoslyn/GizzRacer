@@ -31,9 +31,17 @@ export const MISSILE_SPIN = 1.2;
 /** Tempo Shift slows the leader longest and the back of the field least (seconds, first to last). */
 export const TEMPO_SLOW_FIRST = 4;
 export const TEMPO_SLOW_LAST = 1.5;
-/** Woo Cannon: seconds of flight, speed as a multiple of the kart's own top speed, and the spin it gives anyone in the way. */
-export const CANNON_TIME = 3.5;
-export const CANNON_SPEED_MUL = 1.6;
+/**
+ * Woo Cannon: it flies until it has caught the pack and gone a varying
+ * distance past it (Race.aimCannon), at a multiple of the kart's own top
+ * speed, never shorter than the least nor longer than the most seconds;
+ * and the spin it gives anyone in the way.
+ */
+export const CANNON_TIME = 9;
+export const CANNON_MIN_TIME = 1.5;
+export const CANNON_PAST_MIN = 5;
+export const CANNON_PAST_MAX = 45;
+export const CANNON_SPEED_MUL = 1.9;
 export const CANNON_SPIN = 1.0;
 export const BOX_RESPAWN = 3;
 /** Seconds the item roulette spins before the item lands in the slot. */

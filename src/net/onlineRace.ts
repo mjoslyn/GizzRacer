@@ -108,8 +108,10 @@ export class OnlineRace {
         return true;
       }
       if (e.k === 'cannon') {
+        // Fly it here, aimed at the pack as this screen sees it.
         s.cannonTime = Math.max(s.cannonTime, e.t);
         s.invulnTime = Math.max(s.invulnTime, e.t + 0.8);
+        this.race.aimCannon(this.me);
         return true;
       }
       if (e.k === 'spin') return spinOut(s, e.t);

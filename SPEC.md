@@ -63,7 +63,7 @@ All designs are original. No likenesses of band members or album art. Every race
 | Feedback Wave | Radial spin-out, 8m range | Middle |
 | Riff Missile | Homes on next racer ahead | Middle/back |
 | Tempo Shift | Others slowed: 4s for the leader down to 1.5s for last place | Last 2 only |
-| Woo Cannon | Turns you into a cannon shell that flies itself down the road at 1.6x top speed for 3.5s, immune, spinning out anyone it touches; never lets go over a pit | Last 3 only, likelier further back |
+| Woo Cannon | Turns you into a cannon shell that flies itself down the road at 1.9x top speed, immune, spinning out anyone it touches, until it has caught the pack (the middle of the field) and gone 5 to 45 m past it (1.5 to 9 s); never lets go over a pit. The woo loops for the whole flight | Last 3 only, likelier further back |
 
 - Item boxes respawn 3s after pickup
 - One item held at a time, after a 1s roulette
@@ -120,9 +120,13 @@ Four harder tracks: narrower roads, short straights, more corners, each sized fo
 3. Cyboogie City (Han-Tyumi): neon downtown at night with lit towers, a tight walled alley of right angles, an elevated freeway on pillars, and laser gates that warn, then fire across the whole road, on a rhythm
 4. Butterfly 3000 Skyway (Butterfly 3000): a rainbow road in a pastel sky with no ground (leave the road and you fall to the respawn), butterfly swarms in the walled garden that buffet karts, a star leap over the void, chrysalis hairpins, and an open, unwalled Metamorphosis Mile. Rainbow arches; the cup's finale, with a final-lap music cut
 
+### Petrodragonic Apocalypse (hard)
+
+A burning oil field under a black, smoke-choked sky with a blood-red sun, a dragon circling overhead. Narrow roads; Ashen Grid under a giant dragon skull, Derrick Row (burning crude rains down), Crude Slick (an oil surface that slides like ice), Dragon's Gullet (a walled corridor where dragons rear up at the edge and breathe fire across the whole road on a rhythm, their jaws opening and throats glowing first), Burning Moat (a jump over a pit of burning oil), Wyrm Coil (hairpins on the slick), Skull Bridge (no rails over an oil lake) and Apocalypse Mile. Scenery: nodding pumpjacks, burning barrels, dead trees, dragon bones, flaring derricks, tar pits. It closes the Apocalypse Cup (Volcano Fortress, Cyboogie City, Butterfly 3000 Skyway, Petrodragonic Apocalypse).
+
 ### Generated tracks
 
-The Track Generator mode builds a track at race time from a seed and three dials: theme (desert, speedway, volcano, jungle, lagoon, glacier, neon city, sky), twists (complexity 1 to 5) and length (short about 0.85 km, medium 1.2 km, long 1.7 km). Each theme brings its road surfaces, liquid for bridges and jumps, hazards, landmarks, music and words for names. The layout is a rectangle skeleton whose sides are filled with modules (straights, S-bends, esses, chicanes, switchback hairpins, jumps, bridges), each measured before it's placed so the sides keep their length; the last two sides aim for the final corner, which a Dubins path closes onto the finish line. A layout that crosses itself or needs a loop to get home is re-rolled from the same seed, so a seed always builds the same track. Every track gets a name (Gizzard-ish adjective, theme place, kind of course); after a race it can be saved under that name or another. Saved tracks are kept in the browser as seed and dials.
+The Track Generator mode builds a track at race time from a seed and three dials: theme (desert, speedway, volcano, jungle, lagoon, glacier, neon city, sky, petrodragonic), twists (complexity 1 to 5) and length (short about 0.85 km, medium 1.2 km, long 1.7 km). Each theme brings its road surfaces, liquid for bridges and jumps, hazards, landmarks, music and words for names. The layout is a rectangle skeleton whose sides are filled with modules (straights, S-bends, esses, chicanes, switchback hairpins, jumps, bridges), each measured before it's placed so the sides keep their length; the last two sides aim for the final corner, which a Dubins path closes onto the finish line. A layout that crosses itself or needs a loop to get home is re-rolled from the same seed, so a seed always builds the same track. Every track gets a name (Gizzard-ish adjective, theme place, kind of course); after a race it can be saved under that name or another. Saved tracks are kept in the browser as seed and dials.
 
 ## 8. CPU Racers
 - Follow a waypoint spline with per-racer lateral offset and racing line variation

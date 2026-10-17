@@ -30,6 +30,7 @@ interface Materials {
   rock: THREE.Material;
   lava: THREE.MeshBasicMaterial;
   water: THREE.MeshPhongMaterial;
+  oil: THREE.MeshPhongMaterial;
 }
 
 function materials(theme: Theme): Materials {
@@ -45,6 +46,7 @@ function materials(theme: Theme): Materials {
     glacier: () => tex.stoneTexture([110, 130, 150], [200, 215, 230]),
     city: () => tex.stoneTexture([40, 34, 56], [90, 80, 110]),
     sky: () => tex.stoneTexture([220, 200, 240], [255, 250, 255]),
+    wasteland: () => tex.stoneTexture([30, 22, 22], [80, 58, 50]),
   };
   const neon = tex.neonRoadTexture();
   const rainbow = tex.rainbowTexture();
@@ -58,6 +60,8 @@ function materials(theme: Theme): Materials {
       ice: new THREE.MeshPhongMaterial({ map: tex.iceTexture(), shininess: 60, specular: 0x4a5a6a }),
       neon: lambert(neon, { emissive: 0xffffff, emissiveMap: neon, emissiveIntensity: 0.7 }),
       rainbow: lambert(rainbow, { emissive: 0xffffff, emissiveMap: rainbow, emissiveIntensity: 0.35 }),
+      // Wet and black, with a hard highlight: it looks as slippery as it is.
+      oil: new THREE.MeshPhongMaterial({ map: tex.oilRoadTexture(), shininess: 110, specular: 0x8a7a90 }),
     },
     curb: lambert(tex.curbTexture()),
     strata: lambert(theme.cliff(), { side: THREE.DoubleSide }),
@@ -68,6 +72,7 @@ function materials(theme: Theme): Materials {
     rock: new THREE.MeshLambertMaterial({ map: rockMap[theme.decor](), flatShading: true }),
     lava: new THREE.MeshBasicMaterial({ map: tex.lavaTexture(), side: THREE.DoubleSide }),
     water: new THREE.MeshPhongMaterial({ color: 0x2a7a8a, shininess: 120, specular: 0xffffff, transparent: true, opacity: 0.85, side: THREE.DoubleSide }),
+    oil: new THREE.MeshPhongMaterial({ color: 0x0a0608, emissive: 0x2a0800, shininess: 140, specular: 0xaa8866, side: THREE.DoubleSide }),
   };
 }
 
@@ -114,6 +119,12 @@ export function buildTrackView(track: Track): TrackView {
     if (lm.kind === 'iceArch') group.add(iceArch(ribbon, s));
     if (lm.kind === 'neonArch') group.add(neonArch(ribbon, s));
     if (lm.kind === 'rainbowArch') group.add(rainbowArch(ribbon, s));
+    if (lm.kind === 'dragonGate') group.add(dragonGate(ribbon, s, mats));
+    if (lm.kind === 'dragonFlight') {
+      const d = dragonFlight(track.def.bounds);
+      group.add(d.group);
+      animated.push(d.update);
+    }
     if (lm.kind === 'lighthouse') {
       const l = lighthouse(ribbon, s);
       group.add(l.group);
@@ -234,7 +245,8 @@ function pitMesh(p: PitDef, mats: Materials): THREE.Group {
     surface.setAttribute('uv', new THREE.Float32BufferAttribute(corners.map(([x, z]) => [x / 10, z / 10]).flat(), 2));
     surface.setIndex([0, 2, 1, 0, 3, 2]);
     surface.computeVertexNormals();
-    g.add(new THREE.Mesh(surface, p.liquid === 'lava' ? mats.lava : mats.water));
+    g.add(new THREE.Mesh(surface, p.liquid === 'lava' ? mats.lava : p.liquid === 'oil' ? mats.oil : mats.water));
+    if (p.liquid === 'oil') g.add(oilFires(corners));
   }
 
   const pos: number[] = [];
@@ -867,6 +879,25 @@ function distant(theme: Theme): THREE.Group {
           mesh.scale.set(1.6, 0.6, 1);
           mesh.position.y = (rand() - 0.3) * 120;
           break;
+        case 'flare': {
+          // A ruined refinery stack, a gas flare burning on top, smoke leaning off it.
+          const sh = h * 1.6;
+          mesh = new THREE.Mesh(new THREE.CylinderGeometry(w * 0.05, w * 0.09, sh, 8), mat);
+          mesh.position.y = sh / 2 - 2;
+          const fire = new THREE.Mesh(new THREE.ConeGeometry(w * 0.06, w * 0.22, 8), glowMat);
+          fire.position.y = sh / 2 + w * 0.1;
+          mesh.add(fire);
+          const smoke = new THREE.Mesh(new THREE.SphereGeometry(w * 0.3, 10, 8), new THREE.MeshLambertMaterial({ color: 0x1a0c0a, transparent: true, opacity: 0.7 }));
+          smoke.scale.set(1.8, 0.7, 1);
+          smoke.position.set(w * 0.25, sh / 2 + w * 0.35, 0);
+          mesh.add(smoke);
+          // A low black hill of spoil around its foot.
+          const spoil = new THREE.Mesh(new THREE.SphereGeometry(w * 0.6, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), mat);
+          spoil.scale.y = 0.25;
+          spoil.position.y = -sh / 2;
+          mesh.add(spoil);
+          break;
+        }
       }
       mesh.position.x = Math.cos(a) * r;
       mesh.position.z = Math.sin(a) * r;
@@ -887,8 +918,8 @@ function decor(track: Track, mats: Materials, theme: Theme, animated: ((time: nu
     ribbons.every((r) => nearestOnSpline(r.spline, x, z).distance > Math.max(...r.halfWidth) + 8) &&
     track.def.pits.every((p) => !inPit({ ...p, halfWidth: p.halfWidth + 6, halfLength: p.halfLength + 6 }, x, z));
 
-  const rockCount = { jungle: 120, city: 0, sky: 0, lagoon: 60, glacier: 140 }[theme.decor as string] ?? 220;
-  const featureCount = { jungle: 150, meadow: 110, lagoon: 120, glacier: 160, city: 90, sky: 90 }[theme.decor as string] ?? 70;
+  const rockCount = { jungle: 120, city: 0, sky: 0, lagoon: 60, glacier: 140, wasteland: 150 }[theme.decor as string] ?? 220;
+  const featureCount = { jungle: 150, meadow: 110, lagoon: 120, glacier: 160, city: 90, sky: 90, wasteland: 110 }[theme.decor as string] ?? 70;
   // Sky scenery floats at all heights; city towers need room off the road.
   const floating = theme.decor === 'sky';
   const rocks = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 1), mats.rock, rockCount);
@@ -942,6 +973,8 @@ function featureBuilder(theme: Theme, mats: Materials, animated: ((time: number)
     return t;
   };
   switch (theme.decor) {
+    case 'wasteland':
+      return wastelandFeature(mats, animated, trunkGeo);
     case 'lagoon': {
       const bark = lambert(0x9a7a52);
       const frond = lambert(0x3aa04a, { side: THREE.DoubleSide, flatShading: true });
@@ -1702,4 +1735,343 @@ function cactus(x: number, z: number, h: number, rot: number, geo: THREE.BufferG
   c.position.set(x, 0, z);
   c.rotation.y = rot;
   return c;
+}
+
+/** Fire licking across a burning oil pit: flame sprites over the slick, each flickering on its own. */
+function oilFires(corners: [number, number][]): THREE.Group {
+  const g = new THREE.Group();
+  const flame = tex.glowTexture('rgba(255,200,90,1)', 'rgba(255,50,0,0)');
+  const rand = seededRandom(Math.round(corners[0][0] * 7 + corners[0][1] * 13));
+  const [a, b, , d] = corners;
+  for (let k = 0; k < 14; k++) {
+    const u = rand();
+    const v = rand();
+    const x = a[0] + (b[0] - a[0]) * u + (d[0] - a[0]) * v;
+    const z = a[1] + (b[1] - a[1]) * u + (d[1] - a[1]) * v;
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: flame, color: k % 3 ? 0xff7a20 : 0xffc040, blending: THREE.AdditiveBlending, depthWrite: false }));
+    const size = 3 + rand() * 4;
+    const ph = rand() * 10;
+    s.position.set(x, -1.5, z);
+    s.scale.set(size, size * 1.6, 1);
+    s.onBeforeRender = () => {
+      const t = performance.now() / 1000;
+      const k2 = 0.8 + Math.sin(t * 9 + ph) * 0.12 + Math.sin(t * 23 + ph * 2) * 0.08;
+      s.scale.set(size * k2, size * 1.6 * k2, 1);
+    };
+    g.add(s);
+  }
+  return g;
+}
+
+/** The skull of a petrodragon arched over the road: fanged jaws for pillars, horns raking back, eyes still burning. */
+function dragonGate(ribbon: Ribbon, s: number, mats: Materials): THREE.Group {
+  const g = new THREE.Group();
+  const f = frameAt(ribbon, s);
+  const hw = ribbon.halfWidthAtS(s) + 1.5;
+  const bone = new THREE.MeshPhongMaterial({ map: tex.boneTexture(), color: 0x9a8a7a, shininess: 25, specular: 0x332a22 });
+  const black = new THREE.MeshPhongMaterial({ color: 0x140a0a, shininess: 60, specular: 0x553322 });
+  // Lower jaw bones as the two pillars, teeth along their tops.
+  for (const side of [-1, 1]) {
+    const jaw = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 2.2, 13, 8), bone);
+    jaw.position.set(side * (hw + 2), 6.5, 0);
+    jaw.rotation.z = side * 0.12;
+    g.add(jaw);
+    for (let k = 0; k < 4; k++) {
+      const tooth = new THREE.Mesh(new THREE.ConeGeometry(0.5, 2.4, 6), mats.bone);
+      tooth.position.set(side * (hw + 0.6), 3 + k * 2.6, 0.8);
+      tooth.rotation.z = side * -Math.PI / 2;
+      g.add(tooth);
+    }
+  }
+  // The cranium across the top, its snout pushed out over the oncoming road.
+  const skull = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), bone);
+  skull.scale.set(hw + 3, 4.2, 6);
+  skull.position.set(0, 14.5, -1);
+  g.add(skull);
+  const snout = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 4.2, 9, 10), bone);
+  snout.rotation.x = Math.PI / 2;
+  snout.position.set(0, 13.2, -8);
+  g.add(snout);
+  // Upper fangs hanging over the road.
+  for (let k = -3; k <= 3; k++) {
+    const fang = new THREE.Mesh(new THREE.ConeGeometry(0.55, 3.6 - Math.abs(k) * 0.3, 6), mats.bone);
+    fang.rotation.x = Math.PI;
+    fang.position.set((k / 3) * hw * 0.9, 10.4, -4 + Math.abs(k) * 0.8);
+    g.add(fang);
+  }
+  // Horns raking back from the brow, nostrils, and eye sockets with fire still in them.
+  for (const side of [-1, 1]) {
+    const horn = new THREE.Group();
+    horn.position.set(side * (hw * 0.6), 17, 1);
+    for (let k = 0; k < 6; k++) {
+      const seg = new THREE.Mesh(new THREE.CylinderGeometry(0.9 - k * 0.13, 1.05 - k * 0.13, 2.2, 8), black);
+      seg.position.set(side * k * 0.6, k * 1.8 - k * k * 0.12, k * 1.6);
+      seg.rotation.set(0.6 + k * 0.12, 0, side * -0.3);
+      horn.add(seg);
+    }
+    g.add(horn);
+    const socket = new THREE.Mesh(new THREE.SphereGeometry(1.6, 12, 8), black);
+    socket.position.set(side * (hw * 0.45), 14.8, -5.6);
+    g.add(socket);
+    const ember = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex.glowTexture('rgba(255,120,40,1)', 'rgba(255,20,0,0)'), color: 0xff3a10, blending: THREE.AdditiveBlending, depthWrite: false }));
+    ember.position.set(side * (hw * 0.45), 14.8, -6.8);
+    ember.scale.setScalar(4);
+    g.add(ember);
+    const nostril = new THREE.Mesh(new THREE.SphereGeometry(0.6, 8, 6), black);
+    nostril.position.set(side * 1.2, 14, -12.4);
+    g.add(nostril);
+  }
+  g.position.set(f.x, f.y, f.z);
+  g.rotation.y = f.heading;
+  return g;
+}
+
+/** A petrodragon circling high over the track: black-red scales, bat wings beating, fire in its throat now and then. */
+function dragonFlight(bounds: number): { group: THREE.Group; update: (time: number) => void } {
+  const g = new THREE.Group();
+  const dragon = new THREE.Group();
+  g.add(dragon);
+  const scales = new THREE.MeshPhongMaterial({ map: tex.scaleTexture('#5a1410', '#0a0404'), shininess: 70, specular: 0x663322 });
+  const belly = new THREE.MeshPhongMaterial({ color: 0x3a2014, shininess: 30 });
+  const membrane = new THREE.MeshPhongMaterial({ color: 0x2a0a08, emissive: 0x200402, side: THREE.DoubleSide, shininess: 20, transparent: true, opacity: 0.92 });
+  // Neck, body and tail as a chain of shrinking segments along z.
+  const segs: [number, number][] = [[10, 1.1], [8.5, 1.4], [7, 1.8], [5, 2.6], [2.5, 3.2], [0, 3.4], [-2.5, 3.0], [-5, 2.4], [-7.5, 1.8], [-10, 1.3], [-12.5, 0.9], [-15, 0.6], [-17.5, 0.35]];
+  const body: THREE.Mesh[] = [];
+  for (const [z, r] of segs) {
+    const m = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 8), z > 1 && z < 6 ? belly : scales);
+    m.position.z = z;
+    m.scale.y = 0.8;
+    dragon.add(m);
+    body.push(m);
+  }
+  // Spines down the back.
+  for (const [z, r] of segs.slice(1, -2)) {
+    const spine = new THREE.Mesh(new THREE.ConeGeometry(r * 0.25, r * 0.9, 5), scales);
+    spine.position.set(0, r * 0.75, z);
+    spine.rotation.x = -0.5;
+    dragon.add(spine);
+  }
+  // The head: a long jaw, horns, burning eyes.
+  const head = new THREE.Group();
+  head.position.set(0, 0.6, 12.4);
+  head.add(new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.6, 4.2), scales));
+  const jaw = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.6, 3.6), scales);
+  jaw.position.set(0, -1, 0.3);
+  head.add(jaw);
+  for (const side of [-1, 1]) {
+    const horn = new THREE.Mesh(new THREE.ConeGeometry(0.35, 3.2, 6), belly);
+    horn.position.set(side * 0.8, 1.4, -1.6);
+    horn.rotation.x = -1.1;
+    head.add(horn);
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.28, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffb020 }));
+    eye.position.set(side * 0.95, 0.5, 1.2);
+    head.add(eye);
+  }
+  const breath = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex.glowTexture('rgba(255,210,120,1)', 'rgba(255,60,0,0)'), color: 0xff8a30, blending: THREE.AdditiveBlending, depthWrite: false }));
+  breath.position.set(0, -0.6, 5);
+  head.add(breath);
+  dragon.add(head);
+  // Bat wings: a membrane on three finger bones, hinged at the shoulder.
+  const wingShape = new THREE.Shape();
+  wingShape.moveTo(0, 0);
+  wingShape.lineTo(6, 3);
+  wingShape.lineTo(14, 1.5);
+  wingShape.quadraticCurveTo(11, -1, 13, -4);
+  wingShape.quadraticCurveTo(9, -3, 9, -6);
+  wingShape.quadraticCurveTo(5, -4, 3, -7);
+  wingShape.quadraticCurveTo(1.5, -4, 0, -3.5);
+  wingShape.lineTo(0, 0);
+  const wingGeo = new THREE.ShapeGeometry(wingShape).rotateX(Math.PI / 2);
+  const wings: THREE.Group[] = [];
+  for (const side of [-1, 1]) {
+    const hinge = new THREE.Group();
+    hinge.position.set(side * 2.4, 1.2, 2.5);
+    const w = new THREE.Mesh(wingGeo, membrane);
+    w.scale.set(side, 1, 1);
+    hinge.add(w);
+    hinge.userData.side = side;
+    dragon.add(hinge);
+    wings.push(hinge);
+  }
+  dragon.scale.setScalar(1.4);
+  const radius = bounds * 0.55;
+  return {
+    group: g,
+    update: (time) => {
+      // Circle the field, dipping and climbing, banked into the turn.
+      const a = time * 0.09;
+      dragon.position.set(Math.cos(a) * radius, 58 + Math.sin(time * 0.31) * 10, Math.sin(a) * radius);
+      dragon.rotation.set(Math.sin(time * 0.31 + 1) * 0.12, -a + Math.PI, 0.35);
+      const beat = Math.sin(time * 2.6);
+      for (const w of wings) w.rotation.z = (w.userData.side as number) * (beat * 0.6 + 0.1);
+      body.forEach((m, k) => (m.position.y = Math.sin(time * 2.6 - k * 0.5) * 0.4));
+      // A burst of fire every eleven seconds or so.
+      const u = (time % 11) / 11;
+      const firing = u > 0.85;
+      breath.visible = firing;
+      breath.scale.setScalar(firing ? 6 + Math.random() * 4 : 0.01);
+      jaw.rotation.x = firing ? 0.5 : 0.1;
+    },
+  };
+}
+
+/** The Petrodragonic wasteland: nodding pumpjacks, burning barrels, dead trees, dragon bones, flaring derricks, tar pits. */
+function wastelandFeature(mats: Materials, animated: ((time: number) => void)[], trunkGeo: THREE.BufferGeometry): Feature {
+  const iron = lambert(0x2a2224, { flatShading: true });
+  const rust = new THREE.MeshLambertMaterial({ map: tex.rustTexture() });
+  const ash = lambert(0x2a2422, { flatShading: true });
+  const tar = new THREE.MeshPhongMaterial({ color: 0x050304, shininess: 150, specular: 0x9a8aa0 });
+  const flame = tex.glowTexture('rgba(255,200,90,1)', 'rgba(255,50,0,0)');
+  const fire = (parent: THREE.Object3D, y: number, size: number, ph: number) => {
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: flame, color: 0xff7a20, blending: THREE.AdditiveBlending, depthWrite: false }));
+    s.position.y = y;
+    parent.add(s);
+    animated.push((time) => s.scale.set(size * (0.85 + Math.sin(time * 11 + ph) * 0.15), size * (1.4 + Math.sin(time * 17 + ph) * 0.25), 1));
+    return s;
+  };
+  const at = (t: THREE.Object3D, x: number, z: number, rand: () => number) => {
+    t.position.set(x, 0, z);
+    t.rotation.y = rand() * Math.PI * 2;
+    return t;
+  };
+  const pumpjack: Feature = (x, z, rand) => {
+    // A nodding pumpjack: A-frame, walking beam with a horse head, crank and counterweight.
+    const t = new THREE.Group();
+    const base = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.4, 7), iron);
+    base.position.y = 0.2;
+    t.add(base);
+    for (const side of [-1, 1]) {
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.25, 4.6, 0.25), rust);
+      leg.position.set(side * 0.7, 2.4, 0);
+      leg.rotation.z = side * 0.18;
+      t.add(leg);
+    }
+    const beam = new THREE.Group();
+    beam.position.y = 4.6;
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 6.4), rust);
+    const horseHead = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 0.5, 12, 1, false, 0, Math.PI), iron);
+    horseHead.rotation.set(0, 0, Math.PI / 2);
+    horseHead.position.set(0, -0.3, 3.2);
+    beam.add(bar, horseHead);
+    t.add(beam);
+    const crank = new THREE.Group();
+    crank.position.set(0, 1.6, -2.6);
+    const weight = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.4, 0.4), iron);
+    weight.position.y = 0.8;
+    crank.add(weight);
+    t.add(crank);
+    const wellhead = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.4, 1.4, 8), iron);
+    wellhead.position.set(0, 0.9, 3.2);
+    t.add(wellhead);
+    const ph = rand() * 6;
+    const rate = 0.9 + rand() * 0.5;
+    animated.push((time) => {
+      beam.rotation.x = Math.sin(time * rate + ph) * 0.28;
+      crank.rotation.x = time * rate + ph;
+    });
+    return at(t, x, z, rand);
+  };
+  const barrels: Feature = (x, z, rand) => {
+    // A huddle of oil drums, one burning.
+    const t = new THREE.Group();
+    const n = 3 + Math.floor(rand() * 3);
+    for (let k = 0; k < n; k++) {
+      const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 1.3, 12), k === 0 ? rust : lambert(rand() < 0.5 ? 0x5a1a14 : 0x2a3a2a));
+      const lying = k > 2 && rand() < 0.6;
+      drum.position.set((rand() - 0.5) * 2.4, lying ? 0.45 : 0.65, (rand() - 0.5) * 2.4);
+      if (lying) drum.rotation.set(Math.PI / 2, 0, rand() * 3);
+      t.add(drum);
+      if (k === 0) fire(drum, 1.2, 2.4, rand() * 6).position.set(0, 1.2, 0);
+    }
+    return at(t, x, z, rand);
+  };
+  const deadTree: Feature = (x, z, rand) => {
+    // A dead, ash-grey tree, all thorns.
+    const t = new THREE.Group();
+    const h = 4 + rand() * 5;
+    const trunk = new THREE.Mesh(trunkGeo, ash);
+    trunk.scale.set(0.45, h, 0.45);
+    trunk.position.y = h / 2;
+    trunk.rotation.z = (rand() - 0.5) * 0.25;
+    t.add(trunk);
+    for (let k = 0; k < 5; k++) {
+      const len = 1 + rand() * 2;
+      const branch = new THREE.Group();
+      branch.position.y = h * (0.4 + k * 0.12);
+      branch.rotation.set(0, rand() * Math.PI * 2, 0.6 + rand() * 0.6);
+      const stick = new THREE.Mesh(trunkGeo, ash);
+      stick.scale.set(0.14, len, 0.14);
+      stick.position.y = len / 2;
+      branch.add(stick);
+      t.add(branch);
+    }
+    return at(t, x, z, rand);
+  };
+  const bones: Feature = (x, z, rand) => {
+    // A dragon's ribcage half sunk in the ground, its skull nearby.
+    const t = new THREE.Group();
+    const rib = new THREE.TorusGeometry(3.2, 0.25, 6, 16, Math.PI);
+    for (let k = 0; k < 7; k++) {
+      const r = new THREE.Mesh(rib, mats.bone);
+      r.position.z = (k - 3) * 1.4;
+      r.scale.setScalar(1 - Math.abs(k - 3) * 0.12);
+      r.rotation.z = (rand() - 0.5) * 0.2;
+      t.add(r);
+    }
+    const spine = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 10, 6), mats.bone);
+    spine.rotation.x = Math.PI / 2;
+    spine.position.y = 3.1;
+    t.add(spine);
+    const skull = new THREE.Mesh(new THREE.SphereGeometry(1.6, 10, 8), mats.bone);
+    skull.scale.set(0.9, 0.7, 1.6);
+    skull.position.set(1.5, 0.8, 7.5);
+    skull.rotation.z = 0.4;
+    const horn = new THREE.Mesh(new THREE.ConeGeometry(0.3, 2.4, 6), lambert(0x1a1010));
+    horn.position.set(1.5, 2, 6.5);
+    horn.rotation.x = -0.8;
+    t.add(skull, horn);
+    return at(t, x, z, rand);
+  };
+  const derrick: Feature = (x, z, rand) => {
+    // An oil derrick: a tapering lattice tower with a gas flare roaring at the top.
+    const t = new THREE.Group();
+    const h = 14 + rand() * 8;
+    for (const [lx, lz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, h, 5), rust);
+      leg.position.set(lx * 1.2, h / 2, lz * 1.2);
+      leg.rotation.set(-lz * 0.08, 0, lx * 0.08);
+      t.add(leg);
+    }
+    for (let k = 1; k < 6; k++) {
+      const s = 2.6 * (1 - k / 7);
+      const ring = new THREE.Mesh(new THREE.BoxGeometry(s, 0.12, s), rust);
+      ring.position.y = (k / 6) * h;
+      t.add(ring);
+    }
+    fire(t, h + 1.2, 4, rand() * 6);
+    return at(t, x, z, rand);
+  };
+  const tarPit: Feature = (x, z, rand) => {
+    // A tar pit: a glossy black pool with bubbles swelling and bursting.
+    const t = new THREE.Group();
+    const r = 2.5 + rand() * 3;
+    const pool = new THREE.Mesh(new THREE.CircleGeometry(r, 18), tar);
+    pool.rotation.x = -Math.PI / 2;
+    pool.position.y = 0.05;
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(r, 0.35, 5, 18), ash);
+    rim.rotation.x = Math.PI / 2;
+    rim.position.y = 0.08;
+    t.add(pool, rim);
+    const bubbles: THREE.Mesh[] = [];
+    for (let k = 0; k < 3; k++) {
+      const b = new THREE.Mesh(new THREE.SphereGeometry(0.4, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), tar);
+      b.position.set((rand() - 0.5) * r, 0.05, (rand() - 0.5) * r);
+      t.add(b);
+      bubbles.push(b);
+    }
+    const ph = rand() * 6;
+    animated.push((time) => bubbles.forEach((b, k) => b.scale.setScalar(Math.max(0.01, ((time * 0.6 + ph + k * 0.37) % 1) * 1.6))));
+    return at(t, x, z, rand);
+  };
+  return (x, z, rand) => pick(rand, [[2, pumpjack], [2, barrels], [3, deadTree], [1, bones], [1, derrick], [1.4, tarPit]])(x, z, rand);
 }

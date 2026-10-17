@@ -84,8 +84,9 @@ describe('online race over a laggy link', () => {
         c.race.step(PHYSICS_DT, c.race.karts.map((k) => (k === c.me ? input : undefined)));
         if (tick % 4 === 0) c.up.send(now, { t: 'kart', s: c.net.report() });
         // How far is the other human from where the room had them INTERP_DELAY + a bit ago? Sampled mid-race.
-        if (tick % 300 === 0 && c.race.time > 5) {
-          const other = clients.find((o) => o !== c)!;
+        const other = clients.find((o) => o !== c)!;
+        // Not mid-flight in a Woo Cannon, which goes well past the 40 m/s the bound below assumes.
+        if (tick % 300 === 0 && c.race.time > 5 && other.me.state.cannonTime === 0) {
           const idx = c.race.karts.findIndex((k) => k.racer.id === other.me.racer.id);
           const shown = c.race.karts[idx].state;
           c.viewErr.push(Math.hypot(shown.x - other.me.state.x, shown.z - other.me.state.z));

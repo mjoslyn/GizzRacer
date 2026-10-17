@@ -150,6 +150,10 @@ export class HazardsView {
     const warnTex = warningTexture();
 
     const magma = new THREE.MeshPhongMaterial({ map: basaltTexture(), color: 0x6a3020, emissive: 0xff3a08, emissiveIntensity: 0.6, flatShading: true });
+    const crude = new THREE.MeshPhongMaterial({ color: 0x080506, emissive: 0x2a0800, shininess: 150, specular: 0xaa8866 });
+    const dragonScales = new THREE.MeshPhongMaterial({ map: scaleTexture('#5a1410', '#0a0404'), shininess: 70, specular: 0x663322 });
+    const dragonHorn = new THREE.MeshPhongMaterial({ color: 0x1a1010, shininess: 50 });
+    const dragonEye = new THREE.MeshBasicMaterial({ color: 0xffb020 });
     const heat = glowTexture('rgba(255,160,60,1)', 'rgba(255,60,0,0)');
     const flames = flameTexture();
     const nozzleGeo = new THREE.CylinderGeometry(0.45, 0.6, 1.2, 10);
@@ -238,10 +242,14 @@ export class HazardsView {
           break;
         }
         case 'boulders':
-        case 'lavaBombs': {
+        case 'lavaBombs':
+        case 'oilBombs': {
           const lava = pose.kind === 'lavaBombs';
-          const b = new THREE.Mesh(boulderGeo, lava ? magma : boulderMat);
+          const oil = pose.kind === 'oilBombs';
+          const b = new THREE.Mesh(boulderGeo, lava ? magma : oil ? crude : boulderMat);
           if (lava) b.add(sprite(heat, 0xff7a20, 7));
+          // Burning crude: a black glob wrapped in flame.
+          if (oil) b.add(sprite(heat, 0xff5a10, 6), sprite(flames, 0xffa040, 4.5));
           const warn = new THREE.Mesh(warnGeo, new THREE.MeshBasicMaterial({ map: warnTex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 }));
           parts.push(b, warn);
           this.group.add(warn);
@@ -269,6 +277,44 @@ export class HazardsView {
             parts.push(spit);
           }
           parts.unshift(sheet, glow);
+          break;
+        }
+        case 'dragonFire': {
+          // A dragon's head reared at the road's edge, breathing a sheet of fire right across it.
+          const sheet = new THREE.Mesh(
+            new THREE.PlaneGeometry(1, 3.6),
+            new THREE.MeshBasicMaterial({ map: flames.clone(), color: 0xffb070, transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending }),
+          );
+          (sheet.material.map as THREE.Texture).needsUpdate = true;
+          sheet.position.y = 1.8;
+          sheet.scale.x = pose.radius * 2;
+          const glow = sprite(heat, 0xff5020, pose.radius * 1.8);
+          glow.position.y = 1.2;
+          const head = new THREE.Group();
+          head.position.set(-pose.radius - 1.4, 2.2, 0);
+          head.add(new THREE.Mesh(new THREE.BoxGeometry(3.2, 1.8, 1.9), dragonScales));
+          const jaw = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.6, 1.7), dragonScales);
+          jaw.position.set(0.3, -1.1, 0);
+          head.add(jaw);
+          for (const side of [-1, 1]) {
+            const horn = new THREE.Mesh(new THREE.ConeGeometry(0.28, 2.2, 6), dragonHorn);
+            horn.position.set(-1.1, 1.4, side * 0.6);
+            horn.rotation.z = 0.9;
+            const eye = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), dragonEye);
+            eye.position.set(0.6, 0.55, side * 0.95);
+            head.add(horn, eye);
+          }
+          // A long neck coiling down out of the ground behind it.
+          for (let k = 0; k < 5; k++) {
+            const seg = new THREE.Mesh(new THREE.SphereGeometry(1.05 - k * 0.06, 10, 8), dragonScales);
+            seg.position.set(-pose.radius - 2.6 - k * 0.6, 1.6 - k * 0.45, Math.sin(k) * 0.4);
+            obj.add(seg);
+          }
+          const ember = sprite(heat, 0xff7030, 1.8);
+          ember.position.set(1.8, -0.4, 0);
+          head.add(ember);
+          obj.add(sheet, glow, head);
+          parts.push(sheet, glow, jaw, ember);
           break;
         }
         case 'vines': {
@@ -396,6 +442,23 @@ export class HazardsView {
           }
           break;
         }
+        case 'dragonFire': {
+          const [sheet, glow, jaw, ember] = parts;
+          obj.rotation.y = p.heading;
+          const u = p.phase;
+          const firing = u >= JET_STAGES.fire;
+          const smoulder = u >= JET_STAGES.sputter && !firing;
+          sheet.visible = glow.visible = firing;
+          if (firing) {
+            sheet.scale.y = 0.85 + Math.random() * 0.35;
+            (sheet as THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>).material.map!.offset.x = elapsed * 0.9;
+          }
+          // The jaw opens as it draws breath, embers glowing in its throat: the warning.
+          jaw.rotation.z = firing ? -0.6 : smoulder ? -0.3 : 0;
+          ember.visible = firing || smoulder;
+          ember.scale.setScalar(firing ? 2.6 : 0.8 + Math.random() * 0.8);
+          break;
+        }
         case 'vines': {
           const [rope, log] = parts;
           obj.rotation.y = p.heading;
@@ -448,7 +511,8 @@ export class HazardsView {
           });
           break;
         case 'boulders':
-        case 'lavaBombs': {
+        case 'lavaBombs':
+        case 'oilBombs': {
           const [b, warn] = parts;
           const u = p.phase;
           b.visible = u >= BOULDER_STAGES.fall;

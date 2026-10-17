@@ -18,7 +18,7 @@ export interface BranchDef extends RibbonDef {
 }
 
 export interface Landmark {
-  kind: 'skeletonArch' | 'fangs' | 'fortressGate' | 'templeGate' | 'waterfall' | 'gantry' | 'lighthouse' | 'iceArch' | 'neonArch' | 'rainbowArch';
+  kind: 'skeletonArch' | 'fangs' | 'fortressGate' | 'templeGate' | 'waterfall' | 'gantry' | 'lighthouse' | 'iceArch' | 'neonArch' | 'rainbowArch' | 'dragonGate' | 'dragonFlight';
   ribbon: number; // -1 = main, else branch index
   s: number; // builder units
 }
@@ -41,7 +41,7 @@ export interface TrackDef {
   itemBoxes: { s: number; count: number }[];
   hazards: HazardDef[];
   /** Visual theme (render/themes.ts). */
-  theme: 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream';
+  theme: 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro';
   /** No ground: off the road is a long drop (the sky track). */
   abyss?: boolean;
   /** Music cues (public/music/<cue>.mp3): one for the race, one for the final lap. */
@@ -72,7 +72,11 @@ export type HazardDef =
   /** City: laser gates across the whole road, on a rhythm. */
   | { kind: 'lasers'; at: number[]; period: number }
   /** Sky: swarms of butterflies that buffet karts sideways. */
-  | { kind: 'butterflies'; from: number; to: number; count: number };
+  | { kind: 'butterflies'; from: number; to: number; count: number }
+  /** Petrodragonic: dragons perched by the road breathing fire across all of it, on a rhythm. */
+  | { kind: 'dragonFire'; at: number[]; period: number }
+  /** Petrodragonic: burning oil dropped from above, left smouldering on the road. */
+  | { kind: 'oilBombs'; at: number[]; period: number };
 
 export interface StartSlot {
   x: number;
@@ -311,7 +315,8 @@ export class Track implements DriveEnv {
     } else if (this.onBoostPad(sup.hit)) {
       surface = 'boost';
     }
-    if (surface === 'road' && sup.ribbon.surfaceAt(sup.hit.index) === 'ice') surface = 'ice';
+    const road = sup.ribbon.surfaceAt(sup.hit.index);
+    if (surface === 'road' && (road === 'ice' || road === 'oil')) surface = road;
     return {
       hint: mainHit.index,
       progress,

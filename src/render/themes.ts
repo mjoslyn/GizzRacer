@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import * as tex from './textures';
 import { DESERT_SKY, type SkyColors } from './textures';
 
-export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream';
-export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky';
+export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro';
+export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland';
 
 /** Everything that makes a track's world look like itself. */
 export interface Theme {
@@ -18,7 +18,7 @@ export interface Theme {
   /** Off-road scenery. */
   decor: DecorKind;
   /** Silhouettes on the horizon. */
-  distant: { shape: 'mesa' | 'hill' | 'volcano' | 'mountain' | 'city' | 'cloud'; color: number };
+  distant: { shape: 'mesa' | 'hill' | 'volcano' | 'mountain' | 'city' | 'cloud' | 'flare'; color: number };
   /** Heat haze strength on the straights, 0..1 (render/postfx.ts). */
   haze: number;
   /** The sky turns a full circle of hue over a 3-lap race. */
@@ -149,5 +149,21 @@ export const THEMES: Record<ThemeId, Theme> = {
     skyCycle: true,
     dust: 0xffffff,
     barrier: { map: tex.rainbowTexture, crawl: true },
+  },
+  // Petrodragonic Apocalypse: a black sky choked with smoke over a burning oil field, a blood-red sun low on the horizon.
+  petro: {
+    sky: { zenith: '#030102', high: '#140405', low: '#3a0a06', horizon: '#c8341a', below: '#1a0604', ground: '#080303', cloud: '40,22,20', clouds: 48 },
+    fog: { color: 0x200806, near: 70, far: 480 },
+    hemi: { sky: 0xff5a2a, ground: 0x0a0303, intensity: 1.1 },
+    sun: { color: 0xff6a3a, intensity: 1.7 },
+    ground: tex.oilEarthTexture,
+    groundTile: 22,
+    cliff: () => tex.stoneTexture([22, 16, 16], [70, 46, 40]),
+    decor: 'wasteland',
+    distant: { shape: 'flare', color: 0x120808 },
+    haze: 0.8,
+    skyCycle: false,
+    dust: 0x2a1c18,
+    barrier: { map: tex.rustTexture, crawl: false },
   },
 };

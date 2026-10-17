@@ -19,6 +19,8 @@ export class Sfx {
   /** The Woo Cannon's shout: the one sound that's a recording (public/sfx/woo.mp3), fetched once. */
   private wooBuffer: AudioBuffer | null = null;
   private wooLoad: Promise<void> | null = null;
+  /** The woo looping for as long as the player's cannon flies. */
+  private wooLoop: { src: AudioBufferSourceNode; gain: GainNode } | null = null;
   muted = false;
   volume = 1;
 
@@ -147,9 +149,34 @@ export class Sfx {
         this.tone(880, 0.7, 'square', 0.08, 220);
         break;
       case 'wooCannon':
-        this.woo(1);
+        // The woo itself loops for the whole flight (cannonLoop).
         this.whoosh(0.8, 300, 2400, 0.2);
         break;
+    }
+  }
+
+  /** Loops the woo while `on` (the player is in the cannon), fading it out when the flight ends. */
+  cannonLoop(on: boolean): void {
+    const ctx = this.ctx;
+    if (!ctx || !this.out) return;
+    if (on && !this.wooLoop && this.wooBuffer) {
+      const src = ctx.createBufferSource();
+      src.buffer = this.wooBuffer;
+      src.loop = true;
+      const gain = ctx.createGain();
+      gain.gain.value = 0.9;
+      src.connect(gain).connect(this.out);
+      src.start();
+      this.wooLoop = { src, gain };
+    }
+    if (this.wooLoop) this.onDuck(0.3, 0.2);
+    if (!on && this.wooLoop) {
+      const { src, gain } = this.wooLoop;
+      const t = ctx.currentTime;
+      gain.gain.setValueAtTime(gain.gain.value, t);
+      gain.gain.linearRampToValueAtTime(0, t + 0.25);
+      src.stop(t + 0.3);
+      this.wooLoop = null;
     }
   }
 
@@ -180,10 +207,12 @@ export class Sfx {
     }
     if (by === 'dustDevils' || by === 'butterflies') return;
     this.onDuck(0.4, 0.8);
-    if (by === 'boulders' || by === 'lavaBombs' || by === 'rollers' || by === 'vines' || by === 'iceBlocks') this.hit(0.3, 180, 0.5);
+    if (by === 'boulders' || by === 'lavaBombs' || by === 'oilBombs' || by === 'rollers' || by === 'vines' || by === 'iceBlocks') this.hit(0.3, 180, 0.5);
     if (by === 'fish') this.hit(0.25, 900, 0.4);
     if (by === 'lasers') this.tone(1760, 0.3, 'square', 0.06, 220);
-    if (by === 'flameJets' || by === 'lavaBombs') this.whoosh(0.6, 300, 1400, 0.3);
+    if (by === 'flameJets' || by === 'lavaBombs' || by === 'oilBombs' || by === 'dragonFire') this.whoosh(0.6, 300, 1400, 0.3);
+    // A dragon roars as it burns you.
+    if (by === 'dragonFire') this.tone(90, 0.8, 'sawtooth', 0.12, 45, 0, true);
     this.tone(700, 0.55, 'sawtooth', 0.09, 140);
     this.tone(720, 0.55, 'sawtooth', 0.07, 150);
   }

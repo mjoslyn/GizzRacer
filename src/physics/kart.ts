@@ -2,7 +2,7 @@ import { NEUTRAL_INPUT, type InputFrame } from '../core/inputFrame';
 import { clamp, moveToward, wrapAngle } from '../core/math';
 import type { KartParams } from './racers';
 
-export type SurfaceType = 'road' | 'offroad' | 'boost' | 'ice';
+export type SurfaceType = 'road' | 'offroad' | 'boost' | 'ice' | 'oil';
 
 export interface WallHit {
   nx: number; // push-out normal
@@ -114,7 +114,7 @@ const EXT_DAMPING = 4;
  * surface: karts skid wide through every turn, a little on the road, more
  * on dirt, a lot on ice.
  */
-const SLIDE: Record<SurfaceType, number> = { road: 0.2, boost: 0.2, offroad: 0.3, ice: 0.45 };
+const SLIDE: Record<SurfaceType, number> = { road: 0.2, boost: 0.2, offroad: 0.3, ice: 0.45, oil: 0.42 };
 const WALL_SPEED_LOSS = 0.7;
 const WALL_BOUNCE = 4;
 

@@ -75,6 +75,13 @@ const STYLES: Record<DecorKind, DetailStyle> = {
     boards: { words: ['BOOGIE', 'VOLTS', 'NEON 24/7', 'DATA'], bg: ['#140a30', '#2a0a3a'], fg: '#ff3ad8' },
     crowd: true,
   },
+  wasteland: {
+    edge: { kind: 'torch', height: 1.5, spacing: 14, color: 0x3a2a26, stripe: 0x6a3a1a },
+    light: 0xff5a1a,
+    cover: { shape: 'pebble', colors: [0x1a1210, 0x2a1c18, 0x0a0606, 0x4a2a1a], count: 1300 },
+    boards: { words: ['REPENT', 'DOOM', 'CRUDE', 'THE END'], bg: ['#1a0604', '#3a0a06'], fg: '#ff4a1a' },
+    crowd: false,
+  },
   sky: {
     edge: { kind: 'star', height: 1.4, spacing: 14, color: 0xffe8a0, stripe: 0xffffff },
     light: 0xfff0ff,

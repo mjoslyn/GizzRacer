@@ -72,6 +72,8 @@ const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds' | 'butterfli
   boulders: BOULDER_SPIN,
   lavaBombs: BOULDER_SPIN,
   flameJets: JET_SPIN,
+  dragonFire: JET_SPIN,
+  oilBombs: BOULDER_SPIN,
   vines: VINE_SPIN,
   rollers: ROLLER_SPIN,
 };
@@ -157,6 +159,7 @@ export class HazardSystem {
           break;
         }
         case 'flameJets':
+        case 'dragonFire':
         case 'lasers': {
           const at = def.at[i];
           this.place(p, at, 0, 0);
@@ -189,7 +192,8 @@ export class HazardSystem {
           break;
         }
         case 'boulders':
-        case 'lavaBombs': {
+        case 'lavaBombs':
+        case 'oilBombs': {
           const at = def.at[i];
           const tt = t + 10 + (i * def.period) / def.at.length;
           const cycle = Math.floor(tt / def.period);
@@ -230,7 +234,7 @@ export class HazardSystem {
           this.swirl(p, s, dt);
           continue;
         }
-        if (p.kind === 'boulders' || p.kind === 'lavaBombs') this.pushOut(p, s);
+        if (p.kind === 'boulders' || p.kind === 'lavaBombs' || p.kind === 'oilBombs') this.pushOut(p, s);
         if (this.cooldown.has(s)) continue;
         this.cooldown.set(s, HIT_COOLDOWN);
         if (p.kind === 'tumbleweeds') {
@@ -248,8 +252,8 @@ export class HazardSystem {
   /** Circles for CPU avoidance, including boulders about to land. */
   obstacles(out: { x: number; z: number; r: number; vx: number; vz: number }[]): void {
     for (const p of this.poses) {
-      if (p.kind === 'flameJets' || p.kind === 'lasers') continue; // the whole road: nothing to steer around
-      const falling = p.kind === 'boulders' || p.kind === 'lavaBombs';
+      if (p.kind === 'flameJets' || p.kind === 'dragonFire' || p.kind === 'lasers') continue; // the whole road: nothing to steer around
+      const falling = p.kind === 'boulders' || p.kind === 'lavaBombs' || p.kind === 'oilBombs';
       if (falling ? p.phase > BOULDER_STAGES.crumble || p.phase < BOULDER_STAGES.fall * 0.5 : !p.active) continue;
       if (p.kind === 'snakes') {
         // The body trails the head: aim to miss its middle.
@@ -285,7 +289,7 @@ export class HazardSystem {
    * thin sheet across the road; everything else is a circle.
    */
   private distance(p: HazardPose, s: KartState): number {
-    if (p.kind === 'flameJets' || p.kind === 'lasers') {
+    if (p.kind === 'flameJets' || p.kind === 'dragonFire' || p.kind === 'lasers') {
       const fx = Math.sin(p.heading);
       const fz = Math.cos(p.heading);
       const along = Math.abs((s.x - p.x) * fx + (s.z - p.z) * fz);

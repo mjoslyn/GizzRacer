@@ -1,7 +1,8 @@
 import { AUTOPILOT_SKILL, CpuDriver, type CpuSkill, type Obstacle } from '../ai/cpuDriver';
 import { HazardSystem } from '../items/hazards';
-import { CANNON_SPEED_MUL, CANNON_SPIN, ItemSystem, type ItemEvent, type ItemHolder, type ItemKind } from '../items/items';
+import { CANNON_MIN_TIME, CANNON_PAST_MAX, CANNON_PAST_MIN, CANNON_SPEED_MUL, CANNON_SPIN, CANNON_TIME, ItemSystem, type ItemEvent, type ItemHolder, type ItemKind } from '../items/items';
 import { NEUTRAL_INPUT, type InputFrame } from './inputFrame';
+import { seededRandom } from './math';
 import { unpackKart } from '../net/wire';
 import { KART_RADIUS, copyKartState, createKartState, respawnKart, spinOut, stepKart, type KartState, type StepEvents } from '../physics/kart';
 import { kartParams, type EngineClass, type KartParams, type RacerDef } from '../physics/racers';
@@ -52,6 +53,8 @@ export class RaceKart implements ItemHolder {
   item: ItemKind | null = null;
   rolling = 0;
   held = 0;
+  /** In the Woo Cannon: the kart it's chasing, and how far past it to fly before letting go. */
+  cannonGoal: { target: RaceKart; past: number } | null = null;
   /**
    * Online: this kart is driven somewhere else (another player, or the room's
    * CPU on a client). It isn't simulated here: each step it takes the state
@@ -128,6 +131,7 @@ export class Race {
   private readonly obstacles: Obstacle[] = [];
   /** Karts knocked aside by a Woo Cannon this step, reported with the item events. */
   private readonly cannonHits: ItemEvent[] = [];
+  private readonly cannonRand: () => number;
 
   constructor(
     readonly track: Track,
@@ -137,6 +141,7 @@ export class Race {
     readonly laps = track.def.laps,
   ) {
     this.items = new ItemSystem(track, seed, items);
+    this.cannonRand = seededRandom(seed * 7919 + 3);
     this.hazards = new HazardSystem(track);
     this.hazards.update(this.time);
   }
@@ -202,7 +207,11 @@ export class Race {
     this.events = this.remoteItems ? [] : this.items.update(dt, this.karts, use);
     this.events.push(...this.cannonHits);
     this.cannonHits.length = 0;
-    for (const e of this.events) if (e.type === 'use') (e.kart as RaceKart).driver?.forgetItem();
+    for (const e of this.events) {
+      if (e.type !== 'use') continue;
+      (e.kart as RaceKart).driver?.forgetItem();
+      if (e.item === 'wooCannon') this.aimCannon(e.kart as RaceKart);
+    }
     this.hazards.update(this.time);
     if (this.started) {
       // Hazards hit the karts simulated here; remote ones are hit where they're driven.
@@ -219,6 +228,17 @@ export class Race {
     this.obstacles.length = 0;
     this.hazards.obstacles(this.obstacles);
     for (const m of this.items.mines) this.obstacles.push({ x: m.x, z: m.z, r: 1.2, vx: 0, vz: 0 });
+  }
+
+  /**
+   * Where a Woo Cannon is headed: the pack (the kart in the middle of the
+   * field, or the one just ahead when that's further up), and a varying
+   * distance past it.
+   */
+  aimCannon(kart: RaceKart): void {
+    const place = Math.max(1, Math.min(kart.position - 1, Math.ceil(this.karts.length / 2)));
+    const target = this.karts.find((k) => k.position === place && k !== kart);
+    kart.cannonGoal = target ? { target, past: CANNON_PAST_MIN + this.cannonRand() * (CANNON_PAST_MAX - CANNON_PAST_MIN) } : null;
   }
 
   /**
@@ -249,6 +269,9 @@ export class Race {
     s.trackHint = Math.min(sp.count - 1, Math.floor((s1 / L) * sp.count));
     Object.assign(s, { speed, vy: 0, extX: 0, extZ: 0, grounded: false, steer: 0, slip: 0, driftDir: 0, driftArmed: false, driftCharge: 0, boostTime: 0, spinTime: 0, spinAngle: 0, wobbleTime: 0, slowTime: 0 });
     s.cannonTime = Math.max(0, s.cannonTime - dt);
+    // Caught the pack and gone far enough past it: let go.
+    const goal = kart.cannonGoal;
+    if (goal && CANNON_TIME - s.cannonTime >= CANNON_MIN_TIME && kart.distance >= goal.target.distance + goal.past) s.cannonTime = 0;
     s.invulnTime = Math.max(s.invulnTime, s.cannonTime + 0.8);
     if (s.cannonTime > 0) return;
     const main = this.track.main;
@@ -257,6 +280,7 @@ export class Race {
       return;
     }
     // Out of the barrel at top speed with a little boost; it drops the last metre onto the road.
+    kart.cannonGoal = null;
     s.speed = kart.params.topSpeed;
     s.boostTime = CANNON_EXIT_BOOST;
   }

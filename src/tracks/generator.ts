@@ -9,7 +9,7 @@ import { Track, type HazardDef, type Landmark, type TrackDef } from './track';
  */
 
 export type GenTheme = TrackDef['theme'];
-export const GEN_THEMES: readonly GenTheme[] = ['desert', 'speedway', 'volcano', 'jungle', 'lagoon', 'glacier', 'neon', 'dream'];
+export const GEN_THEMES: readonly GenTheme[] = ['desert', 'speedway', 'volcano', 'jungle', 'lagoon', 'glacier', 'neon', 'dream', 'petro'];
 export const GEN_THEME_NAMES: Record<GenTheme, string> = {
   desert: 'Desert',
   speedway: 'Speedway',
@@ -19,6 +19,7 @@ export const GEN_THEME_NAMES: Record<GenTheme, string> = {
   glacier: 'Glacier',
   neon: 'Neon City',
   dream: 'Sky',
+  petro: 'Petrodragonic',
 };
 export type GenLength = 'short' | 'medium' | 'long';
 export const GEN_LENGTHS: readonly GenLength[] = ['short', 'medium', 'long'];
@@ -45,7 +46,7 @@ interface Palette {
   deck: RoadSurface;
   /** Other surfaces some sections take instead (ice on the glacier). */
   alt?: RoadSurface;
-  liquid?: 'water' | 'lava';
+  liquid?: 'water' | 'lava' | 'oil';
   hazards: HazardKind[];
   start: Landmark['kind'];
   landmarks: Landmark['kind'][];
@@ -144,6 +145,18 @@ const PALETTES: Record<GenTheme, Palette> = {
     tallWalls: 1.2,
     places: ['Butterfly', 'Cloud', 'Chrysalis', 'Starlight', 'Pastel', 'Daydream', 'Halo'],
     music: { lap: 'butterfly-skyway', finalLap: 'butterfly-skyway-final-lap' },
+  },
+  petro: {
+    surface: 'rock',
+    deck: 'rock',
+    alt: 'oil',
+    liquid: 'oil',
+    hazards: ['oilBombs', 'dragonFire'],
+    start: 'dragonGate',
+    landmarks: ['dragonFlight'],
+    tallWalls: 5,
+    places: ['Wyrm', 'Derrick', 'Ashen', 'Scorch', 'Brimstone', 'Crude', 'Cinder', 'Talon', 'Doom'],
+    music: { lap: 'volcano-fortress' },
   },
 };
 
@@ -455,9 +468,11 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
         hazards.push({ kind, at: at(count - 1), period: 5 });
         break;
       case 'lavaBombs':
+      case 'oilBombs':
         hazards.push({ kind, at: at(count - 1), period: 6 });
         break;
       case 'flameJets':
+      case 'dragonFire':
         hazards.push({ kind, at: at(count), period: 3.2 });
         break;
       case 'lasers':

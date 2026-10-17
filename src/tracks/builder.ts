@@ -7,8 +7,8 @@ export interface Pose {
   h: number;
 }
 
-/** How the road looks; 'ice' also slides (physics/kart.ts). */
-export type RoadSurface = 'asphalt' | 'salt' | 'rock' | 'sand' | 'boards' | 'ice' | 'neon' | 'rainbow';
+/** How the road looks; 'ice' and 'oil' also slide (physics/kart.ts). */
+export type RoadSurface = 'asphalt' | 'salt' | 'rock' | 'sand' | 'boards' | 'ice' | 'neon' | 'rainbow' | 'oil';
 
 export interface SectionProps {
   halfWidth: number;
@@ -47,7 +47,7 @@ export interface PitDef {
   halfWidth: number;
   depth: number;
   /** What the pit is full of, for looks; karts fall in either way. */
-  liquid?: 'water' | 'lava';
+  liquid?: 'water' | 'lava' | 'oil';
 }
 
 const INTEGRATION_STEP = 0.25;

@@ -1064,3 +1064,53 @@ export function chevronSignTexture(): THREE.CanvasTexture {
   ctx.strokeRect(4, 4, 248, 120);
   return finish(c, false);
 }
+
+/** Petrodragonic ground: cracked, oil-soaked earth, black puddles with a rainbow sheen, embers in the cracks. */
+export function oilEarthTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 5, 401);
+  const pools = fbm(S, 3, 3, 402);
+  paint(ctx, S, S, (x, y, i) => {
+    if (pools[i] > 0.62) {
+      // A slick: near black, a faint oily rainbow where it thins at the rim.
+      const rim = Math.max(0, 1 - (pools[i] - 0.62) * 12);
+      const hue = (x + y) * 0.05 + n[i] * 9;
+      return [8 + rim * (40 + 30 * Math.sin(hue)), 6 + rim * (30 + 30 * Math.sin(hue + 2)), 10 + rim * (45 + 30 * Math.sin(hue + 4))];
+    }
+    return mix([28, 20, 18], [62, 44, 34], n[i]);
+  });
+  cracks(ctx, S, 26, 'rgba(0,0,0,0.85)', 3, 403);
+  cracks(ctx, S, 8, 'rgba(255,90,20,0.55)', 1.2, 404);
+  return finish(c);
+}
+
+/** An oil road: wet black tarmac with streaks of sheen; it slides like ice. */
+export function oilRoadTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 3, 4, 411);
+  const streak = fbm(S, 2, 3, 412);
+  paint(ctx, S, S, (x, y, i) => {
+    const sheen = Math.max(0, streak[i] - 0.55) * 4;
+    const hue = y * 0.03 + x * 0.01 + n[i] * 6;
+    const base = 14 + n[i] * 16;
+    return [base + sheen * (50 + 40 * Math.sin(hue)), base + sheen * (40 + 40 * Math.sin(hue + 2.1)), base + 4 + sheen * (60 + 40 * Math.sin(hue + 4.2))];
+  });
+  return finish(c);
+}
+
+/** Rusted sheet metal for barriers: orange-brown scale over dark steel, rivet rows. */
+export function rustTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 5, 421);
+  paint(ctx, S, S, (_x, _y, i) => (n[i] > 0.5 ? mix([70, 38, 22], [150, 70, 30], (n[i] - 0.5) * 2) : mix([30, 28, 30], [70, 38, 22], n[i] * 2)));
+  ctx.fillStyle = 'rgba(20,14,12,0.9)';
+  for (let x = 8; x < S; x += 32) for (const y of [12, S - 12]) {
+    ctx.beginPath();
+    ctx.arc(x, y, 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  return finish(c);
+}
