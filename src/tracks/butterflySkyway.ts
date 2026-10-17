@@ -12,9 +12,12 @@ const FINISH = 60;
  * Butterfly swarms buffet karts toward the open edges.
  */
 export function buildButterflySkyway(): TrackDef {
-  const b = new TrackBuilder(START, 'Cloud Nine', { halfWidth: 11, wallHeight: 1.2, surface: 'rainbow' });
+  // Open edges (no walls) where a mistake costs a fall: the straights, the leap and the S-bends home.
+  const b = new TrackBuilder(START, 'Cloud Nine', { halfWidth: 11, surface: 'rainbow' });
   b.scale = K;
-  b.straight(70).arc(40, 120);
+  b.straight(70);
+  b.section('Cloud Nine Bend', { halfWidth: 11, wallHeight: 1.2, surface: 'rainbow' });
+  b.arc(40, 120);
 
   b.section('Butterfly Garden', { halfWidth: 9.5, wallHeight: 1.2, surface: 'rainbow' });
   b.mark('garden');
@@ -22,7 +25,7 @@ export function buildButterflySkyway(): TrackDef {
   b.section('Garden Bend', { halfWidth: 10, wallHeight: 1.2, surface: 'rainbow' });
   b.arc(38, 120);
 
-  b.section('Star Leap', { halfWidth: 9, wallHeight: 1.2, surface: 'rainbow' });
+  b.section('Star Leap', { halfWidth: 9, surface: 'rainbow' });
   b.mark('leap');
   b.straight(20).elevate(0).rise(20, 3);
   b.gap(18, 30);
@@ -38,7 +41,7 @@ export function buildButterflySkyway(): TrackDef {
   b.section('Final Glide', { halfWidth: 11, wallHeight: 1.2, surface: 'rainbow' });
   b.mark('glide');
   b.turnTo(offsetPose(START, -FINISH * K), 40);
-  b.section('Finish Straight', { halfWidth: 11, wallHeight: 1.2, surface: 'rainbow' });
+  b.section('Finish Straight', { halfWidth: 11, surface: 'rainbow' });
   b.straight(FINISH);
 
   const main = b.finish(true);

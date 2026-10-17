@@ -69,7 +69,7 @@ export interface StepEvents {
  * Bump whenever kart physics, racer stats or a track layout change lap
  * times: online leaderboards and ghosts are kept per version.
  */
-export const PHYSICS_VERSION = 2;
+export const PHYSICS_VERSION = 3;
 export const KART_RADIUS = 1;
 export const GRAVITY = 30;
 export const HOP_VELOCITY = 4.5;
@@ -108,8 +108,12 @@ const REVERSE_ACCEL = 10;
 const DRIFT_SLIP_ANGLE = 0.45;
 const SLIP_RESPONSE = 3;
 const EXT_DAMPING = 4;
-/** On ice, the share of each turn's momentum that keeps going the old way. */
-const ICE_SLIDE = 0.45;
+/**
+ * The share of each turn's momentum that keeps going the old way, by
+ * surface: karts skid wide through every turn, a little on the road, more
+ * on dirt, a lot on ice.
+ */
+const SLIDE: Record<SurfaceType, number> = { road: 0.2, boost: 0.2, offroad: 0.3, ice: 0.45 };
 const WALL_SPEED_LOSS = 0.7;
 const WALL_BOUNCE = 4;
 
@@ -269,10 +273,11 @@ export function stepKart(s: KartState, input: InputFrame, p: KartParams, env: Dr
   // Translate.
   const fx = Math.sin(s.heading);
   const fz = Math.cos(s.heading);
-  if (s.grounded && s.surface === 'ice' && turned !== 0) {
-    // Ice: the kart turns but its momentum doesn't all follow, so it slides wide.
-    s.extX += (Math.sin(s.heading + turned) - fx) * s.speed * ICE_SLIDE;
-    s.extZ += (Math.cos(s.heading + turned) - fz) * s.speed * ICE_SLIDE;
+  if (s.grounded && turned !== 0) {
+    // The kart turns but its momentum doesn't all follow, so it skids wide.
+    const slide = SLIDE[s.surface];
+    s.extX += (Math.sin(s.heading + turned) - fx) * s.speed * slide;
+    s.extZ += (Math.cos(s.heading + turned) - fz) * s.speed * slide;
   }
   s.x += (fx * s.speed + s.extX) * dt;
   s.z += (fz * s.speed + s.extZ) * dt;

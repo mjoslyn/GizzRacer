@@ -874,3 +874,30 @@ export function wingTexture(): THREE.CanvasTexture {
   }
   return finish(c, false);
 }
+
+/** The swirl inside a Nonagon gate: nine rainbow arms spiralling into a bright core. */
+export function portalTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const h = S / 2;
+  ctx.fillStyle = '#1a0630';
+  ctx.fillRect(0, 0, S, S);
+  for (let arm = 0; arm < 9; arm++) {
+    for (let t = 0; t < 1; t += 0.004) {
+      const a = (arm / 9) * Math.PI * 2 + t * Math.PI * 3.2;
+      const r = t * h;
+      ctx.fillStyle = `hsl(${(arm * 40 + t * 220) % 360}, 95%, ${55 + (1 - t) * 20}%)`;
+      ctx.beginPath();
+      ctx.arc(h + Math.cos(a) * r, h + Math.sin(a) * r, 2 + t * 10, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  const core = ctx.createRadialGradient(h, h, 0, h, h, h);
+  core.addColorStop(0, 'rgba(255,255,255,1)');
+  core.addColorStop(0.18, 'rgba(255,240,255,0.7)');
+  core.addColorStop(0.5, 'rgba(255,255,255,0)');
+  core.addColorStop(1, 'rgba(10,0,20,0.6)');
+  ctx.fillStyle = core;
+  ctx.fillRect(0, 0, S, S);
+  return finish(c, false);
+}

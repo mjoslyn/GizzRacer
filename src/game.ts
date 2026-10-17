@@ -518,6 +518,11 @@ function step(dt: number): void {
   const events = race.step(dt, inputs);
   events.forEach((ev, i) => {
     if (ev.landed > 3) views[i].impact(ev.landed);
+    if (ev.wallHit > 0.2) views[i].collide(ev.wallHit);
+    const k = race.karts[i];
+    if (k.bump > 3) views[i].collide(Math.min(1.5, k.bump / 8), k.bumpX, k.bumpZ);
+    // Back from a fall: through the Nonagon gate.
+    if (k.respawned) views[i].restore(k.state);
   });
   if (!player) {
     // Attract mode: once someone wins, start another heat.
@@ -720,7 +725,8 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
   if (input.consumePause() && mode === 'race') requestPause(!loop.paused);
   // A phone turned upright mid-race pauses; Resume once it's back on its side.
   if (screenFit.portrait && mode === 'race' && !loop.paused) requestPause(true);
-  const dt = loop.paused ? 0 : frameDt;
+  // A debug freeze (gizz.freeze) still animates the karts, so poses can be inspected.
+  const dt = loop.paused && !frozen ? 0 : frameDt;
   elapsed += dt;
   // A slow frame (or a stalled tab) mustn't leave me racing in the past: keep up with the room's clock.
   if (online && !loop.paused && race.time > 0) {
@@ -1081,6 +1087,10 @@ Object.assign(window, {
     },
     get race() {
       return race;
+    },
+    /** The kart views (testing animations). */
+    get views() {
+      return views;
     },
     get mode() {
       return mode;

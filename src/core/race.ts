@@ -39,6 +39,10 @@ export class RaceKart implements ItemHolder {
   finishTime: number | null = null;
   fallTime = 0;
   respawned = false;
+  /** This step's hardest bump from another kart (impulse, m/s) and the way to it (world), for views. */
+  bump = 0;
+  bumpX = 0;
+  bumpZ = 0;
   item: ItemKind | null = null;
   rolling = 0;
   held = 0;
@@ -251,6 +255,7 @@ export class Race {
   /** Karts are discs; heavier ones shove lighter ones further (spec section 4). */
   private bumps(): void {
     const r2 = KART_RADIUS * 2;
+    for (const k of this.karts) k.bump = 0;
     for (let i = 0; i < this.karts.length; i++) {
       for (let j = i + 1; j < this.karts.length; j++) {
         const a = this.karts[i];
@@ -282,6 +287,8 @@ export class Race {
         const j_ = (Math.max(closing, 0) * (1 + BUMP_RESTITUTION) + BUMP_MIN) / total;
         if (ia) shove(sa, -nx * j_ * ia, -nz * j_ * ia);
         if (ib) shove(sb, nx * j_ * ib, nz * j_ * ib);
+        noteBump(a, j_ * Math.max(ia, ib), nx, nz);
+        noteBump(b, j_ * Math.max(ia, ib), -nx, -nz);
       }
     }
   }
@@ -314,3 +321,10 @@ export function ordinal(n: number): string {
   return `${n}${['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'}`;
 }
 
+/** Keeps a kart's hardest bump of the step, pointing at what it hit. */
+function noteBump(k: RaceKart, impulse: number, towardX: number, towardZ: number): void {
+  if (impulse <= k.bump) return;
+  k.bump = impulse;
+  k.bumpX = towardX;
+  k.bumpZ = towardZ;
+}
