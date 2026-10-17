@@ -133,18 +133,25 @@ export class SettingsScreen {
     const html = `
       <div class="lobby-panel settings-panel">
         <div class="lobby-title hud-big">SETTINGS</div>
-        <div class="lobby-row"><span class="lobby-label">Music</span>${arrows('music', pct(s.music))}</div>
-        <div class="lobby-row"><span class="lobby-label">Effects</span>${arrows('sfx', pct(s.sfx))}</div>
-        <div class="lobby-row"><span class="lobby-label">Throttle</span>${toggle('auto', s.autoAccelerate, s.autoAccelerate ? 'Automatic' : 'Manual')}</div>
-        ${
-          this.tilt.available
-            ? `<div class="settings-group">Phone steering</div>
-        <div class="lobby-row"><span class="lobby-label">Tilt</span>${toggle('tilt', s.tilt)}</div>
-        <div class="lobby-row${s.tilt ? '' : ' off'}"><span class="lobby-label">Sensitivity</span>${arrows('range', sensitivity)}</div>
-        <div class="lobby-row${s.tilt ? '' : ' off'}"><span class="lobby-label">Invert</span>${toggle('invert', s.tiltInvert)}</div>
-        <button class="settings-recenter" data-act="recenter"${s.tilt ? '' : ' disabled'}>Recentre tilt</button>`
-            : ''
-        }
+        <div class="settings-cols">
+          <div class="settings-col">
+            <div class="settings-group">Sound and driving</div>
+            <div class="lobby-row"><span class="lobby-label">Music</span>${arrows('music', pct(s.music))}</div>
+            <div class="lobby-row"><span class="lobby-label">Effects</span>${arrows('sfx', pct(s.sfx))}</div>
+            <div class="lobby-row"><span class="lobby-label">Throttle</span>${toggle('auto', s.autoAccelerate, s.autoAccelerate ? 'Automatic' : 'Manual')}</div>
+          </div>
+          ${
+            this.tilt.available
+              ? `<div class="settings-col">
+            <div class="settings-group">Phone steering</div>
+            <div class="lobby-row"><span class="lobby-label">Tilt</span>${toggle('tilt', s.tilt)}</div>
+            <div class="lobby-row${s.tilt ? '' : ' off'}"><span class="lobby-label">Sensitivity</span>${arrows('range', sensitivity)}</div>
+            <div class="lobby-row${s.tilt ? '' : ' off'}"><span class="lobby-label">Invert</span>${toggle('invert', s.tiltInvert)}</div>
+            <button class="settings-recenter" data-act="recenter"${s.tilt ? '' : ' disabled'}>Recentre tilt</button>
+          </div>`
+              : ''
+          }
+        </div>
         ${this.status ? `<div class="lobby-status">${this.status}</div>` : ''}
         <button class="lobby-big hud-big" data-act="done">DONE</button>
       </div>`;
