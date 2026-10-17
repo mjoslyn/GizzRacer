@@ -901,3 +901,166 @@ export function portalTexture(): THREE.CanvasTexture {
   ctx.fillRect(0, 0, S, S);
   return finish(c, false);
 }
+
+/** Metal-flake drum wrap: a base colour glittering with flecks. */
+export function sparkleTexture(base: RGB): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const rand = seededRandom(301);
+  const n = fbm(S, 4, 3, 302);
+  paint(ctx, S, S, (_x, _y, i) => {
+    const r = rand();
+    const flake = r > 0.94 ? 1.7 : r > 0.8 ? 1.25 : r < 0.08 ? 0.6 : 1;
+    return shade(base, flake * (0.85 + n[i] * 0.3)).map((v) => Math.min(255, v)) as RGB;
+  });
+  return finish(c);
+}
+
+/** Rubber tank tread: raised blocks across the band, grooves between. */
+export function treadTexture(): THREE.CanvasTexture {
+  const S = 128;
+  const [c, ctx] = canvas(S);
+  ctx.fillStyle = '#141414';
+  ctx.fillRect(0, 0, S, S);
+  for (let y = 0; y < S; y += 16) {
+    const g = ctx.createLinearGradient(0, y, 0, y + 12);
+    g.addColorStop(0, '#5a5a5a');
+    g.addColorStop(1, '#262626');
+    ctx.fillStyle = g;
+    ctx.fillRect(6, y + 2, S - 12, 10);
+    ctx.fillStyle = '#8a8a8a';
+    ctx.fillRect(S / 2 - 6, y + 4, 12, 6);
+  }
+  return finish(c);
+}
+
+/** A toadstool cap: `base` with soft pale spots, for a sphere's UVs. */
+export function spotsTexture(base: string, spot: string, count = 18): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  ctx.fillStyle = base;
+  ctx.fillRect(0, 0, S, S);
+  const rand = seededRandom(311);
+  for (let k = 0; k < count; k++) {
+    const x = rand() * S;
+    const y = 20 + rand() * (S * 0.55);
+    const r = 8 + rand() * 14;
+    wrapStroke(ctx, S, () => {
+      const g = ctx.createRadialGradient(x, y, r * 0.2, x, y, r);
+      g.addColorStop(0, spot);
+      g.addColorStop(0.8, spot);
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.ellipse(x, y, r * 1.2, r, 0, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+  return finish(c);
+}
+
+/** One octave of organ keys, white with black sharps, along u. */
+export function keysTexture(): THREE.CanvasTexture {
+  const [c, ctx] = canvas(256, 64);
+  ctx.fillStyle = '#f4efe2';
+  ctx.fillRect(0, 0, 256, 64);
+  const w = 256 / 7;
+  ctx.strokeStyle = '#3a3428';
+  ctx.lineWidth = 2;
+  for (let k = 0; k <= 7; k++) {
+    ctx.beginPath();
+    ctx.moveTo(k * w, 0);
+    ctx.lineTo(k * w, 64);
+    ctx.stroke();
+  }
+  ctx.fillStyle = '#16120e';
+  for (const k of [1, 2, 4, 5, 6]) ctx.fillRect(k * w - w * 0.3, 0, w * 0.6, 38);
+  return finish(c);
+}
+
+/** Speaker grille cloth: a fine woven grid. */
+export function grilleTexture(): THREE.CanvasTexture {
+  const S = 128;
+  const [c, ctx] = canvas(S);
+  paint(ctx, S, S, (x, y) => {
+    const weave = (x % 4 < 2) !== (y % 4 < 2) ? 1 : 0.7;
+    return shade([58, 52, 46], weave);
+  });
+  return finish(c);
+}
+
+/** Hot rod flames on a transparent ground, licking back along u. */
+export function flameDecalTexture(inner = '#ffe14d', outer = '#ff4a1a'): THREE.CanvasTexture {
+  const [c, ctx] = canvas(256, 64);
+  const g = ctx.createLinearGradient(0, 0, 256, 0);
+  g.addColorStop(0, inner);
+  g.addColorStop(1, outer);
+  ctx.fillStyle = g;
+  ctx.strokeStyle = '#2a0a06';
+  ctx.lineWidth = 3;
+  ctx.lineJoin = 'round';
+  // Tongues from a wide root at the left to curled points on the right.
+  for (const [cy, h, tip, curl] of [[20, 14, 230, -10], [34, 16, 252, 6], [46, 12, 190, 10], [28, 10, 160, -14]]) {
+    ctx.beginPath();
+    ctx.moveTo(0, cy - h);
+    ctx.bezierCurveTo(tip * 0.4, cy - h, tip * 0.75, cy + curl - 6, tip, cy + curl);
+    ctx.bezierCurveTo(tip * 0.7, cy + curl + 4, tip * 0.35, cy + h, 0, cy + h);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  }
+  return finish(c, false);
+}
+
+/** A trackside billboard: a slogan in chunky type over a bold two-colour ground. */
+export function billboardTexture(text: string, bg: string, fg: string, ink = '#1a0a1a'): THREE.CanvasTexture {
+  const [c, ctx] = canvas(512, 192);
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, 512, 192);
+  ctx.fillStyle = fg;
+  for (let k = 0; k < 9; k++) {
+    ctx.beginPath();
+    ctx.moveTo(256, 96);
+    ctx.arc(256, 96, 400, (k / 9) * Math.PI * 2, ((k + 0.5) / 9) * Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 0.35;
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, 512, 192);
+  ctx.globalAlpha = 1;
+  ctx.font = 'italic 900 88px Impact, "Arial Black", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.lineWidth = 12;
+  ctx.strokeStyle = ink;
+  ctx.strokeText(text, 256, 100, 480);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(text, 256, 100, 480);
+  ctx.lineWidth = 10;
+  ctx.strokeRect(5, 5, 502, 182);
+  return finish(c, false);
+}
+
+/** A corner warning board: white chevrons pointing left on red. Flip it for a right-hander. */
+export function chevronSignTexture(): THREE.CanvasTexture {
+  const [c, ctx] = canvas(256, 128);
+  ctx.fillStyle = '#d8202a';
+  ctx.fillRect(0, 0, 256, 128);
+  ctx.fillStyle = '#ffffff';
+  for (let k = 0; k < 3; k++) {
+    const x = 40 + k * 70;
+    ctx.beginPath();
+    ctx.moveTo(x, 64);
+    ctx.lineTo(x + 40, 14);
+    ctx.lineTo(x + 66, 14);
+    ctx.lineTo(x + 26, 64);
+    ctx.lineTo(x + 66, 114);
+    ctx.lineTo(x + 40, 114);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 8;
+  ctx.strokeRect(4, 4, 248, 120);
+  return finish(c, false);
+}

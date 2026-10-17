@@ -8,7 +8,7 @@ import { buildVolcanoFortress } from '../src/tracks/volcanoFortress';
 import { buildPolygondwanalandJungle } from '../src/tracks/polygondwanalandJungle';
 import { BOX_RESPAWN, FUZZ_BOOST, ITEM_KINDS, MINE_WOBBLE, ROULETTE, TEMPO_SLOW, WAVE_RANGE, itemWeights, rollItem, type ItemKind } from '../src/items/items';
 import { createKartState, slowDown, spinOut, stepKart } from '../src/physics/kart';
-import { RACERS, kartParams } from '../src/physics/racers';
+import { FIELD_SIZE, RACERS, kartParams } from '../src/physics/racers';
 import { buildRattlesnakeRun } from '../src/tracks/rattlesnakeRun';
 import { Track } from '../src/tracks/track';
 import { seededRandom } from '../src/core/math';
@@ -288,7 +288,7 @@ describe('hazards', () => {
 describe('a CPU race with items', () => {
   it('CPUs pick up and use items, take hits, and still all finish', () => {
     const race = new Race(track, 7);
-    for (const r of RACERS) race.addKart(r, '150cc', CPU_SKILL['150cc']);
+    for (const r of RACERS.slice(0, FIELD_SIZE)) race.addKart(r, '150cc', CPU_SKILL['150cc']);
     const uses = new Map<ItemKind, number>();
     let pickups = 0;
     let hazardHits = 0;

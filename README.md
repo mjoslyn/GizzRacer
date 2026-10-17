@@ -19,7 +19,7 @@ npm run seed:ghosts  # post CPU starter ghosts to every leaderboard (SEED_URL=ht
 
 ## Status
 
-Milestones 1 to 7 are in (driving feel, the Rattlesnake Run greybox, CPU racers, items and hazards, menus and Grand Prix, the psychedelic art pass, all four Cup 1 tracks), a second cup of four tracks, plus unique racer models, themed worlds, and mobile play (touch controls, fullscreen, landscape). Online multiplayer (Milestone 8: Time Trial boards, rooms, live races) is in.
+Milestones 1 to 7 are in (driving feel, the Rattlesnake Run greybox, CPU racers, items and hazards, menus and Grand Prix, the psychedelic art pass, all four Cup 1 tracks), a second cup of four tracks, plus twelve racers with their own vehicles (karts, a rotor chopper, a hovercraft, a levitating lotus, a toadstool saucer, a monowheel, a drum tank; eight race at a time), themed worlds, and mobile play (touch controls, fullscreen, landscape). Online multiplayer (Milestone 8: Time Trial boards, rooms, live races) is in.
 
 - Fixed 60 Hz physics with interpolated rendering (`src/core/loop.ts`)
 - Keyboard + standard gamepad input as pure `InputFrame` data, auto-accelerate by default (`src/core/input.ts`)
@@ -48,6 +48,8 @@ Milestones 1 to 7 are in (driving feel, the Rattlesnake Run greybox, CPU racers,
 - Sound effects synthesized with Web Audio, no samples (`src/audio/sfx.ts`): engine pitched by speed with fuzz on boosts, tire squeal in drifts and hard turns, countdown, laps, drift sparks, hops, landings, walls, item pickups and uses, hits, and panned snake rattles and dust devil wind. The music sits under the effects and ducks for the big ones
 - Soundtrack from seqbaby (account `gizzracer`), looping per track with a faster cut on the final lap, a title theme and a podium loop (`src/audio/music.ts`)
 - Early-2000s look: procedural high-res textures, painted sky, lens flare, glossy karts, particle sparks, blob shadows, minimap, section banners
+- Trackside detail (`src/render/trackDetail.ts`): painted edge and centre lines, a rubbered racing line that swings to the inside of each bend, themed edge posts and lights (fence posts, marker poles, torches, buoys, snow poles, neon street lamps, floating stars), chevron boards on sharp corners, a grandstand with a bouncing crowd and waving flags by the start, billboards and ground cover
+- Scenery per theme (`src/render/trackView.ts`): saguaros, prickly pears, barrel cacti, skulls and hoodoos; fruit trees, hay bales, flower bushes and windmills; steaming lava pools, charred trees and basalt columns; giant flowers, glowing mushrooms and stone idols; stilt huts, rocking sailboats and gull rocks; igloos and snowmen; rooftop beacons and water tanks; floating islands and hot air balloons. A second, nearer ring of horizon silhouettes for depth
 
 Flow: title, then a picker (mode, track, racer, class). Grand Prix: race, results, cup standings, next race, and a podium after the fourth. Single Race and Time Trial: race, results, back to the picker.
 

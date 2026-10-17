@@ -3,7 +3,7 @@ import { CPU_SKILL } from '../src/ai/cpuDriver';
 import { NEUTRAL_INPUT } from '../src/core/input';
 import { PHYSICS_DT } from '../src/core/loop';
 import { COUNTDOWN, RUBBER_BAND_MAX, Race, ordinal } from '../src/core/race';
-import { RACERS } from '../src/physics/racers';
+import { FIELD_SIZE, RACERS } from '../src/physics/racers';
 import { buildRattlesnakeRun } from '../src/tracks/rattlesnakeRun';
 import { TRACK_LIST } from '../src/tracks/index';
 import { Track } from '../src/tracks/track';
@@ -12,7 +12,7 @@ const track = new Track(buildRattlesnakeRun());
 
 function cpuRace(engine: '50cc' | '100cc' | '150cc' = '100cc') {
   const race = new Race(track);
-  for (const r of RACERS) race.addKart(r, engine, CPU_SKILL[engine]);
+  for (const r of RACERS.slice(0, FIELD_SIZE)) race.addKart(r, engine, CPU_SKILL[engine]);
   return race;
 }
 
@@ -28,7 +28,7 @@ describe('race', () => {
 
   it('ranks karts 1..n with the grid order at the start', () => {
     const race = cpuRace();
-    expect(race.karts.map((k) => k.position).sort()).toEqual(RACERS.map((_, i) => i + 1));
+    expect(race.karts.map((k) => k.position).sort()).toEqual(RACERS.slice(0, FIELD_SIZE).map((_, i) => i + 1));
     expect(race.karts[0].position).toBe(1);
   });
 
@@ -88,7 +88,7 @@ describe('race', () => {
 describe.each(TRACK_LIST.map((t) => [t.name, t.build] as const))('%s with a full CPU field', (_name, build) => {
   it('every CPU laps it with items and hazards on, and no more than a fall or two', () => {
     const race = new Race(new Track(build()), 3);
-    for (const r of RACERS) race.addKart(r, '100cc', CPU_SKILL['100cc']);
+    for (const r of RACERS.slice(0, FIELD_SIZE)) race.addKart(r, '100cc', CPU_SKILL['100cc']);
     let respawns = 0;
     for (let t = 0; t < COUNTDOWN + 200 && race.karts.some((k) => k.laps.lap < 1); t += PHYSICS_DT) {
       race.step(PHYSICS_DT, []);

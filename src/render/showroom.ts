@@ -21,22 +21,30 @@ export function startShowroom(app: HTMLElement): void {
   scene.add(sun);
 
   const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 200);
-  camera.position.set(0, 4, 12.5);
-  camera.lookAt(0, 0.8, 0);
+  // `&racer=<id>` puts one racer on the turntable, close up.
+  const only = new URLSearchParams(location.search).get('racer');
+  const shown = only ? RACERS.filter((r) => r.id === only) : RACERS;
+  if (only) {
+    camera.position.set(0, 2.6, 6.5);
+    camera.lookAt(0, 0.9, 0);
+  } else {
+    camera.position.set(0, 6.5, 15);
+    camera.lookAt(0, 0.6, -2.4);
+  }
 
   const floor = new THREE.Mesh(new THREE.CircleGeometry(30, 48), new THREE.MeshLambertMaterial({ color: 0x3a2a4a }));
   floor.rotation.x = -Math.PI / 2;
   floor.position.y = -0.2;
   scene.add(floor);
 
-  const cols = 3;
+  const cols = Math.min(4, shown.length);
   const spacing = 4.4;
-  const stands = RACERS.map((racer, i) => {
+  const stands = shown.map((racer, i) => {
     const view = new KartView(racer);
     const col = i % cols;
     const row = Math.floor(i / cols);
     const x = (col - (cols - 1) / 2) * spacing;
-    const z = row * -4.2 + 2;
+    const z = only ? 0 : row * -4.2 + 2;
     const plinth = new THREE.Mesh(new THREE.CylinderGeometry(1.9, 2, 0.2, 32), new THREE.MeshPhongMaterial({ color: racer.color, shininess: 80 }));
     plinth.position.set(x, -0.1, z);
     scene.add(plinth, view.root, view.fx);

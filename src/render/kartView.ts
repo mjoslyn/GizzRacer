@@ -42,6 +42,17 @@ const TRICKS: Record<string, TrickMove> = {
   'neon-moth': (u, d) => [Math.sin(u * Math.PI * 6) * 0.15, d * u * TAU, Math.sin(u * Math.PI * 6) * 0.2, Math.sin(u * Math.PI) * 0.7],
   // A front flip.
   'cosmic-coyote': (u) => [u * TAU, 0, 0, Math.sin(u * Math.PI) * 0.9],
+  // A wheelie spin: the hoop rears up and pirouettes on its edge.
+  'mantis-shredder': (u, d) => [-Math.sin(u * Math.PI) * 0.6, d * u * TAU, 0, Math.sin(u * Math.PI) * 1.0],
+  // A drum roll: one slow turn bounced out in triplets.
+  'gator-drummer': (u, d) => [0, d * u * TAU, 0, Math.abs(Math.sin(u * Math.PI * 3)) * 0.6],
+  // A spinning top: three turns with a wobble that dies away.
+  'mushroom-sage': (u, d) => {
+    const wob = Math.sin(u * Math.PI) * 0.25;
+    return [Math.sin(u * TAU * 3) * wob, d * u * TAU * 3, Math.cos(u * TAU * 3) * wob, Math.sin(u * Math.PI) * 1.4];
+  },
+  // A twisting backflip, arms everywhere.
+  'octo-organist': (u, d) => [-u * TAU, 0, d * u * TAU, Math.sin(u * Math.PI) * 1.0],
 };
 const DEFAULT_TRICK: TrickMove = TRICKS['gila-rider'];
 
@@ -74,6 +85,11 @@ export class KartView {
   private readonly frontWheels: THREE.Object3D[] = [];
   private readonly wheels: { mesh: THREE.Object3D; radius: number }[] = [];
   private readonly spinners: THREE.Object3D[];
+  private readonly rotors: THREE.Object3D[];
+  private readonly hover: { bob: number; pads: THREE.Object3D[] } | null;
+  private readonly head: THREE.Object3D | null;
+  private readonly treads: { map: THREE.Texture; perMeter: number }[];
+  private readonly flappers: THREE.Object3D[];
   private readonly sparks: Spark[] = [];
   private readonly dust: Spark[] = [];
   private dustCursor = 0;
@@ -83,6 +99,8 @@ export class KartView {
   private readonly rearTrack: number;
   private readonly rearZ: number;
 
+  /** Offsets idle motion so a grid of the same racer doesn't bob in step. */
+  private readonly phase = Math.random() * Math.PI * 2;
   private roll = 0;
   private pitch = 0;
   private bounce = 0;
@@ -126,6 +144,11 @@ export class KartView {
     this.trickMove = TRICKS[racer.id] ?? DEFAULT_TRICK;
     this.body = model.body;
     this.spinners = model.spinners;
+    this.rotors = model.rotors ?? [];
+    this.hover = model.hover ?? null;
+    this.head = model.head ?? null;
+    this.treads = model.treads ?? [];
+    this.flappers = model.flappers ?? [];
     this.rearTrack = model.rearTrack;
     this.rearZ = model.rearZ;
 
@@ -135,11 +158,28 @@ export class KartView {
       const pivot = new THREE.Group();
       pivot.position.set(w.x, w.radius, w.z);
       const spin = new THREE.Group();
-      const tire = new THREE.Mesh(new THREE.CylinderGeometry(w.radius, w.radius, w.width, 18).rotateZ(Math.PI / 2), w.material ?? rubber);
-      const hub = new THREE.Mesh(new THREE.CylinderGeometry(w.radius * 0.5, w.radius * 0.5, w.width + 0.02, 10).rotateZ(Math.PI / 2), hubMat);
-      // A spoke so the spin reads.
-      const spoke = new THREE.Mesh(new THREE.BoxGeometry(w.width + 0.03, w.radius * 1.5, 0.06), hubMat);
-      spin.add(tire, hub, spoke);
+      if (w.ring) {
+        // A hoop the rider sits inside, with thin spokes to an empty middle.
+        const tube = w.width / 2;
+        spin.add(new THREE.Mesh(new THREE.TorusGeometry(w.radius - tube, tube, 10, 40).rotateY(Math.PI / 2), w.material ?? rubber));
+        spin.add(new THREE.Mesh(new THREE.TorusGeometry(w.radius - tube * 2.2, tube * 0.35, 6, 40).rotateY(Math.PI / 2), hubMat));
+      } else {
+        const tire = new THREE.Mesh(new THREE.CylinderGeometry(w.radius, w.radius, w.width, 18).rotateZ(Math.PI / 2), w.material ?? rubber);
+        const hub = new THREE.Mesh(new THREE.CylinderGeometry(w.radius * 0.5, w.radius * 0.5, w.width + 0.02, 10).rotateZ(Math.PI / 2), hubMat);
+        // Tread blocks round the tire and a spoke, so the spin reads.
+        const spoke = new THREE.Mesh(new THREE.BoxGeometry(w.width + 0.03, w.radius * 1.5, 0.06), hubMat);
+        const lug = new THREE.BoxGeometry(w.width * 0.92, 0.035, w.radius * 0.18);
+        const lugMat = w.material ?? rubber;
+        for (let k = 0; k < 14; k++) {
+          const a = (k / 14) * Math.PI * 2;
+          const m = new THREE.Mesh(lug, lugMat);
+          m.position.set(0, Math.cos(a) * w.radius, Math.sin(a) * w.radius);
+          m.rotation.x = -a;
+          spin.add(m);
+        }
+        const nut = new THREE.Mesh(new THREE.CylinderGeometry(w.radius * 0.14, w.radius * 0.14, w.width + 0.06, 6).rotateZ(Math.PI / 2), hubMat);
+        spin.add(tire, hub, spoke, nut);
+      }
       pivot.add(spin);
       this.root.add(pivot);
       this.wheels.push({ mesh: spin, radius: w.radius });
@@ -243,9 +283,11 @@ export class KartView {
       this.bounceVel += (-120 * this.bounce - 10 * this.bounceVel) * h;
       this.bounce += this.bounceVel * h;
     }
-    const rumble = s.surface === 'offroad' && s.grounded && Math.abs(s.speed) > 2 ? Math.sin(time * 55) * 0.03 : 0;
-    this.body.position.set(0, this.bounce * 0.08 + rumble, 0);
-    this.body.rotation.set(this.pitch, 0, this.roll);
+    // Flyers float over rough ground; they bank harder instead.
+    const rumble = !this.hover && s.surface === 'offroad' && s.grounded && Math.abs(s.speed) > 2 ? Math.sin(time * 55) * 0.03 : 0;
+    const bob = this.hover ? Math.sin(time * 3.1 + this.phase) * this.hover.bob : 0;
+    this.body.position.set(0, this.bounce * 0.08 + rumble + bob, 0);
+    this.body.rotation.set(this.pitch, 0, this.roll * (this.hover ? 1.8 : 1));
     this.animateDrift(s, frameDt, time);
     // Skidding: the body heels over toward the outside of the turn.
     this.body.rotation.z += -this.skidYaw * 0.35;
@@ -256,6 +298,19 @@ export class KartView {
     for (const w of this.wheels) w.mesh.rotation.x = this.wheelTravel / w.radius;
     for (const w of this.frontWheels) w.rotation.y = -s.steer * 0.4;
     for (const sp of this.spinners) sp.rotation.z += frameDt * (6 + Math.abs(s.speed) * 1.2);
+    for (const r of this.rotors) r.rotation.y += frameDt * (14 + Math.abs(s.speed) * 0.6);
+    for (const t of this.treads) t.map.offset.y = -this.wheelTravel * t.perMeter;
+    if (this.hover) {
+      const pulse = 1 + Math.sin(time * 9 + this.phase) * 0.12 + speedRatio * 0.25;
+      for (const p of this.hover.pads) p.scale.setScalar(pulse);
+    }
+    // Wings beat lazily at rest and hard under boost.
+    const beat = Math.sin(time * (s.boostTime > 0 ? 22 : 7 + speedRatio * 6) + this.phase);
+    for (const f of this.flappers) f.rotation.z = (f.userData.side as number) * (0.12 + beat * 0.3);
+    if (this.head) {
+      // Lean into the turn and look along it; tucked back under boost.
+      this.head.rotation.set(s.boostTime > 0 ? -0.18 : 0, -s.steer * 0.35 - s.driftDir * 0.15, this.roll * 1.6);
+    }
 
     const boosting = s.boostTime > 0;
     for (const f of this.flames) {
@@ -327,11 +382,11 @@ export class KartView {
       this.smokeAccum = 0;
       return;
     }
-    // Tire smoke off the outside rear wheel, thicker at higher tiers.
-    this.smokeAccum += dt * (14 + tier * 8);
+    // Tire smoke off the outside rear wheel, thicker at higher tiers; a flyer's downwash kicks up the ground instead.
+    this.smokeAccum += dt * (14 + tier * 8) * (this.hover ? 0.5 : 1);
     while (this.smokeAccum >= 1) {
       this.smokeAccum -= 1;
-      this.emitDust(-s.driftDir * this.rearTrack, (Math.random() - 0.5) * 1.5, 0.4 + Math.random() * 0.6, s, 0xeeeeee);
+      this.emitDust(-s.driftDir * this.rearTrack, (Math.random() - 0.5) * 1.5, 0.4 + Math.random() * 0.6, s, this.hover ? dustColor : 0xeeeeee);
     }
   }
 
@@ -402,7 +457,8 @@ export class KartView {
     const into = side !== 0 && Math.abs(side) > 0.3 ? Math.sign(side) : -Math.sign(s.steer);
     const target = into * 0.28 * k + Math.sin(time * 38) * 0.03 * k;
     this.skidYaw += (target - this.skidYaw) * damp(12, dt);
-    const skidding = s.grounded && s.surface !== 'offroad' && (k > 0.3 || s.driftDir !== 0) && Math.abs(s.speed) > 8;
+    // Nothing to mark the road with when nothing touches it.
+    const skidding = !this.hover && s.grounded && s.surface !== 'offroad' && (k > 0.3 || s.driftDir !== 0) && Math.abs(s.speed) > 8;
     if (skidding) {
       this.markAccum += dt * Math.abs(s.speed) * 0.9;
       while (this.markAccum >= 1) {

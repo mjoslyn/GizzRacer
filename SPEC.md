@@ -2,7 +2,7 @@
 
 ## 1. Overview
 - 3D arcade kart racer in the browser, built with Three.js
-- Single player vs CPU racers, one kart per racer so every kart looks different: 8 racers, so 7 CPUs. Online multiplayer deferred
+- Single player vs CPU racers, one kart per racer so every kart looks different: a roster of 12, eight to a race, so 7 CPUs drawn from the rest (a new draw each time the picker starts a race or cup; a restart keeps the field). Online multiplayer deferred
 - Psychedelic garage-rock world with original characters
 - Target: 60 fps on a mid-range laptop, Chrome/Firefox/Safari, keyboard, gamepad and touch (phones and tablets, iOS included)
 - Phones play in landscape, fullscreen where the browser allows it (installable web app for iPhone)
@@ -46,10 +46,14 @@ Touch: drag on the left half to steer (analog), DRIFT and BRAKE buttons on the r
 | Fuzz Golem | 5 | 1 | 5 | 1 | 3 |
 | Neon Moth | 2 | 5 | 2 | 4 | 5 |
 | Cosmic Coyote | 4 | 2 | 3 | 2 | 3 |
+| Mantis Shredder | 3 | 4 | 2 | 3 | 4 |
+| Gator Drummer | 4 | 2 | 4 | 2 | 3 |
+| Mushroom Sage | 3 | 3 | 2 | 4 | 4 |
+| Octo Organist | 4 | 2 | 3 | 2 | 3 |
 
 Tuned with `npm run balance` (all-CPU races on every track at 100cc and 150cc) so no stat dominates: average finishing places run from about 3.5 to 5.5 of 8, and every racer reaches the podium. A speed point is worth about 2.7% top speed.
 
-All designs are original. No likenesses of band members or album art. Every racer has their own character model and kart body (render/racerModels.ts).
+All designs are original. No likenesses of band members or album art. Every racer has their own character model and vehicle (render/racerModels.ts), and not every vehicle is a kart: Gila Rider flies a rotor chopper, Swamp Witch a fan hovercraft, Microtonal Monk a levitating lotus, Mushroom Sage a toadstool saucer, Mantis Shredder rides a monowheel and Gator Drummer a tracked kick-drum tank. All of them drive with the same kart physics; the difference is in the look (hovering craft bob and bank, leave no skid marks, and their drift kicks up ground instead of tire smoke). Drivers lean into turns and look where they steer, and every racer has their own trick move.
 
 ## 6. Items
 | Item | Effect | Odds bias |

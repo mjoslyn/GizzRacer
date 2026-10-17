@@ -1,3 +1,5 @@
+import { seededRandom } from '../core/math';
+
 /** Racer stats on a 1..5 scale (spec section 5). */
 export interface RacerStats {
   speed: number;
@@ -24,7 +26,25 @@ export const RACERS: readonly RacerDef[] = [
   { id: 'fuzz-golem', name: 'Fuzz Golem', stats: { speed: 5, accel: 1, weight: 5, handling: 1, drift: 3 }, color: 0xc23b8c, accent: 0xffcc33 },
   { id: 'neon-moth', name: 'Neon Moth', stats: { speed: 2, accel: 5, weight: 2, handling: 4, drift: 5 }, color: 0x3ad8ff, accent: 0xff5ad0 },
   { id: 'cosmic-coyote', name: 'Cosmic Coyote', stats: { speed: 4, accel: 2, weight: 3, handling: 2, drift: 3 }, color: 0x2a2a6a, accent: 0xff9a1f },
+  { id: 'mantis-shredder', name: 'Mantis Shredder', stats: { speed: 3, accel: 4, weight: 2, handling: 3, drift: 4 }, color: 0x9ad83a, accent: 0xff3a6a },
+  { id: 'gator-drummer', name: 'Gator Drummer', stats: { speed: 4, accel: 2, weight: 4, handling: 2, drift: 3 }, color: 0xb8202a, accent: 0xf2e6c8 },
+  { id: 'mushroom-sage', name: 'Mushroom Sage', stats: { speed: 3, accel: 3, weight: 2, handling: 4, drift: 4 }, color: 0x7a5adf, accent: 0xf4e8d0 },
+  { id: 'octo-organist', name: 'Octo Organist', stats: { speed: 4, accel: 2, weight: 3, handling: 2, drift: 3 }, color: 0xff7aa8, accent: 0x2ad8b0 },
 ];
+
+/** Karts in one race: the player (or the room's players) and CPUs drawn from the roster. */
+export const FIELD_SIZE = 8;
+
+/** `count` racers not in `taken`, drawn and ordered by `seed`: a seed always draws the same rivals. */
+export function pickRivals(taken: ReadonlySet<string>, count: number, seed: number): RacerDef[] {
+  const pool = RACERS.filter((r) => !taken.has(r.id));
+  const rand = seededRandom(seed);
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool.slice(0, Math.max(0, count));
+}
 
 export type EngineClass = '50cc' | '100cc' | '150cc';
 export const ENGINE_CLASSES: readonly EngineClass[] = ['50cc', '100cc', '150cc'];

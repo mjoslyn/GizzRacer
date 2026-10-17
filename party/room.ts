@@ -2,7 +2,7 @@ import { Server, getServerByName, type Connection, type WSMessage } from 'partys
 import { seededRandom } from '../src/core/math';
 import { ROOM_MAX, isRoomCode, type ClientMsg, type GridSlot, type RoomMember, type RoomSettings, type RoomStart, type RoomState, type ServerMsg } from '../src/net/protocol';
 import { RoomRace } from '../src/net/roomRace';
-import { ENGINE_CLASSES, RACERS } from '../src/physics/racers';
+import { ENGINE_CLASSES, FIELD_SIZE, RACERS, pickRivals } from '../src/physics/racers';
 import { TRACK_LIST } from '../src/tracks/index';
 
 /** Countdown to GO after the host presses start, in ms: time for every client to load the track. */
@@ -275,11 +275,12 @@ export class Room extends Server<Env> {
   }
 }
 
-/** Humans keep their racers; CPUs take the rest; the order is shuffled per race. */
+/** Humans keep their racers; CPUs drawn from the rest fill the field; the order is shuffled per race. */
 function grid(room: Saved): GridSlot[] {
   const humans = Object.entries(room.members).map(([playerId, m]) => ({ racerId: m.racerId, playerId }));
   const taken = new Set(humans.map((h) => h.racerId));
-  const slots: GridSlot[] = [...humans, ...RACERS.filter((r) => !taken.has(r.id)).map((r) => ({ racerId: r.id, playerId: null }))];
+  const cpus = pickRivals(taken, FIELD_SIZE - humans.length, room.races * 104729 + 17);
+  const slots: GridSlot[] = [...humans, ...cpus.map((r) => ({ racerId: r.id, playerId: null }))];
   const rand = seededRandom(room.races * 7919 + humans.length);
   for (let i = slots.length - 1; i > 0; i--) {
     const j = Math.floor(rand() * (i + 1));

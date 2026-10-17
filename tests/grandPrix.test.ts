@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { GP_POINTS, GrandPrix } from '../src/core/grandPrix';
-import { RACERS } from '../src/physics/racers';
+import { FIELD_SIZE, RACERS } from '../src/physics/racers';
 
 describe('grand prix', () => {
-  const grid = [...RACERS];
+  const grid = RACERS.slice(0, FIELD_SIZE);
 
   it('runs every track in order, then finishes', () => {
     const gp = new GrandPrix(grid, [0, 1, 2, 3]);
@@ -18,8 +18,8 @@ describe('grand prix', () => {
   it('scores 15, 12, 10, 8, 6, 4, 2, 1 by place', () => {
     const gp = new GrandPrix(grid, [0, 1]);
     gp.record(grid);
-    expect(gp.entries.map((e) => e.points)).toEqual(GP_POINTS.slice(0, RACERS.length));
-    expect(gp.entries.map((e) => e.gained)).toEqual(GP_POINTS.slice(0, RACERS.length));
+    expect(gp.entries.map((e) => e.points)).toEqual(GP_POINTS.slice(0, FIELD_SIZE));
+    expect(gp.entries.map((e) => e.gained)).toEqual(GP_POINTS.slice(0, FIELD_SIZE));
   });
 
   it('ranks by points, breaking ties on the latest race', () => {

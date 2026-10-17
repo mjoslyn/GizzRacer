@@ -2,12 +2,13 @@ import { it } from 'vitest';
 import { CPU_SKILL } from '../src/ai/cpuDriver';
 import { PHYSICS_DT } from '../src/core/loop';
 import { COUNTDOWN, Race } from '../src/core/race';
-import { RACERS } from '../src/physics/racers';
+import { FIELD_SIZE, RACERS } from '../src/physics/racers';
 import { TRACK_LIST } from '../src/tracks/index';
 import { Track } from '../src/tracks/track';
 
 /**
- * Balance report: every track, five seeds, 100cc and 150cc, all-CPU fields.
+ * Balance report: every track, five seeds, 100cc and 150cc, all-CPU fields
+ * of FIELD_SIZE drawn round the roster so every racer races about as often.
  * Prints average finishing place, wins and podiums per racer.
  * Run with `npm run balance` (not part of `npm test`).
  */
@@ -19,8 +20,8 @@ it('balance', () => {
     for (const [ti, track] of tracks.entries()) {
       for (const seed of [1, 2, 3, 4, 5]) {
         const race = new Race(track, seed * 97 + ti);
-        // Rotate the grid so no racer always starts in front.
-        const grid = RACERS.map((_, i) => RACERS[(i + seed + ti) % RACERS.length]);
+        // Rotate the field round the roster, and the grid within it, so no racer always starts in front.
+        const grid = Array.from({ length: FIELD_SIZE }, (_, i) => RACERS[(i + seed * 3 + ti * 5) % RACERS.length]);
         for (const r of grid) race.addKart(r, engine, CPU_SKILL[engine]);
         for (let t = 0; t < COUNTDOWN + 600 && !race.finished; t += PHYSICS_DT) race.step(PHYSICS_DT, []);
         race.results.forEach((k, i) => {

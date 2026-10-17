@@ -5,8 +5,8 @@ import type { PitDef, RoadSurface } from '../tracks/builder';
 import { inPit, type Ribbon, type Track } from '../tracks/track';
 import * as tex from './textures';
 import { THEMES, type Theme } from './themes';
+import { CURB_WIDTH, trackDetail } from './trackDetail';
 
-const CURB_WIDTH = 1.2;
 /** Meters of road per texture repeat along the track. */
 const ROAD_TILE = 14;
 /** Draw roads a hair above their physical height to stay clear of the ground. */
@@ -126,7 +126,8 @@ export function buildTrackView(track: Track): TrackView {
     }
   }
   if (!abyss) group.add(boundaryCliffs(track.def.bounds, mats));
-  group.add(decor(track, mats, theme));
+  group.add(trackDetail(track, theme, animated));
+  group.add(decor(track, mats, theme, animated));
   group.add(distant(theme));
 
   const skyMesh = group.children[0] as THREE.Mesh;
@@ -785,69 +786,99 @@ function boundaryCliffs(bounds: number, mats: Materials): THREE.Group {
   return g;
 }
 
-/** Silhouettes on the horizon, washed out by haze: mesas, hills, volcanoes or peaks. */
+/** Silhouettes on the horizon, washed out by haze: mesas, hills, volcanoes or peaks, in two rings for depth. */
 function distant(theme: Theme): THREE.Group {
   const g = new THREE.Group();
   const rand = seededRandom(5);
-  const mat = new THREE.MeshLambertMaterial({ color: theme.distant.color });
+  const far = new THREE.MeshLambertMaterial({ color: theme.distant.color });
+  // The nearer ring sits a little out of the haze: a touch darker and more saturated.
+  const near = new THREE.MeshLambertMaterial({ color: new THREE.Color(theme.distant.color).multiplyScalar(0.8) });
   const glowMat = new THREE.MeshBasicMaterial({ color: 0xff6a1a, fog: false });
-  for (let k = 0; k < 18; k++) {
-    const a = (k / 18) * Math.PI * 2 + rand() * 0.2;
-    const r = 800 + rand() * 300;
-    const h = 40 + rand() * 90;
-    const w = 60 + rand() * 140;
-    let mesh: THREE.Mesh;
-    switch (theme.distant.shape) {
-      case 'mesa':
-        mesh = new THREE.Mesh(new THREE.CylinderGeometry(w * 0.8, w, h, 7), mat);
-        mesh.position.y = h / 2 - 2;
-        break;
-      case 'hill':
-        mesh = new THREE.Mesh(new THREE.SphereGeometry(w, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), mat);
-        mesh.scale.y = (h / w) * 0.9;
-        break;
-      case 'volcano': {
-        const vh = h * 2;
-        mesh = new THREE.Mesh(new THREE.CylinderGeometry(w * 0.18, w, vh, 10), mat);
-        mesh.position.y = vh / 2 - 2;
-        const crater = new THREE.Mesh(new THREE.CircleGeometry(w * 0.16, 12), glowMat);
-        crater.rotation.x = -Math.PI / 2;
-        crater.position.y = vh / 2 + 0.5;
-        mesh.add(crater);
-        break;
-      }
-      case 'mountain':
-        mesh = new THREE.Mesh(new THREE.ConeGeometry(w, h * 2.2, 7), mat);
-        mesh.position.y = h * 1.1 - 2;
-        break;
-      case 'city': {
-        // A cluster of towers with lit windows.
-        mesh = new THREE.Mesh(new THREE.BoxGeometry(w * 0.3, h * 2, w * 0.3), mat);
-        mesh.position.y = h - 2;
-        for (let t = 0; t < 4; t++) {
-          const th = h * (0.8 + rand() * 1.8);
-          const tower = new THREE.Mesh(new THREE.BoxGeometry(w * 0.2, th, w * 0.2), mat);
-          tower.position.set((rand() - 0.5) * w, th / 2 - h, (rand() - 0.5) * w * 0.4);
-          mesh.add(tower);
+  const windowMats = [0xffd23a, 0xff3ad8, 0x3adcff].map((c) => new THREE.MeshBasicMaterial({ color: c, fog: false }));
+  for (const [ring, count, r0, rSpan, scale] of [[far, 18, 800, 300, 1], [near, 12, 560, 120, 0.6]] as const) {
+    const mat = ring;
+    for (let k = 0; k < count; k++) {
+      const a = (k / count) * Math.PI * 2 + rand() * 0.2 + (scale < 1 ? 0.13 : 0);
+      const r = r0 + rand() * rSpan;
+      const h = (40 + rand() * 90) * scale;
+      const w = (60 + rand() * 140) * scale;
+      let mesh: THREE.Mesh;
+      switch (theme.distant.shape) {
+        case 'mesa':
+          mesh = new THREE.Mesh(new THREE.CylinderGeometry(w * 0.8, w, h, 7), mat);
+          mesh.position.y = h / 2 - 2;
+          // A darker cap band, like the hard layer that made the mesa.
+          {
+            const cap = new THREE.Mesh(new THREE.CylinderGeometry(w * 0.8, w * 0.84, h * 0.12, 7), new THREE.MeshLambertMaterial({ color: new THREE.Color(theme.distant.color).multiplyScalar(0.7) }));
+            cap.position.y = h * 0.44;
+            mesh.add(cap);
+          }
+          break;
+        case 'hill':
+          mesh = new THREE.Mesh(new THREE.SphereGeometry(w, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), mat);
+          mesh.scale.y = (h / w) * 0.9;
+          break;
+        case 'volcano': {
+          const vh = h * 2;
+          mesh = new THREE.Mesh(new THREE.CylinderGeometry(w * 0.18, w, vh, 10), mat);
+          mesh.position.y = vh / 2 - 2;
+          const crater = new THREE.Mesh(new THREE.CircleGeometry(w * 0.16, 12), glowMat);
+          crater.rotation.x = -Math.PI / 2;
+          crater.position.y = vh / 2 + 0.5;
+          mesh.add(crater);
+          // A lava trickle down one flank.
+          const flow = new THREE.Mesh(new THREE.BoxGeometry(w * 0.04, vh * 0.6, w * 0.02), glowMat);
+          flow.position.set(0, vh * 0.15, w * 0.45);
+          flow.rotation.x = -0.4;
+          mesh.add(flow);
+          break;
         }
-        break;
+        case 'mountain': {
+          mesh = new THREE.Mesh(new THREE.ConeGeometry(w, h * 2.2, 7), mat);
+          mesh.position.y = h * 1.1 - 2;
+          // Snow on the peak.
+          const snow = new THREE.Mesh(new THREE.ConeGeometry(w * 0.34, h * 0.75, 7), new THREE.MeshLambertMaterial({ color: 0xf4f8ff }));
+          snow.position.y = h * 0.73;
+          mesh.add(snow);
+          break;
+        }
+        case 'city': {
+          // A cluster of towers with lit windows and a beacon on the tallest.
+          mesh = new THREE.Mesh(new THREE.BoxGeometry(w * 0.3, h * 2, w * 0.3), mat);
+          mesh.position.y = h - 2;
+          for (let t = 0; t < 4; t++) {
+            const th = h * (0.8 + rand() * 1.8);
+            const tower = new THREE.Mesh(new THREE.BoxGeometry(w * 0.2, th, w * 0.2), mat);
+            tower.position.set((rand() - 0.5) * w, th / 2 - h, (rand() - 0.5) * w * 0.4);
+            mesh.add(tower);
+            for (let wv = 0; wv < 3; wv++) {
+              const lit = new THREE.Mesh(new THREE.PlaneGeometry(w * 0.03, th * 0.05), windowMats[Math.floor(rand() * 3)]);
+              lit.position.set((rand() - 0.5) * w * 0.14, (rand() - 0.5) * th * 0.8, w * 0.101);
+              tower.add(lit);
+            }
+          }
+          const beacon = new THREE.Mesh(new THREE.SphereGeometry(w * 0.02, 6, 4), new THREE.MeshBasicMaterial({ color: 0xff2a2a, fog: false }));
+          beacon.position.y = h + 1;
+          mesh.add(beacon);
+          break;
+        }
+        case 'cloud':
+          mesh = new THREE.Mesh(new THREE.SphereGeometry(w * 0.6, 14, 10), mat);
+          mesh.scale.set(1.6, 0.6, 1);
+          mesh.position.y = (rand() - 0.3) * 120;
+          break;
       }
-      case 'cloud':
-        mesh = new THREE.Mesh(new THREE.SphereGeometry(w * 0.6, 14, 10), mat);
-        mesh.scale.set(1.6, 0.6, 1);
-        mesh.position.y = (rand() - 0.3) * 120;
-        break;
+      mesh.position.x = Math.cos(a) * r;
+      mesh.position.z = Math.sin(a) * r;
+      mesh.rotation.y = rand() * 3;
+      g.add(mesh);
     }
-    mesh.position.x = Math.cos(a) * r;
-    mesh.position.z = Math.sin(a) * r;
-    mesh.rotation.y = rand() * 3;
-    g.add(mesh);
   }
   return g;
 }
 
 /** Rocks plus the theme's own scenery scattered off the road, for speed perception. */
-function decor(track: Track, mats: Materials, theme: Theme): THREE.Group {
+function decor(track: Track, mats: Materials, theme: Theme, animated: ((time: number) => void)[]): THREE.Group {
   const g = new THREE.Group();
   const rand = seededRandom(7);
   const b = track.def.bounds - 6;
@@ -861,7 +892,7 @@ function decor(track: Track, mats: Materials, theme: Theme): THREE.Group {
   // Sky scenery floats at all heights; city towers need room off the road.
   const floating = theme.decor === 'sky';
   const rocks = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 1), mats.rock, rockCount);
-  const feature = featureBuilder(theme, mats);
+  const feature = featureBuilder(theme, mats, animated);
   const m = new THREE.Matrix4();
   const q = new THREE.Quaternion();
   const e = new THREE.Euler();
@@ -889,116 +920,476 @@ function decor(track: Track, mats: Materials, theme: Theme): THREE.Group {
   return g;
 }
 
-/** Builds one piece of a theme's characteristic scenery. */
-function featureBuilder(theme: Theme, mats: Materials): (x: number, z: number, rand: () => number) => THREE.Object3D {
+type Feature = (x: number, z: number, rand: () => number) => THREE.Object3D;
+
+/** Picks one of `kinds` by weight. */
+function pick(rand: () => number, kinds: [number, Feature][]): Feature {
+  const total = kinds.reduce((s, [w]) => s + w, 0);
+  let r = rand() * total;
+  for (const [w, f] of kinds) if ((r -= w) <= 0) return f;
+  return kinds[kinds.length - 1][1];
+}
+
+const lambert = (color: number, extra: THREE.MeshLambertMaterialParameters = {}) => new THREE.MeshLambertMaterial({ color, ...extra });
+const blobGeo = new THREE.IcosahedronGeometry(1, 1);
+
+/** Builds one piece of a theme's characteristic scenery; anything that moves registers in `animated`. */
+function featureBuilder(theme: Theme, mats: Materials, animated: ((time: number) => void)[]): Feature {
   const trunkGeo = new THREE.CylinderGeometry(0.45, 0.55, 1, 10);
+  const at = (t: THREE.Object3D, x: number, z: number, rand: () => number, spin = true) => {
+    t.position.set(x, 0, z);
+    if (spin) t.rotation.y = rand() * Math.PI * 2;
+    return t;
+  };
   switch (theme.decor) {
     case 'lagoon': {
-      const bark = new THREE.MeshLambertMaterial({ color: 0x9a7a52 });
-      const frond = new THREE.MeshLambertMaterial({ color: 0x3aa04a, side: THREE.DoubleSide, flatShading: true });
+      const bark = lambert(0x9a7a52);
+      const frond = lambert(0x3aa04a, { side: THREE.DoubleSide, flatShading: true });
       const frondGeo = new THREE.ConeGeometry(0.7, 4.4, 4, 1, true).rotateX(Math.PI / 2).translate(0, 0, 2.2).scale(1, 0.15, 1);
-      const sand = new THREE.MeshLambertMaterial({ color: 0xe8d8a8 });
-      return (x, z, rand) => {
+      const sand = lambert(0xe8d8a8);
+      const thatch = lambert(0xc8a050, { flatShading: true });
+      const plank = lambert(0x8a6a42);
+      const sail = lambert(0xfff8ec, { side: THREE.DoubleSide });
+      const stripes = [0xff5a7a, 0x3adcff, 0xffd23a].map((c) => lambert(c, { side: THREE.DoubleSide }));
+      const islet: Feature = (x, z, rand) => {
         const t = new THREE.Group();
-        // A little sand islet with a palm or two leaning out over the water.
-        const islet = new THREE.Mesh(new THREE.CylinderGeometry(3 + rand() * 3, 4 + rand() * 3, 0.6, 14), sand);
-        islet.position.y = 0.2;
-        t.add(islet);
+        // A little sand islet with a palm or two leaning out over the water, sometimes a beach umbrella.
+        const r0 = 3 + rand() * 3;
+        const isle = new THREE.Mesh(new THREE.CylinderGeometry(r0, r0 + 1 + rand() * 2, 0.6, 14), sand);
+        isle.position.y = 0.2;
+        t.add(isle);
         const palms = rand() < 0.4 ? 2 : 1;
         for (let p = 0; p < palms; p++) t.add(palmTree(rand, trunkGeo, bark, frondGeo, frond, p * 2.2));
-        t.position.set(x, 0, z);
-        t.rotation.y = rand() * Math.PI * 2;
-        return t;
+        if (rand() < 0.4) {
+          const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 2.4, 6), plank);
+          pole.position.set(-r0 * 0.5, 1.6, 0);
+          const shade = new THREE.Mesh(new THREE.ConeGeometry(1.4, 0.6, 8, 1, true), stripes[Math.floor(rand() * 3)]);
+          shade.position.set(-r0 * 0.5, 2.9, 0);
+          const towel = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.03, 1.6), stripes[Math.floor(rand() * 3)]);
+          towel.position.set(-r0 * 0.5 + 1, 0.52, 0.3);
+          t.add(pole, shade, towel);
+        }
+        return at(t, x, z, rand);
       };
+      const hut: Feature = (x, z, rand) => {
+        // A thatched hut on stilts over the water, with a ladder down.
+        const t = new THREE.Group();
+        for (const [px, pz] of [[-1.6, -1.6], [1.6, -1.6], [-1.6, 1.6], [1.6, 1.6]]) {
+          const post = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 3, 6), plank);
+          post.position.set(px, 1.5, pz);
+          t.add(post);
+        }
+        const deck = new THREE.Mesh(new THREE.BoxGeometry(4.4, 0.25, 4.4), plank);
+        deck.position.y = 3;
+        const room = new THREE.Mesh(new THREE.BoxGeometry(3, 2, 3), lambert(0xd8b880));
+        room.position.y = 4.1;
+        const roof = new THREE.Mesh(new THREE.ConeGeometry(3.2, 2.2, 4), thatch);
+        roof.position.y = 6.2;
+        roof.rotation.y = Math.PI / 4;
+        const door = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 1.4), lambert(0x3a2a1a));
+        door.position.set(0, 3.8, 1.51);
+        t.add(deck, room, roof, door);
+        for (let k = 0; k < 4; k++) {
+          const rung = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.08, 0.08), plank);
+          rung.position.set(0, 0.5 + k * 0.7, 2.3);
+          t.add(rung);
+        }
+        return at(t, x, z, rand);
+      };
+      const boat: Feature = (x, z, rand) => {
+        // A little sailboat rocking at anchor.
+        const t = new THREE.Group();
+        const hull = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.4, 3.6, 8, 1, false, 0, Math.PI), stripes[Math.floor(rand() * 3)]);
+        hull.rotation.set(Math.PI / 2, 0, Math.PI / 2);
+        hull.position.y = 0.4;
+        const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 4.5, 6), plank);
+        mast.position.y = 2.6;
+        const shape = new THREE.Shape([new THREE.Vector2(0, 0), new THREE.Vector2(0, 3.8), new THREE.Vector2(1.9, 0)]);
+        const sheet = new THREE.Mesh(new THREE.ShapeGeometry(shape), sail);
+        sheet.position.set(0, 0.7, 0.1);
+        sheet.rotation.y = Math.PI / 2;
+        t.add(hull, mast, sheet);
+        const ph = rand() * 6;
+        animated.push((time) => {
+          t.rotation.z = Math.sin(time * 1.1 + ph) * 0.08;
+          t.position.y = Math.sin(time * 0.9 + ph) * 0.1;
+        });
+        return at(t, x, z, rand);
+      };
+      const gullRock: Feature = (x, z, rand) => {
+        const t = new THREE.Group();
+        const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(1.6 + rand(), 0), mats.rock);
+        rock.scale.y = 0.8;
+        rock.position.y = 0.6;
+        const gull = new THREE.Group();
+        const white = lambert(0xffffff);
+        gull.add(new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6).scale(1, 0.8, 1.6), white));
+        for (const side of [-1, 1]) {
+          const wing = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.03, 0.25), lambert(0x8a8a90));
+          wing.position.set(side * 0.3, 0.05, -0.05);
+          wing.rotation.z = side * 0.4;
+          gull.add(wing);
+        }
+        const beak = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.2, 5), lambert(0xffb020));
+        beak.rotation.x = Math.PI / 2;
+        beak.position.set(0, 0.08, 0.42);
+        gull.add(beak);
+        gull.position.y = 1.9;
+        t.add(rock, gull);
+        return at(t, x, z, rand);
+      };
+      return (x, z, rand) => pick(rand, [[6, islet], [1.4, hut], [1.5, boat], [1.2, gullRock]])(x, z, rand);
     }
     case 'glacier': {
-      const needles = new THREE.MeshLambertMaterial({ color: 0x2a5a48, flatShading: true });
-      const snow = new THREE.MeshLambertMaterial({ color: 0xf4f8ff, flatShading: true });
+      const needles = lambert(0x2a5a48, { flatShading: true });
+      const snow = lambert(0xf4f8ff, { flatShading: true });
       const ice = new THREE.MeshPhongMaterial({ color: 0xa8dcff, emissive: 0x10283a, shininess: 120, specular: 0xffffff, transparent: true, opacity: 0.85, flatShading: true });
-      return (x, z, rand) => {
+      const pine: Feature = (x, z, rand) => {
+        // A snowy pine: stacked cones, white-capped, on a little drift.
         const t = new THREE.Group();
-        if (rand() < 0.65) {
-          // A snowy pine: stacked cones, white-capped.
-          const h = 5 + rand() * 6;
-          for (let k = 0; k < 3; k++) {
-            const r = (1 - k * 0.25) * h * 0.32;
-            const cone = new THREE.Mesh(new THREE.ConeGeometry(r, h * 0.45, 7), needles);
-            cone.position.y = h * (0.3 + k * 0.22);
-            const cap = new THREE.Mesh(new THREE.ConeGeometry(r * 0.6, h * 0.2, 7), snow);
-            cap.position.y = cone.position.y + h * 0.14;
-            t.add(cone, cap);
-          }
-        } else {
-          // Ice shards breaking through the snow.
-          for (let k = 0; k < 4; k++) {
-            const h = 2 + rand() * 7;
-            const shard = new THREE.Mesh(new THREE.ConeGeometry(0.5 + rand() * 0.9, h, 5), ice);
-            shard.position.set((rand() - 0.5) * 3, h / 2, (rand() - 0.5) * 3);
-            shard.rotation.set((rand() - 0.5) * 0.6, rand() * 3, (rand() - 0.5) * 0.6);
-            t.add(shard);
-          }
+        const h = 5 + rand() * 6;
+        const trunk = new THREE.Mesh(trunkGeo, lambert(0x4a3420));
+        trunk.scale.set(0.4, h * 0.3, 0.4);
+        trunk.position.y = h * 0.15;
+        t.add(trunk);
+        for (let k = 0; k < 3; k++) {
+          const r = (1 - k * 0.25) * h * 0.32;
+          const cone = new THREE.Mesh(new THREE.ConeGeometry(r, h * 0.45, 7), needles);
+          cone.position.y = h * (0.3 + k * 0.22);
+          const cap = new THREE.Mesh(new THREE.ConeGeometry(r * 0.6, h * 0.2, 7), snow);
+          cap.position.y = cone.position.y + h * 0.14;
+          t.add(cone, cap);
         }
-        t.position.set(x, 0, z);
-        return t;
+        const drift = new THREE.Mesh(new THREE.SphereGeometry(h * 0.3, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), snow);
+        drift.scale.y = 0.25;
+        t.add(drift);
+        return at(t, x, z, rand);
       };
+      const shards: Feature = (x, z, rand) => {
+        // Ice shards breaking through the snow.
+        const t = new THREE.Group();
+        for (let k = 0; k < 4; k++) {
+          const h = 2 + rand() * 7;
+          const shard = new THREE.Mesh(new THREE.ConeGeometry(0.5 + rand() * 0.9, h, 5), ice);
+          shard.position.set((rand() - 0.5) * 3, h / 2, (rand() - 0.5) * 3);
+          shard.rotation.set((rand() - 0.5) * 0.6, rand() * 3, (rand() - 0.5) * 0.6);
+          t.add(shard);
+        }
+        return at(t, x, z, rand, false);
+      };
+      const igloo: Feature = (x, z, rand) => {
+        // An igloo with its block courses and an entrance tunnel.
+        const t = new THREE.Group();
+        const dome = new THREE.Mesh(new THREE.SphereGeometry(2.6, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), snow);
+        t.add(dome);
+        for (let k = 1; k < 4; k++) {
+          const a = (k / 4) * (Math.PI / 2);
+          const course = new THREE.Mesh(new THREE.TorusGeometry(Math.cos(a) * 2.62, 0.04, 4, 24), lambert(0xc8d8e8));
+          course.rotation.x = Math.PI / 2;
+          course.position.y = Math.sin(a) * 2.62;
+          t.add(course);
+        }
+        const tunnel = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 1.8, 10, 1, false, 0, Math.PI), snow);
+        tunnel.rotation.set(Math.PI / 2, 0, Math.PI / 2);
+        tunnel.rotation.order = 'ZXY';
+        tunnel.position.set(0, 0, 2.6);
+        const dark = new THREE.Mesh(new THREE.CircleGeometry(0.75, 10, 0, Math.PI), lambert(0x1a2a3a));
+        dark.position.set(0, 0.01, 3.51);
+        t.add(tunnel, dark);
+        return at(t, x, z, rand);
+      };
+      const snowman: Feature = (x, z, rand) => {
+        const t = new THREE.Group();
+        for (const [y, r] of [[0.8, 0.9], [2.1, 0.65], [3.1, 0.45]]) {
+          const ball = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 10), snow);
+          ball.position.y = y;
+          t.add(ball);
+        }
+        const coal = lambert(0x111111);
+        for (const side of [-1, 1]) {
+          const eye = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 4), coal);
+          eye.position.set(side * 0.15, 3.2, 0.4);
+          const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.04, 1.4, 5), lambert(0x5a3a22));
+          arm.position.set(side * 1.0, 2.4, 0);
+          arm.rotation.z = side * -1.0;
+          t.add(eye, arm);
+        }
+        for (let k = 0; k < 3; k++) {
+          const button = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 4), coal);
+          button.position.set(0, 1.9 + k * 0.25, 0.62);
+          t.add(button);
+        }
+        const nose = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.5, 6), lambert(0xff7a1a));
+        nose.rotation.x = Math.PI / 2;
+        nose.position.set(0, 3.1, 0.65);
+        const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.05, 12), coal);
+        brim.position.y = 3.5;
+        const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.55, 12), coal);
+        crown.position.y = 3.8;
+        const scarf = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.1, 6, 14), lambert(0xd8302a));
+        scarf.rotation.x = Math.PI / 2;
+        scarf.position.y = 2.65;
+        t.add(nose, brim, crown, scarf);
+        return at(t, x, z, rand);
+      };
+      return (x, z, rand) => pick(rand, [[6, pine], [3, shards], [0.8, igloo], [0.7, snowman]])(x, z, rand);
     }
     case 'city': {
       const windows = tex.windowsTexture();
-      const roofMat = new THREE.MeshLambertMaterial({ color: 0x120c1c });
+      const roofMat = lambert(0x120c1c);
       const trims = [0xff3ad8, 0x3adcff, 0xffd23a, 0x7aff9a].map((c) => new THREE.MeshBasicMaterial({ color: c }));
+      const metal = lambert(0x3a3448);
+      const beacon = new THREE.MeshBasicMaterial({ color: 0xff2a2a });
+      const beacons: THREE.Mesh[] = [];
+      animated.push((time) => {
+        const on = Math.sin(time * 4) > 0.2;
+        for (const b of beacons) b.visible = on;
+      });
       return (x, z, rand) => {
         const t = new THREE.Group();
         const w = 5 + rand() * 4;
         const d = 5 + rand() * 4;
         const h = 12 + rand() * 50;
-        const map = windows.clone();
-        map.needsUpdate = true;
-        map.repeat.set(w / 8, h / 8);
-        const wall = new THREE.MeshLambertMaterial({ map, emissive: 0xffffff, emissiveMap: map, emissiveIntensity: 0.8 });
-        const tower = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), [wall, wall, roofMat, roofMat, wall, wall]);
+        const wall = (bw: number, bh: number) => {
+          const map = windows.clone();
+          map.needsUpdate = true;
+          map.repeat.set(bw / 8, bh / 8);
+          return new THREE.MeshLambertMaterial({ map, emissive: 0xffffff, emissiveMap: map, emissiveIntensity: 0.8 });
+        };
+        const lower = wall(w, h);
+        const tower = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), [lower, lower, roofMat, roofMat, lower, lower]);
         tower.position.y = h / 2;
-        const trim = new THREE.Mesh(new THREE.BoxGeometry(w + 0.3, 0.4, d + 0.3), trims[Math.floor(rand() * trims.length)]);
+        const trimMat = trims[Math.floor(rand() * trims.length)];
+        const trim = new THREE.Mesh(new THREE.BoxGeometry(w + 0.3, 0.4, d + 0.3), trimMat);
         trim.position.y = h;
         t.add(tower, trim);
+        let top = h;
+        // Some step back into a second, narrower block.
+        if (rand() < 0.45) {
+          const h2 = 6 + rand() * 16;
+          const upper = wall(w * 0.6, h2);
+          const set = new THREE.Mesh(new THREE.BoxGeometry(w * 0.6, h2, d * 0.6), [upper, upper, roofMat, roofMat, upper, upper]);
+          set.position.y = h + h2 / 2;
+          const trim2 = new THREE.Mesh(new THREE.BoxGeometry(w * 0.6 + 0.3, 0.3, d * 0.6 + 0.3), trimMat);
+          trim2.position.y = h + h2;
+          t.add(set, trim2);
+          top = h + h2;
+        }
+        // A neon strip down one corner.
+        if (rand() < 0.5) {
+          const strip = new THREE.Mesh(new THREE.BoxGeometry(0.25, h * 0.7, 0.25), trims[Math.floor(rand() * trims.length)]);
+          strip.position.set(w / 2 + 0.1, h * 0.55, d / 2 + 0.1);
+          t.add(strip);
+        }
+        // Rooftop clutter: an antenna with a blinking light, a water tank or vents.
+        if (rand() < 0.5) {
+          const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.12, 6, 6), metal);
+          mast.position.y = top + 3;
+          const light = new THREE.Mesh(new THREE.SphereGeometry(0.25, 6, 4), beacon);
+          light.position.y = top + 6.1;
+          beacons.push(light);
+          t.add(mast, light);
+        } else if (rand() < 0.6) {
+          const tank = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, 1.8, 10), lambert(0x5a4a3a));
+          tank.position.y = top + 2.2;
+          const cap = new THREE.Mesh(new THREE.ConeGeometry(1.2, 0.8, 10), lambert(0x3a2a20));
+          cap.position.y = top + 3.5;
+          for (const lx of [-0.7, 0.7]) {
+            const leg = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.3, 0.12), metal);
+            leg.position.set(lx, top + 0.65, 0);
+            t.add(leg);
+          }
+          t.add(tank, cap);
+        } else {
+          for (let k = 0; k < 3; k++) {
+            const vent = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.8, 1), metal);
+            vent.position.set((rand() - 0.5) * w * 0.5, top + 0.4, (rand() - 0.5) * d * 0.5);
+            t.add(vent);
+          }
+        }
         t.position.set(x, 0, z);
         t.rotation.y = Math.floor(rand() * 4) * (Math.PI / 2);
         return t;
       };
     }
     case 'sky': {
-      const puff = new THREE.MeshLambertMaterial({ color: 0xffffff, emissive: 0x6a5a7a, flatShading: true });
+      const puff = lambert(0xffffff, { emissive: 0x6a5a7a, flatShading: true });
       const crystal = [0xff9ad8, 0x9ad8ff, 0xffe89a, 0xb89aff].map((c) => new THREE.MeshPhongMaterial({ color: c, emissive: c, emissiveIntensity: 0.35, shininess: 120, flatShading: true }));
-      const blob = new THREE.IcosahedronGeometry(1, 1);
-      return (x, z, rand) => {
+      const grass = lambert(0x8ae07a, { flatShading: true });
+      const earth = lambert(0xb89ad8, { flatShading: true });
+      const bands = [0xff5a7a, 0xffa64a, 0xffe45a, 0x6aef7a, 0x4ad0ff, 0xc86aff].map((c) => lambert(c));
+      const cloud: Feature = (x, z, rand) => {
+        // A cloud: a few overlapping puffs.
         const t = new THREE.Group();
-        if (rand() < 0.75) {
-          // A cloud: a few overlapping puffs.
-          const n = 3 + Math.floor(rand() * 4);
-          for (let k = 0; k < n; k++) {
-            const p = new THREE.Mesh(blob, puff);
-            const r = 2 + rand() * 4;
-            p.scale.set(r * 1.3, r * 0.8, r);
-            p.position.set((k - n / 2) * 3, rand() * 1.5, (rand() - 0.5) * 3);
-            t.add(p);
-          }
-        } else {
-          // A floating crystal, slowly glowing.
-          const c = new THREE.Mesh(new THREE.OctahedronGeometry(1.5 + rand() * 2.5, 0), crystal[Math.floor(rand() * crystal.length)]);
-          c.scale.y = 1.8;
-          c.rotation.y = rand() * 3;
-          t.add(c);
+        const n = 3 + Math.floor(rand() * 4);
+        for (let k = 0; k < n; k++) {
+          const p = new THREE.Mesh(blobGeo, puff);
+          const r = 2 + rand() * 4;
+          p.scale.set(r * 1.3, r * 0.8, r);
+          p.position.set((k - n / 2) * 3, rand() * 1.5, (rand() - 0.5) * 3);
+          t.add(p);
         }
-        t.position.set(x, 0, z);
-        return t;
+        return at(t, x, z, rand, false);
       };
+      const gem: Feature = (x, z, rand) => {
+        // A floating crystal, slowly turning.
+        const t = new THREE.Group();
+        const c = new THREE.Mesh(new THREE.OctahedronGeometry(1.5 + rand() * 2.5, 0), crystal[Math.floor(rand() * crystal.length)]);
+        c.scale.y = 1.8;
+        t.add(c);
+        const sp = 0.2 + rand() * 0.4;
+        animated.push((time) => (c.rotation.y = time * sp));
+        return at(t, x, z, rand, false);
+      };
+      const island: Feature = (x, z, rand) => {
+        // A floating island: a rock cone hanging under a grassy top, a little crystal tree.
+        const t = new THREE.Group();
+        const r = 3 + rand() * 4;
+        const under = new THREE.Mesh(new THREE.ConeGeometry(r, r * 1.8, 7), earth);
+        under.rotation.x = Math.PI;
+        under.position.y = -r * 0.9;
+        const top = new THREE.Mesh(new THREE.CylinderGeometry(r * 1.02, r, 0.6, 7), grass);
+        t.add(under, top);
+        const trunk = new THREE.Mesh(trunkGeo, lambert(0x8a6a9a));
+        trunk.scale.set(0.5, 2.5, 0.5);
+        trunk.position.set(r * 0.3, 1.5, 0);
+        const crown = new THREE.Mesh(blobGeo, crystal[Math.floor(rand() * crystal.length)]);
+        crown.scale.setScalar(1.5);
+        crown.position.set(r * 0.3, 3.3, 0);
+        t.add(trunk, crown);
+        const inner = new THREE.Group();
+        inner.add(...t.children);
+        t.add(inner);
+        const ph = rand() * 6;
+        animated.push((time) => (inner.position.y = Math.sin(time * 0.6 + ph) * 0.8));
+        return at(t, x, z, rand);
+      };
+      const balloon: Feature = (x, z, rand) => {
+        // A hot air balloon in rainbow gores, bobbing.
+        const t = new THREE.Group();
+        const gores = 6;
+        for (let k = 0; k < gores; k++) {
+          const g = new THREE.Mesh(new THREE.SphereGeometry(3, 6, 12, (k / gores) * Math.PI * 2, (Math.PI * 2) / gores), bands[(k + Math.floor(rand() * 6)) % 6]);
+          g.scale.y = 1.2;
+          g.position.y = 6;
+          t.add(g);
+        }
+        const skirt = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 0.6, 1.4, 10, 1, true), bands[0]);
+        skirt.position.y = 2.6;
+        const basket = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.9, 1.2), lambert(0x9a6a3a));
+        basket.position.y = 0.6;
+        t.add(skirt, basket);
+        for (const [rx, rz] of [[-0.5, -0.5], [0.5, -0.5], [-0.5, 0.5], [0.5, 0.5]]) {
+          const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.4, 4), lambert(0x5a4a3a));
+          rope.position.set(rx * 1.4, 1.6, rz * 1.4);
+          t.add(rope);
+        }
+        const ph = rand() * 6;
+        const inner = new THREE.Group();
+        inner.add(...t.children);
+        t.add(inner);
+        animated.push((time) => (inner.position.y = Math.sin(time * 0.7 + ph) * 1.2));
+        return at(t, x, z, rand);
+      };
+      return (x, z, rand) => pick(rand, [[6, cloud], [2, gem], [1.5, island], [0.8, balloon]])(x, z, rand);
     }
-    case 'desert':
-      return (x, z, rand) => cactus(x, z, 3 + rand() * 4, rand() * Math.PI, trunkGeo, mats.cactus);
+    case 'desert': {
+      const flower = lambert(0xff6ab0);
+      const yellow = lambert(0xffd23a);
+      const saguaro: Feature = (x, z, rand) => {
+        const c = cactus(x, z, 3 + rand() * 4, rand() * Math.PI, trunkGeo, mats.cactus);
+        if (rand() < 0.5) {
+          const bloom = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), flower);
+          bloom.position.y = c.children[1].position.y + 0.35;
+          c.add(bloom);
+        }
+        return c;
+      };
+      const pear: Feature = (x, z, rand) => {
+        // Prickly pear: flat pads stacked edge on edge, pink fruit on the top ones.
+        const t = new THREE.Group();
+        const pad = new THREE.SphereGeometry(0.7, 10, 8).scale(1, 1.2, 0.25);
+        const place = (px: number, py: number, rot: number, depth: number) => {
+          const m = new THREE.Mesh(pad, mats.cactus);
+          m.position.set(px, py, 0);
+          m.rotation.set(0, rand() * 0.8, rot);
+          t.add(m);
+          if (depth === 0) {
+            const fruit = new THREE.Mesh(new THREE.SphereGeometry(0.13, 6, 4), flower);
+            fruit.position.set(px + Math.sin(-rot) * 0.8, py + Math.cos(rot) * 0.8, 0);
+            t.add(fruit);
+            return;
+          }
+          for (const side of [-1, 1]) if (rand() < 0.75) place(px + side * 0.55, py + 1.1, rot + side * 0.45, depth - 1);
+        };
+        place(0, 0.8, 0, 2);
+        return at(t, x, z, rand);
+      };
+      const barrels: Feature = (x, z, rand) => {
+        // A cluster of barrel cacti, ribbed, with yellow crowns.
+        const t = new THREE.Group();
+        const n = 2 + Math.floor(rand() * 3);
+        for (let k = 0; k < n; k++) {
+          const r = 0.4 + rand() * 0.4;
+          const b = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 8), mats.cactus);
+          b.scale.y = 1.3;
+          b.position.set((rand() - 0.5) * 2, r * 1.1, (rand() - 0.5) * 2);
+          const crown = new THREE.Mesh(new THREE.SphereGeometry(r * 0.35, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2), yellow);
+          crown.position.set(b.position.x, b.position.y + r * 1.25, b.position.z);
+          t.add(b, crown);
+        }
+        return at(t, x, z, rand, false);
+      };
+      const skull: Feature = (x, z, rand) => {
+        // A bleached longhorn skull on a flat rock.
+        const t = new THREE.Group();
+        const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(1.2, 0), mats.rock);
+        rock.scale.set(1.3, 0.4, 1);
+        rock.position.y = 0.3;
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.45, 10, 8), mats.bone);
+        head.scale.set(1, 0.8, 1.4);
+        head.position.y = 0.95;
+        const snout = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.32, 0.6, 8), mats.bone);
+        snout.rotation.x = Math.PI / 2;
+        snout.position.set(0, 0.8, 0.6);
+        t.add(rock, head, snout);
+        for (const side of [-1, 1]) {
+          const horn = new THREE.Mesh(new THREE.ConeGeometry(0.1, 1.4, 6), mats.bone);
+          horn.position.set(side * 0.9, 1.15, -0.1);
+          horn.rotation.z = side * -1.2;
+          const socket = new THREE.Mesh(new THREE.SphereGeometry(0.1, 6, 4), lambert(0x2a1a10));
+          socket.position.set(side * 0.2, 1.05, 0.35);
+          t.add(horn, socket);
+        }
+        return at(t, x, z, rand);
+      };
+      const hoodoo: Feature = (x, z, rand) => {
+        // A hoodoo: eroded discs of strata pinched at the waist, a hard cap rock on top.
+        const t = new THREE.Group();
+        const n = 3 + Math.floor(rand() * 3);
+        let y = 0;
+        for (let k = 0; k < n; k++) {
+          const h = 1.6 + rand() * 1.2;
+          const r = 1.4 - Math.abs(k - n * 0.4) * 0.25 + rand() * 0.3;
+          const disc = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.85, r, h, 9), mats.strata);
+          disc.position.y = y + h / 2;
+          disc.rotation.y = rand() * 3;
+          t.add(disc);
+          y += h;
+        }
+        const cap = new THREE.Mesh(new THREE.DodecahedronGeometry(1.6, 0), mats.rock);
+        cap.scale.set(1.2, 0.45, 1.1);
+        cap.position.y = y + 0.4;
+        t.add(cap);
+        return at(t, x, z, rand);
+      };
+      return (x, z, rand) => pick(rand, [[4.5, saguaro], [1.6, pear], [1.2, barrels], [0.8, skull], [1.3, hoodoo]])(x, z, rand);
+    }
     case 'meadow': {
-      const bark = new THREE.MeshLambertMaterial({ color: 0x6a4a2a });
-      const leaves = [0x3f8f3a, 0x5aa840, 0x2f7a3a].map((c) => new THREE.MeshLambertMaterial({ color: c, flatShading: true }));
-      const blob = new THREE.IcosahedronGeometry(1, 1);
-      return (x, z, rand) => {
+      const bark = lambert(0x6a4a2a);
+      const leaves = [0x3f8f3a, 0x5aa840, 0x2f7a3a].map((c) => lambert(c, { flatShading: true }));
+      const petals = [0xff5a7a, 0xffe45a, 0xffffff, 0xc86aff].map((c) => lambert(c));
+      const tree: Feature = (x, z, rand) => {
         const t = new THREE.Group();
         const h = 3 + rand() * 4;
         const trunk = new THREE.Mesh(trunkGeo, bark);
@@ -1007,85 +1398,249 @@ function featureBuilder(theme: Theme, mats: Materials): (x: number, z: number, r
         t.add(trunk);
         const mat = leaves[Math.floor(rand() * leaves.length)];
         for (let k = 0; k < 3; k++) {
-          const crown = new THREE.Mesh(blob, mat);
+          const crown = new THREE.Mesh(blobGeo, mat);
           const r = 1.6 + rand() * 1.4;
           crown.scale.setScalar(r);
           crown.position.set((rand() - 0.5) * 1.6, h + r * 0.4 + k * 0.6, (rand() - 0.5) * 1.6);
           t.add(crown);
         }
-        t.position.set(x, 0, z);
-        return t;
+        // Some carry fruit.
+        if (rand() < 0.35) {
+          const fruit = lambert(rand() < 0.5 ? 0xd8202a : 0xffa020);
+          for (let k = 0; k < 6; k++) {
+            const f = new THREE.Mesh(new THREE.SphereGeometry(0.16, 6, 4), fruit);
+            const a = rand() * Math.PI * 2;
+            f.position.set(Math.cos(a) * 1.8, h + 0.6 + rand() * 1.4, Math.sin(a) * 1.8);
+            t.add(f);
+          }
+        }
+        return at(t, x, z, rand, false);
       };
+      const bales: Feature = (x, z, rand) => {
+        // Round hay bales lying in the grass.
+        const t = new THREE.Group();
+        const straw = lambert(0xe0c060);
+        for (let k = 0; k < 2 + Math.floor(rand() * 2); k++) {
+          const b = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 1.4, 14), straw);
+          b.rotation.z = Math.PI / 2;
+          b.position.set(k * 2.1, 0.9, (rand() - 0.5) * 1.5);
+          const swirl = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.06, 4, 16), lambert(0xc8a040));
+          swirl.rotation.y = Math.PI / 2;
+          swirl.position.set(k * 2.1 + 0.71, 0.9, b.position.z);
+          t.add(b, swirl);
+        }
+        return at(t, x, z, rand);
+      };
+      const flowers: Feature = (x, z, rand) => {
+        // A flowering bush.
+        const t = new THREE.Group();
+        const bush = new THREE.Mesh(blobGeo, leaves[Math.floor(rand() * leaves.length)]);
+        bush.scale.set(1.6, 1, 1.6);
+        bush.position.y = 0.8;
+        t.add(bush);
+        const mat = petals[Math.floor(rand() * petals.length)];
+        for (let k = 0; k < 10; k++) {
+          const f = new THREE.Mesh(new THREE.SphereGeometry(0.14, 6, 4), mat);
+          const a = rand() * Math.PI * 2;
+          const e = rand() * 1.2;
+          f.position.set(Math.cos(a) * Math.cos(e) * 1.6, 0.8 + Math.sin(e) * 1.0, Math.sin(a) * Math.cos(e) * 1.6);
+          t.add(f);
+        }
+        return at(t, x, z, rand, false);
+      };
+      const windmill: Feature = (x, z, rand) => {
+        // A little windmill, its sails turning.
+        const t = new THREE.Group();
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.8, 7, 8), lambert(0xf4ece0));
+        body.position.y = 3.5;
+        const cap = new THREE.Mesh(new THREE.ConeGeometry(1.6, 2, 8), lambert(0xa83a2a));
+        cap.position.y = 8;
+        const door = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 1.6), lambert(0x5a3a22));
+        door.position.set(0, 0.8, 1.75);
+        door.rotation.x = -0.08;
+        const sails = new THREE.Group();
+        sails.position.set(0, 7, 1.7);
+        for (let k = 0; k < 4; k++) {
+          const arm = new THREE.Group();
+          arm.rotation.z = (k * Math.PI) / 2;
+          const sail = new THREE.Mesh(new THREE.BoxGeometry(0.9, 3.6, 0.05), lambert(0xfff8ec));
+          sail.position.set(0.45, 2.2, 0);
+          const spar = new THREE.Mesh(new THREE.BoxGeometry(0.12, 4.2, 0.12), bark);
+          spar.position.y = 2.1;
+          arm.add(sail, spar);
+          sails.add(arm);
+        }
+        t.add(body, cap, door, sails);
+        const sp = 0.5 + rand() * 0.6;
+        animated.push((time) => (sails.rotation.z = time * sp));
+        return at(t, x, z, rand);
+      };
+      return (x, z, rand) => pick(rand, [[6, tree], [1.2, bales], [1.6, flowers], [0.5, windmill]])(x, z, rand);
     }
     case 'volcanic': {
       const lava = new THREE.MeshBasicMaterial({ color: 0xff5a10 });
-      const crust = new THREE.MeshLambertMaterial({ color: 0x1a1214, flatShading: true });
-      return (x, z, rand) => {
+      const crust = lambert(0x1a1214, { flatShading: true });
+      const ember = new THREE.MeshBasicMaterial({ color: 0xff8a2a });
+      const steam = tex.glowTexture('rgba(255,230,220,0.8)', 'rgba(255,230,220,0)');
+      const pool: Feature = (x, z, rand) => {
+        // A bubbling lava pool with a dark crust rim and a plume of steam.
         const t = new THREE.Group();
-        if (rand() < 0.45) {
-          // A bubbling lava pool with a dark crust rim.
-          const r = 2 + rand() * 4;
-          const pool = new THREE.Mesh(new THREE.CircleGeometry(r, 16), lava);
-          pool.rotation.x = -Math.PI / 2;
-          pool.position.y = 0.06;
-          const rim = new THREE.Mesh(new THREE.TorusGeometry(r, 0.5, 6, 18), crust);
-          rim.rotation.x = Math.PI / 2;
-          rim.position.y = 0.1;
-          t.add(pool, rim);
-        } else {
-          // Obsidian spikes.
-          for (let k = 0; k < 3; k++) {
-            const h = 2 + rand() * 6;
-            const spike = new THREE.Mesh(new THREE.ConeGeometry(0.6 + rand(), h, 5), crust);
-            spike.position.set((rand() - 0.5) * 3, h / 2, (rand() - 0.5) * 3);
-            spike.rotation.set((rand() - 0.5) * 0.4, rand() * 3, (rand() - 0.5) * 0.4);
-            t.add(spike);
-          }
+        const r = 2 + rand() * 4;
+        const disc = new THREE.Mesh(new THREE.CircleGeometry(r, 16), lava);
+        disc.rotation.x = -Math.PI / 2;
+        disc.position.y = 0.06;
+        const rim = new THREE.Mesh(new THREE.TorusGeometry(r, 0.5, 6, 18), crust);
+        rim.rotation.x = Math.PI / 2;
+        rim.position.y = 0.1;
+        t.add(disc, rim);
+        const puffs: THREE.Sprite[] = [];
+        for (let k = 0; k < 3; k++) {
+          const p = new THREE.Sprite(new THREE.SpriteMaterial({ map: steam, transparent: true, depthWrite: false, opacity: 0.4 }));
+          t.add(p);
+          puffs.push(p);
         }
-        t.position.set(x, 0, z);
-        return t;
+        const ph = rand() * 10;
+        animated.push((time) => {
+          puffs.forEach((p, k) => {
+            const u = (time * 0.25 + ph + k / 3) % 1;
+            p.position.set(Math.sin(u * 4 + k) * 0.6, 1 + u * 9, 0);
+            p.scale.setScalar(r * (0.8 + u * 1.6));
+            p.material.opacity = 0.45 * (1 - u);
+          });
+        });
+        return at(t, x, z, rand);
       };
+      const spikes: Feature = (x, z, rand) => {
+        const t = new THREE.Group();
+        for (let k = 0; k < 3; k++) {
+          const h = 2 + rand() * 6;
+          const spike = new THREE.Mesh(new THREE.ConeGeometry(0.6 + rand(), h, 5), crust);
+          spike.position.set((rand() - 0.5) * 3, h / 2, (rand() - 0.5) * 3);
+          spike.rotation.set((rand() - 0.5) * 0.4, rand() * 3, (rand() - 0.5) * 0.4);
+          t.add(spike);
+        }
+        return at(t, x, z, rand, false);
+      };
+      const charred: Feature = (x, z, rand) => {
+        // A charred dead tree, its branch tips still glowing.
+        const t = new THREE.Group();
+        const h = 4 + rand() * 4;
+        const trunk = new THREE.Mesh(trunkGeo, crust);
+        trunk.scale.set(0.5, h, 0.5);
+        trunk.position.y = h / 2;
+        t.add(trunk);
+        for (let k = 0; k < 4; k++) {
+          const len = 1.2 + rand() * 1.6;
+          const branch = new THREE.Group();
+          branch.position.y = h * (0.5 + k * 0.12);
+          branch.rotation.set(0, rand() * Math.PI * 2, 0.7 + rand() * 0.4);
+          const stick = new THREE.Mesh(trunkGeo, crust);
+          stick.scale.set(0.18, len, 0.18);
+          stick.position.y = len / 2;
+          const tip = new THREE.Mesh(new THREE.SphereGeometry(0.1, 6, 4), ember);
+          tip.position.y = len;
+          branch.add(stick, tip);
+          t.add(branch);
+        }
+        return at(t, x, z, rand);
+      };
+      const columns: Feature = (x, z, rand) => {
+        // Basalt columns: a cluster of hexagonal prisms at stepped heights.
+        const t = new THREE.Group();
+        const hex = new THREE.CylinderGeometry(0.7, 0.7, 1, 6);
+        for (let k = 0; k < 9; k++) {
+          const h = 1.5 + rand() * 6;
+          const col = new THREE.Mesh(hex, mats.rock);
+          const a = (k / 9) * Math.PI * 2;
+          const rr = k === 0 ? 0 : 1.2 + (k % 2) * 0.6;
+          col.scale.y = h;
+          col.position.set(Math.cos(a) * rr, h / 2, Math.sin(a) * rr);
+          t.add(col);
+        }
+        return at(t, x, z, rand);
+      };
+      return (x, z, rand) => pick(rand, [[3.5, pool], [3, spikes], [1.6, charred], [1.4, columns]])(x, z, rand);
     }
     case 'jungle': {
-      const bark = new THREE.MeshLambertMaterial({ color: 0x7a5a36 });
-      const frond = new THREE.MeshLambertMaterial({ color: 0x2f8a3a, side: THREE.DoubleSide, flatShading: true });
-      const fern = new THREE.MeshLambertMaterial({ color: 0x4aa040, flatShading: true });
+      const bark = lambert(0x7a5a36);
+      const frond = lambert(0x2f8a3a, { side: THREE.DoubleSide, flatShading: true });
+      const fern = lambert(0x4aa040, { flatShading: true });
       const frondGeo = new THREE.ConeGeometry(0.7, 4, 4, 1, true).rotateX(Math.PI / 2).translate(0, 0, 2).scale(1, 0.15, 1);
-      return (x, z, rand) => {
+      const moss = lambert(0x4a7a3a, { flatShading: true });
+      const palm: Feature = (x, z, rand) => at(palmTree(rand, trunkGeo, bark, frondGeo, frond), x, z, rand);
+      const ferns: Feature = (x, z, rand) => {
         const t = new THREE.Group();
-        if (rand() < 0.55) {
-          // A palm with a leaning, segmented trunk.
-          const h = 6 + rand() * 6;
-          const lean = (rand() - 0.5) * 0.5;
-          const segs = 5;
-          let top = new THREE.Vector3();
-          for (let k = 0; k < segs; k++) {
-            const seg = new THREE.Mesh(trunkGeo, bark);
-            const y = (k + 0.5) * (h / segs);
-            seg.scale.set(0.5 - k * 0.04, h / segs, 0.5 - k * 0.04);
-            seg.position.set(Math.sin(lean * (k / segs)) * k * 0.8, y, 0);
-            seg.rotation.z = -lean * (k / segs);
-            t.add(seg);
-            top = seg.position.clone().setY(h);
-          }
-          for (let k = 0; k < 7; k++) {
-            const f = new THREE.Mesh(frondGeo, frond);
-            f.position.copy(top);
-            f.rotation.set(0.5 + rand() * 0.3, (k / 7) * Math.PI * 2, 0, 'YXZ');
-            t.add(f);
-          }
-        } else {
-          for (let k = 0; k < 5; k++) {
-            const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.5, 2.4, 4), fern);
-            leaf.position.set((rand() - 0.5) * 1.5, 1, (rand() - 0.5) * 1.5);
-            leaf.rotation.set((rand() - 0.5) * 1.2, rand() * 3, (rand() - 0.5) * 1.2);
-            t.add(leaf);
+        for (let k = 0; k < 5; k++) {
+          const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.5, 2.4, 4), fern);
+          leaf.position.set((rand() - 0.5) * 1.5, 1, (rand() - 0.5) * 1.5);
+          leaf.rotation.set((rand() - 0.5) * 1.2, rand() * 3, (rand() - 0.5) * 1.2);
+          t.add(leaf);
+        }
+        return at(t, x, z, rand);
+      };
+      const bloom: Feature = (x, z, rand) => {
+        // A giant jungle flower: five fleshy spotted petals round a deep centre.
+        const t = new THREE.Group();
+        const petal = lambert(rand() < 0.5 ? 0xd8303a : 0xff7a2a);
+        const spot = lambert(0xfff0d0);
+        for (let k = 0; k < 5; k++) {
+          const a = (k / 5) * Math.PI * 2;
+          const p = new THREE.Mesh(new THREE.SphereGeometry(1, 10, 8), petal);
+          p.scale.set(0.9, 0.18, 1.3);
+          p.position.set(Math.cos(a) * 1.2, 0.3, Math.sin(a) * 1.2);
+          p.rotation.y = -a + Math.PI / 2;
+          t.add(p);
+          for (let s = 0; s < 3; s++) {
+            const d = new THREE.Mesh(new THREE.SphereGeometry(0.13, 6, 4), spot);
+            d.position.set(Math.cos(a) * (0.9 + s * 0.4) + (s - 1) * 0.15, 0.48, Math.sin(a) * (0.9 + s * 0.4));
+            t.add(d);
           }
         }
-        t.position.set(x, 0, z);
-        t.rotation.y = rand() * Math.PI * 2;
-        return t;
+        const core = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.45, 0.6, 12, 1, true), lambert(0x5a1a1a, { side: THREE.DoubleSide }));
+        core.position.y = 0.5;
+        t.add(core);
+        return at(t, x, z, rand);
       };
+      const shrooms: Feature = (x, z, rand) => {
+        // A clump of tall glowing-capped mushrooms.
+        const t = new THREE.Group();
+        const capMat = new THREE.MeshLambertMaterial({ color: 0x6ad8c8, emissive: 0x1a5a50 });
+        for (let k = 0; k < 3 + Math.floor(rand() * 3); k++) {
+          const h = 1 + rand() * 2.5;
+          const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.18, h, 8), lambert(0xf0e8d0));
+          const px = (rand() - 0.5) * 2;
+          const pz = (rand() - 0.5) * 2;
+          stem.position.set(px, h / 2, pz);
+          const cap = new THREE.Mesh(new THREE.SphereGeometry(0.4 + h * 0.15, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), capMat);
+          cap.position.set(px, h, pz);
+          t.add(stem, cap);
+        }
+        return at(t, x, z, rand, false);
+      };
+      const idol: Feature = (x, z, rand) => {
+        // A mossy polygon idol: a blocky stone head half sunk in the ground.
+        const t = new THREE.Group();
+        const head = new THREE.Mesh(new THREE.BoxGeometry(2.6, 3.4, 2.2), mats.rock);
+        head.position.y = 1.4;
+        head.rotation.z = (rand() - 0.5) * 0.2;
+        const brow = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.5, 0.6), mats.rock);
+        brow.position.set(0, 2.3, 1.1);
+        const nose = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.2, 0.7), mats.rock);
+        nose.position.set(0, 1.5, 1.3);
+        const mouth = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.2, 0.1), lambert(0x1a1a14));
+        mouth.position.set(0, 0.6, 1.12);
+        const top = new THREE.Mesh(new THREE.BoxGeometry(2.7, 0.4, 2.3), moss);
+        top.position.y = 3.2;
+        const eyeMat = new THREE.MeshBasicMaterial({ color: 0x3ad8a0 });
+        t.add(head, brow, nose, mouth, top);
+        for (const side of [-1, 1]) {
+          const eye = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.25, 0.1), eyeMat);
+          eye.position.set(side * 0.65, 1.95, 1.12);
+          t.add(eye);
+        }
+        return at(t, x, z, rand);
+      };
+      return (x, z, rand) => pick(rand, [[5, palm], [3.5, ferns], [1, bloom], [1.2, shrooms], [0.5, idol]])(x, z, rand);
     }
   }
 }

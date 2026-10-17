@@ -21,7 +21,7 @@ import type { RoomClient } from './net/room';
 import { GrandPrix } from './core/grandPrix';
 import { Race, ordinal, type RaceKart } from './core/race';
 import { PHYSICS_VERSION, copyKartState, createKartState, driftTier, respawnKart, type KartState, type StepEvents } from './physics/kart';
-import { RACERS, type RacerDef } from './physics/racers';
+import { FIELD_SIZE, RACERS, pickRivals, type RacerDef } from './physics/racers';
 import type { HazardKind } from './items/hazards';
 import type { ItemKind } from './items/items';
 import { ChaseCamera } from './render/chaseCamera';
@@ -130,6 +130,8 @@ let views: KartView[] = [];
 let itemsView: ItemsView | null = null;
 let hazardsView: HazardsView | null = null;
 let raceSeed = 1;
+/** Draws the player's rivals; a new one each time the picker starts something, so a restart keeps the field. */
+let fieldSeed = 1;
 /** Flyover seconds left before the countdown starts. */
 let intro = 0;
 /** Smoothed post effect levels. */
@@ -152,7 +154,8 @@ const menu = new Menu(
   (c) => {
     choice = { ...c };
     if (c.mode === 'online') return setMode('lobby');
-    gp = c.mode === 'grandPrix' ? new GrandPrix(defaultGrid(c.racer), CUPS[c.cup].tracks) : null;
+    fieldSeed = Math.floor(Math.random() * 2 ** 31);
+    gp = c.mode === 'grandPrix' ? new GrandPrix(defaultGrid(c.racer, fieldSeed), CUPS[c.cup].tracks) : null;
     startRace(true);
   },
   savedTracks,
@@ -289,9 +292,9 @@ function raceTrack(): TrackEntry {
   return choice.mode === 'generator' ? generatedTrack() : TRACK_LIST[choice.track];
 }
 
-/** CPUs fill the grid; the player starts from PLAYER_SLOT. */
-function defaultGrid(racer: RacerDef | null): RacerDef[] {
-  const grid = RACERS.filter((r) => r !== racer);
+/** CPUs drawn from the roster by `seed` fill the field; the player starts from PLAYER_SLOT. */
+function defaultGrid(racer: RacerDef | null, seed: number): RacerDef[] {
+  const grid = pickRivals(new Set(racer ? [racer.id] : []), racer ? FIELD_SIZE - 1 : FIELD_SIZE, seed);
   if (racer) grid.splice(Math.min(PLAYER_SLOT, grid.length), 0, racer);
   return grid;
 }
@@ -345,7 +348,7 @@ function startRace(withPlayer: boolean): void {
     netTicks = 0;
     itemSentAt = -Infinity;
   } else {
-    const grid = !withPlayer ? defaultGrid(null) : trial ? [choice.racer] : gp ? gp.grid() : defaultGrid(choice.racer);
+    const grid = !withPlayer ? defaultGrid(null, raceSeed) : trial ? [choice.racer] : gp ? gp.grid() : defaultGrid(choice.racer, fieldSeed);
     for (const r of grid) {
       if (withPlayer && r === choice.racer) player = race.addKart(r, choice.engine, null);
       else race.addKart(r, choice.engine, CPU_SKILL[choice.engine]);
@@ -832,7 +835,7 @@ function table(): Table | null {
   }
   if (mode === 'standings' && gp) {
     const next = gp.finished ? 'Final standings' : `Next: ${TRACK_LIST[gp.trackIndex].name}`;
-    return { kind: 'cup', title: 'CUP STANDINGS', note: next, rows: cupRows(RACERS.length) };
+    return { kind: 'cup', title: 'CUP STANDINGS', note: next, rows: cupRows(gp.entries.length) };
   }
   if (mode === 'podium' && gp) {
     const champ = gp.standings()[0];
