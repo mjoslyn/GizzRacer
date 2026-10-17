@@ -94,11 +94,11 @@ Each track has its own theme (render/themes.ts): desert (Rattlesnake Run), green
 - Hazard motion is a pure function of race time, so it replays and syncs by the clock alone
 
 **Psychedelic layer**
+- Heat haze distortion shader, stronger on the straights
 - Sky slowly cycles through hues: a full turn of the color wheel over the 3 laps, back to normal at the flag
-- Sky slowly cycles through hues each lap
 - Lap 3: kaleidoscope pulse on screen edges synced to the music beat
-- Built (Milestone 6): one post pass (render/postfx.ts) for haze and kaleidoscope, skipped when neither is on. The kaleidoscope runs on every track's final lap. Extras: off-road wheel dust, a pre-race flyover with a title card
 - Diamond-back patterned textures scroll along the track barriers
+- Built (Milestone 6): one post pass (render/postfx.ts) for haze and kaleidoscope, skipped when neither is on. The kaleidoscope runs on every track's final lap. Extras: off-road wheel dust, a pre-race flyover with a title card
 
 **Music:** original driving motorik beat, chant-style hook, microtonal-inflected guitar; tempo rises slightly on the final lap.
 
