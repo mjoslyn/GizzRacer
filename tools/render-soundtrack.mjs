@@ -45,6 +45,12 @@ const CUES = [
   // The Apocalypse Cup's finale.
   { id: 'petrodragonic-apocalypse', title: 'petrodragonic apocalypse', bars: 16 },
   { id: 'petrodragonic-apocalypse-final-lap', title: 'petrodragonic apocalypse (final lap)', bars: 14 },
+  { id: 'hell-on-mars', title: 'hell on mars', bars: 16 },
+  { id: 'hell-on-mars-final-lap', title: 'hell on mars (final lap)', bars: 14 },
+  { id: 'supercell', title: 'supercell', bars: 16 },
+  { id: 'supercell-final-lap', title: 'supercell (final lap)', bars: 14 },
+  { id: 'murder-of-the-universe', title: 'murder of the universe', bars: 16 },
+  { id: 'murder-of-the-universe-final-lap', title: 'murder of the universe (final lap)', bars: 14 },
 ];
 
 process.env.SEQBABY_DIR = SEQBABY_DIR;

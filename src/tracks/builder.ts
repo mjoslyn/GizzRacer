@@ -8,7 +8,7 @@ export interface Pose {
 }
 
 /** How the road looks; 'ice' and 'oil' also slide (physics/kart.ts). */
-export type RoadSurface = 'asphalt' | 'salt' | 'rock' | 'sand' | 'boards' | 'ice' | 'neon' | 'rainbow' | 'oil';
+export type RoadSurface = 'asphalt' | 'salt' | 'rock' | 'sand' | 'boards' | 'ice' | 'neon' | 'rainbow' | 'oil' | 'regolith' | 'wet' | 'cosmic';
 
 export interface SectionProps {
   halfWidth: number;

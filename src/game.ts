@@ -28,6 +28,7 @@ import { ChaseCamera } from './render/chaseCamera';
 import { HazardsView, ItemsView } from './render/itemViews';
 import { KartView, setDustColor } from './render/kartView';
 import { PostFx } from './render/postfx';
+import { RacerGallery } from './render/gallery';
 import { flareRingTexture, glowTexture, setTextureAnisotropy } from './render/textures';
 import { buildTrackView, type TrackView } from './render/trackView';
 import { CUPS, TRACK_LIST } from './tracks/index';
@@ -635,6 +636,11 @@ const HIT_TEXT: Record<ItemKind | HazardKind, string> = {
   iceBlocks: 'ICED!',
   lasers: 'ZAPPED!',
   butterflies: '',
+  meteors: 'METEOR!',
+  hail: 'HAILED!',
+  lightning: 'STRUCK!',
+  tornadoes: '',
+  blackHoles: 'SPAGHETTIFIED!',
 };
 
 /** Takes a group out of the scene and frees what it built. */
@@ -717,7 +723,7 @@ function updateSounds(dt: number): void {
     }
     return best;
   };
-  sfx.hazards(dt, near('snakes'), near('dustDevils') ?? near('butterflies'));
+  sfx.hazards(dt, near('snakes'), near('dustDevils') ?? near('tornadoes') ?? near('blackHoles') ?? near('butterflies'));
 }
 
 function updateMusic(p: RaceKart): void {
@@ -744,6 +750,20 @@ function interpolate(kart: RaceKart, alpha: number): KartState {
 const hex = (c: number) => `#${c.toString(16).padStart(6, '0')}`;
 
 let elapsed = 0;
+/** The racer gallery, built the first time the picker's racer row is used. */
+let gallery: RacerGallery | null = null;
+
+/** While the picker's racer row is in use, the gallery takes over the screen, focused on the chosen racer. */
+function drawGallery(dt: number): boolean {
+  if (mode !== 'menu' || !menu.visible || menu.activeRow !== 'racer') return false;
+  const fresh = !gallery;
+  gallery ??= new RacerGallery();
+  gallery.focus(choice.racer, fresh);
+  gallery.update(dt, elapsed, camera.aspect);
+  postFx.render(gallery.scene, gallery.camera, { haze: 0, kaleido: 0, beat: (elapsed * 2.4) % 1, time: elapsed });
+  return true;
+}
+
 const loop = new FixedLoop(step, (alpha, frameDt) => {
   if (input.consumePause() && mode === 'race') requestPause(!loop.paused);
   // A phone turned upright mid-race pauses; Resume once it's back on its side.
@@ -822,6 +842,7 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
   const finalLap = mode === 'race' && player !== null && player.finishTime === null && intro === 0 && race.laps > 1 && player.laps.lap === race.laps - 1;
   fx.haze += (hazeTarget - fx.haze) * damp(2, frameDt);
   fx.kaleido += ((finalLap ? 1 : 0) - fx.kaleido) * damp(1.5, frameDt);
+  if (drawGallery(frameDt)) return;
   const beat = music.beatPhase();
   postFx.render(scene, camera, { haze: fx.haze, kaleido: fx.kaleido, beat: beat >= 0 ? beat : (elapsed * 2.4) % 1, time: elapsed });
 });

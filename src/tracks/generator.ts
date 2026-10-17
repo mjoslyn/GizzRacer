@@ -9,7 +9,7 @@ import { Track, type HazardDef, type Landmark, type TrackDef } from './track';
  */
 
 export type GenTheme = TrackDef['theme'];
-export const GEN_THEMES: readonly GenTheme[] = ['desert', 'speedway', 'volcano', 'jungle', 'lagoon', 'glacier', 'neon', 'dream', 'petro'];
+export const GEN_THEMES: readonly GenTheme[] = ['desert', 'speedway', 'volcano', 'jungle', 'lagoon', 'glacier', 'neon', 'dream', 'petro', 'mars', 'storm', 'void'];
 export const GEN_THEME_NAMES: Record<GenTheme, string> = {
   desert: 'Desert',
   speedway: 'Speedway',
@@ -20,6 +20,9 @@ export const GEN_THEME_NAMES: Record<GenTheme, string> = {
   neon: 'Neon City',
   dream: 'Sky',
   petro: 'Petrodragonic',
+  mars: 'Mars',
+  storm: 'Supercell',
+  void: 'Void',
 };
 export type GenLength = 'short' | 'medium' | 'long';
 export const GEN_LENGTHS: readonly GenLength[] = ['short', 'medium', 'long'];
@@ -158,6 +161,41 @@ const PALETTES: Record<GenTheme, Palette> = {
     places: ['Wyrm', 'Derrick', 'Ashen', 'Scorch', 'Brimstone', 'Crude', 'Cinder', 'Talon', 'Doom'],
     music: { lap: 'petrodragonic-apocalypse', finalLap: 'petrodragonic-apocalypse-final-lap' },
   },
+  mars: {
+    surface: 'regolith',
+    deck: 'regolith',
+    alt: 'rock',
+    liquid: 'lava',
+    hazards: ['meteors', 'dustDevils'],
+    start: 'colonyGate',
+    landmarks: ['colonyGate'],
+    tallWalls: 4,
+    places: ['Olympus', 'Tharsis', 'Phobos', 'Deimos', 'Crater', 'Colony', 'Red', 'Airlock', 'Rover'],
+    music: { lap: 'hell-on-mars', finalLap: 'hell-on-mars-final-lap' },
+  },
+  storm: {
+    surface: 'wet',
+    deck: 'boards',
+    alt: 'rock',
+    liquid: 'water',
+    hazards: ['tornadoes', 'lightning', 'hail'],
+    start: 'rodGate',
+    landmarks: ['rodGate'],
+    tallWalls: 3,
+    places: ['Supercell', 'Twister', 'Prairie', 'Silo', 'Thunder', 'Anvil', 'Gust', 'Downdraft', 'Hailstone'],
+    music: { lap: 'supercell', finalLap: 'supercell-final-lap' },
+  },
+  void: {
+    surface: 'cosmic',
+    deck: 'cosmic',
+    alt: 'neon',
+    hazards: ['blackHoles', 'lightning'],
+    start: 'voidEye',
+    landmarks: ['voidEye'],
+    tallWalls: 1.2,
+    places: ['Han-Tyumi', 'Altered Beast', 'Balrog', 'Nebula', 'Event Horizon', 'Murder', 'Cyborg', 'Quasar', 'Oblivion'],
+    music: { lap: 'murder-of-the-universe', finalLap: 'murder-of-the-universe-final-lap' },
+  },
 };
 
 const NAME_ADJECTIVES = ['Microtonal', 'Polygon', 'Infinite', 'Nonagon', 'Fuzz', 'Quarter-Tone', 'Psychedelic', 'Altered', 'Cosmic', 'Crumbling', 'Sleepy', 'Plastic', 'Gumboot', 'Robot', 'Hypertension'];
@@ -230,7 +268,7 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
   const between = (a: number, b: number) => a + rand() * (b - a);
   const c = plain ? 1 : clamp(Math.round(p.complexity), 1, GEN_COMPLEXITY_MAX);
   const pal = PALETTES[p.theme];
-  const abyss = p.theme === 'dream';
+  const abyss = p.theme === 'dream' || p.theme === 'void';
   const halfWidth = 12.6 - c * 0.8;
   const R = 52 - c * 5;
   const wall = abyss || c <= 3 ? 1.2 : 0;
@@ -462,6 +500,8 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
         break;
       case 'dustDevils':
       case 'butterflies':
+      case 'tornadoes':
+      case 'blackHoles':
         hazards.push({ kind, from, to, count: 1 });
         break;
       case 'boulders':
@@ -469,6 +509,8 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
         break;
       case 'lavaBombs':
       case 'oilBombs':
+      case 'meteors':
+      case 'hail':
         hazards.push({ kind, at: at(count - 1), period: 6 });
         break;
       case 'flameJets':
@@ -477,6 +519,9 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
         break;
       case 'lasers':
         hazards.push({ kind, at: at(count), period: 2.6 });
+        break;
+      case 'lightning':
+        hazards.push({ kind, at: at(count), period: 4.5 });
         break;
       case 'vines':
         hazards.push({ kind, at: at(count), period: 3.6 });

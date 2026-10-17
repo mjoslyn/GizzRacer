@@ -96,5 +96,47 @@
     "bars": 14,
     "loopSamples": 726353,
     "sampleRate": 44100
+  },
+  "hell-on-mars": {
+    "title": "hell on mars",
+    "bpm": 200,
+    "bars": 16,
+    "loopSamples": 846720,
+    "sampleRate": 44100
+  },
+  "hell-on-mars-final-lap": {
+    "title": "hell on mars (final lap)",
+    "bpm": 212,
+    "bars": 14,
+    "loopSamples": 698943,
+    "sampleRate": 44100
+  },
+  "supercell": {
+    "title": "supercell",
+    "bpm": 172,
+    "bars": 16,
+    "loopSamples": 984558,
+    "sampleRate": 44100
+  },
+  "supercell-final-lap": {
+    "title": "supercell (final lap)",
+    "bpm": 184,
+    "bars": 14,
+    "loopSamples": 805304,
+    "sampleRate": 44100
+  },
+  "murder-of-the-universe": {
+    "title": "murder of the universe",
+    "bpm": 150,
+    "bars": 16,
+    "loopSamples": 1128960,
+    "sampleRate": 44100
+  },
+  "murder-of-the-universe-final-lap": {
+    "title": "murder of the universe (final lap)",
+    "bpm": 160,
+    "bars": 14,
+    "loopSamples": 926100,
+    "sampleRate": 44100
   }
 }

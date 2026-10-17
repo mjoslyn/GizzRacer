@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import * as tex from './textures';
 import { DESERT_SKY, type SkyColors } from './textures';
 
-export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro';
-export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland';
+export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void';
+export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos';
 
 /** Everything that makes a track's world look like itself. */
 export interface Theme {
@@ -18,7 +18,7 @@ export interface Theme {
   /** Off-road scenery. */
   decor: DecorKind;
   /** Silhouettes on the horizon. */
-  distant: { shape: 'mesa' | 'hill' | 'volcano' | 'mountain' | 'city' | 'cloud' | 'flare'; color: number };
+  distant: { shape: 'mesa' | 'hill' | 'volcano' | 'mountain' | 'city' | 'cloud' | 'flare' | 'anvil' | 'planet'; color: number };
   /** Heat haze strength on the straights, 0..1 (render/postfx.ts). */
   haze: number;
   /** The sky turns a full circle of hue over a 3-lap race. */
@@ -27,6 +27,8 @@ export interface Theme {
   dust: number;
   /** Low trackside barriers; `crawl` scrolls the texture along the road. */
   barrier: { map: () => THREE.Texture; crawl: boolean };
+  /** Rain sheeting down round the camera, and lightning lighting up the sky. */
+  storm?: boolean;
 }
 
 export const THEMES: Record<ThemeId, Theme> = {
@@ -165,5 +167,54 @@ export const THEMES: Record<ThemeId, Theme> = {
     skyCycle: false,
     dust: 0x2a1c18,
     barrier: { map: tex.rustTexture, crawl: false },
+  },
+  // Hell on Mars: a red planet gone wrong, the sky the colour of rust and blood, the colony burning.
+  mars: {
+    sky: { zenith: '#2a0806', high: '#6a1e10', low: '#b8502c', horizon: '#f0a06a', below: '#8a3a20', ground: '#5a2414', cloud: '200,110,80', clouds: 14 },
+    fog: { color: 0xb0583a, near: 120, far: 640 },
+    hemi: { sky: 0xffb088, ground: 0x6a2a14, intensity: 1.4 },
+    sun: { color: 0xffc890, intensity: 2.1 },
+    ground: tex.marsTexture,
+    groundTile: 26,
+    cliff: () => tex.stoneTexture([110, 44, 24], [190, 96, 60]),
+    decor: 'colony',
+    distant: { shape: 'mesa', color: 0x7a2a16 },
+    haze: 0.6,
+    skyCycle: false,
+    dust: 0xd07040,
+    barrier: { map: tex.corrugatedTexture, crawl: false },
+  },
+  // Supercell: flattened prairie under a storm the size of a county, green-black light, rain, the funnel coming.
+  storm: {
+    sky: { zenith: '#0a0e10', high: '#1a2428', low: '#34443e', horizon: '#9ab08a', below: '#2a3428', ground: '#1a2418', cloud: '60,70,72', clouds: 60 },
+    fog: { color: 0x3c4a44, near: 70, far: 520 },
+    hemi: { sky: 0xb0c8b8, ground: 0x2a3420, intensity: 1.3 },
+    sun: { color: 0xc8d8c8, intensity: 1.2 },
+    ground: tex.stormGrassTexture,
+    groundTile: 20,
+    cliff: () => tex.stoneTexture([50, 56, 54], [110, 118, 112]),
+    decor: 'plains',
+    distant: { shape: 'anvil', color: 0x1e2628 },
+    haze: 0,
+    skyCycle: false,
+    dust: 0x9aa8a8,
+    barrier: { map: () => tex.stoneTexture([90, 96, 92], [160, 168, 160]), crawl: false },
+    storm: true,
+  },
+  // Murder of the Universe: a road of starlight over nothing, planets hanging dead, the cyborg's eye watching.
+  void: {
+    sky: { zenith: '#000003', high: '#05021a', low: '#180640', horizon: '#7a1aa8', below: '#05020e', ground: '#020108', cloud: '90,40,150', clouds: 8 },
+    fog: { color: 0x0c0420, near: 160, far: 900 },
+    hemi: { sky: 0xb08aff, ground: 0x1a0a3a, intensity: 1.2 },
+    sun: { color: 0xd8c8ff, intensity: 1.5 },
+    ground: tex.voidTexture,
+    groundTile: 140,
+    cliff: () => tex.stoneTexture([30, 20, 50], [80, 60, 120]),
+    decor: 'cosmos',
+    distant: { shape: 'planet', color: 0x2a1a4a },
+    haze: 0,
+    skyCycle: false,
+    dust: 0xb08aff,
+    barrier: { map: tex.cosmicRoadTexture, crawl: true },
   },
 };

@@ -82,6 +82,26 @@ const STYLES: Record<DecorKind, DetailStyle> = {
     boards: { words: ['REPENT', 'DOOM', 'CRUDE', 'THE END'], bg: ['#1a0604', '#3a0a06'], fg: '#ff4a1a' },
     crowd: false,
   },
+  colony: {
+    edge: { kind: 'pole', height: 1.8, spacing: 13, color: 0xc8c8cc, stripe: 0xff3a1a },
+    light: 0xff3a1a,
+    cover: { shape: 'pebble', colors: [0x8a3218, 0x5a2414, 0xb8582c, 0x3a1810], count: 1300 },
+    boards: { words: ['EVACUATE', 'O2 LOW', 'HELL ON MARS', 'NO RETURN'], bg: ['#5a1a10', '#2a2a30'], fg: '#ffc020' },
+    crowd: false,
+  },
+  plains: {
+    edge: { kind: 'fence', height: 1.2, spacing: 10, color: 0x5a4632, stripe: 0x8a7a5a },
+    cover: { shape: 'tuft', colors: [0x4a6a3a, 0x6a8a4a, 0x3a5030, 0x8a8a5a], count: 1600 },
+    boards: { words: ['TAKE COVER', 'SUPERCELL', 'TWISTER', 'NO SHELTER'], bg: ['#1a2428', '#3a2a14'], fg: '#e8f020' },
+    crowd: false,
+  },
+  cosmos: {
+    edge: { kind: 'star', height: 1.4, spacing: 13, color: 0xc89aff, stripe: 0xffffff },
+    light: 0xd8a0ff,
+    cover: { shape: 'none', colors: [], count: 0 },
+    boards: { words: [], bg: [], fg: '#ffffff' },
+    crowd: false,
+  },
   sky: {
     edge: { kind: 'star', height: 1.4, spacing: 14, color: 0xffe8a0, stripe: 0xffffff },
     light: 0xfff0ff,
@@ -153,7 +173,7 @@ function roadPaint(ribbon: Ribbon, decor: DecorKind): THREE.Group {
     line[i] = -Math.max(-0.55, Math.min(0.55, (sum / 25) * 14));
   }
   const paintable = new Set(['asphalt']);
-  const wearable = new Set(['asphalt', 'salt', 'rock', 'sand', 'boards']);
+  const wearable = new Set(['asphalt', 'salt', 'rock', 'sand', 'boards', 'regolith', 'wet']);
   for (let i = 0; i < segs; i++) {
     const j = (i + 1) % n;
     const sMid = (sp.dist[i] + (j === 0 ? sp.length : sp.dist[j])) / 2;

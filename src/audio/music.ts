@@ -19,6 +19,12 @@ export type MusicCue =
   | 'butterfly-skyway-final-lap'
   | 'petrodragonic-apocalypse'
   | 'petrodragonic-apocalypse-final-lap'
+  | 'hell-on-mars'
+  | 'hell-on-mars-final-lap'
+  | 'supercell'
+  | 'supercell-final-lap'
+  | 'murder-of-the-universe'
+  | 'murder-of-the-universe-final-lap'
   | 'podium';
 
 /** Tempo of each song in seqbaby (seqbaby-seed people.mjs), for beat-synced visuals. */
@@ -37,6 +43,12 @@ const BPM: Record<MusicCue, number> = {
   podium: 96,
   'petrodragonic-apocalypse': 188,
   'petrodragonic-apocalypse-final-lap': 204,
+  'hell-on-mars': 200,
+  'hell-on-mars-final-lap': 212,
+  supercell: 172,
+  'supercell-final-lap': 184,
+  'murder-of-the-universe': 150,
+  'murder-of-the-universe-final-lap': 160,
 };
 
 interface ManifestEntry {

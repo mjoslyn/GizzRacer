@@ -64,7 +64,20 @@ const TUMBLEWEED_SPEED = 7;
 const BOULDER_RADIUS = 1.7;
 const BOULDER_DROP = 24;
 const HIT_COOLDOWN = 1;
-const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds' | 'butterflies'>, number> = {
+/** Sideways acceleration inside a tornado, m/s^2: a dust devil grown up. */
+export const TORNADO_PUSH = 40;
+const TORNADO_RADIUS = 6;
+/** Pull round and into a black hole, m/s^2. */
+export const HOLE_PUSH = 30;
+const HOLE_RADIUS = 7;
+/** Touch a black hole's core and it spins you out. */
+export const HOLE_CORE = 1.6;
+export const HOLE_SPIN = 1.1;
+const LIGHTNING_RADIUS = 2.6;
+const SWIRL_PUSH: Partial<Record<HazardKind, number>> = { dustDevils: DEVIL_PUSH, butterflies: BUTTERFLY_PUSH, tornadoes: TORNADO_PUSH, blackHoles: HOLE_PUSH };
+/** A bolt strikes for this share of the cycle after its warning ring closes. */
+export const LIGHTNING_STRIKE = 0.12;
+const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds' | 'butterflies' | 'tornadoes'>, number> = {
   snakes: SNAKE_SPIN,
   fish: FISH_SPIN,
   iceBlocks: ICE_BLOCK_SPIN,
@@ -74,9 +87,18 @@ const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds' | 'butterfli
   flameJets: JET_SPIN,
   dragonFire: JET_SPIN,
   oilBombs: BOULDER_SPIN,
+  meteors: BOULDER_SPIN,
+  hail: BOULDER_SPIN,
+  lightning: JET_SPIN,
+  blackHoles: HOLE_SPIN,
   vines: VINE_SPIN,
   rollers: ROLLER_SPIN,
 };
+
+/** Kinds that drop from the sky and sit where they land, solid. */
+export function isFalling(kind: HazardKind): boolean {
+  return kind === 'boulders' || kind === 'lavaBombs' || kind === 'oilBombs' || kind === 'meteors' || kind === 'hail';
+}
 
 /** Boulder cycle stages, as fractions of the period. */
 export const BOULDER_STAGES = { fall: 0.3, land: 0.4, crumble: 0.85 } as const;
@@ -170,11 +192,13 @@ export class HazardSystem {
           break;
         }
         case 'dustDevils':
-        case 'butterflies': {
+        case 'butterflies':
+        case 'tornadoes':
+        case 'blackHoles': {
           const s = def.from + (def.to - def.from) * (0.5 + 0.45 * Math.sin(t * 0.11 * (1 + i * 0.4) + i * 2.1));
           const lat = this.halfWidth(s) * 0.7 * Math.sin(t * 0.33 + i * 1.7);
-          this.place(p, s, lat, 0);
-          p.radius = def.kind === 'butterflies' ? BUTTERFLY_RADIUS : DEVIL_RADIUS;
+          this.place(p, s, lat, def.kind === 'blackHoles' ? 1.2 : 0);
+          p.radius = { dustDevils: DEVIL_RADIUS, butterflies: BUTTERFLY_RADIUS, tornadoes: TORNADO_RADIUS, blackHoles: HOLE_RADIUS }[def.kind];
           p.active = true;
           p.phase = t * 7;
           break;
@@ -191,9 +215,24 @@ export class HazardSystem {
           p.phase = bounce;
           break;
         }
+        case 'lightning': {
+          const at = def.at[i];
+          const tt = t + 10 + (i * def.period) / def.at.length;
+          const cycle = Math.floor(tt / def.period);
+          const u = tt / def.period - cycle;
+          const lat = this.halfWidth(at) * 0.6 * Math.sin(cycle * 2.39 + i * 1.3);
+          this.place(p, at, lat, 0);
+          p.radius = LIGHTNING_RADIUS;
+          // The warning ring closes over the fall; the bolt hits as it lands.
+          p.active = u >= BOULDER_STAGES.land && u < BOULDER_STAGES.land + LIGHTNING_STRIKE;
+          p.phase = u;
+          break;
+        }
         case 'boulders':
         case 'lavaBombs':
-        case 'oilBombs': {
+        case 'oilBombs':
+        case 'meteors':
+        case 'hail': {
           const at = def.at[i];
           const tt = t + 10 + (i * def.period) / def.at.length;
           const cycle = Math.floor(tt / def.period);
@@ -230,11 +269,15 @@ export class HazardSystem {
         if (Math.abs(s.y - p.ground) > 2.2) continue;
         const d = this.distance(p, s);
         if (d > p.radius + KART_RADIUS) continue;
-        if (p.kind === 'dustDevils' || p.kind === 'butterflies') {
+        if (p.kind === 'dustDevils' || p.kind === 'butterflies' || p.kind === 'tornadoes') {
           this.swirl(p, s, dt);
           continue;
         }
-        if (p.kind === 'boulders' || p.kind === 'lavaBombs' || p.kind === 'oilBombs') this.pushOut(p, s);
+        if (p.kind === 'blackHoles') {
+          this.swirl(p, s, dt);
+          if (d > HOLE_CORE + KART_RADIUS) continue;
+        }
+        if (isFalling(p.kind)) this.pushOut(p, s);
         if (this.cooldown.has(s)) continue;
         this.cooldown.set(s, HIT_COOLDOWN);
         if (p.kind === 'tumbleweeds') {
@@ -253,8 +296,10 @@ export class HazardSystem {
   obstacles(out: { x: number; z: number; r: number; vx: number; vz: number }[]): void {
     for (const p of this.poses) {
       if (p.kind === 'flameJets' || p.kind === 'dragonFire' || p.kind === 'lasers') continue; // the whole road: nothing to steer around
-      const falling = p.kind === 'boulders' || p.kind === 'lavaBombs' || p.kind === 'oilBombs';
-      if (falling ? p.phase > BOULDER_STAGES.crumble || p.phase < BOULDER_STAGES.fall * 0.5 : !p.active) continue;
+      const falling = isFalling(p.kind);
+      if (p.kind === 'lightning') {
+        if (p.phase < BOULDER_STAGES.fall * 0.5 || p.phase > BOULDER_STAGES.land + LIGHTNING_STRIKE) continue;
+      } else if (falling ? p.phase > BOULDER_STAGES.crumble || p.phase < BOULDER_STAGES.fall * 0.5 : !p.active) continue;
       if (p.kind === 'snakes') {
         // The body trails the head: aim to miss its middle.
         const bx = -Math.sin(p.heading) * SNAKE_LENGTH * 0.5;
@@ -310,10 +355,11 @@ export class HazardSystem {
     const dx = s.x - p.x;
     const dz = s.z - p.z;
     const d = Math.hypot(dx, dz) || 1;
-    // Mostly around (counterclockwise from above), a little outward.
-    const push = (p.kind === 'butterflies' ? BUTTERFLY_PUSH : DEVIL_PUSH) * dt;
-    s.extX += ((-dz / d) * 0.85 + (dx / d) * 0.5) * push;
-    s.extZ += ((dx / d) * 0.85 + (dz / d) * 0.5) * push;
+    // Mostly around (counterclockwise from above), a little outward; a black hole pulls in instead.
+    const push = (SWIRL_PUSH[p.kind] ?? DEVIL_PUSH) * dt;
+    const out = p.kind === 'blackHoles' ? -0.45 : 0.5;
+    s.extX += ((-dz / d) * 0.85 + (dx / d) * out) * push;
+    s.extZ += ((dx / d) * 0.85 + (dz / d) * out) * push;
   }
 
   private pushOut(p: HazardPose, s: KartState): void {

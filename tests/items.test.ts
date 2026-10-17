@@ -3,9 +3,12 @@ import { CPU_SKILL, CpuDriver } from '../src/ai/cpuDriver';
 import { NEUTRAL_INPUT } from '../src/core/input';
 import { PHYSICS_DT } from '../src/core/loop';
 import { COUNTDOWN, Race } from '../src/core/race';
-import { BOULDER_STAGES, HazardSystem, JET_STAGES } from '../src/items/hazards';
+import { BOULDER_STAGES, HOLE_CORE, HazardSystem, JET_STAGES, LIGHTNING_STRIKE } from '../src/items/hazards';
 import { buildVolcanoFortress } from '../src/tracks/volcanoFortress';
 import { buildPolygondwanalandJungle } from '../src/tracks/polygondwanalandJungle';
+import { buildHellOnMars } from '../src/tracks/hellOnMars';
+import { buildSupercell } from '../src/tracks/supercell';
+import { buildMurderOfTheUniverse } from '../src/tracks/murderOfTheUniverse';
 import { BOX_RESPAWN, FAR_BEHIND, CANNON_PAST_MAX, CANNON_PAST_MIN, CANNON_TIME, FUZZ_BOOST, ITEM_KINDS, MINE_WOBBLE, ROULETTE, TEMPO_SLOW_FIRST, TEMPO_SLOW_LAST, WAVE_RANGE, itemWeights, rollItem, tempoSlowFor, type ItemKind } from '../src/items/items';
 import { createKartState, respawnKart, slowDown, spinOut, stepKart } from '../src/physics/kart';
 import { FIELD_SIZE, RACERS, kartParams } from '../src/physics/racers';
@@ -518,3 +521,72 @@ describe('volcano and jungle hazards', () => {
     }
   });
 });
+
+describe('apocalypse hazards', () => {
+  const mars = new Track(buildHellOnMars());
+  const storm = new Track(buildSupercell());
+  const space = new Track(buildMurderOfTheUniverse());
+
+  it('meteors and hail land and sit solid like boulders', () => {
+    for (const [t0, kind] of [[mars, 'meteors'], [storm, 'hail']] as const) {
+      const h = new HazardSystem(t0);
+      const i = h.poses.findIndex((p) => p.kind === kind);
+      for (let t = 0; t < 10 && !(h.poses[i].phase > 0.5 && h.poses[i].phase < 0.6); t += 1 / 60) h.update(t);
+      const p = h.poses[i];
+      expect(p.active, kind).toBe(true);
+      const s = createKartState(p.x + 0.4, p.z);
+      s.y = p.ground;
+      h.collide([s], PHYSICS_DT);
+      expect(s.spinTime, kind).toBeGreaterThan(0);
+      expect(Math.hypot(s.x - p.x, s.z - p.z)).toBeGreaterThan(p.radius);
+    }
+  });
+
+  it('lightning warns, then strikes only for a moment', () => {
+    const h = new HazardSystem(storm);
+    const i = h.poses.findIndex((p) => p.kind === 'lightning');
+    const seen = { warn: false, strike: false, after: false };
+    for (let t = 0; t < 10; t += 1 / 60) {
+      h.update(t);
+      const p = h.poses[i];
+      const striking = p.phase >= BOULDER_STAGES.land && p.phase < BOULDER_STAGES.land + LIGHTNING_STRIKE;
+      expect(p.active).toBe(striking);
+      if (p.phase < BOULDER_STAGES.land) seen.warn = true;
+      else if (striking) seen.strike = true;
+      else seen.after = true;
+    }
+    expect(seen).toEqual({ warn: true, strike: true, after: true });
+    for (let t = 0; t < 10 && !h.poses[i].active; t += 1 / 60) h.update(t);
+    const p = h.poses[i];
+    const s = createKartState(p.x + 1, p.z);
+    s.y = p.ground;
+    expect(h.collide([s], PHYSICS_DT).map((e) => e.by)).toEqual(['lightning']);
+    expect(s.spinTime).toBeGreaterThan(0);
+  });
+
+  it('a tornado flings karts round and out without spinning them', () => {
+    const h = new HazardSystem(storm);
+    const p = h.poses.find((q) => q.kind === 'tornadoes')!;
+    const s = createKartState(p.x + 3, p.z);
+    s.y = p.ground;
+    for (let i = 0; i < 10; i++) h.collide([s], PHYSICS_DT);
+    expect(Math.hypot(s.extX, s.extZ)).toBeGreaterThan(4);
+    expect(s.extX).toBeGreaterThan(0); // outward
+    expect(s.spinTime).toBe(0);
+  });
+
+  it('a black hole drags karts in, and its core spins them out', () => {
+    const h = new HazardSystem(space);
+    const p = h.poses.find((q) => q.kind === 'blackHoles')!;
+    const s = createKartState(p.x + 5, p.z);
+    s.y = p.ground;
+    for (let i = 0; i < 10; i++) h.collide([s], PHYSICS_DT);
+    expect(s.extX).toBeLessThan(0); // inward
+    expect(s.spinTime).toBe(0);
+    const core = createKartState(p.x + HOLE_CORE * 0.5, p.z);
+    core.y = p.ground;
+    expect(h.collide([core], PHYSICS_DT).map((e) => e.by)).toEqual(['blackHoles']);
+    expect(core.spinTime).toBeGreaterThan(0);
+  });
+});
+

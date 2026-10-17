@@ -1114,3 +1114,141 @@ export function rustTexture(): THREE.CanvasTexture {
   }
   return finish(c);
 }
+
+/** Martian regolith: rust-red dust, darker basalt patches, small craters. */
+export function marsTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 5, 501);
+  const patch = fbm(S, 3, 3, 502);
+  paint(ctx, S, S, (_x, _y, i) => {
+    const base = mix([132, 52, 26], [206, 104, 56], n[i]);
+    return patch[i] > 0.6 ? mix(base, [70, 30, 22], Math.min(1, (patch[i] - 0.6) * 5)) : base;
+  });
+  const rand = seededRandom(503);
+  for (let k = 0; k < 14; k++) {
+    const x = rand() * S;
+    const y = rand() * S;
+    const r = 4 + rand() * 18;
+    wrapStroke(ctx, S, () => {
+      ctx.strokeStyle = 'rgba(60,20,10,0.45)';
+      ctx.lineWidth = r * 0.25;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(240,150,100,0.35)';
+      ctx.lineWidth = r * 0.12;
+      ctx.beginPath();
+      ctx.arc(x - r * 0.1, y - r * 0.1, r * 1.1, Math.PI * 0.9, Math.PI * 1.6);
+      ctx.stroke();
+    });
+  }
+  return finish(c);
+}
+
+/** A packed red dirt road on Mars, rover ruts down it. */
+export function regolithRoadTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 4, 511);
+  paint(ctx, S, S, (x, _y, i) => {
+    const rut = Math.abs(x / S - 0.3) < 0.04 || Math.abs(x / S - 0.7) < 0.04 ? 0.88 : 1;
+    const b = mix([120, 50, 30], [176, 86, 50], n[i]);
+    return [b[0] * rut, b[1] * rut, b[2] * rut];
+  });
+  return finish(c);
+}
+
+/** Storm plains: flattened wet grass, dark mud showing through, puddles catching the sky. */
+export function stormGrassTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 5, 5, 521);
+  const mud = fbm(S, 3, 3, 522);
+  paint(ctx, S, S, (_x, _y, i) => {
+    if (mud[i] > 0.68) return mix([70, 84, 92], [120, 138, 150], (mud[i] - 0.68) * 3);
+    if (mud[i] > 0.58) return mix([52, 46, 34], [74, 66, 48], n[i]);
+    return mix([46, 70, 40], [96, 122, 66], n[i]);
+  });
+  return finish(c);
+}
+
+/** Rain-soaked asphalt: near black, glossy streaks. */
+export function wetRoadTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 3, 4, 531);
+  const streak = fbm(S, 2, 3, 532);
+  paint(ctx, S, S, (_x, _y, i) => {
+    const sheen = Math.max(0, streak[i] - 0.6) * 3;
+    const b = 30 + n[i] * 20;
+    return [b + sheen * 60, b + sheen * 66, b + 4 + sheen * 76];
+  });
+  return finish(c);
+}
+
+/** Deep space for the void below the road: nebula clouds and stars. */
+export function voidTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 3, 5, 541);
+  const m = fbm(S, 2, 4, 542);
+  paint(ctx, S, S, (_x, _y, i) => {
+    const a = Math.max(0, n[i] - 0.45) * 2;
+    const b = Math.max(0, m[i] - 0.5) * 2;
+    return [6 + a * 120 + b * 30, 4 + a * 20 + b * 60, 14 + a * 110 + b * 120];
+  });
+  const rand = seededRandom(543);
+  for (let k = 0; k < 260; k++) {
+    const v = 150 + rand() * 105;
+    ctx.fillStyle = `rgb(${v},${v},${Math.min(255, v + 20)})`;
+    const r = rand() < 0.08 ? 1.6 : 0.8;
+    ctx.fillRect(rand() * S, rand() * S, r, r);
+  }
+  return finish(c);
+}
+
+/** A road of starlight across the void: deep violet, stars set in it, glowing rails of colour down its sides. */
+export function cosmicRoadTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 3, 4, 551);
+  paint(ctx, S, S, (x, _y, i) => {
+    const edge = x / S < 0.06 || x / S > 0.94;
+    if (edge) return [255, 60 + n[i] * 80, 200];
+    return [24 + n[i] * 40, 10 + n[i] * 16, 50 + n[i] * 60];
+  });
+  const rand = seededRandom(552);
+  for (let k = 0; k < 70; k++) {
+    ctx.fillStyle = rand() < 0.3 ? '#9ae8ff' : '#ffffff';
+    ctx.fillRect(16 + rand() * (S - 32), rand() * S, 1.5, 1.5);
+  }
+  ctx.fillStyle = 'rgba(120,240,255,0.7)';
+  ctx.fillRect(S / 2 - 2, 0, 4, S / 2);
+  return finish(c);
+}
+
+/** Corrugated steel for colony barriers and huts, a hazard stripe along the top. */
+export function corrugatedTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 3, 561);
+  paint(ctx, S, S, (x, y, i) => {
+    const ridge = 0.8 + 0.2 * Math.sin((x / S) * Math.PI * 32);
+    const dust = y / S;
+    const b = mix([150, 150, 156], [196, 120, 80], dust * 0.7 + n[i] * 0.3);
+    return [b[0] * ridge, b[1] * ridge, b[2] * ridge];
+  });
+  for (let x = -S; x < S * 2; x += 32) {
+    ctx.fillStyle = '#ffc020';
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x + 16, 0);
+    ctx.lineTo(x + 32, 24);
+    ctx.lineTo(x + 16, 24);
+    ctx.fill();
+  }
+  ctx.fillStyle = 'rgba(20,20,20,0.9)';
+  ctx.fillRect(0, 24, S, 3);
+  return finish(c);
+}

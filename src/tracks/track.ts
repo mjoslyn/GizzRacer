@@ -18,7 +18,7 @@ export interface BranchDef extends RibbonDef {
 }
 
 export interface Landmark {
-  kind: 'skeletonArch' | 'fangs' | 'fortressGate' | 'templeGate' | 'waterfall' | 'gantry' | 'lighthouse' | 'iceArch' | 'neonArch' | 'rainbowArch' | 'dragonGate' | 'dragonFlight';
+  kind: 'skeletonArch' | 'fangs' | 'fortressGate' | 'templeGate' | 'waterfall' | 'gantry' | 'lighthouse' | 'iceArch' | 'neonArch' | 'rainbowArch' | 'dragonGate' | 'dragonFlight' | 'colonyGate' | 'rodGate' | 'voidEye';
   ribbon: number; // -1 = main, else branch index
   s: number; // builder units
 }
@@ -41,7 +41,7 @@ export interface TrackDef {
   itemBoxes: { s: number; count: number }[];
   hazards: HazardDef[];
   /** Visual theme (render/themes.ts). */
-  theme: 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro';
+  theme: 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void';
   /** No ground: off the road is a long drop (the sky track). */
   abyss?: boolean;
   /** Music cues (public/music/<cue>.mp3): one for the race, one for the final lap. */
@@ -76,7 +76,17 @@ export type HazardDef =
   /** Petrodragonic: dragons perched by the road breathing fire across all of it, on a rhythm. */
   | { kind: 'dragonFire'; at: number[]; period: number }
   /** Petrodragonic: burning oil dropped from above, left smouldering on the road. */
-  | { kind: 'oilBombs'; at: number[]; period: number };
+  | { kind: 'oilBombs'; at: number[]; period: number }
+  /** Hell on Mars: meteors streaking down and smouldering in their craters. */
+  | { kind: 'meteors'; at: number[]; period: number }
+  /** Supercell: hailstones the size of boulders. */
+  | { kind: 'hail'; at: number[]; period: number }
+  /** Supercell and Murder of the Universe: a ring of warning, then a bolt where it stood. */
+  | { kind: 'lightning'; at: number[]; period: number }
+  /** Supercell: tornadoes wandering the road, flinging karts round and out. */
+  | { kind: 'tornadoes'; from: number; to: number; count: number }
+  /** Murder of the Universe: black holes drifting across the road, dragging karts round and in. */
+  | { kind: 'blackHoles'; from: number; to: number; count: number };
 
 export interface StartSlot {
   x: number;

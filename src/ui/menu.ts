@@ -73,6 +73,11 @@ export class Menu {
     this.render();
   }
 
+  /** The row being used: the game shows the racer gallery while it's 'racer'. */
+  get activeRow(): MenuRow {
+    return this.rows()[this.row];
+  }
+
   get visible(): boolean {
     return this.el.classList.contains('show');
   }

@@ -1,6 +1,9 @@
 import { buildButterflySkyway } from './butterflySkyway';
 import { buildCyboogieCity } from './cyboogieCity';
 import { buildFishiesLagoon } from './fishiesLagoon';
+import { buildHellOnMars } from './hellOnMars';
+import { buildMurderOfTheUniverse } from './murderOfTheUniverse';
+import { buildSupercell } from './supercell';
 import { buildIceVGlacier } from './iceVGlacier';
 import { buildInfiniteLoopSpeedway } from './infiniteLoopSpeedway';
 import { buildPetrodragonicApocalypse } from './petrodragonicApocalypse';
@@ -20,12 +23,15 @@ export const TRACK_LIST: { id: string; name: string; build: () => TrackDef }[] =
   { id: 'cyboogie-city', name: 'Cyboogie City', build: buildCyboogieCity },
   { id: 'butterfly-skyway', name: 'Butterfly 3000 Skyway', build: buildButterflySkyway },
   { id: 'petrodragonic-apocalypse', name: 'Petrodragonic Apocalypse', build: buildPetrodragonicApocalypse },
+  { id: 'hell-on-mars', name: 'Hell on Mars', build: buildHellOnMars },
+  { id: 'supercell', name: 'Supercell', build: buildSupercell },
+  { id: 'murder-of-the-universe', name: 'Murder of the Universe', build: buildMurderOfTheUniverse },
 ];
 
 /** Grand Prix cups: four tracks each, in race order (indexes into TRACK_LIST). */
 export const CUPS: { name: string; tracks: number[] }[] = [
   { name: 'Nonagon Cup', tracks: [0, 1, 2, 3] },
   { name: 'Microtonal Cup', tracks: [4, 5, 6, 7] },
-  // The hardest three, ending in the apocalypse.
-  { name: 'Apocalypse Cup', tracks: [2, 6, 7, 8] },
+  // Four ends of the world, the oil-field dragons last.
+  { name: 'Apocalypse Cup', tracks: [9, 10, 11, 8] },
 ];

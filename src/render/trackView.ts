@@ -6,6 +6,7 @@ import { inPit, type Ribbon, type Track } from '../tracks/track';
 import * as tex from './textures';
 import { THEMES, type Theme } from './themes';
 import { CURB_WIDTH, trackDetail } from './trackDetail';
+import { colonyFeature, colonyGate, cosmosFeature, plainsFeature, rodGate, stormWeather, voidEye } from './apocalypse';
 
 /** Meters of road per texture repeat along the track. */
 const ROAD_TILE = 14;
@@ -47,6 +48,9 @@ function materials(theme: Theme): Materials {
     city: () => tex.stoneTexture([40, 34, 56], [90, 80, 110]),
     sky: () => tex.stoneTexture([220, 200, 240], [255, 250, 255]),
     wasteland: () => tex.stoneTexture([30, 22, 22], [80, 58, 50]),
+    colony: () => tex.stoneTexture([100, 40, 22], [180, 90, 54]),
+    plains: () => tex.stoneTexture([70, 74, 70], [130, 136, 128]),
+    cosmos: () => tex.stoneTexture([50, 30, 80], [130, 100, 180]),
   };
   const neon = tex.neonRoadTexture();
   const rainbow = tex.rainbowTexture();
@@ -62,6 +66,12 @@ function materials(theme: Theme): Materials {
       rainbow: lambert(rainbow, { emissive: 0xffffff, emissiveMap: rainbow, emissiveIntensity: 0.35 }),
       // Wet and black, with a hard highlight: it looks as slippery as it is.
       oil: new THREE.MeshPhongMaterial({ map: tex.oilRoadTexture(), shininess: 110, specular: 0x8a7a90 }),
+      regolith: lambert(tex.regolithRoadTexture()),
+      wet: new THREE.MeshPhongMaterial({ map: tex.wetRoadTexture(), shininess: 80, specular: 0x6a7a80 }),
+      cosmic: (() => {
+        const map = tex.cosmicRoadTexture();
+        return lambert(map, { emissive: 0xffffff, emissiveMap: map, emissiveIntensity: 0.55 });
+      })(),
     },
     curb: lambert(tex.curbTexture()),
     strata: lambert(theme.cliff(), { side: THREE.DoubleSide }),
@@ -120,6 +130,9 @@ export function buildTrackView(track: Track): TrackView {
     if (lm.kind === 'neonArch') group.add(neonArch(ribbon, s));
     if (lm.kind === 'rainbowArch') group.add(rainbowArch(ribbon, s));
     if (lm.kind === 'dragonGate') group.add(dragonGate(ribbon, s, mats));
+    if (lm.kind === 'colonyGate') group.add(colonyGate(ribbon, s, animated));
+    if (lm.kind === 'rodGate') group.add(rodGate(ribbon, s, animated));
+    if (lm.kind === 'voidEye') group.add(voidEye(ribbon, s, animated));
     if (lm.kind === 'dragonFlight') {
       const d = dragonFlight(track.def.bounds);
       group.add(d.group);
@@ -143,6 +156,8 @@ export function buildTrackView(track: Track): TrackView {
 
   const skyMesh = group.children[0] as THREE.Mesh;
   const skyHue = skyMesh.userData.hue as { value: number };
+  const weather = theme.storm ? stormWeather(skyMesh.material as THREE.MeshBasicMaterial) : null;
+  if (weather) group.add(weather.group);
   return {
     group,
     theme,
@@ -154,6 +169,7 @@ export function buildTrackView(track: Track): TrackView {
       if (mats.lava.map) mats.lava.map.offset.set(time * 0.02, time * 0.035);
       skyMesh.position.copy(cameraPos);
       for (const a of animated) a(time);
+      weather?.update(time, cameraPos);
     },
   };
 }
@@ -879,6 +895,33 @@ function distant(theme: Theme): THREE.Group {
           mesh.scale.set(1.6, 0.6, 1);
           mesh.position.y = (rand() - 0.3) * 120;
           break;
+        case 'anvil': {
+          // A supercell: a dark tower of cloud spreading into a flat anvil, a funnel hanging from its belly.
+          const ah = h * 2.4;
+          mesh = new THREE.Mesh(new THREE.CylinderGeometry(w * 0.5, w * 0.7, ah, 14), mat);
+          mesh.position.y = ah / 2 - 2;
+          const top = new THREE.Mesh(new THREE.CylinderGeometry(w * 1.6, w * 0.8, ah * 0.18, 16), mat);
+          top.position.y = ah * 0.5;
+          mesh.add(top);
+          if (rand() < 0.35) {
+            const funnel = new THREE.Mesh(new THREE.ConeGeometry(w * 0.08, ah * 0.5, 10), new THREE.MeshLambertMaterial({ color: new THREE.Color(theme.distant.color).multiplyScalar(1.4) }));
+            funnel.rotation.x = Math.PI;
+            funnel.position.set(w * 0.9, -ah * 0.25, 0);
+            mesh.add(funnel);
+          }
+          break;
+        }
+        case 'planet': {
+          // Dead worlds hanging over the void, some ringed.
+          mesh = new THREE.Mesh(new THREE.SphereGeometry(w * 0.5, 20, 14), new THREE.MeshLambertMaterial({ color: new THREE.Color().setHSL(0.6 + rand() * 0.35, 0.5, 0.25 + rand() * 0.15) }));
+          mesh.position.y = 40 + rand() * 260 * scale;
+          if (rand() < 0.5) {
+            const ring = new THREE.Mesh(new THREE.RingGeometry(w * 0.65, w * 0.95, 40), new THREE.MeshBasicMaterial({ color: 0xc8a8ff, transparent: true, opacity: 0.4, side: THREE.DoubleSide, fog: false }));
+            ring.rotation.x = Math.PI / 2 - 0.35;
+            mesh.add(ring);
+          }
+          break;
+        }
         case 'flare': {
           // A ruined refinery stack, a gas flare burning on top, smoke leaning off it.
           const sh = h * 1.6;
@@ -918,10 +961,10 @@ function decor(track: Track, mats: Materials, theme: Theme, animated: ((time: nu
     ribbons.every((r) => nearestOnSpline(r.spline, x, z).distance > Math.max(...r.halfWidth) + 8) &&
     track.def.pits.every((p) => !inPit({ ...p, halfWidth: p.halfWidth + 6, halfLength: p.halfLength + 6 }, x, z));
 
-  const rockCount = { jungle: 120, city: 0, sky: 0, lagoon: 60, glacier: 140, wasteland: 150 }[theme.decor as string] ?? 220;
-  const featureCount = { jungle: 150, meadow: 110, lagoon: 120, glacier: 160, city: 90, sky: 90, wasteland: 110 }[theme.decor as string] ?? 70;
-  // Sky scenery floats at all heights; city towers need room off the road.
-  const floating = theme.decor === 'sky';
+  const rockCount = { jungle: 120, city: 0, sky: 0, lagoon: 60, glacier: 140, wasteland: 150, colony: 170, plains: 60, cosmos: 0 }[theme.decor as string] ?? 220;
+  const featureCount = { jungle: 150, meadow: 110, lagoon: 120, glacier: 160, city: 90, sky: 90, wasteland: 110, colony: 110, plains: 140, cosmos: 110 }[theme.decor as string] ?? 70;
+  // Sky and void scenery floats at all heights; city towers need room off the road.
+  const floating = theme.decor === 'sky' || theme.decor === 'cosmos';
   const rocks = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 1), mats.rock, rockCount);
   const feature = featureBuilder(theme, mats, animated);
   const m = new THREE.Matrix4();
@@ -975,6 +1018,12 @@ function featureBuilder(theme: Theme, mats: Materials, animated: ((time: number)
   switch (theme.decor) {
     case 'wasteland':
       return wastelandFeature(mats, animated, trunkGeo);
+    case 'colony':
+      return colonyFeature(mats.rock, animated);
+    case 'plains':
+      return plainsFeature(animated);
+    case 'cosmos':
+      return cosmosFeature(mats.rock, animated);
     case 'lagoon': {
       const bark = lambert(0x9a7a52);
       const frond = lambert(0x3aa04a, { side: THREE.DoubleSide, flatShading: true });

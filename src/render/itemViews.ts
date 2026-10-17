@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { BOULDER_STAGES, JET_STAGES, type HazardPose } from '../items/hazards';
+import { BOULDER_STAGES, HOLE_CORE, JET_STAGES, LIGHTNING_STRIKE, type HazardPose } from '../items/hazards';
 import { WAVE_RANGE, type ItemSystem } from '../items/items';
 import type { HazardSystem } from '../items/hazards';
 import { basaltTexture, dustTexture, wingTexture, flameTexture, glowTexture, itemBoxTexture, scaleTexture, stoneTexture, warningTexture, woodTexture } from './textures';
@@ -185,6 +185,26 @@ export class HazardsView {
     const wing = wingTexture();
     const wingMats = [0xff7ad8, 0x7ae8ff, 0xffe07a, 0xb07aff, 0x7aff9a].map((c) => new THREE.MeshBasicMaterial({ color: c, map: wing, side: THREE.DoubleSide, alphaTest: 0.5 }));
 
+    const meteorMat = new THREE.MeshPhongMaterial({ map: stoneTexture([60, 30, 24], [120, 70, 50]), emissive: 0xff4a10, emissiveIntensity: 0.45, flatShading: true });
+    const trailGeo = new THREE.ConeGeometry(1.4, 9, 10, 1, true);
+    trailGeo.translate(0, 4.5, 0);
+    const trailMat = new THREE.MeshBasicMaterial({ map: flames, color: 0xff8a40, transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending });
+    const hailMat = new THREE.MeshPhongMaterial({ color: 0xe8f4ff, emissive: 0x1a2a3a, shininess: 120, specular: 0xffffff, transparent: true, opacity: 0.9, flatShading: true });
+    const stormFunnel = funnelGeo.clone().scale(1.5, 2.6, 1.5);
+    const debrisGeo = new THREE.BoxGeometry(0.6, 0.15, 1.1);
+    const debrisMats = [0x6a4a2a, 0x8a8a8a, 0x3a5a2a].map((c) => new THREE.MeshLambertMaterial({ color: c }));
+    const boltMat = new THREE.MeshBasicMaterial({ color: 0xe8f0ff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
+    const boltGlow = glowTexture('rgba(200,220,255,1)', 'rgba(120,140,255,0)');
+    const ringGeo = new THREE.RingGeometry(0.85, 1, 40);
+    ringGeo.rotateX(-Math.PI / 2);
+    const scorchGeo = new THREE.CircleGeometry(1, 20);
+    scorchGeo.rotateX(-Math.PI / 2);
+    const holeCore = new THREE.MeshBasicMaterial({ color: 0x000000 });
+    const diskGeo = new THREE.RingGeometry(HOLE_CORE * 1.1, 6, 48, 2);
+    diskGeo.rotateX(-Math.PI / 2);
+    const diskTex = flames.clone();
+    diskTex.needsUpdate = true;
+
     for (const pose of hazards.poses) {
       const obj = new THREE.Group();
       const parts: THREE.Object3D[] = [];
@@ -239,6 +259,81 @@ export class HazardsView {
           ball.add(new THREE.Mesh(weedCoreGeo, weedCore));
           parts.push(ball);
           obj.add(ball);
+          break;
+        }
+        case 'meteors':
+        case 'hail': {
+          const meteor = pose.kind === 'meteors';
+          const b = new THREE.Mesh(boulderGeo, meteor ? meteorMat : hailMat);
+          if (meteor) {
+            // A flaming tail streaming up the way it came, and a glow.
+            const trail = new THREE.Mesh(trailGeo, trailMat);
+            b.add(trail, sprite(heat, 0xff6a20, 7));
+          } else b.scale.setScalar(0.85);
+          const warn = new THREE.Mesh(warnGeo, new THREE.MeshBasicMaterial({ map: warnTex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 }));
+          parts.push(b, warn);
+          this.group.add(warn);
+          obj.add(b);
+          break;
+        }
+        case 'lightning': {
+          // A ring closing on the spot, then a jagged bolt from the clouds, then a scorch mark.
+          const ring = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0x9ac8ff, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+          ring.position.y = 0.08;
+          const bolt = new THREE.Group();
+          let x = 0;
+          let z = 0;
+          for (let k = 0; k < 10; k++) {
+            const nx = k === 9 ? 0 : (Math.random() - 0.5) * 3;
+            const nz = k === 9 ? 0 : (Math.random() - 0.5) * 3;
+            const y0 = 60 - k * 6;
+            const a = new THREE.Vector3(x, y0, z);
+            const c = new THREE.Vector3(nx, y0 - 6, nz);
+            const seg = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, a.distanceTo(c), 5), boltMat);
+            seg.position.copy(a).add(c).multiplyScalar(0.5);
+            seg.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), c.clone().sub(a).normalize());
+            bolt.add(seg);
+            x = nx;
+            z = nz;
+          }
+          const flash = sprite(boltGlow, 0xc8d8ff, 12);
+          flash.position.y = 1.5;
+          bolt.add(flash);
+          const scorch = new THREE.Mesh(scorchGeo, new THREE.MeshBasicMaterial({ color: 0x050505, transparent: true, opacity: 0.7, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 }));
+          scorch.scale.setScalar(2.4);
+          scorch.position.y = 0.05;
+          obj.add(ring, bolt, scorch);
+          parts.push(ring, bolt, scorch);
+          break;
+        }
+        case 'tornadoes': {
+          // Three grey funnels turning at different rates, a cloud of debris orbiting the base.
+          for (let i = 0; i < 3; i++) {
+            const t = dust.clone();
+            t.needsUpdate = true;
+            t.repeat.set(2 + i, 1);
+            const funnel = new THREE.Mesh(stormFunnel, new THREE.MeshLambertMaterial({ map: t, color: 0x7a8486, transparent: true, opacity: 0.7 - i * 0.15, depthWrite: false, side: THREE.DoubleSide }));
+            funnel.scale.setScalar(1 - i * 0.2);
+            parts.push(funnel);
+            obj.add(funnel);
+          }
+          for (let k = 0; k < 14; k++) {
+            const d = new THREE.Mesh(debrisGeo, debrisMats[k % 3]);
+            d.userData.k = k;
+            parts.push(d);
+            obj.add(d);
+          }
+          break;
+        }
+        case 'blackHoles': {
+          // A black sphere, a swirling disk of fire round it, light bending in a halo.
+          const core = new THREE.Mesh(new THREE.SphereGeometry(HOLE_CORE, 24, 16), holeCore);
+          const disk = new THREE.Mesh(diskGeo, new THREE.MeshBasicMaterial({ map: diskTex, color: 0xd88aff, transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending }));
+          disk.rotation.x = 0.25;
+          const halo = sprite(glowTexture('rgba(180,120,255,0.35)', 'rgba(150,80,255,0)'), 0xb070ff, 16);
+          const rim = sprite(glowTexture('rgba(255,220,255,1)', 'rgba(120,40,255,0)'), 0xc890ff, HOLE_CORE * 3.4);
+          obj.add(rim, core, disk, halo);
+          parts.push(disk, rim);
           break;
         }
         case 'boulders':
@@ -510,13 +605,51 @@ export class HazardsView {
             b.children[1].rotation.y = Math.PI - flap;
           });
           break;
+        case 'lightning': {
+          const [ring, bolt, scorch] = parts;
+          const u = p.phase;
+          const strike = u >= BOULDER_STAGES.land && u < BOULDER_STAGES.land + LIGHTNING_STRIKE;
+          ring.visible = u < BOULDER_STAGES.land;
+          const close = Math.min(1, u / BOULDER_STAGES.land);
+          ring.scale.setScalar(6 - close * 3.4);
+          (ring as THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>).material.opacity = 0.3 + 0.7 * Math.abs(Math.sin(elapsed * (6 + close * 14)));
+          bolt.visible = strike && Math.sin(elapsed * 70) > -0.3;
+          scorch.visible = u >= BOULDER_STAGES.land && u < BOULDER_STAGES.crumble;
+          (scorch as THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>).material.opacity = 0.7 * (1 - Math.max(0, u - BOULDER_STAGES.land) / (BOULDER_STAGES.crumble - BOULDER_STAGES.land));
+          break;
+        }
+        case 'tornadoes':
+          parts.forEach((f, i) => {
+            if (i < 3) {
+              f.rotation.y = elapsed * (4 + i * 2.5);
+              f.position.x = Math.sin(elapsed * 1.7 + i) * 0.8;
+              return;
+            }
+            const k = f.userData.k as number;
+            const a = elapsed * (2.4 + (k % 4) * 0.4) + k * 0.9;
+            const r = 3 + (k % 5) * 0.9;
+            f.position.set(Math.cos(a) * r, 1 + ((k * 1.7 + elapsed * 2) % 9), Math.sin(a) * r);
+            f.rotation.set(elapsed * 5 + k, elapsed * 3, k);
+          });
+          break;
+        case 'blackHoles': {
+          const [disk, rim] = parts;
+          disk.rotation.y = -elapsed * 1.8;
+          rim.scale.setScalar(HOLE_CORE * (3.2 + Math.sin(elapsed * 3) * 0.3));
+          break;
+        }
         case 'boulders':
         case 'lavaBombs':
-        case 'oilBombs': {
+        case 'oilBombs':
+        case 'meteors':
+        case 'hail': {
           const [b, warn] = parts;
           const u = p.phase;
           b.visible = u >= BOULDER_STAGES.fall;
-          b.rotation.set(u * 9, u * 5, 0);
+          // A meteor keeps its tail pointed up the way it came; everything else tumbles.
+          if (p.kind === 'meteors') b.rotation.set(0.5, u * 4, 0.3);
+          else b.rotation.set(u * 9, u * 5, 0);
+          if (p.kind === 'meteors') b.children[0].visible = u < BOULDER_STAGES.land;
           warn.visible = u < BOULDER_STAGES.land;
           warn.position.set(p.x, p.ground + 0.05, p.z);
           const grow = Math.min(1, u / BOULDER_STAGES.fall);
