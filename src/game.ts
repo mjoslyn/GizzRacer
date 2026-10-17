@@ -934,6 +934,8 @@ function requestPause(paused: boolean): void {
 
 lobby.onRoomState = (s) => {
   if (!online) return;
+  // The room went back to its lobby (the host, or a server restart): so do we.
+  if (s.phase === 'lobby' && (mode === 'race' || mode === 'results')) return backToLobby();
   // GO moves back by any pause; keep the latest.
   if (s.start && s.start.race === online.start.race) online.start = s.start;
   pendingPause = null;
@@ -1035,7 +1037,8 @@ Object.assign(window, {
     },
     /** Online race clock check: room offset, round trip, and seconds to GO by the room's clock. */
     get online() {
-      return online && { offset: online.client.offset, rtt: online.client.rtt, toGo: (online.start.at - online.client.serverNow()) / 1000, raceTime: race.time };
+      const snap = online?.net?.latest;
+      return online && { offset: online.client.offset, rtt: online.client.rtt, toGo: (online.start.at - online.client.serverNow()) / 1000, raceTime: race.time, roomTime: snap?.t, roomLaps: snap?.lap, roomFin: snap?.fin };
     },
     advance,
     /** Puts an item straight in the player's slot (testing). */

@@ -54,6 +54,14 @@ export class Room extends Server<Env> {
 
   async onStart(): Promise<void> {
     this.saved = (await this.ctx.storage.get<Saved>('room')) ?? null;
+    const room = this.saved;
+    // The race lives in memory only: after a restart (a deploy, say) it's gone, so the room is back in its lobby.
+    if (room?.phase === 'racing') {
+      room.phase = 'lobby';
+      room.pause = null;
+      for (const m of Object.values(room.members)) m.ready = false;
+      await this.ctx.storage.put('room', room);
+    }
   }
 
   async onMessage(conn: Connection<ConnState>, raw: WSMessage): Promise<void> {

@@ -2,6 +2,8 @@ export const PHYSICS_HZ = 60;
 export const PHYSICS_DT = 1 / PHYSICS_HZ;
 /** Cap on real time consumed per frame so a stalled tab doesn't spiral. */
 const MAX_FRAME_TIME = 0.25;
+/** Most extra time catchUp adds in one go. */
+const MAX_CATCH_UP = 1;
 
 /**
  * Fixed-timestep simulation with interpolated rendering.
@@ -42,7 +44,8 @@ export class FixedLoop {
 
   /** Runs extra simulated time on the next frames (an online race that fell behind the room's clock). */
   catchUp(seconds: number): void {
-    this.accumulator += Math.min(Math.max(seconds, 0), MAX_FRAME_TIME);
+    // Physics steps are cheap next to a frame's rendering: allow a good second's worth.
+    this.accumulator += Math.min(Math.max(seconds, 0), MAX_CATCH_UP);
   }
 
   get alpha(): number {

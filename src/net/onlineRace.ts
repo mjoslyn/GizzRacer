@@ -32,6 +32,11 @@ export class OnlineRace {
     for (const k of race.karts) k.remote = k !== me;
   }
 
+  /** The newest snapshot from the room (debugging). */
+  get latest(): Snap | null {
+    return this.buffer[this.buffer.length - 1]?.snap ?? null;
+  }
+
   /** The packed state to report to the room. */
   report(): number[] {
     return packKart(this.me.state);
