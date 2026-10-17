@@ -36,4 +36,5 @@ export const TEST_TRACK: TrackDef = {
   laps: 3,
   bounds: 240,
   landmarks: [],
+  music: { lap: 'infinite-loop-speedway' },
 };

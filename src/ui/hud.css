@@ -203,3 +203,122 @@ body {
   color: #ffb347;
   letter-spacing: 2px;
 }
+
+.hud-position {
+  font-size: 52px;
+  line-height: 1;
+}
+
+.hud-position small {
+  font-size: 22px;
+}
+
+.hud-count {
+  position: absolute;
+  top: 34%;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 120px;
+  letter-spacing: 6px;
+  opacity: 0;
+}
+
+.hud-count.pop {
+  animation: hud-pop 0.9s ease-out forwards;
+}
+
+@keyframes hud-pop {
+  0% { opacity: 0; transform: scale(2.2); }
+  15% { opacity: 1; transform: scale(1); }
+  75% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.9); }
+}
+
+.hud-standings {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  min-width: min(420px, 86vw);
+  transform: translate(-50%, -50%) skewX(-6deg);
+  padding: 18px 26px 22px;
+  display: none;
+  background: linear-gradient(180deg, rgba(60, 15, 75, 0.88), rgba(25, 5, 40, 0.9));
+  box-shadow: 0 0 0 3px #ffd23a, 0 0 0 6px #3a0f45, 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.hud-standings.show {
+  display: block;
+}
+
+.hud-standings-head {
+  font-size: 40px;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.hud-standing {
+  display: grid;
+  grid-template-columns: 52px 18px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 6px;
+  font-size: 18px;
+  text-shadow: 2px 2px 0 #3a0f45;
+}
+
+.hud-standing.me {
+  background: rgba(255, 210, 58, 0.22);
+}
+
+.hud-standing .dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px #fff7e6;
+}
+
+.hud-standing .time {
+  font-variant-numeric: tabular-nums;
+  font-size: 15px;
+}
+
+.hud-title {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at center, rgba(60, 15, 75, 0.35), rgba(20, 0, 30, 0.75));
+}
+
+.hud-title.show {
+  display: flex;
+}
+
+.hud-title-logo {
+  font-size: min(120px, 16vw);
+  letter-spacing: 4px;
+  transform: skewX(-10deg);
+}
+
+.hud-title-sub {
+  font-size: 20px;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  text-shadow: 2px 2px 0 #3a0f45;
+}
+
+.hud-title-press {
+  margin-top: 48px;
+  font-size: 22px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  text-shadow: 2px 2px 0 #3a0f45;
+  animation: hud-blink 1.1s steps(2, start) infinite;
+}
+
+@keyframes hud-blink {
+  to { visibility: hidden; }
+}

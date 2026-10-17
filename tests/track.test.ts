@@ -114,7 +114,8 @@ describe('rattlesnake run', () => {
 
   it('a lap driven by autopilot finishes without falling off', () => {
     const race = new Race(track);
-    const kart = race.addKart(RACERS[0], '100cc');
+    const kart = race.addKart(RACERS[0], '100cc', null);
+    race.time = 0; // skip the countdown
     let respawns = 0;
     for (let t = 0; t < 200 && kart.laps.lap < 1; t += PHYSICS_DT) {
       race.step(PHYSICS_DT, [autopilot(track, kart.state, kart.progressS)]);

@@ -1,6 +1,7 @@
+import { wrapAngle } from '../core/math';
 import type { DriveEnv, GroundInfo, KartState, SurfaceType, WallHit } from '../physics/kart';
 import type { PitDef, RibbonDef, RoadSurface } from './builder';
-import { buildSpline, nearestOnSpline, pointAt, type SplineHit, type TrackSpline } from './spline';
+import { buildSpline, indexAt, nearestOnSpline, pointAt, type SplineHit, type TrackSpline } from './spline';
 
 export interface BoostPad {
   s: number; // main-ribbon arc length of the pad's leading edge (builder units)
@@ -36,6 +37,8 @@ export interface TrackDef {
   /** Square play area half-extent; walls sit on its edge. */
   bounds: number;
   landmarks: Landmark[];
+  /** Music cues (public/music/<cue>.mp3): one for the race, one for the final lap. */
+  music: { lap: string; finalLap?: string };
 }
 
 export interface StartSlot {
@@ -69,9 +72,26 @@ export class Ribbon {
   readonly halfWidth: Float32Array;
   readonly wallHeight: Float32Array;
   readonly sectionIndex: Uint16Array;
+  /** Heading at each sample, unwrapped so differences measure total turning. */
+  readonly turn: Float64Array;
+  /** Signed curvature (rad/m) at each sample; positive turns left. */
+  readonly curvature: Float32Array;
 
   constructor(readonly def: RibbonDef) {
     this.spline = buildSpline(def.points, 2, def.closed);
+    const sp = this.spline;
+    this.turn = new Float64Array(sp.count);
+    this.curvature = new Float32Array(sp.count);
+    for (let i = 0; i < sp.count; i++) {
+      const h = Math.atan2(sp.tx[i], sp.tz[i]);
+      this.turn[i] = i === 0 ? h : this.turn[i - 1] + wrapAngle(h - Math.atan2(sp.tx[i - 1], sp.tz[i - 1]));
+    }
+    for (let i = 0; i < sp.count; i++) {
+      const a = sp.closed ? (i - 2 + sp.count) % sp.count : Math.max(i - 2, 0);
+      const b = sp.closed ? (i + 2) % sp.count : Math.min(i + 2, sp.count - 1);
+      const ds = 4 * (sp.length / (sp.closed ? sp.count : sp.count - 1));
+      this.curvature[i] = wrapAngle(Math.atan2(sp.tx[b], sp.tz[b]) - Math.atan2(sp.tx[a], sp.tz[a])) / ds;
+    }
     this.scale = def.length > 0 ? this.spline.length / def.length : 1;
     const n = this.spline.count;
     this.sectionIndex = new Uint16Array(n);
@@ -145,6 +165,54 @@ export class Ribbon {
 
   sectionName(index: number): string {
     return this.def.sections[this.sectionIndex[index]].name;
+  }
+
+  /** Unwrapped heading at spline arc length s; on a loop it keeps counting past the line. */
+  private turnAt(s: number): number {
+    const sp = this.spline;
+    const L = sp.length;
+    const laps = sp.closed ? Math.floor(s / L) : 0;
+    const local = sp.closed ? s - laps * L : Math.min(Math.max(s, 0), L);
+    const i = indexAt(sp, local);
+    const j = (i + 1) % sp.count;
+    const segLen = j === 0 ? L - sp.dist[i] : sp.dist[j] - sp.dist[i];
+    const t = (local - sp.dist[i]) / (segLen || 1);
+    const next = j === 0 ? this.turn[0] + this.loopTurn() : this.turn[j];
+    return this.turn[i] + (next - this.turn[i]) * t + laps * this.loopTurn();
+  }
+
+  private loopTurn(): number {
+    const sp = this.spline;
+    const last = sp.count - 1;
+    return this.turn[last] - this.turn[0] + wrapAngle(Math.atan2(sp.tx[0], sp.tz[0]) - Math.atan2(sp.tx[last], sp.tz[last]));
+  }
+
+  /** Signed heading change from s0 to s1 (positive = left), any length of road. */
+  turnBetween(s0: number, s1: number): number {
+    return this.turnAt(s1) - this.turnAt(s0);
+  }
+
+  /** Largest |curvature| between s0 and s1. */
+  maxCurvature(s0: number, s1: number): number {
+    const sp = this.spline;
+    let max = 0;
+    for (let s = s0; s <= s1; s += 2) {
+      const local = sp.closed ? ((s % sp.length) + sp.length) % sp.length : s;
+      max = Math.max(max, Math.abs(this.curvature[indexAt(sp, local)]));
+    }
+    return max;
+  }
+
+  curvatureAt(s: number): number {
+    const sp = this.spline;
+    const local = sp.closed ? ((s % sp.length) + sp.length) % sp.length : s;
+    return this.curvature[indexAt(sp, local)];
+  }
+
+  halfWidthAtS(s: number): number {
+    const sp = this.spline;
+    const local = sp.closed ? ((s % sp.length) + sp.length) % sp.length : s;
+    return this.halfWidth[indexAt(sp, local)];
   }
 }
 

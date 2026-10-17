@@ -53,6 +53,7 @@ export function buildRattlesnakeRun(): TrackDef {
       { kind: 'skeletonArch', ribbon: -1, s: 0 },
       { kind: 'fangs', ribbon: 0, s: shortcut.caveStart },
     ],
+    music: { lap: 'rattlesnake-run', finalLap: 'rattlesnake-run-final-lap' },
   };
 }
 

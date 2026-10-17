@@ -1,0 +1,51 @@
+{
+  "rattlesnake-run": {
+    "title": "rattlesnake run",
+    "bpm": 148,
+    "bars": 12,
+    "loopSamples": 858162,
+    "sampleRate": 44100
+  },
+  "rattlesnake-run-final-lap": {
+    "title": "rattlesnake run (final lap)",
+    "bpm": 156,
+    "bars": 10,
+    "loopSamples": 678462,
+    "sampleRate": 44100
+  },
+  "title": {
+    "title": "gizzracer title theme",
+    "bpm": 128,
+    "bars": 8,
+    "loopSamples": 661500,
+    "sampleRate": 44100
+  },
+  "infinite-loop-speedway": {
+    "title": "infinite loop speedway",
+    "bpm": 164,
+    "bars": 20,
+    "loopSamples": 1290732,
+    "sampleRate": 44100
+  },
+  "volcano-fortress": {
+    "title": "volcano fortress",
+    "bpm": 176,
+    "bars": 20,
+    "loopSamples": 1202727,
+    "sampleRate": 44100
+  },
+  "polygondwanaland-jungle": {
+    "title": "polygondwanaland jungle",
+    "bpm": 132,
+    "bars": 16,
+    "loopSamples": 1122545,
+    "sampleRate": 44100
+  },
+  "podium": {
+    "title": "podium",
+    "bpm": 96,
+    "bars": 4,
+    "loopSamples": 441000,
+    "sampleRate": 44100
+  }
+}

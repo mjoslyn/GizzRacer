@@ -3,6 +3,8 @@ import { Lensflare, LensflareElement } from 'three/addons/objects/Lensflare.js';
 import { InputManager, NEUTRAL_INPUT, type InputFrame } from './core/input';
 import { FixedLoop } from './core/loop';
 import { lerp, lerpAngle } from './core/math';
+import { CPU_SKILL } from './ai/cpuDriver';
+import { MusicPlayer, type MusicCue } from './audio/music';
 import { Race, type RaceKart } from './core/race';
 import { copyKartState, createKartState, respawnKart, type KartState } from './physics/kart';
 import { ENGINE_CLASSES, RACERS, type EngineClass, type RacerDef } from './physics/racers';
@@ -47,6 +49,10 @@ scene.add(sunAnchor);
 
 const input = new InputManager();
 const hud = new Hud(document.body);
+const music = new MusicPlayer();
+
+/** Grid slot the player starts from; CPUs fill the rest. */
+const PLAYER_SLOT = 4;
 
 let trackIndex = 0;
 let track: Track;
@@ -55,10 +61,10 @@ let race: Race;
 let player: RaceKart;
 let racer: RacerDef = RACERS[0];
 let engine: EngineClass = '100cc';
-const kartView = new KartView(racer);
-scene.add(kartView.root, kartView.fx);
+let views: KartView[] = [];
 let lastInput: InputFrame = NEUTRAL_INPUT;
-const snapshot = createKartState();
+let onTitle = true;
+const snapshots = new Map<RaceKart, KartState>();
 
 function loadTrack(index: number): void {
   trackIndex = index;
@@ -75,85 +81,151 @@ function loadTrack(index: number): void {
   startRace();
 }
 
+/** One kart per racer: the player's pick, and a CPU for each of the others. */
 function startRace(): void {
   race = new Race(track);
-  player = race.addKart(racer, engine);
+  const cpus = RACERS.filter((r) => r !== racer);
+  const grid: (RacerDef | null)[] = [];
+  for (let slot = 0, c = 0; slot < RACERS.length; slot++) grid.push(slot === Math.min(PLAYER_SLOT, RACERS.length - 1) ? null : cpus[c++]);
+  for (const r of grid) {
+    if (r === null) player = race.addKart(racer, engine, null);
+    else race.addKart(r, engine, CPU_SKILL[engine]);
+  }
+  for (const v of views) scene.remove(v.root, v.fx);
+  views = race.karts.map((k) => {
+    const v = new KartView(k.racer);
+    scene.add(v.root, v.fx);
+    return v;
+  });
+  snapshots.clear();
   chase.snap();
+  if (!onTitle) music.play(track.def.music.lap as MusicCue);
 }
 
 function step(dt: number): void {
+  if (onTitle) return;
   lastInput = input.sample();
-  const [events] = race.step(dt, [lastInput]);
-  if (events.landed > 3) kartView.impact(events.landed);
-  if (events.boostTier > 0) chase.bump(0.3 + events.boostTier * 0.2);
-  if (events.trick) chase.bump(0.6);
-  if (events.wallHit > 0.3) chase.bump(events.wallHit);
+  const inputs = race.karts.map((k) => (k === player ? lastInput : undefined));
+  const events = race.step(dt, inputs);
+  events.forEach((ev, i) => {
+    if (ev.landed > 3) views[i].impact(ev.landed);
+  });
+  const ev = events[race.karts.indexOf(player)];
+  if (ev.boostTier > 0) chase.bump(0.3 + ev.boostTier * 0.2);
+  if (ev.trick) chase.bump(0.6);
+  if (ev.wallHit > 0.3) chase.bump(ev.wallHit);
   if (player.respawned) chase.snap();
+  updateMusic();
+}
+
+function updateMusic(): void {
+  if (player.finishTime !== null) music.play('podium');
+  else if (track.def.music.finalLap && player.laps.lap === track.def.laps - 1) music.play(track.def.music.finalLap as MusicCue);
+  else music.play(track.def.music.lap as MusicCue);
 }
 
 function interpolate(kart: RaceKart, alpha: number): KartState {
+  let snap = snapshots.get(kart);
+  if (!snap) snapshots.set(kart, (snap = createKartState()));
   const { prev, state } = kart;
-  copyKartState(state, snapshot);
-  snapshot.x = lerp(prev.x, state.x, alpha);
-  snapshot.y = lerp(prev.y, state.y, alpha);
-  snapshot.z = lerp(prev.z, state.z, alpha);
-  snapshot.heading = lerpAngle(prev.heading, state.heading, alpha);
-  snapshot.slip = lerp(prev.slip, state.slip, alpha);
-  snapshot.speed = lerp(prev.speed, state.speed, alpha);
-  snapshot.groundY = lerp(prev.groundY, state.groundY, alpha);
-  return snapshot;
+  copyKartState(state, snap);
+  snap.x = lerp(prev.x, state.x, alpha);
+  snap.y = lerp(prev.y, state.y, alpha);
+  snap.z = lerp(prev.z, state.z, alpha);
+  snap.heading = lerpAngle(prev.heading, state.heading, alpha);
+  snap.slip = lerp(prev.slip, state.slip, alpha);
+  snap.speed = lerp(prev.speed, state.speed, alpha);
+  snap.groundY = lerp(prev.groundY, state.groundY, alpha);
+  return snap;
 }
+
+const hex = (c: number) => `#${c.toString(16).padStart(6, '0')}`;
 
 let elapsed = 0;
 const loop = new FixedLoop(step, (alpha, frameDt) => {
-  if (input.consumePause()) loop.paused = !loop.paused;
+  if (input.consumePause() && !onTitle) loop.paused = !loop.paused;
   const dt = loop.paused ? 0 : frameDt;
   elapsed += dt;
 
-  const s = interpolate(player, alpha);
-  kartView.update(s, player.params.topSpeed, dt, elapsed);
+  const snaps = race.karts.map((k) => interpolate(k, alpha));
+  race.karts.forEach((k, i) => views[i].update(snaps[i], k.params.topSpeed, dt, elapsed));
+  const s = snaps[race.karts.indexOf(player)];
   chase.update(s, player.params.topSpeed, lastInput.lookBack, dt);
   trackView!.update(elapsed, camera.position);
   sunAnchor.position.copy(camera.position).addScaledVector(SUN_DIR, 1400);
 
+  const finished = player.finishTime !== null;
   hud.update(
     {
       kart: s,
       lap: player.laps.lap,
       totalLaps: track.def.laps,
-      raceTime: player.finishTime ?? race.time,
+      raceTime: player.finishTime ?? Math.max(0, race.time),
       lapTimes: player.lapTimes,
       racerName: racer.name,
       engineClass: engine,
       trackName: track.def.name,
       section: player.section,
       autoAccelerate: input.autoAccelerate,
-      finished: player.finishTime !== null,
+      finished,
       paused: loop.paused,
+      position: player.position,
+      karts: race.karts.length,
+      countdown: onTitle ? 99 : -race.time,
+      // Results once the player has crossed the line and the banner has had its moment.
+      standings:
+        finished && race.time - player.finishTime! > 2.5
+          ? [...race.karts]
+              .sort((a, b) => a.position - b.position)
+              .map((k) => ({ name: k.racer.name, color: hex(k.racer.color), time: k.finishTime, player: k === player }))
+          : [],
+      muted: musicMuted,
     },
     elapsed,
   );
-  hud.minimap.draw([{ x: s.x, z: s.z, color: `#${racer.color.toString(16).padStart(6, '0')}`, player: true }]);
+  hud.minimap.draw(race.karts.map((k, i) => ({ x: snaps[i].x, z: snaps[i].z, color: hex(k.racer.color), player: k === player })));
   renderer.render(scene, camera);
+});
+
+let musicMuted = false;
+
+/** The title card's "press any key" doubles as the gesture browsers need before audio can play. */
+function leaveTitle(): void {
+  if (!onTitle) return;
+  onTitle = false;
+  hud.showTitle(false);
+  music.unlock();
+  startRace();
+}
+
+window.addEventListener('pointerdown', () => {
+  music.unlock();
+  leaveTitle();
 });
 
 // Dev controls.
 window.addEventListener('keydown', (e) => {
+  music.unlock();
+  if (onTitle) {
+    leaveTitle();
+    return;
+  }
   if (e.repeat) return;
   const n = Number(e.key);
   if (n >= 1 && n <= RACERS.length) {
     racer = RACERS[n - 1];
-    player.setRacer(racer, engine);
-    kartView.setRacer(racer);
+    startRace();
   } else if (e.code === 'KeyC') {
     engine = ENGINE_CLASSES[(ENGINE_CLASSES.indexOf(engine) + 1) % ENGINE_CLASSES.length];
-    player.setRacer(racer, engine);
+    startRace();
   } else if (e.code === 'KeyR') {
     startRace();
   } else if (e.code === 'KeyT') {
     loadTrack((trackIndex + 1) % TRACKS.length);
   } else if (e.code === 'KeyM') {
     input.autoAccelerate = !input.autoAccelerate;
+  } else if (e.code === 'KeyN') {
+    musicMuted = music.toggleMute();
   }
 });
 
@@ -176,8 +248,14 @@ Object.assign(window, {
     get kart() {
       return player.state;
     },
+    get race() {
+      return race;
+    },
+    start: leaveTitle,
   },
 });
 
 loadTrack(0);
+hud.showTitle(true);
+music.play('title');
 loop.start();

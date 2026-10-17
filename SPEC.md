@@ -2,7 +2,7 @@
 
 ## 1. Overview
 - 3D arcade kart racer in the browser, built with Three.js
-- Single player vs 7 CPU racers (online multiplayer deferred)
+- Single player vs CPU racers, one kart per racer so every kart looks different (5 CPUs with the MVP's 6 racers; 7 once the roster reaches 8). Online multiplayer deferred
 - Psychedelic garage-rock world with original characters
 - Target: 60 fps on a mid-range laptop, Chrome/Firefox/Safari, keyboard and gamepad
 
@@ -102,7 +102,7 @@ All designs are original. No likenesses of band members or album art.
 - Grand Prix points: 15, 12, 10, 8, 6, 4, 2, 1
 
 ## 10. Audio
-- Howler.js for music and SFX
+- Music: the seqbaby soundtrack pre-rendered to looping MP3s (tools/render-soundtrack.mjs), played with Web Audio for sample-accurate loops. Howler.js still an option for SFX
 - Engine pitch tied to speed; fuzz distortion on boosts
 - Positional audio for hazards and nearby karts
 
