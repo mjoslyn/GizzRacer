@@ -24,7 +24,7 @@
 | Look back | Q | Y |
 | Pause | Esc | Start |
 
-Touch: drag on the left half to steer (analog), DRIFT and BRAKE buttons on the right, pause at the bottom; acceleration is automatic. The first tap also unlocks audio (iOS needs a gesture).
+Touch: drag on the left half to steer (analog), DRIFT and BRAKE buttons on the right, pause at the bottom, and a tap anywhere else on the screen (or a quick tap on the steering side) hops, so a tap at a ramp lip is a trick; acceleration is automatic. The first tap also unlocks audio (iOS needs a gesture).
 
 ## 4. Kart Physics (custom arcade, not rigid body)
 - Kart is a sphere collider for ground contact plus a visual model that tilts and bounces

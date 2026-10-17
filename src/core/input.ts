@@ -8,7 +8,7 @@ const KEYS = {
   brake: ['KeyS', 'ArrowDown'],
   left: ['KeyA', 'ArrowLeft'],
   right: ['KeyD', 'ArrowRight'],
-  drift: ['ShiftLeft', 'ShiftRight', 'Space'],
+  drift: ['ShiftLeft', 'ShiftRight', 'Space', 'TouchHop'],
   item: ['KeyE', 'KeyX', 'TouchItem'],
   lookBack: ['KeyQ'],
   pause: ['Escape'],
@@ -100,6 +100,11 @@ export class InputManager {
   /** Fires the item as if E were tapped (the touch ITEM button). */
   pressItem(): void {
     this.latched.add('TouchItem');
+  }
+
+  /** A hop, as if Space were tapped (a tap on the touch screen): one tick of drift, so no drift follows. */
+  pressHop(): void {
+    this.latched.add('TouchHop');
   }
 
   /** Asks for a pause as if Esc were pressed (the touch pause button). */

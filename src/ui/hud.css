@@ -494,6 +494,13 @@ body.touch-mode .menu-hint {
   display: block;
 }
 
+.touch-tap {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+  touch-action: none;
+}
+
 .touch-steer {
   position: absolute;
   left: 0;
