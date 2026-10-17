@@ -2062,6 +2062,118 @@ function jasonGalea(r: RacerDef): KartModel {
   };
 }
 
+/** Curls over an ellipsoid: small balls scattered on its surface, each a little in or out, for a poodle's coat. */
+function curls(parent: THREE.Object3D, mat: THREE.Material, at: [number, number, number], radii: [number, number, number], count: number, size: number, seed: number, skip?: (x: number, y: number, z: number) => boolean): void {
+  let s = seed;
+  const rnd = () => ((s = (s * 16807) % 2147483647) / 2147483647);
+  const geo = ball(size, 10, 8);
+  for (let k = 0; k < count; k++) {
+    // Even spread over the sphere (golden spiral), then stretched to the ellipsoid.
+    const y = 1 - (2 * (k + 0.5)) / count;
+    const r = Math.sqrt(1 - y * y);
+    const a = k * 2.399963;
+    const x = Math.cos(a) * r;
+    const z = Math.sin(a) * r;
+    if (skip?.(x, y, z)) continue;
+    const out = 0.92 + rnd() * 0.16;
+    put(parent, geo, mat, [at[0] + x * radii[0] * out, at[1] + y * radii[1] * out, at[2] + z * radii[2] * out], [0, 0, 0], [1, 0.9 + rnd() * 0.3, 1]);
+  }
+  put(parent, ball(1, 16, 12), mat, at, [0, 0, 0], [radii[0] * 0.95, radii[1] * 0.95, radii[2] * 0.95]);
+}
+
+// The poodle: an apricot standard poodle in a plush grey dog bed on wheels, ears flapping, tail going.
+function apricotPoodle(r: RacerDef): KartModel {
+  const body = new THREE.Group();
+  const coat = matte(r.color, { shininess: 6 });
+  const face = matte(0xe8c69a, { shininess: 10 });
+  const plush = matte(0xffffff, { map: tex('plush', () => sparkleTexture([150, 150, 154])), shininess: 4 });
+  const plushDark = matte(0x8a8a8e, { shininess: 4 });
+
+  // The bed: a padded base, a bolster all round open at the front, on four wheels.
+  put(body, cyl(0.9, 0.95, 0.3, 28), plushDark, [0, 0.42, 0], [0, 0, 0], [0.95, 1, 1.35]);
+  put(body, cyl(0.8, 0.8, 0.06, 28), plush, [0, 0.58, 0], [0, 0, 0], [0.95, 1, 1.35]);
+  // The bolster runs round the sides and back, open at the front, its ends rounded off.
+  const rim = Array.from({ length: 13 }, (_, k) => {
+    const a = Math.PI * (0.32 + (k / 12) * 1.36);
+    return new THREE.Vector3(Math.sin(a) * 0.78, 0.7, Math.cos(a) * 1.08 - 0.05);
+  });
+  put(body, new THREE.TubeGeometry(new THREE.CatmullRomCurve3(rim), 40, 0.2, 12, false), plush, [0, 0, 0]);
+  for (const end of [rim[0], rim[rim.length - 1]]) put(body, ball(0.2, 12, 10), plush, end.toArray() as [number, number, number]);
+  // A tennis ball riding on the front.
+  put(body, ball(0.17, 16, 12), matte(0xd8f03a), [0.35, 0.72, 1.2]);
+  put(body, ring(0.17, 0.012), matte(0xffffff), [0.35, 0.72, 1.2], [0.6, 0.4, 0]);
+  headlights(body, 0.4, 0.5, 1.3, 0.07);
+
+  const d = new THREE.Group();
+  d.position.set(0, 0.62, -0.1);
+  // Sitting up: a curly chest and haunches, the trimmed legs, curly paws on the wheel.
+  curls(d, coat, [0, 0.42, 0], [0.32, 0.4, 0.3], 110, 0.07, 3);
+  curls(d, coat, [0, 0.15, -0.3], [0.36, 0.2, 0.28], 70, 0.065, 5);
+  const grips = steeringWheel(d, 0.5, 0.5, 0.2);
+  for (const g of grips) {
+    const side = Math.sign(g[0]);
+    rod(d, [side * 0.18, 0.62, 0.12], g, 0.07, coat);
+    curls(d, coat, g, [0.07, 0.07, 0.08], 12, 0.04, 9 + side);
+  }
+  // The tail, straight up and curly at the tip, wagging.
+  // A sweeper turns about its own y axis: tipped back a quarter turn, that axis runs fore and aft, so the turn is a wag.
+  const tail = new THREE.Group();
+  tail.position.set(0, 0.25, -0.55);
+  tail.rotation.x = -Math.PI / 2;
+  tail.userData.phase = 0;
+  const stub = new THREE.Group();
+  stub.rotation.x = Math.PI / 2;
+  rod(stub, [0, 0, 0], [0, 0.5, -0.12], 0.05, coat);
+  curls(stub, coat, [0, 0.58, -0.14], [0.08, 0.12, 0.08], 16, 0.045, 13);
+  tail.add(stub);
+  d.add(tail);
+
+  // The head: a long trimmed muzzle, a black nose, a curly topknot and long curly ears.
+  const head = new THREE.Group();
+  head.position.set(0, 1.02, 0.08);
+  head.scale.setScalar(1.5);
+  put(head, ball(0.2, 18, 14), face, [0, 0, 0], [0, 0, 0], [0.95, 1, 1.05]);
+  put(head, cyl(0.1, 0.13, 0.3, 14), face, [0, -0.06, 0.2], [Math.PI / 2 - 0.15, 0, 0]);
+  // A curly moustache round the muzzle, and the beard under it.
+  curls(head, coat, [0, -0.1, 0.28], [0.1, 0.07, 0.07], 18, 0.035, 17, (_x, y, z) => z > 0.6 && y > 0);
+  put(head, ball(0.065, 14, 10), matte(0x0a0a0a, { shininess: 120, specular: 0x666666 }), [0, -0.03, 0.37], [0, 0, 0], [1.1, 0.8, 0.8]);
+  put(head, ball(0.06, 12, 8), matte(0x3a0a0a), [0, -0.14, 0.27], [0, 0, 0], [1, 0.4, 0.6]);
+  for (const side of [-1, 1]) {
+    put(head, ball(0.04, 12, 10), matte(0x120806, { shininess: 100, specular: 0xffffff }), [side * 0.085, 0.04, 0.165]);
+    put(head, ball(0.012, 6, 4), glow(0xffffff), [side * 0.085 + 0.012, 0.055, 0.2]);
+  }
+  curls(head, coat, [0, 0.17, -0.03], [0.19, 0.12, 0.19], 44, 0.05, 19, (_x, y, z) => y < -0.2 && z > 0.3);
+  const flappers: THREE.Object3D[] = [];
+  for (const side of [-1, 1]) {
+    const ear = new THREE.Group();
+    ear.position.set(side * 0.17, 0.08, -0.02);
+    ear.userData.side = side;
+    curls(ear, coat, [side * 0.05, -0.2, 0], [0.065, 0.2, 0.06], 34, 0.042, 23 + side);
+    head.add(ear);
+    flappers.push(ear);
+  }
+  d.add(head);
+  // A grey-blue collar.
+  put(d, ring(0.2, 0.025), matte(0x3a4250), [0, 0.8, 0.04], [Math.PI / 2 - 0.2, 0, 0]);
+  body.add(d);
+
+  return {
+    body,
+    wheels: [0.82, -0.82].flatMap((x) => [
+      { x, z: 0.95, radius: 0.32, width: 0.28, front: true },
+      { x, z: -0.95, radius: 0.38, width: 0.32, front: false },
+    ]),
+    exhausts: pipes(body, 0.3, 0.4, -1.3),
+    rearTrack: 0.82,
+    rearZ: -0.95,
+    spinners: [],
+    shadow: [2.4, 3.3],
+    head,
+    flappers,
+    sweepers: [tail],
+  };
+}
+
 const BUILDERS: Record<string, (r: RacerDef) => KartModel> = {
   'lizard-warlock': lizardWarlock,
   'cyborg-gourmand': cyborgGourmand,
@@ -2082,6 +2194,7 @@ const BUILDERS: Record<string, (r: RacerDef) => KartModel> = {
   'lucas-harwood': lucasHarwood,
   'michael-cavanagh': michaelCavanagh,
   'jason-galea': jasonGalea,
+  'apricot-poodle': apricotPoodle,
 };
 
 export function buildKartModel(racer: RacerDef): KartModel {

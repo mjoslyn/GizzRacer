@@ -53,6 +53,8 @@ const TRICKS: Record<string, TrickMove> = {
   },
   // A twisting backflip, arms everywhere.
   'octo-organist': (u, d) => [-u * TAU, 0, d * u * TAU, Math.sin(u * Math.PI) * 1.0],
+  // Chasing its tail: two quick turns with a happy bounce.
+  'apricot-poodle': (u, d) => [0, d * u * TAU * 2, 0, Math.abs(Math.sin(u * Math.PI * 2)) * 0.8],
   // The band. A stage dive, all the way round.
   'stu-mackenzie': (u, d) => [-u * TAU, d * u * TAU, 0, Math.sin(u * Math.PI) * 1.1],
   // A harmonica blast that spins him like a top.

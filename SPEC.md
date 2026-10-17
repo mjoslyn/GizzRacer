@@ -2,7 +2,7 @@
 
 ## 1. Overview
 - 3D arcade kart racer in the browser, built with Three.js
-- Single player vs CPU racers, one kart per racer so every kart looks different: a roster of 19, twelve to a race, so 11 CPUs drawn at random from the rest with no repeats (a new draw each time the picker starts a race or cup; a restart keeps the field, and a cup keeps the same twelve for every race). Online rooms fill the places humans leave with CPUs the same way
+- Single player vs CPU racers, one kart per racer so every kart looks different: a roster of 20, twelve to a race, so 11 CPUs drawn at random from the rest with no repeats (a new draw each time the picker starts a race or cup; a restart keeps the field, and a cup keeps the same twelve for every race). Online rooms fill the places humans leave with CPUs the same way
 - Psychedelic garage-rock world with original characters
 - Target: 60 fps on a mid-range laptop, Chrome/Firefox/Safari, keyboard, gamepad and touch (phones and tablets, iOS included)
 - Phones play in landscape, fullscreen where the browser allows it (installable web app for iPhone)
@@ -49,6 +49,7 @@ Touch: drag on the left half to steer (analog), DRIFT and BRAKE buttons on the r
 | Mantis Shredder | 3 | 4 | 2 | 3 | 4 |
 | Gator Drummer | 4 | 2 | 4 | 2 | 3 |
 | Mushroom Sage | 3 | 3 | 2 | 4 | 4 |
+| Poodle | 3 | 4 | 2 | 4 | 3 |
 | Octo Organist | 4 | 2 | 3 | 2 | 3 |
 | Amby | 3 | 5 | 2 | 3 | 3 |
 | Cavs | 4 | 2 | 3 | 2 | 3 |
@@ -60,7 +61,7 @@ Touch: drag on the left half to steer (analog), DRIFT and BRAKE buttons on the r
 
 Tuned with `npm run balance` (all-CPU races on every track at 100cc and 150cc, twelve-kart fields drawn round the roster) so no stat dominates: average finishing places run from about 5.3 to 8.2 of 12, and every racer reaches the podium. A speed point is worth about 2.7% top speed.
 
-All designs are original, with no album art. The band races too, with their blessing, under their nicknames, in alphabetical order on the picker: Amby (a chrome harmonica racer, harmonica raised), Cavs (rolling on two bass drums, sticks up), Cookie (a synth-guitar hybrid: a keytar body with a keyboard down the deck and a fretted neck out front), Jason, their visual artist (a rolling lighting rig with moving heads sweeping their beams), Joey (a modular-synth buggy with patch cables, its back pink and signed "Yikes" in script), Lukey (an 8x10 bass cab on wheels) and Stu (riding the Flying Microtonal Banana: a giant banana that is also a guitar, its neck fretted in quarter tones, a flute on his back). They're drawn in the NBA Jam manner, big sculpted heads on smaller bodies, their hair, moustaches, glasses and colouring taken from photos, all in work coveralls with their names on the patch. Every racer has their own character model and vehicle (render/racerModels.ts), and not every vehicle is a kart: Gila Rider flies a rotor chopper, Swamp Witch a fan hovercraft, Microtonal Monk a levitating lotus, Mushroom Sage a toadstool saucer, Mantis Shredder rides a monowheel and Gator Drummer a tracked kick-drum tank. All of them drive with the same kart physics; the difference is in the look (hovering craft bob and bank, leave no skid marks, and their drift kicks up ground instead of tire smoke). Drivers lean into turns and look where they steer, and every racer has their own trick move.
+All designs are original, with no album art. The band races too, with their blessing, under their nicknames, in alphabetical order on the picker: Amby (a chrome harmonica racer, harmonica raised), Cavs (rolling on two bass drums, sticks up), Cookie (a synth-guitar hybrid: a keytar body with a keyboard down the deck and a fretted neck out front), Jason, their visual artist (a rolling lighting rig with moving heads sweeping their beams), Joey (a modular-synth buggy with patch cables, its back pink and signed "Yikes" in script), Lukey (an 8x10 bass cab on wheels) and Stu (riding the Flying Microtonal Banana: a giant banana that is also a guitar, its neck fretted in quarter tones, a flute on his back). They're drawn in the NBA Jam manner, big sculpted heads on smaller bodies, their hair, moustaches, glasses and colouring taken from photos, all in work coveralls with their names on the patch. Every racer has their own character model and vehicle (render/racerModels.ts), and not every vehicle is a kart: Gila Rider flies a rotor chopper, Swamp Witch a fan hovercraft, Microtonal Monk a levitating lotus, Mushroom Sage a toadstool saucer, Mantis Shredder rides a monowheel and Gator Drummer a tracked kick-drum tank, and the Poodle (an apricot standard poodle, all curls, ears flapping and tail wagging) drives a plush dog bed on wheels with a tennis ball on the front. All of them drive with the same kart physics; the difference is in the look (hovering craft bob and bank, leave no skid marks, and their drift kicks up ground instead of tire smoke). Drivers lean into turns and look where they steer, and every racer has their own trick move.
 
 ## 6. Items
 | Item | Effect | Odds bias |

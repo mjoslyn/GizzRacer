@@ -29,6 +29,7 @@ export const RACERS: readonly RacerDef[] = [
   { id: 'mantis-shredder', name: 'Mantis Shredder', stats: { speed: 3, accel: 4, weight: 2, handling: 3, drift: 4 }, color: 0x9ad83a, accent: 0xff3a6a },
   { id: 'gator-drummer', name: 'Gator Drummer', stats: { speed: 4, accel: 2, weight: 4, handling: 2, drift: 3 }, color: 0xb8202a, accent: 0xf2e6c8 },
   { id: 'mushroom-sage', name: 'Mushroom Sage', stats: { speed: 3, accel: 3, weight: 2, handling: 4, drift: 4 }, color: 0x7a5adf, accent: 0xf4e8d0 },
+  { id: 'apricot-poodle', name: 'Poodle', stats: { speed: 3, accel: 4, weight: 2, handling: 4, drift: 3 }, color: 0xd09a62, accent: 0x3a4250 },
   { id: 'octo-organist', name: 'Octo Organist', stats: { speed: 4, accel: 2, weight: 3, handling: 2, drift: 3 }, color: 0xff7aa8, accent: 0x2ad8b0 },
   // The band, with their blessing.
   { id: 'ambrose-kenny-smith', name: 'Amby', stats: { speed: 3, accel: 5, weight: 2, handling: 3, drift: 3 }, color: 0x2a8ad8, accent: 0xff5a3a },
