@@ -2,7 +2,7 @@
 
 Browser kart racer built with Three.js. See [SPEC.md](SPEC.md).
 
-Play: https://gizzracer.mike-42e.workers.dev (Cloudflare Workers; deploys on every push to `master`). The old Netlify address redirects there (`netlify.toml`).
+Play: https://www.gizzracer.com (Cloudflare Workers, also at gizzracer.mike-42e.workers.dev; deploys on every push to `master`). The old Netlify address redirects there (`netlify.toml`).
 
 ## Run
 

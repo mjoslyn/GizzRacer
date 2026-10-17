@@ -6,6 +6,6 @@
 
 [[redirects]]
   from = "/*"
-  to = "https://gizzracer.mike-42e.workers.dev/:splat"
+  to = "https://www.gizzracer.com/:splat"
   status = 301
   force = true
