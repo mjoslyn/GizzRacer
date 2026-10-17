@@ -641,14 +641,45 @@ body.touch-mode .hud-racer {
   display: none;
 }
 
+/* Touch: a smaller map tucked in the corner, well above the ITEM button. */
 body.touch-mode .hud-minimap {
-  width: 120px !important;
-  height: 120px !important;
+  width: 88px !important;
+  height: 88px !important;
 }
 
+body.touch-mode .hud-tr {
+  top: 8px;
+  right: 12px;
+}
+
+@media (max-height: 400px) {
+  body.touch-mode .hud-minimap {
+    width: 76px !important;
+    height: 76px !important;
+  }
+
+  body.touch-mode .touch-item {
+    bottom: 150px;
+  }
+}
+
+/* On touch screens the drift meter tucks under the position and speed at the
+   top, clear of the kart, the road ahead and the thumbs. */
 body.touch-mode .hud-drift {
-  bottom: 70px;
-  width: min(260px, 40vw);
+  top: 52px;
+  bottom: auto;
+  width: min(220px, 30vw);
+}
+
+body.touch-mode .hud-drift-bar {
+  height: 9px;
+}
+
+body.touch-mode .hud-drift-label {
+  font-size: 10px;
+  letter-spacing: 2px;
+  margin-top: 3px;
+  min-height: 12px;
 }
 
 /* Item slot: top centre on desktop, under the lap counter on touch. */
