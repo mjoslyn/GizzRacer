@@ -23,7 +23,7 @@ interface Materials {
   road: Record<RoadSurface, THREE.Material>;
   curb: THREE.Material;
   strata: THREE.Material;
-  diamond: THREE.MeshLambertMaterial;
+  barrier: THREE.MeshLambertMaterial;
   mud: THREE.Material;
   bone: THREE.Material;
   cactus: THREE.Material;
@@ -51,7 +51,7 @@ function materials(theme: Theme): Materials {
     },
     curb: lambert(tex.curbTexture()),
     strata: lambert(theme.cliff(), { side: THREE.DoubleSide }),
-    diamond: lambert(tex.diamondTexture(), { side: THREE.DoubleSide }),
+    barrier: lambert(theme.barrier.map(), { side: THREE.DoubleSide }),
     mud: lambert(tex.mudTexture()),
     bone: new THREE.MeshPhongMaterial({ map: tex.boneTexture(), shininess: 30, specular: 0x333322 }),
     cactus: lambert(tex.cactusTexture()),
@@ -72,6 +72,7 @@ export function buildTrackView(track: Track): TrackView {
   for (const pit of track.def.pits) group.add(pitMesh(pit, mats));
   for (const ribbon of [track.main, ...track.branches]) group.add(ribbonMeshes(ribbon, mats));
 
+  const animated: ((time: number) => void)[] = [];
   const padTexture = tex.chevronTexture();
   for (const pad of track.def.boostPads) {
     const p = pointAt(track.spline, track.mainS(pad.s + pad.length / 2));
@@ -92,6 +93,14 @@ export function buildTrackView(track: Track): TrackView {
     const s = lm.s * ribbon.scale;
     if (lm.kind === 'skeletonArch') group.add(skeletonArch(ribbon, s, mats));
     if (lm.kind === 'fangs') group.add(snakeMouth(ribbon, s, mats));
+    if (lm.kind === 'fortressGate') group.add(fortressGate(ribbon, s, mats));
+    if (lm.kind === 'templeGate') group.add(templeGate(ribbon, s, mats));
+    if (lm.kind === 'gantry') group.add(gantry(ribbon, s, track.def.name));
+    if (lm.kind === 'waterfall') {
+      const w = waterfall(ribbon, s, mats);
+      group.add(w.group);
+      animated.push(w.update);
+    }
   }
   group.add(boundaryCliffs(track.def.bounds, mats));
   group.add(decor(track, mats, theme));
@@ -105,10 +114,11 @@ export function buildTrackView(track: Track): TrackView {
     update(time: number, cameraPos: THREE.Vector3, hue = 0) {
       skyHue.value = hue;
       padTexture.offset.y = -time * 2;
-      // Barrier diamonds crawl along like scales.
-      if (mats.diamond.map) mats.diamond.map.offset.x = -time * 0.15;
+      // Desert barrier diamonds crawl along like scales.
+      if (theme.barrier.crawl && mats.barrier.map) mats.barrier.map.offset.x = -time * 0.15;
       if (mats.lava.map) mats.lava.map.offset.set(time * 0.02, time * 0.035);
       skyMesh.position.copy(cameraPos);
+      for (const a of animated) a(time);
     },
   };
 }
@@ -289,7 +299,16 @@ function ribbonMeshes(ribbon: Ribbon, mats: Materials): THREE.Group {
       }
     }
 
-    if (yi > 0.05 || yj > 0.05) {
+    const deck = ribbon.def.sections[ribbon.sectionIndex[i]]?.bridge;
+    if (deck) {
+      // Overpass: a slab with fascia, open underneath for the road below.
+      const li = hwi + 0.6;
+      const lj = hwj + 0.6;
+      skirts.quad(edge(i, -li, yi - DECK_DEPTH), edge(j, -lj, yj - DECK_DEPTH), edge(i, li, yi - DECK_DEPTH), edge(j, lj, yj - DECK_DEPTH), [0, 1], [0, 1], true);
+      for (const side of [-1, 1]) {
+        skirts.quad(edge(i, side * li, yi + 0.05), edge(j, side * lj, yj + 0.05), edge(i, side * li, yi - DECK_DEPTH), edge(j, side * lj, yj - DECK_DEPTH), [sp.dist[i] / 10, sp.dist[j] / 10], [0.15, 0], false, true);
+      }
+    } else if (yi > 0.05 || yj > 0.05) {
       for (const side of [-1, 1]) {
         const lat = side * (wall === 0 ? hwi + CURB_WIDTH : hwi + 0.3);
         const latj = side * (wall === 0 ? hwj + CURB_WIDTH : hwj + 0.3);
@@ -301,8 +320,42 @@ function ribbonMeshes(ribbon: Ribbon, mats: Materials): THREE.Group {
   for (const [surface, b] of road) g.add(b.mesh(mats.road[surface]));
   g.add(curbs.mesh(mats.curb));
   g.add(tallWalls.mesh(mats.strata));
-  g.add(lowWalls.mesh(mats.diamond));
+  g.add(lowWalls.mesh(mats.barrier));
   g.add(skirts.mesh(mats.strata));
+  g.add(pillars(ribbon, mats));
+  return g;
+}
+
+const DECK_DEPTH = 1.3;
+
+/** Columns under overpass decks, wherever they won't stand in the road below. */
+function pillars(ribbon: Ribbon, mats: Materials): THREE.Group {
+  const g = new THREE.Group();
+  const sp = ribbon.spline;
+  const geo = new THREE.CylinderGeometry(0.8, 1, 1, 10);
+  let last = -Infinity;
+  for (let i = 0; i < sp.count; i++) {
+    if (!ribbon.def.sections[ribbon.sectionIndex[i]]?.bridge || sp.dist[i] - last < 14) continue;
+    last = sp.dist[i];
+    const top = ribbon.heightAt(sp.dist[i]) - DECK_DEPTH;
+    for (const side of [-1, 1]) {
+      const lat = side * (ribbon.halfWidth[i] - 1.5);
+      const x = sp.px[i] - sp.tz[i] * lat;
+      const z = sp.pz[i] + sp.tx[i] * lat;
+      // Keep clear of any other stretch of this road (the one passing underneath).
+      let blocked = false;
+      for (let k = 0; k < sp.count && !blocked; k++) {
+        const along = Math.abs(sp.dist[k] - sp.dist[i]);
+        if (Math.min(along, sp.length - along) < 60) continue;
+        blocked = Math.hypot(sp.px[k] - x, sp.pz[k] - z) < ribbon.halfWidth[k] + 3;
+      }
+      if (blocked) continue;
+      const col = new THREE.Mesh(geo, mats.strata);
+      col.scale.set(1, top, 1);
+      col.position.set(x, top / 2, z);
+      g.add(col);
+    }
+  }
   return g;
 }
 
@@ -393,6 +446,139 @@ function skeletonArch(ribbon: Ribbon, s: number, mats: Materials): THREE.Group {
     fang.position.set(span + 1.5 + side * 0.9, 0.9, 2.6);
     g.add(fang);
   }
+  g.position.set(f.x, f.y, f.z);
+  g.rotation.y = f.heading;
+  return g;
+}
+
+/** Basalt gatehouse over the road: two crenellated towers, a lintel with glowing eyes. */
+function fortressGate(ribbon: Ribbon, s: number, mats: Materials): THREE.Group {
+  const g = new THREE.Group();
+  const f = frameAt(ribbon, s);
+  const hw = ribbon.halfWidthAtS(s) + 1.5;
+  const tower = new THREE.BoxGeometry(5, 16, 5);
+  const merlon = new THREE.BoxGeometry(1.2, 1.4, 1.2);
+  for (const side of [-1, 1]) {
+    const t = new THREE.Mesh(tower, mats.strata);
+    t.position.set(side * (hw + 2.5), 8, 0);
+    g.add(t);
+    for (const [mx, mz] of [[-1.9, -1.9], [1.9, -1.9], [-1.9, 1.9], [1.9, 1.9]]) {
+      const m = new THREE.Mesh(merlon, mats.strata);
+      m.position.set(side * (hw + 2.5) + mx, 16.7, mz);
+      g.add(m);
+    }
+  }
+  const lintel = new THREE.Mesh(new THREE.BoxGeometry(hw * 2 + 10, 3, 4), mats.strata);
+  lintel.position.y = 12.5;
+  g.add(lintel);
+  const glow = tex.glowTexture('rgba(255,200,80,1)', 'rgba(255,60,0,0)');
+  for (const side of [-1, 1]) {
+    const eye = new THREE.Sprite(new THREE.SpriteMaterial({ map: glow, color: 0xff7020, blending: THREE.AdditiveBlending, depthWrite: false }));
+    eye.position.set(side * 2.6, 12.6, 2.2);
+    eye.scale.setScalar(3);
+    g.add(eye);
+  }
+  g.position.set(f.x, f.y, f.z);
+  g.rotation.y = f.heading;
+  return g;
+}
+
+/** Stepped stone arch with a big faceted polygon on top. */
+function templeGate(ribbon: Ribbon, s: number, mats: Materials): THREE.Group {
+  const g = new THREE.Group();
+  const f = frameAt(ribbon, s);
+  const hw = ribbon.halfWidthAtS(s) + 1.5;
+  for (const side of [-1, 1]) {
+    for (let k = 0; k < 4; k++) {
+      const w = 5 - k;
+      const step = new THREE.Mesh(new THREE.BoxGeometry(w, 3, w), mats.strata);
+      step.position.set(side * (hw + 2.5), 1.5 + k * 3, 0);
+      g.add(step);
+    }
+  }
+  const lintel = new THREE.Mesh(new THREE.BoxGeometry(hw * 2 + 8, 2.4, 3.2), mats.strata);
+  lintel.position.y = 12.6;
+  g.add(lintel);
+  const gem = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(3, 0),
+    new THREE.MeshPhongMaterial({ color: 0x3ad8a0, emissive: 0x0a4a30, shininess: 120, specular: 0xffffff, flatShading: true }),
+  );
+  gem.position.y = 17;
+  g.add(gem);
+  g.position.set(f.x, f.y, f.z);
+  g.rotation.y = f.heading;
+  return g;
+}
+
+/** A cliff beside the road with a falling sheet of water, mist and a pool. */
+function waterfall(ribbon: Ribbon, s: number, mats: Materials): { group: THREE.Group; update: (time: number) => void } {
+  const g = new THREE.Group();
+  const f = frameAt(ribbon, s);
+  // Set back from the road and angled to face oncoming karts.
+  const falls = new THREE.Group();
+  falls.position.set(ribbon.halfWidthAtS(s) + 16, 0, 0);
+  falls.rotation.y = -0.7;
+  g.add(falls);
+  const cliff = new THREE.Mesh(new THREE.BoxGeometry(34, 30, 10), mats.strata);
+  cliff.position.set(9, 15, 0);
+  cliff.rotation.y = Math.PI / 2;
+  const waterTex = tex.waterfallTexture();
+  waterTex.repeat.set(1.5, 1);
+  const fall = new THREE.Mesh(
+    new THREE.PlaneGeometry(14, 29),
+    new THREE.MeshBasicMaterial({ map: waterTex, transparent: true, depthWrite: false, side: THREE.DoubleSide }),
+  );
+  fall.position.set(3.8, 15, 0);
+  fall.rotation.y = Math.PI / 2;
+  const pool = new THREE.Mesh(new THREE.CircleGeometry(9, 24), mats.water);
+  pool.rotation.x = -Math.PI / 2;
+  pool.position.set(0, 0.08, 0);
+  falls.add(cliff, fall, pool);
+  const mist = tex.glowTexture('rgba(255,255,255,0.9)', 'rgba(255,255,255,0)');
+  for (let k = 0; k < 4; k++) {
+    const m = new THREE.Sprite(new THREE.SpriteMaterial({ map: mist, transparent: true, opacity: 0.5, depthWrite: false }));
+    m.position.set(1, 2 + k, (k - 1.5) * 3);
+    m.scale.setScalar(9);
+    falls.add(m);
+  }
+  g.position.set(f.x, f.y, f.z);
+  g.rotation.y = f.heading;
+  return { group: g, update: (time) => (waterTex.offset.y = time * 1.6) };
+}
+
+/** Start gantry: two pylons and a banner with the track name between infinity signs. */
+function gantry(ribbon: Ribbon, s: number, name: string): THREE.Group {
+  const g = new THREE.Group();
+  const f = frameAt(ribbon, s);
+  const hw = ribbon.halfWidthAtS(s) + 2;
+  const steel = new THREE.MeshPhongMaterial({ color: 0xd8dde8, shininess: 90, specular: 0xffffff });
+  for (const side of [-1, 1]) {
+    const pylon = new THREE.Mesh(new THREE.BoxGeometry(1.2, 9, 1.2), steel);
+    pylon.position.set(side * hw, 4.5, 0);
+    g.add(pylon);
+  }
+  const c = document.createElement('canvas');
+  c.width = 1024;
+  c.height = 128;
+  const ctx = c.getContext('2d')!;
+  const grad = ctx.createLinearGradient(0, 0, 1024, 0);
+  ['#ff5ad0', '#3ad8ff', '#7affb0', '#ffd23a', '#ff5ad0'].forEach((col, i) => grad.addColorStop(i / 4, col));
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 1024, 128);
+  ctx.font = 'italic 900 78px Impact, "Arial Black", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.lineWidth = 10;
+  ctx.strokeStyle = '#2a0636';
+  const label = `\u221E  ${name.toUpperCase()}  \u221E`;
+  ctx.strokeText(label, 512, 68);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(label, 512, 68);
+  const map = new THREE.CanvasTexture(c);
+  map.colorSpace = THREE.SRGBColorSpace;
+  const banner = new THREE.Mesh(new THREE.BoxGeometry(hw * 2 + 1.2, 2.4, 0.4), [steel, steel, steel, steel, new THREE.MeshBasicMaterial({ map }), new THREE.MeshBasicMaterial({ map })]);
+  banner.position.y = 8.2;
+  g.add(banner);
   g.position.set(f.x, f.y, f.z);
   g.rotation.y = f.heading;
   return g;

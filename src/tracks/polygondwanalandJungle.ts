@@ -38,7 +38,7 @@ export function buildPolygondwanalandJungle(): TrackDef {
   const main = b.finish(true);
   return {
     id: 'polygondwanaland-jungle',
-    name: 'Polygondwanaland Jungle (draft)',
+    name: 'Polygondwanaland Jungle',
     main,
     branches: [],
     pits: b.pits,
@@ -46,14 +46,20 @@ export function buildPolygondwanalandJungle(): TrackDef {
     checkpoints: ['hairpins', 'river', 'ruins', 'waterfall'].map((m) => b.marks[m].s / main.length),
     laps: 3,
     bounds: 420,
-    landmarks: [],
+    landmarks: [
+      { kind: 'templeGate', ribbon: -1, s: b.marks.ruins.s + 4 },
+      { kind: 'waterfall', ribbon: -1, s: b.marks.waterfall.s + 30 },
+    ],
     itemBoxes: [
       { s: 80, count: 4 },
       { s: b.marks.river.s + 15, count: 4 },
       { s: b.marks.ruins.s + 30, count: 3 },
       { s: b.marks.waterfall.s + 20, count: 4 },
     ],
-    hazards: [],
+    hazards: [
+      { kind: 'vines', at: [b.marks.hairpins.s + 10, b.marks.hairpins.s + 96, b.marks.hairpins.s + 183], period: 3.6 },
+      { kind: 'rollers', from: b.marks.ruins.s + 15, to: b.marks.ruins.s + 170, count: 3, period: 7 },
+    ],
     theme: 'jungle',
     music: { lap: 'polygondwanaland-jungle' },
   };

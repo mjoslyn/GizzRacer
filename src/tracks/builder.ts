@@ -14,6 +14,8 @@ export interface SectionProps {
   /** Barrier height on both edges; 0 = open edges. */
   wallHeight?: number;
   surface?: RoadSurface;
+  /** Raised deck on pillars (an overpass) rather than an earth embankment. */
+  bridge?: boolean;
 }
 
 export interface SectionDef extends SectionProps {

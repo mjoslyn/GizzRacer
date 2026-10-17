@@ -651,3 +651,50 @@ function hsl(h: number, s: number, l: number): RGB {
   const f = (n: number) => l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1));
   return [f(0) * 255, f(8) * 255, f(4) * 255];
 }
+
+/** A sheet of fire: hot yellow at the base licking up to transparent red. */
+export function flameTexture(): THREE.CanvasTexture {
+  const W = 128;
+  const H = 128;
+  const [c, ctx] = canvas(W, H);
+  const n = fbm(W, 4, 4, 301);
+  const img = ctx.createImageData(W, H);
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const up = 1 - y / H; // 0 at the base, 1 at the top
+      const lick = n[y * W + x];
+      const a = Math.max(0, Math.min(1, (1 - up * 1.25) + (lick - 0.5) * 0.9));
+      const heat = Math.max(0, 1 - up * 1.6);
+      const i = (y * W + x) * 4;
+      img.data[i] = 255;
+      img.data[i + 1] = 90 + heat * 165;
+      img.data[i + 2] = 20 + heat * 120;
+      img.data[i + 3] = a * 255;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  const tex = finish(c);
+  tex.wrapT = THREE.ClampToEdgeWrapping;
+  return tex;
+}
+
+/** Falling water: pale blue with bright vertical streaks; scroll v to make it fall. */
+export function waterfallTexture(): THREE.CanvasTexture {
+  const W = 128;
+  const [c, ctx] = canvas(W);
+  const n = fbm(W, 4, 4, 401);
+  const img = ctx.createImageData(W, W);
+  for (let y = 0; y < W; y++) {
+    for (let x = 0; x < W; x++) {
+      // Stretch the noise vertically into streaks.
+      const v = n[((y >> 3) * W + x) % (W * W)] * 0.6 + n[y * W + x] * 0.4;
+      const i = (y * W + x) * 4;
+      img.data[i] = 150 + v * 105;
+      img.data[i + 1] = 205 + v * 50;
+      img.data[i + 2] = 235 + v * 20;
+      img.data[i + 3] = 200 + v * 55;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  return finish(c);
+}

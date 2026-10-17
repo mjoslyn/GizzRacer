@@ -10,6 +10,7 @@ import { buildRattlesnakeRun } from '../src/tracks/rattlesnakeRun';
 import { LapTracker } from '../src/tracks/laps';
 import { buildClosedSpline, nearestOnSpline, pointAt } from '../src/tracks/spline';
 import { TEST_TRACK } from '../src/tracks/testTrack';
+import { buildInfiniteLoopSpeedway } from '../src/tracks/infiniteLoopSpeedway';
 import { Track } from '../src/tracks/track';
 
 describe('spline', () => {
@@ -78,6 +79,8 @@ function minSelfGap(track: Track): number {
     for (let j = 0; j < sp.count; j += 2) {
       const along = Math.abs(sp.dist[i] - sp.dist[j]);
       if (Math.min(along, sp.length - along) < 120) continue;
+      // An overpass may cross the road below with headroom to spare.
+      if (Math.abs(track.main.heightAt(sp.dist[i]) - track.main.heightAt(sp.dist[j])) > 6) continue;
       const gap = Math.hypot(sp.px[i] - sp.px[j], sp.pz[i] - sp.pz[j]) - track.main.halfWidth[i] - track.main.halfWidth[j];
       min = Math.min(min, gap);
     }
@@ -209,5 +212,38 @@ describe('fixed loop', () => {
     const loop = new FixedLoop(() => steps++, () => {});
     loop.advance(5);
     expect(steps).toBe(15);
+  });
+});
+
+describe('infinite loop speedway', () => {
+  const def = buildInfiniteLoopSpeedway();
+  const track = new Track(def);
+
+  it('is a figure-8: the overpass crosses the underpass with headroom', () => {
+    const sp = track.spline;
+    const under = track.mainS(def.main.sections.find((s) => s.name === 'Underpass')!.from + 25);
+    const p = pointAt(sp, under);
+    // From the road below, the deck overhead is out of reach.
+    expect(track.locate(p.x, p.z, 0.5, track.locate(p.x, p.z, 0.5).hint).height).toBeCloseTo(0, 1);
+    const deck = def.main.sections.find((s) => s.bridge)!;
+    expect(track.main.heightAtBuilder((deck.from + deck.to) / 2)).toBeGreaterThan(6);
+  });
+
+  it('lets a kart drive under the bridge and over it in one lap', () => {
+    const race = new Race(track);
+    const kart = race.addKart(RACERS[0], '100cc', null);
+    race.time = 0;
+    let maxY = 0;
+    let underY = Infinity;
+    const under = def.main.sections.find((s) => s.name === 'Underpass')!;
+    for (let t = 0; t < 200 && kart.laps.lap < 1; t += PHYSICS_DT) {
+      race.step(PHYSICS_DT, [autopilot(track, kart.state, kart.progressS)]);
+      maxY = Math.max(maxY, kart.state.y);
+      const b = track.main.toBuilder(kart.progressS);
+      if (b > under.from && b < under.to) underY = Math.min(underY, kart.state.y);
+    }
+    expect(kart.laps.lap).toBe(1);
+    expect(maxY).toBeGreaterThan(8);
+    expect(underY).toBeLessThan(0.5);
   });
 });

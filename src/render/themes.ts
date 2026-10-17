@@ -25,6 +25,8 @@ export interface Theme {
   skyCycle: boolean;
   /** Dust kicked up off-road and on loose surfaces. */
   dust: number;
+  /** Low trackside barriers; `crawl` scrolls the texture along the road. */
+  barrier: { map: () => THREE.Texture; crawl: boolean };
 }
 
 export const THEMES: Record<ThemeId, Theme> = {
@@ -41,6 +43,7 @@ export const THEMES: Record<ThemeId, Theme> = {
     haze: 1,
     skyCycle: true,
     dust: 0xf4e4c8,
+    barrier: { map: tex.diamondTexture, crawl: true },
   },
   speedway: {
     sky: { zenith: '#1a4fd8', high: '#3b7cf0', low: '#9cc8ff', horizon: '#e8f4ff', below: '#a8d890', ground: '#4a7a30', cloud: '255,255,255', clouds: 34 },
@@ -55,6 +58,7 @@ export const THEMES: Record<ThemeId, Theme> = {
     haze: 0,
     skyCycle: false,
     dust: 0xd8d0b0,
+    barrier: { map: tex.curbTexture, crawl: false },
   },
   volcano: {
     sky: { zenith: '#1a0608', high: '#3c0c0c', low: '#8a2410', horizon: '#ff7a2a', below: '#5a1a10', ground: '#1a0a08', cloud: '70,50,50', clouds: 20 },
@@ -69,6 +73,7 @@ export const THEMES: Record<ThemeId, Theme> = {
     haze: 0.7,
     skyCycle: false,
     dust: 0x8a7a76,
+    barrier: { map: () => tex.stoneTexture([40, 32, 34], [96, 80, 74]), crawl: false },
   },
   jungle: {
     sky: { zenith: '#1a5a7a', high: '#3a8aa0', low: '#a0d0c0', horizon: '#e0f0d8', below: '#6a9a5a', ground: '#2a4a20', cloud: '240,250,245', clouds: 40 },
@@ -83,5 +88,6 @@ export const THEMES: Record<ThemeId, Theme> = {
     haze: 0,
     skyCycle: false,
     dust: 0xc0b48a,
+    barrier: { map: tex.woodTexture, crawl: false },
   },
 };

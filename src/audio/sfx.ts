@@ -144,7 +144,8 @@ export class Sfx {
     }
     if (by === 'dustDevils') return;
     this.onDuck(0.4, 0.8);
-    if (by === 'boulders') this.hit(0.3, 180, 0.5);
+    if (by === 'boulders' || by === 'lavaBombs' || by === 'rollers' || by === 'vines') this.hit(0.3, 180, 0.5);
+    if (by === 'flameJets' || by === 'lavaBombs') this.whoosh(0.6, 300, 1400, 0.3);
     this.tone(700, 0.55, 'sawtooth', 0.09, 140);
     this.tone(720, 0.55, 'sawtooth', 0.07, 150);
   }

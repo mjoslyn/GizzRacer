@@ -3,7 +3,9 @@ import { CPU_SKILL } from '../src/ai/cpuDriver';
 import { NEUTRAL_INPUT } from '../src/core/input';
 import { PHYSICS_DT } from '../src/core/loop';
 import { COUNTDOWN, Race } from '../src/core/race';
-import { BOULDER_STAGES, HazardSystem } from '../src/items/hazards';
+import { BOULDER_STAGES, HazardSystem, JET_STAGES } from '../src/items/hazards';
+import { buildVolcanoFortress } from '../src/tracks/volcanoFortress';
+import { buildPolygondwanalandJungle } from '../src/tracks/polygondwanalandJungle';
 import { BOX_RESPAWN, FUZZ_BOOST, ITEM_KINDS, MINE_WOBBLE, ROULETTE, TEMPO_SLOW, WAVE_RANGE, itemWeights, rollItem, type ItemKind } from '../src/items/items';
 import { createKartState, slowDown, spinOut, stepKart } from '../src/physics/kart';
 import { RACERS, kartParams } from '../src/physics/racers';
@@ -314,3 +316,61 @@ const flat = {
   probe: () => ({ height: 0, surface: 'road' as const }),
   collide: () => null,
 };
+
+describe('volcano and jungle hazards', () => {
+  const volcano = new Track(buildVolcanoFortress());
+  const jungle = new Track(buildPolygondwanalandJungle());
+
+  it('flame jets burn across the whole road, but only while firing', () => {
+    const h = new HazardSystem(volcano);
+    const i = h.poses.findIndex((p) => p.kind === 'flameJets');
+    const at = (lo: number, hi: number) => {
+      for (let t = 0; t < 20; t += 1 / 60) {
+        h.update(t);
+        if (h.poses[i].phase >= lo && h.poses[i].phase < hi) return;
+      }
+    };
+    const kartAt = (lateral: number) => {
+      const p = h.poses[i];
+      const s = createKartState(p.x - Math.cos(p.heading) * lateral, p.z + Math.sin(p.heading) * lateral);
+      s.y = p.ground;
+      return s;
+    };
+    at(0, JET_STAGES.sputter);
+    expect(h.collide([kartAt(0)], PHYSICS_DT)).toEqual([]);
+    at(JET_STAGES.fire + 0.05, 1);
+    const edge = kartAt(h.poses[i].radius - 2);
+    expect(h.collide([edge], PHYSICS_DT).length).toBe(1);
+    expect(edge.spinTime).toBeGreaterThan(0);
+  });
+
+  it('lava bombs land and sit solid like boulders', () => {
+    const h = new HazardSystem(volcano);
+    const i = h.poses.findIndex((p) => p.kind === 'lavaBombs');
+    for (let t = 0; t < 10 && !(h.poses[i].phase > 0.5 && h.poses[i].phase < 0.6); t += 1 / 60) h.update(t);
+    const p = h.poses[i];
+    expect(p.active).toBe(true);
+    const s = createKartState(p.x + 0.4, p.z);
+    s.y = p.ground;
+    h.collide([s], PHYSICS_DT);
+    expect(s.spinTime).toBeGreaterThan(0);
+    expect(Math.hypot(s.x - p.x, s.z - p.z)).toBeGreaterThan(p.radius);
+  });
+
+  it('vine logs swing across the road and rollers roll across it', () => {
+    const h = new HazardSystem(jungle);
+    for (const kind of ['vines', 'rollers'] as const) {
+      const i = h.poses.findIndex((p) => p.kind === kind);
+      let lo = Infinity;
+      let hi = -Infinity;
+      for (let t = 0; t < 8; t += 0.05) {
+        h.update(t);
+        const p = h.poses[i];
+        const off = Math.hypot(p.x - p.ax, p.z - p.az) * Math.sign((p.x - p.ax) * -Math.cos(p.heading) + (p.z - p.az) * Math.sin(p.heading) || 1);
+        lo = Math.min(lo, off);
+        hi = Math.max(hi, off);
+      }
+      expect(hi - lo, kind).toBeGreaterThan(10);
+    }
+  });
+});

@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-import { BOULDER_STAGES, type HazardPose } from '../items/hazards';
+import { BOULDER_STAGES, JET_STAGES, type HazardPose } from '../items/hazards';
 import { WAVE_RANGE, type ItemSystem } from '../items/items';
 import type { HazardSystem } from '../items/hazards';
-import { dustTexture, glowTexture, itemBoxTexture, scaleTexture, stoneTexture, warningTexture } from './textures';
+import { basaltTexture, dustTexture, flameTexture, glowTexture, itemBoxTexture, scaleTexture, stoneTexture, warningTexture, woodTexture } from './textures';
 
 const MINE_POOL = 12;
 const MISSILE_POOL = 8;
@@ -149,6 +149,20 @@ export class HazardsView {
     warnGeo.rotateX(-Math.PI / 2);
     const warnTex = warningTexture();
 
+    const magma = new THREE.MeshPhongMaterial({ map: basaltTexture(), color: 0x6a3020, emissive: 0xff3a08, emissiveIntensity: 0.6, flatShading: true });
+    const heat = glowTexture('rgba(255,160,60,1)', 'rgba(255,60,0,0)');
+    const flames = flameTexture();
+    const nozzleGeo = new THREE.CylinderGeometry(0.45, 0.6, 1.2, 10);
+    const iron = new THREE.MeshPhongMaterial({ color: 0x2a2224, shininess: 60, specular: 0x886655 });
+    const ropeMat = new THREE.MeshLambertMaterial({ color: 0x4a6a2a });
+    const ropeGeo = new THREE.CylinderGeometry(0.07, 0.07, 1, 6);
+    ropeGeo.translate(0, -0.5, 0);
+    const logGeo = new THREE.CylinderGeometry(0.55, 0.55, 3.4, 12);
+    logGeo.rotateX(Math.PI / 2);
+    const logMat = new THREE.MeshLambertMaterial({ map: woodTexture() });
+    const rollerGeo = new THREE.IcosahedronGeometry(1.5, 0);
+    const rollerMat = new THREE.MeshPhongMaterial({ map: stoneTexture([70, 96, 60], [140, 160, 110]), flatShading: true, shininess: 10 });
+
     for (const pose of hazards.poses) {
       const obj = new THREE.Group();
       const parts: THREE.Object3D[] = [];
@@ -205,12 +219,53 @@ export class HazardsView {
           obj.add(ball);
           break;
         }
-        case 'boulders': {
-          const b = new THREE.Mesh(boulderGeo, boulderMat);
+        case 'boulders':
+        case 'lavaBombs': {
+          const lava = pose.kind === 'lavaBombs';
+          const b = new THREE.Mesh(boulderGeo, lava ? magma : boulderMat);
+          if (lava) b.add(sprite(heat, 0xff7a20, 7));
           const warn = new THREE.Mesh(warnGeo, new THREE.MeshBasicMaterial({ map: warnTex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 }));
           parts.push(b, warn);
           this.group.add(warn);
           obj.add(b);
+          break;
+        }
+        case 'flameJets': {
+          // Nozzles at both road edges, a sheet of fire between them.
+          const sheet = new THREE.Mesh(
+            new THREE.PlaneGeometry(1, 3.2),
+            new THREE.MeshBasicMaterial({ map: flames.clone(), transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending }),
+          );
+          (sheet.material.map as THREE.Texture).needsUpdate = true;
+          sheet.position.y = 1.6;
+          sheet.scale.x = pose.radius * 2;
+          const glow = sprite(heat, 0xff8030, pose.radius * 1.6);
+          glow.position.y = 1;
+          obj.add(sheet, glow);
+          for (const side of [-1, 1]) {
+            const nozzle = new THREE.Mesh(nozzleGeo, iron);
+            nozzle.position.set(side * pose.radius, 0.6, 0);
+            const spit = sprite(heat, 0xffb050, 1.6);
+            spit.position.set(side * pose.radius, 1.4, 0);
+            obj.add(nozzle, spit);
+            parts.push(spit);
+          }
+          parts.unshift(sheet, glow);
+          break;
+        }
+        case 'vines': {
+          const rope = new THREE.Mesh(ropeGeo, ropeMat);
+          const log = new THREE.Mesh(logGeo, logMat);
+          // The rope lives in world space: it runs from a fixed anchor to the log.
+          this.group.add(rope);
+          obj.add(log);
+          parts.push(rope, log);
+          break;
+        }
+        case 'rollers': {
+          const r = new THREE.Mesh(rollerGeo, rollerMat);
+          obj.add(r);
+          parts.push(r);
           break;
         }
       }
@@ -247,7 +302,42 @@ export class HazardsView {
           obj.rotation.y = p.heading;
           parts[0].rotation.x = elapsed * 7;
           break;
-        case 'boulders': {
+        case 'flameJets': {
+          const [sheet, glow, ...spits] = parts;
+          obj.rotation.y = p.heading;
+          const u = p.phase;
+          const firing = u >= JET_STAGES.fire;
+          const sputter = u >= JET_STAGES.sputter && !firing;
+          sheet.visible = glow.visible = firing;
+          if (firing) {
+            sheet.scale.y = 0.85 + Math.random() * 0.3;
+            const map = (sheet as THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>).material.map!;
+            map.offset.x = elapsed * 0.7;
+          }
+          for (const s of spits) {
+            s.visible = firing || (sputter && Math.random() < 0.6);
+            s.scale.setScalar(firing ? 2.4 : 0.8 + Math.random());
+          }
+          break;
+        }
+        case 'vines': {
+          const [rope, log] = parts;
+          obj.rotation.y = p.heading;
+          log.rotation.z = p.phase * 0.25;
+          // Anchor high above the road centre; the rope stretches to the log.
+          const top = new THREE.Vector3(p.ax, p.ground + 15, p.az);
+          const end = new THREE.Vector3(p.x, p.y + 0.3, p.z);
+          rope.position.copy(top);
+          rope.scale.y = top.distanceTo(end);
+          rope.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), end.sub(top).normalize());
+          break;
+        }
+        case 'rollers':
+          obj.rotation.y = p.heading;
+          parts[0].rotation.x = p.phase;
+          break;
+        case 'boulders':
+        case 'lavaBombs': {
           const [b, warn] = parts;
           const u = p.phase;
           b.visible = u >= BOULDER_STAGES.fall;

@@ -18,7 +18,7 @@ export interface BranchDef extends RibbonDef {
 }
 
 export interface Landmark {
-  kind: 'skeletonArch' | 'fangs';
+  kind: 'skeletonArch' | 'fangs' | 'fortressGate' | 'templeGate' | 'waterfall' | 'gantry';
   ribbon: number; // -1 = main, else branch index
   s: number; // builder units
 }
@@ -54,7 +54,15 @@ export type HazardDef =
   | { kind: 'snakes'; from: number; to: number; count: number; period: number }
   | { kind: 'dustDevils'; from: number; to: number; count: number }
   | { kind: 'tumbleweeds'; from: number; to: number; count: number }
-  | { kind: 'boulders'; at: number[]; period: number };
+  | { kind: 'boulders'; at: number[]; period: number }
+  /** Volcano: boulders that fall glowing and smoulder where they land. */
+  | { kind: 'lavaBombs'; at: number[]; period: number }
+  /** Volcano fortress: jets of fire across the whole road, on a rhythm. */
+  | { kind: 'flameJets'; at: number[]; period: number }
+  /** Jungle: logs swinging across the road on vines. */
+  | { kind: 'vines'; at: number[]; period: number }
+  /** Jungle ruins: polygon boulders rolling across the road and back. */
+  | { kind: 'rollers'; from: number; to: number; count: number; period: number };
 
 export interface StartSlot {
   x: number;

@@ -13,12 +13,15 @@ npm run build     # typecheck + production build
 
 ## Status
 
-Milestones 1 to 6 are in (driving feel, the Rattlesnake Run greybox, CPU racers, items and hazards, menus and Grand Prix, the psychedelic art pass), plus unique racer models, themed worlds, draft layouts of Volcano Fortress and Polygondwanaland Jungle, and mobile play (touch controls, fullscreen, landscape).
+Milestones 1 to 7 are in (driving feel, the Rattlesnake Run greybox, CPU racers, items and hazards, menus and Grand Prix, the psychedelic art pass, all four Cup 1 tracks), plus unique racer models, themed worlds, and mobile play (touch controls, fullscreen, landscape). Online multiplayer (Milestone 8) is next.
 
 - Fixed 60 Hz physics with interpolated rendering (`src/core/loop.ts`)
 - Keyboard + standard gamepad input as pure `InputFrame` data, auto-accelerate by default (`src/core/input.ts`)
 - Arcade kart controller: per-racer stats, engine classes, off-road penalty, fine steering (gradual ramp-in, response curve), hop, 3-tier drift boosts, ramps that launch off their lip, trick boosts, boost pads, walls (`src/physics/kart.ts`)
 - Track model: turtle-style builder (`src/tracks/builder.ts`), ribbons with per-section width, walls, surface and elevation, jump gaps over pits, branch shortcuts (`src/tracks/track.ts`)
+- Infinite Loop Speedway (`src/tracks/infiniteLoopSpeedway.ts`): a figure-8 on green hills; the two long straights cross in the middle, one flying over the other on an overpass on pillars
+- Volcano Fortress (`src/tracks/volcanoFortress.ts`): lava switchbacks, a walled basalt fortress behind two gatehouses with flame jets across the road, a rail-less bridge over a lava lake, and lava bombs on the open plains
+- Polygondwanaland Jungle (`src/tracks/polygondwanalandJungle.ts`): vine hairpins with logs swinging across the road, a river jump, stone ruins behind a temple gate with polygon boulders rolling across, and a waterfall
 - Rattlesnake Run: Salt Flat Straight, Sidewinder S-Bends, Rattle Canyon, The Coil (a double spiral), Dry Wash with the Snake's Mouth shortcut (a 20 m jump: a boost at 50cc, flat out from 100cc), Mesa Leap (`src/tracks/rattlesnakeRun.ts`)
 - Race: checkpointed laps, fall detection and respawn at the last checkpoint after 1.5 s (`src/core/race.ts`)
 - CPU racers (`src/ai/cpuDriver.ts`): own racing lane, corner braking, drifts for mini-turbos, steer around karts ahead, recover when stuck; difficulty follows the class; mild rubber-banding; kart bumps by weight; positions and results

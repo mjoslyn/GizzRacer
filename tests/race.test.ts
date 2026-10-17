@@ -5,6 +5,7 @@ import { PHYSICS_DT } from '../src/core/loop';
 import { COUNTDOWN, RUBBER_BAND_MAX, Race, ordinal } from '../src/core/race';
 import { RACERS } from '../src/physics/racers';
 import { buildRattlesnakeRun } from '../src/tracks/rattlesnakeRun';
+import { TRACK_LIST } from '../src/tracks/index';
 import { Track } from '../src/tracks/track';
 
 const track = new Track(buildRattlesnakeRun());
@@ -81,5 +82,19 @@ describe('race', () => {
 
   it('formats positions', () => {
     expect([1, 2, 3, 4, 11, 12, 13, 21, 22].map(ordinal)).toEqual(['1st', '2nd', '3rd', '4th', '11th', '12th', '13th', '21st', '22nd']);
+  });
+});
+
+describe.each(TRACK_LIST.map((t) => [t.name, t.build] as const))('%s with a full CPU field', (_name, build) => {
+  it('every CPU laps it with items and hazards on, and no more than a fall or two', () => {
+    const race = new Race(new Track(build()), 3);
+    for (const r of RACERS) race.addKart(r, '100cc', CPU_SKILL['100cc']);
+    let respawns = 0;
+    for (let t = 0; t < COUNTDOWN + 200 && race.karts.some((k) => k.laps.lap < 1); t += PHYSICS_DT) {
+      race.step(PHYSICS_DT, []);
+      respawns += race.karts.filter((k) => k.respawned).length;
+    }
+    for (const k of race.karts) expect(k.laps.lap, k.racer.name).toBeGreaterThanOrEqual(1);
+    expect(respawns).toBeLessThanOrEqual(2);
   });
 });

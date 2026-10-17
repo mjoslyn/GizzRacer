@@ -15,6 +15,9 @@ export interface HazardPose {
   radius: number;
   /** Road height under the hazard. */
   ground: number;
+  /** Road centerline point it sits across from (vine anchors). */
+  ax: number;
+  az: number;
   /** Velocity over the last update, m/s. */
   vx: number;
   vz: number;
@@ -29,6 +32,15 @@ export interface HazardPose {
 
 export const SNAKE_SPIN = 0.9;
 export const BOULDER_SPIN = 1.1;
+export const JET_SPIN = 1.0;
+export const VINE_SPIN = 1.0;
+export const ROLLER_SPIN = 1.0;
+/** Flame jet cycle: quiet, then sputtering (harmless), then full fire. */
+export const JET_STAGES = { sputter: 0.45, fire: 0.62 } as const;
+const VINE_RADIUS = 1.3;
+const ROLLER_RADIUS = 1.5;
+/** How far along the road a flame jet's sheet of fire reaches. */
+const JET_DEPTH = 1.3;
 export const TUMBLEWEED_SLOW = 0.55;
 /** Sideways acceleration inside a dust devil, m/s^2. */
 export const DEVIL_PUSH = 34;
@@ -40,6 +52,15 @@ const TUMBLEWEED_SPEED = 7;
 const BOULDER_RADIUS = 1.7;
 const BOULDER_DROP = 24;
 const HIT_COOLDOWN = 1;
+const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds'>, number> = {
+  snakes: SNAKE_SPIN,
+  boulders: BOULDER_SPIN,
+  lavaBombs: BOULDER_SPIN,
+  flameJets: JET_SPIN,
+  vines: VINE_SPIN,
+  rollers: ROLLER_SPIN,
+};
+
 /** Boulder cycle stages, as fractions of the period. */
 export const BOULDER_STAGES = { fall: 0.3, land: 0.4, crumble: 0.85 } as const;
 
@@ -56,10 +77,10 @@ export class HazardSystem {
 
   constructor(private readonly track: Track) {
     for (const def of track.def.hazards) {
-      const n = def.kind === 'boulders' ? def.at.length : def.count;
+      const n = 'at' in def ? def.at.length : def.count;
       for (let i = 0; i < n; i++) {
         this.slots.push({ def, index: i });
-        this.poses.push({ kind: def.kind, x: 0, y: 0, z: 0, heading: 0, radius: 0, ground: 0, vx: 0, vz: 0, active: false, phase: 0 });
+        this.poses.push({ kind: def.kind, x: 0, y: 0, z: 0, heading: 0, radius: 0, ground: 0, ax: 0, az: 0, vx: 0, vz: 0, active: false, phase: 0 });
       }
     }
     this.update(0);
@@ -74,18 +95,40 @@ export class HazardSystem {
       const x0 = p.x;
       const z0 = p.z;
       switch (def.kind) {
-        case 'snakes': {
+        case 'snakes':
+        case 'rollers': {
           const s = def.from + ((def.to - def.from) * (i + 0.5)) / def.count;
-          const hw = this.halfWidth(s) + 2.5;
+          const roller = def.kind === 'rollers';
+          const hw = this.halfWidth(s) + (roller ? 1 : 2.5);
           const u = (((t + 10) / def.period + i * 0.37) % 1 + 1) % 1;
-          // Triangle wave: edge to edge at a steady crawl, then back.
+          // Triangle wave: edge to edge at a steady pace, then back.
           const lat = hw * (1 - 4 * Math.abs(u - 0.5));
-          this.place(p, s, lat, 0);
+          this.place(p, s, lat, roller ? ROLLER_RADIUS : 0);
           const dir = u < 0.5 ? -1 : 1; // lateral direction of travel
           p.heading = p.heading + (dir * Math.PI) / 2;
-          p.radius = SNAKE_RADIUS;
+          p.radius = roller ? ROLLER_RADIUS : SNAKE_RADIUS;
           p.active = true;
-          p.phase = t * 9 + i;
+          // Snakes: slither phase. Rollers: roll angle (distance over radius).
+          p.phase = roller ? (lat + hw) / ROLLER_RADIUS : t * 9 + i;
+          break;
+        }
+        case 'vines': {
+          const at = def.at[i];
+          const hw = this.halfWidth(at);
+          const swing = Math.sin(((t + 10) / def.period) * Math.PI * 2 + i * 1.9);
+          this.place(p, at, hw * 0.85 * swing, 1.1);
+          p.radius = VINE_RADIUS;
+          p.active = true;
+          p.phase = swing;
+          break;
+        }
+        case 'flameJets': {
+          const at = def.at[i];
+          this.place(p, at, 0, 0);
+          const u = (((t + 10) / def.period + i * 0.31) % 1 + 1) % 1;
+          p.radius = this.halfWidth(at) + 1;
+          p.active = u >= JET_STAGES.fire;
+          p.phase = u;
           break;
         }
         case 'dustDevils': {
@@ -109,7 +152,8 @@ export class HazardSystem {
           p.phase = bounce;
           break;
         }
-        case 'boulders': {
+        case 'boulders':
+        case 'lavaBombs': {
           const at = def.at[i];
           const tt = t + 10 + (i * def.period) / def.at.length;
           const cycle = Math.floor(tt / def.period);
@@ -150,14 +194,14 @@ export class HazardSystem {
           this.swirl(p, s, dt);
           continue;
         }
-        if (p.kind === 'boulders') this.pushOut(p, s);
+        if (p.kind === 'boulders' || p.kind === 'lavaBombs') this.pushOut(p, s);
         if (this.cooldown.has(s)) continue;
         this.cooldown.set(s, HIT_COOLDOWN);
         if (p.kind === 'tumbleweeds') {
           s.speed *= TUMBLEWEED_SLOW;
           s.vy = Math.max(s.vy, 2.5);
           hit.push({ kart: s, by: p.kind });
-        } else if (spinOut(s, p.kind === 'snakes' ? SNAKE_SPIN : BOULDER_SPIN)) {
+        } else if (spinOut(s, SPIN[p.kind])) {
           hit.push({ kart: s, by: p.kind });
         }
       }
@@ -168,7 +212,9 @@ export class HazardSystem {
   /** Circles for CPU avoidance, including boulders about to land. */
   obstacles(out: { x: number; z: number; r: number; vx: number; vz: number }[]): void {
     for (const p of this.poses) {
-      if (p.kind === 'boulders' ? p.phase > BOULDER_STAGES.crumble || p.phase < BOULDER_STAGES.fall * 0.5 : !p.active) continue;
+      if (p.kind === 'flameJets') continue; // the whole road: nothing to steer around
+      const falling = p.kind === 'boulders' || p.kind === 'lavaBombs';
+      if (falling ? p.phase > BOULDER_STAGES.crumble || p.phase < BOULDER_STAGES.fall * 0.5 : !p.active) continue;
       if (p.kind === 'snakes') {
         // The body trails the head: aim to miss its middle.
         const bx = -Math.sin(p.heading) * SNAKE_LENGTH * 0.5;
@@ -188,6 +234,8 @@ export class HazardSystem {
     p.z = a.z + (a.tx / tl) * lateral;
     const L = this.track.length;
     p.ground = this.track.main.heightAt(((s % L) + L) % L);
+    p.ax = a.x;
+    p.az = a.z;
     p.y = p.ground + lift;
     p.heading = Math.atan2(a.tx, a.tz);
   }
@@ -196,8 +244,19 @@ export class HazardSystem {
     return this.track.main.halfWidthAtS(this.track.mainS(builderS));
   }
 
-  /** Snakes are a short segment trailing behind the head; everything else is a circle. */
+  /**
+   * Snakes are a short segment trailing behind the head; a flame jet is a
+   * thin sheet across the road; everything else is a circle.
+   */
   private distance(p: HazardPose, s: KartState): number {
+    if (p.kind === 'flameJets') {
+      const fx = Math.sin(p.heading);
+      const fz = Math.cos(p.heading);
+      const along = Math.abs((s.x - p.x) * fx + (s.z - p.z) * fz);
+      const across = Math.abs((s.x - p.x) * -fz + (s.z - p.z) * fx);
+      // Inside the sheet counts as touching; the radius is the half-width.
+      return along < JET_DEPTH + KART_RADIUS ? across - KART_RADIUS : Infinity;
+    }
     if (p.kind !== 'snakes') return Math.hypot(s.x - p.x, s.z - p.z);
     const bx = -Math.sin(p.heading);
     const bz = -Math.cos(p.heading);

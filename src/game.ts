@@ -294,6 +294,10 @@ const HIT_TEXT: Record<ItemKind | HazardKind, string> = {
   dustDevils: 'DUST DEVIL!',
   tumbleweeds: 'TUMBLEWEED!',
   boulders: 'ROCKFALL!',
+  lavaBombs: 'LAVA BOMB!',
+  flameJets: 'TORCHED!',
+  vines: 'TIMBER!',
+  rollers: "POLYGON'D!",
 };
 
 /** Takes a group out of the scene and frees what it built. */

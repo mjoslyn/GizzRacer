@@ -65,10 +65,10 @@ All designs are original. No likenesses of band members or album art. Every race
 
 Each track has its own theme (render/themes.ts): desert (Rattlesnake Run), green speedway hills (Infinite Loop Speedway), basalt and lava (Volcano Fortress), jungle (Polygondwanaland Jungle). Not everything is desert.
 
-1. Infinite Loop Speedway (easy)
+1. Infinite Loop Speedway (easy): a figure-8 (an infinity sign from above), about 1.4 km. Wide road, two big loops, and two long straights that cross in the middle: one passes under, the other flies over on a 9 m overpass on pillars. Start gantry with the track name. No hazards
 2. Rattlesnake Run (medium, detailed below)
-3. Volcano Fortress (hard)
-4. Polygondwanaland Jungle (hard)
+3. Volcano Fortress (hard): Ash Plain, Lava Switchbacks, Fortress Gate (a walled basalt corridor behind two gatehouses), Magma Bridge (no rails, over a lava lake), Caldera Rim. Hazards: lava bombs that fall glowing onto the plain and the rim and smoulder on the road; flame jets that sweep across the whole fortress road on a rhythm (they sputter as a warning first)
+4. Polygondwanaland Jungle (hard): Canopy Run, Vine Hairpins, River Jump, Polygon Ruins (through a stepped temple gate), Waterfall Bend. Hazards: logs swinging across the hairpin straights on vines; faceted polygon boulders rolling back and forth across the ruins
 
 ### Rattlesnake Run
 **Visual direction:** sun-scorched desert in the spirit of the Rattlesnake visuals: burnt orange sand, red rock, cobalt sky, shimmering heat haze, hypnotic repetition. Original assets, not a recreation of the video.

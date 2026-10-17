@@ -38,7 +38,7 @@ export function buildVolcanoFortress(): TrackDef {
   const main = b.finish(true);
   return {
     id: 'volcano-fortress',
-    name: 'Volcano Fortress (draft)',
+    name: 'Volcano Fortress',
     main,
     branches: [],
     pits: b.pits,
@@ -46,13 +46,19 @@ export function buildVolcanoFortress(): TrackDef {
     checkpoints: ['switchbacks', 'fortress', 'bridge', 'caldera'].map((m) => b.marks[m].s / main.length),
     laps: 3,
     bounds: 420,
-    landmarks: [],
+    landmarks: [
+      { kind: 'fortressGate', ribbon: -1, s: b.marks.fortress.s + 6 },
+      { kind: 'fortressGate', ribbon: -1, s: b.marks.bridge.s - 8 },
+    ],
     itemBoxes: [
       { s: 95, count: 4 },
       { s: b.marks.fortress.s + 30, count: 3 },
       { s: b.marks.caldera.s + 25, count: 4 },
     ],
-    hazards: [],
+    hazards: [
+      { kind: 'lavaBombs', at: [55, 115, b.marks.caldera.s + 45], period: 6 },
+      { kind: 'flameJets', at: [b.marks.fortress.s + 50, b.marks.fortress.s + 159, b.marks.fortress.s + 243], period: 3.2 },
+    ],
     theme: 'volcano',
     music: { lap: 'volcano-fortress' },
   };
