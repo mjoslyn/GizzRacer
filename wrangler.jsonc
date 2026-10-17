@@ -12,8 +12,12 @@
   "durable_objects": {
     "bindings": [
       { "name": "Players", "class_name": "Players" },
-      { "name": "Trials", "class_name": "Trials" }
+      { "name": "Trials", "class_name": "Trials" },
+      { "name": "Room", "class_name": "Room" }
     ]
   },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Players", "Trials"] }]
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["Players", "Trials"] },
+    { "tag": "v2", "new_sqlite_classes": ["Room"] }
+  ]
 }

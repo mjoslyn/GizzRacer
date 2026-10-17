@@ -11,7 +11,8 @@
     "test": "vitest run",
     "balance": "vitest run --config tools/vitest.balance.config.ts --silent=false",
     "dev:party": "vite build && wrangler dev",
-    "deploy": "npm run build && wrangler deploy"
+    "deploy": "npm run build && wrangler deploy",
+    "seed:ghosts": "NODE_USE_ENV_PROXY=1 vitest run --config tools/vitest.seed.config.ts --silent=false"
   },
   "dependencies": {
     "partyserver": "^0.5.10",

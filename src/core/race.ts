@@ -91,6 +91,8 @@ export class Race {
     readonly track: Track,
     seed = 1,
     items = true,
+    /** Laps to the flag; Time Trial runs a single lap. */
+    readonly laps = track.def.laps,
   ) {
     this.items = new ItemSystem(track, seed, items);
     this.hazards = new HazardSystem(track);
@@ -198,7 +200,7 @@ export class Race {
     if (kart.laps.update(loc.progress)) {
       kart.lapTimes.push(this.time - kart.lapStart);
       kart.lapStart = this.time;
-      if (kart.laps.lap >= this.track.def.laps) {
+      if (kart.laps.lap >= this.laps) {
         kart.finishTime = this.time;
         this.results.push(kart);
         kart.driver ??= new CpuDriver(AUTOPILOT_SKILL, 1);

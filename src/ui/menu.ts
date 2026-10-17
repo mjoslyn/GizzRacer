@@ -1,12 +1,13 @@
 import { ENGINE_CLASSES, RACERS, type EngineClass, type RacerDef } from '../physics/racers';
 import { TRACK_LIST } from '../tracks/index';
 
-export type RaceMode = 'grandPrix' | 'single' | 'timeTrial';
+export type RaceMode = 'grandPrix' | 'single' | 'timeTrial' | 'online';
 
 export const MODE_NAMES: Record<RaceMode, string> = {
   grandPrix: 'Grand Prix',
   single: 'Single Race',
   timeTrial: 'Time Trial',
+  online: 'Online',
 };
 const MODES = Object.keys(MODE_NAMES) as RaceMode[];
 
@@ -75,14 +76,14 @@ export class Menu {
   /** A Grand Prix runs every track, so its track row is skipped. */
   private moveRow(dir: number): void {
     do this.row = (this.row + dir + ROWS.length) % ROWS.length;
-    while (ROWS[this.row] === 'track' && this.choice.mode === 'grandPrix');
+    while (ROWS[this.row] === 'track' && (this.choice.mode === 'grandPrix' || this.choice.mode === 'online'));
   }
 
   private change(dir: number): void {
     const c = this.choice;
     const row = ROWS[this.row];
     const step = <T>(list: readonly T[], v: T) => list[(list.indexOf(v) + dir + list.length) % list.length];
-    if (row === 'track' && c.mode === 'grandPrix') return;
+    if (row === 'track' && (c.mode === 'grandPrix' || c.mode === 'online')) return;
     if (row === 'mode') c.mode = step(MODES, c.mode);
     else if (row === 'track') c.track = (c.track + dir + TRACK_LIST.length) % TRACK_LIST.length;
     else if (row === 'racer') c.racer = step(RACERS, c.racer);
@@ -109,10 +110,16 @@ export class Menu {
       <div class="menu-panel">
         <div class="menu-title hud-big">CHOOSE YOUR RACE</div>
         ${line('mode', 'Mode', MODE_NAMES[c.mode])}
-        ${c.mode === 'grandPrix' ? `<div class="menu-row menu-cup"><div class="menu-label">Cup</div><div class="menu-value">Cup 1: ${TRACK_LIST.length} races</div></div>` : line('track', 'Track', TRACK_LIST[c.track].name)}
+        ${
+          c.mode === 'grandPrix'
+            ? `<div class="menu-row menu-cup"><div class="menu-label">Cup</div><div class="menu-value">Cup 1: ${TRACK_LIST.length} races</div></div>`
+            : c.mode === 'online'
+              ? `<div class="menu-row menu-cup"><div class="menu-label">Rooms</div><div class="menu-value">Race friends with a room code</div></div>`
+              : line('track', 'Track', TRACK_LIST[c.track].name)
+        }
         ${line('racer', 'Racer', c.racer.name, `<div class="menu-stats">${stats}</div>`)}
         ${line('engine', 'Class', c.engine)}
-        <button class="menu-start hud-big" data-start>RACE!</button>
+        <button class="menu-start hud-big" data-start>${c.mode === 'online' ? 'ROOMS' : 'RACE!'}</button>
         <div class="menu-hint">&uarr;&darr; choose &middot; &larr;&rarr; change &middot; Enter race</div>
       </div>`;
   }

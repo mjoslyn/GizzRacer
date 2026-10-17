@@ -16,6 +16,9 @@ export interface RunSubmission {
   ghost: string;
 }
 
+/** A Time Trial run is a single lap from a standing start. */
+export const TRIAL_LAPS = 1;
+
 /** Leaderboard name: one board per track, class and physics version. */
 export function boardName(trackId: string, engine: EngineClass, version = PHYSICS_VERSION): string {
   return `${trackId}.${engine}.v${version}`;
@@ -45,7 +48,7 @@ export function checkRun(run: RunSubmission): string | null {
   if (!RACERS.some((r) => r.id === run.racerId)) return 'unknown racer';
   const track = trackById(run.trackId);
   if (!track) return 'unknown track';
-  const laps = track.def.laps;
+  const laps = TRIAL_LAPS;
   if (!Array.isArray(run.lapsMs) || run.lapsMs.length !== laps || run.lapsMs.some((l) => !Number.isFinite(l) || l <= 0)) return 'bad laps';
   const sum = run.lapsMs.reduce((a, b) => a + b, 0);
   if (Math.abs(sum - run.totalMs) > 5 * laps) return 'laps do not add up';

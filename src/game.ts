@@ -8,11 +8,15 @@ import { MusicPlayer, type MusicCue } from './audio/music';
 import { Sfx } from './audio/sfx';
 import { GHOST_OVERRUN, GhostRecorder, decodeGhost, encodeGhost, ghostPose, type GhostRun } from './core/ghost';
 import { identity } from './net/identity';
+import { TRIAL_LAPS } from './net/runCheck';
 import { fetchGhost, uploadRun } from './net/trials';
 import { LeaderboardPanel } from './ui/leaderboard';
+import { LobbyScreen } from './ui/lobby';
+import type { RoomStart } from './net/protocol';
+import type { RoomClient } from './net/room';
 import { GrandPrix } from './core/grandPrix';
 import { Race, ordinal, type RaceKart } from './core/race';
-import { copyKartState, createKartState, driftTier, respawnKart, type KartState, type StepEvents } from './physics/kart';
+import { PHYSICS_VERSION, copyKartState, createKartState, driftTier, respawnKart, type KartState, type StepEvents } from './physics/kart';
 import { RACERS, type RacerDef } from './physics/racers';
 import type { HazardKind } from './items/hazards';
 import type { ItemKind } from './items/items';
@@ -82,7 +86,7 @@ const INTRO_TIME = 4.5;
  * results -> standings -> next race, and after the last one -> podium.
  * Behind the title and the menu, CPUs race the chosen track as an attract mode.
  */
-type Mode = 'title' | 'menu' | 'race' | 'results' | 'standings' | 'podium';
+type Mode = 'title' | 'menu' | 'race' | 'results' | 'standings' | 'podium' | 'lobby';
 let mode: Mode = 'title';
 
 let choice: MenuChoice = { mode: 'grandPrix', track: 1, racer: RACERS[0], engine: '100cc' };
@@ -127,9 +131,27 @@ const snapshots = new Map<RaceKart, KartState>();
 
 const menu = new Menu(document.body, choice, onMenuChange, (c) => {
   choice = { ...c };
+  if (c.mode === 'online') return setMode('lobby');
   gp = c.mode === 'grandPrix' ? new GrandPrix(defaultGrid(c.racer), TRACK_LIST.map((_, i) => i)) : null;
   startRace(true);
 });
+/** The online race in progress (8b preview: other players drive as CPUs here). */
+let online: { client: RoomClient; start: RoomStart } | null = null;
+const lobby = new LobbyScreen(document.body, () => choice.racer);
+lobby.onBack = () => setMode('menu');
+lobby.onSettings = (s) => {
+  // The attract race behind the lobby shows the room's track.
+  if (mode === 'lobby' && track.def.id !== TRACK_LIST[s.track].id) loadTrack(s.track);
+};
+lobby.onStart = (start, client) => {
+  online = { client, start };
+  gp = null;
+  choice = { ...choice, engine: start.settings.engine };
+  if (track.def.id !== TRACK_LIST[start.settings.track].id) loadTrack(start.settings.track);
+  startRace(true);
+};
+/** A ?room= link opens the lobby and joins once past the title. */
+const linkedRoom = new URLSearchParams(location.search).get('room');
 const touch = new TouchControls(document.body, input, () => input.requestPause());
 const screenFit = new ScreenFit(document.body, fitRenderer);
 const board = new LeaderboardPanel(document.body);
@@ -158,9 +180,10 @@ function setMode(next: Mode): void {
   document.body.dataset.mode = next;
   hud.showTitle(next === 'title');
   menu.show(next === 'menu');
+  lobby.show(next === 'lobby');
   touch.setVisible(next === 'race');
   loop.paused = false;
-  if (next === 'title' || next === 'menu') music.play('title');
+  if (next === 'title' || next === 'menu' || next === 'lobby') music.play('title');
   // Back at the picker: fetch the board again, it may include the run just posted.
   updateBoard(true);
 }
@@ -221,19 +244,30 @@ function loadTrack(index: number): void {
  * race, the player alone in Time Trial, or all CPUs for the attract mode.
  */
 function startRace(withPlayer: boolean): void {
-  if (withPlayer && track.def.id !== TRACK_LIST[raceTrack()].id) {
+  const net = withPlayer ? online : null;
+  if (withPlayer && !net && track.def.id !== TRACK_LIST[raceTrack()].id) {
     loadTrack(raceTrack());
   }
-  const trial = withPlayer && choice.mode === 'timeTrial';
-  race = new Race(track, raceSeed++, !trial);
+  const trial = withPlayer && !net && choice.mode === 'timeTrial';
+  race = new Race(track, net ? net.start.seed : raceSeed++, !trial, trial ? TRIAL_LAPS : track.def.laps);
   setupGhost(trial);
   player = null;
   trialNote = '';
   Object.assign(heard, { count: 0, lap: 0, tier: 0, rolling: false });
-  const grid = !withPlayer ? defaultGrid(null) : trial ? [choice.racer] : gp ? gp.grid() : defaultGrid(choice.racer);
-  for (const r of grid) {
-    if (withPlayer && r === choice.racer) player = race.addKart(r, choice.engine, null);
-    else race.addKart(r, choice.engine, CPU_SKILL[choice.engine]);
+  if (net) {
+    // The room's grid: my slot is mine; everyone else drives as a CPU for now.
+    const me = identity().playerId;
+    for (const slot of net.start.grid) {
+      const r = RACERS.find((x) => x.id === slot.racerId) ?? RACERS[0];
+      if (slot.playerId === me) player = race.addKart(r, choice.engine, null);
+      else race.addKart(r, choice.engine, CPU_SKILL[choice.engine]);
+    }
+  } else {
+    const grid = !withPlayer ? defaultGrid(null) : trial ? [choice.racer] : gp ? gp.grid() : defaultGrid(choice.racer);
+    for (const r of grid) {
+      if (withPlayer && r === choice.racer) player = race.addKart(r, choice.engine, null);
+      else race.addKart(r, choice.engine, CPU_SKILL[choice.engine]);
+    }
   }
   // Attract mode skips the countdown.
   if (!withPlayer) race.time = 0;
@@ -249,14 +283,17 @@ function startRace(withPlayer: boolean): void {
   });
   snapshots.clear();
   chase.snap();
-  intro = withPlayer ? INTRO_TIME : 0;
+  intro = withPlayer && !net ? INTRO_TIME : 0;
+  // Online, everyone's GO is the room's: count down to it on the room clock.
+  if (net) race.time = Math.max(-10, -(net.start.at - net.client.serverNow()) / 1000);
   if (withPlayer) {
     setMode('race');
     music.play(track.def.music.lap as MusicCue);
   }
 }
 
-const ghostKey = () => `gizzracer.ghost.${track.def.id}.${choice.engine}`;
+// Keyed by physics version: older records and ghosts (e.g. 3-lap ones) don't carry over.
+const ghostKey = () => `gizzracer.ghost.${track.def.id}.${choice.engine}.v${PHYSICS_VERSION}`;
 
 /** In Time Trial, starts recording and brings back your best run, and any leaderboard run you picked, as ghosts. */
 function setupGhost(trial: boolean): void {
@@ -335,6 +372,8 @@ function step(dt: number): void {
     if (intro === 0) chase.snap();
     return;
   }
+  // Online countdowns follow the room's clock, so a slow frame can't make anyone late to GO.
+  if (online && race.time < 0) race.time = Math.min(0, -(online.start.at - online.client.serverNow()) / 1000) - dt;
   const inputs = race.karts.map((k) => (k === player ? lastInput : undefined));
   const events = race.step(dt, inputs);
   events.forEach((ev, i) => {
@@ -412,7 +451,7 @@ function playerSounds(p: RaceKart, ev: StepEvents): void {
   if (p.laps.lap !== heard.lap) {
     if (p.finishTime !== null) sfx.finish();
     else if (p.laps.lap > heard.lap) {
-      const final = p.laps.lap === track.def.laps - 1;
+      const final = p.laps.lap === race.laps - 1;
       sfx.lap(final);
       hud.flash(final ? 'FINAL LAP!' : `LAP ${p.laps.lap + 1}`);
     }
@@ -477,7 +516,7 @@ function updateSounds(dt: number): void {
 
 function updateMusic(p: RaceKart): void {
   if (p.finishTime !== null) music.play('podium');
-  else if (track.def.music.finalLap && p.laps.lap === track.def.laps - 1) music.play(track.def.music.finalLap as MusicCue);
+  else if (track.def.music.finalLap && race.laps > 1 && p.laps.lap === race.laps - 1) music.play(track.def.music.finalLap as MusicCue);
   else music.play(track.def.music.lap as MusicCue);
 }
 
@@ -531,7 +570,7 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
   document.body.classList.toggle('intro', intro > 0);
   const theme = trackView!.theme;
   const L = track.length;
-  trackView!.update(elapsed, camera.position, theme.skyCycle ? Math.PI * 2 * clamp(f.distance / (L * track.def.laps), 0, 1) : 0);
+  trackView!.update(elapsed, camera.position, theme.skyCycle ? Math.PI * 2 * clamp(f.distance / (L * race.laps), 0, 1) : 0);
   itemsView!.update(elapsed);
   hazardsView!.update(elapsed);
   sunAnchor.position.copy(camera.position).addScaledVector(SUN_DIR, 1400);
@@ -542,7 +581,7 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
     {
       kart: s,
       lap: f.laps.lap,
-      totalLaps: track.def.laps,
+      totalLaps: race.laps,
       raceTime: f.finishTime ?? Math.max(0, race.time),
       lapTimes: f.lapTimes,
       racerName: f.racer.name,
@@ -568,7 +607,7 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
   // Heat haze shimmers hardest on the straights; the kaleidoscope runs on the player's final lap.
   const straight = 1 - clamp(track.main.maxCurvature(f.progressS, f.progressS + 80) * 25, 0, 1);
   const hazeTarget = podium ? 0 : theme.haze * (0.3 + 0.7 * straight);
-  const finalLap = mode === 'race' && player !== null && player.finishTime === null && intro === 0 && player.laps.lap === track.def.laps - 1;
+  const finalLap = mode === 'race' && player !== null && player.finishTime === null && intro === 0 && race.laps > 1 && player.laps.lap === race.laps - 1;
   fx.haze += (hazeTarget - fx.haze) * damp(2, frameDt);
   fx.kaleido += ((finalLap ? 1 : 0) - fx.kaleido) * damp(1.5, frameDt);
   const beat = music.beatPhase();
@@ -597,7 +636,7 @@ function table(): Table | null {
         player: e.racer === choice.racer,
       }));
   if (mode === 'results') {
-    const title = gp ? `RACE ${gp.round + 1}/${gp.tracks.length} RESULTS` : choice.mode === 'timeTrial' ? 'TIME TRIAL' : 'RESULTS';
+    const title = online ? `ROOM ${online.client.code} RESULTS` : gp ? `RACE ${gp.round + 1}/${gp.tracks.length} RESULTS` : choice.mode === 'timeTrial' ? 'TIME TRIAL' : 'RESULTS';
     return { kind: 'results', title, note: trialNote || undefined, rows: finishOrder().map(kartRow) };
   }
   if (mode === 'standings' && gp) {
@@ -620,7 +659,7 @@ function finishOrder(): RaceKart[] {
 
 /** Stores a Time Trial run and describes it against the best so far. */
 function saveTrial(total: number, bestLap: number, racerId: string): string {
-  const key = `gizzracer.tt.${track.def.id}.${choice.engine}`;
+  const key = `gizzracer.tt.${track.def.id}.${choice.engine}.v${PHYSICS_VERSION}`;
   let prev: { total: number; lap: number } | null = null;
   try {
     prev = JSON.parse(localStorage.getItem(key) ?? 'null');
@@ -686,6 +725,15 @@ function advance(): boolean {
   music.unlock();
   if (mode === 'title') {
     toMenu();
+    if (linkedRoom) {
+      menu.choice.mode = choice.mode = 'online';
+      setMode('lobby');
+      lobby.joinCode(linkedRoom);
+    }
+    return true;
+  }
+  if (mode === 'results' && online) {
+    backToLobby();
     return true;
   }
   if (mode === 'results') {
@@ -709,12 +757,25 @@ function advance(): boolean {
   return false;
 }
 
+/** After an online race, back to the room's lobby with the attract race behind it. */
+function backToLobby(): void {
+  online = null;
+  setMode('lobby');
+  lobby.backToLobby();
+  startRace(false);
+}
+
 hud.onPauseAction = (action) => {
   if (action === 'resume') {
     loop.paused = false;
     touch.setVisible(true);
-  } else if (action === 'restart') startRace(true);
-  else if (action === 'quit') toMenu();
+  } else if (action === 'restart') {
+    // An online race runs on the room's clock: no restarts.
+    if (!online) startRace(true);
+  } else if (action === 'quit') {
+    if (online) backToLobby();
+    else toMenu();
+  }
 };
 
 // iOS only lets audio start inside a touch, and is strictest about touchend.
@@ -743,7 +804,7 @@ window.addEventListener('keydown', (e) => {
     else if (e.code === 'Backspace') hud.onPauseAction?.('quit');
     return;
   }
-  if (e.code === 'KeyR') startRace(true);
+  if (e.code === 'KeyR') hud.onPauseAction?.('restart');
   else if (e.code === 'KeyM') input.autoAccelerate = !input.autoAccelerate;
   else if (e.code === 'KeyN') musicMuted = music.toggleMute();
   else if (e.code === 'KeyB') sfxMuted = sfx.toggleMute();
@@ -769,6 +830,10 @@ Object.assign(window, {
     },
     get mode() {
       return mode;
+    },
+    /** Online race clock check: room offset, round trip, and seconds to GO by the room's clock. */
+    get online() {
+      return online && { offset: online.client.offset, rtt: online.client.rtt, toGo: (online.start.at - online.client.serverNow()) / 1000, raceTime: race.time };
     },
     advance,
     /** Puts an item straight in the player's slot (testing). */

@@ -7,12 +7,12 @@ import { PHYSICS_VERSION } from '../src/physics/kart';
 import { RACERS } from '../src/physics/racers';
 import { TRACK_LIST } from '../src/tracks/index';
 import { Track } from '../src/tracks/track';
-import { boardName, checkRun, type RunSubmission } from '../src/net/runCheck';
+import { TRIAL_LAPS, boardName, checkRun, type RunSubmission } from '../src/net/runCheck';
 
 /** A real 3-lap Time Trial, driven by the CPU and recorded like the game does. */
 function realRun(): RunSubmission {
   const entry = TRACK_LIST[0];
-  const race = new Race(new Track(entry.build()), 1, false);
+  const race = new Race(new Track(entry.build()), 1, false, TRIAL_LAPS);
   const kart = race.addKart(RACERS[0], '100cc', CPU_SKILL['150cc']);
   race.time = 0;
   const rec = new GhostRecorder();
@@ -44,10 +44,10 @@ describe('run check', () => {
     expect(checkRun({ ...run, trackId: 'moon-base' })).toMatch(/track/);
     expect(checkRun({ ...run, totalMs: run.totalMs - 10_000 })).toMatch(/add up/);
     // Claim a much faster time with matching laps: the ghost gives it away.
-    const fast = { ...run, lapsMs: run.lapsMs.map((l) => l - 3000), totalMs: run.totalMs - 9000 };
+    const fast = { ...run, lapsMs: run.lapsMs.map((l) => l - 6000), totalMs: run.totalMs - 6000 };
     expect(checkRun(fast)).toMatch(/ghost length/);
     // Absurd laps trip the physics floor.
-    expect(checkRun({ ...run, lapsMs: [1000, 1000, 1000], totalMs: 3000 })).toMatch(/too fast/);
+    expect(checkRun({ ...run, lapsMs: [1000], totalMs: 1000 })).toMatch(/too fast/);
     expect(checkRun({ ...run, ghost: 'nope' })).toMatch(/bad ghost/);
   });
 

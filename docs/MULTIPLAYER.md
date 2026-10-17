@@ -47,13 +47,15 @@ No sign-up. On first online use the game makes a guest identity: a random `playe
 | Phase | Ships |
 |---|---|
 | 8a | Online Time Trial: guest identity, run uploads, leaderboards, ghost downloads. **Built** |
-| 8b | Rooms: create or join by code, lobby, host settings, ready up |
+| 8b | Rooms: create or join by code, lobby, host settings, ready up. **Built** (Single Race; online Grand Prix comes with 8c) |
 | 8c | Online races: the room runs the race; clients drive their own karts |
 | 8d | Hardening: disconnects, reconnect into a running race, phone testing, load test |
 
 8a stands alone, so it goes first.
 
 ## 5. Time Trial online (8a)
+
+Time Trial runs are a single lap (`TRIAL_LAPS`). Every board starts with three CPU starter ghosts (`npm run seed:ghosts`) so there's always something to race.
 
 ### 5.1 Player flow
 
