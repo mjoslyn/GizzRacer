@@ -22,9 +22,16 @@ export function startShowroom(app: HTMLElement): void {
 
   const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 200);
   // `&racer=<id>` puts one racer on the turntable, close up.
-  const only = new URLSearchParams(location.search).get('racer');
+  const params = new URLSearchParams(location.search);
+  const only = params.get('racer');
+  // `&face` frames the driver's head and holds the turntable still (at `&turn=`), for checking likenesses.
+  const face = params.has('face');
+  const still = face || params.has('still');
   const shown = only ? RACERS.filter((r) => r.id === only) : RACERS;
-  if (only) {
+  if (only && face) {
+    camera.position.set(0, 2.4, 2.4);
+    camera.lookAt(0, 2.05, 0);
+  } else if (only) {
     camera.position.set(0, 2.6, 6.5);
     camera.lookAt(0, 0.9, 0);
   } else {
@@ -57,7 +64,7 @@ export function startShowroom(app: HTMLElement): void {
     const dt = Math.min(clock.getDelta(), 0.05);
     const t = clock.elapsedTime;
     for (const [i, s] of stands.entries()) {
-      s.state.heading = t * 0.5 + i * 0.6 + Number(new URLSearchParams(location.search).get('turn') ?? 0);
+      s.state.heading = (still ? 0 : t * 0.5 + i * 0.6) + Number(params.get('turn') ?? 0);
       s.view.update(s.state, 30, dt, t);
     }
     renderer.render(scene, camera);

@@ -1326,13 +1326,25 @@ function octoOrganist(r: RacerDef): KartModel {
 interface Look {
   skin: number;
   hair: number;
-  style: 'long' | 'curly' | 'short' | 'shaggy';
+  style: 'long' | 'curly' | 'short' | 'shaggy' | 'mop' | 'bob' | 'wavy' | 'tousled' | 'mullet';
   /** Coveralls: the colour, the trim (patch border, cuffs, collar) and the name on the patch. */
   shirt: number;
   trim?: number;
   name: string;
   iris?: number;
   beard?: number;
+  /** A moustache, and nothing else on the chin. */
+  moustache?: number;
+  /** A few days' growth: a shadow on the jaw and lip rather than a beard. */
+  stubble?: number;
+  /** Narrower (under 1) or wider face. */
+  faceWidth?: number;
+  /** Lighter ends to the hair, sun-bleached. */
+  tips?: number;
+  /** Sunglasses: black wraparound lenses. */
+  shades?: boolean;
+  /** Frames: rectangular glasses in this colour. */
+  glasses?: number;
   hat?: { color: number; kind: 'bucket' | 'cap' | 'beanie' };
   headphones?: number;
 }
@@ -1406,11 +1418,12 @@ function musician(d: THREE.Group, look: Look): THREE.Group {
 
   const head = new THREE.Group();
   head.position.set(0, 1.0, 0.02);
-  head.scale.setScalar(BIG_HEAD);
+  head.scale.set(BIG_HEAD * (look.faceWidth ?? 1), BIG_HEAD, BIG_HEAD);
   // Skull, jaw, cheekbones, brow.
   put(head, ball(0.25, 20, 16), skin, [0, 0.02, -0.01], [0, 0, 0], [0.92, 1.06, 1]);
   put(head, ball(0.2, 16, 12), skin, [0, -0.1, 0.04], [0, 0, 0], [0.95, 0.8, 1]);
-  for (const side of [-1, 1]) put(head, ball(0.075, 10, 8), skin, [side * 0.12, -0.04, 0.17]);
+  // Cheekbones: soft, set back into the face rather than puffed out.
+  for (const side of [-1, 1]) put(head, ball(0.07, 12, 10), skin, [side * 0.115, -0.035, 0.145], [0, 0, 0], [1, 0.75, 0.6]);
   put(head, box(0.32, 0.04, 0.07), skin, [0, 0.095, 0.2]);
   // Eyes: sclera, iris, pupil, a glint, and a lid over the top.
   const iris = matte(look.iris ?? 0x4a3020, { shininess: 80, specular: 0xffffff });
@@ -1420,7 +1433,7 @@ function musician(d: THREE.Group, look: Look): THREE.Group {
     put(head, ball(0.028, 10, 8), iris, [x, 0.035, 0.235]);
     put(head, ball(0.014, 8, 6), matte(0x050505), [x, 0.035, 0.252]);
     put(head, ball(0.007, 6, 4), glow(0xffffff), [x + 0.008, 0.045, 0.258]);
-    put(head, new THREE.SphereGeometry(0.054, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2.2), skin, [x, 0.04, 0.203], [-0.25, 0, 0], [1.25, 0.8, 0.75]);
+    put(head, new THREE.SphereGeometry(0.054, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2.2), skin, [x, 0.047, 0.201], [-0.42, 0, 0], [1.25, 0.8, 0.75]);
     // Brows: the hair colour, thick and arched.
     put(head, box(0.11, 0.026, 0.03), hair, [x, 0.125, 0.225], [0, 0, side * -0.18]);
     // Ears with a shaded hollow.
@@ -1431,27 +1444,66 @@ function musician(d: THREE.Group, look: Look): THREE.Group {
   put(head, box(0.045, 0.12, 0.05), skin, [0, 0.0, 0.245], [-0.2, 0, 0]);
   put(head, ball(0.04, 10, 8), skin, [0, -0.055, 0.27]);
   for (const side of [-1, 1]) put(head, ball(0.024, 8, 6), shade, [side * 0.032, -0.065, 0.255]);
-  // A wide open grin with teeth showing.
-  put(head, ball(0.07, 12, 8), matte(0x3a0a0a), [0, -0.125, 0.215], [0, 0, 0], [1.25, 0.55, 0.45]);
-  put(head, box(0.11, 0.026, 0.02), matte(0xffffff, { shininess: 80 }), [0, -0.105, 0.243]);
-  put(head, new THREE.TorusGeometry(0.075, 0.014, 6, 16, Math.PI), matte(0xb8605a), [0, -0.118, 0.22], [0.25, 0, Math.PI]);
+  // A grin: a dark mouth, a curved row of upper teeth inside it, and lips round it.
+  const lip = matte(new THREE.Color(look.skin).lerp(new THREE.Color(0xb05a50), 0.55).getHex(), { shininess: 40 });
+  put(head, ball(0.065, 14, 10), matte(0x2a0808), [0, -0.122, 0.205], [0, 0, 0], [1.2, 0.5, 0.5]);
+  put(head, new THREE.SphereGeometry(0.06, 16, 6, 0, Math.PI * 2, 0, Math.PI / 2), matte(0xfaf8f0, { shininess: 90, specular: 0x666666 }), [0, -0.104, 0.214], [Math.PI, 0, 0], [1.15, 0.42, 0.55]);
+  put(head, new THREE.TorusGeometry(0.072, 0.011, 6, 18, Math.PI), lip, [0, -0.12, 0.215], [0.35, 0, Math.PI]);
+  put(head, new THREE.TorusGeometry(0.07, 0.009, 6, 18, Math.PI), lip, [0, -0.104, 0.218], [-0.2, 0, 0], [1, 0.25, 1]);
   if (look.beard !== undefined) {
     const beard = matte(look.beard, { flatShading: true });
     put(head, ball(0.2, 14, 10), beard, [0, -0.17, 0.08], [0, 0, 0], [1.05, 0.62, 0.85]);
     for (const side of [-1, 1]) put(head, ball(0.09, 10, 8), beard, [side * 0.15, -0.09, 0.1], [0, 0, 0], [0.6, 1.1, 1]);
     for (const side of [-1, 1]) put(head, ball(0.05, 10, 8), beard, [side * 0.045, -0.085, 0.25], [0, 0, side * 0.3], [1.3, 0.55, 0.6]);
   }
+  if (look.moustache !== undefined) {
+    const tache = matte(look.moustache, { flatShading: true });
+    for (const side of [-1, 1]) put(head, ball(0.045, 10, 8), tache, [side * 0.035, -0.083, 0.258], [0, 0, side * 0.35], [1.25, 0.42, 0.5]);
+  }
+  if (look.stubble !== undefined) {
+    // A shadow of the hair colour over the skin, not a beard.
+    const shadow = matte(new THREE.Color(look.skin).lerp(new THREE.Color(look.stubble), 0.6).getHex(), { transparent: true, opacity: 0.6 });
+    put(head, ball(0.205, 14, 10), shadow, [0, -0.115, 0.05], [0, 0, 0], [0.97, 0.76, 1.0]);
+    for (const side of [-1, 1]) put(head, ball(0.04, 8, 6), shadow, [side * 0.04, -0.08, 0.262], [0, 0, side * 0.3], [1.3, 0.45, 0.4]);
+  }
+  if (look.shades) {
+    const black = matte(0x0a0a0c, { shininess: 140, specular: 0xaaaaaa });
+    for (const side of [-1, 1]) put(head, ball(0.07, 14, 10), black, [side * 0.088, 0.035, 0.235], [0, 0, side * -0.1], [1.25, 0.72, 0.45]);
+    put(head, box(0.34, 0.025, 0.03), black, [0, 0.075, 0.245]);
+    for (const side of [-1, 1]) put(head, box(0.014, 0.018, 0.24), black, [side * 0.18, 0.07, 0.13]);
+  }
+  if (look.glasses !== undefined) {
+    const frame = matte(look.glasses, { shininess: 70, specular: 0x444444 });
+    const lens = matte(0x223040, { transparent: true, opacity: 0.35, shininess: 120, specular: 0xffffff });
+    for (const side of [-1, 1]) {
+      const x = side * 0.09;
+      put(head, box(0.13, 0.085, 0.015), lens, [x, 0.035, 0.262]);
+      put(head, box(0.14, 0.016, 0.02), frame, [x, 0.082, 0.262]);
+      put(head, box(0.14, 0.012, 0.02), frame, [x, -0.01, 0.262]);
+      put(head, box(0.012, 0.09, 0.02), frame, [side * 0.159, 0.035, 0.262]);
+      put(head, box(0.012, 0.09, 0.02), frame, [side * 0.021, 0.035, 0.262]);
+      put(head, box(0.012, 0.016, 0.24), frame, [side * 0.165, 0.075, 0.14]);
+    }
+    put(head, box(0.04, 0.012, 0.02), frame, [0, 0.06, 0.262]);
+  }
   // Hair, built up from clumps so it has some volume and shape.
   const clump = (pos: [number, number, number], size: number, stretch: [number, number, number], rot: [number, number, number] = [0, 0, 0]) => put(head, ball(size, 8, 6), hair, pos, rot, stretch);
-  put(head, new THREE.SphereGeometry(0.265, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), hair, [0, 0.06, -0.02], [-0.15, 0, 0], [1, 0.95, 1.05]);
+  // The scalp: a full cap of hair, or only the crown for short back and sides.
+  if (look.style === 'short') put(head, new THREE.SphereGeometry(0.264, 18, 8, 0, Math.PI * 2, 0, Math.PI / 3.3), hair, [0, 0.07, -0.02], [-0.1, 0, 0], [1, 1.05, 1.05]);
+  else put(head, new THREE.SphereGeometry(0.265, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), hair, [0, 0.06, -0.02], [-0.15, 0, 0], [1, 0.95, 1.05]);
   switch (look.style) {
     case 'long':
-      for (let k = 0; k < 14; k++) {
-        const a = Math.PI * (0.15 + (k / 13) * 0.7);
-        const x = Math.cos(a) * 0.25;
-        clump([x, -0.18 - (k % 3) * 0.03, -Math.sin(a) * 0.17 - 0.02], 0.08, [0.75, 2.6, 0.8], [0, 0, x * 0.5]);
+      // Long and straight-ish, down past the shoulders: a curtain behind, a lock either side of the face, parted in the middle.
+      for (let k = 0; k < 16; k++) {
+        const a = Math.PI * (-0.12 + (k / 15) * 1.24);
+        const x = Math.cos(a) * 0.255;
+        clump([x, -0.2 - (k % 3) * 0.025, -Math.sin(a) * 0.19 - 0.02], 0.08, [0.75, 2.8, 0.8], [0, 0, x * 0.35]);
       }
-      for (const side of [-1, 1]) clump([side * 0.12, 0.17, 0.16], 0.08, [1.4, 0.6, 0.8], [0, 0, side * 0.5]);
+      for (const side of [-1, 1]) {
+        clump([side * 0.2, -0.1, 0.12], 0.07, [0.7, 2.6, 0.8], [0.1, 0, side * 0.12]);
+      }
+      // A loose fringe across the brow, parted in the middle.
+      for (const x of [-0.15, -0.1, -0.05, 0, 0.05, 0.1, 0.15]) clump([x, 0.15, 0.205 - Math.abs(x) * 0.25], 0.05, [0.9, 2, 0.5], [0.3, 0, x * 1.8]);
       break;
     case 'curly':
       for (let k = 0; k < 34; k++) {
@@ -1471,7 +1523,72 @@ function musician(d: THREE.Group, look: Look): THREE.Group {
       for (let k = -2; k <= 2; k++) clump([k * 0.07, 0.16, 0.19], 0.05, [0.8, 1.4, 0.6], [0.6, 0, k * 0.25]);
       break;
     case 'short':
-      for (let k = 0; k < 7; k++) clump([-0.15 + k * 0.05, 0.24, 0.05 - (k % 2) * 0.05], 0.06, [0.8, 1.2, 0.8]);
+      // Short back and sides, a mop of tight curls on top.
+      for (let k = 0; k < 22; k++) {
+        const a = (k * 2.399) % (Math.PI * 2);
+        const r = 0.05 + ((k * 0.618) % 1) * 0.13;
+        clump([Math.cos(a) * r, 0.27 + (0.18 - r) * 0.4, Math.sin(a) * r * 0.9 + 0.03], 0.048, [1, 1, 1]);
+      }
+      for (let k = 0; k < 4; k++) clump([-0.09 + k * 0.06, 0.24, 0.16], 0.046, [1, 1, 0.9]);
+      break;
+    case 'mop': {
+      // A big head of curls down to the neck, a few falling over the brow: curls scattered over the
+      // whole scalp and the back and sides, the face left clear.
+      let seed = 7;
+      const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+      for (let k = 0; k < 70; k++) {
+        const a = rnd() * Math.PI * 2;
+        const up = -0.22 + rnd() * 0.5;
+        const front = Math.sin(a);
+        if (front > 0.35 && up < 0.2) continue;
+        const r = (up > 0.12 ? 0.26 - (up - 0.12) * 0.6 : 0.265) + rnd() * 0.02;
+        clump([Math.cos(a) * r, up, front * r * 0.85 - 0.04], 0.06 + rnd() * 0.02, [1, 1.1, 1]);
+      }
+      for (const [x, y] of [[-0.15, 0.17], [-0.06, 0.2], [0.05, 0.19], [0.14, 0.15], [-0.19, 0.08], [0.2, 0.06]]) clump([x, y, 0.19], 0.065, [1, 1.3, 0.8]);
+      break;
+    }
+    case 'mullet':
+    case 'tousled': {
+      // Jaw-length waves pushed up and back off the forehead, full at the sides, every lock at its own angle.
+      const tip = look.tips !== undefined ? matte(look.tips, { flatShading: true, shininess: 40, specular: 0x333333 }) : hair;
+      let seed = 11;
+      const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+      for (let k = 0; k < 22; k++) {
+        const a = Math.PI * (-0.18 + (k / 21) * 1.36);
+        const y = -0.08 + (k % 3) * 0.06 + rnd() * 0.03;
+        const lock = clump([Math.cos(a) * (0.255 + rnd() * 0.02), y, -Math.sin(a) * 0.19 - 0.02], 0.065 + rnd() * 0.012, [0.8, 1.6, 0.8], [rnd() - 0.5, 0, (rnd() - 0.5) * 0.9 + Math.cos(a) * 0.4]);
+        if (k % 3 === 0) lock.material = tip;
+      }
+      // The crown, heaped up and swept to one side; a lock lifting off the hairline.
+      for (let k = 0; k < 9; k++) {
+        const x = -0.18 + k * 0.045;
+        clump([x, 0.225 + Math.sin(k) * 0.015, 0.02 - Math.abs(x) * 0.2 + rnd() * 0.04], 0.065, [1.1, 0.75, 1.4], [-0.5 + rnd() * 0.3, 0, -0.35 + rnd() * 0.3]);
+      }
+      for (let k = 0; k < 4; k++) clump([-0.08 + k * 0.07, 0.2 + k * 0.012, 0.15], 0.06, [1.2, 0.7, 1.1], [-0.7, 0, -0.5]).material = k % 2 ? tip : hair;
+      for (const side of [-1, 1]) clump([side * 0.23, 0.11, 0.1], 0.06, [0.8, 1.4, 0.8], [0.3, 0, side * 0.3]);
+      // A mullet: longer at the back, flicking out at the nape.
+      if (look.style === 'mullet')
+        for (let k = 0; k < 9; k++) {
+          const a = Math.PI * (0.12 + (k / 8) * 0.76);
+          clump([Math.cos(a) * 0.25, -0.2 - (k % 2) * 0.03, -Math.sin(a) * 0.2 - 0.03], 0.07, [0.85, 1.8, 0.85], [-0.35, 0, Math.cos(a) * 0.9]);
+        }
+      break;
+    }
+    case 'wavy':
+      // Ear-length waves swept back off a high forehead.
+      for (let k = 0; k < 16; k++) {
+        const a = Math.PI * (-0.15 + (k / 15) * 1.3);
+        clump([Math.cos(a) * 0.265, -0.02 + (k % 2) * 0.05, -Math.sin(a) * 0.2 - 0.03], 0.08, [0.9, 1.5, 0.9]);
+      }
+      for (let k = 0; k < 5; k++) clump([-0.12 + k * 0.06, 0.25, 0.08 - k * 0.0], 0.075, [0.8, 0.8, 1.9], [-0.3, 0, (k - 2) * 0.12]);
+      break;
+    case 'bob':
+      // A fringe straight across the brow and a bob cut level with the jaw.
+      for (let k = 0; k < 13; k++) {
+        const a = Math.PI * (-0.1 + (k / 12) * 1.2);
+        clump([Math.cos(a) * 0.255, -0.06, -Math.sin(a) * 0.2 + 0.0], 0.075, [0.8, 2.1, 0.8]);
+      }
+      for (let k = -3; k <= 3; k++) clump([k * 0.055, 0.15, 0.2 - Math.abs(k) * 0.012], 0.055, [0.9, 1.5, 0.6], [0.35, 0, k * 0.08]);
       break;
   }
   if (look.hat) {
@@ -1528,37 +1645,73 @@ function musicianArms(d: THREE.Group, look: Look, grips: [number, number, number
   });
 }
 
-/** A guitar body as a flat slab: two overlapping lobes and a waist. */
-function guitarBody(parent: THREE.Object3D, mat: THREE.Material, pos: [number, number, number], scale: number, thickness: number): void {
-  const g = new THREE.Group();
-  g.position.set(...pos);
-  g.scale.setScalar(scale);
-  put(g, cyl(0.62, 0.62, thickness, 28), mat, [0, 0, -0.35]);
-  put(g, cyl(0.48, 0.48, thickness, 28), mat, [0, 0, 0.45]);
-  put(g, box(0.7, thickness, 0.6), mat, [0, 0, 0.05]);
-  parent.add(g);
-}
-
-// Stu Mackenzie: frontman, guitar and flute, in a kart built from a guitar.
+// Stu Mackenzie: frontman, guitar and flute, riding the Flying Microtonal Banana: a giant banana
+// that is also a guitar, its neck fretted in quarter tones.
 function stuMackenzie(r: RacerDef): KartModel {
   const body = new THREE.Group();
-  const finish = gloss(r.color);
-  const wood = matte(0x7a4a22, { shininess: 50, specular: 0x553322 });
   const steel = chrome();
-  // The kart is the guitar: a body for the tub, the neck run out as the nose, the headstock up front.
-  guitarBody(body, finish, [0, 0.45, -0.1], 1.25, 0.32);
-  put(body, cyl(0.28, 0.28, 0.33, 20), matte(0x111111), [0, 0.46, 0.25]);
-  put(body, box(0.9, 0.04, 0.2), matte(0x1a1a1a), [0, 0.62, -0.65]);
-  put(body, box(0.22, 0.1, 1.2), wood, [0, 0.55, 1.15]);
-  for (let k = 0; k < 9; k++) put(body, box(0.24, 0.015, 0.02), steel, [0, 0.61, 0.62 + k * 0.12]);
-  for (let k = 0; k < 4; k++) put(body, box(0.006, 0.006, 2.2), steel, [-0.06 + k * 0.04, 0.63, 0.4]);
-  put(body, box(0.32, 0.1, 0.36), finish, [0, 0.56, 1.85], [-0.2, 0, 0]);
-  for (const side of [-1, 1]) for (let k = 0; k < 2; k++) put(body, cyl(0.03, 0.03, 0.12, 8), steel, [side * 0.2, 0.6, 1.78 + k * 0.14], [0, 0, Math.PI / 2]);
-  headlights(body, 0.45, 0.5, 0.95, 0.08);
+  // The banana: a five-ridged tube along a curve that rises at both ends, fat in the middle, tapering to the tips.
+  const path = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(0, 0.95, -1.75),
+    new THREE.Vector3(0, 0.52, -1.0),
+    new THREE.Vector3(0, 0.42, 0),
+    new THREE.Vector3(0, 0.52, 1.0),
+    new THREE.Vector3(0, 0.98, 1.72),
+  ]);
+  const rings = 48;
+  const peel = new THREE.TubeGeometry(path, rings, 1, 5, false);
+  const pos = peel.attributes.position;
+  const v = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i++) {
+    const u = Math.floor(i / 6) / rings;
+    const c = path.getPointAt(u);
+    const radius = 0.08 + 0.5 * Math.pow(Math.sin(Math.PI * u), 0.55);
+    v.fromBufferAttribute(pos, i).sub(c).multiplyScalar(radius).add(c);
+    // A little wider than tall, so it sits like a hull.
+    v.x *= 1.1;
+    pos.setXYZ(i, v.x, v.y, v.z);
+  }
+  peel.computeVertexNormals();
+  put(body, peel, gloss(r.color, { flatShading: true, shininess: 60 }), [0, 0, 0]);
+  // Brown freckles and the dark tips.
+  const freckle = matte(0x6a4a1a);
+  for (let k = 0; k < 14; k++) {
+    const u = 0.15 + ((k * 0.37) % 0.7);
+    const c = path.getPointAt(u);
+    const side = k % 2 ? 1 : -1;
+    put(body, ball(0.035 + (k % 3) * 0.01, 6, 4), freckle, [side * (0.5 - Math.abs(u - 0.5) * 0.6), c.y + 0.05, c.z]);
+  }
+  put(body, ball(0.09, 8, 6), matte(0x2a1a0a), path.getPointAt(0).toArray() as [number, number, number]);
+  // The stalk at the front is the headstock, tuning pegs either side.
+  const tip = path.getPointAt(1);
+  put(body, cyl(0.07, 0.09, 0.42, 8), matte(0x5a4a1a), [0, tip.y + 0.12, tip.z + 0.1], [-0.6, 0, 0]);
+  for (const side of [-1, 1]) for (let k = 0; k < 3; k++) put(body, cyl(0.025, 0.025, 0.14, 8), steel, [side * 0.1, tip.y + 0.06 + k * 0.06, tip.z - 0.02 + k * 0.05], [0, 0, Math.PI / 2]);
+  // The fretboard down the top of the front half: frets in quarter tones (every other one a short fret between the normal ones).
+  const board = new THREE.Group();
+  for (let k = 0; k < 16; k++) {
+    const u = 0.58 + k * 0.022;
+    const c = path.getPointAt(u);
+    const t = path.getTangentAt(u);
+    const top = c.y + (0.08 + 0.5 * Math.pow(Math.sin(Math.PI * u), 0.55)) * 0.95;
+    put(board, box(0.26, 0.04, 0.075), matte(0x3a2214), [0, top, c.z], [-Math.atan2(t.y, t.z), 0, 0]);
+    put(board, box(k % 2 ? 0.13 : 0.26, 0.014, 0.012), steel, [0, top + 0.026, c.z + 0.03], [-Math.atan2(t.y, t.z), 0, 0]);
+  }
+  body.add(board);
+  // Strings from the tailpiece behind the driver to the stalk.
+  const strings = new THREE.CatmullRomCurve3([0.48, 0.6, 0.7, 0.8, 0.92].map((u) => {
+    const c = path.getPointAt(u);
+    return new THREE.Vector3(0, c.y + (0.08 + 0.5 * Math.pow(Math.sin(Math.PI * u), 0.55)) * 0.95 + 0.04, c.z);
+  }));
+  for (let k = 0; k < 6; k++) put(body, new THREE.TubeGeometry(strings, 24, 0.005, 4, false), steel, [-0.075 + k * 0.03, 0, 0]);
+  // A red pickguard and two pickups in front of the seat.
+  put(body, cyl(0.3, 0.3, 0.03, 20), matte(0xb8201a, { shininess: 50 }), [0.12, 0.98, 0.3], [0.05, 0, 0], [1, 1, 1.5]);
+  for (let k = 0; k < 2; k++) put(body, box(0.24, 0.05, 0.1), matte(0x111111), [0, 1.0, 0.18 + k * 0.22]);
+  headlights(body, 0.32, 0.62, 1.22, 0.07);
 
-  const look: Look = { skin: 0xf0c8a0, hair: 0x3a2618, style: 'long', shirt: 0x2a5a8a, trim: 0xffd23a, name: 'Stu', iris: 0x3a5a3a };
+  const look: Look = { skin: 0xf2caa8, hair: 0x6a4626, tips: 0x9a7244, style: 'tousled', shirt: 0x2a5a8a, trim: 0xffd23a, name: 'Stu', iris: 0x5a86a8, faceWidth: 0.92 };
   const d = new THREE.Group();
-  d.position.set(0, 0.55, -0.35);
+  // Astride the banana, behind the pickups.
+  d.position.set(0, 0.8, -0.35);
   const head = musician(d, look);
   const grips = steeringWheel(d, 0.42, 0.62, 0.2);
   musicianArms(d, look, grips);
@@ -1601,7 +1754,7 @@ function ambroseKennySmith(r: RacerDef): KartModel {
   body.add(keys);
   headlights(body, 0.35, 0.5, 1.55, 0.08);
 
-  const look: Look = { skin: 0xe8b890, hair: 0x2a1a10, style: 'curly', shirt: r.accent, trim: 0xffffff, name: 'Amby' };
+  const look: Look = { skin: 0xf0c4a4, hair: 0x1e1410, style: 'mullet', shirt: r.accent, trim: 0xffffff, name: 'Amby', moustache: 0x1e1410, faceWidth: 0.94, iris: 0x3a2a1a };
   const d = new THREE.Group();
   d.position.set(0, 0.7, -0.35);
   const head = musician(d, look);
@@ -1661,7 +1814,7 @@ function cookCraig(r: RacerDef): KartModel {
   for (let k = 0; k < 6; k++) put(body, ring(0.08, 0.016), matte(0x111111), [0.5, 0.45, -1.25 - k * 0.06]);
   headlights(body, 0.55, 0.45, 0.95, 0.07, 0xd8ffd8);
 
-  const look: Look = { skin: 0xf2cfae, hair: 0x7a4a24, style: 'shaggy', shirt: 0xe8dcc0, trim: 0x2a6a3a, name: 'Cookie', iris: 0x5a7a9a, hat: { color: 0x3a5a3a, kind: 'bucket' } };
+  const look: Look = { skin: 0xf2c8aa, hair: 0xd4b06a, tips: 0xecd49a, style: 'long', shirt: 0x1e1e22, trim: 0x6aff7a, name: 'Cookie', iris: 0x5a7a9a, moustache: 0x9a6a3a, faceWidth: 0.92 };
   const d = new THREE.Group();
   d.position.set(0, 0.62, -0.75);
   const head = musician(d, look);
@@ -1718,7 +1871,7 @@ function joeyWalker(r: RacerDef): KartModel {
   put(body, box(1.3, 0.34, 0.14), gloss(0xff6ac0), [0, 0.45, -1.22]);
   headlights(body, 0.4, 0.45, 1.22, 0.08, 0xc8f0ff);
 
-  const look: Look = { skin: 0xf0c49a, hair: 0x1a1210, style: 'short', shirt: 0x3a3a42, trim: r.accent, name: 'Joey', headphones: r.accent };
+  const look: Look = { skin: 0xe8b88e, hair: 0x1a1210, style: 'short', shirt: 0x26262c, trim: r.accent, name: 'Joey', shades: true, moustache: 0x1a1210, faceWidth: 0.93 };
   const d = new THREE.Group();
   d.position.set(0, 0.5, -0.1);
   const head = musician(d, look);
@@ -1758,7 +1911,7 @@ function lucasHarwood(r: RacerDef): KartModel {
   put(body, box(0.2, 0.26, 0.06), gloss(r.accent), [0.6, 3.25, -0.85], [0, 0, -0.15]);
   headlights(body, 0.45, 0.5, 1.32, 0.09);
 
-  const look: Look = { skin: 0xe8bc94, hair: 0x5a3a20, style: 'shaggy', shirt: r.accent, trim: 0xf4e8d0, name: 'Lukey', beard: 0x4a2e18 };
+  const look: Look = { skin: 0xe8bc94, hair: 0x2a1a10, style: 'wavy', shirt: 0xd8703a, trim: 0xf4e8d0, name: 'Lukey', iris: 0x4a6a8a };
   const d = new THREE.Group();
   d.position.set(0, 0.55, -0.05);
   const head = musician(d, look);
@@ -1797,7 +1950,7 @@ function michaelCavanagh(r: RacerDef): KartModel {
   rod(body, [-0.6, 0.55, 0.4], [-0.85, 1.05, 0.65], 0.02, chrome());
   put(body, cyl(0.02, 0.36, 0.03, 24), brassMat, [-0.85, 1.07, 0.65], [0.2, 0, 0.2]);
 
-  const look: Look = { skin: 0xf0c8a4, hair: 0xb8864a, style: 'long', shirt: 0xe8642a, trim: 0x1a3a6a, name: 'Cavs', iris: 0x4a7aa8, hat: { color: r.accent, kind: 'cap' } };
+  const look: Look = { skin: 0xecc0a0, hair: 0x1e140e, style: 'mop', shirt: 0x24262c, trim: 0xe8642a, name: 'Cavs', iris: 0x4a3a2a };
   const d = new THREE.Group();
   d.position.set(0, 0.55, -0.35);
   const head = musician(d, look);
@@ -1886,7 +2039,7 @@ function jasonGalea(r: RacerDef): KartModel {
   body.add(desk);
   headlights(body, 0.45, 0.45, 1.27, 0.08, 0xffffff);
 
-  const look: Look = { skin: 0xf0c8a0, hair: 0x2a1c14, style: 'shaggy', shirt: 0x22222a, trim: r.accent, name: 'Jason', beard: 0x2a1c14 };
+  const look: Look = { skin: 0xe8bc98, hair: 0x5a3c24, style: 'shaggy', shirt: 0x22222a, trim: r.accent, name: 'Jason', beard: 0x4a3020, iris: 0x4a3a2a, hat: { color: 0xb8a882, kind: 'cap' } };
   const d = new THREE.Group();
   d.position.set(0, 0.5, -0.2);
   const head = musician(d, look);

@@ -37,7 +37,7 @@ export const RACERS: readonly RacerDef[] = [
   { id: 'jason-galea', name: 'Jason', stats: { speed: 3, accel: 4, weight: 2, handling: 3, drift: 4 }, color: 0x1a1a22, accent: 0x3adcff },
   { id: 'joey-walker', name: 'Joey', stats: { speed: 3, accel: 3, weight: 2, handling: 4, drift: 3 }, color: 0xe85a9a, accent: 0x3adcff },
   { id: 'lucas-harwood', name: 'Lukey', stats: { speed: 4, accel: 2, weight: 4, handling: 2, drift: 3 }, color: 0x8a5a3a, accent: 0xd84a2a },
-  { id: 'stu-mackenzie', name: 'Stu', stats: { speed: 3, accel: 3, weight: 3, handling: 3, drift: 4 }, color: 0xd8a83a, accent: 0x7a2a8a },
+  { id: 'stu-mackenzie', name: 'Stu', stats: { speed: 3, accel: 3, weight: 3, handling: 3, drift: 4 }, color: 0xf4d23a, accent: 0x7a2a8a },
 ];
 
 /** Karts in one race: the player (or the room's players) and CPUs drawn from the roster. */

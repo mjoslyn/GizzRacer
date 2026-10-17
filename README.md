@@ -63,7 +63,7 @@ Controls: auto-accelerate, arrows steer, Down brakes/reverses, Shift/Space hop+d
 
 Settings (title screen and pause menu): music and effects volume, automatic or manual throttle, and tilt steering for phones that have the sensor (turn the phone like a wheel; sensitivity, invert, recentre; it recentres at every race start, and the drag pad hides while it's on). The first tap on a phone with tilt asks drag or tilt, once. Phones: the first tap goes fullscreen and locks to landscape where the browser allows it (Android Chrome). Held upright, the game shows a "turn your phone sideways" card and pauses the race. iPhone Safari can't go fullscreen from a page, so the title suggests Share, Add to Home Screen; the web app manifest launches it fullscreen in landscape from there.
 
-In a race: `R` restart, `M` manual throttle, `N` music on/off, `B` sound effects on/off. In the picker, the racer row shows the racer gallery. `?showroom` shows every racer on a turntable. In the console, `gizz.warp(0.5)` jumps halfway round the lap and `gizz.autopilot()` lets the CPU drive your kart, `gizz.give('riffMissile')` fills the item slot.
+In a race: `R` restart, `M` manual throttle, `N` music on/off, `B` sound effects on/off. In the picker, the racer row shows the racer gallery. `?showroom` shows every racer on a turntable (`&racer=<id>&face` for a close-up of one driver's head). In the console, `gizz.warp(0.5)` jumps halfway round the lap and `gizz.autopilot()` lets the CPU drive your kart, `gizz.give('riffMissile')` fills the item slot.
 
 ## Soundtrack
 
