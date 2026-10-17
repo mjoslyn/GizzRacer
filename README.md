@@ -9,6 +9,7 @@ npm install
 npm run dev       # http://localhost:5173
 npm test          # vitest
 npm run build     # typecheck + production build
+npm run balance   # slow: all-CPU races on every track, wins and average place per racer
 ```
 
 ## Status

@@ -15,11 +15,11 @@ describe('grand prix', () => {
     expect(seen).toEqual([0, 1, 2, 3]);
   });
 
-  it('scores 15, 12, 10, 8, 6, 4 by place', () => {
+  it('scores 15, 12, 10, 8, 6, 4, 2, 1 by place', () => {
     const gp = new GrandPrix(grid, [0, 1]);
     gp.record(grid);
-    expect(gp.entries.map((e) => e.points)).toEqual(GP_POINTS.slice(0, 6));
-    expect(gp.entries.map((e) => e.gained)).toEqual(GP_POINTS.slice(0, 6));
+    expect(gp.entries.map((e) => e.points)).toEqual(GP_POINTS.slice(0, RACERS.length));
+    expect(gp.entries.map((e) => e.gained)).toEqual(GP_POINTS.slice(0, RACERS.length));
   });
 
   it('ranks by points, breaking ties on the latest race', () => {

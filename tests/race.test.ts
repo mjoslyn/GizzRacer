@@ -28,7 +28,7 @@ describe('race', () => {
 
   it('ranks karts 1..n with the grid order at the start', () => {
     const race = cpuRace();
-    expect(race.karts.map((k) => k.position).sort()).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(race.karts.map((k) => k.position).sort()).toEqual(RACERS.map((_, i) => i + 1));
     expect(race.karts[0].position).toBe(1);
   });
 

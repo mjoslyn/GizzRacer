@@ -2,13 +2,13 @@
 
 ## 1. Overview
 - 3D arcade kart racer in the browser, built with Three.js
-- Single player vs CPU racers, one kart per racer so every kart looks different (5 CPUs with the MVP's 6 racers; 7 once the roster reaches 8). Online multiplayer deferred
+- Single player vs CPU racers, one kart per racer so every kart looks different: 8 racers, so 7 CPUs. Online multiplayer deferred
 - Psychedelic garage-rock world with original characters
 - Target: 60 fps on a mid-range laptop, Chrome/Firefox/Safari, keyboard, gamepad and touch (phones and tablets, iOS included)
 - Phones play in landscape, fullscreen where the browser allows it (installable web app for iPhone)
 
 ## 2. MVP Scope
-- 1 cup (4 tracks), 6 racers, 5 items
+- 1 cup (4 tracks), 8 racers (6 in the MVP, plus Neon Moth and Cosmic Coyote), 5 items
 - Modes: Grand Prix, Time Trial
 - 3 difficulty classes: 50cc, 100cc, 150cc
 - Out of scope for MVP: online, battle mode
@@ -36,14 +36,18 @@ Touch: drag on the left half to steer (analog), DRIFT and BRAKE buttons on the r
 - Fall-off: respawn at last checkpoint after 1.5s
 
 ## 5. Racers
-| Racer | Speed | Accel | Weight | Handling |
-|---|---|---|---|---|
-| Lizard Warlock | 3 | 3 | 3 | 3 |
-| Cyborg Gourmand | 4 | 2 | 4 | 2 |
-| Gila Rider | 3 | 5 | 2 | 3 |
-| Swamp Witch | 2 | 3 | 3 | 5 |
-| Microtonal Monk | 3 | 3 | 2 | 4 |
-| Fuzz Golem | 5 | 1 | 5 | 2 |
+| Racer | Speed | Accel | Weight | Handling | Drift |
+|---|---|---|---|---|---|
+| Lizard Warlock | 3 | 3 | 3 | 3 | 4 |
+| Cyborg Gourmand | 4 | 2 | 4 | 2 | 3 |
+| Gila Rider | 3 | 5 | 2 | 3 | 3 |
+| Swamp Witch | 3 | 2 | 3 | 5 | 4 |
+| Microtonal Monk | 3 | 3 | 2 | 4 | 3 |
+| Fuzz Golem | 5 | 1 | 5 | 1 | 3 |
+| Neon Moth | 2 | 5 | 2 | 4 | 5 |
+| Cosmic Coyote | 4 | 2 | 3 | 2 | 3 |
+
+Tuned with `npm run balance` (all-CPU races on every track at 100cc and 150cc) so no stat dominates: average finishing places run from about 3.5 to 5.5 of 8, and every racer reaches the podium. A speed point is worth about 2.7% top speed.
 
 All designs are original. No likenesses of band members or album art. Every racer has their own character model and kart body (render/racerModels.ts).
 

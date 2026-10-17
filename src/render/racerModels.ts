@@ -407,6 +407,122 @@ function fuzzGolem(r: RacerDef): KartModel {
   };
 }
 
+// ---- Neon Moth: glowing moth on a featherweight trike with wing sails ----------
+
+function neonMoth(r: RacerDef): KartModel {
+  const body = new THREE.Group();
+  const paint = gloss(r.color, { emissive: 0x0a3a4a });
+  const trim = gloss(r.accent);
+  const fuzz = matte(0xf4ecd8);
+
+  // A narrow tube-frame trike: one front wheel, two rear.
+  put(body, box(0.5, 0.22, 2.3), paint, [0, 0.42, 0]);
+  put(body, box(1.3, 0.14, 0.5), trim, [0, 0.4, -0.85]);
+  put(body, cyl(0.06, 0.06, 1.1), chrome(), [0, 0.75, 1.05], [0.5, 0, 0]);
+  // Glowing lamp on the nose, the thing it can't stop chasing.
+  put(body, ball(0.16), glow(0xfff2a8), [0, 1.0, 1.35]);
+
+  // The moth: fuzzy thorax, big eyes, feathered antennae, four wing sails.
+  const d = new THREE.Group();
+  d.position.set(0, 0.55, -0.3);
+  put(d, ball(0.34), fuzz, [0, 0.42, 0], [0, 0, 0], [1, 1.2, 1]);
+  const head = new THREE.Group();
+  head.position.set(0, 0.98, 0.05);
+  put(head, ball(0.24), fuzz, [0, 0, 0]);
+  for (const side of [-1, 1]) {
+    put(head, ball(0.13), glow(r.color), [side * 0.17, 0.04, 0.14]);
+    const antenna = new THREE.Group();
+    antenna.position.set(side * 0.1, 0.18, 0.08);
+    antenna.rotation.set(-0.5, 0, side * -0.5);
+    put(antenna, cyl(0.015, 0.015, 0.5, 5), matte(0x3a2a20), [0, 0.25, 0]);
+    for (let k = 0; k < 5; k++) put(antenna, box(0.16 - k * 0.025, 0.012, 0.03), matte(0x3a2a20), [0, 0.12 + k * 0.08, 0]);
+    head.add(antenna);
+  }
+  d.add(head);
+  const wing = new THREE.Shape();
+  wing.moveTo(0, 0);
+  wing.bezierCurveTo(0.5, 0.3, 1.1, 0.25, 1.05, -0.2);
+  wing.bezierCurveTo(0.9, -0.55, 0.4, -0.45, 0, 0);
+  const wingGeo = new THREE.ShapeGeometry(wing);
+  const wingMat = new THREE.MeshPhongMaterial({ color: r.color, emissive: r.accent, emissiveIntensity: 0.25, transparent: true, opacity: 0.85, side: THREE.DoubleSide, shininess: 60 });
+  for (const side of [-1, 1]) {
+    for (const [y, tilt, s] of [[0.55, 0.35, 1], [0.35, -0.15, 0.7]] as const) {
+      const w = put(d, wingGeo, wingMat, [side * 0.18, y, -0.1], [0, side * -0.35, tilt * side], [side * s, s, 1]);
+      w.rotation.order = 'YXZ';
+    }
+  }
+  body.add(d);
+
+  return {
+    body,
+    wheels: [
+      { x: 0, z: 1.15, radius: 0.34, width: 0.18, front: true },
+      { x: 0.72, z: -0.85, radius: 0.4, width: 0.26, front: false },
+      { x: -0.72, z: -0.85, radius: 0.4, width: 0.26, front: false },
+    ],
+    exhausts: pipes(body, 0.25, 0.45, -1.2, 0.09),
+    rearTrack: 0.72,
+    rearZ: -0.95,
+    spinners: [],
+    shadow: [2.2, 3.0],
+  };
+}
+
+// ---- Cosmic Coyote: space coyote in a rocket roadster ---------------------------
+
+function cosmicCoyote(r: RacerDef): KartModel {
+  const body = new THREE.Group();
+  const paint = gloss(r.color);
+  const trim = gloss(r.accent);
+  const fur = matte(0xc89060);
+  const belly = matte(0xf0d8b0);
+
+  // Low roadster with a rocket on its back and tail fins.
+  put(body, box(1.2, 0.3, 2.6), paint, [0, 0.42, 0]);
+  put(body, cone(0.55, 0.9, 16), paint, [0, 0.45, 1.6], [Math.PI / 2, 0, 0], [1, 1, 0.55]);
+  for (const side of [-1, 1]) put(body, box(0.06, 0.55, 0.6), trim, [side * 0.58, 0.75, -1.05], [0, 0, side * 0.25]);
+  const rocket = put(body, cyl(0.24, 0.24, 1.3, 14), chrome(), [0, 0.82, -0.9], [Math.PI / 2, 0, 0]);
+  put(rocket, cone(0.24, 0.4, 14), trim, [0, 0.85, 0]);
+  // Stars painted down the sides.
+  for (let k = 0; k < 4; k++) for (const side of [-1, 1]) put(body, new THREE.OctahedronGeometry(0.06), glow(0xfff2a8), [side * 0.61, 0.45, 0.8 - k * 0.5]);
+
+  // The coyote: long snout, tall ears, goggles, scarf.
+  const d = new THREE.Group();
+  d.position.set(0, 0.58, -0.2);
+  put(d, cyl(0.3, 0.38, 0.65), fur, [0, 0.4, 0]);
+  put(d, cyl(0.33, 0.33, 0.12, 14), trim, [0, 0.72, 0]);
+  const head = new THREE.Group();
+  head.position.set(0, 1.0, 0.05);
+  put(head, ball(0.27), fur, [0, 0, 0], [0, 0, 0], [1, 0.95, 1]);
+  put(head, cone(0.15, 0.42, 12), fur, [0, -0.06, 0.36], [Math.PI / 2, 0, 0]);
+  put(head, ball(0.06), matte(0x1a1010), [0, -0.05, 0.58]);
+  put(head, ball(0.14), belly, [0, -0.13, 0.14], [0, 0, 0], [1.2, 0.6, 1]);
+  for (const side of [-1, 1]) {
+    put(head, cone(0.1, 0.38, 6), fur, [side * 0.15, 0.3, -0.02], [0, 0, side * -0.2]);
+    put(head, cyl(0.08, 0.08, 0.06, 12), chrome(), [side * 0.11, 0.08, 0.22], [Math.PI / 2, 0, 0]);
+    put(head, cyl(0.06, 0.06, 0.065, 12), glow(r.accent), [side * 0.11, 0.08, 0.23], [Math.PI / 2, 0, 0]);
+  }
+  put(head, box(0.42, 0.04, 0.04), matte(0x2a2a2a), [0, 0.08, 0.2]);
+  d.add(head);
+  body.add(d);
+
+  return {
+    body,
+    wheels: [
+      { x: 0.74, z: 0.95, radius: 0.33, width: 0.28, front: true },
+      { x: -0.74, z: 0.95, radius: 0.33, width: 0.28, front: true },
+      { x: 0.78, z: -0.9, radius: 0.44, width: 0.38, front: false },
+      { x: -0.78, z: -0.9, radius: 0.44, width: 0.38, front: false },
+    ],
+    // The rocket nozzle is the exhaust.
+    exhausts: [new THREE.Vector3(0, 0.82, -1.6)],
+    rearTrack: 0.78,
+    rearZ: -1,
+    spinners: [],
+    shadow: [2.4, 3.4],
+  };
+}
+
 const BUILDERS: Record<string, (r: RacerDef) => KartModel> = {
   'lizard-warlock': lizardWarlock,
   'cyborg-gourmand': cyborgGourmand,
@@ -414,6 +530,8 @@ const BUILDERS: Record<string, (r: RacerDef) => KartModel> = {
   'swamp-witch': swampWitch,
   'microtonal-monk': microtonalMonk,
   'fuzz-golem': fuzzGolem,
+  'neon-moth': neonMoth,
+  'cosmic-coyote': cosmicCoyote,
 };
 
 export function buildKartModel(racer: RacerDef): KartModel {
