@@ -47,6 +47,41 @@ export interface RoomStart {
   settings: RoomSettings;
 }
 
+/** One finisher in the room's results, in order. */
+export interface RaceResult {
+  racerId: string;
+  playerId: string | null;
+  time: number | null;
+}
+
+/**
+ * The room's race, 15 times a second: every kart (grid order, packed by
+ * wire.ts), each kart's item and roulette, places, laps and finish times,
+ * and the item boxes and live items.
+ */
+export interface Snap {
+  t: number;
+  k: number[][];
+  /** [item index in ITEM_KINDS or -1, roulette time left] per kart. */
+  it: [number, number][];
+  pos: number[];
+  lap: number[];
+  fin: (number | null)[];
+  /** Respawn time left per item box (0 = there). */
+  box: number[];
+  mines: number[][];
+  mis: number[][];
+  waves: number[][];
+}
+
+/** Something the room did to your kart: apply it locally. */
+export interface Effect {
+  k: 'spin' | 'wobble' | 'slow' | 'boost';
+  t: number;
+  /** What did it (an item kind), for the HUD. */
+  by: string;
+}
+
 export interface RoomState {
   code: string;
   phase: 'lobby' | 'racing';
@@ -55,6 +90,8 @@ export interface RoomState {
   settings: RoomSettings;
   members: RoomMember[];
   start: RoomStart | null;
+  /** The current race's finishing order, once the room calls it. */
+  results: RaceResult[] | null;
 }
 
 export type ClientMsg =
@@ -65,9 +102,15 @@ export type ClientMsg =
   | { t: 'start' }
   | { t: 'lobby' }
   | { t: 'pause'; paused: boolean }
+  | { t: 'kart'; s: number[] }
+  | { t: 'item' }
+  /** Out of the race (back to the lobby early): a CPU takes my kart. */
+  | { t: 'quit' }
   | { t: 'ping'; at: number; rtt: number };
 
 export type ServerMsg =
   | { t: 'state'; state: RoomState }
   | { t: 'error'; error: string; fatal: boolean }
-  | { t: 'pong'; at: number; server: number };
+  | { t: 'pong'; at: number; server: number }
+  | { t: 'snap'; snap: Snap }
+  | { t: 'fx'; fx: Effect[] };

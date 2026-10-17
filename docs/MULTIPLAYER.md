@@ -48,7 +48,7 @@ No sign-up. On first online use the game makes a guest identity: a random `playe
 |---|---|
 | 8a | Online Time Trial: guest identity, run uploads, leaderboards, ghost downloads. **Built** |
 | 8b | Rooms: create or join by code, lobby, host settings, ready up. **Built** (Single Race; online Grand Prix comes with 8c) |
-| 8c | Online races: the room runs the race; clients drive their own karts |
+| 8c | Online races: the room runs the race; clients drive their own karts. **Built** (Single Race; online Grand Prix still to come) |
 | 8d | Hardening: disconnects, reconnect into a running race, phone testing, load test |
 
 8a stands alone, so it goes first.

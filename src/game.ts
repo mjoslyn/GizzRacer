@@ -15,7 +15,8 @@ import { LobbyScreen } from './ui/lobby';
 import { SettingsScreen } from './ui/settings';
 import { TiltSteering } from './ui/tilt';
 import { onSettings, settings, updateSettings } from './core/settings';
-import type { RoomStart } from './net/protocol';
+import { OnlineRace } from './net/onlineRace';
+import type { Effect, RoomStart } from './net/protocol';
 import type { RoomClient } from './net/room';
 import { GrandPrix } from './core/grandPrix';
 import { Race, ordinal, type RaceKart } from './core/race';
@@ -140,8 +141,12 @@ const menu = new Menu(document.body, choice, onMenuChange, (c) => {
   gp = c.mode === 'grandPrix' ? new GrandPrix(defaultGrid(c.racer), TRACK_LIST.map((_, i) => i)) : null;
   startRace(true);
 });
-/** The online race in progress (8b preview: other players drive as CPUs here). */
-let online: { client: RoomClient; start: RoomStart } | null = null;
+/** The online race in progress: the room, its start, and my side of the race once it's built. */
+let online: { client: RoomClient; start: RoomStart; net: OnlineRace | null } | null = null;
+/** Physics ticks this online race, for reporting my kart 15 times a second. */
+let netTicks = 0;
+/** When I last asked the room to use my item (its answer takes a round trip). */
+let itemSentAt = -Infinity;
 const lobby = new LobbyScreen(document.body, () => choice.racer);
 lobby.onBack = () => setMode('menu');
 lobby.onSettings = (s) => {
@@ -149,7 +154,9 @@ lobby.onSettings = (s) => {
   if (mode === 'lobby' && track.def.id !== TRACK_LIST[s.track].id) loadTrack(s.track);
 };
 lobby.onStart = (start, client) => {
-  online = { client, start };
+  online = { client, start, net: null };
+  client.onSnap = (snap) => online?.client === client && online.net?.receive(snap, performance.now() / 1000);
+  client.onFx = (fx) => online?.client === client && onEffects(fx);
   gp = null;
   choice = { ...choice, engine: start.settings.engine };
   if (track.def.id !== TRACK_LIST[start.settings.track].id) loadTrack(start.settings.track);
@@ -281,13 +288,16 @@ function startRace(withPlayer: boolean): void {
   trialNote = '';
   Object.assign(heard, { count: 0, lap: 0, tier: 0, rolling: false });
   if (net) {
-    // The room's grid: my slot is mine; everyone else drives as a CPU for now.
+    // The room's grid: I drive my kart here; every other kart is the room's, shown from its snapshots.
     const me = identity().playerId;
     for (const slot of net.start.grid) {
       const r = RACERS.find((x) => x.id === slot.racerId) ?? RACERS[0];
-      if (slot.playerId === me) player = race.addKart(r, choice.engine, null);
-      else race.addKart(r, choice.engine, CPU_SKILL[choice.engine]);
+      const k = race.addKart(r, choice.engine, slot.playerId === me ? null : CPU_SKILL[choice.engine]);
+      if (slot.playerId === me) player = k;
     }
+    net.net = player && new OnlineRace(race, player);
+    netTicks = 0;
+    itemSentAt = -Infinity;
   } else {
     const grid = !withPlayer ? defaultGrid(null) : trial ? [choice.racer] : gp ? gp.grid() : defaultGrid(choice.racer);
     for (const r of grid) {
@@ -456,6 +466,8 @@ function step(dt: number): void {
   }
   // Online countdowns follow the room's clock, so a slow frame can't make anyone late to GO.
   if (online && race.time < 0) race.time = Math.min(0, -(online.start.at - online.client.serverNow()) / 1000) - dt;
+  const net = player && online?.net;
+  if (net) netStep(net, player!);
   const inputs = race.karts.map((k) => (k === player ? lastInput : undefined));
   const events = race.step(dt, inputs);
   events.forEach((ev, i) => {
@@ -502,6 +514,34 @@ function step(dt: number): void {
     setMode('results');
   }
   updateMusic(player);
+}
+
+/** Online: place the other karts, use my item through the room, and report where I am. */
+function netStep(net: OnlineRace, p: RaceKart): void {
+  const now = performance.now() / 1000;
+  const heldItem = p.item;
+  net.update(now);
+  if (heldItem === null && p.item !== null) sfx.pickup();
+  // Items are the room's: ask it, and play the sound now rather than a round trip later.
+  if (lastInput.itemPressed && p.item && p.rolling === 0 && race.started && p.finishTime === null && now - itemSentAt > 0.4) {
+    itemSentAt = now;
+    sfx.use(p.item);
+    online!.client.send({ t: 'item' });
+  }
+  if (netTicks++ % 4 === 0) online!.client.send({ t: 'kart', s: net.report() });
+}
+
+/** Hits the room landed on my kart (and my fuzz boosts). */
+function onEffects(fx: Effect[]): void {
+  const net = online?.net;
+  if (!net || mode !== 'race') return;
+  for (const e of net.apply(fx)) {
+    if (e.k === 'boost') continue;
+    const by = e.by as ItemKind;
+    hud.flash(HIT_TEXT[by] ?? 'HIT!');
+    sfx.hurt(by);
+    if (e.k !== 'slow') chase.bump(0.5);
+  }
 }
 
 const HIT_TEXT: Record<ItemKind | HazardKind, string> = {
@@ -632,6 +672,11 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
   if (screenFit.portrait && mode === 'race' && !loop.paused) requestPause(true);
   const dt = loop.paused ? 0 : frameDt;
   elapsed += dt;
+  // A slow frame (or a stalled tab) mustn't leave me racing in the past: keep up with the room's clock.
+  if (online && !loop.paused && race.time > 0) {
+    const behind = (online.client.serverNow() - online.start.at) / 1000 - race.time;
+    if (behind > 0.1) loop.catchUp(behind);
+  }
 
   const snaps = race.karts.map((k) => interpolate(k, alpha));
   const f = focus();
@@ -726,7 +771,8 @@ function table(): Table | null {
       }));
   if (mode === 'results') {
     const title = online ? `ROOM ${online.client.code} RESULTS` : gp ? `RACE ${gp.round + 1}/${gp.tracks.length} RESULTS` : choice.mode === 'timeTrial' ? 'TIME TRIAL' : 'RESULTS';
-    return { kind: 'results', title, note: trialNote || undefined, rows: finishOrder().map(kartRow) };
+    const rows = online ? onlineRows(kartRow) : finishOrder().map(kartRow);
+    return { kind: 'results', title, note: trialNote || undefined, rows };
   }
   if (mode === 'standings' && gp) {
     const next = gp.finished ? 'Final standings' : `Next: ${TRACK_LIST[gp.trackIndex].name}`;
@@ -739,6 +785,25 @@ function table(): Table | null {
     return { kind: 'podium', title: `${champ.racer.name.toUpperCase()} WINS!`, note, rows: cupRows(3) };
   }
   return null;
+}
+
+/** The room's results once it calls them (with players' names); until then, as things stand here. */
+function onlineRows(kartRow: (k: RaceKart, i: number) => TableRow): TableRow[] {
+  const s = online!.client.state;
+  const results = s?.start?.race === online!.start.race ? s.results : null;
+  if (!results) return finishOrder().map(kartRow);
+  const me = identity().playerId;
+  return results.map((r, i) => {
+    const racer = RACERS.find((x) => x.id === r.racerId) ?? RACERS[0];
+    const member = r.playerId ? s!.members.find((m) => m.playerId === r.playerId) : undefined;
+    return {
+      place: ordinal(i + 1),
+      name: member ? `${member.name} (${racer.name})` : racer.name,
+      color: hex(racer.color),
+      value: r.time === null ? '-' : formatTime(r.time),
+      player: r.playerId === me,
+    };
+  });
 }
 
 /** Karts by finishing place, unfinished ones by where they are now. */
@@ -880,6 +945,8 @@ lobby.onRoomState = (s) => {
 function backToLobby(): void {
   // Don't leave the room paused behind us.
   if (online && loop.paused) online.client.send({ t: 'pause', paused: false });
+  // Leaving mid-race: a CPU takes my kart at the room.
+  if (online && player && player.finishTime === null) online.client.send({ t: 'quit' });
   online = null;
   pausedBy = '';
   setPaused(false);

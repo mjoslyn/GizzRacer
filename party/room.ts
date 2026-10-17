@@ -1,6 +1,7 @@
 import { Server, getServerByName, type Connection, type WSMessage } from 'partyserver';
 import { seededRandom } from '../src/core/math';
 import { ROOM_MAX, isRoomCode, type ClientMsg, type GridSlot, type RoomMember, type RoomSettings, type RoomStart, type RoomState, type ServerMsg } from '../src/net/protocol';
+import { RoomRace } from '../src/net/roomRace';
 import { ENGINE_CLASSES, RACERS } from '../src/physics/racers';
 import { TRACK_LIST } from '../src/tracks/index';
 
@@ -8,6 +9,9 @@ import { TRACK_LIST } from '../src/tracks/index';
 const START_DELAY = 6000;
 /** An empty room is forgotten after this long. */
 const EMPTY_TTL = 10 * 60 * 1000;
+const STEP = 1 / 60;
+/** Snapshot every this many steps: 15 a second. */
+const SNAP_EVERY = 4;
 
 interface Member {
   name: string;
@@ -24,6 +28,7 @@ interface Saved {
   phase: RoomState['phase'];
   start: RoomStart | null;
   pause: { playerId: string; name: string; at: number } | null;
+  results: RoomState['results'];
   members: Record<string, Member>;
   races: number;
 }
@@ -40,6 +45,12 @@ interface ConnState {
 export class Room extends Server<Env> {
   static options = { hibernate: true };
   private saved: Saved | null = null;
+  /** The race being run, while racing (kept in memory only: the loop keeps the room awake). */
+  private race: RoomRace | null = null;
+  private loop: ReturnType<typeof setInterval> | null = null;
+  private lastTick = 0;
+  private acc = 0;
+  private steps = 0;
 
   async onStart(): Promise<void> {
     this.saved = (await this.ctx.storage.get<Saved>('room')) ?? null;
@@ -58,6 +69,15 @@ export class Room extends Server<Env> {
     if (!room || !me || !room.members[me]) return;
     const member = room.members[me];
     switch (msg.t) {
+      case 'kart':
+        this.race?.report(me, msg.s);
+        return;
+      case 'item':
+        this.race?.useItem(me);
+        return;
+      case 'quit':
+        this.race?.drop(me);
+        return;
       case 'ping':
         send(conn, { t: 'pong', at: msg.at, server: Date.now() });
         if (Number.isFinite(msg.rtt) && Math.abs(member.ping - msg.rtt) > 15) {
@@ -89,6 +109,8 @@ export class Room extends Server<Env> {
         room.races++;
         room.phase = 'racing';
         room.start = { race: room.races, at: Date.now() + START_DELAY, seed: Math.floor(Math.random() * 1e9), grid: grid(room), settings: { ...room.settings } };
+        room.results = null;
+        this.beginRace(room.start);
         break;
       }
       case 'pause':
@@ -102,6 +124,7 @@ export class Room extends Server<Env> {
         if (me !== room.hostId) return;
         room.phase = 'lobby';
         room.pause = null;
+        this.endRace();
         for (const m of Object.values(room.members)) m.ready = false;
         break;
       default:
@@ -127,6 +150,7 @@ export class Room extends Server<Env> {
         phase: 'lobby',
         start: null,
         pause: null,
+        results: null,
         members: {},
         races: 0,
       };
@@ -162,10 +186,13 @@ export class Room extends Server<Env> {
     const still = [...this.getConnections<ConnState>()].some((c) => c !== conn && c.state?.playerId === me);
     if (still) return;
     delete room.members[me];
+    // A CPU takes over their kart (it hands back if they're still racing and report in).
+    this.race?.drop(me);
     // Nobody's left holding the race up.
     if (room.pause?.playerId === me) this.unpause(room);
     const left = Object.entries(room.members).sort((a, b) => a[1].joined - b[1].joined);
     if (left.length === 0) {
+      this.endRace();
       await this.ctx.storage.setAlarm(Date.now() + EMPTY_TTL);
     } else if (room.hostId === me) {
       room.hostId = left[0][0];
@@ -177,6 +204,47 @@ export class Room extends Server<Env> {
     if ([...this.getConnections()].length > 0) return;
     this.saved = null;
     await this.ctx.storage.deleteAll();
+  }
+
+  private beginRace(start: RoomStart): void {
+    this.endRace();
+    this.race = new RoomRace(start, Date.now());
+    this.lastTick = Date.now();
+    this.acc = 0;
+    this.steps = 0;
+    this.loop = setInterval(() => void this.tick(), 1000 / 120);
+  }
+
+  private endRace(): void {
+    if (this.loop) clearInterval(this.loop);
+    this.loop = null;
+    this.race = null;
+  }
+
+  /** Fixed 60 Hz steps from real time; snapshots to everyone, effects to whoever was hit. */
+  private async tick(): Promise<void> {
+    const race = this.race;
+    const room = this.saved;
+    if (!race || !room) return;
+    const now = Date.now();
+    const elapsed = Math.min(0.25, (now - this.lastTick) / 1000);
+    this.lastTick = now;
+    // Paused for everyone: the room's race stands still too.
+    if (room.pause) return;
+    this.acc += elapsed;
+    const conns = [...this.getConnections<ConnState>()];
+    while (this.acc >= STEP) {
+      this.acc -= STEP;
+      const fx = race.step(STEP);
+      for (const [playerId, effects] of fx) {
+        for (const c of conns) if (c.state?.playerId === playerId) send(c, { t: 'fx', fx: effects });
+      }
+      if (++this.steps % SNAP_EVERY === 0) this.broadcast(JSON.stringify({ t: 'snap', snap: race.snapshot() } satisfies ServerMsg));
+    }
+    if (race.done && !room.results) {
+      room.results = race.results();
+      await this.changed();
+    }
   }
 
   /** Resumes, moving GO back by the pause so the race clock skips it. */
@@ -194,7 +262,7 @@ export class Room extends Server<Env> {
       .sort((a, b) => a[1].joined - b[1].joined)
       .map(([playerId, m]) => ({ playerId, name: m.name, racerId: m.racerId, ready: m.ready || playerId === room.hostId, host: playerId === room.hostId, ping: m.ping }));
     const pause = room.pause ? { playerId: room.pause.playerId, name: room.pause.name } : null;
-    const state: RoomState = { code: this.name, phase: room.phase, pause, settings: room.settings, members, start: room.start };
+    const state: RoomState = { code: this.name, phase: room.phase, pause, settings: room.settings, members, start: room.start, results: room.results ?? null };
     this.broadcast(JSON.stringify({ t: 'state', state } satisfies ServerMsg));
   }
 }

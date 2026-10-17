@@ -248,7 +248,7 @@ export class LobbyScreen {
         <div class="lobby-row"><span class="lobby-label">Track</span>${arrows('track', TRACK_LIST[s.settings.track].name, host)}</div>
         <div class="lobby-row"><span class="lobby-label">Class</span>${arrows('engine', s.settings.engine, host)}</div>
         ${action}
-        <div class="lobby-note">${s.members.length}/8 racers, CPUs fill the rest. Preview: other players drive as CPUs on your screen until live online racing arrives.</div>
+        <div class="lobby-note">${s.members.length}/8 racers, CPUs fill the rest.</div>
         ${status}
         <button class="lobby-back" data-act="leave">Leave room</button>
       </div>`);

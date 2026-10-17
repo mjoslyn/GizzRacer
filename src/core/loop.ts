@@ -40,6 +40,11 @@ export class FixedLoop {
     return steps;
   }
 
+  /** Runs extra simulated time on the next frames (an online race that fell behind the room's clock). */
+  catchUp(seconds: number): void {
+    this.accumulator += Math.min(Math.max(seconds, 0), MAX_FRAME_TIME);
+  }
+
   get alpha(): number {
     return this.accumulator / PHYSICS_DT;
   }

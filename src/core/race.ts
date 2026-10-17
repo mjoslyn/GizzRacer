@@ -2,6 +2,7 @@ import { AUTOPILOT_SKILL, CpuDriver, type CpuSkill, type Obstacle } from '../ai/
 import { HazardSystem } from '../items/hazards';
 import { ItemSystem, type ItemEvent, type ItemHolder, type ItemKind } from '../items/items';
 import { NEUTRAL_INPUT, type InputFrame } from './inputFrame';
+import { unpackKart } from '../net/wire';
 import { KART_RADIUS, copyKartState, createKartState, respawnKart, stepKart, type KartState, type StepEvents } from '../physics/kart';
 import { kartParams, type EngineClass, type KartParams, type RacerDef } from '../physics/racers';
 import { LapTracker } from '../tracks/laps';
@@ -17,6 +18,8 @@ const RUBBER_BAND_RANGE = 250;
 const FALL_DEPTH = -2;
 const BUMP_RESTITUTION = 0.4;
 const BUMP_MIN = 2;
+
+const NO_EVENTS: StepEvents = { hopped: false, landed: 0, driftStarted: false, boostTier: 0, wallHit: 0, launched: false, trick: false };
 
 export class RaceKart implements ItemHolder {
   readonly state: KartState;
@@ -39,6 +42,15 @@ export class RaceKart implements ItemHolder {
   item: ItemKind | null = null;
   rolling = 0;
   held = 0;
+  /**
+   * Online: this kart is driven somewhere else (another player, or the room's
+   * CPU on a client). It isn't simulated here: each step it takes the state
+   * last fed to it.
+   */
+  remote = false;
+  /** Online: the remote player pressed their item button. */
+  pendingUse = false;
+  private incoming: readonly number[] | null = null;
   /** CPU brain, or null while a human drives. A finished human gets one. */
   driver: CpuDriver | null;
 
@@ -60,6 +72,22 @@ export class RaceKart implements ItemHolder {
     this.progressS = loc.progress;
     this.distance = loc.progress > track.length / 2 ? loc.progress - track.length : loc.progress;
     this.driver = cpu ? new CpuDriver(cpu, slot * 7919 + 13) : null;
+  }
+
+  /** Online: the next state for a remote kart (wire.ts packed form). */
+  feed(packed: readonly number[]): void {
+    this.incoming = packed;
+  }
+
+  /** Applies the fed state; true if it jumped (a respawn), so views snap. */
+  applyFed(): boolean {
+    if (!this.incoming) return false;
+    const s = this.state;
+    const x0 = s.x;
+    const z0 = s.z;
+    unpackKart(this.incoming, s);
+    this.incoming = null;
+    return Math.hypot(s.x - x0, s.z - z0) > 8;
   }
 
   get isCpu(): boolean {
@@ -85,6 +113,8 @@ export class Race {
   readonly hazards: HazardSystem;
   /** Item pickups, uses and hits (items and hazards) from the last step. */
   events: ItemEvent[] = [];
+  /** Online client: items are run by the room; this race only shows them. */
+  remoteItems = false;
   private readonly obstacles: Obstacle[] = [];
 
   constructor(
@@ -124,6 +154,14 @@ export class Race {
     const events = this.karts.map((kart, i) => {
       copyKartState(kart.state, kart.prev);
       kart.respawned = false;
+      if (kart.remote) {
+        kart.respawned = kart.applyFed();
+        if (kart.respawned) copyKartState(kart.state, kart.prev);
+        use[i] = kart.pendingUse && this.started;
+        kart.pendingUse = false;
+        this.updateLaps(kart);
+        return { ...NO_EVENTS };
+      }
       const d = kart.driver;
       let input = (d ? d.drive(kart.state, kart.params, kart.progressS, this.track, states, this.obstacles, dt) : humanInputs[i]) ?? NEUTRAL_INPUT;
       if (d && kart.item && kart.rolling === 0) {
@@ -143,11 +181,13 @@ export class Race {
     });
     this.bumps();
     this.rank();
-    this.events = this.items.update(dt, this.karts, use);
+    this.events = this.remoteItems ? [] : this.items.update(dt, this.karts, use);
     for (const e of this.events) if (e.type === 'use') (e.kart as RaceKart).driver?.forgetItem();
     this.hazards.update(this.time);
     if (this.started) {
-      for (const h of this.hazards.collide(states, dt)) {
+      // Hazards hit the karts simulated here; remote ones are hit where they're driven.
+      const local = this.karts.filter((k) => !k.remote).map((k) => k.state);
+      for (const h of this.hazards.collide(local, dt)) {
         this.events.push({ type: 'hit', kart: this.karts.find((k) => k.state === h.kart)!, by: h.by });
       }
     }
@@ -203,7 +243,7 @@ export class Race {
       if (kart.laps.lap >= this.laps) {
         kart.finishTime = this.time;
         this.results.push(kart);
-        kart.driver ??= new CpuDriver(AUTOPILOT_SKILL, 1);
+        if (!kart.remote) kart.driver ??= new CpuDriver(AUTOPILOT_SKILL, 1);
       }
     }
   }
@@ -218,26 +258,30 @@ export class Race {
         const sa = a.state;
         const sb = b.state;
         if (Math.abs(sa.y - sb.y) > 1.5) continue;
+        // A remote kart's position isn't ours to change: the other kart takes the whole bump.
+        if (a.remote && b.remote) continue;
         const dx = sb.x - sa.x;
         const dz = sb.z - sa.z;
         const d = Math.hypot(dx, dz);
         if (d >= r2 || d < 1e-6) continue;
         const nx = dx / d;
         const nz = dz / d;
-        const ma = a.params.mass;
-        const mb = b.params.mass;
+        // Inverse masses: a remote kart moves for nobody.
+        const ia = a.remote ? 0 : 1 / a.params.mass;
+        const ib = b.remote ? 0 : 1 / b.params.mass;
+        const total = ia + ib;
         const overlap = r2 - d;
-        sa.x -= nx * overlap * (mb / (ma + mb));
-        sa.z -= nz * overlap * (mb / (ma + mb));
-        sb.x += nx * overlap * (ma / (ma + mb));
-        sb.z += nz * overlap * (ma / (ma + mb));
+        sa.x -= nx * overlap * (ia / total);
+        sa.z -= nz * overlap * (ia / total);
+        sb.x += nx * overlap * (ib / total);
+        sb.z += nz * overlap * (ib / total);
 
         const va = velocity(sa);
         const vb = velocity(sb);
         const closing = (va.x - vb.x) * nx + (va.z - vb.z) * nz;
-        const j_ = (Math.max(closing, 0) * (1 + BUMP_RESTITUTION) + BUMP_MIN) / (1 / ma + 1 / mb);
-        shove(sa, -nx * (j_ / ma), -nz * (j_ / ma));
-        shove(sb, nx * (j_ / mb), nz * (j_ / mb));
+        const j_ = (Math.max(closing, 0) * (1 + BUMP_RESTITUTION) + BUMP_MIN) / total;
+        if (ia) shove(sa, -nx * j_ * ia, -nz * j_ * ia);
+        if (ib) shove(sb, nx * j_ * ib, nz * j_ * ib);
       }
     }
   }

@@ -1,8 +1,10 @@
 import PartySocket from 'partysocket';
 import { identity } from './identity';
-import type { ClientMsg, RoomStart, RoomState, ServerMsg } from './protocol';
+import type { ClientMsg, Effect, RoomStart, RoomState, ServerMsg, Snap } from './protocol';
 
 const PING_EVERY = 2000;
+/** On (re)connecting, a quick burst of pings: one slow round trip (a busy page) mustn't set the clock. */
+const PING_BURST = [150, 400, 700, 1100];
 
 /**
  * One connection to a room party (docs/MULTIPLAYER.md section 6): says
@@ -18,6 +20,10 @@ export class RoomClient {
   onError: (message: string, fatal: boolean) => void = () => {};
   /** Fires once per race the room starts. */
   onStart: (start: RoomStart) => void = () => {};
+  /** The room's race, 15 times a second. */
+  onSnap: (snap: Snap) => void = () => {};
+  /** Hits and boosts the room decided on for my kart. */
+  onFx: (fx: Effect[]) => void = () => {};
   private readonly socket: PartySocket;
   private bestRtt = Infinity;
   private lastRace = 0;
@@ -55,6 +61,7 @@ export class RoomClient {
     const id = identity();
     this.send({ t: 'hello', playerId: id.playerId, token: id.token, create: this.create, racerId: this.racerId });
     this.ping();
+    for (const ms of PING_BURST) setTimeout(() => !this.closed && this.ping(), ms);
   }
 
   private ping(): void {
@@ -76,6 +83,10 @@ export class RoomClient {
         this.bestRtt = this.rtt;
         this.offset = msg.server - (msg.at + this.rtt / 2);
       }
+    } else if (msg.t === 'snap') {
+      this.onSnap(msg.snap);
+    } else if (msg.t === 'fx') {
+      this.onFx(msg.fx);
     } else if (msg.t === 'error') {
       if (msg.fatal) this.close();
       this.onError(msg.error, msg.fatal);
