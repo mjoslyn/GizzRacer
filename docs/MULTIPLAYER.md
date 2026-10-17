@@ -103,6 +103,7 @@ Re-simulating from the inputs is the stronger check, and it can run in the party
 - **Racers:** one kart per racer, so two players can't both pick the same racer; first come keeps it.
 - **Start:** the room fills empty slots with CPUs, picks the seed and grid, and announces a start time about 3 s ahead on its clock.
 - **Lifetime:** an empty room closes after 10 minutes; an alarm clears its state.
+- **Pause:** anyone can pause a race and it pauses for everyone, showing who paused; anyone can resume. The room moves GO back by the pause, so the race clock skips it (and a pause in the countdown still starts everyone together). If the player who paused leaves, the race resumes.
 
 ## 7. Race netcode (8c)
 

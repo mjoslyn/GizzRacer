@@ -68,6 +68,9 @@ export interface HudData {
   autoAccelerate: boolean;
   finished: boolean;
   paused: boolean;
+  /** Online: who paused the race for everyone. */
+  pausedBy: string;
+  online: boolean;
   position: number;
   karts: number;
   /** Seconds until the green light; <= 0 once racing. */
@@ -153,6 +156,7 @@ export class Hud {
       <div class="hud-standings"></div>
       <div class="hud-pause">
         <div class="hud-big">PAUSED</div>
+        <div class="hud-pause-by"></div>
         <div class="hud-pause-buttons">
           <button data-act="resume">Resume <small>Esc</small></button>
           <button data-act="restart">Restart <small>R</small></button>
@@ -266,6 +270,10 @@ export class Hud {
       this.standings.innerHTML = html;
     }
     this.pause.classList.toggle('show', d.paused);
+    this.pause.classList.toggle('online', d.online);
+    const by = d.pausedBy ? `Paused by ${d.pausedBy} for everyone` : '';
+    const byEl = this.pause.querySelector<HTMLElement>('.hud-pause-by')!;
+    if (byEl.textContent !== by) byEl.textContent = by;
     this.updateItem(d, now);
     const intro = d.intro ? `${d.intro.name}|${d.intro.sub}` : '';
     if (intro !== this.lastIntro) {

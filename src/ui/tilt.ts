@@ -16,13 +16,26 @@ interface PermissionCapable {
 export class TiltSteering {
   private neutral: number | null = null;
   private active = false;
+  /** A real reading has arrived (desktops send none, or one with nulls). */
+  private sensed = false;
 
   constructor(private readonly input: InputManager) {
-    window.addEventListener('deviceorientation', (e) => this.orientation(e));
+    window.addEventListener('deviceorientation', (e) => {
+      if (e.beta !== null) this.sensed = true;
+      this.orientation(e);
+    });
   }
 
-  static get supported(): boolean {
-    return typeof window !== 'undefined' && 'DeviceOrientationEvent' in window;
+  /**
+   * Whether this device can steer by tilt: a touch device that has sent an
+   * orientation reading, or an iPhone/iPad (they only send readings once
+   * motion permission is granted, so the permission API is the tell).
+   */
+  get available(): boolean {
+    if (typeof window === 'undefined' || !('DeviceOrientationEvent' in window)) return false;
+    const touch = navigator.maxTouchPoints > 0 || matchMedia('(pointer: coarse)').matches;
+    const asksPermission = typeof (DeviceOrientationEvent as unknown as PermissionCapable).requestPermission === 'function';
+    return touch && (this.sensed || asksPermission);
   }
 
   /**
@@ -30,7 +43,7 @@ export class TiltSteering {
    * Resolves false if the sensor isn't available or permission was refused.
    */
   async start(): Promise<boolean> {
-    if (!TiltSteering.supported) return false;
+    if (!this.available) return false;
     const api = DeviceOrientationEvent as unknown as PermissionCapable;
     if (api.requestPermission) {
       try {

@@ -10,9 +10,11 @@ export interface Settings {
   tiltRange: number;
   tiltInvert: boolean;
   autoAccelerate: boolean;
+  /** The phone steering question has been answered (asked once, on the first tap past the title). */
+  steeringChosen: boolean;
 }
 
-export const DEFAULT_SETTINGS: Settings = { music: 0.6, sfx: 1, tilt: false, tiltRange: 24, tiltInvert: false, autoAccelerate: true };
+export const DEFAULT_SETTINGS: Settings = { music: 0.6, sfx: 1, tilt: false, tiltRange: 24, tiltInvert: false, autoAccelerate: true, steeringChosen: false };
 export const TILT_RANGES = [16, 24, 34] as const;
 
 const KEY = 'gizzracer.settings';

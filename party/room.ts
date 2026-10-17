@@ -23,6 +23,7 @@ interface Saved {
   settings: RoomSettings;
   phase: RoomState['phase'];
   start: RoomStart | null;
+  pause: { playerId: string; name: string; at: number } | null;
   members: Record<string, Member>;
   races: number;
 }
@@ -90,10 +91,17 @@ export class Room extends Server<Env> {
         room.start = { race: room.races, at: Date.now() + START_DELAY, seed: Math.floor(Math.random() * 1e9), grid: grid(room), settings: { ...room.settings } };
         break;
       }
+      case 'pause':
+        if (room.phase !== 'racing') return;
+        if (msg.paused && !room.pause) room.pause = { playerId: me, name: member.name, at: Date.now() };
+        else if (!msg.paused && room.pause) this.unpause(room);
+        else return;
+        break;
       case 'lobby':
         // The host brings everyone back to the lobby after a race.
         if (me !== room.hostId) return;
         room.phase = 'lobby';
+        room.pause = null;
         for (const m of Object.values(room.members)) m.ready = false;
         break;
       default:
@@ -118,6 +126,7 @@ export class Room extends Server<Env> {
         settings: { track: 1, engine: '100cc' },
         phase: 'lobby',
         start: null,
+        pause: null,
         members: {},
         races: 0,
       };
@@ -153,6 +162,8 @@ export class Room extends Server<Env> {
     const still = [...this.getConnections<ConnState>()].some((c) => c !== conn && c.state?.playerId === me);
     if (still) return;
     delete room.members[me];
+    // Nobody's left holding the race up.
+    if (room.pause?.playerId === me) this.unpause(room);
     const left = Object.entries(room.members).sort((a, b) => a[1].joined - b[1].joined);
     if (left.length === 0) {
       await this.ctx.storage.setAlarm(Date.now() + EMPTY_TTL);
@@ -168,6 +179,12 @@ export class Room extends Server<Env> {
     await this.ctx.storage.deleteAll();
   }
 
+  /** Resumes, moving GO back by the pause so the race clock skips it. */
+  private unpause(room: Saved): void {
+    if (room.pause && room.start) room.start.at += Date.now() - room.pause.at;
+    room.pause = null;
+  }
+
   /** Saves the room and sends everyone the new state. */
   private async changed(): Promise<void> {
     const room = this.saved;
@@ -176,7 +193,8 @@ export class Room extends Server<Env> {
     const members: RoomMember[] = Object.entries(room.members)
       .sort((a, b) => a[1].joined - b[1].joined)
       .map(([playerId, m]) => ({ playerId, name: m.name, racerId: m.racerId, ready: m.ready || playerId === room.hostId, host: playerId === room.hostId, ping: m.ping }));
-    const state: RoomState = { code: this.name, phase: room.phase, settings: room.settings, members, start: room.start };
+    const pause = room.pause ? { playerId: room.pause.playerId, name: room.pause.name } : null;
+    const state: RoomState = { code: this.name, phase: room.phase, pause, settings: room.settings, members, start: room.start };
     this.broadcast(JSON.stringify({ t: 'state', state } satisfies ServerMsg));
   }
 }

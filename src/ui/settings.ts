@@ -1,5 +1,5 @@
 import { TILT_RANGES, settings, updateSettings, type Settings } from '../core/settings';
-import { TiltSteering } from './tilt';
+import type { TiltSteering } from './tilt';
 
 const SENSITIVITY = ['High', 'Medium', 'Low'];
 
@@ -12,6 +12,7 @@ export class SettingsScreen {
   private onClose: () => void = () => {};
   private status = '';
   private last = '';
+  private asking = false;
 
   constructor(
     parent: HTMLElement,
@@ -27,6 +28,18 @@ export class SettingsScreen {
     });
   }
 
+  /**
+   * First run on a phone: drag or tilt? The answer is saved; Settings can
+   * change it later.
+   */
+  askSteering(onDone: () => void): void {
+    this.onClose = onDone;
+    this.status = '';
+    this.asking = true;
+    this.el.classList.add('show');
+    this.render();
+  }
+
   get visible(): boolean {
     return this.el.classList.contains('show');
   }
@@ -40,6 +53,7 @@ export class SettingsScreen {
 
   close(): void {
     if (!this.visible) return;
+    this.asking = false;
     this.el.classList.remove('show');
     this.onClose();
   }
@@ -47,8 +61,8 @@ export class SettingsScreen {
   private async click(t: HTMLElement): Promise<void> {
     const btn = t.closest<HTMLElement>('[data-act]');
     if (!btn) {
-      // A tap on the backdrop closes.
-      if (t === this.el) this.close();
+      // A tap on the backdrop closes (the steering question needs an answer).
+      if (t === this.el && !this.asking) this.close();
       return;
     }
     const dir = Number(btn.dataset.dir ?? 0);
@@ -90,11 +104,26 @@ export class SettingsScreen {
       case 'done':
         this.close();
         return;
+      case 'choose-drag':
+        this.tilt.stop();
+        updateSettings({ tilt: false, steeringChosen: true });
+        this.close();
+        return;
+      case 'choose-tilt':
+        if (await this.tilt.start()) {
+          updateSettings({ tilt: true, steeringChosen: true });
+          this.close();
+          return;
+        }
+        this.status = "Couldn't read the motion sensor, so it's drag steering for now. You can try tilt again in Settings.";
+        updateSettings({ tilt: false, steeringChosen: true });
+        break;
     }
     this.render();
   }
 
   private render(): void {
+    if (this.asking) return this.renderAsk();
     const s: Settings = settings();
     const pct = (v: number) => `${Math.round(v * 100)}%`;
     const arrows = (act: string, value: string) =>
@@ -108,7 +137,7 @@ export class SettingsScreen {
         <div class="lobby-row"><span class="lobby-label">Effects</span>${arrows('sfx', pct(s.sfx))}</div>
         <div class="lobby-row"><span class="lobby-label">Throttle</span>${toggle('auto', s.autoAccelerate, s.autoAccelerate ? 'Automatic' : 'Manual')}</div>
         ${
-          TiltSteering.supported
+          this.tilt.available
             ? `<div class="settings-group">Phone steering</div>
         <div class="lobby-row"><span class="lobby-label">Tilt</span>${toggle('tilt', s.tilt)}</div>
         <div class="lobby-row${s.tilt ? '' : ' off'}"><span class="lobby-label">Sensitivity</span>${arrows('range', sensitivity)}</div>
@@ -119,6 +148,30 @@ export class SettingsScreen {
         ${this.status ? `<div class="lobby-status">${this.status}</div>` : ''}
         <button class="lobby-big hud-big" data-act="done">DONE</button>
       </div>`;
+    this.show(html);
+  }
+
+  private renderAsk(): void {
+    this.show(`
+      <div class="lobby-panel settings-panel steer-ask">
+        <div class="lobby-title hud-big">HOW DO YOU STEER?</div>
+        <div class="steer-choices">
+          <button class="steer-choice" data-act="choose-drag">
+            <span class="steer-icon drag"><i></i></span>
+            <b class="hud-big">DRAG</b>
+            <small>Drag left and right on the left side of the screen</small>
+          </button>
+          <button class="steer-choice" data-act="choose-tilt">
+            <span class="steer-icon tilt"><i></i></span>
+            <b class="hud-big">TILT</b>
+            <small>Turn the phone like a steering wheel</small>
+          </button>
+        </div>
+        ${this.status ? `<div class="lobby-status">${this.status}</div><button class="lobby-big hud-big" data-act="done">OK</button>` : '<div class="lobby-note">You can change this any time in Settings.</div>'}
+      </div>`);
+  }
+
+  private show(html: string): void {
     if (html === this.last) return;
     this.last = html;
     this.el.innerHTML = html;

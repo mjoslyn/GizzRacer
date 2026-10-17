@@ -1,6 +1,6 @@
 import { ENGINE_CLASSES, RACERS, type RacerDef } from '../physics/racers';
 import { identity, setName } from '../net/identity';
-import { isRoomCode, makeRoomCode, type RoomSettings, type RoomStart } from '../net/protocol';
+import { isRoomCode, makeRoomCode, type RoomSettings, type RoomStart, type RoomState } from '../net/protocol';
 import { RoomClient } from '../net/room';
 import { TRACK_LIST } from '../tracks/index';
 
@@ -19,6 +19,8 @@ export class LobbyScreen {
   /** The host changed the track (the attract race behind the lobby follows it). */
   onSettings: (settings: RoomSettings) => void = () => {};
   onBack: () => void = () => {};
+  /** Every room update (the game follows pauses from it). */
+  onRoomState: (s: RoomState) => void = () => {};
   private readonly el = document.createElement('div');
   private status = '';
   private editingName = false;
@@ -89,6 +91,7 @@ export class LobbyScreen {
     this.status = create ? `Creating room ${code}...` : `Joining ${code}...`;
     c.onState = (s) => {
       this.status = '';
+      this.onRoomState(s);
       if (s.settings.track !== this.lastTrack) {
         this.lastTrack = s.settings.track;
         this.onSettings(s.settings);

@@ -50,6 +50,8 @@ export interface RoomStart {
 export interface RoomState {
   code: string;
   phase: 'lobby' | 'racing';
+  /** Someone paused the race: it's paused for everyone until anyone resumes. */
+  pause: { playerId: string; name: string } | null;
   settings: RoomSettings;
   members: RoomMember[];
   start: RoomStart | null;
@@ -62,6 +64,7 @@ export type ClientMsg =
   | { t: 'settings'; settings: Partial<RoomSettings> }
   | { t: 'start' }
   | { t: 'lobby' }
+  | { t: 'pause'; paused: boolean }
   | { t: 'ping'; at: number; rtt: number };
 
 export type ServerMsg =

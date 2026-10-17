@@ -78,6 +78,16 @@ export class TouchControls {
     window.addEventListener('touchstart', () => this.enable(), { once: true, passive: true });
   }
 
+  /** With tilt steering on, the drag pad is hidden and off: steering is all in the phone. */
+  setTiltMode(on: boolean): void {
+    this.el.classList.toggle('tilt-mode', on);
+    if (on) {
+      this.steerId = null;
+      this.pad.classList.remove('active');
+      this.setSteer(0);
+    }
+  }
+
   enable(): void {
     this.enabled = true;
     document.body.classList.add('touch-mode');

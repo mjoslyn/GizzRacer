@@ -166,6 +166,7 @@ onSettings((s) => {
   music.setVolume(s.music * MUSIC_LEVEL);
   sfx.setVolume(s.sfx);
   input.autoAccelerate = s.autoAccelerate;
+  touch.setTiltMode(s.tilt);
 });
 // Android allows the sensor straight away; iPhones need a tap (see touchend below).
 if (settings().tilt) void tilt.start();
@@ -556,15 +557,9 @@ const hex = (c: number) => `#${c.toString(16).padStart(6, '0')}`;
 
 let elapsed = 0;
 const loop = new FixedLoop(step, (alpha, frameDt) => {
-  if (input.consumePause() && mode === 'race') {
-    loop.paused = !loop.paused;
-    touch.setVisible(!loop.paused);
-  }
+  if (input.consumePause() && mode === 'race') requestPause(!loop.paused);
   // A phone turned upright mid-race pauses; Resume once it's back on its side.
-  if (screenFit.portrait && mode === 'race' && !loop.paused) {
-    loop.paused = true;
-    touch.setVisible(false);
-  }
+  if (screenFit.portrait && mode === 'race' && !loop.paused) requestPause(true);
   const dt = loop.paused ? 0 : frameDt;
   elapsed += dt;
 
@@ -608,6 +603,8 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
       autoAccelerate: input.autoAccelerate,
       finished,
       paused: loop.paused && !frozen,
+      pausedBy,
+      online: !!online,
       position: f.position,
       karts: race.karts.length,
       countdown: intro > 0 ? -1 : -race.time,
@@ -742,6 +739,9 @@ function advance(): boolean {
   music.unlock();
   if (mode === 'title') {
     toMenu();
+    // First time on a phone: drag or tilt? Asked once, saved.
+    // Only where tilt is possible; otherwise it's drag steering and nothing to ask.
+    if (touch.enabled && !settings().steeringChosen && tilt.available) settingsScreen.askSteering(() => updateSettings({ steeringChosen: true }));
     if (linkedRoom) {
       menu.choice.mode = choice.mode = 'online';
       setMode('lobby');
@@ -774,9 +774,40 @@ function advance(): boolean {
   return false;
 }
 
+/** Who paused an online race, for the pause screen ('' offline). */
+let pausedBy = '';
+/** An online pause or resume sent and not yet echoed by the room. */
+let pendingPause: boolean | null = null;
+
+function setPaused(paused: boolean): void {
+  loop.paused = paused;
+  touch.setVisible(!paused);
+}
+
+/** Offline, pause at once. Online, ask the room: it pauses (and resumes) everyone. */
+function requestPause(paused: boolean): void {
+  if (!online) return setPaused(paused);
+  if (pendingPause === paused) return;
+  pendingPause = paused;
+  online.client.send({ t: 'pause', paused });
+}
+
+lobby.onRoomState = (s) => {
+  if (!online) return;
+  // GO moves back by any pause; keep the latest.
+  if (s.start && s.start.race === online.start.race) online.start = s.start;
+  pendingPause = null;
+  pausedBy = s.pause?.name ?? '';
+  if ((mode === 'race' || mode === 'results') && loop.paused !== !!s.pause) setPaused(!!s.pause);
+};
+
 /** After an online race, back to the room's lobby with the attract race behind it. */
 function backToLobby(): void {
+  // Don't leave the room paused behind us.
+  if (online && loop.paused) online.client.send({ t: 'pause', paused: false });
   online = null;
+  pausedBy = '';
+  setPaused(false);
   setMode('lobby');
   lobby.backToLobby();
   startRace(false);
@@ -784,8 +815,7 @@ function backToLobby(): void {
 
 hud.onPauseAction = (action) => {
   if (action === 'resume') {
-    loop.paused = false;
-    touch.setVisible(true);
+    requestPause(false);
   } else if (action === 'restart') {
     // An online race runs on the room's clock: no restarts.
     if (!online) startRace(true);
