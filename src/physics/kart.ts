@@ -69,7 +69,7 @@ export const BOOST_ACCEL = 30;
 export const PAD_BOOST_TIME = 1;
 export const DRIFT_MIN_SPEED = 10;
 /** Charge thresholds (s) and boost durations (s) for blue, orange, purple sparks. */
-export const DRIFT_TIERS = [0.7, 1.4, 2.2] as const;
+export const DRIFT_TIERS = [0.45, 0.9, 1.4] as const;
 export const DRIFT_BOOSTS = [0.5, 1, 1.5] as const;
 export const TRICK_WINDOW = 0.3;
 export const TRICK_BOOST = 0.7;

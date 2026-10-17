@@ -27,7 +27,7 @@
 - Kart is a sphere collider for ground contact plus a visual model that tilts and bounces
 - Stats per racer (1 to 5): top speed, acceleration, weight, handling, drift
 - Off-road surfaces cut top speed by 40%
-- Drift: hold while turning; sparks charge in 3 tiers (blue 0.7s, orange 1.4s, purple 2.2s) for 0.5s / 1.0s / 1.5s boosts
+- Drift: hold while turning; sparks charge in 3 tiers (blue 0.45s, orange 0.9s, purple 1.4s) for 0.5s / 1.0s / 1.5s boosts
 - Ramps: press hop at the lip for a trick boost on landing
 - Weight affects bump knockback between karts
 - Fall-off: respawn at last checkpoint after 1.5s
