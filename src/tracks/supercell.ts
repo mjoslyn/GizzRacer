@@ -9,8 +9,7 @@ const LEVEE_R = 34;
 const LEVEE_TURN = 70;
 /** The top of the trestle up round the silos. */
 const SILO_TOP = 16;
-/** The flooded creek: the boards just over the water at the bottom of its gully, and the washout below it. */
-const CREEK = -1.5;
+/** How deep the Washout's gully runs below the creek. */
 const WASHOUT_DEPTH = 6;
 
 /**
@@ -21,8 +20,8 @@ const WASHOUT_DEPTH = 6;
  * creek has burst over the road, the bridge across it has no rails, and a
  * narrow levee (Converge) cuts straight across the flooded Downdraft.
  * The county road rolls over the prairie, a wooden trestle climbs 16 m up
- * round the silos and plunges back down, and the creek runs in a gully
- * that the Washout follows down into the ground.
+ * round the silos and plunges back down, and past the creek the Washout
+ * runs down a gully the flood has cut 6 m into the ground.
  */
 export function buildSupercell(): TrackDef {
   const b = new TrackBuilder(START, 'County Road', { halfWidth: 11, surface: 'wet' });
@@ -45,9 +44,9 @@ export function buildSupercell(): TrackDef {
 
   b.section('Flooded Creek', { halfWidth: 8, surface: 'boards' });
   b.mark('creek');
-  b.straight(10).elevate(CREEK);
+  b.elevate(0).straight(10).elevate(1.5);
   b.bridge(60, 30, 'water');
-  b.elevate(CREEK).straight(10);
+  b.elevate(1.5).straight(10).elevate(0);
 
   b.section('Washout', { halfWidth: 9, wallHeight: 1.2, surface: 'rock' });
   b.mark('washout');
@@ -66,7 +65,7 @@ export function buildSupercell(): TrackDef {
   b.mark('finish');
   b.straight(FINISH);
 
-  // Heights, over the layout: prairie swells, the trestle, a hill on the farm, the creek's gully.
+  // Heights, over the layout: prairie swells, the trestle, a hill on the farm, the gully below the creek.
   const m = (name: string, d = 0) => b.marks[name].s + d * K;
   b.profile(30, m('alley', -20), (u) => 3.5 * Math.sin(2 * Math.PI * u) ** 2);
   ease(b, m('silo'), 0, m('siloTop'), SILO_TOP);
@@ -74,8 +73,7 @@ export function buildSupercell(): TrackDef {
   ease(b, m('farm', 10), 0, m('farm', 35), 5);
   plunge(b, m('farm', 35), 5, m('farm', 60), 0);
   b.profile(m('farm', 70), m('farm', 160), (u) => 2.5 * Math.sin(Math.PI * u) ** 2);
-  ease(b, m('farm', 165), 0, m('creek', 10), CREEK);
-  ease(b, m('washout', 10), CREEK, m('washout', 30), -WASHOUT_DEPTH);
+  ease(b, m('washout', 10), 0, m('washout', 30), -WASHOUT_DEPTH);
   ease(b, m('washout', 30), -WASHOUT_DEPTH, m('ramp'), 0);
   b.profile(m('leveeTo', 40), m('finish', -10), (u) => 4 * Math.sin(Math.PI * u) ** 2);
 

@@ -12,7 +12,7 @@ import { buildMurderOfTheUniverse } from '../src/tracks/murderOfTheUniverse';
 import { buildPetrodragonicApocalypse } from '../src/tracks/petrodragonicApocalypse';
 import { nearestOnSpline, pointAt } from '../src/tracks/spline';
 import { buildSupercell } from '../src/tracks/supercell';
-import { Track, type Ribbon, type TrackDef } from '../src/tracks/track';
+import { Track, inPit, type Ribbon, type TrackDef } from '../src/tracks/track';
 
 /** How a shortcut's jump is meant to go: who makes it, and who doesn't. */
 interface JumpSpec {
@@ -216,6 +216,15 @@ describe.each(HEIGHTS.map((c) => [c.name, c] as const))('%s elevation', (_name, 
     } else {
       expect(bottom).toBeLessThan(c.bottom);
       expect(main.cut.some((x) => x > 0)).toBe(true);
+    }
+  });
+
+  it('keeps its cuts clear of pits, so the ground opens cleanly round each', () => {
+    const sp = main.spline;
+    for (let i = 0; i < sp.count; i++) {
+      if (!main.cut[i]) continue;
+      const near = def.pits.some((p) => inPit({ ...p, halfLength: p.halfLength + 6, halfWidth: p.halfWidth + 6 }, sp.px[i], sp.pz[i]));
+      expect(near, `cut at ${main.toBuilder(sp.dist[i]).toFixed(0)}`).toBe(false);
     }
   });
 
