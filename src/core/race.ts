@@ -12,6 +12,8 @@ import type { Track } from '../tracks/track';
 
 /** Seconds below ground before a fallen kart is put back on the track (spec section 4). */
 export const RESPAWN_DELAY = 1;
+/** Metres below the last road under a kart, off the road, that count as having fallen off it. */
+const HIGH_FALL = 5;
 /** Back on the road rolling at this fraction of top speed, with a little boost and a moment of immunity. */
 const RESPAWN_SPEED = 0.5;
 const RESPAWN_BOOST = 0.6;
@@ -77,6 +79,9 @@ export class RaceKart implements ItemHolder {
   finishTime: number | null = null;
   fallTime = 0;
   respawned = false;
+  /** On a road last step, and the height of the last road under it: falling well below that is a fall (off a high deck). */
+  onRoad = true;
+  roadY = 0;
   /** This step's hardest bump from another kart (impulse, m/s) and the way to it (world), for views. */
   bump = 0;
   bumpX = 0;
@@ -409,7 +414,9 @@ export class Race {
 
   private updateFall(kart: RaceKart, dt: number): void {
     // Below ground is only a fall off the road: a road sunk in a cut (or under water) holds you up.
-    if (kart.state.y > FALL_DEPTH || this.onSunkRoad(kart.state)) {
+    // Above it, dropping well below the last road you were on (off a coaster deck) is a fall too.
+    const offHigh = !kart.onRoad && kart.state.y < kart.roadY - HIGH_FALL;
+    if ((kart.state.y > FALL_DEPTH && !offHigh) || (kart.state.y <= FALL_DEPTH && this.onSunkRoad(kart.state))) {
       kart.fallTime = 0;
       return;
     }
@@ -422,6 +429,8 @@ export class Race {
     kart.state.speed = kart.params.topSpeed * RESPAWN_SPEED;
     kart.state.boostTime = RESPAWN_BOOST;
     kart.state.invulnTime = RESPAWN_IMMUNE;
+    kart.roadY = pose.y;
+    kart.onRoad = true;
     copyKartState(kart.state, kart.prev);
     kart.fallTime = 0;
     kart.respawned = true;
@@ -442,6 +451,8 @@ export class Race {
     kart.distance += delta;
     kart.progressS = loc.progress;
     kart.section = loc.section;
+    kart.onRoad = loc.onRoad;
+    if (loc.onRoad) kart.roadY = loc.height;
     if (kart.finishTime !== null || !this.started) return;
     if (kart.laps.update(loc.progress)) {
       kart.lapTimes.push(this.time - kart.lapStart);
