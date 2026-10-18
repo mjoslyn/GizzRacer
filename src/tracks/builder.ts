@@ -167,6 +167,17 @@ export class TrackBuilder {
     return this;
   }
 
+  /**
+   * A trick kicker across the road: a short ramp up `height` metres, then a
+   * sheer drop back to the road. Karts leave the lip airborne, so a hop
+   * there is a trick boost on landing.
+   */
+  kicker(len = 7, height = 1.4): this {
+    const base = this.elevation.length ? this.elevation[this.elevation.length - 1][1] : 0;
+    this.elevate(base).rise(len, base + height);
+    return this.elevate(base);
+  }
+
   /** Straight jump gap with a pit underneath. */
   gap(len: number, pitHalfWidth: number, liquid?: PitDef['liquid'], depth = 12, overhang = 2): this {
     const from = this.s;

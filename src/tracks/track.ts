@@ -37,8 +37,12 @@ export interface TrackDef {
   /** Square play area half-extent; walls sit on its edge. */
   bounds: number;
   landmarks: Landmark[];
-  /** Rows of item boxes across the road, at main-ribbon arc lengths (builder units). */
-  itemBoxes: { s: number; count: number }[];
+  /**
+   * Rows of item boxes across the road, at arc lengths (builder units) on the
+   * main ribbon, or on a branch (`ribbon`, an index into `branches`).
+   * `double` boxes hold two items; put them on the risky lines.
+   */
+  itemBoxes: ItemBoxRow[];
   hazards: HazardDef[];
   /** Visual theme (render/themes.ts). */
   theme: 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void';
@@ -46,6 +50,17 @@ export interface TrackDef {
   abyss?: boolean;
   /** Music cues (public/music/<cue>.mp3): one for the race, one for the final lap. */
   music: { lap: string; finalLap?: string };
+}
+
+export interface ItemBoxRow {
+  s: number;
+  count: number;
+  ribbon?: number;
+  /** Centre of the row as an offset from the centerline (m), the same way round as a boost pad's `lateral`. */
+  lateral?: number;
+  /** Width of the row (m); defaults to 70% of the road. */
+  span?: number;
+  double?: boolean;
 }
 
 /**

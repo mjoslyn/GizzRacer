@@ -77,6 +77,8 @@ export interface ItemBox {
   z: number;
   /** Seconds until it's back; 0 = available. */
   respawn: number;
+  /** Holds two items. */
+  double: boolean;
 }
 
 export interface Mine {
@@ -158,15 +160,16 @@ export class ItemSystem {
   ) {
     this.rand = seededRandom(seed);
     for (const row of withBoxes ? track.def.itemBoxes : []) {
-      const s = track.mainS(row.s);
-      const p = pointAt(track.spline, s);
-      const hw = track.main.halfWidthAtS(s) * 0.7;
+      const ribbon = track.ribbon(row.ribbon ?? -1);
+      const s = row.s * ribbon.scale;
+      const p = pointAt(ribbon.spline, s);
+      const hw = row.span !== undefined ? row.span / 2 : ribbon.halfWidthAtS(s) * 0.7;
       const tl = Math.hypot(p.tx, p.tz) || 1;
       for (let i = 0; i < row.count; i++) {
-        const lat = row.count > 1 ? -hw + (2 * hw * i) / (row.count - 1) : 0;
+        const lat = (row.lateral ?? 0) + (row.count > 1 ? -hw + (2 * hw * i) / (row.count - 1) : 0);
         const x = p.x - (p.tz / tl) * lat;
         const z = p.z + (p.tx / tl) * lat;
-        this.boxes.push({ x, y: track.locate(x, z, 100).height + 1.1, z, respawn: 0 });
+        this.boxes.push({ x, y: ribbon.heightAt(s) + 1.1, z, respawn: 0, double: !!row.double });
       }
     }
   }
