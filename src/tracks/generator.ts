@@ -50,6 +50,30 @@ const SHORTCUT_RAMP = 12;
 const SHORTCUT_LIP = 2.5;
 /** How far from either end a shortcut may still share road with the sweep it cuts across. */
 export const SHORTCUT_JUNCTION = 65;
+/**
+ * Elevation. Rolling hills bend no sharper than this (1/m), so karts stay
+ * planted over their tops; humps on straights are sharp-topped, for airtime.
+ */
+const HILL_BEND = 0.012;
+const HUMP_RAMP = 20;
+const HUMP_SLOPE = 0.15;
+/** Clear straight a hump needs: its two ramps and somewhere to land. */
+const HUMP_ROOM = 2 * HUMP_RAMP + 30;
+/** Raised past this, a section gets barriers so nobody drops off the embankment. */
+const RAISED = 2;
+/** Room kept flat around kickers, jumps, bridges and junctions. */
+const FLAT_MARGIN = 10;
+/** And either side of a shortcut's sweep, so it meets the main road on the level. */
+const JUNCTION_FLAT = 25;
+/** Coaster: flat run-in, the lead up to the crest and the runout, metres; deck from this height up. */
+const COASTER_IN = 8;
+const COASTER_LEAD = 30;
+const COASTER_OUT = 25;
+const COASTER_LIFT = 2.5;
+const COASTER_DROP_SLOPE = 0.45;
+const COASTER_MIN = 8;
+const DECK_LINE = 4;
+const COASTER_DECKS = ['Skyway', 'Coaster', 'Viaduct', 'Highline', 'Big Dipper', 'Rollercoaster'];
 const SHORTCUT_NAMES = ['Gamma Knife', 'Robot Stop', 'Hot Water', 'Head On', 'Cut Throat Boogie', 'Mind Fuzz', 'Planet B', 'Doom City', 'Nuclear Fusion', 'Crumbling Castle'];
 
 type HazardKind = HazardDef['kind'];
@@ -224,7 +248,7 @@ export function trackId(p: GenParams): string {
 }
 
 /** How the last generation went (tests and tuning). */
-export const generatorStats = { attempts: 0, fallbacks: 0, rejects: { closure: 0, overlap: 0 } };
+export const generatorStats = { attempts: 0, fallbacks: 0, rejects: { closure: 0, overlap: 0, coaster: 0 } };
 
 /** Builds the track for these dials; a layout that fails its checks is re-rolled from the same seed. */
 export function generateTrack(p: GenParams): TrackDef {
@@ -257,8 +281,8 @@ export function selfGap(track: Track): number {
   for (let i = 0; i < sp.count; i += 2) {
     for (let j = i + 2; j < sp.count; j += 2) {
       const along = Math.abs(sp.dist[i] - sp.dist[j]);
+      // Flat on the map: a deck high over another stretch of road would still be a crossing.
       if (Math.min(along, sp.length - along) < 120) continue;
-      if (Math.abs(track.main.heightAt(sp.dist[i]) - track.main.heightAt(sp.dist[j])) > 6) continue;
       const gap = Math.hypot(sp.px[i] - sp.px[j], sp.pz[i] - sp.pz[j]) - track.main.halfWidth[i] - track.main.halfWidth[j];
       if (gap < min) min = gap;
     }
@@ -303,6 +327,29 @@ export function branchGap(track: Track, k: number): number {
   return min;
 }
 
+/** Lays straights (curvature 0) and arcs (signed curvature, 1/m) end to end, starting a new section at each split (metres along). */
+function lay(b: TrackBuilder, pieces: [number, number][], splits: [number, string, SectionProps][]): void {
+  let at = 0;
+  let next = 0;
+  for (const [len, k] of pieces) {
+    let left = len;
+    while (left > 1e-9) {
+      const split = splits[next];
+      const run = split && split[0] < at + left ? Math.max(0, split[0] - at) : left;
+      if (run > 0) {
+        if (k === 0) b.straight(run);
+        else b.arc(1 / Math.abs(k), (Math.sign(k) * run * Math.abs(k) * 180) / Math.PI);
+      }
+      at += run;
+      left -= run;
+      if (split && split[0] <= at + 1e-9) {
+        b.section(split[1], split[2]);
+        next++;
+      }
+    }
+  }
+}
+
 interface Module {
   name: string;
   /** Hazards that fit it: crossing kinds need a straight-ish run. */
@@ -313,7 +360,16 @@ interface Module {
   kickers?: number[];
   /** A bulge a shortcut can cut straight across. */
   bulge?: boolean;
+  /** Its heights are its own (kickers, jumps, bridges, coasters): no hills over it. */
+  fixed?: boolean;
+  /** A walled stretch that can be sunk into a cut. */
+  walled?: boolean;
+  /** Its own road heights, [from, to, height, step] in metres into the module, shaped after the layout. */
+  shapes?: Shape[];
 }
+
+/** A stretch of road's height: from, to, height at s, sample step. */
+type Shape = [number, number, (s: number) => number, number];
 
 /** A spot on a risky line for the double item box row; the highest rank gets it. */
 interface RiskySpot extends ItemBoxRow {
@@ -349,8 +405,23 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
   let bridges = 0;
   let lateral = 0;
   let kickers = 0;
+  let coasters = 0;
+  /** Stretches whose heights are fixed, straights a hump could go on, walled stretches a cut could sink, and module ends (for keeping cuts off pits). */
+  const fixed: [number, number][] = [];
+  const straights: [number, number][] = [];
+  const walled: [number, number][] = [];
+  const shapes: Shape[] = [];
+  const ends: { s: number; pose: Pose }[] = [];
+  /** Notes a straight, joined onto the one before when they run on end to end. */
+  const noteStraight = (s0: number, s1: number) => {
+    const last = straights[straights.length - 1];
+    if (last && Math.abs(last[1] - s0) < 0.01) last[1] = s1;
+    else straights.push([s0, s1]);
+  };
   /** The last module was a kicker run: no gap or tight turn straight after its landing. */
   let landing = false;
+  /** The last module was walled: no rail-less bridge straight out of it, where a fast kart still running wide would go in. */
+  let walledLast = false;
   let bulge: { from: { s: number; pose: Pose }; to: { s: number; pose: Pose } } | null = null;
   const risky: RiskySpot[] = [];
   const edge = () => (rand() < 0.5 ? 1 : -1);
@@ -375,6 +446,7 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
     return {
       name: tight ? 'Chicane' : 'Esses',
       open: false,
+      walled: true,
       props: { wallHeight: tight ? pal.tallWalls : wall, halfWidth: halfWidth - (tight ? 1 : 0) },
       build: (bb) => bb.arc(r, dir * a).arc(r, -2 * dir * a).arc(r, dir * a),
     };
@@ -387,6 +459,7 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
     return {
       name: 'Hairpins',
       open: false,
+      walled: true,
       props: { wallHeight: 1.5, halfWidth: halfWidth - 1 },
       build: (bb) => bb.straight(10).arc(r, dir * 165).straight(s).arc(r, -dir * 165).straight(10),
     };
@@ -394,6 +467,7 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
   const jump = (): Module => ({
     name: pick(['Leap', 'Jump']),
     open: false,
+    fixed: true,
     props: { wallHeight: 1.2, surface: pal.deck },
     build: (bb) => {
       bb.straight(30).elevate(0).rise(20, 3);
@@ -404,6 +478,7 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
   const bridge = (): Module => ({
     name: pick(['Bridge', 'Causeway', 'Crossing']),
     open: true,
+    fixed: true,
     props: { surface: pal.deck, halfWidth: halfWidth - 2, wallHeight: 0 },
     build: (bb) => {
       bb.straight(8).elevate(0).rise(12, 1.5);
@@ -420,6 +495,7 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
     return {
       name: pair ? 'Kickers' : 'Kicker',
       open: false,
+      fixed: true,
       props: { wallHeight: abyss ? 1.2 : 0, surface: pal.surface },
       kickers: pair ? [lead + 7, lead + 14 + apart] : [lead + 7],
       build: (bb) => {
@@ -438,7 +514,55 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
       open: false,
       props: { wallHeight: 0, surface: pal.surface },
       bulge: true,
+      fixed: true,
       build: (bb) => bb.straight(6).arc(r, -a).arc(r, 2 * a).arc(r, -a).straight(6),
+    };
+  };
+
+  /**
+   * A roller coaster: up through an S onto a deck on pillars, a lead up to a
+   * crest that drops away fast enough to leave the road, and a plunge back to
+   * earth on the straight. Over an abyss it climbs higher.
+   */
+  const coaster = (room: number): Module | null => {
+    const want = abyss ? between(20, 26) : between(8 + c, 12 + c);
+    const top = Math.min(want, (room - 76) / 9.45);
+    if (top < COASTER_MIN) return null;
+    const climb = top * 5;
+    const drop = (2 * (top + COASTER_LIFT)) / COASTER_DROP_SLOPE;
+    // The S it climbs through: no tighter than this.
+    const a = Math.min(climb / (4 * between(40, 60)), (32 * Math.PI) / 180);
+    const r = climb / (4 * a);
+    const dir = rand() < 0.5 ? 1 : -1;
+    const deck = `${place()} ${pick(COASTER_DECKS)}`;
+    const plunge = `${place()} ${pick(['Drop', 'Plunge', 'Dipper'])}`;
+    const crest = COASTER_IN + climb + COASTER_LEAD;
+    const deckFrom = COASTER_IN + (climb * Math.acos(1 - (2 * DECK_LINE) / top)) / Math.PI;
+    const deckTo = crest + drop * (1 - Math.sqrt(DECK_LINE / (top + COASTER_LIFT)));
+    const peak = top + COASTER_LIFT;
+    return {
+      name: 'Climb',
+      open: false,
+      fixed: true,
+      props: { wallHeight: 1.2, surface: pal.surface },
+      shapes: [
+        [COASTER_IN, COASTER_IN + climb, (x) => (top * (1 - Math.cos((Math.PI * (x - COASTER_IN)) / climb))) / 2, 4],
+        [COASTER_IN + climb, crest, (x) => top + (COASTER_LIFT * (x - COASTER_IN - climb)) / COASTER_LEAD, 4],
+        [crest, crest + drop, (x) => peak * (1 - (x - crest) / drop) ** 2, 2],
+      ],
+      build: (bb) => {
+        const pieces: [number, number][] = [
+          [COASTER_IN, 0],
+          [r * a, dir / r],
+          [2 * r * a, -dir / r],
+          [r * a, dir / r],
+          [COASTER_LEAD + drop + COASTER_OUT, 0],
+        ];
+        lay(bb, pieces, [
+          [deckFrom, deck, { halfWidth, wallHeight: 1.2, surface: pal.deck, bridge: true }],
+          [deckTo, plunge, { halfWidth, wallHeight: 1.2, surface: pal.surface }],
+        ]);
+      },
     };
   };
 
@@ -458,7 +582,7 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
     if (c >= 2 && !landing) options.push([c * 0.4, () => esses(true)]);
     if (c >= 3 && room > 90 && !landing) options.push([(c - 2) * 0.6, hairpins]);
     if (c >= 2 && jumps < 2 && room > 110 && !landing) options.push([0.5 + c * 0.15, jump]);
-    if (pal.liquid && bridges < 1 && room > 110) options.push([0.6, bridge]);
+    if (pal.liquid && bridges < 1 && room > 110 && !walledLast) options.push([0.6, bridge]);
     // Kickers: more at higher twists, and every track gets one once it's past the first side;
     // none where the grid and the first boxes are.
     const single = KICKER_LEAD + 7 + KICKER_LANDING;
@@ -468,6 +592,12 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
       // None yet by the second half of the lap: this is it.
       if (kickers === 0 && side >= 2 && !plain) return make();
       options.push([kickers === 0 && side > 0 ? 12 : 0.2 + c * 0.25, make]);
+    }
+    // A coaster from twists 3: likely once past the first side, and by the third side this is it.
+    if (c >= 3 && !plain && coasters === 0 && side >= 1) {
+      const m = coaster(room);
+      if (m && side >= 2) return m;
+      if (m) options.push([4, () => m]);
     }
     // Not over an abyss: the open bends where it meets the shortcut would be a long way down.
     if (c >= 3 && !abyss && !bulge && room > 160) options.push([1.5 + (c - 3) * 0.5, sweep]);
@@ -515,6 +645,7 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
       m ??= straight(room);
       // The last side keeps to its line: nothing that shifts the road sideways.
       if (side === 3 && (m.name === 'S-Bends' || m.name === 'Hairpins')) m = straight(Math.min(room, 40));
+      if (m.name === 'Climb') coasters++;
       const s0 = b.s;
       b.section(`${place()} ${m.name}`, { halfWidth, wallHeight: abyss ? 1.2 : 0, surface: surface(), ...m.props });
       const before = { ...b.pose };
@@ -523,8 +654,17 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
       lateral += (b.pose.x - before.x) * Math.cos(from.h) - (b.pose.z - before.z) * Math.sin(from.h);
       const s1 = b.s;
       const hw = m.props.halfWidth ?? halfWidth;
+      ends.push({ s: s0, pose: before }, { s: s1, pose: { ...b.pose } });
+      if (m.fixed) {
+        const margin = m.bulge ? JUNCTION_FLAT : FLAT_MARGIN;
+        fixed.push([s0 - margin, s1 + margin]);
+      }
+      if (m.walled) walled.push([s0, s1]);
+      if (m.name === 'Straight' || m.name === 'Run' || m.name === 'Dash') noteStraight(s0, s1);
+      for (const [from, to, f, step] of m.shapes ?? []) shapes.push([s0 + from, s0 + to, (x) => f(x - s0), step]);
       if (m.open && s1 - s0 > 35 && addHazard(s0, s1)) risky.push({ rank: 2, s: (s0 + s1) / 2, count: 1, lateral: edge() * (hw - 2) });
       landing = !!m.kickers;
+      walledLast = !!m.walled;
       for (const at of m.kickers ?? []) {
         kickers++;
         // Up on the lip, out by the edge.
@@ -549,13 +689,21 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
       if (pal.landmarks.length && landmarks.length < 3 && m.open && rand() < 0.35) landmarks.push({ kind: pick(pal.landmarks), ribbon: -1, s: s0 + 4 });
     }
     // Whatever's left of the side, straight.
-    if (goal() > 0.5) b.straight(goal());
+    if (goal() > 0.5) {
+      noteStraight(b.s, b.s + goal());
+      b.straight(goal());
+    }
     if (side < 3) {
       b.section(`${place()} ${pick(['Bend', 'Turn', 'Corner', 'Sweeper'])}`, { halfWidth, wallHeight: wall, surface: surface() });
       // Tight on the apex: the fallback spot for the double boxes.
       risky.push({ rank: 0, s: b.s + (R * Math.PI) / 4, count: 1, lateral: -(halfWidth - 1.5) });
       b.arc(R, 90);
     }
+  }
+  // From twists 3 every track has its coaster: one with no room for it is re-rolled.
+  if (c >= 3 && !plain && coasters === 0) {
+    generatorStats.rejects.coaster++;
+    return null;
   }
   if (!marks.includes('mid')) {
     // A short first side: the checkpoint goes on the first corner's exit instead.
@@ -577,7 +725,15 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
   b.straight(FINISH);
   itemBoxes.unshift({ s: 30, count: halfWidth > 10 ? 4 : 3 });
 
+  // Heights, laid over the finished layout from their own rolls, so they never change its shape.
+  const lift = elevation(seededRandom(p.seed * 4241 + attempt * 613 + 9));
   const main = b.finish(true);
+  // Up on an embankment, low barriers: a kart off its edge would be stuck below the road.
+  for (const sec of main.sections) {
+    let high = 0;
+    for (let s = sec.from; s <= sec.to; s += 2) high = Math.max(high, lift(s));
+    if (high > RAISED) sec.wallHeight = Math.max(sec.wallHeight ?? 0, 1.2);
+  }
   const branches: BranchDef[] = [];
   const pits = b.pits.slice();
   if (bulge) {
@@ -633,6 +789,84 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
     const branch: BranchDef = { name: `${name} Shortcut`, mainFrom: from.s, mainTo: to.s, ...sb.finish(false) };
     const spot: RiskySpot = { rank: 4, ribbon: 0, s: landed + 8, count: rand() < 0.5 ? 1 : 2, span: 4 };
     return { branch, pits: sb.pits, spot };
+  }
+
+  /**
+   * Shapes the road's heights once the layout is down: the modules' own
+   * (coasters), then now and then a walled stretch sunk into a cut, sharp
+   * humps on straights for airtime, and rolling hills everywhere else that's
+   * free, all scaled by the twists. Kickers, jumps, bridges, the shortcut's
+   * junctions and the grid stay level. Returns the height it gave each spot.
+   */
+  function elevation(er: () => number): (s: number) => number {
+    const L = b.s;
+    const span = (lo: number, hi: number) => lo + er() * (hi - lo);
+    const shuffle = <T>(list: T[]) => list.map((v) => [er(), v] as const).sort((x, y) => x[0] - y[0]).map(([, v]) => v);
+    const blocked: [number, number][] = [[-Infinity, 45], [L - FINISH - FLAT_MARGIN, Infinity], ...fixed, ...shapes.map(([a, z]) => [a, z] as [number, number])];
+    const rows = itemBoxes.map((r): [number, number] => [r.s - 8, r.s + 8]);
+    const free = (a: number, z: number, also: [number, number][] = []) => ![...blocked, ...also].some(([x, y]) => a < y && z > x);
+    const nearPit = (a: number, z: number) =>
+      ends.some(({ s, pose }) => s >= a && s <= z && b.pits.some((pit) => inPit({ ...pit, halfLength: pit.halfLength + 25, halfWidth: pit.halfWidth + 25 }, pose.x, pose.z)));
+
+    // Cuts: a walled stretch sunk into the ground, ramps in and out on the road either side. Not over an abyss.
+    let cuts = abyss || plain || er() > 0.15 + 0.12 * c ? 0 : c >= 4 && er() < 0.4 ? 2 : 1;
+    for (const [s0, s1] of shuffle(walled)) {
+      if (cuts <= 0) break;
+      if (!free(s0, s1)) continue;
+      const depth = span(5, 7) + c * 0.6;
+      const ramp = Math.max(50, 7 * depth);
+      let a = s0;
+      let z = s1;
+      while (a > s0 - ramp && free(a - 2, a)) a -= 2;
+      while (z < s1 + ramp && free(z, z + 2)) z += 2;
+      if (z - a < 2 * ramp + 20 || nearPit(a, z)) continue;
+      const ease = (u: number) => (1 - Math.cos(Math.PI * clamp(u, 0, 1))) / 2;
+      shapes.push([a, z, (x) => -depth * Math.min(ease((x - a) / ramp), ease((z - x) / ramp)), 4]);
+      blocked.push([a, z]);
+      cuts--;
+    }
+
+    // Humps: a sharp top a fast kart leaves the road from, with a straight to land on.
+    let humps = plain ? 0 : c >= 4 ? 2 : c >= 2 ? 1 : 0;
+    const hump = (HUMP_SLOPE * HUMP_RAMP) / 2;
+    for (const [s0, s1] of shuffle(straights)) {
+      if (humps <= 0) break;
+      if (s1 - s0 < HUMP_ROOM + 6) continue;
+      const a = s0 + 3 + er() * (s1 - s0 - HUMP_ROOM - 6);
+      if (!free(a, a + HUMP_ROOM, rows)) continue;
+      const top = a + HUMP_RAMP;
+      shapes.push([a, top, (x) => hump * ((x - a) / HUMP_RAMP) ** 2, 2]);
+      shapes.push([top, top + HUMP_RAMP, (x) => hump * (1 - (x - top) / HUMP_RAMP) ** 2, 2]);
+      blocked.push([a, a + HUMP_ROOM]);
+      humps--;
+    }
+
+    // Rolling hills in what's left, bending no sharper than HILL_BEND; over an abyss some dip instead.
+    const taken = blocked.map(([x, y]) => [Math.max(0, x), Math.min(L, y)] as [number, number]).filter(([x, y]) => y > x).sort((x, y) => x[0] - y[0]);
+    let at = 0;
+    for (const [x, y] of [...taken, [L, L] as [number, number]]) {
+      const len = x - at;
+      if (len >= 40) {
+        const n = Math.max(1, Math.round(len / span(80, 140)));
+        const w = len / n;
+        const cap = (HILL_BEND * w * w) / (2 * Math.PI ** 2);
+        for (let k = 0; k < n; k++) {
+          let A = Math.min(cap, (abyss ? 1.4 : 1) * (1.5 + 1.1 * c) * span(0.4, 1));
+          if (er() < 0.2) continue;
+          if (abyss && er() < 0.4) A = -A;
+          const h0 = at + k * w;
+          shapes.push([h0, h0 + w, (s) => (A * (1 - Math.cos((2 * Math.PI * (s - h0)) / w))) / 2, 4]);
+        }
+      }
+      at = Math.max(at, y);
+    }
+
+    shapes.sort((x, y) => x[0] - y[0]);
+    for (const [from, to, f, step] of shapes) b.profile(from, to, (u) => f(from + (to - from) * u), step);
+    return (s) => {
+      for (const [from, to, f] of shapes) if (s >= from && s <= to) return f(s);
+      return 0;
+    };
   }
 
   function addHazard(s0: number, s1: number): boolean {

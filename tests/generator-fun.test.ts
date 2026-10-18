@@ -6,9 +6,9 @@ import { Race } from '../src/core/race';
 import { ItemSystem } from '../src/items/items';
 import { createKartState, stepKart, type KartState } from '../src/physics/kart';
 import { RACERS, kartParams } from '../src/physics/racers';
-import { GEN_COMPLEXITY_MAX, GEN_LENGTHS, GEN_THEMES, SHORTCUT_JUNCTION, generateTrack, isPlayable, type GenParams } from '../src/tracks/generator';
+import { GEN_COMPLEXITY_MAX, GEN_LENGTHS, GEN_THEMES, SHORTCUT_JUNCTION, generateTrack, isPlayable, selfGap, type GenParams } from '../src/tracks/generator';
 import { nearestOnSpline, pointAt } from '../src/tracks/spline';
-import { Track, type Ribbon, type TrackDef } from '../src/tracks/track';
+import { Track, inPit, type Ribbon, type TrackDef } from '../src/tracks/track';
 
 /** Every theme, twist and length, a few seeds each. */
 const DIALS: GenParams[] = GEN_THEMES.flatMap((theme, t) =>
@@ -28,6 +28,13 @@ function kickerLips(def: TrackDef): number[] {
   const lips: number[] = [];
   for (let i = 1; i < keys.length; i++) if (keys[i][0] === keys[i - 1][0] && keys[i - 1][1] - keys[i][1] > 1) lips.push(keys[i][0]);
   return lips;
+}
+
+/** Below the ground and not on a road there (a cut holds you up): fallen. */
+function fallen(track: Track, kart: KartState): boolean {
+  if (kart.y > -2) return false;
+  const loc = track.locate(kart.x, kart.z, kart.y, kart.trackHint);
+  return !(loc.onRoad && kart.y > loc.height - 1.5);
 }
 
 /** Steers toward a point 14 m further along a ribbon. */
@@ -59,7 +66,7 @@ function hitKicker(track: Track, lip: number, speed: number) {
     const ev = stepKart(kart, steer(track.main, kart), p, track, PHYSICS_DT);
     if (ev.launched) launched = true;
     if (launched && ev.landed > 0 && !landedOnRoad) landedOnRoad = track.locate(kart.x, kart.z, kart.y).onRoad;
-    if (kart.y < -2) fell = true;
+    if (fallen(track, kart)) fell = true;
   }
   return { launched, landedOnRoad, fell };
 }
@@ -69,7 +76,7 @@ function jump(track: Track, r: Ribbon, s: number, speed: number, boost: number, 
   const kart = kartAt(r, s, speed, boost);
   for (let t = 0; t < 4; t += PHYSICS_DT) {
     stepKart(kart, { ...NEUTRAL_INPUT, throttle: 1 }, p, track, PHYSICS_DT);
-    if (kart.y < -2) return 'fell';
+    if (fallen(track, kart)) return 'fell';
   }
   return 'cleared';
 }
@@ -79,7 +86,7 @@ function drive(track: Track, r: Ribbon, s0: number, s1: number, p: ReturnType<ty
   const kart = kartAt(r, s0, p.topSpeed, boost);
   for (let t = 0; t < 30; t += PHYSICS_DT) {
     stepKart(kart, steer(r, kart), p, track, PHYSICS_DT);
-    if (kart.y < -2) return Infinity;
+    if (fallen(track, kart)) return Infinity;
     if (nearestOnSpline(r.spline, kart.x, kart.z).s >= s1) return t;
   }
   return Infinity;
@@ -242,7 +249,7 @@ describe('generated tracks: kickers, double boxes and shortcuts', () => {
       let reached = false;
       for (let t = 0; t < 10 && !reached; t += PHYSICS_DT) {
         stepKart(kart, { ...NEUTRAL_INPUT, throttle: 1 }, p, track, PHYSICS_DT);
-        if (kart.y < -2) break;
+        if (fallen(track, kart)) break;
         reached = Math.hypot(kart.x - end[0], kart.z - end[1]) < 4;
       }
       expect(reached, label(dials)).toBe(true);
@@ -266,20 +273,209 @@ describe('generated tracks: kickers, double boxes and shortcuts', () => {
 
   describe.each(GEN_THEMES)('%s: autopilot laps every dial', (theme) => {
     it.each(BUILT.filter(({ p }) => p.theme === theme && p.seed < 1000).map(({ p, def }) => [label(p), def] as const))('%s', (_name, def) => {
+      expect(autopilotLap(def, RACERS[0], '100cc')).toEqual({ laps: 1, falls: 0 });
+    }, 30_000);
+  });
+});
+
+/** One autopilot lap in a race (falls and respawns as in a real race): laps done and respawns. */
+function autopilotLap(def: TrackDef, racer: (typeof RACERS)[number], engine: '100cc' | '150cc') {
+  const track = new Track(def);
+  const race = new Race(track);
+  const kart = race.addKart(racer, engine, null);
+  race.time = 0;
+  let falls = 0;
+  for (let t = 0; t < 200 && kart.laps.lap < 1; t += PHYSICS_DT) {
+    const s = kart.state;
+    const aim = pointAt(track.spline, kart.progressS + 14);
+    const err = wrapAngle(Math.atan2(aim.x - s.x, aim.z - s.z) - s.heading);
+    race.step(PHYSICS_DT, [{ ...NEUTRAL_INPUT, throttle: 1, steer: clamp(-err * 2.5, -1, 1) }]);
+    if (kart.respawned) falls++;
+  }
+  return { laps: kart.laps.lap, falls };
+}
+
+/** More seeds for the elevation checks: every theme, twist and length, three more each. */
+const MORE = GEN_THEMES.flatMap((theme, t) =>
+  Array.from({ length: GEN_COMPLEXITY_MAX }, (_, i) => i + 1).flatMap((complexity) =>
+    GEN_LENGTHS.flatMap((length, l) => [0, 1, 2].map((k) => ({ seed: 5000 + t * 101 + complexity * 13 + l * 7 + k * 977, theme, complexity, length }))),
+  ),
+).map((p) => ({ p, def: generateTrack(p) }));
+const ALL = [...BUILT, ...MORE];
+const ABYSS = (p: GenParams) => p.theme === 'dream' || p.theme === 'void';
+const mean = (v: number[]) => v.reduce((a, b) => a + b, 0) / v.length;
+
+/** Main road heights every 2 m (spline units). */
+function heights(track: Track): number[] {
+  const out: number[] = [];
+  for (let s = 0; s < track.length; s += 2) out.push(track.main.heightAt(s));
+  return out;
+}
+
+/** Drives a lap flat out on autopilot: where (builder metres) the kart left the road over a crest, not off a kicker or a jump. */
+function crestLaunches(track: Track, def: TrackDef, p: ReturnType<typeof kartParams>): number[] {
+  const lips = kickerLips(def);
+  const kart = kartAt(track.main, 2, p.topSpeed);
+  const out: number[] = [];
+  let last = 2;
+  let travelled = 0;
+  for (let t = 0; t < 120 && travelled < track.length - 10; t += PHYSICS_DT) {
+    const ev = stepKart(kart, steer(track.main, kart), p, track, PHYSICS_DT);
+    const at = nearestOnSpline(track.spline, kart.x, kart.z).s;
+    let d = at - last;
+    if (d < -track.length / 2) d += track.length;
+    travelled += d;
+    last = at;
+    if (!ev.launched) continue;
+    const s = track.main.toBuilder(at);
+    if (lips.some((l) => Math.abs(s - l) < 8) || def.main.gaps.some(([a, b]) => s > a - 8 && s < b + 8)) continue;
+    out.push(s);
+  }
+  return out;
+}
+
+describe('generated tracks: hills, coasters and cuts', () => {
+  it('every dial still builds a closed loop that never crosses itself, even flat on the map', () => {
+    for (const { p, def } of ALL) {
+      expect(isPlayable(def), label(p)).toBe(true);
       const track = new Track(def);
-      const race = new Race(track);
-      const kart = race.addKart(RACERS[0], '100cc', null);
-      race.time = 0;
-      let falls = 0;
-      for (let t = 0; t < 200 && kart.laps.lap < 1; t += PHYSICS_DT) {
-        const s = kart.state;
-        const aim = pointAt(track.spline, kart.progressS + 14);
-        const err = wrapAngle(Math.atan2(aim.x - s.x, aim.z - s.z) - s.heading);
-        race.step(PHYSICS_DT, [{ ...NEUTRAL_INPUT, throttle: 1, steer: clamp(-err * 2.5, -1, 1) }]);
-        if (kart.respawned) falls++;
+      // Measured flat on the map: a deck high over another stretch of road would count.
+      expect(selfGap(track), label(p)).toBeGreaterThanOrEqual(5);
+      // Level over the grid and through the line.
+      for (let s = -50; s <= 6; s += 2) expect(Math.abs(track.main.heightAt((s + track.length) % track.length)), label(p)).toBeLessThan(0.01);
+    }
+  }, 120_000);
+
+  it('builds the same hills from the same seed', () => {
+    for (const { p, def } of MORE.filter((_, i) => i % 7 === 0)) expect(JSON.stringify(generateTrack(p)), label(p)).toBe(JSON.stringify(def));
+  }, 60_000);
+
+  it('rolls at every twist, more at higher twists', () => {
+    const range = (c: number) =>
+      mean(
+        ALL.filter(({ p }) => p.complexity === c).map(({ def }) => {
+          const h = heights(new Track(def));
+          return Math.max(...h) - Math.min(...h);
+        }),
+      );
+    for (let c = 1; c <= GEN_COMPLEXITY_MAX; c++) expect(range(c), `twists ${c}`).toBeGreaterThan(1);
+    expect(range(2)).toBeGreaterThan(range(1));
+    expect(range(3)).toBeGreaterThan(range(2) + 5);
+  }, 60_000);
+
+  it('from twists 3, a coaster: a real height range, up on a pillared deck with low walls, higher over an abyss', () => {
+    const peaks = { abyss: [] as number[], ground: [] as number[] };
+    for (const { p, def } of ALL) {
+      if (p.complexity < 3) continue;
+      const track = new Track(def);
+      const decks = def.main.sections.filter((s) => s.bridge);
+      expect(decks.length, label(p)).toBeGreaterThanOrEqual(1);
+      const h = heights(track);
+      expect(Math.max(...h) - Math.min(...h), label(p)).toBeGreaterThan(10);
+      let peak = 0;
+      for (const d of decks) {
+        for (let s = d.from; s <= d.to; s += 2) {
+          const y = track.main.heightAtBuilder(s);
+          expect(y, `${label(p)} deck at ${s.toFixed(0)}`).toBeGreaterThan(3.5);
+          peak = Math.max(peak, y);
+        }
+        expect(d.wallHeight, label(p)).toBe(1.2);
       }
-      expect(kart.laps.lap).toBe(1);
-      expect(falls).toBe(0);
+      (ABYSS(p) ? peaks.abyss : peaks.ground).push(peak);
+    }
+    expect(mean(peaks.ground)).toBeGreaterThan(12);
+    expect(mean(peaks.abyss)).toBeGreaterThan(mean(peaks.ground) + 3);
+  }, 60_000);
+
+  it('sinks a walled stretch into a cut now and then, never over an abyss or by a pit', () => {
+    let cut = 0;
+    let ground = 0;
+    for (const { p, def } of ALL) {
+      const track = new Track(def);
+      const h = heights(track);
+      if (ABYSS(p)) {
+        // No ground to sink into: nothing goes below it but a dip in the clouds.
+        expect(track.main.cut.some((v) => v), label(p)).toBe(false);
+        continue;
+      }
+      ground++;
+      if (!track.main.cut.some((v) => v)) {
+        expect(Math.min(...h), label(p)).toBeGreaterThan(-0.3);
+        continue;
+      }
+      cut++;
+      expect(Math.min(...h), label(p)).toBeLessThan(-4.5);
+      expect(Math.min(...h), label(p)).toBeGreaterThan(-11);
+      const sp = track.spline;
+      for (let i = 0; i < sp.count; i++) {
+        if (!track.main.cut[i]) continue;
+        for (const pit of def.pits) expect(inPit({ ...pit, halfLength: pit.halfLength + 10, halfWidth: pit.halfWidth + 10 }, sp.px[i], sp.pz[i]), label(p)).toBe(false);
+      }
+    }
+    expect(cut / ground).toBeGreaterThan(0.15);
+    expect(cut / ground).toBeLessThan(0.7);
+  }, 60_000);
+
+  it('keeps kickers, jumps, bridges over pits and shortcut junctions level', () => {
+    for (const { p, def } of ALL) {
+      const track = new Track(def);
+      const main = track.main;
+      // Kickers rise off level road and drop back onto it.
+      for (const lip of kickerLips(def)) {
+        for (const d of [-12, -8, 1, 10, 30]) expect(Math.abs(main.heightAtBuilder(lip + d)), `${label(p)} kicker at ${lip.toFixed(0)}`).toBeLessThan(0.01);
+      }
+      // Jumps land on level road.
+      for (const [, to] of def.main.gaps) expect(Math.abs(main.heightAtBuilder(to + 5)), label(p)).toBeLessThan(0.01);
+      // Over a pit the road is its bridge or its jump ramp, nothing more.
+      const sp = track.spline;
+      for (let i = 0; i < sp.count; i++) {
+        if (!def.pits.some((pit) => inPit(pit, sp.px[i], sp.pz[i]))) continue;
+        const y = main.heightAt(sp.dist[i]);
+        expect(y, label(p)).toBeGreaterThanOrEqual(0);
+        expect(y, label(p)).toBeLessThanOrEqual(3);
+      }
+      // A shortcut meets the main road at its height, at both ends.
+      def.branches.forEach((br, k) => {
+        const r = track.branches[k];
+        const ends: [number, number][] = [
+          [0, br.mainFrom],
+          [r.spline.length, br.mainTo],
+        ];
+        for (const [bs, ms] of ends) {
+          expect(Math.abs(main.heightAtBuilder(ms)), label(p)).toBeLessThan(0.01);
+          for (const d of [-20, 0, 20]) expect(Math.abs(r.heightAt(clamp(bs + d, 0, r.spline.length))), label(p)).toBeLessThan(0.01);
+        }
+        // No hill reaches into the sweep it cuts across (a bridge or kicker may sit right up against it).
+        for (let s = br.mainFrom; s <= br.mainTo; s += 4) expect(Math.abs(main.heightAtBuilder(s)), label(p)).toBeLessThan(0.01);
+      });
+    }
+  }, 60_000);
+
+  it('puts barriers on raised road, so nobody drops off an embankment', () => {
+    for (const { p, def } of ALL) {
+      const track = new Track(def);
+      const sp = track.spline;
+      for (let i = 0; i < sp.count; i++) {
+        if (track.main.heightAt(sp.dist[i]) > 3.2) expect(track.main.wallHeight[i], `${label(p)} at ${sp.dist[i].toFixed(0)}`).toBeGreaterThanOrEqual(1.2);
+      }
+    }
+  });
+
+  it('gives a fast kart airtime over a crest: every track from twists 3, most at twists 2', () => {
+    const fast = kartParams(FASTEST.stats, '150cc');
+    const got = new Map<number, number>();
+    for (const { p, def } of BUILT) {
+      const n = crestLaunches(new Track(def), def, fast).length;
+      if (p.complexity >= 3) expect(n, label(p)).toBeGreaterThanOrEqual(1);
+      got.set(p.complexity, (got.get(p.complexity) ?? 0) + (n > 0 ? 1 : 0));
+    }
+    const per = BUILT.length / GEN_COMPLEXITY_MAX;
+    expect(got.get(2)! / per).toBeGreaterThan(0.5);
+  }, 120_000);
+
+  describe.each(GEN_THEMES)('%s: autopilot laps at 150cc', (theme) => {
+    it.each(ALL.filter(({ p }) => p.theme === theme && p.seed % 2 === 0).map(({ p, def }) => [label(p), def] as const))('%s', (_name, def) => {
+      expect(autopilotLap(def, FASTEST, '150cc')).toEqual({ laps: 1, falls: 0 });
     }, 30_000);
   });
 });
