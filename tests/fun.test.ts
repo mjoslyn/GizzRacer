@@ -280,12 +280,12 @@ describe('band items', () => {
     }
   });
 
-  it('Flute Flurry wobbles karts in a cone ahead, not off to the side', () => {
+  it('Sleep Drifter wobbles karts in a cone ahead, not off to the side', () => {
     expect(fire('fluteFlurry').them.state.wobbleTime).toBeGreaterThan(1);
     expect(fire('fluteFlurry', 4, 8).hit).toBe(false);
   });
 
-  it('Drum Roll is a battering ram: immune, and spins out whoever it touches', () => {
+  it('Road Train is a battering ram: immune, and spins out whoever it touches', () => {
     const { race, me, them } = fire('drumRoll', 3);
     expect(me.state.ramTime).toBeCloseTo(DRUM_TIME, 1);
     let spun = false;
@@ -294,33 +294,33 @@ describe('band items', () => {
     expect(me.state.spinTime).toBe(0);
   });
 
-  it('Bass Drop slows everyone a little way ahead', () => {
+  it('Superheavy slows everyone a little way ahead', () => {
     expect(fire('bassDrop', 60).them.state.slowTime).toBeCloseTo(BASS_SLOW, 1);
     expect(fire('bassDrop', 150).hit).toBe(false);
   });
 
-  it('Patch Cable slows the kart ahead and slingshots you', () => {
+  it('Silver Cord slows the kart ahead and slingshots you', () => {
     const { me, them, hit } = fire('patchCable', 30);
     expect(hit).toBe(true);
     expect(them.state.slowTime).toBeCloseTo(CABLE_TIME, 1);
     expect(me.state.boostTime).toBeGreaterThan(CABLE_TIME);
   });
 
-  it('Harmonica Wail shoves karts ahead aside', () => {
+  it('Boogieman Sam shoves karts ahead aside', () => {
     const { them, events } = fire('harmonicaWail', 8, 1.5);
     const hit = events.find((e) => e.type === 'hit' && e.kart === them);
     expect(hit && hit.type === 'hit' && hit.push).toBeTruthy();
     expect(Math.hypot(them.state.extX, them.state.extZ)).toBeGreaterThan(3);
   });
 
-  it('Keytar Laser spins out the first kart in line, in range', () => {
+  it('Gamma Knife spins out the first kart in line, in range', () => {
     expect(fire('keytarLaser', 40).them.state.spinTime).toBeGreaterThan(1);
     expect(fire('keytarLaser', LASER_RANGE + 20).hit).toBe(false);
     expect(fire('keytarLaser', 20, 6).hit).toBe(false);
   });
 });
 
-describe('Gizzard Wave', () => {
+describe('Nonagon Infinity', () => {
   function chase(hop: boolean) {
     const race = humanRace(6);
     race.karts.forEach((k, i) => place(k, 10 + i * 3, (i % 3) * 3 - 3, 0));
@@ -358,7 +358,7 @@ describe('Gizzard Wave', () => {
 });
 
 describe('online', () => {
-  it('puts the Drum Roll on the wire', () => {
+  it('puts the Road Train on the wire', () => {
     const s = createKartState();
     s.ramTime = 2.5;
     const out = createKartState();

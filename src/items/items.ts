@@ -6,8 +6,9 @@ import type { Track } from '../tracks/track';
 import type { HazardKind } from './hazards';
 
 /**
- * Spec section 6. New kinds go on the end: online snapshots send an item
- * as its index in ITEM_KINDS.
+ * Spec section 6. The kinds keep the names they were built under; what
+ * players see are the Gizzverse names in ITEMS. New kinds go on the end:
+ * online snapshots send an item as its index in ITEM_KINDS.
  */
 export type ItemKind =
   | 'fuzzPedal'
@@ -25,19 +26,20 @@ export type ItemKind =
   | 'gizzardWave';
 
 export const ITEMS: Record<ItemKind, { name: string }> = {
-  fuzzPedal: { name: 'Fuzz Pedal' },
-  microtonalMine: { name: 'Microtonal Mine' },
-  feedbackWave: { name: 'Feedback Wave' },
-  riffMissile: { name: 'Riff Missile' },
-  tempoShift: { name: 'Tempo Shift' },
+  fuzzPedal: { name: 'Mind Fuzz' },
+  microtonalMine: { name: 'Microtonal Banana' },
+  feedbackWave: { name: 'Nuclear Fusion' },
+  riffMissile: { name: 'Big Fig Wasp' },
+  tempoShift: { name: 'Horology' },
   wooCannon: { name: 'Woo Cannon' },
-  fluteFlurry: { name: 'Flute Flurry' },
-  drumRoll: { name: 'Drum Roll' },
-  bassDrop: { name: 'Bass Drop' },
-  patchCable: { name: 'Patch Cable' },
-  harmonicaWail: { name: 'Harmonica Wail' },
-  keytarLaser: { name: 'Keytar Laser' },
-  gizzardWave: { name: 'Gizzard Wave' },
+  // The band's own, one each.
+  fluteFlurry: { name: 'Sleep Drifter' },
+  drumRoll: { name: 'Road Train' },
+  bassDrop: { name: 'Superheavy' },
+  patchCable: { name: 'The Silver Cord' },
+  harmonicaWail: { name: 'Boogieman Sam' },
+  keytarLaser: { name: 'Gamma Knife' },
+  gizzardWave: { name: 'Nonagon Infinity' },
 };
 export const ITEM_KINDS = Object.keys(ITEMS) as ItemKind[];
 
@@ -55,7 +57,7 @@ const SIGNATURE_BIAS = 2;
 /** Held in the slot, these guard your back: they take a missile or a mine for you, and are gone. */
 export const SHIELD_ITEMS: readonly ItemKind[] = ['microtonalMine', 'riffMissile'];
 
-/** How long Tempo Shift slows a kart in `position` of `karts`: longest for the leader, shortest for last. */
+/** How long Horology slows a kart in `position` of `karts`: longest for the leader, shortest for last. */
 export function tempoSlowFor(position: number, karts: number): number {
   const p = karts > 1 ? (position - 1) / (karts - 1) : 0;
   return TEMPO_SLOW_FIRST + (TEMPO_SLOW_LAST - TEMPO_SLOW_FIRST) * Math.min(1, Math.max(0, p));
@@ -66,7 +68,7 @@ export const MINE_WOBBLE = 1.5;
 export const WAVE_RANGE = 8;
 export const WAVE_SPIN = 1.0;
 export const MISSILE_SPIN = 1.2;
-/** Tempo Shift slows the leader longest and the back of the field least (seconds, first to last). */
+/** Horology slows the leader longest and the back of the field least (seconds, first to last). */
 export const TEMPO_SLOW_FIRST = 4;
 export const TEMPO_SLOW_LAST = 1.5;
 /**
@@ -81,31 +83,31 @@ export const CANNON_PAST_MIN = 5;
 export const CANNON_PAST_MAX = 45;
 export const CANNON_SPEED_MUL = 1.9;
 export const CANNON_SPIN = 1.0;
-/** Flute Flurry: a spray of notes in a cone ahead that sends steering out of tune. */
+/** Sleep Drifter: a spray of notes in a cone ahead that sends steering out of tune. */
 export const FLUTE_RANGE = 26;
 export const FLUTE_CONE = 0.5;
 export const FLUTE_WOBBLE = 1.3;
-/** Drum Roll: seconds as a battering ram (race.ts bumps). */
+/** Road Train: seconds as a battering ram (race.ts bumps). */
 export const DRUM_TIME = 3;
-/** Bass Drop: slows every kart up to this far ahead of you, for this long. */
+/** Superheavy: slows every kart up to this far ahead of you, for this long. */
 export const BASS_RANGE = 90;
 export const BASS_SLOW = 1.6;
-/** Patch Cable: latches onto the nearest kart ahead in range, slows it and slingshots you. */
+/** Silver Cord: latches onto the nearest kart ahead in range, slows it and slingshots you. */
 export const CABLE_RANGE = 55;
 export const CABLE_TIME = 1.5;
 export const CABLE_BOOST = 2.2;
-/** Harmonica Wail: shoves karts in a cone ahead aside (an impulse, m/s), wobbles them, and gives you a little boost. */
+/** Boogieman Sam: shoves karts in a cone ahead aside (an impulse, m/s), wobbles them, and gives you a little boost. */
 export const HARMONICA_RANGE = 20;
 export const HARMONICA_CONE = 0.7;
 export const HARMONICA_PUSH = 16;
 export const HARMONICA_WOBBLE = 0.6;
 export const HARMONICA_BOOST = 0.6;
-/** Keytar Laser: a straight beam ahead; the first kart in it spins out. */
+/** Gamma Knife: a straight beam ahead; the first kart in it spins out. */
 export const LASER_RANGE = 70;
 export const LASER_WIDTH = 1.8;
 export const LASER_SPIN = 1.2;
 /**
- * Gizzard Wave: rolls down the road under everyone to the leader, fast,
+ * Nonagon Infinity: rolls down the road under everyone to the leader, fast,
  * then closes in at a readable pace; a leader in the air (or just off a
  * hop) when it arrives rides over it.
  */
@@ -206,7 +208,7 @@ export interface Burst {
   to: ItemHolder | null;
 }
 
-/** A Gizzard Wave rolling down the road after the leader. */
+/** A Nonagon Infinity rolling down the road after the leader. */
 export interface Surge {
   /** Race distance it has reached. */
   d: number;
@@ -231,13 +233,13 @@ export type ItemEvent =
   | { type: 'hit'; kart: ItemHolder; by: ItemKind | HazardKind; from?: ItemHolder; push?: [number, number] }
   /** A held item took the hit instead. */
   | { type: 'block'; kart: ItemHolder; by: ItemKind; from?: ItemHolder }
-  /** Rode over a Gizzard Wave. */
+  /** Rode over a Nonagon Infinity. */
   | { type: 'dodge'; kart: ItemHolder; by: ItemKind; from?: ItemHolder };
 
 /**
  * Item odds by race position (spec section 6): `p` runs from 0 (leading)
  * to 1 (last). Fuzz everywhere, mines up front, waves mid-pack, missiles
- * from the middle back, Tempo Shift for the last two only, and the Woo
+ * from the middle back, Horology for the last two only, and the Woo
  * Cannon for the last three, likelier the further back.
  */
 export function itemWeights(position: number, karts: number, signature: ItemKind | null = null): Record<ItemKind, number> {
@@ -282,7 +284,7 @@ export class ItemSystem {
   readonly missiles: Missile[] = [];
   readonly waves: Wave[] = [];
   readonly bursts: Burst[] = [];
-  /** The Gizzard Wave in flight; one at a time. */
+  /** The Nonagon Infinity in flight; one at a time. */
   surge: Surge | null = null;
   private readonly rand: () => number;
 
@@ -333,7 +335,7 @@ export class ItemSystem {
   }
 
   /**
-   * A CPU's hop over a Gizzard Wave coming for it: it rolls once, on its
+   * A CPU's hop over a Nonagon Infinity coming for it: it rolls once, on its
    * driver's dice, when the wave is a moment away.
    */
   dodge(k: ItemHolder, input: InputFrame, driver: { roll(chance: number): boolean; skill: { itemIq: number } }): InputFrame {
@@ -373,7 +375,7 @@ export class ItemSystem {
     }
   }
 
-  /** An item for `k`: never a second Gizzard Wave while one is out, nor the same thing twice from one box. */
+  /** An item for `k`: never a second Nonagon Infinity while one is out, nor the same thing twice from one box. */
   private roll(k: ItemHolder, karts: readonly ItemHolder[], not: ItemKind | null = null): ItemKind {
     const busy = this.surge || not === 'gizzardWave' ? 'gizzardWave' : null;
     const item = rollItem(k.position, karts.length, this.rand, k.signature, busy);
@@ -546,7 +548,7 @@ export class ItemSystem {
     }
   }
 
-  /** The Gizzard Wave: on down the road to whoever leads, then it breaks on them, or under them if they're in the air. */
+  /** The Nonagon Infinity: on down the road to whoever leads, then it breaks on them, or under them if they're in the air. */
   private updateSurge(dt: number, karts: readonly ItemHolder[], events: ItemEvent[]): void {
     const w = this.surge;
     if (!w) return;

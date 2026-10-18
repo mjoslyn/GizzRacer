@@ -135,33 +135,31 @@ export class OnlineRace {
 
   private take(e: Effect): boolean {
     const s = this.me.state;
-    {
-      if (e.k === 'boost') {
-        s.boostTime = Math.max(s.boostTime, e.t);
-        return true;
-      }
-      if (e.k === 'ram') {
-        s.ramTime = Math.max(s.ramTime, e.t);
-        s.invulnTime = Math.max(s.invulnTime, e.t);
-        return true;
-      }
-      if (e.k === 'push') {
-        if (!wobble(s, e.t)) return false;
-        s.extX += (e.x ?? 0) / this.me.params.mass;
-        s.extZ += (e.z ?? 0) / this.me.params.mass;
-        return true;
-      }
-      if (e.k === 'surge') return spinOut(s, e.t);
-      if (e.k === 'cannon') {
-        // Fly it here, aimed at the pack as this screen sees it.
-        s.cannonTime = Math.max(s.cannonTime, e.t);
-        s.invulnTime = Math.max(s.invulnTime, e.t + 0.8);
-        this.race.aimCannon(this.me);
-        return true;
-      }
-      if (e.k === 'spin') return spinOut(s, e.t);
-      if (e.k === 'wobble') return wobble(s, e.t);
-      return slowDown(s, e.t);
+    if (e.k === 'boost') {
+      s.boostTime = Math.max(s.boostTime, e.t);
+      return true;
     }
+    if (e.k === 'ram') {
+      s.ramTime = Math.max(s.ramTime, e.t);
+      s.invulnTime = Math.max(s.invulnTime, e.t);
+      return true;
+    }
+    if (e.k === 'push') {
+      if (!wobble(s, e.t)) return false;
+      s.extX += (e.x ?? 0) / this.me.params.mass;
+      s.extZ += (e.z ?? 0) / this.me.params.mass;
+      return true;
+    }
+    if (e.k === 'surge') return spinOut(s, e.t);
+    if (e.k === 'cannon') {
+      // Fly it here, aimed at the pack as this screen sees it.
+      s.cannonTime = Math.max(s.cannonTime, e.t);
+      s.invulnTime = Math.max(s.invulnTime, e.t + 0.8);
+      this.race.aimCannon(this.me);
+      return true;
+    }
+    if (e.k === 'spin') return spinOut(s, e.t);
+    if (e.k === 'wobble') return wobble(s, e.t);
+    return slowDown(s, e.t);
   }
 }

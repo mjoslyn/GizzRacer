@@ -193,7 +193,7 @@ export class Menu {
                 ? this.generatorRows(line)
                 : line('track', 'Track', TRACK_LIST[c.track].name)
         }
-        ${line('racer', 'Racer', c.racer.name, `<div class="menu-stats">${stats}</div>`)}
+        ${line('racer', 'Racer', c.racer.name, `<div class="menu-stats">${stats}</div><div class="menu-bio">${c.racer.bio}</div>`)}
         ${line('engine', 'Class', c.engine)}
         <button class="menu-start hud-big" data-start>${c.mode === 'online' ? 'ROOMS' : 'RACE!'}</button>
         <div class="menu-hint">&uarr;&darr; choose &middot; &larr;&rarr; change &middot; Enter race</div>

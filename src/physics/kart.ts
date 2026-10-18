@@ -50,11 +50,11 @@ export interface KartState {
   trackHint: number; // opaque lookup hint owned by the track, -1 = none
   spinTime: number; // seconds of spin-out left: no control, bleeding speed
   spinAngle: number; // visual yaw added by a spin-out, radians
-  wobbleTime: number; // seconds of wobbly steering left (Microtonal Mine)
-  slowTime: number; // seconds of reduced top speed left (Tempo Shift)
+  wobbleTime: number; // seconds of wobbly steering left (Microtonal Banana)
+  slowTime: number; // seconds of reduced top speed left (Horology)
   invulnTime: number; // seconds of immunity left after being hit
   cannonTime: number; // seconds of Woo Cannon flight left: the race flies the kart, not stepKart
-  ramTime: number; // seconds of Drum Roll left: immune, a little faster, spins out whoever it touches
+  ramTime: number; // seconds of Road Train left: immune, a little faster, spins out whoever it touches
   trickStreak: number; // tricks landed back to back
   trickChain: number; // seconds left to land the next trick and keep the streak
 }
@@ -86,7 +86,7 @@ export const DRIFT_MIN_SPEED = 10;
 /** Charge thresholds (s) and boost durations (s) for blue, orange, purple sparks. */
 export const DRIFT_TIERS = [0.15, 0.3, 0.475] as const;
 export const DRIFT_BOOSTS = [0.5, 1, 1.5] as const;
-/** Top speed multiplier while slowed by Tempo Shift. */
+/** Top speed multiplier while slowed by Horology. */
 export const SLOW_MUL = 0.6;
 const SPIN_DECEL = 22;
 const SPIN_RATE = 14; // rad/s of visual spin
@@ -98,7 +98,7 @@ export const TRICK_BOOST = 0.7;
 export const TRICK_CHAIN = 3;
 export const TRICK_STREAK_BONUS = 0.4;
 export const TRICK_STREAK_MAX = 4;
-/** Top speed multiplier while in a Drum Roll. */
+/** Top speed multiplier while in a Road Train. */
 export const RAM_SPEED_MUL = 1.1;
 
 /** Steering ramps in gradually (fine taps) and recenters quickly. */
@@ -387,7 +387,7 @@ export function spinOut(s: KartState, duration: number): boolean {
   return true;
 }
 
-/** Makes steering wobble for `duration` (Microtonal Mine). Returns false if immune. */
+/** Makes steering wobble for `duration` (Microtonal Banana). Returns false if immune. */
 export function wobble(s: KartState, duration: number): boolean {
   if (s.invulnTime > 0) return false;
   s.wobbleTime = duration;
@@ -395,7 +395,7 @@ export function wobble(s: KartState, duration: number): boolean {
   return true;
 }
 
-/** Cuts top speed for `duration` (Tempo Shift). Returns false if immune. */
+/** Cuts top speed for `duration` (Horology). Returns false if immune. */
 export function slowDown(s: KartState, duration: number): boolean {
   if (s.invulnTime > 0) return false;
   s.slowTime = duration;

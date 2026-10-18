@@ -85,7 +85,7 @@ export interface HudData {
   rolling: number;
   /** A second item from a double box. */
   spare: ItemKind | null;
-  /** A Gizzard Wave closing in on you: 0 far .. 1 arriving; null when none is. */
+  /** A Nonagon Infinity closing in on you: 0 far .. 1 arriving; null when none is. */
   surge: number | null;
 }
 
@@ -156,7 +156,7 @@ export class Hud {
       <div class="hud-tr"><div class="hud-racer"></div></div>
       <div class="hud-item"><img alt="" /><div class="hud-item-name"></div><div class="hud-spare"><img alt="" /></div></div>
       <div class="hud-callouts"></div>
-      <div class="hud-warn hud-big">GIZZARD WAVE! HOP!</div>
+      <div class="hud-warn hud-big">NONAGON INFINITY! HOP!</div>
       <div class="hud-flash hud-big"></div>
       <div class="hud-intro"><div class="hud-intro-name hud-big"></div><div class="hud-intro-sub"></div><div class="hud-intro-skip">${'ontouchstart' in window ? 'tap' : 'press any key'} to skip</div></div>
       <div class="hud-drift">

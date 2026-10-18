@@ -32,7 +32,7 @@ export class ItemsView {
   /** Mines and missiles held in the slot, trailing behind their karts as shields. */
   private readonly heldMines: THREE.Group[] = [];
   private readonly heldPicks: THREE.Group[] = [];
-  /** Drum Roll: a ring of drumheads round the kart. */
+  /** Road Train: a ring of drumheads round the kart. */
   private readonly auras: THREE.Mesh[] = [];
   private readonly notes: THREE.Sprite[] = [];
   private readonly drops: THREE.Mesh[] = [];
@@ -68,40 +68,79 @@ export class ItemsView {
       this.shards.push(sh);
       this.group.add(sh);
     }
-    const mineGeo = new THREE.OctahedronGeometry(0.7, 0);
-    const mineMat = new THREE.MeshPhongMaterial({ color: 0xb04aff, emissive: 0x5a1080, shininess: 80, flatShading: true });
-    const coreGeo = new THREE.IcosahedronGeometry(0.42, 0);
-    const coreMat = new THREE.MeshBasicMaterial({ color: 0x7dffd8 });
+    // Microtonal Banana: a ripe banana dropped on the road, glowing faintly.
+    const bananaCurve = new THREE.QuadraticBezierCurve3(new THREE.Vector3(-0.75, 0.25, 0), new THREE.Vector3(0, -0.45, 0), new THREE.Vector3(0.75, 0.25, 0));
+    const bananaGeo = new THREE.TubeGeometry(bananaCurve, 16, 0.24, 10, false);
+    const bananaMat = new THREE.MeshPhongMaterial({ color: 0xffe040, emissive: 0x4a3000, shininess: 70 });
+    const tipGeo = new THREE.SphereGeometry(0.13, 8, 6);
+    const tipMat = new THREE.MeshPhongMaterial({ color: 0x4a2a10 });
+    const fretMat = new THREE.MeshBasicMaterial({ color: 0x8a5a10 });
+    const fretGeo = new THREE.TorusGeometry(0.245, 0.02, 4, 12);
     for (let i = 0; i < MINE_POOL; i++) {
       const g = new THREE.Group();
-      const spikes = new THREE.Mesh(mineGeo, mineMat);
-      spikes.scale.set(1, 1.3, 1);
-      const spikes2 = spikes.clone();
-      spikes2.rotation.set(Math.PI / 4, Math.PI / 4, 0);
-      g.add(spikes, spikes2, new THREE.Mesh(coreGeo, coreMat), sprite(glow, 0xc070ff, 2.6));
+      const banana = new THREE.Group();
+      banana.add(new THREE.Mesh(bananaGeo, bananaMat));
+      for (const t of [0, 1]) {
+        const tip = new THREE.Mesh(tipGeo, tipMat);
+        tip.position.copy(bananaCurve.getPoint(t));
+        banana.add(tip);
+      }
+      // Frets down the neck, a quarter tone apart.
+      for (let k = 1; k < 7; k++) {
+        const fret = new THREE.Mesh(fretGeo, fretMat);
+        const t = k / 7;
+        fret.position.copy(bananaCurve.getPoint(t));
+        fret.lookAt(fret.position.clone().add(bananaCurve.getTangent(t)));
+        banana.add(fret);
+      }
+      banana.rotation.x = 0.4;
+      g.add(banana, sprite(glow, 0xffe070, 2.2));
       g.visible = false;
       this.mines.push(g);
       this.group.add(g);
     }
 
-    // Riff Missile: a fat guitar pick riding a flame.
-    const pick = new THREE.Shape();
-    pick.moveTo(0, -0.9);
-    pick.bezierCurveTo(0.75, -0.6, 0.7, 0.55, 0, 0.75);
-    pick.bezierCurveTo(-0.7, 0.55, -0.75, -0.6, 0, -0.9);
-    const pickGeo = new THREE.ExtrudeGeometry(pick, { depth: 0.18, bevelEnabled: true, bevelSize: 0.06, bevelThickness: 0.06, bevelSegments: 2 });
-    pickGeo.center();
-    const pickMat = new THREE.MeshPhongMaterial({ color: 0x3a9aff, emissive: 0x0a2a70, shininess: 120, specular: 0xffffff });
-    const flameGeo = new THREE.ConeGeometry(0.35, 1.8, 10);
-    flameGeo.rotateX(-Math.PI / 2);
-    flameGeo.translate(0, 0, -1.3);
-    const flameMat = new THREE.MeshBasicMaterial({ color: 0xffa020, transparent: true, opacity: 0.85 });
+    // Big Fig Wasp: a mechanical wasp, wings buzzing, red saw-blade eyes.
+    const wingGeo = new THREE.PlaneGeometry(0.9, 0.4);
+    wingGeo.translate(0.45, 0, 0);
+    wingGeo.rotateX(-Math.PI / 2);
+    const wingMat = new THREE.MeshBasicMaterial({ color: 0xd8f0ff, transparent: true, opacity: 0.6, side: THREE.DoubleSide, depthWrite: false });
+    const bodyMat = new THREE.MeshPhongMaterial({ color: 0xffc820, emissive: 0x3a2000, shininess: 110, specular: 0xffffff });
+    const stripeMat = new THREE.MeshPhongMaterial({ color: 0x1a1018, shininess: 60 });
+    const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff2a2a });
+    const abdomenGeo = new THREE.SphereGeometry(0.34, 14, 10);
+    abdomenGeo.scale(1, 1, 1.7);
+    const stripeGeo = new THREE.TorusGeometry(0.31, 0.05, 6, 16);
+    const headGeo = new THREE.SphereGeometry(0.26, 12, 10);
+    const eyeGeo = new THREE.SphereGeometry(0.09, 8, 6);
+    const stingGeo = new THREE.ConeGeometry(0.07, 0.4, 8);
+    stingGeo.rotateX(-Math.PI / 2);
     for (let i = 0; i < MISSILE_POOL; i++) {
       const g = new THREE.Group();
-      const p = new THREE.Mesh(pickGeo, pickMat);
-      p.rotation.x = -Math.PI / 2;
-      p.rotation.z = Math.PI; // point first
-      g.add(p, new THREE.Mesh(flameGeo, flameMat), sprite(glow, 0xffb040, 3));
+      const wings = [1, -1].map((side) => {
+        const w = new THREE.Mesh(wingGeo, wingMat);
+        w.scale.x = side;
+        w.position.set(0, 0.25, 0.1);
+        return w;
+      });
+      const abdomen = new THREE.Mesh(abdomenGeo, bodyMat);
+      abdomen.position.z = -0.45;
+      const stripes = [-0.25, -0.5, -0.75].map((z) => {
+        const st = new THREE.Mesh(stripeGeo, stripeMat);
+        st.position.z = z;
+        st.scale.setScalar(1 - Math.abs(z + 0.45) * 0.6);
+        return st;
+      });
+      const head = new THREE.Mesh(headGeo, bodyMat);
+      head.position.z = 0.35;
+      const eyes = [1, -1].map((side) => {
+        const e = new THREE.Mesh(eyeGeo, eyeMat);
+        e.position.set(side * 0.15, 0.06, 0.52);
+        return e;
+      });
+      const sting = new THREE.Mesh(stingGeo, stripeMat);
+      sting.position.z = -1.05;
+      g.add(...wings, abdomen, ...stripes, head, ...eyes, sting, sprite(glow, 0xffb040, 2.4));
       g.visible = false;
       this.missiles.push(g);
       this.group.add(g);
@@ -116,7 +155,7 @@ export class ItemsView {
       this.group.add(m);
     }
 
-    // Held items: a smaller mine or pick riding behind the kart.
+    // Held items: a smaller banana or wasp riding behind the kart.
     for (let i = 0; i < KART_POOL; i++) {
       const mine = this.mines[0].clone();
       mine.scale.setScalar(0.6);
@@ -146,7 +185,7 @@ export class ItemsView {
       const drop = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0x9a40ff, transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending }));
       drop.visible = false;
       this.drops.push(drop);
-      const cable = new THREE.Line(new THREE.BufferGeometry().setFromPoints(Array.from({ length: 12 }, () => new THREE.Vector3())), new THREE.LineBasicMaterial({ color: 0xff3a8a }));
+      const cable = new THREE.Line(new THREE.BufferGeometry().setFromPoints(Array.from({ length: 12 }, () => new THREE.Vector3())), new THREE.LineBasicMaterial({ color: 0xe0e8ff }));
       cable.frustumCulled = false;
       cable.visible = false;
       this.cables.push(cable);
@@ -169,20 +208,18 @@ export class ItemsView {
       this.group.add(drop, cable, wail, beam);
     }
 
-    // The Gizzard Wave: a curling wall of green across the road, foam on its lip.
+    // Nonagon Infinity: a nine-sided ring of green fire rolling down the road, end over end.
     this.surge = new THREE.Group();
-    const curl = new THREE.CylinderGeometry(1.6, 1.6, 12, 20, 1, true, 0, Math.PI);
-    curl.rotateZ(Math.PI / 2);
-    curl.translate(0, 0.6, 0);
-    this.surge.add(
-      new THREE.Mesh(curl, new THREE.MeshBasicMaterial({ color: 0x30ff90, transparent: true, opacity: 0.55, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending })),
-      sprite(glow, 0x80ffc0, 9),
+    const ring = new THREE.Group();
+    ring.add(
+      new THREE.Mesh(new THREE.TorusGeometry(2.2, 0.32, 8, 9), new THREE.MeshBasicMaterial({ color: 0x30ff90, transparent: true, opacity: 0.85, depthWrite: false, blending: THREE.AdditiveBlending })),
+      new THREE.Mesh(new THREE.TorusGeometry(2.2, 0.7, 8, 9), new THREE.MeshBasicMaterial({ color: 0x20a060, transparent: true, opacity: 0.3, depthWrite: false, blending: THREE.AdditiveBlending })),
     );
-    for (let i = 0; i < 6; i++) {
-      const foam = sprite(glow, 0xe0fff0, 1.4);
-      foam.position.set(-5 + i * 2, 2.1, 0);
-      this.surge.add(foam);
-    }
+    // Facing down the road, it rolls about its axle.
+    ring.rotation.y = Math.PI / 2;
+    ring.position.y = 2.3;
+    this.surge.add(ring, sprite(glow, 0x80ffc0, 7));
+    this.surge.children[1].position.y = 2.3;
     this.surge.visible = false;
     this.group.add(this.surge);
   }
@@ -227,7 +264,10 @@ export class ItemsView {
       if (!m) return;
       g.position.set(m.x, m.y, m.z);
       g.rotation.set(0, m.heading, 0);
-      g.children[0].rotation.y = elapsed * 9;
+      // Wings buzzing.
+      const flap = Math.sin(elapsed * 60) * 0.5;
+      g.children[0].rotation.z = flap;
+      g.children[1].rotation.z = -flap;
     });
     this.waves.forEach((r, i) => {
       const w = this.items.waves[i];
@@ -240,7 +280,7 @@ export class ItemsView {
     });
   }
 
-  /** Shields trailing behind, and the Drum Roll's ring. */
+  /** Shields trailing behind, and the Road Train's ring. */
   private updateHeld(elapsed: number, karts: readonly ItemKartView[]): void {
     for (let i = 0; i < KART_POOL; i++) {
       const k = karts[i];
@@ -270,7 +310,7 @@ export class ItemsView {
     }
   }
 
-  /** The band's items going off, and the Gizzard Wave. */
+  /** The band's items going off, and the Nonagon Infinity. */
   private updateBursts(elapsed: number, karts: readonly ItemKartView[]): void {
     const at = (h: ItemHolder | null) => (h ? karts.find((k) => k.holder === h)?.state ?? h.state : null);
     let note = 0;
@@ -355,14 +395,14 @@ export class ItemsView {
     if (w) {
       this.surge.position.set(w.x, w.y, w.z);
       this.surge.rotation.y = w.heading;
-      this.surge.children.slice(2).forEach((f, k) => (f.position.y = 2.1 + Math.sin(elapsed * 10 + k) * 0.3));
+      this.surge.children[0].rotation.x = -elapsed * 8;
     }
   }
 }
 
 let noteCache: THREE.CanvasTexture | null = null;
 
-/** A pair of quavers, white on clear, for the Flute Flurry. */
+/** A pair of quavers, white on clear, for the Sleep Drifter. */
 function noteTexture(): THREE.CanvasTexture {
   if (noteCache) return noteCache;
   const c = document.createElement('canvas');

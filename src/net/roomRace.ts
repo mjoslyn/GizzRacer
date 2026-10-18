@@ -10,7 +10,7 @@ import { packKart } from './wire';
 /** Humans still out this long after the first finisher are placed where they are. */
 export const FINISH_GRACE = 30;
 
-/** Tempo Shift's length depends on the victim's place, so it's worked out per hit (below). */
+/** Horology's length depends on the victim's place, so it's worked out per hit (below). */
 const HIT_EFFECTS: Partial<Record<ItemKind, Omit<Effect, 'by'>>> = {
   feedbackWave: { k: 'spin', t: WAVE_SPIN },
   riffMissile: { k: 'spin', t: MISSILE_SPIN },

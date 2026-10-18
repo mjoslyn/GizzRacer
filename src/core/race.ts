@@ -51,7 +51,7 @@ const DRAFT_MAX = 22;
 const DRAFT_LATERAL = 2.4;
 const DRAFT_MIN_SPEED = 0.6;
 export const DRAFT_BOOST = 0.9;
-/** A Drum Roll moves for nobody much and spins out whoever it touches. */
+/** A Road Train moves for nobody much and spins out whoever it touches. */
 const RAM_MASS = 4;
 export const RAM_SPIN = 1;
 /** CPUs trick off ramp lips this often, by skill. */
@@ -479,7 +479,7 @@ export class Race {
         const ib = b.remote || cb ? 0 : 1 / (b.params.mass * (rb ? RAM_MASS : 1));
         const total = ia + ib;
         if (total === 0) continue;
-        // Hit by a cannon or a Drum Roll: spun out, here if it's driven here (a remote kart takes the hit where it's driven).
+        // Hit by a cannon or a Road Train: spun out, here if it's driven here (a remote kart takes the hit where it's driven).
         const victim = ca && !b.remote ? b : cb && !a.remote ? a : ra && !rb && !b.remote ? b : rb && !ra && !a.remote ? a : null;
         if (victim) {
           const by = ca || cb ? 'wooCannon' : 'drumRoll';

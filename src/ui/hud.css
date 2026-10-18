@@ -448,6 +448,14 @@ body.touch-mode .hud-help {
   margin-top: 4px;
 }
 
+.menu-bio {
+  grid-column: 2 / 5;
+  margin-top: 4px;
+  font-size: 13px;
+  font-style: italic;
+  opacity: 0.85;
+}
+
 .menu-stat {
   display: grid;
   grid-template-columns: 70px 1fr;
@@ -830,7 +838,7 @@ body:not([data-mode='race']) .hud-warn {
   from { transform: translateY(-8px); opacity: 0; }
 }
 
-/* A Gizzard Wave coming for the leader: louder and faster as it closes. */
+/* A Nonagon Infinity coming for the leader: louder and faster as it closes. */
 .hud-warn {
   position: absolute;
   bottom: 22%;
@@ -1053,6 +1061,7 @@ body[data-mode='podium'] .hud-item {
   .menu-value { font-size: 20px; }
   .menu .menu-arrow { padding: 3px 0; font-size: 13px; }
   .menu-stats { margin-top: 0; gap: 0 14px; }
+  .menu-bio { display: none; }
   .menu .menu-start { margin-top: 4px; font-size: 22px; padding: 6px; }
 }
 

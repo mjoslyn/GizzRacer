@@ -15,30 +15,32 @@ export interface RacerDef {
   stats: RacerStats;
   color: number;
   accent: number;
+  /** One line of who they are in the Gizzverse, for the picker. */
+  bio: string;
 }
 
 export const RACERS: readonly RacerDef[] = [
-  { id: 'lizard-warlock', name: 'Lizard Warlock', stats: { speed: 3, accel: 3, weight: 3, handling: 3, drift: 4 }, color: 0x3fa34d, accent: 0x7a3fbf },
-  { id: 'cyborg-gourmand', name: 'Cyborg Gourmand', stats: { speed: 4, accel: 2, weight: 4, handling: 2, drift: 3 }, color: 0x9aa4b1, accent: 0xd1342f },
-  { id: 'gila-rider', name: 'Gila Rider', stats: { speed: 3, accel: 5, weight: 2, handling: 3, drift: 3 }, color: 0xe0702a, accent: 0x222222 },
-  { id: 'swamp-witch', name: 'Swamp Witch', stats: { speed: 3, accel: 2, weight: 3, handling: 5, drift: 4 }, color: 0x2f6f5e, accent: 0xb7d14a },
-  { id: 'microtonal-monk', name: 'Microtonal Monk', stats: { speed: 3, accel: 3, weight: 2, handling: 4, drift: 3 }, color: 0xe3a72f, accent: 0x7b2230 },
-  { id: 'fuzz-golem', name: 'Fuzz Golem', stats: { speed: 5, accel: 1, weight: 5, handling: 1, drift: 3 }, color: 0xc23b8c, accent: 0xffcc33 },
-  { id: 'neon-moth', name: 'Neon Moth', stats: { speed: 2, accel: 5, weight: 2, handling: 4, drift: 5 }, color: 0x3ad8ff, accent: 0xff5ad0 },
-  { id: 'cosmic-coyote', name: 'Cosmic Coyote', stats: { speed: 4, accel: 2, weight: 3, handling: 2, drift: 3 }, color: 0x2a2a6a, accent: 0xff9a1f },
-  { id: 'mantis-shredder', name: 'Mantis Shredder', stats: { speed: 3, accel: 4, weight: 2, handling: 3, drift: 4 }, color: 0x9ad83a, accent: 0xff3a6a },
-  { id: 'gator-drummer', name: 'Gator Drummer', stats: { speed: 4, accel: 2, weight: 4, handling: 2, drift: 3 }, color: 0xb8202a, accent: 0xf2e6c8 },
-  { id: 'mushroom-sage', name: 'Mushroom Sage', stats: { speed: 3, accel: 3, weight: 2, handling: 4, drift: 4 }, color: 0x7a5adf, accent: 0xf4e8d0 },
-  { id: 'arlo', name: 'Arlo', stats: { speed: 3, accel: 4, weight: 2, handling: 4, drift: 3 }, color: 0xd09a62, accent: 0x3a4250 },
-  { id: 'octo-organist', name: 'Octo Organist', stats: { speed: 4, accel: 2, weight: 3, handling: 2, drift: 3 }, color: 0xff7aa8, accent: 0x2ad8b0 },
+  { id: 'lizard-warlock', name: 'Lizard Wizard', stats: { speed: 3, accel: 3, weight: 3, handling: 3, drift: 4 }, color: 0x3fa34d, accent: 0x7a3fbf, bio: 'Robed reptile mage from the castle on the misty mountain, hot rod and all' },
+  { id: 'cyborg-gourmand', name: 'Han-Tyumi', stats: { speed: 4, accel: 2, weight: 4, handling: 2, drift: 3 }, color: 0x9aa4b1, accent: 0xd1342f, bio: 'The confused cyborg, last of the naturally born, cooking up a Soy-Protein Munt Machine' },
+  { id: 'gila-rider', name: 'Gila Rider', stats: { speed: 3, accel: 5, weight: 2, handling: 3, drift: 3 }, color: 0xe0702a, accent: 0x222222, bio: 'Keeper of the Gila Monster, flying high before the candle falls' },
+  { id: 'swamp-witch', name: 'Blood Moon Witch', stats: { speed: 3, accel: 2, weight: 3, handling: 5, drift: 4 }, color: 0x2f6f5e, accent: 0xb7d14a, bio: 'Survivor of the Witchcraft ritual, still channelling the four elements' },
+  { id: 'microtonal-monk', name: 'Microtonal Monk', stats: { speed: 3, accel: 3, weight: 2, handling: 4, drift: 3 }, color: 0xe3a72f, accent: 0x7b2230, bio: 'One of the seven robed, floating on the lotus a quarter tone above the road' },
+  { id: 'fuzz-golem', name: 'Fuzz Golem', stats: { speed: 5, accel: 1, weight: 5, handling: 1, drift: 3 }, color: 0xc23b8c, accent: 0xffcc33, bio: 'A lump of pure Mind Fuzz, slow to get going and impossible to stop' },
+  { id: 'neon-moth', name: 'Blue Morpho', stats: { speed: 2, accel: 5, weight: 2, handling: 4, drift: 5 }, color: 0x3ad8ff, accent: 0xff5ad0, bio: 'Fresh out of the Butterfly 3000 chrysalis, falling upwards through clouds of glue' },
+  { id: 'cosmic-coyote', name: 'Mad Dog Morgan', stats: { speed: 4, accel: 2, weight: 3, handling: 2, drift: 3 }, color: 0x2a2a6a, accent: 0xff9a1f, bio: 'The bushranger of Billabong Valley, gone to space in a rocket roadster' },
+  { id: 'mantis-shredder', name: 'Mantis Shredder', stats: { speed: 3, accel: 4, weight: 2, handling: 3, drift: 4 }, color: 0x9ad83a, accent: 0xff3a6a, bio: 'A fret-board mantis from the Polygondwanaland canopy, shredding on one wheel' },
+  { id: 'gator-drummer', name: 'Gator Drummer', stats: { speed: 4, accel: 2, weight: 4, handling: 2, drift: 3 }, color: 0xb8202a, accent: 0xf2e6c8, bio: 'The croc from the Invisible Face voyage, master of the Evil Death Roll' },
+  { id: 'mushroom-sage', name: 'Mushroom Sage', stats: { speed: 3, accel: 3, weight: 2, handling: 4, drift: 4 }, color: 0x7a5adf, accent: 0xf4e8d0, bio: 'Mycelium mystic who knows the secret of the Fourth Colour' },
+  { id: 'arlo', name: 'Arlo', stats: { speed: 3, accel: 4, weight: 2, handling: 4, drift: 3 }, color: 0xd09a62, accent: 0x3a4250, bio: 'An apricot standard poodle, booked on Flight b741 for when pigs fly' },
+  { id: 'octo-organist', name: 'Kraken', stats: { speed: 4, accel: 2, weight: 3, handling: 2, drift: 3 }, color: 0xff7aa8, accent: 0x2ad8b0, bio: 'Up from Open Water at the keys of a steam pipe-organ, dragging sailors under' },
   // The band, with their blessing.
-  { id: 'ambrose-kenny-smith', name: 'Amby', stats: { speed: 3, accel: 5, weight: 2, handling: 3, drift: 3 }, color: 0x2a8ad8, accent: 0xff5a3a },
-  { id: 'michael-cavanagh', name: 'Cavs', stats: { speed: 4, accel: 2, weight: 3, handling: 2, drift: 3 }, color: 0x1a3a6a, accent: 0xffd23a },
-  { id: 'cook-craig', name: 'Cookie', stats: { speed: 3, accel: 2, weight: 3, handling: 5, drift: 4 }, color: 0x3aa04a, accent: 0xffe14d },
-  { id: 'jason-galea', name: 'Jason', stats: { speed: 3, accel: 4, weight: 2, handling: 3, drift: 4 }, color: 0x1a1a22, accent: 0x3adcff },
-  { id: 'joey-walker', name: 'Joey', stats: { speed: 3, accel: 3, weight: 2, handling: 4, drift: 3 }, color: 0xe85a9a, accent: 0x3adcff },
-  { id: 'lucas-harwood', name: 'Lukey', stats: { speed: 4, accel: 2, weight: 4, handling: 2, drift: 3 }, color: 0x8a5a3a, accent: 0xd84a2a },
-  { id: 'stu-mackenzie', name: 'Stu', stats: { speed: 3, accel: 3, weight: 3, handling: 3, drift: 4 }, color: 0xf4d23a, accent: 0x7a2a8a },
+  { id: 'ambrose-kenny-smith', name: 'Amby', stats: { speed: 3, accel: 5, weight: 2, handling: 3, drift: 3 }, color: 0x2a8ad8, accent: 0xff5a3a, bio: 'Harmonica raised, boogie in the blood: Boogieman Sam\'s own' },
+  { id: 'michael-cavanagh', name: 'Cavs', stats: { speed: 4, accel: 2, weight: 3, handling: 2, drift: 3 }, color: 0x1a3a6a, accent: 0xffd23a, bio: 'Rolling on two bass drums, sticks up, a Road Train with no brakes' },
+  { id: 'cook-craig', name: 'Cookie', stats: { speed: 3, accel: 2, weight: 3, handling: 5, drift: 4 }, color: 0x3aa04a, accent: 0xffe14d, bio: 'Keytar, guitar and keyboard in one deck, with a Gamma Knife on the neck' },
+  { id: 'jason-galea', name: 'Jason', stats: { speed: 3, accel: 4, weight: 2, handling: 3, drift: 4 }, color: 0x1a1a22, accent: 0x3adcff, bio: 'The band\'s visual artist on a rolling lighting rig, painting the Gizzverse as it goes' },
+  { id: 'joey-walker', name: 'Joey', stats: { speed: 3, accel: 3, weight: 2, handling: 4, drift: 3 }, color: 0xe85a9a, accent: 0x3adcff, bio: 'A modular-synth buggy patched up with the Silver Cord, signed Yikes' },
+  { id: 'lucas-harwood', name: 'Lukey', stats: { speed: 4, accel: 2, weight: 4, handling: 2, drift: 3 }, color: 0x8a5a3a, accent: 0xd84a2a, bio: 'An 8x10 bass cab on wheels: superheavy, supercritical low end' },
+  { id: 'stu-mackenzie', name: 'Stu', stats: { speed: 3, accel: 3, weight: 3, handling: 3, drift: 4 }, color: 0xf4d23a, accent: 0x7a2a8a, bio: 'On the Flying Microtonal Banana, a flute on his back for the Sleep Drifter' },
 ];
 
 /** Karts in one race: the player (or the room's players) and CPUs drawn from the roster. */

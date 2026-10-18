@@ -288,7 +288,7 @@ export class KartView {
     this.root.position.set(s.x, s.y, s.z);
     this.updateSkid(s, topSpeed, frameDt, time);
     this.root.rotation.y = s.heading - s.slip + s.spinAngle + this.skidYaw;
-    // Tempo Shift shrinks you a little while it lasts.
+    // Horology shrinks you a little while it lasts.
     this.body.scale.setScalar(s.slowTime > 0 ? 0.8 : 1);
     this.updatePresence(s, frameDt, time);
     this.animateCannon(s, frameDt, time);

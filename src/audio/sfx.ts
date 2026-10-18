@@ -235,14 +235,14 @@ export class Sfx {
     this.hit(0.1, 3000, 0.3);
   }
 
-  /** Rode over a Gizzard Wave. */
+  /** Rode over a Nonagon Infinity. */
   dodge(): void {
     this.onDuck(0.6, 0.4);
     this.whoosh(0.4, 600, 2800, 0.2);
     [988, 1319, 1976].forEach((f, i) => this.tone(f, 0.1, 'sine', 0.08, undefined, i * 0.05));
   }
 
-  /** A Gizzard Wave closing on you, 0..1 (null when there's none): beeps that come faster as it closes. */
+  /** A Nonagon Infinity closing on you, 0..1 (null when there's none): beeps that come faster as it closes. */
   surgeAlarm(dt: number, near: number | null): void {
     if (near === null) {
       this.alarmWait = 0;

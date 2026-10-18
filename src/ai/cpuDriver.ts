@@ -122,8 +122,8 @@ export class CpuDriver {
 
   /**
    * Whether to fire the held item this tick. Smart picks wait for a good
-   * moment (a straight for the Fuzz Pedal, a kart on its tail for a mine,
-   * company for the Feedback Wave); the rest fire after a random wait.
+   * moment (a straight for the Mind Fuzz, a kart on its tail for a mine,
+   * company for the Nuclear Fusion); the rest fire after a random wait.
    */
   wantsItem(item: ItemKind, held: number, s: KartState, position: number, progress: number, track: Track, others: readonly KartState[]): boolean {
     if (this.itemPlan?.item !== item) {

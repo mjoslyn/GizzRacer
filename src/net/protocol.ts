@@ -74,13 +74,13 @@ export interface Snap {
   waves: number[][];
   /** Band item bursts: [kind index, x, y, z, heading, age, life, len, from kart or -1, to kart or -1]. */
   fx: number[][];
-  /** The Gizzard Wave: [x, y, z, heading, target kart or -1], or null. */
+  /** The Nonagon Infinity: [x, y, z, heading, target kart or -1], or null. */
   sg: number[] | null;
 }
 
 /** Something the room did to your kart: apply it locally. */
 export interface Effect {
-  /** `push` is a wobble with a shove (x, z, m/s); `surge` is a Gizzard Wave, ridden over if you're in the air; `dodge` is one that was (client side only). */
+  /** `push` is a wobble with a shove (x, z, m/s); `surge` is a Nonagon Infinity, ridden over if you're in the air; `dodge` is one that was (client side only). */
   k: 'spin' | 'wobble' | 'slow' | 'boost' | 'cannon' | 'ram' | 'push' | 'surge' | 'dodge';
   t: number;
   /** What did it (an item kind), for the HUD. */

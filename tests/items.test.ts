@@ -38,7 +38,7 @@ function give(race: Race, index: number, item: ItemKind) {
 }
 
 describe('item odds', () => {
-  it('never gives the leader a missile, and Tempo Shift only to the last two', () => {
+  it('never gives the leader a missile, and Horology only to the last two', () => {
     for (let pos = 1; pos <= 6; pos++) {
       const w = itemWeights(pos, 6);
       if (pos === 1) expect(w.riffMissile).toBe(0);
@@ -232,7 +232,7 @@ describe('item boxes', () => {
 });
 
 describe('item effects', () => {
-  it('Fuzz Pedal boosts', () => {
+  it('Mind Fuzz boosts', () => {
     const race = humanRace(1);
     const k = give(race, 0, 'fuzzPedal');
     race.step(PHYSICS_DT, [PRESS]);
@@ -240,7 +240,7 @@ describe('item effects', () => {
     expect(k.state.boostTime).toBeGreaterThan(FUZZ_BOOST - 0.1);
   });
 
-  it('Microtonal Mine drops behind, arms, and wobbles whoever drives over it', () => {
+  it('Microtonal Banana drops behind, arms, and wobbles whoever drives over it', () => {
     const race = humanRace(2);
     const a = give(race, 0, 'microtonalMine');
     race.step(PHYSICS_DT, [PRESS, NEUTRAL_INPUT]);
@@ -259,7 +259,7 @@ describe('item effects', () => {
     expect(race.events.some((e) => e.type === 'hit' && e.kart === b && e.by === 'microtonalMine')).toBe(true);
   });
 
-  it('Feedback Wave spins out karts in range only', () => {
+  it('Nuclear Fusion spins out karts in range only', () => {
     const race = humanRace(3);
     const [a, near, far] = race.karts;
     give(race, 0, 'feedbackWave');
@@ -273,7 +273,7 @@ describe('item effects', () => {
     expect(a.state.spinTime).toBe(0);
   });
 
-  it('Riff Missile chases down the racer ahead', () => {
+  it('Big Fig Wasp chases down the racer ahead', () => {
     const race = humanRace(2);
     const [lead, chaser] = race.karts;
     // Put the leader 60 m up the salt flat and the chaser at the line.
@@ -297,7 +297,7 @@ describe('item effects', () => {
     expect(race.items.missiles.length).toBe(0);
   });
 
-  it('Tempo Shift slows everyone else, the leader longest', () => {
+  it('Horology slows everyone else, the leader longest', () => {
     const race = humanRace(3);
     give(race, 2, 'tempoShift');
     race.step(PHYSICS_DT, [NEUTRAL_INPUT, NEUTRAL_INPUT, PRESS]);
@@ -309,7 +309,7 @@ describe('item effects', () => {
     expect(user.state.slowTime).toBe(0);
   });
 
-  it('Tempo Shift runs from longest in first to shortest in last', () => {
+  it('Horology runs from longest in first to shortest in last', () => {
     expect(tempoSlowFor(1, 8)).toBe(TEMPO_SLOW_FIRST);
     expect(tempoSlowFor(8, 8)).toBe(TEMPO_SLOW_LAST);
     for (let p = 1; p < 8; p++) expect(tempoSlowFor(p, 8)).toBeGreaterThan(tempoSlowFor(p + 1, 8));

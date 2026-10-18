@@ -144,7 +144,7 @@ let musicMuted = false;
 let sfxMuted = false;
 /** What the player's kart was doing last tick, to turn changes into sounds. */
 const heard = { count: 0, lap: 0, tier: 0, rolling: false };
-/** A Gizzard Wave is in earshot of you when it's this close (m). */
+/** A Nonagon Infinity is in earshot of you when it's this close (m). */
 const SURGE_WARN = 120;
 /** Seconds the player has been driving against the track. */
 let wrongWay = 0;
@@ -687,7 +687,7 @@ function boxSound(mine: boolean, x: number, z: number, double: boolean): void {
   if (d < 40) sfx.box(0.45 * (1 - d / 40), double);
 }
 
-/** How close a Gizzard Wave coming for the player is, 0 (just in earshot) .. 1 (arriving), or null. */
+/** How close a Nonagon Infinity coming for the player is, 0 (just in earshot) .. 1 (arriving), or null. */
 function surgeCloseness(p: RaceKart): number | null {
   const w = race.items.surge;
   if (!w || w.target !== p || p.finishTime !== null) return null;
@@ -703,18 +703,18 @@ function surgeWarning(p: RaceKart, dt: number): void {
 
 const HIT_TEXT: Record<ItemKind | HazardKind, string> = {
   fuzzPedal: '',
-  microtonalMine: 'OUT OF TUNE!',
-  feedbackWave: 'FEEDBACK!',
-  riffMissile: 'RIFFED!',
-  tempoShift: 'TEMPO SHIFT!',
+  microtonalMine: 'DETUNED!',
+  feedbackWave: 'FUSED!',
+  riffMissile: 'STUNG!',
+  tempoShift: 'TICK TOCK!',
   wooCannon: 'WOOOOO!',
-  fluteFlurry: 'FLUTED!',
-  drumRoll: 'DRUMMED!',
-  bassDrop: 'DROPPED!',
-  patchCable: 'PATCHED!',
-  harmonicaWail: 'WAILED!',
-  keytarLaser: 'LASERED!',
-  gizzardWave: 'GIZZARD WAVE!',
+  fluteFlurry: 'DOZED OFF!',
+  drumRoll: 'ROAD TRAINED!',
+  bassDrop: 'SUPERHEAVY!',
+  patchCable: 'CORDED!',
+  harmonicaWail: 'BOOGIED!',
+  keytarLaser: 'SLICED!',
+  gizzardWave: 'INFINITY!',
   snakes: 'SNAKEBITE!',
   dustDevils: 'DUST DEVIL!',
   tumbleweeds: 'TUMBLEWEED!',
