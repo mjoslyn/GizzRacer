@@ -35,8 +35,8 @@ export function buildHellOnMars(): TrackDef {
   b.mark('habs');
   b.straight(40).arc(28, -55).arc(28, 55).straight(40);
 
-  // Up the flank of the mountain, railed at the edges of the drop.
-  b.section('Olympus Climb', { halfWidth: 9.5, wallHeight: 1.2, surface: 'rock' });
+  // Up the flank of the mountain.
+  b.section('Olympus Climb', { halfWidth: 9.5, surface: 'rock' });
   b.mark('climb');
   b.straight(130).arc(42, 90);
 

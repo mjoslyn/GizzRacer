@@ -52,7 +52,7 @@ export function buildPetrodragonicApocalypse(): TrackDef {
 
   b.section('Burning Moat', { halfWidth: 8, wallHeight: 1.2, surface: 'rock' });
   b.mark('moat');
-  b.straight(14).elevate(0).rise(20, 3);
+  b.straight(14).elevate(0).rise(20, 3.5);
   b.gap(13, 34, 'oil');
   b.elevate(0).straight(30);
   b.arc(38, 90);
@@ -91,8 +91,8 @@ export function buildPetrodragonicApocalypse(): TrackDef {
   b.profile(m('derricks'), m('slick'), (u) => RIDGE + 2 * Math.sin(2 * Math.PI * u) ** 2);
   ease(b, m('slick'), RIDGE, m('gullet'), 0);
   ease(b, m('gullet', 4), 0, m('gullet', 30), -GULLET_DEPTH);
-  b.profile(m('gullet', 30), m('gullet', 65), () => -GULLET_DEPTH, 20);
-  ease(b, m('gullet', 65), -GULLET_DEPTH, m('moat', 14), 0);
+  b.profile(m('gullet', 30), m('gullet', 55), () => -GULLET_DEPTH, 20);
+  ease(b, m('gullet', 55), -GULLET_DEPTH, m('moat'), 0);
   ease(b, m('coil'), 0, m('bridge', 12), TRESTLE);
   plunge(b, m('trestleEnd'), TRESTLE, b.marks.lakeFrom.s - 40, 0);
   b.profile(b.marks.lakeTo.s + 45, m('finish', -10), (u) => 3 * Math.sin(Math.PI * u) ** 2);
