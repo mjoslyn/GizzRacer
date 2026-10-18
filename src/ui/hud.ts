@@ -7,7 +7,7 @@ import { Minimap } from './minimap';
 const TIER_NAMES = ['', 'BLUE', 'ORANGE', 'PURPLE'];
 const TIER_COLORS = ['#fff2a8', 'var(--tier-1)', 'var(--tier-2)', 'var(--tier-3)'];
 const MAX_CHARGE = DRIFT_TIERS[DRIFT_TIERS.length - 1];
-const FLASH_TIME = 1.4;
+const FLASH_TIME = 1;
 /** Seconds per face of the item roulette. */
 const ROULETTE_STEP = 0.07;
 
@@ -98,8 +98,8 @@ export interface Callout {
   kind: 'landed' | 'took' | 'blocked' | 'dodged';
 }
 
-const CALLOUT_TIME = 3;
-const CALLOUT_MAX = 3;
+const CALLOUT_TIME = 2.5;
+const CALLOUT_MAX = 2;
 
 export type PauseAction = 'resume' | 'restart' | 'quit' | 'settings';
 
@@ -152,10 +152,10 @@ export class Hud {
         <div class="hud-time"></div>
         <div class="hud-ghost-gap"></div>
         <div class="hud-laps"></div>
+        <div class="hud-callouts"></div>
       </div>
       <div class="hud-tr"><div class="hud-racer"></div></div>
       <div class="hud-item"><img alt="" /><div class="hud-item-name"></div><div class="hud-spare"><img alt="" /></div></div>
-      <div class="hud-callouts"></div>
       <div class="hud-warn hud-big">NONAGON INFINITY! HOP!</div>
       <div class="hud-flash hud-big"></div>
       <div class="hud-intro"><div class="hud-intro-name hud-big"></div><div class="hud-intro-sub"></div><div class="hud-intro-skip">${'ontouchstart' in window ? 'tap' : 'press any key'} to skip</div></div>
@@ -231,8 +231,9 @@ export class Hud {
     this.flashPending = true;
   }
 
-  /** Adds a line to the callout feed: who hit whom, with the item's icon between them. */
-  callout(c: Callout, now: number): void {
+  /** Adds a line to the callout feed: who hit whom, with the item's icon between them. Timed on the wall clock, so a slow frame can't skip it. */
+  callout(c: Callout): void {
+    const now = performance.now() / 1000;
     const el = document.createElement('div');
     el.className = `hud-callout ${c.kind}`;
     const name = (n: string) => {
@@ -349,9 +350,10 @@ export class Hud {
     }
     this.spareSlot.classList.toggle('show', !!spare);
 
+    const wall = performance.now() / 1000;
     for (let i = this.callouts.length - 1; i >= 0; i--) {
       const c = this.callouts[i];
-      if (now - c.at > CALLOUT_TIME || d.paused) {
+      if (wall - c.at > CALLOUT_TIME || d.paused) {
         c.el.remove();
         this.callouts.splice(i, 1);
       }

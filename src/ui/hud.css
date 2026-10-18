@@ -728,14 +728,15 @@ body.touch-mode .hud-drift-label {
   text-shadow: 0 2px 0 #3a0f45, 0 0 6px #3a0f45;
 }
 
+/* Up in the sky, clear of the road and the kart. */
 .hud-flash {
   position: absolute;
-  top: 44%;
+  top: 17%;
   left: 0;
   right: 0;
   text-align: center;
-  font-size: 54px;
-  letter-spacing: 3px;
+  font-size: 38px;
+  letter-spacing: 2px;
   opacity: 0;
   transition: opacity 0.3s;
   pointer-events: none;
@@ -788,27 +789,24 @@ body:not([data-mode='race']) .hud-warn {
   visibility: visible;
 }
 
-/* Who hit whom: a short feed under the item slot. */
+/* Who hit whom: a short feed in the left margin, under the lap times. */
 .hud-callouts {
-  position: absolute;
-  top: 132px;
-  left: 50%;
-  transform: translateX(-50%);
+  margin-top: 8px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 4px;
+  align-items: flex-start;
+  gap: 3px;
   pointer-events: none;
 }
 
 .hud-callout {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 2px 10px;
-  border-radius: 12px;
-  background: rgba(20, 0, 30, 0.6);
-  font-size: 15px;
+  gap: 5px;
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: rgba(20, 0, 30, 0.5);
+  font-size: 12px;
   font-weight: bold;
   color: #fff6d0;
   text-shadow: 0 2px 0 #3a0f45;
@@ -817,8 +815,8 @@ body:not([data-mode='race']) .hud-warn {
 }
 
 .hud-callout img {
-  width: 26px;
-  height: 26px;
+  width: 18px;
+  height: 18px;
 }
 
 .hud-callout.landed {
@@ -841,11 +839,11 @@ body:not([data-mode='race']) .hud-warn {
 /* A Nonagon Infinity coming for the leader: louder and faster as it closes. */
 .hud-warn {
   position: absolute;
-  bottom: 22%;
+  top: 25%;
   left: 0;
   right: 0;
   text-align: center;
-  font-size: calc(24px + 18px * var(--near, 0));
+  font-size: calc(18px + 10px * var(--near, 0));
   color: #7dffb0;
   opacity: 0;
   pointer-events: none;
@@ -861,17 +859,16 @@ body:not([data-mode='race']) .hud-warn {
 }
 
 @media (max-width: 700px) {
-  .hud-callouts {
-    top: 110px;
-  }
-
   .hud-callout {
-    font-size: 12px;
+    font-size: 10px;
   }
 }
 
+/* On touch the item slot sits under the lap counter: the feed goes beside it. */
 body.touch-mode .hud-callouts {
-  top: 72px;
+  position: absolute;
+  top: 84px;
+  left: 74px;
 }
 
 body.touch-mode .hud-item {
@@ -902,7 +899,13 @@ body.touch-mode .hud-item-name {
 }
 
 @media (max-width: 700px) {
-  .hud-flash { font-size: 34px; }
+  .hud-flash { font-size: 24px; }
+}
+
+/* Short screens: under the item slot, not over it. */
+@media (max-height: 460px) {
+  .hud-flash { top: 31%; }
+  .hud-warn { top: 40%; }
 }
 
 /* ---- Phones: keep clear of notches, and ask for landscape ---- */

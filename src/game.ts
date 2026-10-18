@@ -570,7 +570,6 @@ function step(dt: number): void {
   if (player.drafted) {
     sfx.slipstream();
     chase.kick(6);
-    hud.flash('SLIPSTREAM!');
   }
   if (player.bump > 3) sfx.bump(Math.min(1, player.bump / 10));
   if (ev.wallHit > 0.3) chase.bump(ev.wallHit);
@@ -593,9 +592,8 @@ function step(dt: number): void {
     if (e.type === 'box') boxSound(e.kart === player, e.x, e.z, e.double);
     if (e.type === 'block' || e.type === 'dodge') {
       const mine = e.kart === player;
-      if (mine || e.from === player) hud.callout({ from: who(e.from), to: who(e.kart), by: e.by, kind: e.type === 'block' ? 'blocked' : 'dodged' }, elapsed);
+      if (mine || e.from === player) hud.callout({ from: who(e.from), to: who(e.kart), by: e.by, kind: e.type === 'block' ? 'blocked' : 'dodged' });
       if (mine) {
-        hud.flash(e.type === 'block' ? 'BLOCKED!' : 'DODGED!');
         if (e.type === 'block') sfx.block();
         else sfx.dodge();
       }
@@ -620,14 +618,12 @@ function step(dt: number): void {
       sfx.hurt(e.by);
       if (e.by !== 'tempoShift' && e.by !== 'bassDrop') chase.bump(0.5);
       if (e.by === 'bassDrop') chase.bump(1.2);
-      if (item && e.from) hud.callout({ from: who(e.from), to: 'you', by: item, kind: 'took' }, elapsed);
+      if (item && e.from) hud.callout({ from: who(e.from), to: 'you', by: item, kind: 'took' });
     } else if (e.from === player && item) {
       // Area items hit a crowd: one line each, but only one flash and sound.
-      hud.callout({ from: 'you', to: who(e.kart), by: item, kind: 'landed' }, elapsed);
-      if (e.by !== 'tempoShift' && e.by !== 'bassDrop') {
-        hud.flash(`HIT ${(e.kart as RaceKart).racer.name.toUpperCase()}!`);
-        sfx.scored();
-      }
+      hud.callout({ from: 'you', to: who(e.kart), by: item, kind: 'landed' });
+      // The feed says who you hit; a sound is enough on top of it.
+      if (e.by !== 'tempoShift' && e.by !== 'bassDrop') sfx.scored();
     }
   }
   surgeWarning(player, dt);
@@ -680,15 +676,14 @@ function onEffects(fx: Effect[]): void {
     const by = e.by as ItemKind;
     const from = e.f !== undefined ? race.karts[e.f] : undefined;
     if (e.k === 'dodge') {
-      hud.flash('DODGED!');
       sfx.dodge();
-      if (from) hud.callout({ from: who(from), to: 'you', by, kind: 'dodged' }, elapsed);
+      if (from) hud.callout({ from: who(from), to: 'you', by, kind: 'dodged' });
       continue;
     }
     hud.flash(HIT_TEXT[by] ?? 'HIT!');
     sfx.hurt(by);
     if (e.k !== 'slow') chase.bump(0.5);
-    if (from && by in ITEMS) hud.callout({ from: who(from), to: 'you', by, kind: 'took' }, elapsed);
+    if (from && by in ITEMS) hud.callout({ from: who(from), to: 'you', by, kind: 'took' });
   }
 }
 
