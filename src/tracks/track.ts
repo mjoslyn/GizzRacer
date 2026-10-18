@@ -127,6 +127,8 @@ const CURB = 1.2;
  */
 export const CUT_DEPTH = 0.3;
 export const CUT_RIM = 1.5;
+/** A road raised on the ground (not a deck on pillars) sits on a bank of earth this many metres out for each metre up: you can drive back up it. */
+export const BANK = 2;
 /** How far above the kart a road surface can be and still be stepped onto. */
 const STEP_UP = 0.8;
 const PIT_FLOOR = -12;
@@ -146,6 +148,8 @@ export class Ribbon {
   readonly curvature: Float32Array;
   /** 1 where the road is sunk into the ground (Track.cutInto): rock walls up to ground level, and a hole in the ground above. */
   readonly cut: Uint8Array;
+  /** 1 where the road is raised on a bank of earth (Track.cutInto): its sides slope down to the ground, BANK out per metre up. */
+  readonly bank: Uint8Array;
 
   constructor(readonly def: RibbonDef) {
     this.spline = buildSpline(def.points, 2, def.closed);
@@ -163,6 +167,7 @@ export class Ribbon {
       this.curvature[i] = wrapAngle(Math.atan2(sp.tx[b], sp.tz[b]) - Math.atan2(sp.tx[a], sp.tz[a])) / ds;
     }
     this.cut = new Uint8Array(sp.count);
+    this.bank = new Uint8Array(sp.count);
     this.scale = def.length > 0 ? this.spline.length / def.length : 1;
     const n = this.spline.count;
     this.sectionIndex = new Uint16Array(n);
@@ -203,12 +208,19 @@ export class Ribbon {
     return s / this.scale;
   }
 
-  /** Marks where the road runs below the ground and walls it in up to ground level; `overPit` says where the ground is already open. */
+  /**
+   * Marks where the road runs below the ground and walls it in up to ground
+   * level, and where it's raised on an earth bank; `overPit` says where the
+   * ground is already open.
+   */
   cutInto(overPit: (x: number, z: number) => boolean): void {
     const sp = this.spline;
     for (let i = 0; i < sp.count; i++) {
       const h = this.heightAt(sp.dist[i]);
-      if (h >= -CUT_DEPTH || this.inGap(sp.dist[i]) || overPit(sp.px[i], sp.pz[i])) continue;
+      if (this.inGap(sp.dist[i]) || overPit(sp.px[i], sp.pz[i])) continue;
+      // Up on the ground and not a deck: an earth bank either side.
+      if (h > 0.05 && !this.def.sections[this.sectionIndex[i]]?.bridge) this.bank[i] = 1;
+      if (h >= -CUT_DEPTH) continue;
       this.cut[i] = 1;
       this.wallHeight[i] = Math.max(this.wallHeight[i], -h + CUT_RIM);
     }
@@ -344,10 +356,16 @@ export class Track implements DriveEnv {
 
     let progress = mainHit.s;
     if (!support) {
+      // Off the road: the ground, or the bank of a raised road beside it.
+      let ground = this.terrainHeight(x, z, y);
+      if (y >= -1) {
+        ground = Math.max(ground, this.bankHeight(this.main, mainHit));
+        this.branches.forEach((r) => (ground = Math.max(ground, this.bankHeight(r, nearestOnSpline(r.spline, x, z)))));
+      }
       return {
         hint: mainHit.index,
         progress,
-        height: this.terrainHeight(x, z, y),
+        height: ground,
         surface: 'offroad',
         section: this.main.sectionName(mainHit.index),
         onRoad: false,
@@ -442,6 +460,23 @@ export class Track implements DriveEnv {
     return 0;
   }
 
+  /** Height of a raised road's earth bank at `hit`; -Infinity off it, so a pit beside it stays a pit. */
+  private bankHeight(ribbon: Ribbon, hit: SplineHit): number {
+    // Only beside the road: across a jump's gap there's nothing, bank or road.
+    const hw = ribbon.halfWidthAt(hit);
+    if (!ribbon.bank[hit.index] || pastEnd(ribbon, hit) || ribbon.inGap(hit.s) || Math.abs(hit.lateral) <= hw) return -Infinity;
+    const h = ribbon.heightAt(hit.s);
+    const out = Math.max(0, Math.abs(hit.lateral) - hw - CURB);
+    return out < h * BANK ? h * (1 - out / (h * BANK)) : -Infinity;
+  }
+
+  /** Under or right beside a deck that's above you, off the road: there's no getting back up there. */
+  underDeck(s: KartState): boolean {
+    const deck = (r: Ribbon, hit: SplineHit) =>
+      !pastEnd(r, hit) && !!r.def.sections[r.sectionIndex[hit.index]]?.bridge && Math.abs(hit.lateral) < r.halfWidthAt(hit) + 3 && r.heightAt(hit.s) > s.y + STEP_UP;
+    return deck(this.main, this.nearestMain(s.x, s.z, s.trackHint)) || this.branches.some((r) => deck(r, nearestOnSpline(r.spline, s.x, s.z)));
+  }
+
   private ribbonWalls(ribbon: Ribbon, hit: SplineHit, y: number, radius: number): WallHit | null {
     if (pastEnd(ribbon, hit)) return null;
     const hw = ribbon.halfWidthAt(hit);
@@ -454,8 +489,8 @@ export class Track implements DriveEnv {
     const rx = -hit.tz * side;
     const rz = hit.tx * side;
 
-    if (ry > y + STEP_UP && !ribbon.inGap(hit.s)) {
-      // Road is above us: its side is a cliff face. Only push from the edge band.
+    if (ry > y + STEP_UP && !ribbon.inGap(hit.s) && !ribbon.bank[hit.index]) {
+      // Road is above us with no bank to drive up: its side is a cliff face. Only push from the edge band.
       if (abs > hw - 2 && abs < hw + radius) return { nx: rx, nz: rz, depth: hw + radius - abs };
       return null;
     }

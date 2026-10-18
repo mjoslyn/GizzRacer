@@ -470,3 +470,58 @@ describe('Woo Cannon on the new ground', () => {
     }
   }, 120000);
 });
+
+describe('Woo Cannon speed', () => {
+  it('flies faster the further behind the pack it starts', () => {
+    const speedFrom = (behind: number) => {
+      const race = humanRace(4);
+      race.karts.forEach((k, i) => place(k, 400 + i * 4, 0, 20));
+      const me = race.karts[0];
+      place(me, 400 - behind, 0, 20);
+      race.step(0, race.karts.map(() => GAS));
+      give(me, 'wooCannon');
+      race.step(PHYSICS_DT, race.karts.map((_, i) => (i === 0 ? PRESS : { ...NEUTRAL_INPUT })));
+      race.step(PHYSICS_DT, race.karts.map(() => ({ ...NEUTRAL_INPUT })));
+      return me.state.speed;
+    };
+    expect(speedFrom(320)).toBeGreaterThan(speedFrom(30) * 1.5);
+  });
+});
+
+describe('raised roads', () => {
+  const raised = (deck: boolean) => {
+    const b = new TrackBuilder({ x: 0, z: -200, h: 0 }, 'Test', { halfWidth: 8 });
+    b.straight(80);
+    b.section('Up', { halfWidth: 8, bridge: deck });
+    b.straight(160);
+    b.section('Down', { halfWidth: 8 });
+    b.straight(80);
+    b.profile(60, 260, (u) => 3 * Math.sin(Math.PI * Math.min(1, Math.max(0, (u - 0.05) / 0.9))) ** 0.3);
+    return new Track({ id: 'raised', name: 'Raised', main: b.finish(false), branches: [], pits: [], boostPads: [], checkpoints: [0.5], laps: 1, bounds: 400, landmarks: [], itemBoxes: [], hazards: [], theme: 'speedway', music: { lap: 'title' } });
+  };
+
+  it('sits on an earth bank you can drive back up', () => {
+    const t = raised(false);
+    const p = kartParams(RACERS[0].stats, '100cc');
+    // Down beside the road, off the bank, heading back toward it at an angle.
+    const s = createKartState(16, -40, -0.5);
+    s.speed = 15;
+    let back = false;
+    for (let time = 0; time < 4 && !back; time += PHYSICS_DT) {
+      stepKart(s, GAS, p, t, PHYSICS_DT);
+      back = t.locate(s.x, s.z, s.y, s.trackHint).onRoad && s.y > 2.5;
+    }
+    expect(back).toBe(true);
+  });
+
+  it('off a deck with nothing under it, you come back through the gate', () => {
+    const t = raised(true);
+    const race = new Race(t);
+    const k = race.addKart(RACERS[0], '100cc', null);
+    race.time = 0;
+    Object.assign(k.state, { x: 4, z: -40, y: 0, groundY: 0, heading: 0, speed: 5 });
+    let respawned = false;
+    for (let time = 0; time < 3 && !respawned; time += PHYSICS_DT) respawned = race.step(PHYSICS_DT, [GAS]) && k.respawned;
+    expect(respawned).toBe(true);
+  });
+});

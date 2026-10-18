@@ -12,7 +12,7 @@ export interface CameraPlacement {
 }
 
 // Close over the driver's shoulder and a little above, wide: the kart big in the lower middle of the screen.
-export const DEFAULT_PLACEMENT: CameraPlacement = { distance: 2.6, height: 1.95, lookAhead: 8, lookHeight: 1.0, fov: 78 };
+export const DEFAULT_PLACEMENT: CameraPlacement = { distance: 2, height: 2.45, lookAhead: 5, lookHeight: -0.4, fov: 78 };
 
 /** Third-person camera that trails the kart's travel direction (not its drift yaw). */
 export class ChaseCamera {

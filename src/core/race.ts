@@ -1,6 +1,6 @@
 import { AUTOPILOT_SKILL, CpuDriver, type CpuSkill, type Obstacle } from '../ai/cpuDriver';
 import { HazardSystem } from '../items/hazards';
-import { CANNON_MIN_TIME, CANNON_PAST_MAX, CANNON_PAST_MIN, CANNON_SPEED_MUL, CANNON_SPIN, CANNON_TIME, ItemSystem, SIGNATURE_ITEMS, type ItemEvent, type ItemHolder, type ItemKind } from '../items/items';
+import { CANNON_FAR, CANNON_FAR_BOOST, CANNON_FAR_FROM, CANNON_MIN_TIME, CANNON_PAST_MAX, CANNON_PAST_MIN, CANNON_SPEED_MUL, CANNON_SPIN, CANNON_TIME, ItemSystem, SIGNATURE_ITEMS, type ItemEvent, type ItemHolder, type ItemKind } from '../items/items';
 import { NEUTRAL_INPUT, type InputFrame } from './inputFrame';
 import { seededRandom } from './math';
 import { unpackKart } from '../net/wire';
@@ -339,7 +339,11 @@ export class Race {
     const sp = this.track.spline;
     const L = this.track.length;
     const wrap = (v: number) => ((v % L) + L) % L;
-    const speed = kart.baseParams.topSpeed * CANNON_SPEED_MUL;
+    // Faster the further back it is from the kart it's chasing, so the very last catch up as quickly as the nearly there.
+    const goal = kart.cannonGoal;
+    const gap = goal ? goal.target.distance - kart.distance : 0;
+    const far = Math.min(1, Math.max(0, (gap - CANNON_FAR_FROM) / (CANNON_FAR - CANNON_FAR_FROM)));
+    const speed = kart.baseParams.topSpeed * (CANNON_SPEED_MUL + CANNON_FAR_BOOST * far);
     const s0 = kart.progressS;
     const s1 = wrap(s0 + speed * dt);
     const p0 = pointAt(sp, s0);
@@ -358,7 +362,6 @@ export class Race {
     Object.assign(s, { speed, vy: 0, extX: 0, extZ: 0, grounded: false, steer: 0, slip: 0, driftDir: 0, driftArmed: false, driftCharge: 0, boostTime: 0, spinTime: 0, spinAngle: 0, wobbleTime: 0, slowTime: 0 });
     s.cannonTime = Math.max(0, s.cannonTime - dt);
     // Caught the pack and gone far enough past it: let go.
-    const goal = kart.cannonGoal;
     if (goal && CANNON_TIME - s.cannonTime >= CANNON_MIN_TIME && kart.distance >= goal.target.distance + goal.past) s.cannonTime = 0;
     s.invulnTime = Math.max(s.invulnTime, s.cannonTime + 0.8);
     if (s.cannonTime > 0) return;
@@ -415,7 +418,7 @@ export class Race {
   private updateFall(kart: RaceKart, dt: number): void {
     // Below ground is only a fall off the road: a road sunk in a cut (or under water) holds you up.
     // Above it, dropping well below the last road you were on (off a coaster deck) is a fall too.
-    const offHigh = !kart.onRoad && kart.state.y < kart.roadY - HIGH_FALL;
+    const offHigh = !kart.onRoad && (kart.state.y < kart.roadY - HIGH_FALL || this.track.underDeck(kart.state));
     if ((kart.state.y > FALL_DEPTH && !offHigh) || (kart.state.y <= FALL_DEPTH && this.onSunkRoad(kart.state))) {
       kart.fallTime = 0;
       return;
