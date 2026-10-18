@@ -42,6 +42,8 @@ const STEER_GAIN = 2.8;
 /** Heading change ahead (rad) worth drifting for. */
 const DRIFT_TURN = 0.75;
 const STUCK_TIME = 1.2;
+/** How hard a drifting CPU yaws into its own outward slide (rad/s per m/s of slide). */
+const DRIFT_CATCH = 0.25;
 /** A CPU that isn't waiting for a good moment fires its item after this long, give or take. */
 const ITEM_HOLD_MIN = 1;
 const ITEM_HOLD_SPREAD = 4;
@@ -210,7 +212,9 @@ export class CpuDriver {
 
     // Steer within the drift for the yaw the road needs, mapped through the
     // drift's own steer response (see stepKart).
-    const wantYaw = -(s.speed * ribbon.curvatureAt(progress)) - err * 3;
+    // A drift slides out wide of the nose (stepKart): yaw harder into it to catch the slide.
+    const slide = -s.extX * Math.cos(s.heading) + s.extZ * Math.sin(s.heading);
+    const wantYaw = -(s.speed * ribbon.curvatureAt(progress)) - err * 3 - slide * DRIFT_CATCH;
     const dir = s.driftDir;
     input.steer = clamp((dir * ((wantYaw * dir) / p.driftTurnRate - 0.75)) / 0.55, -1, 1);
 

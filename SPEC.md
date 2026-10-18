@@ -30,7 +30,7 @@ Touch: drag on the left half to steer (analog), DRIFT and BRAKE buttons on the r
 - Kart is a sphere collider for ground contact plus a visual model that tilts and bounces
 - Stats per racer (1 to 5): top speed, acceleration, weight, handling, drift
 - Off-road surfaces cut top speed by 40%
-- Drift: hold while turning; sparks charge in 3 tiers (blue 0.15s, orange 0.3s, purple 0.475s) for 0.5s / 1.0s / 1.5s boosts. The charge hums higher toward purple, and each release kicks the camera's field of view
+- Drift: hold while turning; the kart slides out wide of its nose, further the harder it's steered into the drift (CPUs yaw into their own slide); sparks charge in 3 tiers (blue 0.15s, orange 0.3s, purple 0.475s) for 0.5s / 1.0s / 1.5s boosts. The charge hums higher toward purple, and each release kicks the camera's field of view
 - Rocket start: hop in the last half second before GO for a 1 s boost off the line; hop earlier than that (after the 3) and the engine bogs for 0.7 s. CPUs get rocket starts by skill
 - Slipstream: tucked in behind a kart at speed (3 to 22 m back, nearly in line) a draft charges over 1.1 s, with wind rising, then fires a 0.9 s boost
 - Ramps and kickers: press hop at the lip for a trick boost on landing. Tricks landed within 3 s of each other are a streak: each one boosts 40% longer, up to x4. Kickers (`TrackBuilder.kicker`) are short full-width ramps with a sheer drop, on most tracks' straights. CPUs trick off lips by skill
@@ -78,7 +78,7 @@ Named for the Gizzverse. Internally the kinds keep the names they were built und
 | Nuclear Fusion | feedbackWave | Radial spin-out, 8m range | Middle |
 | Big Fig Wasp | riffMissile | A mechanical wasp that homes on the next racer ahead | Middle/back |
 | Horology | tempoShift | Others slowed: 4s for the leader down to 1.5s for last place | Last 2 only |
-| Woo Cannon | wooCannon | Turns you into a cannon shell that flies itself down the road at 1.9x top speed, immune, spinning out anyone it touches, until it has caught the pack and gone 5 to 45 m past it (1.5 to 9 s); never lets go over a pit | Last 3 only, likelier further back |
+| Woo Cannon | wooCannon | Turns you into a cannon shell that flies itself down the road at 1.9x top speed (up to 3.2x the further behind the kart it's chasing, from 40 m back to 300 m), immune, spinning out anyone it touches, until it has caught the pack and gone 5 to 45 m past it (1.5 to 9 s); never lets go over a pit | Last 3 only, likelier further back |
 | Sleep Drifter (Stu) | fluteFlurry | A flurry of flute notes in a cone ahead (26 m, 30 degrees each side): wobbles 1.3s | Everywhere, more up front |
 | Road Train (Cavs) | drumRoll | 3 s as a battering ram: immune, 10% faster, four times as heavy, spins out whoever it touches | Everywhere, more at the back |
 | Superheavy (Lukey) | bassDrop | Slows every kart up to 90 m ahead for 1.6s | Not the leader |
@@ -134,7 +134,7 @@ Each track has its own theme (render/themes.ts): desert (Rattlesnake Run), green
 - Lap 3: kaleidoscope pulse on screen edges synced to the music beat
 - Diamond-back patterned textures scroll along the track barriers
 - Built (Milestone 6): one post pass (render/postfx.ts) for haze and kaleidoscope, skipped when nothing is on.
-- The look of the Rattlesnake video (render/postfx.ts): tape (red and blue bleeding apart, wobbling lines, scanlines, grain), a posterized duotone in each world's own colours (`Theme.duotone`: shadows, body, and highlights that burn like a snake's eye) and letterbox bars. Full on the pre-race flyover and behind the title and menus, tape through every race (more on the final lap), and a short bite of duotone when you're hit. Settings > Video look: Light (the default: toned down, no bites), Full or Off. Nothing strobes. The kaleidoscope runs on every track's final lap. Extras: off-road wheel dust, a pre-race flyover with a title card
+- The look of the Rattlesnake video (render/postfx.ts): tape (red and blue bleeding apart, wobbling lines, scanlines, grain), a posterized duotone in each world's own colours (`Theme.duotone`: shadows, body, and highlights that burn like a snake's eye) and letterbox bars. Settings > VHS: Light (the default) is full on the pre-race flyover and behind the title and menus, tape through every race (more on the final lap), and a short bite of duotone when you're hit; Full washes the races in the duotone too; Off turns it off. Nothing strobes. The kaleidoscope runs on every track's final lap. Extras: off-road wheel dust, a pre-race flyover with a title card
 
 **Music:** original driving motorik beat, chant-style hook, microtonal-inflected guitar; tempo rises slightly on the final lap.
 
@@ -169,6 +169,7 @@ The Track Generator mode builds a track at race time from a seed and three dials
 - A road that runs below the ground is sunk in a cut (`Track.cutInto`): the ground opens along it and its sides are rock walls up to ground level and 1.5 m over. Rattle Canyon drops 8 m into the desert floor
 - `TrackBuilder.dive` takes a road down under the surface of a pit of water and back out. Fishies Lagoon's Coral Causeway dives 8 m to the lagoon floor instead of riding over it: kelp, coral, circling fish, bubbles, light shafts and the surface rippling overhead; with the camera under the surface the picture turns blue-green and wavers with caustics, the fog closes in and the music is muffled
 - A kart is only falling if it's below ground with no road under it, so sunk and submerged roads hold
+- A road raised on the ground sits on an earth bank (1 m up for every 2 m out) that you can drive back up; a deck on pillars (`bridge` sections) has nothing under it, and dropping off one (or 5 m below the last road under you) is a fall
 - `TrackBuilder.profile` shapes a stretch of road's height after the layout is drawn (hills, dips, coaster drops). Over a crest that drops away faster than gravity, a kart takes off with the climb it had: airtime and a trick window, like a ramp lip
 
 ### Shortcuts, kickers and double boxes

@@ -82,6 +82,10 @@ export const CANNON_MIN_TIME = 1.5;
 export const CANNON_PAST_MIN = 5;
 export const CANNON_PAST_MAX = 45;
 export const CANNON_SPEED_MUL = 1.9;
+/** The further behind the kart it's chasing, the faster it flies: up to this much more top speed, from CANNON_FAR_FROM metres back to CANNON_FAR metres. */
+export const CANNON_FAR_BOOST = 1.3;
+export const CANNON_FAR_FROM = 40;
+export const CANNON_FAR = 300;
 export const CANNON_SPIN = 1.0;
 /** Sleep Drifter: a spray of notes in a cone ahead that sends steering out of tune. */
 export const FLUTE_RANGE = 26;

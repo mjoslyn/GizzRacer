@@ -153,7 +153,7 @@ export class SettingsScreen {
             <div class="lobby-row"><span class="lobby-label">Effects</span>${arrows('sfx', pct(s.sfx))}</div>
             <div class="lobby-row"><span class="lobby-label">Soundtrack</span>${arrows('version', MUSIC_VERSION_NAMES[s.musicVersion])}</div>
             ${s.musicVersion === 'official' && !this.officialAvailable ? '<div class="lobby-note">The band\'s recordings aren\'t in yet: the remixes play until they are.</div>' : ''}
-            <div class="lobby-row"><span class="lobby-label">Video look</span>${arrows('look', { full: 'Full', light: 'Light', off: 'Off' }[s.videoLook])}</div>
+            <div class="lobby-row"><span class="lobby-label">VHS</span>${arrows('look', { full: 'Full', light: 'Light', off: 'Off' }[s.videoLook])}</div>
             <div class="lobby-row"><span class="lobby-label">Throttle</span>${toggle('auto', s.autoAccelerate, s.autoAccelerate ? 'Automatic' : 'Manual')}</div>
           </div>
           ${
