@@ -187,7 +187,7 @@ export class Hud {
       </div>
       <div class="hud-title">
         <div class="hud-title-logo hud-big">GIZZRACER</div>
-        <div class="hud-title-sub">psychedelic garage-rock kart racing</div>
+        <div class="hud-title-sub">psychedelic kart racing</div>
         <div class="hud-title-press">${'ontouchstart' in window ? 'tap to start' : 'press any key'}</div>
         <button class="hud-title-settings">SETTINGS</button>
         <div class="hud-title-ios">For full screen: Share &rarr; Add to Home Screen</div>

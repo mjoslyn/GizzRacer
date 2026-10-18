@@ -3,6 +3,7 @@ import { BOULDER_STAGES, HOLE_CORE, JET_STAGES, LIGHTNING_STRIKE, type HazardPos
 import { BOX_RESPAWN, SHIELD_ITEMS, WAVE_RANGE, type ItemHolder, type ItemSystem } from '../items/items';
 import type { KartState } from '../physics/kart';
 import type { HazardSystem } from '../items/hazards';
+import { CUT_RIM } from '../tracks/track';
 import { basaltTexture, dustTexture, wingTexture, flameTexture, glowTexture, itemBoxTexture, scaleTexture, stoneTexture, warningTexture, woodTexture } from './textures';
 
 const MINE_POOL = 12;
@@ -15,6 +16,11 @@ const NOTES_PER_FLURRY = 10;
 const FX_POOL = 4;
 /** Seconds a broken item box takes to burst and vanish. */
 const BOX_POP = 0.22;
+/** A dragon's head height over the road. */
+const DRAGON_HEAD_Y = 2.2;
+/** How much higher it hangs down a cut's wall from the rim, and its neck's segments. */
+const DRAGON_HANG = 2.6;
+const DRAGON_NECK = 5;
 
 /** A kart as the items view draws around it: where it's shown this frame, and what it holds. */
 export interface ItemKartView {
@@ -697,7 +703,7 @@ export class HazardsView {
           const glow = sprite(heat, 0xff5020, pose.radius * 1.8);
           glow.position.y = 1.2;
           const head = new THREE.Group();
-          head.position.set(-pose.radius - 1.4, 2.2, 0);
+          head.position.set(-pose.radius - 1.4, DRAGON_HEAD_Y, 0);
           head.add(new THREE.Mesh(new THREE.BoxGeometry(3.2, 1.8, 1.9), dragonScales));
           const jaw = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.6, 1.7), dragonScales);
           jaw.position.set(0.3, -1.1, 0);
@@ -710,17 +716,18 @@ export class HazardsView {
             eye.position.set(0.6, 0.55, side * 0.95);
             head.add(horn, eye);
           }
-          // A long neck coiling down out of the ground behind it.
-          for (let k = 0; k < 5; k++) {
+          // A long neck coiling out of the ground behind it (placed each frame: in a cut it climbs the wall to the rim).
+          const neck: THREE.Object3D[] = [];
+          for (let k = 0; k < DRAGON_NECK; k++) {
             const seg = new THREE.Mesh(new THREE.SphereGeometry(1.05 - k * 0.06, 10, 8), dragonScales);
-            seg.position.set(-pose.radius - 2.6 - k * 0.6, 1.6 - k * 0.45, Math.sin(k) * 0.4);
             obj.add(seg);
+            neck.push(seg);
           }
           const ember = sprite(heat, 0xff7030, 1.8);
           ember.position.set(1.8, -0.4, 0);
           head.add(ember);
           obj.add(sheet, glow, head);
-          parts.push(sheet, glow, jaw, ember);
+          parts.push(sheet, glow, jaw, ember, head, ...neck);
           break;
         }
         case 'vines': {
@@ -849,8 +856,21 @@ export class HazardsView {
           break;
         }
         case 'dragonFire': {
-          const [sheet, glow, jaw, ember] = parts;
+          const [sheet, glow, jaw, ember, head, ...neck] = parts;
           obj.rotation.y = p.heading;
+          // Down in a cut the road's edge is a rock wall over the camera: the dragon comes over the rim
+          // and hangs down the wall, its head out over the road looking down into the trench.
+          const rim = CUT_RIM - p.ground;
+          const hang = rim > DRAGON_HEAD_Y + DRAGON_HANG;
+          const hx = hang ? -p.radius - 0.2 : -p.radius - 1.4;
+          const hy = hang ? DRAGON_HEAD_Y + DRAGON_HANG : DRAGON_HEAD_Y;
+          head.position.set(hx, hy, 0);
+          head.rotation.z = hang ? -0.45 : 0;
+          neck.forEach((seg, k) => {
+            const f = k / (neck.length - 1);
+            if (hang) seg.position.set(hx - 1.8 - f * 1.2, hy + 0.6 + f * (rim + 0.4 - hy), Math.sin(k) * 0.4);
+            else seg.position.set(-p.radius - 2.6 - k * 0.6, 1.6 - k * 0.45, Math.sin(k) * 0.4);
+          });
           const u = p.phase;
           const firing = u >= JET_STAGES.fire;
           const smoulder = u >= JET_STAGES.sputter && !firing;

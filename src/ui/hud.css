@@ -1,9 +1,18 @@
+/* Metal Mania (SIL OFL, public/fonts/OFL.txt): a thrash logo hand, after the PetroDragonic Apocalypse lettering. */
+@font-face {
+  font-family: 'Metal Mania';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/metal-mania-latin.woff2') format('woff2');
+}
+
 :root {
   --hud-fg: #fff7e6;
   --tier-1: #3fa9ff;
   --tier-2: #ff8a1f;
   --tier-3: #c04bff;
-  --hud-font: 'Arial Black', 'Arial Bold', Gadget, sans-serif;
+  --hud-font: 'Metal Mania', 'Arial Black', 'Arial Bold', Gadget, sans-serif;
 }
 
 html,
