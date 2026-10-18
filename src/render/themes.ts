@@ -21,6 +21,12 @@ export interface Theme {
   distant: { shape: 'mesa' | 'hill' | 'volcano' | 'mountain' | 'city' | 'cloud' | 'flare' | 'anvil' | 'planet'; color: number };
   /** Heat haze strength on the straights, 0..1 (render/postfx.ts). */
   haze: number;
+  /**
+   * The Rattlesnake video's posterized duotone in this world's colours
+   * (render/postfx.ts): the shadows, the body, and the highlights that burn
+   * like a snake's eye.
+   */
+  duotone: [number, number, number];
   /** The sky turns a full circle of hue over a 3-lap race. */
   skyCycle: boolean;
   /** Dust kicked up off-road and on loose surfaces. */
@@ -43,6 +49,7 @@ export const THEMES: Record<ThemeId, Theme> = {
     decor: 'desert',
     distant: { shape: 'mesa', color: 0xa4502e },
     haze: 1,
+    duotone: [0x0a0002, 0xc00410, 0xf0c020],
     skyCycle: true,
     dust: 0xf4e4c8,
     barrier: { map: tex.diamondTexture, crawl: true },
@@ -58,6 +65,7 @@ export const THEMES: Record<ThemeId, Theme> = {
     decor: 'meadow',
     distant: { shape: 'hill', color: 0x3f7a3a },
     haze: 0,
+    duotone: [0x020a02, 0x18a030, 0xf0f060],
     skyCycle: false,
     dust: 0xd8d0b0,
     barrier: { map: tex.curbTexture, crawl: false },
@@ -73,6 +81,7 @@ export const THEMES: Record<ThemeId, Theme> = {
     decor: 'volcanic',
     distant: { shape: 'volcano', color: 0x2a1614 },
     haze: 0.7,
+    duotone: [0x0a0200, 0xe04008, 0xffe060],
     skyCycle: false,
     dust: 0x8a7a76,
     barrier: { map: () => tex.stoneTexture([40, 32, 34], [96, 80, 74]), crawl: false },
@@ -88,6 +97,7 @@ export const THEMES: Record<ThemeId, Theme> = {
     decor: 'jungle',
     distant: { shape: 'mountain', color: 0x2e5a3a },
     haze: 0,
+    duotone: [0x000a04, 0x0c8040, 0xc8ff40],
     skyCycle: false,
     dust: 0xc0b48a,
     barrier: { map: tex.woodTexture, crawl: false },
@@ -103,6 +113,7 @@ export const THEMES: Record<ThemeId, Theme> = {
     decor: 'lagoon',
     distant: { shape: 'hill', color: 0x2f8a5a },
     haze: 0.3,
+    duotone: [0x00060a, 0x0890b0, 0xfff0a0],
     skyCycle: false,
     dust: 0xf0e6c8,
     barrier: { map: tex.boardsTexture, crawl: false },
@@ -118,6 +129,7 @@ export const THEMES: Record<ThemeId, Theme> = {
     decor: 'glacier',
     distant: { shape: 'mountain', color: 0xdce8f4 },
     haze: 0,
+    duotone: [0x00040e, 0x3070d0, 0xe8fbff],
     skyCycle: false,
     dust: 0xffffff,
     barrier: { map: () => tex.stoneTexture([150, 190, 220], [220, 240, 255]), crawl: false },
@@ -133,6 +145,7 @@ export const THEMES: Record<ThemeId, Theme> = {
     decor: 'city',
     distant: { shape: 'city', color: 0x1a1030 },
     haze: 0,
+    duotone: [0x06000c, 0xd010c0, 0x40fff0],
     skyCycle: false,
     dust: 0x8a7aa8,
     barrier: { map: tex.neonRoadTexture, crawl: true },
@@ -148,6 +161,7 @@ export const THEMES: Record<ThemeId, Theme> = {
     decor: 'sky',
     distant: { shape: 'cloud', color: 0xfff4fc },
     haze: 0,
+    duotone: [0x100418, 0xe050b0, 0xfff0a0],
     skyCycle: true,
     dust: 0xffffff,
     barrier: { map: tex.rainbowTexture, crawl: true },
@@ -164,6 +178,7 @@ export const THEMES: Record<ThemeId, Theme> = {
     decor: 'wasteland',
     distant: { shape: 'flare', color: 0x120808 },
     haze: 0.8,
+    duotone: [0x000000, 0xd02008, 0xffa020],
     skyCycle: false,
     dust: 0x2a1c18,
     barrier: { map: tex.rustTexture, crawl: false },
@@ -180,6 +195,7 @@ export const THEMES: Record<ThemeId, Theme> = {
     decor: 'colony',
     distant: { shape: 'mesa', color: 0x7a2a16 },
     haze: 0.6,
+    duotone: [0x0a0100, 0xb02810, 0xffc080],
     skyCycle: false,
     dust: 0xd07040,
     barrier: { map: tex.corrugatedTexture, crawl: false },
@@ -196,6 +212,7 @@ export const THEMES: Record<ThemeId, Theme> = {
     decor: 'plains',
     distant: { shape: 'anvil', color: 0x1e2628 },
     haze: 0,
+    duotone: [0x020600, 0x3a7020, 0xe0ff60],
     skyCycle: false,
     dust: 0x9aa8a8,
     barrier: { map: () => tex.stoneTexture([90, 96, 92], [160, 168, 160]), crawl: false },
@@ -213,6 +230,7 @@ export const THEMES: Record<ThemeId, Theme> = {
     decor: 'cosmos',
     distant: { shape: 'planet', color: 0x2a1a4a },
     haze: 0,
+    duotone: [0x04000a, 0x6020c0, 0xf0e0ff],
     skyCycle: false,
     dust: 0xb08aff,
     barrier: { map: tex.cosmicRoadTexture, crawl: true },

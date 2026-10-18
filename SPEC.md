@@ -133,7 +133,8 @@ Each track has its own theme (render/themes.ts): desert (Rattlesnake Run), green
 - Sky slowly cycles through hues: a full turn of the color wheel over the 3 laps, back to normal at the flag
 - Lap 3: kaleidoscope pulse on screen edges synced to the music beat
 - Diamond-back patterned textures scroll along the track barriers
-- Built (Milestone 6): one post pass (render/postfx.ts) for haze and kaleidoscope, skipped when neither is on. The kaleidoscope runs on every track's final lap. Extras: off-road wheel dust, a pre-race flyover with a title card
+- Built (Milestone 6): one post pass (render/postfx.ts) for haze and kaleidoscope, skipped when nothing is on.
+- The look of the Rattlesnake video (render/postfx.ts): tape (red and blue bleeding apart, wobbling lines, scanlines, grain), a posterized duotone in each world's own colours (`Theme.duotone`: shadows, body, and highlights that burn like a snake's eye) and letterbox bars. Full on the pre-race flyover and behind the title and menus, a touch of tape on the final lap, and a short bite of duotone when you're hit. Settings > Video look: Full, Light (toned down, no bites; the default when the system asks for reduced motion) or Off. Nothing strobes. The kaleidoscope runs on every track's final lap. Extras: off-road wheel dust, a pre-race flyover with a title card
 
 **Music:** original driving motorik beat, chant-style hook, microtonal-inflected guitar; tempo rises slightly on the final lap.
 
@@ -183,7 +184,7 @@ Every track has a shortcut or alternate route (a branch) that trades risk for ti
 
 ## 10. Audio
 - Music: the seqbaby soundtrack pre-rendered to looping MP3s (tools/render-soundtrack.mjs), played with Web Audio for sample-accurate loops
-- Each track is themed on a King Gizzard & the Lizard Wizard song (audio/songs.ts): Robot Stop, Rattlesnake, Magma, Crumbling Castle, Fishing for Fishies, Ice V, Cyboogie, Catching Smoke, Mars for the Rich, Supercell, The Lord of Lightning and Dragon. Settings > Soundtrack picks the version: Remix (a video game style remix of the song, written in seqbaby: seqbaby-seed gizzracer/remix-*.mjs, cues `<track>-remix` and `<track>-remix-final-lap`), Official (the band's own recording from the Bootlegger archive, `official/<track>`, played whole), Classic (the original themes) or Random (a pick per race). A version that has no file for a track falls back to the classic theme; the title card names the song and the version
+- Each track is themed on a King Gizzard & the Lizard Wizard song (audio/songs.ts): Robot Stop, Rattlesnake, Magma, Crumbling Castle, Fishing for Fishies, Ice V, Cyboogie, Catching Smoke, Mars for the Rich, Supercell, The Lord of Lightning and Dragon. Settings > Soundtrack picks the version: Remix (a video game style remix of the song, written in seqbaby: seqbaby-seed gizzracer/remix-*.mjs, cues `<track>-remix` and `<track>-remix-final-lap`), Official (the band's own recording from the Bootlegger archive, `official/<track>`, played whole), Classic (the original themes) or Random (a pick per race). A version that has no file for a track falls back to the classic theme. Song names aren't shown in the game
 - SFX: synthesized on the same AudioContext (audio/sfx.ts), no sample files. Mix: music around -22 dB RMS, one-shots around -20 dB with the music ducking under them, engine a quieter bed; tires squeal in drifts and hard turns on tarmac
 - Engine pitch tied to speed; fuzz distortion on boosts
 - Positional audio for hazards and nearby karts

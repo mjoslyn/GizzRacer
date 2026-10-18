@@ -6,7 +6,7 @@ import { clamp, damp, lerp, lerpAngle } from './core/math';
 import { CPU_SKILL, CpuDriver } from './ai/cpuDriver';
 import { MusicPlayer } from './audio/music';
 import { Sfx } from './audio/sfx';
-import { TRACK_SONGS, versionCues, type MusicVersion } from './audio/songs';
+import { versionCues, type MusicVersion } from './audio/songs';
 import { GHOST_HZ, GHOST_OVERRUN, GhostRecorder, decodeGhost, encodeGhost, ghostPose, type GhostRun } from './core/ghost';
 import { identity } from './net/identity';
 import { TRIAL_LAPS } from './net/runCheck';
@@ -137,7 +137,13 @@ let fieldSeed = 1;
 /** Flyover seconds left before the countdown starts. */
 let intro = 0;
 /** Smoothed post effect levels. */
-const fx = { haze: 0, kaleido: 0 };
+/** Post effects, eased toward their targets each frame; `bite` is the red flash of a hit, decaying. */
+const fx = { haze: 0, kaleido: 0, vhs: 0, duo: 0, box: 0, bite: 0 };
+
+/** A hit on the player: the screen takes a short red bite, like the Rattlesnake video. */
+function bite(): void {
+  if (settings().videoLook === 'full') fx.bite = 1;
+}
 /** Debug: the simulation stands still without the pause menu (gizz.freeze). */
 let frozen = false;
 let lastInput: InputFrame = NEUTRAL_INPUT;
@@ -158,13 +164,6 @@ function pickVersion(): Exclude<MusicVersion, 'random'> {
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
-/** The song this track is themed on, and which version is playing, for the title card. */
-function songLine(): string {
-  const song = TRACK_SONGS[track.def.music.lap];
-  if (!song) return '';
-  const how = raceVersion === 'remix' ? 'remix' : raceVersion === 'official' ? 'King Gizzard & the Lizard Wizard' : 'classic theme';
-  return `♪ ${song.title} (${how})`;
-}
 /** A Nonagon Infinity is in earshot of you when it's this close (m). */
 const SURGE_WARN = 120;
 /** Seconds the player has been driving against the track. */
@@ -616,6 +615,7 @@ function step(dt: number): void {
     if (e.kart === player) {
       hud.flash(HIT_TEXT[e.by]);
       sfx.hurt(e.by);
+      if (HIT_TEXT[e.by]) bite();
       if (e.by !== 'tempoShift' && e.by !== 'bassDrop') chase.bump(0.5);
       if (e.by === 'bassDrop') chase.bump(1.2);
       if (item && e.from) hud.callout({ from: who(e.from), to: 'you', by: item, kind: 'took' });
@@ -682,6 +682,7 @@ function onEffects(fx: Effect[]): void {
     }
     hud.flash(HIT_TEXT[by] ?? 'HIT!');
     sfx.hurt(by);
+    bite();
     if (e.k !== 'slow') chase.bump(0.5);
     if (from && by in ITEMS) hud.callout({ from: who(from), to: 'you', by, kind: 'took' });
   }
@@ -941,7 +942,7 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
       position: f.position,
       karts: race.karts.length,
       countdown: intro > 0 ? -1 : -race.time,
-      intro: intro > 0 ? { name: track.def.name, sub: [gp ? `Race ${gp.round + 1} of ${gp.tracks.length}` : choice.mode === 'timeTrial' ? 'Time Trial' : `${choice.engine}`, songLine()].filter(Boolean).join(' · ') } : null,
+      intro: intro > 0 ? { name: track.def.name, sub: gp ? `Race ${gp.round + 1} of ${gp.tracks.length}` : choice.mode === 'timeTrial' ? 'Time Trial' : `${choice.engine}` } : null,
       table: table(),
       muted: musicMuted,
       sfxMuted,
@@ -959,9 +960,20 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
   const finalLap = mode === 'race' && player !== null && player.finishTime === null && intro === 0 && race.laps > 1 && player.laps.lap === race.laps - 1;
   fx.haze += (hazeTarget - fx.haze) * damp(2, frameDt);
   fx.kaleido += ((finalLap ? 1 : 0) - fx.kaleido) * damp(1.5, frameDt);
+  // The Rattlesnake video's look: full on tape for the flyover and behind the title and menus, a touch on the final lap, a bite when hit.
+  const look = settings().videoLook;
+  const scale = look === 'full' ? 1 : look === 'light' ? 0.45 : 0;
+  const attract = !player && mode !== 'podium';
+  const flyover = intro > 0;
+  fx.bite = Math.max(0, fx.bite - frameDt * 1.6);
+  const vhsTarget = (flyover ? 1 : attract ? 0.7 : finalLap ? 0.35 : 0) * scale + fx.bite * 0.8;
+  const duoTarget = (flyover ? 0.85 : attract ? 0.75 : 0) * scale + fx.bite * 0.55;
+  fx.vhs += (vhsTarget - fx.vhs) * damp(8, frameDt);
+  fx.duo += (duoTarget - fx.duo) * damp(8, frameDt);
+  fx.box += ((flyover && scale > 0 ? 1 : 0) - fx.box) * damp(6, frameDt);
   if (drawGallery(frameDt)) return;
   const beat = music.beatPhase();
-  postFx.render(scene, camera, { haze: fx.haze, kaleido: fx.kaleido, beat: beat >= 0 ? beat : (elapsed * 2.4) % 1, time: elapsed });
+  postFx.render(scene, camera, { haze: fx.haze, kaleido: fx.kaleido, beat: beat >= 0 ? beat : (elapsed * 2.4) % 1, time: elapsed, vhs: fx.vhs, duo: fx.duo, box: fx.box, palette: theme.duotone });
 });
 
 /** The panel for the results, cup standings and podium screens. */
