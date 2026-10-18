@@ -121,6 +121,12 @@ export interface TrackLocation {
 }
 
 const CURB = 1.2;
+/**
+ * A road this far below the ground runs in a cut: the earth opens along it
+ * and its sides are walls of rock up to the ground and this much over.
+ */
+export const CUT_DEPTH = 0.3;
+export const CUT_RIM = 1.5;
 /** How far above the kart a road surface can be and still be stepped onto. */
 const STEP_UP = 0.8;
 const PIT_FLOOR = -12;
@@ -138,6 +144,8 @@ export class Ribbon {
   readonly turn: Float64Array;
   /** Signed curvature (rad/m) at each sample; positive turns left. */
   readonly curvature: Float32Array;
+  /** 1 where the road is sunk into the ground (Track.cutInto): rock walls up to ground level, and a hole in the ground above. */
+  readonly cut: Uint8Array;
 
   constructor(readonly def: RibbonDef) {
     this.spline = buildSpline(def.points, 2, def.closed);
@@ -154,6 +162,7 @@ export class Ribbon {
       const ds = 4 * (sp.length / (sp.closed ? sp.count : sp.count - 1));
       this.curvature[i] = wrapAngle(Math.atan2(sp.tx[b], sp.tz[b]) - Math.atan2(sp.tx[a], sp.tz[a])) / ds;
     }
+    this.cut = new Uint8Array(sp.count);
     this.scale = def.length > 0 ? this.spline.length / def.length : 1;
     const n = this.spline.count;
     this.sectionIndex = new Uint16Array(n);
@@ -192,6 +201,17 @@ export class Ribbon {
   /** Builder-unit arc length for a spline arc length. */
   toBuilder(s: number): number {
     return s / this.scale;
+  }
+
+  /** Marks where the road runs below the ground and walls it in up to ground level; `overPit` says where the ground is already open. */
+  cutInto(overPit: (x: number, z: number) => boolean): void {
+    const sp = this.spline;
+    for (let i = 0; i < sp.count; i++) {
+      const h = this.heightAt(sp.dist[i]);
+      if (h >= -CUT_DEPTH || this.inGap(sp.dist[i]) || overPit(sp.px[i], sp.pz[i])) continue;
+      this.cut[i] = 1;
+      this.wallHeight[i] = Math.max(this.wallHeight[i], -h + CUT_RIM);
+    }
   }
 
   heightAtBuilder(s: number): number {
@@ -289,6 +309,8 @@ export class Track implements DriveEnv {
     this.main = new Ribbon(def.main);
     this.branches = def.branches.map((b) => new Ribbon(b));
     this.length = this.main.spline.length;
+    // Sunk into the ground (not over a pit, which is open water or a drop): a cut.
+    if (!def.abyss) for (const r of [this.main, ...this.branches]) r.cutInto((x, z) => def.pits.some((p) => inPit(p, x, z)));
   }
 
   get spline(): TrackSpline {
@@ -310,7 +332,7 @@ export class Track implements DriveEnv {
     let support: { ribbon: Ribbon; hit: SplineHit; branch: number } | null = null;
 
     const consider = (ribbon: Ribbon, hit: SplineHit, branch: number) => {
-      if (Math.abs(hit.lateral) > ribbon.halfWidthAt(hit) + CURB) return;
+      if (Math.abs(hit.lateral) > ribbon.halfWidthAt(hit) + CURB || pastEnd(ribbon, hit)) return;
       if (ribbon.inGap(hit.s)) return;
       const ry = ribbon.heightAt(hit.s);
       if (ry > y + STEP_UP || ry <= bestY) return;
@@ -421,6 +443,7 @@ export class Track implements DriveEnv {
   }
 
   private ribbonWalls(ribbon: Ribbon, hit: SplineHit, y: number, radius: number): WallHit | null {
+    if (pastEnd(ribbon, hit)) return null;
     const hw = ribbon.halfWidthAt(hit);
     const lat = hit.lateral;
     const abs = Math.abs(lat);
@@ -442,6 +465,11 @@ export class Track implements DriveEnv {
     }
     return null;
   }
+}
+
+/** A point beyond either end of an open ribbon (a branch) is off it, however close its side line passes. */
+function pastEnd(ribbon: Ribbon, hit: SplineHit): boolean {
+  return !ribbon.spline.closed && hit.distance > Math.abs(hit.lateral) + 0.5;
 }
 
 export function inPit(p: PitDef, x: number, z: number): boolean {

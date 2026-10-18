@@ -17,11 +17,12 @@ export function buildFishiesLagoon(): TrackDef {
   b.straight(6).kicker().straight(44).kicker().straight(70 - 50 - 14 / K);
   b.arc(40, 90);
 
-  b.section('Coral Causeway', { halfWidth: 7, surface: 'boards' });
+  // The causeway dives: down a slipway into the lagoon, along the sea floor under the surface, and back up.
+  b.section('Coral Causeway', { halfWidth: 7, surface: 'sand' });
   b.mark('causeway');
-  b.straight(8).elevate(0).straight(12).elevate(1.5);
-  b.bridge(55, 30, 'water');
-  b.elevate(1.5).straight(12).elevate(0);
+  b.straight(16);
+  b.dive(84, 8, 22, 30);
+  b.straight(10);
 
   b.section('Fish Leap', { halfWidth: 10, surface: 'sand' });
   b.mark('leap');

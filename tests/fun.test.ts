@@ -404,3 +404,27 @@ describe('soundtrack versions', () => {
     for (const t of TRACK_LIST) expect(TRACK_SONGS[t.build().music.lap], t.id).toBeTruthy();
   });
 });
+
+describe('hills', () => {
+  it('a kart flies off the crest of a steep hill, and sticks to a gentle one', () => {
+    const p = kartParams(RACERS[0].stats, '150cc');
+    const hill = (height: number) => {
+      const b = new TrackBuilder({ x: 0, z: -200, h: 0 }, 'Test', { halfWidth: 10 });
+      b.straight(300);
+      b.profile(60, 140, (u) => height * Math.sin(Math.PI * u) ** 2);
+      return new Track({ id: 'hill', name: 'Hill', main: b.finish(false), branches: [], pits: [], boostPads: [], checkpoints: [0.5], laps: 1, bounds: 400, landmarks: [], itemBoxes: [], hazards: [], theme: 'speedway', music: { lap: 'title' } });
+    };
+    const fly = (t: Track) => {
+      const s = createKartState(0, -200, 0);
+      s.speed = p.topSpeed;
+      let air = 0;
+      for (let time = 0; time < 5; time += PHYSICS_DT) {
+        stepKart(s, GAS, p, t, PHYSICS_DT);
+        if (!s.grounded) air += PHYSICS_DT;
+      }
+      return air;
+    };
+    expect(fly(hill(12))).toBeGreaterThan(0.3);
+    expect(fly(hill(1))).toBe(0);
+  });
+});

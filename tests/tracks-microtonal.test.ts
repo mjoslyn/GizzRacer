@@ -87,9 +87,16 @@ function driveRoute(track: Track, pts: { x: number; z: number }[], p: ReturnType
     const aim = pts[Math.min(i + 14, pts.length - 1)];
     const err = wrapAngle(heading(aim.x - kart.x, aim.z - kart.z) - kart.heading);
     stepKart(kart, { ...NEUTRAL_INPUT, throttle: 1, steer: clamp(-err * 2.5, -1, 1) }, p, track, PHYSICS_DT);
-    if (kart.y < -2) return null;
+    if (fallen(track, kart)) return null;
   }
   return null;
+}
+
+/** Below the ground and not on a road there (a cut or the Coral Causeway's dive holds you up): fallen. */
+function fallen(track: Track, kart: KartState): boolean {
+  if (kart.y > -2) return false;
+  const loc = track.locate(kart.x, kart.z, kart.y, kart.trackHint);
+  return !(loc.onRoad && kart.y > loc.height - 1.5);
 }
 
 /** Drives straight down a ribbon from arc length `s` and reports whether the kart landed or fell. */
@@ -102,7 +109,7 @@ function jump(track: Track, s: number, ribbon: number, speed: number, boost: num
   kart.boostTime = boost;
   for (let t = 0; t < 4; t += PHYSICS_DT) {
     stepKart(kart, { ...NEUTRAL_INPUT, throttle: 1 }, p, track, PHYSICS_DT);
-    if (kart.y < -2) return 'fell';
+    if (fallen(track, kart)) return 'fell';
   }
   return 'cleared';
 }
@@ -125,7 +132,7 @@ function followRibbon(track: Track, ribbon: number, s: number, time: number, p: 
     if (ev.launched) launched = true;
     if (ev.landed && !track.locate(kart.x, kart.z, kart.y).onRoad) offLanding = true;
     if (ev.wallHit > 0 && hit.s < r.spline.length - 2) walls++;
-    if (kart.y < -2) return { launched, offLanding, walls, fell: true, end: kart };
+    if (fallen(track, kart)) return { launched, offLanding, walls, fell: true, end: kart };
   }
   return { launched, offLanding, walls, fell: false, end: kart };
 }

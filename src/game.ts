@@ -31,11 +31,11 @@ import { KartView, setDustColor } from './render/kartView';
 import { PostFx } from './render/postfx';
 import { RacerGallery } from './render/gallery';
 import { flareRingTexture, glowTexture, setTextureAnisotropy } from './render/textures';
-import { buildTrackView, type TrackView } from './render/trackView';
+import { WATER_LEVEL, buildTrackView, type TrackView } from './render/trackView';
 import { CUPS, TRACK_LIST } from './tracks/index';
 import { pointAt } from './tracks/spline';
 import { generateTrack, trackId } from './tracks/generator';
-import { Track, type TrackDef } from './tracks/track';
+import { Track, inPit, type TrackDef } from './tracks/track';
 import { Hud, formatTime, type Table, type TableRow } from './ui/hud';
 import { deleteSaved, findSaved, saveTrack, savedTracks } from './core/savedTracks';
 import { Menu, newSeed, type MenuChoice } from './ui/menu';
@@ -138,7 +138,25 @@ let fieldSeed = 1;
 let intro = 0;
 /** Smoothed post effect levels. */
 /** Post effects, eased toward their targets each frame; `bite` is the red flash of a hit, decaying. */
-const fx = { haze: 0, kaleido: 0, vhs: 0, duo: 0, box: 0, bite: 0 };
+const fx = { haze: 0, kaleido: 0, vhs: 0, duo: 0, box: 0, bite: 0, water: 0 };
+
+/** The world's own fog, and the close blue-green of being under water, blended. */
+const SEA_FOG = new THREE.Color(0x0a5a6a);
+const airFog = { color: new THREE.Color(), near: 0, far: 0, known: false };
+function underwaterFog(amount: number): void {
+  const fog = scene.fog as THREE.Fog | null;
+  if (!fog) return;
+  if (!airFog.known || amount === 0) {
+    airFog.color.copy(fog.color);
+    airFog.near = fog.near;
+    airFog.far = fog.far;
+    airFog.known = true;
+    if (amount === 0) return;
+  }
+  fog.color.copy(airFog.color).lerp(SEA_FOG, amount);
+  fog.near = airFog.near + (4 - airFog.near) * amount;
+  fog.far = airFog.far + (70 - airFog.far) * amount;
+}
 
 /** A hit on the player: the screen takes a short red bite, like the Rattlesnake video. */
 function bite(): void {
@@ -971,9 +989,14 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
   fx.vhs += (vhsTarget - fx.vhs) * damp(8, frameDt);
   fx.duo += (duoTarget - fx.duo) * damp(8, frameDt);
   fx.box += ((flyover && scale > 0 ? 1 : 0) - fx.box) * damp(6, frameDt);
+  // Under water: the camera is below a dive's surface.
+  const submerged = trackView!.dives.some((p) => camera.position.y < WATER_LEVEL && inPit(p, camera.position.x, camera.position.z));
+  fx.water += ((submerged ? 1 : 0) - fx.water) * damp(6, frameDt);
+  underwaterFog(fx.water);
+  music.setMuffle(fx.water);
   if (drawGallery(frameDt)) return;
   const beat = music.beatPhase();
-  postFx.render(scene, camera, { haze: fx.haze, kaleido: fx.kaleido, beat: beat >= 0 ? beat : (elapsed * 2.4) % 1, time: elapsed, vhs: fx.vhs, duo: fx.duo, box: fx.box, palette: theme.duotone });
+  postFx.render(scene, camera, { haze: fx.haze, kaleido: fx.kaleido, beat: beat >= 0 ? beat : (elapsed * 2.4) % 1, time: elapsed, vhs: fx.vhs, duo: fx.duo, box: fx.box, palette: theme.duotone, water: fx.water });
 });
 
 /** The panel for the results, cup standings and podium screens. */
@@ -1259,6 +1282,10 @@ Object.assign(window, {
     },
     get race() {
       return race;
+    },
+    /** Camera height, how far under water the view is, and how many dives the track has (testing). */
+    get view() {
+      return { camY: camera.position.y, water: fx.water, dives: trackView?.dives.length ?? 0 };
     },
     /** The kart views (testing animations). */
     get views() {

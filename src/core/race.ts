@@ -407,7 +407,8 @@ export class Race {
   }
 
   private updateFall(kart: RaceKart, dt: number): void {
-    if (kart.state.y > FALL_DEPTH) {
+    // Below ground is only a fall off the road: a road sunk in a cut (or under water) holds you up.
+    if (kart.state.y > FALL_DEPTH || this.onSunkRoad(kart.state)) {
       kart.fallTime = 0;
       return;
     }
@@ -423,6 +424,11 @@ export class Race {
     copyKartState(kart.state, kart.prev);
     kart.fallTime = 0;
     kart.respawned = true;
+  }
+
+  private onSunkRoad(s: KartState): boolean {
+    const loc = this.track.locate(s.x, s.z, s.y, s.trackHint);
+    return loc.onRoad && s.y > loc.height - 1.5;
   }
 
   private updateLaps(kart: RaceKart): void {

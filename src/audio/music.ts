@@ -78,6 +78,9 @@ export class MusicPlayer {
   /** Kept well under the sound effects so they cut through. */
   volume = 0.38;
   private duckGain: GainNode | null = null;
+  /** Muffles the music under water. */
+  private muffle: BiquadFilterNode | null = null;
+  private muffled = 0;
 
   /** Creates the audio context; call from a user gesture (browsers require it). */
   unlock(): void {
@@ -96,7 +99,10 @@ export class MusicPlayer {
     this.master = this.ctx.createGain();
     this.master.gain.value = this.muted ? 0 : this.volume;
     this.duckGain = this.ctx.createGain();
-    this.master.connect(this.duckGain).connect(this.ctx.destination);
+    this.muffle = this.ctx.createBiquadFilter();
+    this.muffle.type = 'lowpass';
+    this.muffle.frequency.value = 20000;
+    this.master.connect(this.duckGain).connect(this.muffle).connect(this.ctx.destination);
     if (this.wanted) void this.start(this.wanted);
   }
 
@@ -134,6 +140,13 @@ export class MusicPlayer {
     g.setValueAtTime(g.value, t);
     g.linearRampToValueAtTime(level, t + 0.03);
     g.setTargetAtTime(1, t + 0.03 + hold * 0.4, hold * 0.3);
+  }
+
+  /** Under water, 0..1: the music sounds like it's coming from above the surface. */
+  setMuffle(amount: number): void {
+    if (!this.muffle || !this.ctx || Math.abs(amount - this.muffled) < 0.02) return;
+    this.muffled = amount;
+    this.muffle.frequency.setTargetAtTime(20000 * Math.pow(500 / 20000, amount), this.ctx.currentTime, 0.08);
   }
 
   /** The shared AudioContext once unlocked; sound effects play on it too. */

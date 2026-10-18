@@ -74,7 +74,7 @@ export interface StepEvents {
  * Bump whenever kart physics, racer stats or a track layout change lap
  * times: online leaderboards and ghosts are kept per version.
  */
-export const PHYSICS_VERSION = 4;
+export const PHYSICS_VERSION = 5;
 export const KART_RADIUS = 1;
 export const GRAVITY = 30;
 export const HOP_VELOCITY = 4.5;
@@ -109,6 +109,12 @@ const STEER_EXPO = 1.6;
 /** A drop bigger than this under the kart counts as leaving a ledge. */
 const LEDGE_DROP = 0.3;
 const MAX_GROUND_VY = 20;
+/**
+ * Over a crest, a kart whose road drops away faster than gravity can pull
+ * it down by more than this (m/s) leaves the road with the climb it had:
+ * airtime, and a trick window like a ramp lip.
+ */
+const CREST_SLACK = 3;
 const TURN_FULL_SPEED = 6;
 const AIR_STEER = 0.6;
 const BRAKE_DECEL = 24;
@@ -310,15 +316,23 @@ export function stepKart(s: KartState, input: InputFrame, p: KartParams, env: Dr
   s.surface = ground.surface;
   const drop = s.groundY - ground.height;
   s.groundY = ground.height;
+  let crest = false;
   if (s.grounded) {
     if (ground.height < s.y - LEDGE_DROP) {
       s.grounded = false;
     } else {
-      s.vy = clamp((ground.height - s.y) / dt, -MAX_GROUND_VY, MAX_GROUND_VY);
-      s.y = ground.height;
+      const vy = clamp((ground.height - s.y) / dt, -MAX_GROUND_VY, MAX_GROUND_VY);
+      if (vy < s.vy - GRAVITY * dt - CREST_SLACK) {
+        // Off the top of a hill: away into the air, still rising as it was.
+        s.grounded = false;
+        crest = true;
+      } else {
+        s.vy = vy;
+        s.y = ground.height;
+      }
     }
   }
-  if (!s.grounded && drop > 1) {
+  if (!s.grounded && (drop > 1 || crest)) {
     // Ground fell away beneath us: a lip. A hop just before it counts as a trick.
     ev.launched = true;
     if (s.hopAge < TRICK_WINDOW) s.trick = true;

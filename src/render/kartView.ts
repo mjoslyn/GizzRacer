@@ -392,7 +392,9 @@ export class KartView {
   /** Over the edge: shrink away in a puff of stars. Through the gate: grow back, with a little overshoot. */
   private updatePresence(s: KartState, dt: number, time: number): void {
     this.gate.update(dt, time);
-    if (s.y < VANISH_Y && !this.gate.active) {
+    // Below ground is a fall only with nothing under you: a road sunk in a cut or under water holds you.
+    const falling = s.y < VANISH_Y && (this.vanished || (!s.grounded && s.y - s.groundY > 2.5));
+    if (falling && !this.gate.active) {
       if (!this.vanished) {
         this.vanished = true;
         for (let i = 0; i < 14; i++) this.emitStar(0.5);

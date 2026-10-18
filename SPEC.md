@@ -134,7 +134,7 @@ Each track has its own theme (render/themes.ts): desert (Rattlesnake Run), green
 - Lap 3: kaleidoscope pulse on screen edges synced to the music beat
 - Diamond-back patterned textures scroll along the track barriers
 - Built (Milestone 6): one post pass (render/postfx.ts) for haze and kaleidoscope, skipped when nothing is on.
-- The look of the Rattlesnake video (render/postfx.ts): tape (red and blue bleeding apart, wobbling lines, scanlines, grain), a posterized duotone in each world's own colours (`Theme.duotone`: shadows, body, and highlights that burn like a snake's eye) and letterbox bars. Full on the pre-race flyover and behind the title and menus, a touch of tape on the final lap, and a short bite of duotone when you're hit. Settings > Video look: Full, Light (toned down, no bites; the default when the system asks for reduced motion) or Off. Nothing strobes. The kaleidoscope runs on every track's final lap. Extras: off-road wheel dust, a pre-race flyover with a title card
+- The look of the Rattlesnake video (render/postfx.ts): tape (red and blue bleeding apart, wobbling lines, scanlines, grain), a posterized duotone in each world's own colours (`Theme.duotone`: shadows, body, and highlights that burn like a snake's eye) and letterbox bars. Full on the pre-race flyover and behind the title and menus, a touch of tape on the final lap, and a short bite of duotone when you're hit. Settings > Video look: Full (the default), Light (toned down, no bites) or Off. Nothing strobes. The kaleidoscope runs on every track's final lap. Extras: off-road wheel dust, a pre-race flyover with a title card
 
 **Music:** original driving motorik beat, chant-style hook, microtonal-inflected guitar; tempo rises slightly on the final lap.
 
@@ -163,6 +163,13 @@ A burning oil field under a black, smoke-choked sky with a blood-red sun, a drag
 ### Generated tracks
 
 The Track Generator mode builds a track at race time from a seed and three dials: theme (desert, speedway, volcano, jungle, lagoon, glacier, neon city, sky, petrodragonic, mars, supercell, void), twists (complexity 1 to 5) and length (short about 0.85 km, medium 1.2 km, long 1.7 km). Each theme brings its road surfaces, liquid for bridges and jumps, hazards, landmarks, music and words for names. The layout is a rectangle skeleton whose sides are filled with modules (straights, S-bends, esses, chicanes, switchback hairpins, jumps, bridges), each measured before it's placed so the sides keep their length; the last two sides aim for the final corner, which a Dubins path closes onto the finish line. A layout that crosses itself or needs a loop to get home is re-rolled from the same seed, so a seed always builds the same track. Every track gets a name (Gizzard-ish adjective, theme place, kind of course); after a race it can be saved under that name or another. Saved tracks are kept in the browser as seed and dials.
+
+### Elevation: cuts, dives and crests
+
+- A road that runs below the ground is sunk in a cut (`Track.cutInto`): the ground opens along it and its sides are rock walls up to ground level and 1.5 m over. Rattle Canyon drops 8 m into the desert floor
+- `TrackBuilder.dive` takes a road down under the surface of a pit of water and back out. Fishies Lagoon's Coral Causeway dives 8 m to the lagoon floor instead of riding over it: kelp, coral, circling fish, bubbles, light shafts and the surface rippling overhead; with the camera under the surface the picture turns blue-green and wavers with caustics, the fog closes in and the music is muffled
+- A kart is only falling if it's below ground with no road under it, so sunk and submerged roads hold
+- `TrackBuilder.profile` shapes a stretch of road's height after the layout is drawn (hills, dips, coaster drops). Over a crest that drops away faster than gravity, a kart takes off with the climb it had: airtime and a trick window, like a ramp lip
 
 ### Shortcuts, kickers and double boxes
 

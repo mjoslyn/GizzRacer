@@ -84,9 +84,12 @@ function layout(washLength: number): TrackBuilder {
   b.arc(32, bend).arc(32, -2 * bend).arc(32, 2 * bend).arc(32, -2 * bend).arc(32, 2 * bend).arc(32, -bend);
   b.straight(10).arc(40, -90);
 
+  // Rattle Canyon is sunk into the desert floor: down into it, round its bends, and back up to the Coil.
   b.section('Rattle Canyon', { halfWidth: 6.5, wallHeight: 9, surface: 'rock' });
   b.mark('canyon');
-  b.straight(35).arc(90, 22).straight(30).arc(90, -22).straight(30);
+  b.elevate(0).straight(35).elevate(-8);
+  b.arc(90, 22).straight(30).arc(90, -22);
+  b.elevate(-8).straight(30).elevate(0);
 
   b.section('The Coil', { halfWidth: 8, wallHeight: 1.5 });
   b.mark('coil');

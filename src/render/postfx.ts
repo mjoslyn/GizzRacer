@@ -12,6 +12,8 @@ export interface PostFxParams {
   vhs?: number;
   duo?: number;
   box?: number;
+  /** Under water, 0..1: blue-green, rippling, with caustic light. */
+  water?: number;
   /** The duotone's shadows, body and highlights (the track theme's `duotone`). */
   palette?: readonly [number, number, number];
 }
@@ -33,6 +35,7 @@ uniform float uAspect;
 uniform float uVhs;
 uniform float uDuo;
 uniform float uBox;
+uniform float uWater;
 uniform vec3 uDuoDark;
 uniform vec3 uDuoMid;
 uniform vec3 uDuoHigh;
@@ -57,6 +60,9 @@ void main() {
     float v = sin(uv.x * 90.0 + uTime * 5.1) * 0.5;
     uv += vec2(w, v * 0.5) * 0.0024 * uHaze * band;
   }
+
+  // Under water everything wavers.
+  if (uWater > 0.0) uv += vec2(sin(uv.y * 22.0 + uTime * 2.1), cos(uv.x * 17.0 + uTime * 1.7)) * 0.0035 * uWater;
 
   vec4 col;
   if (uVhs > 0.0) {
@@ -88,6 +94,15 @@ void main() {
     kc = mix(kc, kc * hue(r * 1.4 - uTime * 0.25) * 1.8, 0.55);
     float edge = smoothstep(0.5 - pulse * 0.08, 0.85, r);
     col.rgb = mix(col.rgb, kc, edge * uKaleido * (0.45 + 0.55 * pulse));
+  }
+
+  if (uWater > 0.0) {
+    // Light filtered blue-green, darker with depth down the screen, and the dance of caustics.
+    vec3 sea = col.rgb * vec3(0.3, 0.8, 0.95) + vec3(0.0, 0.03, 0.05);
+    sea *= mix(1.05, 0.6, 1.0 - uv.y);
+    float c = sin(uv.x * 38.0 + uTime * 1.9) + sin(uv.y * 31.0 - uTime * 1.4) + sin((uv.x + uv.y) * 27.0 + uTime * 2.3);
+    sea += vec3(0.6, 0.9, 1.0) * pow(max(c / 3.0, 0.0), 6.0) * 0.18;
+    col.rgb = mix(col.rgb, sea, uWater);
   }
 
   // The Rattlesnake video: posterized into a duotone in the world's colours,
@@ -140,6 +155,7 @@ export class PostFx {
           uVhs: { value: 0 },
           uDuo: { value: 0 },
           uBox: { value: 0 },
+          uWater: { value: 0 },
           uDuoDark: { value: new THREE.Color(0x0a0002) },
           uDuoMid: { value: new THREE.Color(0xc00410) },
           uDuoHigh: { value: new THREE.Color(0xf0c020) },
@@ -157,7 +173,8 @@ export class PostFx {
     const vhs = p.vhs ?? 0;
     const duo = p.duo ?? 0;
     const box = p.box ?? 0;
-    if (p.haze < 0.01 && p.kaleido < 0.01 && vhs < 0.01 && duo < 0.01 && box < 0.01) {
+    const water = p.water ?? 0;
+    if (p.haze < 0.01 && p.kaleido < 0.01 && vhs < 0.01 && duo < 0.01 && box < 0.01 && water < 0.01) {
       r.render(scene, camera);
       return;
     }
@@ -179,6 +196,7 @@ export class PostFx {
     u.uVhs.value = vhs;
     u.uDuo.value = duo;
     u.uBox.value = box;
+    u.uWater.value = water;
     if (p.palette) {
       (u.uDuoDark.value as THREE.Color).setHex(p.palette[0]);
       (u.uDuoMid.value as THREE.Color).setHex(p.palette[1]);

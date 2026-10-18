@@ -161,6 +161,22 @@ export class TrackBuilder {
     return this;
   }
 
+  /**
+   * Shapes the road's height between builder arc lengths `from` and `to`
+   * (from marks, say) by `f(u)`, u running 0..1, sampled every `step`
+   * metres; any height keys already in that stretch give way. For hills,
+   * dips and roller coasters laid over a layout after it's drawn. Keep
+   * kickers, gaps and dives out of the stretch.
+   */
+  profile(from: number, to: number, f: (u: number) => number, step = 4): this {
+    const keys = this.elevation.filter(([s]) => s < from || s > to);
+    const n = Math.max(1, Math.ceil((to - from) / step));
+    for (let k = 0; k <= n; k++) keys.push([from + ((to - from) * k) / n, f(k / n)]);
+    keys.sort((a, b) => a[0] - b[0]);
+    this.elevation.splice(0, this.elevation.length, ...keys);
+    return this;
+  }
+
   /** Sets the road height at the current position. */
   elevate(y: number): this {
     this.elevation.push([this.s, y]);
@@ -185,6 +201,21 @@ export class TrackBuilder {
     this.integrate(len, () => 0);
     this.gaps.push([from, this.s]);
     return this;
+  }
+
+  /**
+   * A dive under water: over a pit of water `len` long, the road ramps
+   * `depth` down over `ramp`, runs along under the surface, and climbs back
+   * out. Unscaled, like a bridge.
+   */
+  dive(len: number, depth: number, ramp: number, pitHalfWidth: number, liquid: PitDef['liquid'] = 'water'): this {
+    const base = this.elevation.length ? this.elevation[this.elevation.length - 1][1] : 0;
+    this.addPit(len, pitHalfWidth, liquid, depth + 6, 0);
+    this.elevate(base);
+    this.integrate(ramp, () => 0).elevate(base - depth);
+    this.integrate(len - 2 * ramp, () => 0).elevate(base - depth);
+    this.integrate(ramp, () => 0);
+    return this.elevate(base);
   }
 
   /** Straight road over a pit: a bridge with nothing either side. */

@@ -13,9 +13,14 @@ const ROAD_TILE = 14;
 /** Draw roads a hair above their physical height to stay clear of the ground. */
 const ROAD_LIFT = 0.03;
 
+/** Height of the surface of water in a pit; under it, the camera is under water. */
+export const WATER_LEVEL = -2.5;
+
 export interface TrackView {
   group: THREE.Group;
   theme: Theme;
+  /** Pits of water a road dives into, for the under-water look (game.ts). */
+  dives: PitDef[];
   /** `skyHue` rotates the sky's colors, in radians. */
   update(time: number, cameraPos: THREE.Vector3, skyHue?: number): void;
 }
@@ -149,6 +154,9 @@ export function buildTrackView(track: Track): TrackView {
       animated.push(w.update);
     }
   }
+  // Where a road dives under water: kelp, fish, bubbles and light from the surface.
+  const dives = abyss ? [] : track.def.pits.filter((p) => p.liquid === 'water' && divesInto(track, p));
+  for (const p of dives) group.add(underwater(track, p, animated));
   if (!abyss) group.add(boundaryCliffs(track.def.bounds, mats));
   group.add(trackDetail(track, theme, animated));
   group.add(decor(track, mats, theme, animated));
@@ -161,6 +169,7 @@ export function buildTrackView(track: Track): TrackView {
   return {
     group,
     theme,
+    dives,
     update(time: number, cameraPos: THREE.Vector3, hue = 0) {
       skyHue.value = hue;
       padTexture.offset.y = -time * 2;
@@ -222,6 +231,8 @@ function ground(track: Track, theme: Theme): THREE.Mesh {
     const hole = pitCorners(p).map(([x, z]) => new THREE.Vector2(x, -z));
     shape.holes.push(new THREE.Path(hole));
   }
+  // Roads sunk into the ground: the earth opens along them out to their rock walls.
+  for (const r of [track.main, ...track.branches]) for (const hole of cutHoles(r)) shape.holes.push(new THREE.Path(hole));
   const geo = new THREE.ShapeGeometry(shape);
   const map = theme.ground();
   map.repeat.set(1 / theme.groundTile, 1 / theme.groundTile);
@@ -229,6 +240,157 @@ function ground(track: Track, theme: Theme): THREE.Mesh {
   const mesh = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map, polygonOffset: true, polygonOffsetFactor: 4, polygonOffsetUnits: 4 }));
   mesh.rotation.x = -Math.PI / 2;
   return mesh;
+}
+
+/** How far out from the centerline each sample's walls stand: tall walls are jagged rock (wallJag), low ones a straight barrier. */
+function wallOffsets(ribbon: Ribbon): Float32Array {
+  const jag = wallJag(ribbon);
+  return Float32Array.from(ribbon.halfWidth, (hw, i) => hw + 0.3 + (ribbon.wallHeight[i] >= 4 ? jag[i] : 0));
+}
+
+/** The jag of a ribbon's tall rock walls, the same every time it's asked for. */
+function wallJag(ribbon: Ribbon): Float32Array {
+  const rand = seededRandom(ribbon.spline.count);
+  return Float32Array.from({ length: ribbon.spline.count }, () => rand() * 1.4);
+}
+
+/** Outlines (shape space: x, -z) of the ground to open over each sunk stretch of a ribbon, wall to wall. */
+function cutHoles(ribbon: Ribbon): THREE.Vector2[][] {
+  const sp = ribbon.spline;
+  const off = wallOffsets(ribbon);
+  const holes: THREE.Vector2[][] = [];
+  for (let i = 0; i < sp.count; i++) {
+    if (!ribbon.cut[i]) continue;
+    let j = i;
+    while (j + 1 < sp.count && ribbon.cut[j + 1]) j++;
+    // One sample more each end, so the road's first dip below the ground shows too.
+    const a = Math.max(0, i - 1);
+    const b = Math.min(sp.count - 1, j + 1);
+    const left: THREE.Vector2[] = [];
+    const right: THREE.Vector2[] = [];
+    for (let k = a; k <= b; k++) {
+      left.push(new THREE.Vector2(sp.px[k] + sp.tz[k] * off[k], -(sp.pz[k] - sp.tx[k] * off[k])));
+      right.push(new THREE.Vector2(sp.px[k] - sp.tz[k] * off[k], -(sp.pz[k] + sp.tx[k] * off[k])));
+    }
+    holes.push([...left, ...right.reverse()]);
+    i = j;
+  }
+  return holes;
+}
+
+/** Whether any road runs under the surface of pit `p`. */
+function divesInto(track: Track, p: PitDef): boolean {
+  return [track.main, ...track.branches].some((r) => {
+    const sp = r.spline;
+    for (let i = 0; i < sp.count; i++) if (r.heightAt(sp.dist[i]) < WATER_LEVEL - 1 && inPit(p, sp.px[i], sp.pz[i])) return true;
+    return false;
+  });
+}
+
+/**
+ * The world under a lagoon's surface: kelp swaying on the floor, fish
+ * circling, bubbles rising, shafts of light from above, and the surface
+ * rippling overhead. Kept off the road.
+ */
+function underwater(track: Track, p: PitDef, animated: ((time: number) => void)[]): THREE.Group {
+  const g = new THREE.Group();
+  const rand = seededRandom(Math.round(p.x * 7 + p.z * 13));
+  const fx = Math.sin(p.heading);
+  const fz = Math.cos(p.heading);
+  const floor = -p.depth;
+  const at = (a: number, b: number): [number, number] => [p.x + fx * a * p.halfLength - fz * b * p.halfWidth, p.z + fz * a * p.halfLength + fx * b * p.halfWidth];
+  const offRoad = (x: number, z: number, margin: number) => [track.main, ...track.branches].every((r) => nearestOnSpline(r.spline, x, z).distance > Math.max(...r.halfWidth) + margin);
+
+  // Kelp: tall ribbons rooted on the floor, swaying.
+  const kelpGeo = new THREE.PlaneGeometry(0.9, 1, 1, 8);
+  kelpGeo.translate(0, 0.5, 0);
+  const kelpMats = [0x2a8a3a, 0x4aa040, 0x6a8a20].map((c) => new THREE.MeshLambertMaterial({ color: c, side: THREE.DoubleSide }));
+  const kelp: { m: THREE.Mesh; phase: number }[] = [];
+  for (let i = 0; i < 70; i++) {
+    const [x, z] = at(rand() * 2 - 1, rand() * 2 - 1);
+    if (!offRoad(x, z, 2.5)) continue;
+    const m = new THREE.Mesh(kelpGeo, kelpMats[i % 3]);
+    const h = 4 + rand() * (p.depth - 5);
+    m.scale.set(0.6 + rand() * 0.8, h, 1);
+    m.position.set(x, floor, z);
+    m.rotation.y = rand() * Math.PI;
+    g.add(m);
+    kelp.push({ m, phase: rand() * 6.3 });
+  }
+  // Rocks and coral heads on the floor.
+  const rockGeo = new THREE.DodecahedronGeometry(1, 0);
+  const coralMats = [0xff6a8a, 0xffa040, 0xb070ff, 0x8a9aa0].map((c) => new THREE.MeshLambertMaterial({ color: c, flatShading: true }));
+  for (let i = 0; i < 40; i++) {
+    const [x, z] = at(rand() * 2 - 1, rand() * 2 - 1);
+    if (!offRoad(x, z, 1.5)) continue;
+    const m = new THREE.Mesh(rockGeo, coralMats[i % 4]);
+    m.scale.set(0.6 + rand() * 1.6, 0.5 + rand() * 1.4, 0.6 + rand() * 1.6);
+    m.position.set(x, floor + 0.3, z);
+    m.rotation.set(rand(), rand() * 6, rand());
+    g.add(m);
+  }
+  // Fish: little schools circling at different depths.
+  const fishGeo = new THREE.ConeGeometry(0.22, 0.8, 6);
+  fishGeo.rotateX(Math.PI / 2);
+  const fishMats = [0xffd23a, 0x3adcff, 0xff7a3a, 0xffffff].map((c) => new THREE.MeshLambertMaterial({ color: c, emissive: c, emissiveIntensity: 0.25 }));
+  const schools: { fish: THREE.Mesh[]; cx: number; cz: number; y: number; r: number; speed: number }[] = [];
+  for (let i = 0; i < 7; i++) {
+    const [cx, cz] = at(rand() * 1.6 - 0.8, rand() * 1.6 - 0.8);
+    const fish: THREE.Mesh[] = [];
+    for (let k = 0; k < 7; k++) {
+      const f = new THREE.Mesh(fishGeo, fishMats[i % 4]);
+      g.add(f);
+      fish.push(f);
+    }
+    schools.push({ fish, cx, cz, y: floor + 2 + rand() * (p.depth - 5), r: 4 + rand() * 7, speed: (0.3 + rand() * 0.4) * (rand() < 0.5 ? -1 : 1) });
+  }
+  // Bubbles rising from the floor to the surface, and back round again.
+  const bubbleTex = tex.glowTexture('rgba(255,255,255,0.9)', 'rgba(200,240,255,0)', 64);
+  const bubbles: { s: THREE.Sprite; x: number; z: number; phase: number; speed: number }[] = [];
+  for (let i = 0; i < 60; i++) {
+    const [x, z] = at(rand() * 2 - 1, rand() * 2 - 1);
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: bubbleTex, color: 0xd8f8ff, transparent: true, depthWrite: false, opacity: 0.7 }));
+    s.scale.setScalar(0.15 + rand() * 0.3);
+    g.add(s);
+    bubbles.push({ s, x, z, phase: rand(), speed: 0.1 + rand() * 0.15 });
+  }
+  // Shafts of light slanting down from the surface.
+  const shaftMat = new THREE.MeshBasicMaterial({ color: 0xbff8ff, transparent: true, opacity: 0.08, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+  for (let i = 0; i < 12; i++) {
+    const [x, z] = at(rand() * 1.8 - 0.9, rand() * 1.8 - 0.9);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(2.5 + rand() * 3, p.depth), shaftMat);
+    m.position.set(x, WATER_LEVEL - p.depth / 2, z);
+    m.rotation.set(0, rand() * Math.PI, 0.25);
+    g.add(m);
+  }
+  // The surface seen from below: a rippling sheet of light.
+  const ripples = tex.lagoonTexture();
+  ripples.repeat.set(p.halfLength / 6, p.halfWidth / 6);
+  const corners = pitCorners(p);
+  const under = new THREE.BufferGeometry();
+  under.setAttribute('position', new THREE.Float32BufferAttribute(corners.map(([x, z]) => [x, WATER_LEVEL - 0.05, z]).flat(), 3));
+  under.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, 1, 0, 1, 1, 0, 1], 2));
+  under.setIndex([0, 1, 2, 0, 2, 3]);
+  const ceiling = new THREE.Mesh(under, new THREE.MeshBasicMaterial({ map: ripples, color: 0x9ff0ff, transparent: true, opacity: 0.55, side: THREE.DoubleSide, depthWrite: false }));
+  g.add(ceiling);
+
+  animated.push((time) => {
+    for (const k of kelp) k.m.rotation.z = Math.sin(time * 0.9 + k.phase) * 0.12;
+    for (const sc of schools) {
+      sc.fish.forEach((f, k) => {
+        const a = time * sc.speed + k * 0.35;
+        f.position.set(sc.cx + Math.cos(a) * sc.r + Math.sin(k * 2.1) * 0.6, sc.y + Math.sin(time * 1.3 + k) * 0.4, sc.cz + Math.sin(a) * sc.r);
+        f.rotation.y = -a + (sc.speed > 0 ? 0 : Math.PI);
+      });
+    }
+    for (const b of bubbles) {
+      const u = (b.phase + time * b.speed) % 1;
+      b.s.position.set(b.x + Math.sin(time * 2 + b.phase * 9) * 0.25, floor + u * (WATER_LEVEL - floor), b.z);
+    }
+    shaftMat.opacity = 0.06 + 0.03 * Math.sin(time * 0.7);
+    ripples.offset.set(time * 0.03, time * 0.02);
+  });
+  return g;
 }
 
 function pitCorners(p: { x: number; z: number; heading: number; halfLength: number; halfWidth: number }): [number, number][] {
@@ -257,7 +419,7 @@ function pitMesh(p: PitDef, mats: Materials): THREE.Group {
   if (p.liquid) {
     // A glowing lava or water surface a little below ground level.
     const surface = new THREE.BufferGeometry();
-    surface.setAttribute('position', new THREE.Float32BufferAttribute(corners.map(([x, z]) => [x, -2.5, z]).flat(), 3));
+    surface.setAttribute('position', new THREE.Float32BufferAttribute(corners.map(([x, z]) => [x, WATER_LEVEL, z]).flat(), 3));
     surface.setAttribute('uv', new THREE.Float32BufferAttribute(corners.map(([x, z]) => [x / 10, z / 10]).flat(), 2));
     surface.setIndex([0, 2, 1, 0, 3, 2]);
     surface.computeVertexNormals();
@@ -289,8 +451,6 @@ function ribbonMeshes(ribbon: Ribbon, mats: Materials, floating = false): THREE.
   const g = new THREE.Group();
   const sp = ribbon.spline;
   const segs = sp.closed ? sp.count : sp.count - 1;
-  const rand = seededRandom(sp.count);
-
   const road = new Map<RoadSurface, GeoBuilder>();
   const curbs = new GeoBuilder();
   const tallWalls = new GeoBuilder();
@@ -299,7 +459,7 @@ function ribbonMeshes(ribbon: Ribbon, mats: Materials, floating = false): THREE.
 
   const y = (i: number) => ribbon.heightAt(sp.dist[i]) + ROAD_LIFT;
   const edge = (i: number, lat: number, h: number): V3 => [sp.px[i] - sp.tz[i] * lat, h, sp.pz[i] + sp.tx[i] * lat];
-  const jag = Float32Array.from({ length: sp.count }, () => rand() * 1.4);
+  const jag = wallJag(ribbon);
 
   for (let i = 0; i < segs; i++) {
     const j = (i + 1) % sp.count;
@@ -370,6 +530,13 @@ function ribbonMeshes(ribbon: Ribbon, mats: Materials, floating = false): THREE.
       skirts.quad(edge(i, -li, yi - DECK_DEPTH), edge(j, -lj, yj - DECK_DEPTH), edge(i, li, yi - DECK_DEPTH), edge(j, lj, yj - DECK_DEPTH), [0, 1], [0, 1], true);
       for (const side of [-1, 1]) {
         skirts.quad(edge(i, side * li, yi + 0.05), edge(j, side * lj, yj + 0.05), edge(i, side * li, yi - DECK_DEPTH), edge(j, side * lj, yj - DECK_DEPTH), [sp.dist[i] / 10, sp.dist[j] / 10], [0.15, 0], false, true);
+      }
+    } else if ((yi < -0.05 || yj < -0.05) && !ribbon.cut[i]) {
+      // Under water over a pit: the road runs on a bank of sand down to the floor.
+      for (const side of [-1, 1]) {
+        const lat = side * (hwi + CURB_WIDTH);
+        const latj = side * (hwj + CURB_WIDTH);
+        skirts.quad(edge(i, lat, yi), edge(j, latj, yj), edge(i, lat * 1.6, -16), edge(j, latj * 1.6, -16), [sp.dist[i] / 10, sp.dist[j] / 10], [1.6, 0], false, true);
       }
     } else if (yi > 0.05 || yj > 0.05) {
       for (const side of [-1, 1]) {
