@@ -4,8 +4,9 @@ import { InputManager, NEUTRAL_INPUT, type InputFrame } from './core/input';
 import { FixedLoop, PHYSICS_DT } from './core/loop';
 import { clamp, damp, lerp, lerpAngle } from './core/math';
 import { CPU_SKILL, CpuDriver } from './ai/cpuDriver';
-import { MusicPlayer, type MusicCue } from './audio/music';
+import { MusicPlayer } from './audio/music';
 import { Sfx } from './audio/sfx';
+import { TRACK_SONGS, versionCues, type MusicVersion } from './audio/songs';
 import { GHOST_HZ, GHOST_OVERRUN, GhostRecorder, decodeGhost, encodeGhost, ghostPose, type GhostRun } from './core/ghost';
 import { identity } from './net/identity';
 import { TRIAL_LAPS } from './net/runCheck';
@@ -144,6 +145,26 @@ let musicMuted = false;
 let sfxMuted = false;
 /** What the player's kart was doing last tick, to turn changes into sounds. */
 const heard = { count: 0, lap: 0, tier: 0, rolling: false };
+/** This race's soundtrack version: the setting, or this race's pick when it's Random. */
+let raceVersion: Exclude<MusicVersion, 'random'> = 'remix';
+let officialAvailable = false;
+void music.hasAny('official/').then((v) => (officialAvailable = settingsScreen.officialAvailable = v));
+
+/** Picks the version for a race; Random draws from the ones there are. */
+function pickVersion(): Exclude<MusicVersion, 'random'> {
+  const v = settings().musicVersion;
+  if (v !== 'random') return v;
+  const pool: Exclude<MusicVersion, 'random'>[] = officialAvailable ? ['remix', 'official', 'classic'] : ['remix', 'classic'];
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+/** The song this track is themed on, and which version is playing, for the title card. */
+function songLine(): string {
+  const song = TRACK_SONGS[track.def.music.lap];
+  if (!song) return '';
+  const how = raceVersion === 'remix' ? 'remix' : raceVersion === 'official' ? 'King Gizzard & the Lizard Wizard' : 'classic theme';
+  return `♪ ${song.title} (${how})`;
+}
 /** A Nonagon Infinity is in earshot of you when it's this close (m). */
 const SURGE_WARN = 120;
 /** Seconds the player has been driving against the track. */
@@ -378,7 +399,8 @@ function startRace(withPlayer: boolean): void {
   if (net) race.time = Math.max(-10, -(net.start.at - net.client.serverNow()) / 1000);
   if (withPlayer) {
     setMode('race');
-    music.play(track.def.music.lap as MusicCue);
+    raceVersion = pickVersion();
+    music.play(versionCues(track.def.music.lap, raceVersion));
   }
 }
 
@@ -823,9 +845,11 @@ function updateSounds(dt: number): void {
 }
 
 function updateMusic(p: RaceKart): void {
+  const { lap, finalLap } = track.def.music;
   if (p.finishTime !== null) music.play('podium');
-  else if (track.def.music.finalLap && race.laps > 1 && p.laps.lap === race.laps - 1) music.play(track.def.music.finalLap as MusicCue);
-  else music.play(track.def.music.lap as MusicCue);
+  // A recording plays whole: no final-lap cut.
+  else if (race.laps > 1 && p.laps.lap === race.laps - 1 && raceVersion !== 'official') music.play(versionCues(finalLap ?? `${lap}-final-lap`, raceVersion).filter((c) => finalLap || c !== `${lap}-final-lap`));
+  else music.play(versionCues(lap, raceVersion));
 }
 
 function interpolate(kart: RaceKart, alpha: number): KartState {
@@ -922,7 +946,7 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
       position: f.position,
       karts: race.karts.length,
       countdown: intro > 0 ? -1 : -race.time,
-      intro: intro > 0 ? { name: track.def.name, sub: gp ? `Race ${gp.round + 1} of ${gp.tracks.length}` : choice.mode === 'timeTrial' ? 'Time Trial' : `${choice.engine}` } : null,
+      intro: intro > 0 ? { name: track.def.name, sub: [gp ? `Race ${gp.round + 1} of ${gp.tracks.length}` : choice.mode === 'timeTrial' ? 'Time Trial' : `${choice.engine}`, songLine()].filter(Boolean).join(' · ') } : null,
       table: table(),
       muted: musicMuted,
       sfxMuted,

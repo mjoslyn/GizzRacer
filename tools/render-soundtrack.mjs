@@ -20,8 +20,9 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
 const SEQBABY_DIR = path.resolve(process.env.SEQBABY_DIR || path.join(ROOT, '../mjoslyn/seqbaby'));
 const SEED_DIR = path.resolve(process.env.SEQBABY_SEED_DIR || path.join(ROOT, '../seqbaby-seed'));
-const OUT_DIR = path.join(ROOT, 'public/music');
-const PORT = 4321;
+// MUSIC_OUT and RENDER_PORT let renders run side by side (a scratch folder each, a port each).
+const OUT_DIR = path.resolve(process.env.MUSIC_OUT || path.join(ROOT, 'public/music'));
+const PORT = Number(process.env.RENDER_PORT || 4321);
 const SAMPLE_RATE = 44100;
 const KBPS = 160;
 
@@ -57,6 +58,9 @@ process.env.SEQBABY_DIR = SEQBABY_DIR;
 const { PEOPLE } = await import(pathToFileURL(path.join(SEED_DIR, 'people.mjs')).href);
 const person = PEOPLE.find((p) => p.handle === 'gizzracer');
 if (!person) throw new Error('no gizzracer in seqbaby-seed/people.mjs');
+
+// The remixes (seqbaby-seed gizzracer/remix-*.mjs) name their own cue and loop length.
+for (const song of person.songs) if (song.cue && !CUES.some((c) => c.id === song.cue)) CUES.push({ id: song.cue, title: song.title, bars: song.bars });
 
 const only = process.argv[2];
 const cues = CUES.filter((c) => !only || c.id.includes(only));

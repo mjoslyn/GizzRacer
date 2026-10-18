@@ -392,3 +392,15 @@ describe('online', () => {
     expect(snap.it[0]).toHaveLength(3);
   });
 });
+
+describe('soundtrack versions', () => {
+  it('a remix falls back to the classic theme, and a final lap to the lap remix', async () => {
+    const { versionCues, TRACK_SONGS } = await import('../src/audio/songs');
+    expect(versionCues('rattlesnake-run', 'remix')).toEqual(['rattlesnake-run-remix', 'rattlesnake-run']);
+    expect(versionCues('rattlesnake-run-final-lap', 'remix')).toEqual(['rattlesnake-run-remix-final-lap', 'rattlesnake-run-remix', 'rattlesnake-run-final-lap']);
+    expect(versionCues('supercell', 'official')).toEqual(['official/supercell', 'supercell']);
+    expect(versionCues('supercell', 'classic')).toEqual(['supercell']);
+    const { TRACK_LIST } = await import('../src/tracks/index');
+    for (const t of TRACK_LIST) expect(TRACK_SONGS[t.build().music.lap], t.id).toBeTruthy();
+  });
+});

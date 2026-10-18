@@ -5,30 +5,15 @@
  * from the manifest.
  */
 
-export type MusicCue =
-  | 'title'
-  | 'infinite-loop-speedway'
-  | 'rattlesnake-run'
-  | 'rattlesnake-run-final-lap'
-  | 'volcano-fortress'
-  | 'polygondwanaland-jungle'
-  | 'fishies-lagoon'
-  | 'ice-v-glacier'
-  | 'cyboogie-city'
-  | 'butterfly-skyway'
-  | 'butterfly-skyway-final-lap'
-  | 'petrodragonic-apocalypse'
-  | 'petrodragonic-apocalypse-final-lap'
-  | 'hell-on-mars'
-  | 'hell-on-mars-final-lap'
-  | 'supercell'
-  | 'supercell-final-lap'
-  | 'murder-of-the-universe'
-  | 'murder-of-the-universe-final-lap'
-  | 'podium';
+/**
+ * A file in public/music: a classic theme (its id), a remix (`<track>-remix`,
+ * `<track>-remix-final-lap`) or a recording (`official/<track>`). Which exist
+ * is in manifest.json.
+ */
+export type MusicCue = string;
 
-/** Tempo of each song in seqbaby (seqbaby-seed people.mjs), for beat-synced visuals. */
-const BPM: Record<MusicCue, number> = {
+/** Tempo of each classic song in seqbaby (seqbaby-seed people.mjs), for beat-synced visuals; the rest come from the manifest. */
+const BPM: Record<string, number> = {
   title: 126,
   'infinite-loop-speedway': 164,
   'rattlesnake-run': 148,
@@ -52,11 +37,14 @@ const BPM: Record<MusicCue, number> = {
 };
 
 interface ManifestEntry {
-  loopSamples: number;
-  sampleRate: number;
+  /** Absent for a recording, which loops whole. */
+  loopSamples?: number;
+  sampleRate?: number;
+  bpm?: number;
 }
 
 interface Loop {
+  bpm: number;
   buffer: AudioBuffer;
   start: number; // seconds
   end: number;
@@ -64,6 +52,7 @@ interface Loop {
 
 interface Playing {
   cue: MusicCue;
+  bpm: number;
   source: AudioBufferSourceNode;
   gain: GainNode;
   /** Context time the loop's first beat played, and the loop length. */
@@ -83,6 +72,8 @@ export class MusicPlayer {
   private readonly loops = new Map<MusicCue, Promise<Loop>>();
   private current: Playing | null = null;
   private wanted: MusicCue | null = null;
+  /** What was last asked for (a cue, or a list of them joined), so asking again is a no-op. */
+  private wantedKey: string | null = null;
   private muted = false;
   /** Kept well under the sound effects so they cut through. */
   volume = 0.38;
@@ -126,7 +117,7 @@ export class MusicPlayer {
     const c = this.current;
     if (!c || !this.ctx) return -1;
     const pos = (((this.ctx.currentTime - c.startedAt) % c.length) + c.length) % c.length;
-    const beats = (pos * BPM[c.cue]) / 60;
+    const beats = (pos * c.bpm) / 60;
     return beats - Math.floor(beats);
   }
 
@@ -165,15 +156,50 @@ export class MusicPlayer {
     return this.muted;
   }
 
-  /** Crossfades to `cue`; a no-op if it is already playing. Remembered until audio unlocks. */
-  play(cue: MusicCue): void {
-    if (this.wanted === cue) return;
-    this.wanted = cue;
-    if (this.ctx) void this.start(cue);
+  /**
+   * Crossfades to `cue`, or to the first of a list that exists (a remix,
+   * falling back to the classic theme); a no-op if it is already playing.
+   * Remembered until audio unlocks.
+   */
+  play(cue: MusicCue | readonly MusicCue[]): void {
+    const key = typeof cue === 'string' ? cue : cue.join('|');
+    if (this.wantedKey === key) return;
+    this.wantedKey = key;
+    const list = typeof cue === 'string' ? [cue] : cue;
+    void this.available(list).then((found) => {
+      if (this.wantedKey !== key || !found) return;
+      this.wanted = found;
+      if (this.ctx) void this.start(found);
+    });
+  }
+
+  /** The manifest: which cues exist. Fetched once. */
+  private entries(): Promise<Record<string, ManifestEntry>> {
+    this.manifest ??= fetch(`${BASE}manifest.json`)
+      .then((r) => r.json())
+      .catch(() => ({}));
+    return this.manifest;
+  }
+
+  /** The first of `cues` the manifest lists (the last one if the manifest can't be read). */
+  private async available(cues: readonly MusicCue[]): Promise<MusicCue | null> {
+    const m = await this.entries();
+    return cues.find((c) => c in m) ?? (Object.keys(m).length ? null : cues[cues.length - 1] ?? null);
+  }
+
+  /** Whether any cue under `prefix` exists (e.g. 'official/'). */
+  async hasAny(prefix: string): Promise<boolean> {
+    return Object.keys(await this.entries()).some((k) => k.startsWith(prefix));
+  }
+
+  /** Whether `cue` exists. */
+  async has(cue: MusicCue): Promise<boolean> {
+    return cue in (await this.entries());
   }
 
   stop(): void {
     this.wanted = null;
+    this.wantedKey = null;
     this.fadeOut();
   }
 
@@ -204,7 +230,7 @@ export class MusicPlayer {
     gain.gain.linearRampToValueAtTime(1, ctx.currentTime + FADE);
     source.connect(gain).connect(this.master);
     source.start(ctx.currentTime, loop.start);
-    this.current = { cue, source, gain, startedAt: ctx.currentTime, length: loop.end - loop.start };
+    this.current = { cue, bpm: loop.bpm, source, gain, startedAt: ctx.currentTime, length: loop.end - loop.start };
   }
 
   private fadeOut(): void {
@@ -228,13 +254,12 @@ export class MusicPlayer {
   }
 
   private async decode(cue: MusicCue): Promise<Loop> {
-    this.manifest ??= fetch(`${BASE}manifest.json`).then((r) => r.json());
-    const [entry, data] = await Promise.all([this.manifest.then((m) => m[cue]), fetch(`${BASE}${cue}.mp3`).then((r) => r.arrayBuffer())]);
+    const [entry, data] = await Promise.all([this.entries().then((m) => m[cue]), fetch(`${BASE}${cue}.mp3`).then((r) => r.arrayBuffer())]);
     const buffer = await this.ctx!.decodeAudioData(data);
     const lead = leadIn(buffer);
-    const length = entry ? entry.loopSamples / entry.sampleRate : buffer.duration - lead / buffer.sampleRate;
+    const length = entry?.loopSamples && entry.sampleRate ? entry.loopSamples / entry.sampleRate : buffer.duration - lead / buffer.sampleRate;
     const start = lead / buffer.sampleRate;
-    return { buffer, start, end: Math.min(buffer.duration, start + length) };
+    return { bpm: entry?.bpm ?? BPM[cue] ?? 120, buffer, start, end: Math.min(buffer.duration, start + length) };
   }
 }
 

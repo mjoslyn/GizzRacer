@@ -30,27 +30,29 @@ Touch: drag on the left half to steer (analog), DRIFT and BRAKE buttons on the r
 - Kart is a sphere collider for ground contact plus a visual model that tilts and bounces
 - Stats per racer (1 to 5): top speed, acceleration, weight, handling, drift
 - Off-road surfaces cut top speed by 40%
-- Drift: hold while turning; sparks charge in 3 tiers (blue 0.3s, orange 0.6s, purple 0.95s) for 0.5s / 1.0s / 1.5s boosts
-- Ramps: press hop at the lip for a trick boost on landing
-- Weight affects bump knockback between karts
-- Fall-off: respawn at last checkpoint after 1.5s
+- Drift: hold while turning; sparks charge in 3 tiers (blue 0.15s, orange 0.3s, purple 0.475s) for 0.5s / 1.0s / 1.5s boosts. The charge hums higher toward purple, and each release kicks the camera's field of view
+- Rocket start: hop in the last half second before GO for a 1 s boost off the line; hop earlier than that (after the 3) and the engine bogs for 0.7 s. CPUs get rocket starts by skill
+- Slipstream: tucked in behind a kart at speed (3 to 22 m back, nearly in line) a draft charges over 1.1 s, with wind rising, then fires a 0.9 s boost
+- Ramps and kickers: press hop at the lip for a trick boost on landing. Tricks landed within 3 s of each other are a streak: each one boosts 40% longer, up to x4. Kickers (`TrackBuilder.kicker`) are short full-width ramps with a sheer drop, on most tracks' straights. CPUs trick off lips by skill
+- Weight affects bump knockback between karts; bumps thud and clank
+- Fall-off: respawn at the last checkpoint after 1 s, rolling at half speed with a little boost and 1.5 s of immunity
 
 ## 5. Racers
 | Racer | Speed | Accel | Weight | Handling | Drift |
 |---|---|---|---|---|---|
-| Lizard Warlock | 3 | 3 | 3 | 3 | 4 |
-| Cyborg Gourmand | 4 | 2 | 4 | 2 | 3 |
+| Lizard Wizard | 3 | 3 | 3 | 3 | 4 |
+| Han-Tyumi | 4 | 2 | 4 | 2 | 3 |
 | Gila Rider | 3 | 5 | 2 | 3 | 3 |
-| Swamp Witch | 3 | 2 | 3 | 5 | 4 |
+| Blood Moon Witch | 3 | 2 | 3 | 5 | 4 |
 | Microtonal Monk | 3 | 3 | 2 | 4 | 3 |
 | Fuzz Golem | 5 | 1 | 5 | 1 | 3 |
-| Neon Moth | 2 | 5 | 2 | 4 | 5 |
-| Cosmic Coyote | 4 | 2 | 3 | 2 | 3 |
+| Blue Morpho | 2 | 5 | 2 | 4 | 5 |
+| Mad Dog Morgan | 4 | 2 | 3 | 2 | 3 |
 | Mantis Shredder | 3 | 4 | 2 | 3 | 4 |
 | Gator Drummer | 4 | 2 | 4 | 2 | 3 |
 | Mushroom Sage | 3 | 3 | 2 | 4 | 4 |
 | Arlo | 3 | 4 | 2 | 4 | 3 |
-| Octo Organist | 4 | 2 | 3 | 2 | 3 |
+| Kraken | 4 | 2 | 3 | 2 | 3 |
 | Amby | 3 | 5 | 2 | 3 | 3 |
 | Cavs | 4 | 2 | 3 | 2 | 3 |
 | Cookie | 3 | 2 | 3 | 5 | 4 |
@@ -59,24 +61,40 @@ Touch: drag on the left half to steer (analog), DRIFT and BRAKE buttons on the r
 | Lukey | 4 | 2 | 4 | 2 | 3 |
 | Stu | 3 | 3 | 3 | 3 | 4 |
 
+Every racer is tied to the Gizzverse, with a one-line bio on the picker (`RacerDef.bio`): the Lizard Wizard of the castle on the misty mountain, Han-Tyumi the confused cyborg, the Gila Rider and the Blood Moon Witch from PetroDragonic Apocalypse, Blue Morpho fresh from the Butterfly 3000 chrysalis, Mad Dog Morgan of Billabong Valley, the Kraken from Open Water, and so on. Racer ids are unchanged, so records and ghosts carry over.
+
 Tuned with `npm run balance` (all-CPU races on every track at 100cc and 150cc, twelve-kart fields drawn round the roster) so no stat dominates: average finishing places run from about 5.3 to 8.2 of 12, and every racer reaches the podium. A speed point is worth about 2.7% top speed.
 
 All designs are original, with no album art. The band races too, with their blessing, under their nicknames, in alphabetical order on the picker: Amby (a chrome harmonica racer, harmonica raised), Cavs (rolling on two bass drums, sticks up), Cookie (a synth-guitar hybrid: a keytar body with a keyboard down the deck and a fretted neck out front), Jason, their visual artist (a rolling lighting rig with moving heads sweeping their beams), Joey (a modular-synth buggy with patch cables, its back pink and signed "Yikes" in script), Lukey (an 8x10 bass cab on wheels) and Stu (riding the Flying Microtonal Banana: a giant banana that is also a guitar, its neck fretted in quarter tones, a flute on his back). They're drawn in the NBA Jam manner, big sculpted heads on smaller bodies, their hair, moustaches, glasses and colouring taken from photos, all in work coveralls with their names on the patch. Every racer has their own character model and vehicle (render/racerModels.ts), and not every vehicle is a kart: Gila Rider flies a rotor chopper, Swamp Witch a fan hovercraft, Microtonal Monk a levitating lotus, Mushroom Sage a toadstool saucer, Mantis Shredder rides a monowheel and Gator Drummer a tracked kick-drum tank, and Arlo (an apricot standard poodle, all curls, ears flapping and tail wagging) drives a plush dog bed on wheels with a tennis ball on the front. All of them drive with the same kart physics; the difference is in the look (hovering craft bob and bank, leave no skid marks, and their drift kicks up ground instead of tire smoke). Drivers lean into turns and look where they steer, and every racer has their own trick move.
 
 ## 6. Items
-| Item | Effect | Odds bias |
-|---|---|---|
-| Fuzz Pedal | 1.2s speed boost | All positions |
-| Microtonal Mine | Dropped trap, wobbles steering 1.5s | Front |
-| Feedback Wave | Radial spin-out, 8m range | Middle |
-| Riff Missile | Homes on next racer ahead | Middle/back |
-| Tempo Shift | Others slowed: 4s for the leader down to 1.5s for last place | Last 2 only |
-| Woo Cannon | Turns you into a cannon shell that flies itself down the road at 1.9x top speed, immune, spinning out anyone it touches, until it has caught the pack (the middle of the field) and gone 5 to 45 m past it (1.5 to 9 s); never lets go over a pit. The woo loops for the whole flight | Last 3 only, likelier further back |
 
-- Item boxes respawn 3s after pickup
-- One item held at a time, after a 1s roulette
+Named for the Gizzverse. Internally the kinds keep the names they were built under (`ItemKind` in items/items.ts); online snapshots send an item as its index in `ITEM_KINDS`, so new kinds go on the end.
+
+| Item | Kind | Effect | Odds bias |
+|---|---|---|---|
+| Mind Fuzz | fuzzPedal | 1.2s speed boost | All positions |
+| Microtonal Banana | microtonalMine | Dropped banana, fretted in quarter tones; wobbles steering 1.5s | Front |
+| Nuclear Fusion | feedbackWave | Radial spin-out, 8m range | Middle |
+| Big Fig Wasp | riffMissile | A mechanical wasp that homes on the next racer ahead | Middle/back |
+| Horology | tempoShift | Others slowed: 4s for the leader down to 1.5s for last place | Last 2 only |
+| Woo Cannon | wooCannon | Turns you into a cannon shell that flies itself down the road at 1.9x top speed, immune, spinning out anyone it touches, until it has caught the pack and gone 5 to 45 m past it (1.5 to 9 s); never lets go over a pit | Last 3 only, likelier further back |
+| Sleep Drifter (Stu) | fluteFlurry | A flurry of flute notes in a cone ahead (26 m, 30 degrees each side): wobbles 1.3s | Everywhere, more up front |
+| Road Train (Cavs) | drumRoll | 3 s as a battering ram: immune, 10% faster, four times as heavy, spins out whoever it touches | Everywhere, more at the back |
+| Superheavy (Lukey) | bassDrop | Slows every kart up to 90 m ahead for 1.6s | Not the leader |
+| The Silver Cord (Joey) | patchCable | Latches onto the nearest kart up to 55 m ahead: slows it 1.5s and slingshots you (2.2s boost) | Not the leader |
+| Boogieman Sam (Amby) | harmonicaWail | A wail in a cone ahead (20 m) that shoves karts aside and wobbles them; a little boost for you | Everywhere |
+| Gamma Knife (Cookie) | keytarLaser | A beam straight ahead (70 m): the first kart in it spins out 1.2s. Aim by steering | Not the leader |
+| Nonagon Infinity | gizzardWave | A nine-sided ring that rolls down the road under everyone to the leader: fast, then closing at a readable pace with a warning and an alarm; it spins them out 1.8s unless they're in the air (a hop as it arrives rides over it). One at a time | 4th and back in fields of 6 or more |
+
+- Each band member's own item comes up twice as often for them (`SIGNATURE_ITEMS`)
+- Item boxes respawn 3s after pickup, and break with a sound every time they're hit, full slot or not
+- Double boxes (gold, a box inside a box) sit on the risky lines (shortcuts, edges by drops): they give two items, the second waits beside the slot and moves in when the first is used
+- One item held at a time (plus a spare from a double box), after a 1s roulette
+- Shields: a Microtonal Banana or Big Fig Wasp held in the slot trails behind the kart and takes a wasp or a banana for you, and is gone
 - Hit karts are briefly immune (spin-outs: 1s longer than the spin)
-- CPUs use items at a good moment (a straight for the Fuzz Pedal, a kart on their tail for a mine, company for the Feedback Wave) with a chance set by class; otherwise after a random wait
+- Who hit whom with what shows in a callout feed under the item slot
+- CPUs use items at a good moment (a straight for Mind Fuzz, a kart on their tail for a banana, company for Nuclear Fusion, a kart in the cone or the beam for the band's items) with a chance set by class; otherwise after a random wait. CPU leaders hop over a Nonagon Infinity by skill
 
 ## 7. Tracks (Cup 1: the Nonagon Cup)
 
@@ -145,6 +163,10 @@ A burning oil field under a black, smoke-choked sky with a blood-red sun, a drag
 
 The Track Generator mode builds a track at race time from a seed and three dials: theme (desert, speedway, volcano, jungle, lagoon, glacier, neon city, sky, petrodragonic, mars, supercell, void), twists (complexity 1 to 5) and length (short about 0.85 km, medium 1.2 km, long 1.7 km). Each theme brings its road surfaces, liquid for bridges and jumps, hazards, landmarks, music and words for names. The layout is a rectangle skeleton whose sides are filled with modules (straights, S-bends, esses, chicanes, switchback hairpins, jumps, bridges), each measured before it's placed so the sides keep their length; the last two sides aim for the final corner, which a Dubins path closes onto the finish line. A layout that crosses itself or needs a loop to get home is re-rolled from the same seed, so a seed always builds the same track. Every track gets a name (Gizzard-ish adjective, theme place, kind of course); after a race it can be saved under that name or another. Saved tracks are kept in the browser as seed and dials.
 
+### Shortcuts, kickers and double boxes
+
+Every track has a shortcut or alternate route (a branch) that trades risk for time, one to three trick kickers on its straights, and a row of double item boxes on the risky line, with sections named for the album the track is themed on: Invisible Face (Infinite Loop Speedway, whose sections are the nine Nonagon Infinity songs in order), Snake's Mouth (Rattlesnake Run, now through Sleep Drifter, Billabong Valley and Deserted Dunes), Hell's Itch (Volcano Fortress), The Fourth Colour (Polygondwanaland Jungle), Open Water (Fishies Lagoon), Mycelium (Ice V Glacier), the Soy-Protein Munt Machine (Cyboogie City), Catching Smoke (Butterfly 3000 Skyway), Mars for the Rich (Hell on Mars), Converge (Supercell), Digital Black (Murder of the Universe) and Flamethrower (Petrodragonic Apocalypse). A branch's walls are open where it leaves and rejoins the main road. Generated tracks get kickers (more at higher twists, sometimes in pairs), a double box row out on a risky edge, and from twists 3 a shortcut chord across a bulge. CPUs keep to the main road.
+
 ## 8. CPU Racers
 - Follow a waypoint spline with per-racer lateral offset and racing line variation
 - Difficulty controls top speed cap, drift usage, and item intelligence
@@ -161,6 +183,7 @@ The Track Generator mode builds a track at race time from a seed and three dials
 
 ## 10. Audio
 - Music: the seqbaby soundtrack pre-rendered to looping MP3s (tools/render-soundtrack.mjs), played with Web Audio for sample-accurate loops
+- Each track is themed on a King Gizzard & the Lizard Wizard song (audio/songs.ts): Robot Stop, Rattlesnake, Magma, Crumbling Castle, Fishing for Fishies, Ice V, Cyboogie, Catching Smoke, Mars for the Rich, Supercell, The Lord of Lightning and Dragon. Settings > Soundtrack picks the version: Remix (a video game style remix of the song, written in seqbaby: seqbaby-seed gizzracer/remix-*.mjs, cues `<track>-remix` and `<track>-remix-final-lap`), Official (the band's own recording from the Bootlegger archive, `official/<track>`, played whole), Classic (the original themes) or Random (a pick per race). A version that has no file for a track falls back to the classic theme; the title card names the song and the version
 - SFX: synthesized on the same AudioContext (audio/sfx.ts), no sample files. Mix: music around -22 dB RMS, one-shots around -20 dB with the music ducking under them, engine a quieter bed; tires squeal in drifts and hard turns on tarmac
 - Engine pitch tied to speed; fuzz distortion on boosts
 - Positional audio for hazards and nearby karts
