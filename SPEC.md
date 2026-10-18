@@ -43,7 +43,7 @@ Touch: drag on the left half to steer (analog), DRIFT and BRAKE buttons on the r
 | Lizard Wizard | 3 | 3 | 3 | 3 | 4 |
 | Han-Tyumi | 4 | 2 | 4 | 2 | 3 |
 | Gila Rider | 3 | 5 | 2 | 3 | 3 |
-| Blood Moon Witch | 3 | 2 | 3 | 5 | 4 |
+| Beowulf's Witch | 3 | 2 | 3 | 5 | 4 |
 | Microtonal Monk | 3 | 3 | 2 | 4 | 3 |
 | Fuzz Golem | 5 | 1 | 5 | 1 | 3 |
 | Blue Morpho | 2 | 5 | 2 | 4 | 5 |
@@ -61,7 +61,7 @@ Touch: drag on the left half to steer (analog), DRIFT and BRAKE buttons on the r
 | Lukey | 4 | 2 | 4 | 2 | 3 |
 | Stu | 3 | 3 | 3 | 3 | 4 |
 
-Every racer is tied to the Gizzverse, with a one-line bio on the picker (`RacerDef.bio`): the Lizard Wizard of the castle on the misty mountain, Han-Tyumi the confused cyborg, the Gila Rider and the Blood Moon Witch from PetroDragonic Apocalypse, Blue Morpho fresh from the Butterfly 3000 chrysalis, Mad Dog Morgan of Billabong Valley, the Kraken from Open Water, and so on. Racer ids are unchanged, so records and ghosts carry over.
+Every racer is tied to the Gizzverse, with a one-line bio on the picker (`RacerDef.bio`): the Lizard Wizard of the castle on the misty mountain, Han-Tyumi the confused cyborg, the Gila Rider and Beowulf's Witch (her black cat knocked the candle over) from PetroDragonic Apocalypse, Blue Morpho fresh from the Butterfly 3000 chrysalis, Mad Dog Morgan of Billabong Valley, the Kraken from Open Water, and so on. Racer ids are unchanged, so records and ghosts carry over.
 
 Tuned with `npm run balance` (all-CPU races on every track at 100cc and 150cc, twelve-kart fields drawn round the roster) so no stat dominates: average finishing places run from about 5.3 to 8.2 of 12, and every racer reaches the podium. A speed point is worth about 2.7% top speed.
 
