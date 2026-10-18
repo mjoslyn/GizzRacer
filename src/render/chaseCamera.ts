@@ -3,8 +3,8 @@ import { clamp, damp, lerpAngle } from '../core/math';
 import type { KartState } from '../physics/kart';
 
 // Mario Kart's angle: low and close behind, the kart big in the lower middle of the screen, looking well up the road.
-const DISTANCE = 4.3;
-const HEIGHT = 1.75;
+const DISTANCE = 3.6;
+const HEIGHT = 1.5;
 const LOOK_AHEAD = 9;
 const BASE_FOV = 72;
 
