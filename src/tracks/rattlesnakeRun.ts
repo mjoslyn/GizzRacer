@@ -14,8 +14,6 @@ const LIP_Y = 14;
 /** The top of the Coil's helix, and the Billabong Valley floor. */
 const COIL_Y = 14;
 const VALLEY_Y = -6;
-/** Sleep Drifter's camelback: walled, so nobody steps up onto its side from the sand. */
-const CAMEL = 100;
 
 /**
  * Rattlesnake Run greybox (spec section 7). Seen from above the course is a
@@ -27,9 +25,9 @@ export function buildRattlesnakeRun(): TrackDef {
   // Lay the track out once, then stretch Sleep Drifter so the loop closes cleanly.
   const mesaLength = MESA_RUN_UP + MESA_RAMP + MESA_GAP + FINISH_STRAIGHT;
   const target = offsetPose(START, -mesaLength);
-  const trial = layout(250);
+  const trial = layout(120);
   const overshoot = trial.marks.washEnd.pose.x - (target.x - CLOSING_SLACK);
-  const b = layout(250 + overshoot);
+  const b = layout(120 + overshoot);
 
   b.hermiteTo(target, 0.9);
   b.section('Mesa Leap', { halfWidth: 10, wallHeight: 1.2 });
@@ -137,11 +135,7 @@ function layout(washLength: number): TrackBuilder {
   // Sleep Drifter: the long heat-haze straight, two kickers to chain.
   b.section('Sleep Drifter', { halfWidth: 10 });
   b.mark('wash');
-  b.straight(63).kicker().straight(53).kicker().mark('drifter').straight(8);
-  b.section('Sleep Drifter', { halfWidth: 10, wallHeight: 1.2 });
-  b.straight(CAMEL);
-  b.section('Sleep Drifter', { halfWidth: 10 });
-  b.straight(washLength - 138 - CAMEL);
+  b.straight(63).kicker().straight(53).kicker().mark('drifter').straight(washLength - 130);
   b.arc(45, -90).straight(5);
   // Billabong Valley: round Mad Dog Morgan's waterhole, or through the Snake's Mouth.
   b.section('Billabong Valley', { halfWidth: 10 });

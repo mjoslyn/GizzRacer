@@ -52,7 +52,7 @@ export function buildInfiniteLoopSpeedway(): TrackDef {
 
   // The overpass straight is a coaster: up onto a deck, over a crest right
   // above the crossing (fast karts fly it), and a plunge back down.
-  b.section('People-Vultures', { halfWidth: 11, wallHeight: 1.2 });
+  b.section('People-Vultures', { halfWidth: 11 });
   b.mark('overpass');
   b.straight(BANK);
   b.section('Mr. Beat', { halfWidth: 11, wallHeight: 1.2, bridge: true });
