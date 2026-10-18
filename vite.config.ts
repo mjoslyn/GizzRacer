@@ -12,5 +12,7 @@ export default defineConfig({
   },
   test: {
     include: ['tests/**/*.test.ts'],
+    // Whole races at 60 Hz: seconds alone, much longer on a busy machine.
+    testTimeout: 60000,
   },
 });

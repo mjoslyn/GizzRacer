@@ -2,11 +2,17 @@ import * as THREE from 'three';
 import { clamp, damp, lerpAngle } from '../core/math';
 import type { KartState } from '../physics/kart';
 
-// Mario Kart's angle: low and close behind, the kart big in the lower middle of the screen, looking well up the road.
-const DISTANCE = 4.3;
-const HEIGHT = 1.75;
-const LOOK_AHEAD = 9;
-const BASE_FOV = 72;
+/** Where the camera sits: metres behind and above the kart, how far up the road it looks and at what height, and its field of view. */
+export interface CameraPlacement {
+  distance: number;
+  height: number;
+  lookAhead: number;
+  lookHeight: number;
+  fov: number;
+}
+
+// Close over the driver's shoulder and a little above, wide: the kart big in the lower middle of the screen.
+export const DEFAULT_PLACEMENT: CameraPlacement = { distance: 2, height: 2.45, lookAhead: 5, lookHeight: -0.4, fov: 78 };
 
 /** Third-person camera that trails the kart's travel direction (not its drift yaw). */
 export class ChaseCamera {
@@ -17,6 +23,8 @@ export class ChaseCamera {
   private shake = 0;
   /** Extra field of view (degrees) from a boost kicking in, easing back out. */
   private punch = 0;
+
+  placement: CameraPlacement = { ...DEFAULT_PLACEMENT };
 
   constructor(readonly camera: THREE.PerspectiveCamera) {}
 
@@ -43,17 +51,21 @@ export class ChaseCamera {
     const fx = Math.sin(yaw);
     const fz = Math.cos(yaw);
     const speedRatio = clamp(Math.abs(s.speed) / topSpeed, 0, 1.5);
-    const dist = DISTANCE + speedRatio * 0.6;
+    const pl = this.placement;
+    const dist = pl.distance + speedRatio * 0.3;
 
-    const desired = new THREE.Vector3(s.x - fx * dist, s.y + HEIGHT, s.z - fz * dist);
+    const desired = new THREE.Vector3(s.x - fx * dist, s.y + pl.height, s.z - fz * dist);
     if (!this.initialized) {
       this.pos.copy(desired);
       this.initialized = true;
     } else {
-      this.pos.lerp(desired, damp(10, dt));
-      this.pos.y += (desired.y - this.pos.y) * damp(4, dt);
+      // Exactly its distance behind, however fast: easing the position made it trail further back the faster you went.
+      // The yaw is what's smoothed (above); height eases so bumps and landings don't jolt.
+      this.pos.x = desired.x;
+      this.pos.z = desired.z;
+      this.pos.y += (desired.y - this.pos.y) * damp(8, dt);
     }
-    this.target.set(s.x + fx * LOOK_AHEAD, s.y + 1.1, s.z + fz * LOOK_AHEAD);
+    this.target.set(s.x + fx * pl.lookAhead, s.y + pl.lookHeight, s.z + fz * pl.lookAhead);
 
     this.shake = Math.max(0, this.shake - dt * 3);
     const jitter = this.shake * 0.15;
@@ -65,7 +77,7 @@ export class ChaseCamera {
     this.camera.lookAt(this.target);
 
     this.punch = Math.max(0, this.punch - dt * 14);
-    const fov = BASE_FOV + speedRatio * 10 + (s.boostTime > 0 ? 8 : 0);
+    const fov = pl.fov + speedRatio * 10 + (s.boostTime > 0 ? 8 : 0);
     // The kick lands at once and eases out; the rest follows speed smoothly.
     this.camera.fov += (fov - this.camera.fov) * damp(4, dt);
     this.camera.fov += (fov + this.punch - this.camera.fov) * (this.punch > 0 ? damp(18, dt) : 0);

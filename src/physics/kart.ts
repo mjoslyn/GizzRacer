@@ -74,7 +74,7 @@ export interface StepEvents {
  * Bump whenever kart physics, racer stats or a track layout change lap
  * times: online leaderboards and ghosts are kept per version.
  */
-export const PHYSICS_VERSION = 5;
+export const PHYSICS_VERSION = 6;
 export const KART_RADIUS = 1;
 export const GRAVITY = 30;
 export const HOP_VELOCITY = 4.5;
@@ -131,6 +131,13 @@ const EXT_DAMPING = 4;
  * on dirt, a lot on ice.
  */
 const SLIDE: Record<SurfaceType, number> = { road: 0.2, boost: 0.2, offroad: 0.3, ice: 0.45, oil: 0.42 };
+/**
+ * Drifting, more of the momentum keeps going the old way than when the
+ * tires grip: the kart slides out wide of its nose, and the harder it's
+ * steered into the drift, the further out it slides.
+ */
+const DRIFT_SLIDE = 0.15;
+const DRIFT_HARD_SLIDE = 0.25;
 const WALL_SPEED_LOSS = 0.7;
 const WALL_BOUNCE = 4;
 
@@ -299,8 +306,9 @@ export function stepKart(s: KartState, input: InputFrame, p: KartParams, env: Dr
   const fx = Math.sin(s.heading);
   const fz = Math.cos(s.heading);
   if (s.grounded && turned !== 0) {
-    // The kart turns but its momentum doesn't all follow, so it skids wide.
-    const slide = SLIDE[s.surface];
+    // The kart turns but its momentum doesn't all follow, so it skids wide; a drift slides out further.
+    let slide = SLIDE[s.surface];
+    if (s.driftDir !== 0) slide = Math.min(0.75, slide + DRIFT_SLIDE + DRIFT_HARD_SLIDE * clamp(steerIn * s.driftDir, 0, 1));
     s.extX += (Math.sin(s.heading + turned) - fx) * s.speed * slide;
     s.extZ += (Math.cos(s.heading + turned) - fz) * s.speed * slide;
   }
@@ -344,7 +352,8 @@ export function stepKart(s: KartState, input: InputFrame, p: KartParams, env: Dr
     if (s.y <= ground.height) {
       ev.landed = Math.max(0.01, -s.vy);
       s.y = ground.height;
-      s.vy = 0;
+      // Land moving with the road (down a slope it falls away): from a standstill the next tick would read as a crest and hop again.
+      s.vy = Math.abs(drop) < 2 ? clamp(-drop / dt, -MAX_GROUND_VY, MAX_GROUND_VY) : 0;
       s.grounded = true;
       s.trickWindow = 0;
       if (s.trick) {

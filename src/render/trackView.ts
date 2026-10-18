@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { seededRandom } from '../core/math';
 import { nearestOnSpline, pointAt } from '../tracks/spline';
 import type { PitDef, RoadSurface } from '../tracks/builder';
-import { inPit, type Ribbon, type Track } from '../tracks/track';
+import { BANK, inPit, type Ribbon, type Track } from '../tracks/track';
 import * as tex from './textures';
 import { THEMES, type Theme } from './themes';
 import { CURB_WIDTH, trackDetail } from './trackDetail';
@@ -542,7 +542,14 @@ function ribbonMeshes(ribbon: Ribbon, mats: Materials, floating = false): THREE.
       for (const side of [-1, 1]) {
         const lat = side * (wall === 0 ? hwi + CURB_WIDTH : hwi + 0.3);
         const latj = side * (wall === 0 ? hwj + CURB_WIDTH : hwj + 0.3);
-        skirts.quad(edge(i, lat, yi), edge(j, latj, yj), edge(i, lat, -14), edge(j, latj, -14), [sp.dist[i] / 10, sp.dist[j] / 10], [1.6, 0], false, true);
+        if (ribbon.bank[i] && ribbon.bank[j]) {
+          // An earth bank sloping down to the ground, as the physics has it (Track.bankHeight).
+          const bi = lat + side * Math.max(0, yi) * BANK;
+          const bj = latj + side * Math.max(0, yj) * BANK;
+          skirts.quad(edge(i, lat, yi), edge(j, latj, yj), edge(i, bi, -0.05), edge(j, bj, -0.05), [sp.dist[i] / 10, sp.dist[j] / 10], [Math.max(yi, yj) / 6, 0], false, true);
+        } else {
+          skirts.quad(edge(i, lat, yi), edge(j, latj, yj), edge(i, lat, -14), edge(j, latj, -14), [sp.dist[i] / 10, sp.dist[j] / 10], [1.6, 0], false, true);
+        }
       }
     }
   }
