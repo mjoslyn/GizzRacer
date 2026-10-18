@@ -428,3 +428,45 @@ describe('hills', () => {
     expect(fly(hill(1))).toBe(0);
   });
 });
+
+describe('Woo Cannon on the new ground', () => {
+  it('lets go only where the kart lands and drives on, on every track and shortcut, climbs and dives included', async () => {
+    const { TRACK_LIST } = await import('../src/tracks/index');
+    const { CPU_SKILL, CpuDriver } = await import('../src/ai/cpuDriver');
+    for (const entry of TRACK_LIST) {
+      const t = new Track(entry.build());
+      const starts: { ribbon: number; s: number }[] = [];
+      for (let f = 0; f < 1; f += 1 / 24) starts.push({ ribbon: -1, s: f * t.length });
+      t.branches.forEach((b, i) => [0.2, 0.5, 0.8].forEach((f) => starts.push({ ribbon: i, s: f * b.spline.length })));
+      for (const st of starts) {
+        const race = new Race(t);
+        const k = race.addKart(RACERS[0], '150cc', null);
+        const lead = race.addKart(RACERS[1], '150cc', null);
+        race.time = 0;
+        const r = t.ribbon(st.ribbon);
+        const p = pointAt(r.spline, st.s);
+        Object.assign(k.state, { x: p.x, z: p.z, heading: Math.atan2(p.tx, p.tz), speed: k.params.topSpeed, trackHint: -1 });
+        k.state.y = k.state.groundY = r.heightAt(st.s);
+        race.step(0, [GAS, GAS]);
+        // Someone a little way ahead to chase, so it lets go all over the lap.
+        const lp = pointAt(t.spline, k.progressS + 20);
+        Object.assign(lead.state, { x: lp.x + 3, z: lp.z, heading: Math.atan2(lp.tx, lp.tz), speed: 0 });
+        lead.state.y = lead.state.groundY = t.main.heightAt((k.progressS + 20) % t.length);
+        give(k, 'wooCannon');
+        race.step(PHYSICS_DT, [PRESS, NEUTRAL_INPUT]);
+        for (let s = 0; s < 15 && k.state.cannonTime > 0; s += PHYSICS_DT) race.step(PHYSICS_DT, [NEUTRAL_INPUT, NEUTRAL_INPUT]);
+        const d0 = k.distance;
+        k.driver = new CpuDriver(CPU_SKILL['150cc'], 3);
+        let fell = false;
+        for (let s = 0; s < 2; s += PHYSICS_DT) {
+          race.step(PHYSICS_DT, []);
+          fell ||= k.fallTime > 0.3 || k.respawned;
+        }
+        const where = `${entry.id} ribbon ${st.ribbon} at ${st.s.toFixed(0)}`;
+        expect(k.state.cannonTime, where).toBe(0);
+        expect(fell, where).toBe(false);
+        expect(k.distance - d0, where).toBeGreaterThan(20);
+      }
+    }
+  }, 120000);
+});

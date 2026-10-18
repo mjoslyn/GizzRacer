@@ -344,7 +344,8 @@ export class Race {
     s.x = p1.x + (s.x - p0.x) * keep;
     s.z = p1.z + (s.z - p0.z) * keep;
     const road = this.track.main.heightAt(s1);
-    s.y += (road + CANNON_LIFT - s.y) * Math.min(1, dt * 6);
+    // Eased toward its flying height, but never below the road: on a climb it would lag under it, and drop through on letting go.
+    s.y = Math.max(road + 0.3, s.y + (road + CANNON_LIFT - s.y) * Math.min(1, dt * 6));
     s.groundY = road;
     s.heading = Math.atan2(p1.tx, p1.tz);
     // The lookup only searches near its hint, so carry the hint along with the flight.
