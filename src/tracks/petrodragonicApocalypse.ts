@@ -12,6 +12,10 @@ const LAKE_TURN = 70;
 const LAKE_END: Pose = { x: -186, z: 88, h: (-70 * Math.PI) / 180 };
 /** Flamethrower: the leap over the burning lake. */
 const LAKE_GAP = 24;
+/** Derrick Row's ridge, the trestle over the oil lake, and how deep the gullet is dug. */
+const RIDGE = 9;
+const TRESTLE = 12;
+const GULLET_DEPTH = 8;
 
 /**
  * Petrodragonic Apocalypse (hard): a burning oil field under a black sky.
@@ -23,13 +27,16 @@ const LAKE_GAP = 24;
  * the bottom corner, the gullet and the moat along the bottom, the coil
  * cutting into the middle on the way up the left, then the bridge and the
  * Mile home, swinging round a burning lake (Witchcraft) that the
- * Flamethrower shortcut leaps straight across.
+ * Flamethrower shortcut leaps straight across. Derrick Row runs along a
+ * ridge, the slick slides down off it into the gullet, dug 8 m into the
+ * earth, and the coil climbs onto a trestle 12 m over the oil lake that
+ * plunges down onto the Mile.
  */
 export function buildPetrodragonicApocalypse(): TrackDef {
   const b = new TrackBuilder(START, 'Ashen Grid', { halfWidth: 10 });
   b.scale = K;
   // Two kickers off the dragon bones on the grid straight.
-  b.straight(78).mark('kick1').kicker().straight(30).mark('kick2').kicker().straight(69.8).arc(45, 90);
+  b.straight(78).mark('kick1').kicker().straight(30).mark('kick2').kicker().mark('grid').straight(69.8).arc(45, 90);
 
   b.section('Derrick Row', { halfWidth: 8.5 });
   b.mark('derricks');
@@ -45,7 +52,7 @@ export function buildPetrodragonicApocalypse(): TrackDef {
 
   b.section('Burning Moat', { halfWidth: 8, wallHeight: 1.2, surface: 'rock' });
   b.mark('moat');
-  b.straight(14).elevate(0).rise(20, 3);
+  b.straight(14).elevate(0).rise(20, 3.5);
   b.gap(13, 34, 'oil');
   b.elevate(0).straight(30);
   b.arc(38, 90);
@@ -54,11 +61,12 @@ export function buildPetrodragonicApocalypse(): TrackDef {
   b.mark('coil');
   b.straight(20).arc(19, 170).straight(16).arc(19, -170).straight(20);
 
-  b.section('Skull Bridge', { halfWidth: 7 });
+  // A trestle high over the burning lake, no rails, then the plunge off its end.
+  b.section('Skull Bridge', { halfWidth: 7, bridge: true });
   b.mark('bridge');
-  b.elevate(0).straight(12).elevate(2);
+  b.straight(12).elevate(TRESTLE);
   b.bridge(55, 30, 'oil');
-  b.elevate(2).straight(12).elevate(0);
+  b.elevate(TRESTLE).mark('trestleEnd').straight(12);
 
   b.section('Apocalypse Mile', { halfWidth: 9 });
   b.mark('mile');
@@ -74,7 +82,20 @@ export function buildPetrodragonicApocalypse(): TrackDef {
   b.section('Dawn of Eternal Night', { halfWidth: 9 });
   b.turnTo(offsetPose(START, -FINISH * K), 40);
   b.section('Finish Straight', { halfWidth: 10 });
+  b.mark('finish');
   b.straight(FINISH);
+
+  // Heights, over the layout: up onto the ridge, down the slick into the gullet, up the coil onto the trestle.
+  const m = (name: string, d = 0) => b.marks[name].s + d * K;
+  ease(b, m('grid', 6), 0, m('derricks'), RIDGE);
+  b.profile(m('derricks'), m('slick'), (u) => RIDGE + 2 * Math.sin(2 * Math.PI * u) ** 2);
+  ease(b, m('slick'), RIDGE, m('gullet'), 0);
+  ease(b, m('gullet', 4), 0, m('gullet', 30), -GULLET_DEPTH);
+  b.profile(m('gullet', 30), m('gullet', 55), () => -GULLET_DEPTH, 20);
+  ease(b, m('gullet', 55), -GULLET_DEPTH, m('moat'), 0);
+  ease(b, m('coil'), 0, m('bridge', 12), TRESTLE);
+  plunge(b, m('trestleEnd'), TRESTLE, b.marks.lakeFrom.s - 40, 0);
+  b.profile(b.marks.lakeTo.s + 45, m('finish', -10), (u) => 3 * Math.sin(Math.PI * u) ** 2);
 
   const main = b.finish(true);
   const flame = buildFlamethrower(b.marks.lakeFrom, b.marks.lakeTo);
@@ -104,7 +125,8 @@ export function buildPetrodragonicApocalypse(): TrackDef {
       { s: at('derricks', 40), count: 3 },
       { s: at('gullet', -20), count: 3 },
       { s: at('coil', 120), count: 3 },
-      { s: at('mile', 10), count: 4 },
+      // Past where karts flying off the trestle come down.
+      { s: at('mile', 30), count: 4 },
       { s: flame.boxes, count: 2, ribbon: 0, span: 5, double: true },
     ],
     hazards: [
@@ -115,6 +137,16 @@ export function buildPetrodragonicApocalypse(): TrackDef {
     theme: 'petro',
     music: { lap: 'petrodragonic-apocalypse', finalLap: 'petrodragonic-apocalypse-final-lap' },
   };
+}
+
+/** Eases the road's height from y0 at arc length s0 to y1 at s1. */
+function ease(b: TrackBuilder, s0: number, y0: number, s1: number, y1: number): void {
+  b.profile(s0, s1, (u) => y0 + (y1 - y0) * u * u * (3 - 2 * u));
+}
+
+/** Drops the road from y0 at s0 to y1 at s1, falling away at once over the top (a crest to fly off) and easing out at the bottom. */
+function plunge(b: TrackBuilder, s0: number, y0: number, s1: number, y1: number): void {
+  b.profile(s0, s1, (u) => y0 + (y1 - y0) * Math.sin((Math.PI * u) / 2));
 }
 
 /**

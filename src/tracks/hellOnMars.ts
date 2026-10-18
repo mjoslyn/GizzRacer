@@ -9,6 +9,11 @@ const RIM_R = 45;
 const RIM_TURN = 65;
 /** Mars for the Rich: the leap over the crater's molten floor. */
 const CRATER_GAP = 23;
+/** The top of the Olympus Climb, where the Valles Rift leaps off; and how high the far side is. */
+const PEAK = 23;
+const RIFT_LAND = 18;
+/** How deep the Rats' Nest is dug into the ground. */
+const NEST_DEPTH = 8;
 
 /**
  * Hell on Mars (hard): a colony on the red planet, overrun and burning.
@@ -16,27 +21,31 @@ const CRATER_GAP = 23;
  * flank of Olympus and a leap over a rift of lava, the rim of a crater
  * where dust devils roam (Mars for the Rich, a toll lane, leaps straight
  * across it), a twisting run through the Rats' Nest, and meteors
- * streaking down onto the straights.
+ * streaking down onto the straights. The climb runs 23 m up the
+ * mountain, the rift leaps off the top and the road plunges down the far
+ * side; the Rats' Nest is a trench dug 8 m into the red dirt.
  */
 export function buildHellOnMars(): TrackDef {
   const b = new TrackBuilder(START, 'Landing Strip', { halfWidth: 11, surface: 'regolith' });
   b.scale = K;
   // Venusian 1 and 2: two kickers off the junk on the strip.
-  b.straight(84).mark('kick1').kicker().straight(30).mark('kick2').kicker().straight(53).arc(50, 90);
+  b.straight(84).mark('kick1').kicker().straight(30).mark('kick2').kicker().mark('strip').straight(53).arc(50, 90);
 
   b.section('Superbug Chicane', { halfWidth: 9, wallHeight: 1.2, surface: 'regolith' });
   b.mark('habs');
   b.straight(40).arc(28, -55).arc(28, 55).straight(40);
 
+  // Up the flank of the mountain.
   b.section('Olympus Climb', { halfWidth: 9.5, surface: 'rock' });
   b.mark('climb');
-  b.elevate(0).straight(130).elevate(6).arc(42, 90).elevate(6);
+  b.straight(130).arc(42, 90);
 
+  // Off the top over a rift of lava, onto the lower far side, then a plunge down it.
   b.section('Valles Rift', { halfWidth: 9, wallHeight: 1.2, surface: 'rock' });
   b.mark('rift');
-  b.straight(20).elevate(6).rise(18, 9);
+  b.straight(20).elevate(PEAK).rise(18, PEAK + 3);
   b.gap(16, 36, 'lava');
-  b.elevate(1).straight(30).elevate(0);
+  b.elevate(RIFT_LAND).mark('landed').straight(92);
 
   // The rim swings out round the crater; the toll lane takes the chord.
   b.section('Perihelion Crater', { halfWidth: 9.5, surface: 'regolith' });
@@ -56,7 +65,20 @@ export function buildHellOnMars(): TrackDef {
   b.straight(20);
   b.turnTo(offsetPose(START, -FINISH * K), 42);
   b.section('Finish Straight', { halfWidth: 11, surface: 'regolith' });
+  b.mark('finish');
   b.straight(FINISH);
+
+  // Heights, over the layout: a roll down the strip, the long climb, the plunge, the trench.
+  const m = (name: string, d = 0) => b.marks[name].s + d * K;
+  b.profile(m('strip', 8), m('habs', -10), (u) => 4 * Math.sin(Math.PI * u) ** 2);
+  ease(b, m('habs'), 0, m('climb'), 3);
+  ease(b, m('climb'), 3, m('rift'), PEAK);
+  plunge(b, m('landed', 30), RIFT_LAND, m('crater'), 0);
+  b.profile(m('rimFrom', 45), m('rimTo', -45), (u) => 4 * Math.sin(Math.PI * u) ** 2);
+  ease(b, m('nest', -40), 0, m('nest', 25), -NEST_DEPTH);
+  b.profile(m('nest', 25), m('mile', -25), () => -NEST_DEPTH, 20);
+  ease(b, m('mile', -25), -NEST_DEPTH, m('mile', 30), 5);
+  plunge(b, m('mile', 30), 5, m('mile', 75), 0);
 
   const main = b.finish(true);
   const toll = buildTollLane(b.marks.rimFrom, b.marks.rimTo);
@@ -93,6 +115,16 @@ export function buildHellOnMars(): TrackDef {
     theme: 'mars',
     music: { lap: 'hell-on-mars', finalLap: 'hell-on-mars-final-lap' },
   };
+}
+
+/** Eases the road's height from y0 at arc length s0 to y1 at s1. */
+function ease(b: TrackBuilder, s0: number, y0: number, s1: number, y1: number): void {
+  b.profile(s0, s1, (u) => y0 + (y1 - y0) * u * u * (3 - 2 * u));
+}
+
+/** Drops the road from y0 at s0 to y1 at s1, falling away at once over the top (a crest to fly off) and easing out at the bottom. */
+function plunge(b: TrackBuilder, s0: number, y0: number, s1: number, y1: number): void {
+  b.profile(s0, s1, (u) => y0 + (y1 - y0) * Math.sin((Math.PI * u) / 2));
 }
 
 /**

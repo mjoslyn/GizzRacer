@@ -3,14 +3,16 @@ import { NEUTRAL_INPUT } from '../src/core/input';
 import { PHYSICS_DT } from '../src/core/loop';
 import { clamp, wrapAngle } from '../src/core/math';
 import { FUZZ_BOOST } from '../src/items/items';
-import { createKartState, stepKart } from '../src/physics/kart';
+import { CPU_SKILL } from '../src/ai/cpuDriver';
+import { Race } from '../src/core/race';
+import { createKartState, stepKart, type KartState } from '../src/physics/kart';
 import { RACERS, kartParams, type EngineClass } from '../src/physics/racers';
 import { buildHellOnMars } from '../src/tracks/hellOnMars';
 import { buildMurderOfTheUniverse } from '../src/tracks/murderOfTheUniverse';
 import { buildPetrodragonicApocalypse } from '../src/tracks/petrodragonicApocalypse';
 import { nearestOnSpline, pointAt } from '../src/tracks/spline';
 import { buildSupercell } from '../src/tracks/supercell';
-import { Track, type Ribbon, type TrackDef } from '../src/tracks/track';
+import { Track, inPit, type Ribbon, type TrackDef } from '../src/tracks/track';
 
 /** How a shortcut's jump is meant to go: who makes it, and who doesn't. */
 interface JumpSpec {
@@ -146,7 +148,7 @@ describe.each(CASES.map((c) => [c.name, c] as const))('%s shortcut and kickers',
         const ev = stepKart(kart, steerAlong(track.main, kart, progress), p, track, PHYSICS_DT);
         progress = nearestOnSpline(track.spline, kart.x, kart.z).s;
         launched ||= ev.launched;
-        expect(kart.y, `kicker at ${lip.toFixed(0)}`).toBeGreaterThan(-2);
+        expect(fallen(track, kart), `kicker at ${lip.toFixed(0)}`).toBe(false);
       }
       expect(launched, `kicker at ${lip.toFixed(0)}`).toBe(true);
       expect(kart.grounded).toBe(true);
@@ -180,12 +182,100 @@ describe('Petrodragonic Apocalypse Flamethrower pad', () => {
         const err = wrapAngle(Math.atan2(ahead.x - ahead.tz * lat - kart.x, ahead.z + ahead.tx * lat - kart.z) - kart.heading);
         stepKart(kart, { ...NEUTRAL_INPUT, throttle: 1, steer: clamp(-err * 2.5, -1, 1) }, p, track, PHYSICS_DT);
         boosted ||= kart.surface === 'boost';
-        expect(kart.y, r.id).toBeGreaterThan(-2);
+        expect(fallen(track, kart), r.id).toBe(false);
       }
       expect(boosted, r.id).toBe(true);
     }
   });
 });
+
+/** How high and low each road runs: a climb to a crest and a dip below ground (none on the abyss, which has no ground). */
+const HEIGHTS: { name: string; build: () => TrackDef; top: number; bottom: number }[] = [
+  { name: 'Hell on Mars', build: buildHellOnMars, top: 20, bottom: -6 },
+  { name: 'Supercell', build: buildSupercell, top: 12, bottom: -4 },
+  { name: 'Murder of the Universe', build: buildMurderOfTheUniverse, top: 20, bottom: 0 },
+  { name: 'Petrodragonic Apocalypse', build: buildPetrodragonicApocalypse, top: 10, bottom: -6 },
+];
+
+describe.each(HEIGHTS.map((c) => [c.name, c] as const))('%s elevation', (_name, c) => {
+  const def = c.build();
+  const track = new Track(def);
+  const main = track.main;
+  const heights = Array.from({ length: Math.ceil(track.length) }, (_, s) => main.heightAt(s));
+  const lips = kickerLips(def);
+
+  it('climbs high and dips low', () => {
+    const top = Math.max(...heights);
+    const bottom = Math.min(...heights);
+    console.log(`${c.name}: road from ${bottom.toFixed(1)} m to ${top.toFixed(1)} m`);
+    expect(top).toBeGreaterThan(c.top);
+    if (def.abyss) {
+      // Nothing is sunk over the void.
+      expect(bottom).toBeGreaterThanOrEqual(0);
+      expect(main.cut.some((x) => x > 0)).toBe(false);
+    } else {
+      expect(bottom).toBeLessThan(c.bottom);
+      expect(main.cut.some((x) => x > 0)).toBe(true);
+    }
+  });
+
+  it('keeps its cuts clear of pits, so the ground opens cleanly round each', () => {
+    const sp = main.spline;
+    for (let i = 0; i < sp.count; i++) {
+      if (!main.cut[i]) continue;
+      const near = def.pits.some((p) => inPit({ ...p, halfLength: p.halfLength + 6, halfWidth: p.halfWidth + 6 }, sp.px[i], sp.pz[i]));
+      expect(near, `cut at ${main.toBuilder(sp.dist[i]).toFixed(0)}`).toBe(false);
+    }
+  });
+
+  it('never runs downhill so steeply that a kart at full speed skips off it', () => {
+    // Kicker lips and jump gaps aside, no slope steeper than this.
+    for (let s = 0; s + 1 < heights.length; s++) {
+      const b = main.toBuilder(s);
+      if (lips.some((l) => Math.abs(b - l) < 2) || def.main.gaps.some(([a, z]) => b > a - 2 && b < z + 2)) continue;
+      expect(heights[s] - heights[s + 1], `at ${b.toFixed(0)}`).toBeLessThan(0.45);
+    }
+  });
+
+  it('gives a fast kart airtime off a crest, and laps it at 150cc with no falls', () => {
+    const race = new Race(track);
+    const kart = race.addKart(RACERS[0], '150cc', null);
+    race.time = 0;
+    let respawns = 0;
+    const crests: number[] = [];
+    for (let t = 0; t < 200 && kart.laps.lap < 1; t += PHYSICS_DT) {
+      const s = kart.state;
+      const ev = race.step(PHYSICS_DT, [steerAlong(main, s, kart.progressS)])[0];
+      if (kart.respawned) respawns++;
+      const b = main.toBuilder(kart.progressS);
+      // A launch that isn't off a kicker or a jump ramp: over the top of a hill.
+      if (ev.launched && !lips.some((l) => Math.abs(b - l) < 6) && !def.main.gaps.some(([a, z]) => b > a - 4 && b < z + 4)) crests.push(b);
+    }
+    console.log(`${c.name}: crest airtime at ${crests.map((b) => b.toFixed(0)).join(', ')}`);
+    expect(kart.laps.lap).toBe(1);
+    expect(respawns).toBe(0);
+    expect(crests.length).toBeGreaterThan(0);
+  }, 30000);
+
+  it('a full field of 150cc CPUs laps it', () => {
+    const race = new Race(track);
+    for (const r of RACERS.slice(0, 8)) race.addKart(r, '150cc', CPU_SKILL['150cc']);
+    let respawns = 0;
+    for (let t = 0; t < 200 && race.karts.some((k) => k.laps.lap < 1); t += PHYSICS_DT) {
+      race.step(PHYSICS_DT, []);
+      respawns += race.karts.filter((k) => k.respawned).length;
+    }
+    for (const k of race.karts) expect(k.laps.lap, k.racer.name).toBeGreaterThanOrEqual(1);
+    expect(respawns).toBeLessThanOrEqual(2);
+  }, 30000);
+});
+
+/** Below the ground and not on a road there (a road sunk in a cut holds you up): fallen. */
+function fallen(track: Track, kart: KartState): boolean {
+  if (kart.y > -2) return false;
+  const loc = track.locate(kart.x, kart.z, kart.y, kart.trackHint);
+  return !(loc.onRoad && kart.y > loc.height - 1.5);
+}
 
 /** Builder arc lengths of each kicker's lip on the main road: a sheer drop in the elevation keys. */
 function kickerLips(def: TrackDef): number[] {
@@ -228,7 +318,7 @@ function drive(track: Track, ribbon: Ribbon, to: number, p: ReturnType<typeof ka
     const hit = nearestOnSpline(ribbon.spline, kart.x, kart.z, hint, 20);
     hint = hit.index;
     progress = hit.s;
-    if (kart.y < -2) return { time: t, fell: true };
+    if (fallen(track, kart)) return { time: t, fell: true };
     const near = Math.hypot(kart.x - goal.x, kart.z - goal.z) < 30;
     if (near && (kart.x - goal.x) * goal.tx + (kart.z - goal.z) * goal.tz >= 0) return { time: t, fell: false };
   }
@@ -245,7 +335,7 @@ function jump(track: Track, s: number, ribbon: number, speed: number, boost: num
   kart.boostTime = boost;
   for (let t = 0; t < 4; t += PHYSICS_DT) {
     stepKart(kart, { ...NEUTRAL_INPUT, throttle: 1 }, p, track, PHYSICS_DT);
-    if (kart.y < -2) return 'fell';
+    if (fallen(track, kart)) return 'fell';
   }
   return 'cleared';
 }
