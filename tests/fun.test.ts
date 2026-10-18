@@ -27,19 +27,27 @@ const HOP = { ...GAS, drift: true, driftPressed: true };
 const PRESS = { ...GAS, item: true, itemPressed: true };
 
 /** A started race with human-driven karts, so nothing fires on its own. */
-function humanRace(n: number, t = track) {
+function humanRace(n: number, t = straight) {
   const race = new Race(t);
   for (let i = 0; i < n; i++) race.addKart(RACERS[i], '100cc', null);
   race.time = 0;
   return race;
 }
 
-/** Puts a kart on the Salt Flat Straight, `s` metres in, `lateral` off the centerline, facing down the road. */
-function place(k: RaceKart, s: number, lateral = 0, speed = 0) {
-  const p = pointAt(track.spline, s);
+/** A long flat straight with nothing on it. */
+function straightTrack(): Track {
+  const b = new TrackBuilder({ x: 0, z: -350, h: 0 }, 'Test', { halfWidth: 10 });
+  b.straight(700);
+  return new Track({ id: 'straight', name: 'Straight', main: b.finish(false), branches: [], pits: [], boostPads: [], checkpoints: [0.5], laps: 1, bounds: 400, landmarks: [], itemBoxes: [], hazards: [], theme: 'speedway', music: { lap: 'title' } });
+}
+const straight = straightTrack();
+
+/** Puts a kart `s` metres down the main road, `lateral` off the centerline, facing down it. */
+function place(k: RaceKart, s: number, lateral = 0, speed = 0, t = straight) {
+  const p = pointAt(t.spline, s);
   const tl = Math.hypot(p.tx, p.tz);
   Object.assign(k.state, { x: p.x - (p.tz / tl) * lateral, z: p.z + (p.tx / tl) * lateral, heading: Math.atan2(p.tx, p.tz), speed, trackHint: -1 });
-  k.state.y = k.state.groundY = track.main.heightAt(s);
+  k.state.y = k.state.groundY = t.main.heightAt(s);
   k.progressS = s;
   k.distance = s;
 }
@@ -210,13 +218,13 @@ describe('respawn', () => {
 
 describe('item boxes', () => {
   function driveInto(race: Race, k: RaceKart) {
-    const box = race.items.boxes.find((b) => b.double) ?? race.items.boxes[0];
+    const box = race.items.boxes[0];
     Object.assign(k.state, { x: box.x, z: box.z, y: box.y - 1.1, groundY: box.y - 1.1 });
     return step(race);
   }
 
   it('every box hit is an event, full slot or not', () => {
-    const race = humanRace(1);
+    const race = humanRace(1, track);
     const k = race.karts[0];
     give(k, 'fuzzPedal');
     const ev = driveInto(race, k);
@@ -225,7 +233,7 @@ describe('item boxes', () => {
   });
 
   it('a double box gives a spare, which moves up when the first is used', () => {
-    const race = humanRace(1);
+    const race = humanRace(1, track);
     const box = race.items.boxes[0];
     box.double = true;
     const k = race.karts[0];
@@ -235,7 +243,7 @@ describe('item boxes', () => {
     expect(k.spare).not.toBe(null);
     const spare = k.spare;
     k.rolling = 0;
-    place(k, 5);
+    place(k, 5, 0, 0, track);
     step(race, PRESS);
     expect(k.item).toBe(spare);
     expect(k.spare).toBe(null);
@@ -370,8 +378,8 @@ describe('online', () => {
     const start = { race: 1, at: 0, seed: 3, settings: { track: 1, engine: '100cc' as const }, grid: RACERS.slice(0, 2).map((r, i) => ({ racerId: r.id, playerId: i === 1 ? 'p' : null })) };
     const room = new RoomRace(start, 0);
     const [cpu, human] = room.race.karts;
-    place(cpu, 20, 0, 20);
-    place(human, 50, 0, 20);
+    place(cpu, 40, 0, 20, room.race.track);
+    place(human, 70, 0, 20, room.race.track);
     room.race.step(0, []);
     give(cpu, 'keytarLaser');
     cpu.driver = null;
