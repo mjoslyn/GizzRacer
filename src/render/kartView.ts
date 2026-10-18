@@ -340,13 +340,15 @@ export class KartView {
       this.head.rotation.set(s.boostTime > 0 ? -0.18 : 0, -s.steer * 0.35 - s.driftDir * 0.15, this.roll * 1.6);
     }
 
-    const boosting = s.boostTime > 0;
+    // The flames point back at the camera: they stand down while a trick plays, so it can be seen, and burn small in the air.
+    const boosting = s.boostTime > 0 && this.trickTime >= TRICK_TIME;
+    const air = s.grounded ? 1 : 0.5;
     for (const f of this.flames) {
       f.cone.visible = f.glow.visible = boosting;
       if (!boosting) continue;
-      const k = 0.8 + Math.random() * 0.5;
+      const k = (0.8 + Math.random() * 0.5) * air;
       f.cone.scale.set(k, k, k * (1 + Math.min(s.boostTime, 1)));
-      f.glow.scale.setScalar(1.6 + Math.random() * 0.8);
+      f.glow.scale.setScalar((1.6 + Math.random() * 0.8) * air);
     }
 
     // Blob shadow on the ground, fading with height.
