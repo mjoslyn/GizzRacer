@@ -6,16 +6,17 @@ const MESA_RUN_UP = 30;
 const MESA_RAMP = 40;
 const MESA_GAP = 12;
 const FINISH_STRAIGHT = 60;
-/** Room left for the closing curve between the Dry Wash and the Mesa straight. */
+/** Room left for the closing curve between Deserted Dunes and the Mesa straight. */
 const CLOSING_SLACK = 55;
 
 /**
  * Rattlesnake Run greybox (spec section 7). Seen from above the course is a
  * coiled snake: a straight tail, serpentine S-bends, a narrow canyon, a
- * double-spiral coil, then a leap over a dry riverbed back to the line.
+ * double-spiral coil, the long Sleep Drifter straight, round Billabong
+ * Valley, then a leap over a dry riverbed back to the line.
  */
 export function buildRattlesnakeRun(): TrackDef {
-  // Lay the track out once, then stretch the Dry Wash so the loop closes cleanly.
+  // Lay the track out once, then stretch Sleep Drifter so the loop closes cleanly.
   const mesaLength = MESA_RUN_UP + MESA_RAMP + MESA_GAP + FINISH_STRAIGHT;
   const target = offsetPose(START, -mesaLength);
   const trial = layout(120);
@@ -58,6 +59,7 @@ export function buildRattlesnakeRun(): TrackDef {
       { s: b.marks.canyon.s - 18, count: 3 },
       { s: b.marks.wash.s + 25, count: 4 },
       { s: b.marks.mesa.s + 8, count: 4 },
+      { s: shortcut.caveStart + 35, count: 2, ribbon: 0, span: 6, double: true },
     ],
     hazards: [
       { kind: 'dustDevils', from: 20, to: 165, count: 2 },
@@ -72,7 +74,8 @@ export function buildRattlesnakeRun(): TrackDef {
 
 function layout(washLength: number): TrackBuilder {
   const b = new TrackBuilder(START, 'Salt Flat Straight', { halfWidth: 13, surface: 'salt' });
-  b.straight(170);
+  // A kicker that lands just short of the boost pads.
+  b.straight(23).kicker().straight(140);
 
   b.section('Sidewinder S-Bends', { halfWidth: 9 });
   b.arc(40, -90);
@@ -89,19 +92,24 @@ function layout(washLength: number): TrackBuilder {
   b.mark('coil');
   b.spiral(46, 15, -270).straight(10).spiral(15, 46, 270);
 
-  b.section('Dry Wash', { halfWidth: 10 });
+  // Sleep Drifter: the long heat-haze straight, two kickers to chain.
+  b.section('Sleep Drifter', { halfWidth: 10 });
   b.mark('wash');
-  b.straight(washLength).arc(45, -90).straight(5);
+  b.straight(63).kicker().straight(53).kicker().straight(washLength - 130);
+  b.arc(45, -90).straight(5);
+  // Billabong Valley: round Mad Dog Morgan's waterhole, or through the Snake's Mouth.
+  b.section('Billabong Valley', { halfWidth: 10 });
   b.mark('bumpStart');
   const bumpR = 55;
   b.arc(bumpR, 60).arc(bumpR, -120).arc(bumpR, 60);
   b.mark('bumpEnd');
+  b.section('Deserted Dunes', { halfWidth: 10 });
   b.straight(5).arc(45, -90);
   b.mark('washEnd');
   return b;
 }
 
-/** Snake's Mouth: a straight cut across the Dry Wash bulge with a jump into a cave: at 50cc it takes a boost. */
+/** Snake's Mouth: a straight cut across the Billabong Valley bulge with a jump into a cave: at 50cc it takes a boost. */
 function buildShortcut(from: { s: number; pose: Pose }, to: { s: number; pose: Pose }) {
   const chord = Math.hypot(to.pose.x - from.pose.x, to.pose.z - from.pose.z);
   const b = new TrackBuilder(from.pose, "Snake's Mouth", { halfWidth: 7 });
