@@ -8,6 +8,10 @@ const CANOPY = 94;
 const RIVERBANK = 75;
 /** Half the river's length, across the road: it runs wide enough for The Fourth Colour to leap it too. */
 const RIVER_REACH = 60;
+/** Canopy height for the vine bridges, the river ravine's floor and the rise the ruins stand on. */
+const CANOPY_Y = 14;
+const RAVINE_Y = -6;
+const RUINS_Y = 8;
 
 /**
  * Polygondwanaland Jungle (spec section 7, hard): vine hairpins, a jump
@@ -16,12 +20,19 @@ const RIVER_REACH = 60;
  * longer leap off a crumbling ramp.
  */
 export function buildPolygondwanalandJungle(): TrackDef {
+  // Canopy Run climbs off the line onto a vine bridge up in the canopy, and the hairpins wind back down on it.
+  const vines = { halfWidth: 8.5, wallHeight: 1.2, bridge: true };
   const b = new TrackBuilder(START, 'Canopy Run', { halfWidth: 10 });
-  b.straight(CANOPY).arc(45, 90);
+  b.straight(20);
+  b.section('Canopy Run', { halfWidth: 10, wallHeight: 1.2, bridge: true });
+  b.straight(CANOPY - 20).arc(45, 90);
 
-  b.section('Vine Hairpins', { halfWidth: 8.5 });
+  b.section('Vine Hairpins', vines);
   b.mark('hairpins');
-  b.straight(20).arc(20, -170).straight(35).arc(20, 170);
+  b.straight(20).arc(20, -170).straight(35).arc(20, 120);
+  // Down on the forest floor again where The Fourth Colour peels away.
+  b.section('Vine Hairpins', { halfWidth: 8.5 });
+  b.arc(20, 50);
   b.mark('colourFrom');
   b.straight(20);
 
@@ -34,6 +45,7 @@ export function buildPolygondwanalandJungle(): TrackDef {
   b.gap(14, RIVER_REACH, 'water', 12, 3);
   b.elevate(0).straight(20);
   b.section('River Jump', { halfWidth: 9 });
+  b.mark('ravine');
   b.arc(45, 90);
 
   // Crumbling Castle: the riverbank under a rising thick green tide, where The Fourth Colour comes back.
@@ -55,6 +67,27 @@ export function buildPolygondwanalandJungle(): TrackDef {
   b.section('Finish Straight', { halfWidth: 10 });
   // A kicker before the line.
   b.straight(18).kicker().straight(FINISH - 25);
+
+  shape(b, [
+    [6, 0, 0],
+    [CANOPY + 6, CANOPY_Y - 1, 0.03],
+    [b.marks.hairpins.s + 20, CANOPY_Y, 0],
+    [b.marks.colourFrom.s, 0, 0],
+  ]);
+  // Past the river the road turns down its ravine, sunk into the forest floor, and climbs back out to the bank.
+  shape(b, [
+    [b.marks.ravine.s, 0, 0],
+    [b.marks.ravine.s + 40, RAVINE_Y, 0],
+    [b.marks.ravine.s + 85, 0, 0],
+  ], 2);
+  // The ruins stand on a rise: up the steps (a kinked top that throws fast karts) and down again round the Inner Cell.
+  const ruins = b.marks.ruins.s;
+  shape(b, [
+    [ruins, 0, 0],
+    [ruins + 50, RUINS_Y, 0.22, 0],
+    [ruins + 150, RUINS_Y, 0],
+    [b.marks.waterfall.s, 0, 0],
+  ]);
 
   const main = b.finish(true);
   const colour = buildFourthColour(b.marks.colourFrom, b.marks.colourTo, b.marks.river.pose);
@@ -118,4 +151,17 @@ function buildFourthColour(from: { s: number; pose: Pose }, to: { s: number; pos
   b.straight(b.pose.x - to.pose.x);
   const branch: BranchDef = { name: 'The Fourth Colour', mainFrom: from.s, mainTo: to.s, ...b.finish(false) };
   return { branch, landing };
+}
+
+/**
+ * Shapes the road through [s, y, slope] points (a fourth value is the slope
+ * leaving the point, for a kink at a crest): a smooth curve between each pair.
+ */
+function shape(b: TrackBuilder, pts: number[][], step = 6): void {
+  for (let k = 1; k < pts.length; k++) {
+    const [s0, y0, m0, out = m0] = pts[k - 1];
+    const [s1, y1, m1] = pts[k];
+    const len = s1 - s0;
+    b.profile(s0, s1, (t) => (2 * t ** 3 - 3 * t ** 2 + 1) * y0 + (t ** 3 - 2 * t ** 2 + t) * len * out + (3 * t ** 2 - 2 * t ** 3) * y1 + (t ** 3 - t ** 2) * len * m1, step);
+  }
 }

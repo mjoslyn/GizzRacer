@@ -9,9 +9,12 @@ const L = R / Math.tan(HALF_CROSS);
 const LOOP_DEG = 180 + (2 * HALF_CROSS * 180) / Math.PI;
 /** Start line distance into the underpass straight. */
 const START_IN = 120;
-const BRIDGE_Y = 9;
-const RAMP = 95;
-const DECK = 90;
+/** The coaster over the crossing: its crest, right above the underpass, and the embankment either end of the deck. */
+const CREST_Y = 18;
+const BANK = 60;
+/** Gamma Knife rolls over two hills this high; Wah Wah dips into a cutting this deep. */
+const ROLL_Y = 6;
+const DIP_Y = 4;
 /** Invisible Face: degrees into the Wah Wah loop where it leaves, and before the end where it rejoins. */
 const FACE_IN = 25;
 const FACE_OUT = 25;
@@ -47,15 +50,17 @@ export function buildInfiniteLoopSpeedway(): TrackDef {
   b.mark('mobius');
   b.arc(R, LOOP_DEG);
 
-  // The overpass straight: climb, fly over the crossing, come back down.
-  const climbAt = L - DECK / 2 - RAMP;
+  // The overpass straight is a coaster: up onto a deck, over a crest right
+  // above the crossing (fast karts fly it), and a plunge back down.
   b.section('People-Vultures', { halfWidth: 11 });
   b.mark('overpass');
-  b.straight(climbAt).elevate(0).straight(RAMP).elevate(BRIDGE_Y);
+  b.straight(BANK);
   b.section('Mr. Beat', { halfWidth: 11, wallHeight: 1.2, bridge: true });
-  b.straight(DECK).elevate(BRIDGE_Y);
-  b.section('Evil Death Roll', { halfWidth: 11 });
-  b.straight(RAMP).elevate(0).straight(climbAt);
+  b.straight(L - BANK);
+  b.section('Evil Death Roll', { halfWidth: 11, wallHeight: 1.2, bridge: true });
+  b.straight(L - BANK);
+  b.section('Evil Death Roll', { halfWidth: 11, wallHeight: 1.2 });
+  b.straight(BANK);
 
   // Wah Wah: open where Invisible Face leaves and rejoins, walled between.
   const wallDeg = LOOP_DEG - FACE_IN - FACE_OUT - (2 * FACE_OPEN * 180) / (Math.PI * R);
@@ -73,6 +78,22 @@ export function buildInfiniteLoopSpeedway(): TrackDef {
   b.straight(40).kicker().mark('kicker3');
   b.straight(START_IN - 47);
 
+  // Gamma Knife rolls over two hills.
+  b.profile(b.marks.mobius.s, b.marks.overpass.s, (u) => (ROLL_Y / 2) * (1 - Math.cos(4 * Math.PI * u)), 6);
+  // The climb steepens all the way to the crest, which kinks over into a
+  // gentle run where flyers land, then the plunge.
+  const o = b.marks.overpass.s;
+  shape(b, [
+    [o, 0, 0],
+    [o + L, CREST_Y, 0.2, -0.05],
+    [o + L + 40, CREST_Y - 2, -0.06],
+    [o + 2 * L, 0, 0],
+  ]);
+  // Wah Wah dips into a cutting between its barriers, clear of Invisible Face.
+  const dipFrom = b.marks.faceFrom.s + FACE_OPEN - 10;
+  const dipTo = b.marks.faceTo.s - FACE_OPEN + 10;
+  b.profile(dipFrom, dipTo, (u) => -DIP_Y * Math.sin(Math.PI * u) ** 2, 6);
+
   const main = b.finish(true);
   const face = buildInvisibleFace(b.marks.faceFrom, b.marks.faceTo);
   return {
@@ -84,7 +105,7 @@ export function buildInfiniteLoopSpeedway(): TrackDef {
     boostPads: [
       { s: 30, length: 8, lateral: -5, halfWidth: 2.5 },
       { s: 30, length: 8, lateral: 5, halfWidth: 2.5 },
-      { s: b.marks.overpass.s + climbAt - 30, length: 8, lateral: 0, halfWidth: 2.5 },
+      { s: b.marks.overpass.s + BANK - 30, length: 8, lateral: 0, halfWidth: 2.5 },
       // On the inside line, pointing into Invisible Face.
       { s: b.marks.faceFrom.s - 12, length: 8, lateral: 6, halfWidth: 2.5 },
     ],
@@ -102,6 +123,19 @@ export function buildInfiniteLoopSpeedway(): TrackDef {
     theme: 'speedway',
     music: { lap: 'infinite-loop-speedway' },
   };
+}
+
+/**
+ * Shapes the road through [s, y, slope] points (a fourth value is the slope
+ * leaving the point, for a kink at a crest): a smooth curve between each pair.
+ */
+function shape(b: TrackBuilder, pts: number[][], step = 6): void {
+  for (let k = 1; k < pts.length; k++) {
+    const [s0, y0, m0, out = m0] = pts[k - 1];
+    const [s1, y1, m1] = pts[k];
+    const len = s1 - s0;
+    b.profile(s0, s1, (t) => (2 * t ** 3 - 3 * t ** 2 + 1) * y0 + (t ** 3 - 2 * t ** 2 + t) * len * out + (3 * t ** 2 - 2 * t ** 3) * y1 + (t ** 3 - t ** 2) * len * m1, step);
+  }
 }
 
 /** Invisible Face: a narrow dirt cut across the infield of Wah Wah. Forgiving: miss it and you're on the grass. */
