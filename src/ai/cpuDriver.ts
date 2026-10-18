@@ -1,6 +1,6 @@
 import { NEUTRAL_INPUT, type InputFrame } from '../core/inputFrame';
 import { clamp, seededRandom, wrapAngle } from '../core/math';
-import type { ItemKind } from '../items/items';
+import { CABLE_RANGE, FLUTE_CONE, FLUTE_RANGE, HARMONICA_CONE, HARMONICA_RANGE, LASER_RANGE, LASER_WIDTH, inCone, type ItemKind } from '../items/items';
 import { DRIFT_MIN_SPEED, driftTier, type KartState } from '../physics/kart';
 import type { EngineClass, KartParams } from '../physics/racers';
 import { pointAt } from '../tracks/spline';
@@ -72,6 +72,11 @@ export class CpuDriver {
     this.rand = seededRandom(seed);
     this.lane = (this.rand() - 0.5) * 0.9;
     this.phase = this.rand() * Math.PI * 2;
+  }
+
+  /** One roll against a chance, on this driver's own dice (rocket starts, tricks, dodges). */
+  roll(chance: number): boolean {
+    return this.rand() < chance;
   }
 
   drive(s: KartState, p: KartParams, progress: number, track: Track, others: readonly KartState[], obstacles: readonly Obstacle[], dt: number): InputFrame {
@@ -152,7 +157,20 @@ export class CpuDriver {
         return position > 1;
       case 'tempoShift':
       case 'wooCannon':
+      case 'gizzardWave':
         return true;
+      case 'fluteFlurry':
+        return others.some((o) => o !== s && inCone(s, o, FLUTE_RANGE, FLUTE_CONE));
+      case 'harmonicaWail':
+        return others.some((o) => o !== s && inCone(s, o, HARMONICA_RANGE, HARMONICA_CONE));
+      case 'keytarLaser':
+        return others.some((o) => o !== s && inCone(s, o, LASER_RANGE, 0.5) && Math.abs((o.x - s.x) * fz - (o.z - s.z) * fx) < LASER_WIDTH);
+      case 'drumRoll':
+        return near > 0 || tailing || others.some((o) => o !== s && inCone(s, o, 12, 0.6));
+      case 'bassDrop':
+        return position > 1;
+      case 'patchCable':
+        return position > 1 && others.some((o) => o !== s && inCone(s, o, CABLE_RANGE * 0.8, 0.9));
     }
   }
 

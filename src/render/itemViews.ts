@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { BOULDER_STAGES, HOLE_CORE, JET_STAGES, LIGHTNING_STRIKE, type HazardPose } from '../items/hazards';
-import { WAVE_RANGE, type ItemSystem } from '../items/items';
+import { BOX_RESPAWN, SHIELD_ITEMS, WAVE_RANGE, type ItemHolder, type ItemSystem } from '../items/items';
+import type { KartState } from '../physics/kart';
 import type { HazardSystem } from '../items/hazards';
 import { basaltTexture, dustTexture, wingTexture, flameTexture, glowTexture, itemBoxTexture, scaleTexture, stoneTexture, warningTexture, woodTexture } from './textures';
 
@@ -8,6 +9,18 @@ const MINE_POOL = 12;
 const MISSILE_POOL = 8;
 const WAVE_POOL = 4;
 const SNAKE_SEGMENTS = 9;
+const KART_POOL = 12;
+const NOTE_POOL = 32;
+const NOTES_PER_FLURRY = 10;
+const FX_POOL = 4;
+/** Seconds a broken item box takes to burst and vanish. */
+const BOX_POP = 0.22;
+
+/** A kart as the items view draws around it: where it's shown this frame, and what it holds. */
+export interface ItemKartView {
+  state: KartState;
+  holder: ItemHolder;
+}
 
 /** Item boxes, mines, missiles and wave rings, mirrored from an ItemSystem each frame. */
 export class ItemsView {
@@ -16,18 +29,45 @@ export class ItemsView {
   private readonly mines: THREE.Group[] = [];
   private readonly missiles: THREE.Group[] = [];
   private readonly waves: THREE.Mesh[] = [];
+  /** Mines and missiles held in the slot, trailing behind their karts as shields. */
+  private readonly heldMines: THREE.Group[] = [];
+  private readonly heldPicks: THREE.Group[] = [];
+  /** Drum Roll: a ring of drumheads round the kart. */
+  private readonly auras: THREE.Mesh[] = [];
+  private readonly notes: THREE.Sprite[] = [];
+  private readonly drops: THREE.Mesh[] = [];
+  private readonly cables: THREE.Line[] = [];
+  private readonly wails: THREE.Mesh[] = [];
+  private readonly beams: THREE.Group[] = [];
+  private readonly surge: THREE.Group;
+  /** Shards of glass flying off a broken box. */
+  private readonly shards: THREE.Sprite[] = [];
 
   constructor(private readonly items: ItemSystem) {
     const boxGeo = new THREE.BoxGeometry(1.5, 1.5, 1.5);
     const boxMat = new THREE.MeshPhongMaterial({ map: itemBoxTexture(), shininess: 90, specular: 0xffffff, emissive: 0x402050, transparent: true, opacity: 0.92 });
+    // A double box glows gold and holds a second box inside it.
+    const doubleMat = new THREE.MeshPhongMaterial({ map: itemBoxTexture(), shininess: 90, specular: 0xffffff, emissive: 0x806010, color: 0xffe080, transparent: true, opacity: 0.85 });
     for (const b of items.boxes) {
-      const m = new THREE.Mesh(boxGeo, boxMat);
+      const m = new THREE.Mesh(boxGeo, b.double ? doubleMat : boxMat);
+      if (b.double) {
+        const inner = new THREE.Mesh(boxGeo, boxMat);
+        inner.scale.setScalar(0.55);
+        inner.rotation.set(0.7, 0.7, 0);
+        m.add(inner);
+      }
       m.position.set(b.x, b.y, b.z);
       this.boxes.push(m);
       this.group.add(m);
     }
 
     const glow = glowTexture();
+    for (let i = 0; i < 16; i++) {
+      const sh = sprite(glow, 0xfff0ff, 0.5);
+      sh.visible = false;
+      this.shards.push(sh);
+      this.group.add(sh);
+    }
     const mineGeo = new THREE.OctahedronGeometry(0.7, 0);
     const mineMat = new THREE.MeshPhongMaterial({ color: 0xb04aff, emissive: 0x5a1080, shininess: 80, flatShading: true });
     const coreGeo = new THREE.IcosahedronGeometry(0.42, 0);
@@ -75,18 +115,105 @@ export class ItemsView {
       this.waves.push(m);
       this.group.add(m);
     }
+
+    // Held items: a smaller mine or pick riding behind the kart.
+    for (let i = 0; i < KART_POOL; i++) {
+      const mine = this.mines[0].clone();
+      mine.scale.setScalar(0.6);
+      mine.visible = false;
+      this.heldMines.push(mine);
+      const pickHeld = this.missiles[0].clone();
+      pickHeld.scale.setScalar(0.6);
+      pickHeld.visible = false;
+      this.heldPicks.push(pickHeld);
+      this.group.add(mine, pickHeld);
+      const aura = new THREE.Mesh(new THREE.TorusGeometry(1.9, 0.12, 8, 40), new THREE.MeshBasicMaterial({ color: 0xffb040, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+      aura.rotation.x = Math.PI / 2;
+      aura.visible = false;
+      this.auras.push(aura);
+      this.group.add(aura);
+    }
+
+    const note = noteTexture();
+    for (let i = 0; i < NOTE_POOL; i++) {
+      const n = new THREE.Sprite(new THREE.SpriteMaterial({ map: note, color: 0xb0ffe8, transparent: true, depthWrite: false }));
+      n.scale.setScalar(0.9);
+      n.visible = false;
+      this.notes.push(n);
+      this.group.add(n);
+    }
+    for (let i = 0; i < FX_POOL; i++) {
+      const drop = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0x9a40ff, transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending }));
+      drop.visible = false;
+      this.drops.push(drop);
+      const cable = new THREE.Line(new THREE.BufferGeometry().setFromPoints(Array.from({ length: 12 }, () => new THREE.Vector3())), new THREE.LineBasicMaterial({ color: 0xff3a8a }));
+      cable.frustumCulled = false;
+      cable.visible = false;
+      this.cables.push(cable);
+      const coneGeo = new THREE.ConeGeometry(1, 1, 24, 1, true);
+      coneGeo.rotateX(-Math.PI / 2);
+      coneGeo.translate(0, 0, 0.5);
+      const wail = new THREE.Mesh(coneGeo, new THREE.MeshBasicMaterial({ color: 0x80c0ff, transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending }));
+      wail.visible = false;
+      this.wails.push(wail);
+      const beamGeo = new THREE.CylinderGeometry(0.18, 0.18, 1, 8, 1, true);
+      beamGeo.rotateX(Math.PI / 2);
+      beamGeo.translate(0, 0, 0.5);
+      const beam = new THREE.Group();
+      const core = new THREE.Mesh(beamGeo, new THREE.MeshBasicMaterial({ color: 0xffd0f8, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+      const halo = new THREE.Mesh(beamGeo, new THREE.MeshBasicMaterial({ color: 0xff2ad0, transparent: true, opacity: 0.5, depthWrite: false, blending: THREE.AdditiveBlending }));
+      halo.scale.set(3, 3, 1);
+      beam.add(core, halo, sprite(glow, 0xff60e0, 3));
+      beam.visible = false;
+      this.beams.push(beam);
+      this.group.add(drop, cable, wail, beam);
+    }
+
+    // The Gizzard Wave: a curling wall of green across the road, foam on its lip.
+    this.surge = new THREE.Group();
+    const curl = new THREE.CylinderGeometry(1.6, 1.6, 12, 20, 1, true, 0, Math.PI);
+    curl.rotateZ(Math.PI / 2);
+    curl.translate(0, 0.6, 0);
+    this.surge.add(
+      new THREE.Mesh(curl, new THREE.MeshBasicMaterial({ color: 0x30ff90, transparent: true, opacity: 0.55, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending })),
+      sprite(glow, 0x80ffc0, 9),
+    );
+    for (let i = 0; i < 6; i++) {
+      const foam = sprite(glow, 0xe0fff0, 1.4);
+      foam.position.set(-5 + i * 2, 2.1, 0);
+      this.surge.add(foam);
+    }
+    this.surge.visible = false;
+    this.group.add(this.surge);
   }
 
-  update(elapsed: number): void {
+  update(elapsed: number, karts: readonly ItemKartView[] = []): void {
+    let shard = 0;
     this.items.boxes.forEach((b, i) => {
       const m = this.boxes[i];
-      // Pop back in over the last half second of the respawn.
-      const scale = b.respawn === 0 ? 1 : Math.max(0, 1 - b.respawn / 0.5);
+      // Just broken: it swells and spins away in a spray of glass. Then it pops back in over the last half second of the respawn.
+      const broken = BOX_RESPAWN - b.respawn;
+      const popping = b.respawn > 0 && broken < BOX_POP;
+      const scale = popping ? 1 + (broken / BOX_POP) * 0.9 : b.respawn === 0 ? 1 : Math.max(0, 1 - b.respawn / 0.5);
       m.visible = scale > 0.01;
-      m.scale.setScalar(scale);
+      m.scale.setScalar(scale * (b.double ? 1.2 : 1));
       m.position.y = b.y + Math.sin(elapsed * 2.4 + i) * 0.18;
-      m.rotation.set(0.5, elapsed * 1.6 + i, 0.3);
+      m.rotation.set(0.5, elapsed * (popping ? 14 : 1.6) + i, 0.3);
+      if (b.respawn > 0 && broken < 0.5) {
+        const u = broken / 0.5;
+        for (let k = 0; k < 4 && shard < this.shards.length; k++, shard++) {
+          const sh = this.shards[shard];
+          const a = i * 1.7 + k * (Math.PI / 2);
+          sh.visible = true;
+          sh.position.set(b.x + Math.cos(a) * u * 3, b.y + u * 2 - u * u * 3, b.z + Math.sin(a) * u * 3);
+          sh.material.opacity = 1 - u;
+          sh.material.color.setHex(b.double ? 0xffe080 : 0xfff0ff);
+        }
+      }
     });
+    for (; shard < this.shards.length; shard++) this.shards[shard].visible = false;
+    this.updateHeld(elapsed, karts);
+    this.updateBursts(elapsed, karts);
     this.mines.forEach((g, i) => {
       const m = this.items.mines[i];
       g.visible = !!m;
@@ -112,6 +239,150 @@ export class ItemsView {
       (r.material as THREE.MeshBasicMaterial).opacity = 1 - t;
     });
   }
+
+  /** Shields trailing behind, and the Drum Roll's ring. */
+  private updateHeld(elapsed: number, karts: readonly ItemKartView[]): void {
+    for (let i = 0; i < KART_POOL; i++) {
+      const k = karts[i];
+      const held = k && k.holder.rolling === 0 ? k.holder.item : null;
+      const shield = held && SHIELD_ITEMS.includes(held) ? held : null;
+      const mine = this.heldMines[i];
+      const pick = this.heldPicks[i];
+      mine.visible = shield === 'microtonalMine';
+      pick.visible = shield === 'riffMissile';
+      const aura = this.auras[i];
+      aura.visible = !!k && k.state.ramTime > 0;
+      if (!k) continue;
+      const s = k.state;
+      const fx = Math.sin(s.heading);
+      const fz = Math.cos(s.heading);
+      const bob = Math.sin(elapsed * 6 + i) * 0.12;
+      if (shield) {
+        const g = shield === 'microtonalMine' ? mine : pick;
+        g.position.set(s.x - fx * 2.3, s.y + 0.7 + bob, s.z - fz * 2.3);
+        g.rotation.set(0, s.heading + (shield === 'microtonalMine' ? elapsed * 2.5 : 0), 0);
+      }
+      if (aura.visible) {
+        aura.position.set(s.x, s.y + 0.6, s.z);
+        aura.scale.setScalar(1 + Math.sin(elapsed * 30) * 0.08);
+        (aura.material as THREE.MeshBasicMaterial).opacity = Math.min(1, s.ramTime) * (0.6 + 0.4 * Math.abs(Math.sin(elapsed * 15)));
+      }
+    }
+  }
+
+  /** The band's items going off, and the Gizzard Wave. */
+  private updateBursts(elapsed: number, karts: readonly ItemKartView[]): void {
+    const at = (h: ItemHolder | null) => (h ? karts.find((k) => k.holder === h)?.state ?? h.state : null);
+    let note = 0;
+    let drop = 0;
+    let cable = 0;
+    let wail = 0;
+    let beam = 0;
+    for (const b of this.items.bursts) {
+      const u = Math.min(1, b.age / b.life);
+      const from = at(b.from);
+      const ox = from?.x ?? b.x;
+      const oy = from?.y ?? b.y;
+      const oz = from?.z ?? b.z;
+      switch (b.kind) {
+        case 'fluteFlurry':
+          // Notes fan out ahead along the cone.
+          for (let k = 0; k < NOTES_PER_FLURRY && note < NOTE_POOL; k++, note++) {
+            const n = this.notes[note];
+            const a = b.heading + (k / (NOTES_PER_FLURRY - 1) - 0.5) * 0.9;
+            const d = b.len * Math.min(1, u * 1.2 + (k % 3) * 0.05);
+            n.visible = true;
+            n.position.set(b.x + Math.sin(a) * d, b.y + 1.2 + Math.sin(elapsed * 12 + k) * 0.4, b.z + Math.cos(a) * d);
+            n.material.opacity = 1 - u;
+          }
+          break;
+        case 'bassDrop': {
+          const r = this.drops[drop++];
+          if (!r) break;
+          r.visible = true;
+          r.position.set(ox, oy + 0.4, oz);
+          r.scale.setScalar(1 + b.len * 0.6 * u);
+          (r.material as THREE.MeshBasicMaterial).opacity = 0.9 * (1 - u);
+          break;
+        }
+        case 'patchCable': {
+          const line = this.cables[cable++];
+          const to = at(b.to);
+          if (!line || !to) break;
+          line.visible = true;
+          // A cable sagging between the two karts, pulled taut as it ends.
+          const pos = line.geometry.attributes.position as THREE.BufferAttribute;
+          const sag = 1.5 * (1 - u);
+          for (let k = 0; k < pos.count; k++) {
+            const t = k / (pos.count - 1);
+            pos.setXYZ(k, ox + (to.x - ox) * t, oy + 1 + (to.y - oy) * t - Math.sin(t * Math.PI) * sag, oz + (to.z - oz) * t);
+          }
+          pos.needsUpdate = true;
+          break;
+        }
+        case 'harmonicaWail': {
+          const c = this.wails[wail++];
+          if (!c) break;
+          c.visible = true;
+          c.position.set(ox, oy + 0.8, oz);
+          c.rotation.set(0, b.heading, 0);
+          const reach = b.len * Math.min(1, u * 2);
+          c.scale.set(reach * 0.7, 2, reach);
+          (c.material as THREE.MeshBasicMaterial).opacity = 0.35 * (1 - u);
+          break;
+        }
+        case 'keytarLaser': {
+          const g = this.beams[beam++];
+          if (!g) break;
+          g.visible = true;
+          g.position.set(b.x, b.y + 1, b.z);
+          g.rotation.set(0, b.heading, 0);
+          for (const c of g.children.slice(0, 2)) c.scale.z = b.len;
+          g.children[2].position.set(0, 0, b.len);
+          g.children.forEach((c) => (((c as THREE.Mesh).material as THREE.MeshBasicMaterial).opacity = (c === g.children[1] ? 0.5 : 1) * (1 - u)));
+          break;
+        }
+      }
+    }
+    for (; note < NOTE_POOL; note++) this.notes[note].visible = false;
+    for (; drop < FX_POOL; drop++) this.drops[drop].visible = false;
+    for (; cable < FX_POOL; cable++) this.cables[cable].visible = false;
+    for (; wail < FX_POOL; wail++) this.wails[wail].visible = false;
+    for (; beam < FX_POOL; beam++) this.beams[beam].visible = false;
+
+    const w = this.items.surge;
+    this.surge.visible = !!w;
+    if (w) {
+      this.surge.position.set(w.x, w.y, w.z);
+      this.surge.rotation.y = w.heading;
+      this.surge.children.slice(2).forEach((f, k) => (f.position.y = 2.1 + Math.sin(elapsed * 10 + k) * 0.3));
+    }
+  }
+}
+
+let noteCache: THREE.CanvasTexture | null = null;
+
+/** A pair of quavers, white on clear, for the Flute Flurry. */
+function noteTexture(): THREE.CanvasTexture {
+  if (noteCache) return noteCache;
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const g = c.getContext('2d')!;
+  g.fillStyle = '#fff';
+  g.strokeStyle = '#fff';
+  g.lineWidth = 5;
+  for (const x of [16, 44]) {
+    g.beginPath();
+    g.ellipse(x, 48, 9, 7, -0.4, 0, Math.PI * 2);
+    g.fill();
+    g.beginPath();
+    g.moveTo(x + 7, 46);
+    g.lineTo(x + 7, 12);
+    g.stroke();
+  }
+  g.fillRect(21, 9, 32, 7);
+  noteCache = new THREE.CanvasTexture(c);
+  return noteCache;
 }
 
 /** Snakes, dust devils, tumbleweeds and boulders, posed from a HazardSystem each frame. */

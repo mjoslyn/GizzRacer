@@ -54,6 +54,9 @@ export interface KartState {
   slowTime: number; // seconds of reduced top speed left (Tempo Shift)
   invulnTime: number; // seconds of immunity left after being hit
   cannonTime: number; // seconds of Woo Cannon flight left: the race flies the kart, not stepKart
+  ramTime: number; // seconds of Drum Roll left: immune, a little faster, spins out whoever it touches
+  trickStreak: number; // tricks landed back to back
+  trickChain: number; // seconds left to land the next trick and keep the streak
 }
 
 export interface StepEvents {
@@ -64,13 +67,14 @@ export interface StepEvents {
   wallHit: number; // 0..1 severity
   launched: boolean; // left a ledge or ramp lip
   trick: boolean; // landed a trick
+  trickStreak: number; // its place in a streak of back-to-back tricks, 1 for a lone one
 }
 
 /**
  * Bump whenever kart physics, racer stats or a track layout change lap
  * times: online leaderboards and ghosts are kept per version.
  */
-export const PHYSICS_VERSION = 3;
+export const PHYSICS_VERSION = 4;
 export const KART_RADIUS = 1;
 export const GRAVITY = 30;
 export const HOP_VELOCITY = 4.5;
@@ -80,7 +84,7 @@ export const BOOST_ACCEL = 30;
 export const PAD_BOOST_TIME = 1;
 export const DRIFT_MIN_SPEED = 10;
 /** Charge thresholds (s) and boost durations (s) for blue, orange, purple sparks. */
-export const DRIFT_TIERS = [0.3, 0.6, 0.95] as const;
+export const DRIFT_TIERS = [0.15, 0.3, 0.475] as const;
 export const DRIFT_BOOSTS = [0.5, 1, 1.5] as const;
 /** Top speed multiplier while slowed by Tempo Shift. */
 export const SLOW_MUL = 0.6;
@@ -90,6 +94,12 @@ const WOBBLE_FREQ = 15; // rad/s
 const WOBBLE_DEPTH = 0.85;
 export const TRICK_WINDOW = 0.3;
 export const TRICK_BOOST = 0.7;
+/** Land the next trick within this many seconds to keep a streak going; each trick in it boosts longer, up to the cap. */
+export const TRICK_CHAIN = 3;
+export const TRICK_STREAK_BONUS = 0.4;
+export const TRICK_STREAK_MAX = 4;
+/** Top speed multiplier while in a Drum Roll. */
+export const RAM_SPEED_MUL = 1.1;
 
 /** Steering ramps in gradually (fine taps) and recenters quickly. */
 const STEER_IN_RATE = 3.5;
@@ -147,6 +157,9 @@ export function createKartState(x = 0, z = 0, heading = 0): KartState {
     slowTime: 0,
     invulnTime: 0,
     cannonTime: 0,
+    ramTime: 0,
+    trickStreak: 0,
+    trickChain: 0,
   };
 }
 
@@ -175,8 +188,11 @@ function approachSteer(current: number, target: number, dt: number): number {
 
 /** Advances one kart by dt, mutating `s`. */
 export function stepKart(s: KartState, input: InputFrame, p: KartParams, env: DriveEnv, dt: number): StepEvents {
-  const ev: StepEvents = { hopped: false, landed: 0, driftStarted: false, boostTier: 0, wallHit: 0, launched: false, trick: false };
+  const ev: StepEvents = { hopped: false, landed: 0, driftStarted: false, boostTier: 0, wallHit: 0, launched: false, trick: false, trickStreak: 0 };
   s.invulnTime = Math.max(0, s.invulnTime - dt);
+  s.ramTime = Math.max(0, s.ramTime - dt);
+  s.trickChain = Math.max(0, s.trickChain - dt);
+  if (s.trickChain === 0) s.trickStreak = 0;
   s.slowTime = Math.max(0, s.slowTime - dt);
   const spinning = s.spinTime > 0;
   if (spinning) {
@@ -237,6 +253,7 @@ export function stepKart(s: KartState, input: InputFrame, p: KartParams, env: Dr
   if (boosting) top *= BOOST_SPEED_MUL;
   else if (s.surface === 'offroad') top *= OFFROAD_SPEED_MUL;
   if (s.slowTime > 0) top *= SLOW_MUL;
+  if (s.ramTime > 0) top *= RAM_SPEED_MUL;
 
   if (s.grounded && !spinning) {
     const drive = boosting ? 1 : input.throttle - input.brake;
@@ -318,8 +335,12 @@ export function stepKart(s: KartState, input: InputFrame, p: KartParams, env: Dr
       s.trickWindow = 0;
       if (s.trick) {
         s.trick = false;
-        s.boostTime = Math.max(s.boostTime, TRICK_BOOST);
+        // Back-to-back tricks boost longer and longer.
+        s.trickStreak = Math.min(TRICK_STREAK_MAX, s.trickStreak + 1);
+        s.trickChain = TRICK_CHAIN;
+        s.boostTime = Math.max(s.boostTime, TRICK_BOOST * (1 + TRICK_STREAK_BONUS * (s.trickStreak - 1)));
         ev.trick = true;
+        ev.trickStreak = s.trickStreak;
       }
     }
   }

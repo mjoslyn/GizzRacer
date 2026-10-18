@@ -1,6 +1,6 @@
 import { CPU_SKILL, CpuDriver } from '../ai/cpuDriver';
 import { Race, type RaceKart } from '../core/race';
-import { CANNON_TIME, FUZZ_BOOST, ITEM_KINDS, MINE_WOBBLE, MISSILE_SPIN, WAVE_SPIN, tempoSlowFor, type ItemKind } from '../items/items';
+import { BASS_SLOW, CABLE_TIME, CANNON_TIME, DRUM_TIME, FLUTE_WOBBLE, FUZZ_BOOST, HARMONICA_WOBBLE, ITEM_KINDS, LASER_SPIN, MINE_WOBBLE, MISSILE_SPIN, SURGE_SPIN, WAVE_SPIN, tempoSlowFor, type ItemKind } from '../items/items';
 import { RACERS } from '../physics/racers';
 import { TRACK_LIST } from '../tracks/index';
 import { Track } from '../tracks/track';
@@ -15,6 +15,13 @@ const HIT_EFFECTS: Partial<Record<ItemKind, Omit<Effect, 'by'>>> = {
   feedbackWave: { k: 'spin', t: WAVE_SPIN },
   riffMissile: { k: 'spin', t: MISSILE_SPIN },
   microtonalMine: { k: 'wobble', t: MINE_WOBBLE },
+  fluteFlurry: { k: 'wobble', t: FLUTE_WOBBLE },
+  keytarLaser: { k: 'spin', t: LASER_SPIN },
+  bassDrop: { k: 'slow', t: BASS_SLOW },
+  patchCable: { k: 'slow', t: CABLE_TIME },
+  harmonicaWail: { k: 'push', t: HARMONICA_WOBBLE },
+  // The leader's own screen decides whether they rode over it.
+  gizzardWave: { k: 'surge', t: SURGE_SPIN },
 };
 
 const r2 = (v: number) => Math.round(v * 100) / 100;
@@ -83,13 +90,20 @@ export class RoomRace {
         out.set(id, [...(out.get(id) ?? []), e]);
       }
     };
+    const karts = this.race.karts;
     for (const e of this.race.events) {
       const k = e.kart as RaceKart;
       if (e.type === 'use' && e.item === 'fuzzPedal') add(k, { k: 'boost', t: FUZZ_BOOST, by: e.item });
-      // The player's own client flies their cannon.
+      // Items that boost their user: the room set the boost on the kart as it last heard it.
+      if (e.type === 'use' && (e.item === 'patchCable' || e.item === 'harmonicaWail')) add(k, { k: 'boost', t: k.state.boostTime, by: e.item });
+      // The player's own client flies their cannon, and rolls their drum.
       if (e.type === 'use' && e.item === 'wooCannon') add(k, { k: 'cannon', t: CANNON_TIME, by: e.item });
-      if (e.type === 'hit' && e.by in HIT_EFFECTS) add(k, { ...HIT_EFFECTS[e.by as ItemKind]!, by: e.by });
-      if (e.type === 'hit' && e.by === 'tempoShift') add(k, { k: 'slow', t: tempoSlowFor(k.position, this.race.karts.length), by: e.by });
+      if (e.type === 'use' && e.item === 'drumRoll') add(k, { k: 'ram', t: DRUM_TIME, by: e.item });
+      if (e.type !== 'hit') continue;
+      const f = e.from ? karts.indexOf(e.from as RaceKart) : -1;
+      const from = f >= 0 ? { f } : {};
+      if (e.by in HIT_EFFECTS) add(k, { ...HIT_EFFECTS[e.by as ItemKind]!, by: e.by, ...from, ...(e.push ? { x: e.push[0], z: e.push[1] } : {}) });
+      if (e.by === 'tempoShift') add(k, { k: 'slow', t: tempoSlowFor(k.position, karts.length), by: e.by, ...from });
     }
     if (this.firstFinish === null && this.race.results.length) this.firstFinish = this.race.time;
     return out;
@@ -97,11 +111,12 @@ export class RoomRace {
 
   snapshot(): Snap {
     const { race } = this;
+    const index = (k: unknown) => (k ? race.karts.indexOf(k as RaceKart) : -1);
     const items = race.items;
     return {
       t: r2(race.time),
       k: race.karts.map((k) => packKart(k.state)),
-      it: race.karts.map((k) => [k.item ? ITEM_KINDS.indexOf(k.item) : -1, r2(k.rolling)]),
+      it: race.karts.map((k) => [k.item ? ITEM_KINDS.indexOf(k.item) : -1, r2(k.rolling), k.spare ? ITEM_KINDS.indexOf(k.spare) : -1]),
       pos: race.karts.map((k) => k.position),
       lap: race.karts.map((k) => k.laps.lap),
       fin: race.karts.map((k) => (k.finishTime === null ? null : r2(k.finishTime))),
@@ -109,6 +124,8 @@ export class RoomRace {
       mines: items.mines.map((m) => [r2(m.x), r2(m.y), r2(m.z)]),
       mis: items.missiles.map((m) => [r2(m.x), r2(m.y), r2(m.z), r2(m.heading)]),
       waves: items.waves.map((w) => [r2(w.x), r2(w.y), r2(w.z), r2(w.age)]),
+      fx: items.bursts.map((b) => [ITEM_KINDS.indexOf(b.kind), r2(b.x), r2(b.y), r2(b.z), r2(b.heading), r2(b.age), r2(b.life), r2(b.len), index(b.from), index(b.to)]),
+      sg: items.surge ? [r2(items.surge.x), r2(items.surge.y), r2(items.surge.z), r2(items.surge.heading), index(items.surge.target)] : null,
     };
   }
 

@@ -20,10 +20,10 @@ import type { Effect, RoomStart } from './net/protocol';
 import type { RoomClient } from './net/room';
 import { GrandPrix } from './core/grandPrix';
 import { Race, ordinal, type RaceKart } from './core/race';
-import { PHYSICS_VERSION, copyKartState, createKartState, driftTier, respawnKart, type KartState, type StepEvents } from './physics/kart';
+import { DRIFT_TIERS, PHYSICS_VERSION, copyKartState, createKartState, driftTier, respawnKart, type KartState, type StepEvents } from './physics/kart';
 import { FIELD_SIZE, RACERS, pickRivals, type RacerDef } from './physics/racers';
 import type { HazardKind } from './items/hazards';
-import type { ItemKind } from './items/items';
+import { ITEMS, type ItemHolder, type ItemKind } from './items/items';
 import { ChaseCamera } from './render/chaseCamera';
 import { HazardsView, ItemsView } from './render/itemViews';
 import { KartView, setDustColor } from './render/kartView';
@@ -144,6 +144,8 @@ let musicMuted = false;
 let sfxMuted = false;
 /** What the player's kart was doing last tick, to turn changes into sounds. */
 const heard = { count: 0, lap: 0, tier: 0, rolling: false };
+/** A Gizzard Wave is in earshot of you when it's this close (m). */
+const SURGE_WARN = 120;
 /** Seconds the player has been driving against the track. */
 let wrongWay = 0;
 const snapshots = new Map<RaceKart, KartState>();
@@ -534,16 +536,49 @@ function step(dt: number): void {
     return;
   }
   const ev = events[race.karts.indexOf(player)];
-  if (ev.boostTier > 0) chase.bump(0.3 + ev.boostTier * 0.2);
-  if (ev.trick) chase.bump(0.6);
+  if (ev.boostTier > 0) {
+    chase.bump(0.3 + ev.boostTier * 0.2);
+    chase.kick(3 + ev.boostTier * 3);
+  }
+  if (ev.trick) {
+    chase.bump(0.6);
+    chase.kick(4 + ev.trickStreak * 2);
+    if (ev.trickStreak > 1) hud.flash(`TRICK x${ev.trickStreak}!`);
+  }
+  if (player.drafted) {
+    sfx.slipstream();
+    chase.kick(6);
+    hud.flash('SLIPSTREAM!');
+  }
+  if (player.bump > 3) sfx.bump(Math.min(1, player.bump / 10));
   if (ev.wallHit > 0.3) chase.bump(ev.wallHit);
   if (player.respawned) chase.snap();
   playerSounds(player, ev);
+  if (race.time >= 0 && race.time - dt < 0 && player.launch) {
+    hud.flash(player.launch === 'rocket' ? 'ROCKET START!' : 'TOO EARLY!');
+    if (player.launch === 'rocket') {
+      sfx.rocket();
+      chase.kick(8);
+    } else {
+      sfx.stall();
+    }
+  }
   checkWrongWay(player, dt);
   // Record a little past the line so the ghost visibly crosses it.
   if (recorder && (player.finishTime === null || race.time - player.finishTime < GHOST_OVERRUN)) recorder.record(race.time, player.state);
   for (const e of race.events) {
     if (e.type === 'pickup' && e.kart === player) sfx.pickup();
+    if (e.type === 'box') boxSound(e.kart === player, e.x, e.z, e.double);
+    if (e.type === 'block' || e.type === 'dodge') {
+      const mine = e.kart === player;
+      if (mine || e.from === player) hud.callout({ from: who(e.from), to: who(e.kart), by: e.by, kind: e.type === 'block' ? 'blocked' : 'dodged' }, elapsed);
+      if (mine) {
+        hud.flash(e.type === 'block' ? 'BLOCKED!' : 'DODGED!');
+        if (e.type === 'block') sfx.block();
+        else sfx.dodge();
+      }
+      continue;
+    }
     if (e.type === 'use' && e.kart === player) {
       sfx.use(e.item);
       if (e.item === 'wooCannon') {
@@ -557,15 +592,23 @@ function step(dt: number): void {
       if (d < 80) sfx.woo(0.6 * (1 - d / 80));
     }
     if (e.type !== 'hit') continue;
+    const item = e.by in ITEMS ? (e.by as ItemKind) : null;
     if (e.kart === player) {
       hud.flash(HIT_TEXT[e.by]);
       sfx.hurt(e.by);
-      if (e.by !== 'tempoShift') chase.bump(0.5);
-    } else if (e.from === player && e.by !== 'tempoShift') {
-      hud.flash(`HIT ${(e.kart as RaceKart).racer.name.toUpperCase()}!`);
-      sfx.scored();
+      if (e.by !== 'tempoShift' && e.by !== 'bassDrop') chase.bump(0.5);
+      if (e.by === 'bassDrop') chase.bump(1.2);
+      if (item && e.from) hud.callout({ from: who(e.from), to: 'you', by: item, kind: 'took' }, elapsed);
+    } else if (e.from === player && item) {
+      // Area items hit a crowd: one line each, but only one flash and sound.
+      hud.callout({ from: 'you', to: who(e.kart), by: item, kind: 'landed' }, elapsed);
+      if (e.by !== 'tempoShift' && e.by !== 'bassDrop') {
+        hud.flash(`HIT ${(e.kart as RaceKart).racer.name.toUpperCase()}!`);
+        sfx.scored();
+      }
     }
   }
+  surgeWarning(player, dt);
   if (mode === 'race' && player.finishTime !== null && race.time - player.finishTime > RESULTS_DELAY) {
     if (choice.mode === 'timeTrial') {
       trialNote = saveTrial(player.finishTime, Math.min(...player.lapTimes), player.racer.id);
@@ -588,6 +631,10 @@ function netStep(net: OnlineRace, p: RaceKart): void {
   const heldItem = p.item;
   net.update(now);
   if (heldItem === null && p.item !== null) sfx.pickup();
+  for (const b of net.popped) {
+    const near = Math.hypot(b.x - p.state.x, b.z - p.state.z) < 3.5;
+    boxSound(near, b.x, b.z, b.double);
+  }
   // Items are the room's: ask it, and play the sound now rather than a round trip later.
   if (lastInput.itemPressed && p.item && p.rolling === 0 && race.started && p.finishTime === null && now - itemSentAt > 0.4) {
     itemSentAt = now;
@@ -602,17 +649,56 @@ function onEffects(fx: Effect[]): void {
   const net = online?.net;
   if (!net || mode !== 'race') return;
   for (const e of net.apply(fx)) {
-    if (e.k === 'boost') continue;
+    if (e.k === 'boost' || e.k === 'ram') continue;
     if (e.k === 'cannon') {
       hud.flash('WOO CANNON!');
       chase.bump(0.8);
       continue;
     }
     const by = e.by as ItemKind;
+    const from = e.f !== undefined ? race.karts[e.f] : undefined;
+    if (e.k === 'dodge') {
+      hud.flash('DODGED!');
+      sfx.dodge();
+      if (from) hud.callout({ from: who(from), to: 'you', by, kind: 'dodged' }, elapsed);
+      continue;
+    }
     hud.flash(HIT_TEXT[by] ?? 'HIT!');
     sfx.hurt(by);
     if (e.k !== 'slow') chase.bump(0.5);
+    if (from && by in ITEMS) hud.callout({ from: who(from), to: 'you', by, kind: 'took' }, elapsed);
   }
+}
+
+/** A racer's name for the callout feed. */
+function who(k: ItemHolder | undefined): string {
+  if (!k) return '?';
+  return k === player ? 'you' : (k as RaceKart).racer.name;
+}
+
+/** An item box breaking: loud when it's yours, fainter for someone else's nearby. */
+function boxSound(mine: boolean, x: number, z: number, double: boolean): void {
+  if (mine) {
+    sfx.box(1, double);
+    return;
+  }
+  if (!player) return;
+  const d = Math.hypot(x - player.state.x, z - player.state.z);
+  if (d < 40) sfx.box(0.45 * (1 - d / 40), double);
+}
+
+/** How close a Gizzard Wave coming for the player is, 0 (just in earshot) .. 1 (arriving), or null. */
+function surgeCloseness(p: RaceKart): number | null {
+  const w = race.items.surge;
+  if (!w || w.target !== p || p.finishTime !== null) return null;
+  const d = Math.hypot(w.x - p.state.x, w.z - p.state.z);
+  return d < SURGE_WARN ? 1 - d / SURGE_WARN : null;
+}
+
+/** The wave's alarm, faster as it closes. */
+function surgeWarning(p: RaceKart, dt: number): void {
+  const near = surgeCloseness(p);
+  sfx.surgeAlarm(dt, near);
 }
 
 const HIT_TEXT: Record<ItemKind | HazardKind, string> = {
@@ -622,6 +708,13 @@ const HIT_TEXT: Record<ItemKind | HazardKind, string> = {
   riffMissile: 'RIFFED!',
   tempoShift: 'TEMPO SHIFT!',
   wooCannon: 'WOOOOO!',
+  fluteFlurry: 'FLUTED!',
+  drumRoll: 'DRUMMED!',
+  bassDrop: 'DROPPED!',
+  patchCable: 'PATCHED!',
+  harmonicaWail: 'WAILED!',
+  keytarLaser: 'LASERED!',
+  gizzardWave: 'GIZZARD WAVE!',
   snakes: 'SNAKEBITE!',
   dustDevils: 'DUST DEVIL!',
   tumbleweeds: 'TUMBLEWEED!',
@@ -679,7 +772,7 @@ function playerSounds(p: RaceKart, ev: StepEvents): void {
   if (ev.landed > 2) sfx.land(ev.landed);
   if (ev.wallHit > 0.2) sfx.wall(ev.wallHit);
   if (ev.boostTier > 0) sfx.boost(ev.boostTier);
-  if (ev.trick) sfx.trick();
+  if (ev.trick) sfx.trick(ev.trickStreak);
 }
 
 /** Warns a player who has been driving the wrong way for a second, every 1.5 s until they turn round. */
@@ -706,6 +799,9 @@ function updateSounds(dt: number): void {
   const s = p?.state;
   const speedRatio = s ? Math.abs(s.speed) / p!.baseParams.topSpeed : 0;
   sfx.updateEngine(racing ? 1 : 0, speedRatio, !!s && s.boostTime > 0, !!s && s.driftDir !== 0, s ? tireScreech(s, speedRatio) : 0);
+  // The drift's charge sings higher toward purple; a draft whistles as it builds.
+  sfx.driftCharge(racing && s && s.driftDir !== 0 ? Math.min(1, s.driftCharge / DRIFT_TIERS[DRIFT_TIERS.length - 1]) : 0);
+  sfx.draft(racing && p ? p.draft : 0);
   sfx.cannonLoop(racing && !!s && s.cannonTime > 0);
   if (!racing || !s) {
     sfx.hazards(dt, null, null);
@@ -797,7 +893,7 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
   const theme = trackView!.theme;
   const L = track.length;
   trackView!.update(elapsed, camera.position, theme.skyCycle ? Math.PI * 2 * clamp(f.distance / (L * race.laps), 0, 1) : 0);
-  itemsView!.update(elapsed);
+  itemsView!.update(elapsed, race.karts.map((k, i) => ({ state: snaps[i], holder: k })));
   hazardsView!.update(elapsed);
   sunAnchor.position.copy(camera.position).addScaledVector(SUN_DIR, 1400);
   updateSounds(dt);
@@ -832,6 +928,8 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
       sfxMuted,
       item: player?.item ?? null,
       rolling: player?.rolling ?? 0,
+      spare: player?.spare ?? null,
+      surge: player ? surgeCloseness(player) : null,
     },
     elapsed,
   );

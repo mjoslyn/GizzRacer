@@ -1,6 +1,6 @@
 import { AUTOPILOT_SKILL, CpuDriver, type CpuSkill, type Obstacle } from '../ai/cpuDriver';
 import { HazardSystem } from '../items/hazards';
-import { CANNON_MIN_TIME, CANNON_PAST_MAX, CANNON_PAST_MIN, CANNON_SPEED_MUL, CANNON_SPIN, CANNON_TIME, ItemSystem, type ItemEvent, type ItemHolder, type ItemKind } from '../items/items';
+import { CANNON_MIN_TIME, CANNON_PAST_MAX, CANNON_PAST_MIN, CANNON_SPEED_MUL, CANNON_SPIN, CANNON_TIME, ItemSystem, SIGNATURE_ITEMS, type ItemEvent, type ItemHolder, type ItemKind } from '../items/items';
 import { NEUTRAL_INPUT, type InputFrame } from './inputFrame';
 import { seededRandom } from './math';
 import { unpackKart } from '../net/wire';
@@ -11,7 +11,11 @@ import { pointAt } from '../tracks/spline';
 import type { Track } from '../tracks/track';
 
 /** Seconds below ground before a fallen kart is put back on the track (spec section 4). */
-export const RESPAWN_DELAY = 1.5;
+export const RESPAWN_DELAY = 1;
+/** Back on the road rolling at this fraction of top speed, with a little boost and a moment of immunity. */
+const RESPAWN_SPEED = 0.5;
+const RESPAWN_BOOST = 0.6;
+const RESPAWN_IMMUNE = 1.5;
 export const COUNTDOWN = 3;
 /** Trailing CPUs get up to this much extra top speed (spec section 8). */
 export const RUBBER_BAND_MAX = 0.08;
@@ -26,7 +30,34 @@ const CANNON_CENTRE = 3;
 /** Speed and boost a kart comes out of the cannon with. */
 const CANNON_EXIT_BOOST = 0.6;
 
-const NO_EVENTS: StepEvents = { hopped: false, landed: 0, driftStarted: false, boostTier: 0, wallHit: 0, launched: false, trick: false };
+/**
+ * Rocket start: hop in the last half second before GO for a boost off the
+ * line. Hop earlier than that (after the 3) and the engine bogs: the kart
+ * sits for a moment after GO.
+ */
+export const ROCKET_WINDOW = 0.5;
+const EARLY_FROM = -2;
+export const ROCKET_BOOST = 1;
+export const STALL_TIME = 0.7;
+/** CPUs get a rocket start this often, by skill. */
+const CPU_ROCKET = 0.85;
+/**
+ * Slipstream: tuck in behind a kart (within the range, nearly in line) at
+ * speed and a draft charges; full, it fires a boost.
+ */
+export const DRAFT_CHARGE = 1.1;
+const DRAFT_MIN = 3;
+const DRAFT_MAX = 22;
+const DRAFT_LATERAL = 2.4;
+const DRAFT_MIN_SPEED = 0.6;
+export const DRAFT_BOOST = 0.9;
+/** A Drum Roll moves for nobody much and spins out whoever it touches. */
+const RAM_MASS = 4;
+export const RAM_SPIN = 1;
+/** CPUs trick off ramp lips this often, by skill. */
+const CPU_TRICK = 0.9;
+
+const NO_EVENTS: StepEvents = { hopped: false, landed: 0, driftStarted: false, boostTier: 0, wallHit: 0, launched: false, trick: false, trickStreak: 0 };
 
 export class RaceKart implements ItemHolder {
   readonly state: KartState;
@@ -51,8 +82,21 @@ export class RaceKart implements ItemHolder {
   bumpX = 0;
   bumpZ = 0;
   item: ItemKind | null = null;
+  /** A second item, from a double box: it moves into the slot when the first is used. */
+  spare: ItemKind | null = null;
   rolling = 0;
   held = 0;
+  /** Rocket start: how this kart got off the line, decided at GO. */
+  launch: 'rocket' | 'early' | null = null;
+  /** Hopped during the countdown: early (too soon) or rocket (in the window). */
+  private startPress: 'rocket' | 'early' | null = null;
+  /** Seconds left sitting on the line after a bogged start. */
+  stall = 0;
+  /** Slipstream charge 0..1, and whether it fired this step. */
+  draft = 0;
+  drafted = false;
+  /** A CPU means to trick off the lip it just left. */
+  trickPlan = false;
   /** Metres behind the middle of the field, for the far-behind Woo Cannon. */
   behind = 0;
   /** In the Woo Cannon: the kart it's chasing, and how far past it to fly before letting go. */
@@ -105,8 +149,31 @@ export class RaceKart implements ItemHolder {
     return Math.hypot(s.x - x0, s.z - z0) > 8;
   }
 
+  get finished(): boolean {
+    return this.finishTime !== null;
+  }
+
   get isCpu(): boolean {
     return this.driver !== null;
+  }
+
+  /** The band member's own item comes up a little more often for them. */
+  get signature(): ItemKind | null {
+    return SIGNATURE_ITEMS[this.racer.id] ?? null;
+  }
+
+  /** A hop on the grid: in the window it's a rocket start, before it the engine bogs. */
+  pressStart(time: number): void {
+    if (time >= -ROCKET_WINDOW) this.startPress ??= 'rocket';
+    else if (time >= EARLY_FROM) this.startPress = 'early';
+  }
+
+  /** At GO: the start this kart gets. CPUs roll for theirs. */
+  go(): void {
+    const d = this.driver;
+    this.launch = d ? (d.roll(CPU_ROCKET * d.skill.itemIq) ? 'rocket' : null) : this.startPress;
+    if (this.launch === 'rocket') this.state.boostTime = Math.max(this.state.boostTime, ROCKET_BOOST);
+    if (this.launch === 'early') this.stall = STALL_TIME;
   }
 
   setRacer(racer: RacerDef, engine: EngineClass): void {
@@ -165,7 +232,10 @@ export class Race {
 
   /** `humanInputs[i]` drives kart i when it has no CPU driver. */
   step(dt: number, humanInputs: readonly (InputFrame | undefined)[]): StepEvents[] {
+    const before = this.time;
     this.time += dt;
+    // Lights out: everyone gets the start they earned.
+    if (before < 0 && this.time >= 0) for (const k of this.karts) if (!k.remote) k.go();
     this.rubberBand();
     const states = this.karts.map((k) => k.state);
     this.updateObstacles();
@@ -189,6 +259,9 @@ export class Race {
       }
       const d = kart.driver;
       let input = (d ? d.drive(kart.state, kart.params, kart.progressS, this.track, states, this.obstacles, dt) : humanInputs[i]) ?? NEUTRAL_INPUT;
+      if (d && kart.trickPlan && kart.state.trickWindow > 0) input = { ...input, driftPressed: true };
+      kart.trickPlan = false;
+      if (d) input = this.items.dodge(kart, input, d);
       if (d && kart.item && kart.rolling === 0) {
         use[i] = d.wantsItem(kart.item, kart.held, kart.state, kart.position, kart.progressS, this.track, states);
       } else if (!d) {
@@ -196,14 +269,21 @@ export class Race {
       }
       // Hold everyone on the grid until the lights go green.
       if (!this.started) {
+        if (input.driftPressed) kart.pressStart(this.time);
         input = { ...NEUTRAL_INPUT, drift: input.drift, driftPressed: input.driftPressed };
         use[i] = false;
+      } else if (kart.stall > 0) {
+        // Bogged start: the engine catches after a moment.
+        kart.stall = Math.max(0, kart.stall - dt);
+        input = { ...NEUTRAL_INPUT, steer: input.steer };
       }
       const ev = stepKart(kart.state, input, kart.params, this.track, dt);
+      if (d && ev.launched) kart.trickPlan = d.roll(CPU_TRICK * d.skill.itemIq);
       this.updateFall(kart, dt);
       this.updateLaps(kart);
       return ev;
     });
+    this.slipstream(dt);
     this.bumps();
     this.rank();
     this.events = this.remoteItems ? [] : this.items.update(dt, this.karts, use);
@@ -287,6 +367,36 @@ export class Race {
     s.boostTime = CANNON_EXIT_BOOST;
   }
 
+  /** Charges each kart's draft while it's tucked in behind another at speed; a full draft fires a boost. */
+  private slipstream(dt: number): void {
+    for (const k of this.karts) {
+      k.drafted = false;
+      if (k.remote) continue;
+      const s = k.state;
+      const fx = Math.sin(s.heading);
+      const fz = Math.cos(s.heading);
+      let tucked = false;
+      if (this.started && s.grounded && s.boostTime === 0 && s.cannonTime === 0 && s.speed > k.baseParams.topSpeed * DRAFT_MIN_SPEED) {
+        for (const o of this.karts) {
+          if (o === k || Math.abs(o.state.y - s.y) > 2) continue;
+          const dx = o.state.x - s.x;
+          const dz = o.state.z - s.z;
+          const ahead = dx * fx + dz * fz;
+          if (ahead > DRAFT_MIN && ahead < DRAFT_MAX && Math.abs(dx * fz - dz * fx) < DRAFT_LATERAL && o.state.speed > s.speed * 0.6) {
+            tucked = true;
+            break;
+          }
+        }
+      }
+      k.draft = tucked ? k.draft + dt / DRAFT_CHARGE : Math.max(0, k.draft - dt * 2);
+      if (k.draft >= 1) {
+        k.draft = 0;
+        k.drafted = true;
+        s.boostTime = Math.max(s.boostTime, DRAFT_BOOST);
+      }
+    }
+  }
+
   /** Trailing CPUs get a little more top speed; leaders get none. */
   private rubberBand(): void {
     const lead = Math.max(...this.karts.map((k) => k.distance));
@@ -307,6 +417,9 @@ export class Race {
     const s = cp < 0 ? 2 : this.track.def.checkpoints[cp] * this.track.length + 2;
     const pose = this.track.respawnPose(s);
     respawnKart(kart.state, pose.x, pose.y, pose.z, pose.heading);
+    kart.state.speed = kart.params.topSpeed * RESPAWN_SPEED;
+    kart.state.boostTime = RESPAWN_BOOST;
+    kart.state.invulnTime = RESPAWN_IMMUNE;
     copyKartState(kart.state, kart.prev);
     kart.fallTime = 0;
     kart.respawned = true;
@@ -353,6 +466,8 @@ export class Race {
         const ca = sa.cannonTime > 0;
         const cb = sb.cannonTime > 0;
         if (ca && cb) continue;
+        const ra = sa.ramTime > 0 && !ca;
+        const rb = sb.ramTime > 0 && !cb;
         const dx = sb.x - sa.x;
         const dz = sb.z - sa.z;
         const d = Math.hypot(dx, dz);
@@ -360,13 +475,16 @@ export class Race {
         const nx = dx / d;
         const nz = dz / d;
         // Inverse masses: a remote kart, or a cannon, moves for nobody.
-        const ia = a.remote || ca ? 0 : 1 / a.params.mass;
-        const ib = b.remote || cb ? 0 : 1 / b.params.mass;
+        const ia = a.remote || ca ? 0 : 1 / (a.params.mass * (ra ? RAM_MASS : 1));
+        const ib = b.remote || cb ? 0 : 1 / (b.params.mass * (rb ? RAM_MASS : 1));
         const total = ia + ib;
         if (total === 0) continue;
-        // Hit by a cannon: spun out, here if it's driven here (a remote kart takes the hit where it's driven).
-        const victim = ca && !b.remote ? b : cb && !a.remote ? a : null;
-        if (victim && spinOut(victim.state, CANNON_SPIN)) this.cannonHits.push({ type: 'hit', kart: victim, by: 'wooCannon', from: victim === a ? b : a });
+        // Hit by a cannon or a Drum Roll: spun out, here if it's driven here (a remote kart takes the hit where it's driven).
+        const victim = ca && !b.remote ? b : cb && !a.remote ? a : ra && !rb && !b.remote ? b : rb && !ra && !a.remote ? a : null;
+        if (victim) {
+          const by = ca || cb ? 'wooCannon' : 'drumRoll';
+          if (spinOut(victim.state, by === 'wooCannon' ? CANNON_SPIN : RAM_SPIN)) this.cannonHits.push({ type: 'hit', kart: victim, by, from: victim === a ? b : a });
+        }
         const overlap = r2 - d;
         sa.x -= nx * overlap * (ia / total);
         sa.z -= nz * overlap * (ia / total);

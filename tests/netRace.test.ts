@@ -110,5 +110,6 @@ describe('online race over a laggy link', () => {
     expect(results.length).toBe(RACERS.length);
     expect(new Set(results.map((r) => r.racerId)).size).toBe(RACERS.length);
     console.log('hits applied', clients.map((c) => c.hits), 'view err', clients.map((c) => Math.max(...c.viewErr).toFixed(1)));
-  });
+    // A whole race at 60 Hz for a room and two clients: about 4.5 s alone, more on a busy machine.
+  }, 30_000);
 });

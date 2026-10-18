@@ -14,6 +14,8 @@ export class ChaseCamera {
   private readonly target = new THREE.Vector3();
   private initialized = false;
   private shake = 0;
+  /** Extra field of view (degrees) from a boost kicking in, easing back out. */
+  private punch = 0;
 
   constructor(readonly camera: THREE.PerspectiveCamera) {}
 
@@ -23,6 +25,11 @@ export class ChaseCamera {
 
   bump(amount: number): void {
     this.shake = Math.max(this.shake, amount);
+  }
+
+  /** A kick of field of view (degrees): the rush of a boost kicking in. */
+  kick(degrees: number): void {
+    this.punch = Math.max(this.punch, degrees);
   }
 
   update(s: KartState, topSpeed: number, lookBack: boolean, dt: number): void {
@@ -56,8 +63,11 @@ export class ChaseCamera {
     );
     this.camera.lookAt(this.target);
 
+    this.punch = Math.max(0, this.punch - dt * 14);
     const fov = BASE_FOV + speedRatio * 10 + (s.boostTime > 0 ? 8 : 0);
+    // The kick lands at once and eases out; the rest follows speed smoothly.
     this.camera.fov += (fov - this.camera.fov) * damp(4, dt);
+    this.camera.fov += (fov + this.punch - this.camera.fov) * (this.punch > 0 ? damp(18, dt) : 0);
     this.camera.updateProjectionMatrix();
   }
 }

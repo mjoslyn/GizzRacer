@@ -62,8 +62,8 @@ export interface RaceResult {
 export interface Snap {
   t: number;
   k: number[][];
-  /** [item index in ITEM_KINDS or -1, roulette time left] per kart. */
-  it: [number, number][];
+  /** [item index in ITEM_KINDS or -1, roulette time left, spare item index or -1] per kart. */
+  it: [number, number, number][];
   pos: number[];
   lap: number[];
   fin: (number | null)[];
@@ -72,14 +72,23 @@ export interface Snap {
   mines: number[][];
   mis: number[][];
   waves: number[][];
+  /** Band item bursts: [kind index, x, y, z, heading, age, life, len, from kart or -1, to kart or -1]. */
+  fx: number[][];
+  /** The Gizzard Wave: [x, y, z, heading, target kart or -1], or null. */
+  sg: number[] | null;
 }
 
 /** Something the room did to your kart: apply it locally. */
 export interface Effect {
-  k: 'spin' | 'wobble' | 'slow' | 'boost' | 'cannon';
+  /** `push` is a wobble with a shove (x, z, m/s); `surge` is a Gizzard Wave, ridden over if you're in the air; `dodge` is one that was (client side only). */
+  k: 'spin' | 'wobble' | 'slow' | 'boost' | 'cannon' | 'ram' | 'push' | 'surge' | 'dodge';
   t: number;
   /** What did it (an item kind), for the HUD. */
   by: string;
+  /** Who did it: their grid index. */
+  f?: number;
+  x?: number;
+  z?: number;
 }
 
 export interface RoomState {

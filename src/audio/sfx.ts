@@ -14,6 +14,9 @@ export class Sfx {
   private noise: AudioBuffer | null = null;
   private engine: Engine | null = null;
   private screech: Screech | null = null;
+  private hum: { osc: OscillatorNode; osc2: OscillatorNode; gain: GainNode } | null = null;
+  private wind: { gain: GainNode; bp: BiquadFilterNode } | null = null;
+  private alarmWait = 0;
   private devil: { src: AudioBufferSourceNode; gain: GainNode; pan: StereoPannerNode } | null = null;
   private rattleWait = 0;
   /** The Woo Cannon's shout: the one sound that's a recording (public/sfx/woo.mp3), fetched once. */
@@ -110,11 +113,145 @@ export class Sfx {
 
   boost(tier: number): void {
     this.onDuck(0.65, 0.4);
-    this.whoosh(0.35 + tier * 0.1, 500, 2600, 0.22);
+    this.whoosh(0.35 + tier * 0.1, 500, 2600, 0.18 + tier * 0.05);
+    // A purple release kicks in with a fuzzed fifth under it.
+    if (tier >= 2) this.tone(tier === 3 ? 147 : 110, 0.35, 'sawtooth', 0.04 + tier * 0.015, tier === 3 ? 294 : 220, 0, true);
+    if (tier === 3) this.tone(1760, 0.25, 'sine', 0.06, 2637);
   }
 
-  trick(): void {
-    [784, 988, 1319].forEach((f, i) => this.tone(f, 0.09, 'triangle', 0.1, undefined, i * 0.06));
+  /** A trick landed; each one in a streak climbs a step higher. */
+  trick(streak = 1): void {
+    const up = 2 ** ((Math.max(1, streak) - 1) * 2 / 12);
+    [784, 988, 1319].forEach((f, i) => this.tone(f * up, 0.09, 'triangle', 0.1, undefined, i * 0.06));
+    if (streak > 1) this.tone(1568 * up, 0.18, 'sine', 0.07, undefined, 0.2);
+  }
+
+  /** While drifting: a hum that rises with the spark charge, 0..1 (0 silences it). */
+  driftCharge(charge: number): void {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    if (!this.hum) {
+      const osc = ctx.createOscillator();
+      osc.type = 'triangle';
+      const osc2 = ctx.createOscillator();
+      osc2.type = 'sine';
+      const gain = ctx.createGain();
+      gain.gain.value = 0;
+      osc.connect(gain);
+      osc2.connect(gain);
+      gain.connect(this.out!);
+      osc.start();
+      osc2.start();
+      this.hum = { osc, osc2, gain };
+    }
+    const t = ctx.currentTime;
+    const f = 220 * 2 ** (charge * 2);
+    this.hum.osc.frequency.setTargetAtTime(f, t, 0.05);
+    this.hum.osc2.frequency.setTargetAtTime(f * 1.5, t, 0.05);
+    this.hum.gain.gain.setTargetAtTime(charge > 0 ? 0.012 + charge * 0.02 : 0, t, 0.04);
+  }
+
+  /** A slipstream building, 0..1: wind rushing past. */
+  draft(level: number): void {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    if (!this.wind) {
+      const src = ctx.createBufferSource();
+      src.buffer = this.noise;
+      src.loop = true;
+      const bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.Q.value = 2;
+      const gain = ctx.createGain();
+      gain.gain.value = 0;
+      src.connect(bp).connect(gain).connect(this.out!);
+      src.start();
+      this.wind = { gain, bp };
+    }
+    const t = ctx.currentTime;
+    this.wind.gain.gain.setTargetAtTime(level > 0.05 ? 0.05 + level * 0.12 : 0, t, 0.08);
+    this.wind.bp.frequency.setTargetAtTime(700 + level * 1800, t, 0.08);
+  }
+
+  /** The draft is full and fires. */
+  slipstream(): void {
+    this.onDuck(0.6, 0.4);
+    this.whoosh(0.5, 900, 3500, 0.22);
+    this.tone(660, 0.2, 'triangle', 0.06, 1320);
+  }
+
+  /** Off the line in the window: the engine screams and launches. */
+  rocket(): void {
+    this.onDuck(0.5, 0.6);
+    this.tone(180, 0.45, 'sawtooth', 0.08, 900, 0, true);
+    this.whoosh(0.6, 400, 3000, 0.25);
+  }
+
+  /** Jumped the start: the engine coughs and dies for a moment. */
+  stall(): void {
+    for (let i = 0; i < 4; i++) {
+      this.tone(70 - i * 6, 0.09, 'square', 0.08, 45, i * 0.14, true);
+      this.hit(0.08, 400, 0.18);
+    }
+  }
+
+  /** Kart on kart: a thud with a clank of metal. */
+  bump(intensity: number): void {
+    this.hit(0.12, 320, 0.2 + intensity * 0.3);
+    this.tone(1900 + Math.random() * 400, 0.07, 'square', 0.03 + intensity * 0.04, 900);
+  }
+
+  /** Drove through an item box: glass breaking and a sparkle; a double box sparkles twice. */
+  box(level: number, double: boolean): void {
+    const ctx = this.ctx;
+    if (!ctx || level <= 0) return;
+    if (level > 0.8) this.onDuck(0.7, 0.2);
+    const t = ctx.currentTime;
+    // The crack: a bright, short burst of noise.
+    const src = ctx.createBufferSource();
+    src.buffer = this.noise;
+    const hp = ctx.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.value = 2400;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.4 * level, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+    src.connect(hp).connect(gain).connect(this.shots!);
+    src.start(t, Math.random());
+    src.stop(t + 0.2);
+    this.hit(0.1, 500, 0.25 * level);
+    // Shards tinkling down, and the twinkle of what's inside.
+    const shards = [2637, 3136, 3520, 4186, 3951];
+    for (let i = 0; i < 5; i++) this.tone(shards[(i * 3) % 5] * (0.97 + Math.random() * 0.06), 0.06, 'triangle', 0.05 * level, undefined, 0.03 + i * 0.035 + Math.random() * 0.02);
+    const sparkle = double ? [1568, 2093, 2637, 3136, 2637, 3136, 4186] : [1568, 2093, 2637];
+    sparkle.forEach((f, i) => this.tone(f, 0.12, 'sine', 0.05 * level, undefined, 0.08 + i * 0.05));
+  }
+
+  /** A held item took a hit for you: a clang. */
+  block(): void {
+    this.onDuck(0.6, 0.3);
+    this.tone(1245, 0.35, 'triangle', 0.1);
+    this.tone(1318, 0.35, 'triangle', 0.08);
+    this.hit(0.1, 3000, 0.3);
+  }
+
+  /** Rode over a Gizzard Wave. */
+  dodge(): void {
+    this.onDuck(0.6, 0.4);
+    this.whoosh(0.4, 600, 2800, 0.2);
+    [988, 1319, 1976].forEach((f, i) => this.tone(f, 0.1, 'sine', 0.08, undefined, i * 0.05));
+  }
+
+  /** A Gizzard Wave closing on you, 0..1 (null when there's none): beeps that come faster as it closes. */
+  surgeAlarm(dt: number, near: number | null): void {
+    if (near === null) {
+      this.alarmWait = 0;
+      return;
+    }
+    this.alarmWait -= dt;
+    if (this.alarmWait > 0) return;
+    this.alarmWait = 0.5 - near * 0.38;
+    this.tone(880 + near * 440, 0.07, 'square', 0.05 + near * 0.04);
   }
 
   pickup(): void {
@@ -151,6 +288,44 @@ export class Sfx {
       case 'wooCannon':
         // The woo itself loops for the whole flight (cannonLoop).
         this.whoosh(0.8, 300, 2400, 0.2);
+        break;
+      case 'fluteFlurry':
+        // A breathy run up the scale with a trill on top.
+        [1175, 1319, 1480, 1760, 1976, 2349, 1976, 2349].forEach((f, i) => {
+          this.tone(f, 0.09, 'sine', 0.07, f * 1.01, i * 0.045);
+        });
+        this.whoosh(0.4, 3000, 5000, 0.04);
+        break;
+      case 'drumRoll':
+        // A roll on the toms building into a crash.
+        for (let i = 0; i < 12; i++) this.hit(0.07, 260 + i * 25, 0.14 + i * 0.015);
+        for (let i = 0; i < 12; i++) this.tone(150 - i * 4, 0.06, 'sine', 0.08, 80, i * 0.05);
+        this.whoosh(0.7, 6000, 3000, 0.08);
+        break;
+      case 'bassDrop':
+        this.onDuck(0.25, 1);
+        this.tone(110, 1, 'sine', 0.25, 32);
+        this.tone(55, 1, 'sawtooth', 0.06, 30, 0, true);
+        break;
+      case 'patchCable':
+        // A jack going in: a crackle, then an oscillator sweeping up.
+        this.hit(0.05, 5000, 0.2);
+        this.tone(160, 0.4, 'square', 0.07, 1400, 0.04);
+        this.tone(163, 0.4, 'sawtooth', 0.05, 1450, 0.04);
+        break;
+      case 'harmonicaWail':
+        // Two reeds bending up into a wail.
+        [466, 587, 698].forEach((f) => this.tone(f * 0.94, 0.65, 'square', 0.035, f));
+        this.whoosh(0.55, 800, 1600, 0.07);
+        break;
+      case 'keytarLaser':
+        this.tone(2400, 0.3, 'sawtooth', 0.07, 180, 0, true);
+        this.tone(1200, 0.3, 'square', 0.04, 90);
+        break;
+      case 'gizzardWave':
+        this.onDuck(0.4, 1.2);
+        this.whoosh(1.2, 120, 900, 0.3);
+        this.tone(98, 1.2, 'sawtooth', 0.06, 196, 0, true);
         break;
     }
   }

@@ -749,8 +749,121 @@ body.touch-mode .hud-drift-label {
 body[data-mode='title'] .hud-item,
 body[data-mode='menu'] .hud-item,
 body[data-mode='results'] .hud-item,
-body:not([data-mode='race']) .hud-flash {
+body:not([data-mode='race']) .hud-flash,
+body:not([data-mode='race']) .hud-callouts,
+body:not([data-mode='race']) .hud-warn {
   display: none;
+}
+
+/* The second item from a double box, small at the slot's corner. */
+.hud-spare {
+  position: absolute;
+  right: -22px;
+  bottom: -14px;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: radial-gradient(circle at 50% 40%, rgba(255, 246, 220, 0.85), rgba(150, 90, 200, 0.8) 65%);
+  box-shadow: 0 0 0 3px #ffd23a, 0 0 0 5px #3a0f45;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.hud-spare.show {
+  display: flex;
+}
+
+.hud .hud-item .hud-spare img {
+  width: 32px;
+  height: 32px;
+  visibility: visible;
+}
+
+/* Who hit whom: a short feed under the item slot. */
+.hud-callouts {
+  position: absolute;
+  top: 132px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+}
+
+.hud-callout {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  border-radius: 12px;
+  background: rgba(20, 0, 30, 0.6);
+  font-size: 15px;
+  font-weight: bold;
+  color: #fff6d0;
+  text-shadow: 0 2px 0 #3a0f45;
+  white-space: nowrap;
+  animation: hud-callout-in 0.25s ease-out;
+}
+
+.hud-callout img {
+  width: 26px;
+  height: 26px;
+}
+
+.hud-callout.landed {
+  box-shadow: 0 0 0 2px #5aff8a;
+}
+
+.hud-callout.took {
+  box-shadow: 0 0 0 2px #ff5a6a;
+}
+
+.hud-callout.blocked,
+.hud-callout.dodged {
+  box-shadow: 0 0 0 2px #5ad0ff;
+}
+
+@keyframes hud-callout-in {
+  from { transform: translateY(-8px); opacity: 0; }
+}
+
+/* A Gizzard Wave coming for the leader: louder and faster as it closes. */
+.hud-warn {
+  position: absolute;
+  bottom: 22%;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: calc(24px + 18px * var(--near, 0));
+  color: #7dffb0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.hud-warn.show {
+  opacity: 1;
+  animation: hud-warn-pulse calc(0.5s - 0.35s * var(--near, 0)) ease-in-out infinite alternate;
+}
+
+@keyframes hud-warn-pulse {
+  to { transform: scale(1.12); color: #ffffff; }
+}
+
+@media (max-width: 700px) {
+  .hud-callouts {
+    top: 110px;
+  }
+
+  .hud-callout {
+    font-size: 12px;
+  }
+}
+
+body.touch-mode .hud-callouts {
+  top: 72px;
 }
 
 body.touch-mode .hud-item {

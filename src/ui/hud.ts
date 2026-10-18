@@ -83,7 +83,23 @@ export interface HudData {
   /** Item in the slot, and roulette time left (> 0 while it spins). */
   item: ItemKind | null;
   rolling: number;
+  /** A second item from a double box. */
+  spare: ItemKind | null;
+  /** A Gizzard Wave closing in on you: 0 far .. 1 arriving; null when none is. */
+  surge: number | null;
 }
+
+/** Who hit whom with what, for the callout feed. */
+export interface Callout {
+  from: string;
+  to: string;
+  by: ItemKind;
+  /** 'landed' you hit them, 'took' they hit you, 'blocked' your held item stopped it, 'dodged' you rode a wave. */
+  kind: 'landed' | 'took' | 'blocked' | 'dodged';
+}
+
+const CALLOUT_TIME = 3;
+const CALLOUT_MAX = 3;
 
 export type PauseAction = 'resume' | 'restart' | 'quit' | 'settings';
 
@@ -106,6 +122,12 @@ export class Hud {
   private readonly standings: HTMLElement;
   private readonly title: HTMLElement;
   private readonly itemSlot: HTMLElement;
+  private readonly spareSlot: HTMLElement;
+  private readonly spareImg: HTMLImageElement;
+  private lastSpare = '';
+  private readonly calloutsEl: HTMLElement;
+  private readonly callouts: { el: HTMLElement; at: number }[] = [];
+  private readonly warnEl: HTMLElement;
   private readonly itemImg: HTMLImageElement;
   private readonly itemName: HTMLElement;
   private readonly flashEl: HTMLElement;
@@ -132,7 +154,9 @@ export class Hud {
         <div class="hud-laps"></div>
       </div>
       <div class="hud-tr"><div class="hud-racer"></div></div>
-      <div class="hud-item"><img alt="" /><div class="hud-item-name"></div></div>
+      <div class="hud-item"><img alt="" /><div class="hud-item-name"></div><div class="hud-spare"><img alt="" /></div></div>
+      <div class="hud-callouts"></div>
+      <div class="hud-warn hud-big">GIZZARD WAVE! HOP!</div>
       <div class="hud-flash hud-big"></div>
       <div class="hud-intro"><div class="hud-intro-name hud-big"></div><div class="hud-intro-sub"></div><div class="hud-intro-skip">${'ontouchstart' in window ? 'tap' : 'press any key'} to skip</div></div>
       <div class="hud-drift">
@@ -189,6 +213,10 @@ export class Hud {
     this.itemImg = q('.hud-item img') as HTMLImageElement;
     this.itemName = q('.hud-item-name');
     this.flashEl = q('.hud-flash');
+    this.spareSlot = q('.hud-spare');
+    this.spareImg = q('.hud-spare img') as HTMLImageElement;
+    this.calloutsEl = q('.hud-callouts');
+    this.warnEl = q('.hud-warn');
     this.introEl = q('.hud-intro');
     q('.hud-tr').appendChild(this.minimap.canvas);
     this.pause.addEventListener('click', (e) => {
@@ -201,6 +229,25 @@ export class Hud {
   flash(text: string): void {
     this.flashText = text;
     this.flashPending = true;
+  }
+
+  /** Adds a line to the callout feed: who hit whom, with the item's icon between them. */
+  callout(c: Callout, now: number): void {
+    const el = document.createElement('div');
+    el.className = `hud-callout ${c.kind}`;
+    const name = (n: string) => {
+      const span = document.createElement('span');
+      span.textContent = n.toUpperCase();
+      return span;
+    };
+    const img = document.createElement('img');
+    img.src = itemIcon(c.by);
+    img.alt = ITEMS[c.by].name;
+    el.append(name(c.from), img, name(c.to));
+    if (c.kind === 'blocked' || c.kind === 'dodged') el.append(name(c.kind === 'blocked' ? 'blocked' : 'dodged'));
+    this.calloutsEl.prepend(el);
+    this.callouts.unshift({ el, at: now });
+    while (this.callouts.length > CALLOUT_MAX) this.callouts.pop()!.el.remove();
   }
 
   /** The title screen's Settings button. */
@@ -294,6 +341,23 @@ export class Hud {
     this.itemName.textContent = d.item && d.rolling === 0 ? ITEMS[d.item].name : '';
     this.itemSlot.classList.toggle('rolling', d.rolling > 0);
     this.itemSlot.classList.toggle('ready', !!d.item && d.rolling === 0);
+    // The spare spins with the roulette, then sits small beside the slot.
+    const spare = d.spare ? (d.rolling > 0 ? ITEM_KINDS[(Math.floor(now / ROULETTE_STEP) + 5) % ITEM_KINDS.length] : d.spare) : null;
+    if ((spare ?? '') !== this.lastSpare) {
+      this.lastSpare = spare ?? '';
+      if (spare) this.spareImg.src = itemIcon(spare);
+    }
+    this.spareSlot.classList.toggle('show', !!spare);
+
+    for (let i = this.callouts.length - 1; i >= 0; i--) {
+      const c = this.callouts[i];
+      if (now - c.at > CALLOUT_TIME || d.paused) {
+        c.el.remove();
+        this.callouts.splice(i, 1);
+      }
+    }
+    this.warnEl.classList.toggle('show', d.surge !== null && !d.paused);
+    if (d.surge !== null) this.warnEl.style.setProperty('--near', d.surge.toFixed(2));
 
     if (this.flashPending) {
       this.flashPending = false;
