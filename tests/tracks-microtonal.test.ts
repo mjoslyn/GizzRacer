@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { NEUTRAL_INPUT } from '../src/core/input';
 import { PHYSICS_DT } from '../src/core/loop';
+import { Race } from '../src/core/race';
 import { clamp, wrapAngle } from '../src/core/math';
 import { createKartState, stepKart, type KartState } from '../src/physics/kart';
 import { RACERS, kartParams } from '../src/physics/racers';
@@ -236,5 +237,77 @@ describe.each(CASES)('$name', ({ build, jump: spec, boostAt }) => {
     expect(viaMain).not.toBeNull();
     expect(viaBranch).not.toBeNull();
     expect(viaBranch!).toBeLessThan(viaMain!);
+  });
+});
+
+/** The lie of each track's land: its highest road reaches `high` and its lowest `low` (m); the sky track never sinks below its start line. */
+const LIE: Record<string, { high: number; low: number; floor?: number }> = {
+  'Fishies Lagoon': { high: 12, low: -6 },
+  'Ice V Glacier': { high: 12, low: -8 },
+  'Cyboogie City': { high: 18, low: -4 },
+  'Butterfly 3000 Skyway': { high: 25, low: 0, floor: 0 },
+};
+
+/** Steers toward a point a little further along the main centerline, flat out. */
+function autopilot(track: Track, s: KartState, progress: number) {
+  const p = pointAt(track.spline, progress + 14);
+  const err = wrapAngle(Math.atan2(p.x - s.x, p.z - s.z) - s.heading);
+  return { ...NEUTRAL_INPUT, throttle: 1, steer: clamp(-err * 2.5, -1, 1) };
+}
+
+/** One autopilot lap at 150cc: respawns, and each spell in the air (where it left the road, builder metres, and for how long). */
+function fastLap(track: Track) {
+  const race = new Race(track);
+  const kart = race.addKart(RACERS[0], '150cc', null);
+  race.time = 0; // skip the countdown
+  let respawns = 0;
+  const air: { s: number; time: number }[] = [];
+  let from = -1;
+  let time = 0;
+  for (let t = 0; t < 200 && kart.laps.lap < 1; t += PHYSICS_DT) {
+    race.step(PHYSICS_DT, [autopilot(track, kart.state, kart.progressS)]);
+    if (kart.respawned) respawns++;
+    if (!kart.state.grounded) {
+      if (from < 0) from = track.main.toBuilder(kart.progressS);
+      time += PHYSICS_DT;
+    } else if (from >= 0) {
+      air.push({ s: from, time });
+      from = -1;
+      time = 0;
+    }
+  }
+  return { lapped: kart.laps.lap >= 1, respawns, air };
+}
+
+describe.each(CASES)('$name elevation', ({ name, build }) => {
+  const def = build();
+  const track = new Track(def);
+  const lap = fastLap(track);
+
+  it('climbs and dips', () => {
+    const sp = track.main.spline;
+    let high = -Infinity;
+    let low = Infinity;
+    for (let i = 0; i < sp.count; i++) {
+      const y = track.main.heightAt(sp.dist[i]);
+      high = Math.max(high, y);
+      low = Math.min(low, y);
+    }
+    console.log(`${name}: road from ${low.toFixed(1)} m to ${high.toFixed(1)} m`);
+    expect(high).toBeGreaterThanOrEqual(LIE[name].high);
+    expect(low).toBeLessThanOrEqual(LIE[name].low);
+    if (LIE[name].floor !== undefined) expect(low).toBeGreaterThanOrEqual(LIE[name].floor!);
+  });
+
+  it('gives a fast kart airtime off a crest, not just the kickers and jumps', () => {
+    const lips = [...kickers(track.main), ...def.main.gaps.map((g) => g[0])];
+    const crests = lap.air.filter((a) => a.time > 0.4 && lips.every((l) => Math.abs(a.s - l) > 8));
+    console.log(`${name}: crest airtime at 150cc ${crests.map((a) => `${a.s.toFixed(0)} m (${a.time.toFixed(2)} s)`).join(', ')}`);
+    expect(crests.length).toBeGreaterThan(0);
+  });
+
+  it('laps on autopilot at 150cc without a respawn', () => {
+    expect(lap.lapped).toBe(true);
+    expect(lap.respawns).toBe(0);
   });
 });

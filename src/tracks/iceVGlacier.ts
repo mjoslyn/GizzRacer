@@ -8,8 +8,9 @@ const FINISH = 60;
 
 /**
  * Ice V Glacier (circuit 2, medium): a sheet-ice shelf that slides karts
- * wide, a crevasse jump, icy hairpins between walls, and a frozen lake
- * where blocks of ice skate across the road.
+ * wide as it climbs the glacier, a plunge off its snout, a crevasse jump,
+ * icy hairpins down in a canyon, and a frozen lake where blocks of ice
+ * skate across the road.
  */
 export function buildIceVGlacier(): TrackDef {
   const b = new TrackBuilder(START, 'Base Camp', { halfWidth: 11 });
@@ -20,7 +21,13 @@ export function buildIceVGlacier(): TrackDef {
 
   b.section('Ice Shelf', { halfWidth: 10, surface: 'ice' });
   b.mark('shelf');
-  b.straight(5).kicker().straight(70 - 7 / K).arc(50, -70).arc(50, 70).straight(63);
+  b.straight(5).kicker().straight(70 - 7 / K);
+  // Up the glacier, and off its snout between low walls.
+  b.mark('climb');
+  b.arc(50, -70).arc(50, 70);
+  b.section('Ice V', { halfWidth: 10, wallHeight: 1.2, surface: 'ice' });
+  b.mark('snout');
+  b.straight(63);
   b.section('Shelf Bend', { halfWidth: 10, wallHeight: 1.2, surface: 'ice' });
   b.arc(38, 75);
   b.section('Shelf Bend', { halfWidth: 10, surface: 'ice' });
@@ -58,6 +65,7 @@ export function buildIceVGlacier(): TrackDef {
   b.turnTo(offsetPose(START, -FINISH * K), 40);
   b.section('Finish Straight', { halfWidth: 11 });
   b.straight(FINISH);
+  shapeGlacier(b);
 
   const main = b.finish(true);
   const mycelium = buildMycelium(b.marks.chicane, b.marks.chicaneEnd);
@@ -112,4 +120,44 @@ function buildMycelium(from: { s: number; pose: Pose }, to: { s: number; pose: P
   b.straight(chord - b.s);
   const branch: BranchDef = { name: 'Mycelium', mainFrom: from.s, mainTo: to.s, ...b.finish(false) };
   return { branch, pits: b.pits, boxes: 17 };
+}
+
+/**
+ * The lie of the land: a swell at base camp, the climb up the glacier and
+ * the plunge off its snout, the hairpins sunk in a canyon, and a cutting
+ * on the thaw road. The kickers, the crevasse and Mycelium's junctions stay level.
+ */
+function shapeGlacier(b: TrackBuilder): void {
+  const m = (k: string) => b.marks[k].s;
+  const GLACIER_Y = 14;
+  ease(b, 90, 122, 0, 2.5);
+  ease(b, 122, 154, 2.5, 0);
+  // Gently up the open shelf, then steeper round its bends to the top of the glacier.
+  ease(b, m('shelf') + 14, m('climb'), 0, 3);
+  ease(b, m('climb'), m('snout'), 3, GLACIER_Y);
+  // Over the snout: a drop too steep to touch at speed, onto the level before the bend.
+  const crest = m('snout') + 7;
+  line(b, crest, crest + 22, GLACIER_Y, 1);
+  ease(b, crest + 22, crest + 40, 1, 0);
+  // Down into the canyon after the crevasse, along its floor round the hairpins, and back up to the lake.
+  const pins = m('hairpins');
+  ease(b, pins - 16, pins + 40, 0, -9);
+  ease(b, pins + 40, pins + 110, -9, -7);
+  ease(b, pins + 110, pins + 200, -7, -10);
+  ease(b, pins + 200, pins + 290, -10, -8);
+  ease(b, pins + 290, pins + 384, -8, -9);
+  ease(b, pins + 384, m('lake') - 12, -9, 0);
+  // The thaw road runs down through a cutting in the snow.
+  ease(b, m('thaw') + 5, m('thaw') + 45, 0, -3.5);
+  ease(b, m('thaw') + 45, m('thaw') + 85, -3.5, 0);
+}
+
+/** Eases the road from height y0 to y1 between arc lengths s0 and s1, level at both ends. */
+function ease(b: TrackBuilder, s0: number, s1: number, y0: number, y1: number): void {
+  b.profile(s0, s1, (u) => y0 + ((y1 - y0) * (1 - Math.cos(Math.PI * u))) / 2);
+}
+
+/** A straight slope from y0 to y1: a plunge, with a crest at its top. */
+function line(b: TrackBuilder, s0: number, s1: number, y0: number, y1: number): void {
+  b.profile(s0, s1, (u) => y0 + (y1 - y0) * u);
 }
