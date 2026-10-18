@@ -134,7 +134,7 @@ Each track has its own theme (render/themes.ts): desert (Rattlesnake Run), green
 - Lap 3: kaleidoscope pulse on screen edges synced to the music beat
 - Diamond-back patterned textures scroll along the track barriers
 - Built (Milestone 6): one post pass (render/postfx.ts) for haze and kaleidoscope, skipped when nothing is on.
-- The look of the Rattlesnake video (render/postfx.ts): tape (red and blue bleeding apart, wobbling lines, scanlines, grain), a posterized duotone in each world's own colours (`Theme.duotone`: shadows, body, and highlights that burn like a snake's eye) and letterbox bars. Full on the pre-race flyover and behind the title and menus, a touch of tape on the final lap, and a short bite of duotone when you're hit. Settings > Video look: Full (the default), Light (toned down, no bites) or Off. Nothing strobes. The kaleidoscope runs on every track's final lap. Extras: off-road wheel dust, a pre-race flyover with a title card
+- The look of the Rattlesnake video (render/postfx.ts): tape (red and blue bleeding apart, wobbling lines, scanlines, grain), a posterized duotone in each world's own colours (`Theme.duotone`: shadows, body, and highlights that burn like a snake's eye) and letterbox bars. Full on the pre-race flyover and behind the title and menus, tape through every race (more on the final lap), and a short bite of duotone when you're hit. Settings > Video look: Light (the default: toned down, no bites), Full or Off. Nothing strobes. The kaleidoscope runs on every track's final lap. Extras: off-road wheel dust, a pre-race flyover with a title card
 
 **Music:** original driving motorik beat, chant-style hook, microtonal-inflected guitar; tempo rises slightly on the final lap.
 

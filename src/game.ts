@@ -25,7 +25,7 @@ import { DRIFT_TIERS, PHYSICS_VERSION, copyKartState, createKartState, driftTier
 import { FIELD_SIZE, RACERS, pickRivals, type RacerDef } from './physics/racers';
 import type { HazardKind } from './items/hazards';
 import { ITEMS, type ItemHolder, type ItemKind } from './items/items';
-import { ChaseCamera } from './render/chaseCamera';
+import { ChaseCamera, type CameraPlacement } from './render/chaseCamera';
 import { HazardsView, ItemsView } from './render/itemViews';
 import { KartView, setDustColor } from './render/kartView';
 import { PostFx } from './render/postfx';
@@ -978,13 +978,14 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
   const finalLap = mode === 'race' && player !== null && player.finishTime === null && intro === 0 && race.laps > 1 && player.laps.lap === race.laps - 1;
   fx.haze += (hazeTarget - fx.haze) * damp(2, frameDt);
   fx.kaleido += ((finalLap ? 1 : 0) - fx.kaleido) * damp(1.5, frameDt);
-  // The Rattlesnake video's look: full on tape for the flyover and behind the title and menus, a touch on the final lap, a bite when hit.
+  // The Rattlesnake video's look: full for the flyover and behind the title and menus, on tape through the race, a bite when hit.
   const look = settings().videoLook;
   const scale = look === 'full' ? 1 : look === 'light' ? 0.45 : 0;
   const attract = !player && mode !== 'podium';
   const flyover = intro > 0;
   fx.bite = Math.max(0, fx.bite - frameDt * 1.6);
-  const vhsTarget = (flyover ? 1 : attract ? 0.7 : finalLap ? 0.35 : 0) * scale + fx.bite * 0.8;
+  // On tape the whole race long, a little more on the final lap; the duotone is kept for the flyover, the title and bites, where it can't hide the road.
+  const vhsTarget = (flyover ? 1 : attract ? 0.7 : finalLap ? 0.6 : mode === 'race' ? 0.45 : 0) * scale + fx.bite * 0.8;
   const duoTarget = (flyover ? 0.85 : attract ? 0.75 : 0) * scale + fx.bite * 0.55;
   fx.vhs += (vhsTarget - fx.vhs) * damp(8, frameDt);
   fx.duo += (duoTarget - fx.duo) * damp(8, frameDt);
@@ -1282,6 +1283,11 @@ Object.assign(window, {
     },
     get race() {
       return race;
+    },
+    /** Moves the chase camera (trying placements): any of distance, height, lookAhead, lookHeight, fov. */
+    camera(placement: Partial<CameraPlacement>) {
+      Object.assign(chase.placement, placement);
+      chase.snap();
     },
     /** Camera height, how far under water the view is, and how many dives the track has (testing). */
     get view() {

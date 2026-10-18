@@ -80,7 +80,7 @@ export class SettingsScreen {
         break;
       case 'look': {
         const i = VIDEO_LOOKS.indexOf(s.videoLook);
-        updateSettings({ videoLook: VIDEO_LOOKS[(Math.max(0, i) + dir + VIDEO_LOOKS.length) % VIDEO_LOOKS.length] });
+        updateSettings({ videoLook: VIDEO_LOOKS[(Math.max(0, i) + dir + VIDEO_LOOKS.length) % VIDEO_LOOKS.length], videoLookChosen: true });
         break;
       }
       case 'version': {
