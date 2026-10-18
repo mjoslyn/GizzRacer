@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { RacerDef } from '../physics/racers';
 import {
-  beadTexture,
+  dragonHideTexture,
   flameDecalTexture,
   glowTexture,
   grilleTexture,
@@ -273,45 +273,170 @@ function lizardWarlock(r: RacerDef): KartModel {
   };
 }
 
-// ---- Cyborg Gourmand: the Fishies robot in a kitchen cart------------------------
+// ---- Han-Tyumi: the Fishing for Fishies robot in a clinker dinghy on wheels -----
+
+/** A fish crate's end: pale slats stencilled FISH FO FISH, as on the Fishing for Fishies crate. */
+function crateTexture(): THREE.CanvasTexture {
+  const c = document.createElement('canvas');
+  c.width = 256;
+  c.height = 192;
+  const g = c.getContext('2d')!;
+  // Three slats with dark seams and a little grain.
+  for (let k = 0; k < 3; k++) {
+    g.fillStyle = ['#d8b884', '#cfae78', '#dcbe8c'][k];
+    g.fillRect(0, k * 64, 256, 64);
+    g.fillStyle = 'rgba(90,60,30,0.25)';
+    for (let j = 0; j < 5; j++) g.fillRect(0, k * 64 + 8 + j * 12 + (j % 2) * 3, 256, 2);
+    g.fillStyle = 'rgba(40,24,10,0.7)';
+    g.fillRect(0, k * 64 + 61, 256, 3);
+  }
+  g.font = '900 54px Impact, "Arial Black", sans-serif';
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillStyle = '#22304f';
+  ['FISH', 'FO', 'FISH'].forEach((word, k) => g.fillText(word, 128, 34 + k * 62, 220));
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
 
 function cyborgGourmand(r: RacerDef): KartModel {
   const body = new THREE.Group();
   // Brushed steel rather than mirror chrome, so it reads as metal under any sky.
   const steel = gloss(r.color, { reflectivity: 0.12, shininess: 70, specular: 0x999999 });
-  const paint = gloss(r.color);
-  const red = gloss(r.accent);
   const dark = matte(0x222222);
+  const wood = matte(0xffffff, { map: tex('wood', woodTexture) });
+  const rail = matte(0x7a5634);
+  const rope = matte(0xc8a86a);
+  // Weathered paint: the strakes alternate a sun-faded teal, the top one a chipped red.
+  const strakeMats = [matte(0x4f8a98), matte(0x67a4b0), matte(0x548f9c), matte(0xb04a3c)];
 
-  put(body, box(1.45, 0.55, 2.3), paint, [0, 0.62, 0]);
-  put(body, box(1.2, 0.3, 0.2), steel, [0, 0.55, 1.2]);
-  for (let k = 0; k < 5; k++) put(body, box(0.04, 0.24, 0.05), dark, [-0.4 + k * 0.2, 0.55, 1.31]);
-  // Oven door on each flank with a window glowing from inside, rivets along the top.
+  // A clinker hull: four overlapping strakes a side, each flaring out over the one below,
+  // drawn in a little at the transom and all the way to a raked stem at the bow.
+  const STERN = -1.12;
+  const FLARE = 0.45;
+  const strakes = [0, 1, 2, 3].map((k) => ({ y: 0.44 + k * 0.13, hw: 0.42 + k * 0.1, stem: 1.2 + k * 0.08 }));
+  const outline = (hw: number, stem: number, side: number): [number, number][] => [
+    [side * hw * 0.86, STERN],
+    [side * hw, -0.3],
+    [side * hw, 0.4],
+    [side * 0.03, stem],
+  ];
   for (const side of [-1, 1]) {
-    put(body, box(0.02, 0.36, 0.8), matte(0x2a2a2a), [side * 0.73, 0.6, 0.15]);
-    put(body, box(0.03, 0.2, 0.55), glow(0xff8a3a), [side * 0.735, 0.62, 0.15]);
-    put(body, box(0.05, 0.04, 0.5), steel, [side * 0.75, 0.84, 0.15]);
-    for (let k = 0; k < 6; k++) put(body, ball(0.035, 6, 4), steel, [side * 0.73, 0.88, -0.9 + k * 0.36]);
-    for (let k = 0; k < 3; k++) put(body, cyl(0.05, 0.05, 0.05, 10), red, [side * 0.74, 0.42, -0.6 + k * 0.18], [0, 0, Math.PI / 2]);
+    for (const [k, st] of strakes.entries()) {
+      const pts = outline(st.hw, st.stem, side);
+      for (let j = 0; j < 3; j++) {
+        const [a, b] = [pts[j], pts[j + 1]];
+        const [dx, dz] = [b[0] - a[0], b[1] - a[1]];
+        put(body, box(0.05, 0.17, Math.hypot(dx, dz) + 0.05), strakeMats[k], [(a[0] + b[0]) / 2, st.y, (a[1] + b[1]) / 2], [0, Math.atan2(dx, dz), -side * FLARE]);
+      }
+    }
+    // The gunwale rail along the top strake, an oarlock on it.
+    const top = outline(0.77, 1.47, side);
+    for (let j = 0; j < 3; j++) rod(body, [top[j][0], 0.93, top[j][1]], [top[j + 1][0], 0.93, top[j + 1][1]], 0.035, rail);
+    put(body, ring(0.05, 0.012, Math.PI), steel, [side * 0.77, 0.98, -0.25], [0, Math.PI / 2, 0]);
+    // Ribs inside, so it reads as a boat from above.
+    for (const z of [-0.8, -0.3, 0.3]) rod(body, [side * 0.38, 0.48, z], [side * 0.7, 0.9, z], 0.02, wood);
   }
-  headlights(body, 0.45, 0.62, 1.16, 0.08, 0xffe4b0);
-  // Stove top at the back: hot plate, pot with a ladle, chimney with a cap.
-  put(body, box(1.2, 0.08, 0.7), matte(0x1c1c1c), [0, 0.93, -0.75]);
-  put(body, cyl(0.2, 0.2, 0.04, 20), glow(0xff5a1a), [0.3, 0.98, -0.75]);
-  for (let k = 1; k <= 2; k++) put(body, ring(0.07 * k, 0.012), matte(0x1c1c1c), [0.3, 1.0, -0.75], [Math.PI / 2, 0, 0]);
-  put(body, cyl(0.2, 0.18, 0.3, 16), steel, [-0.3, 1.1, -0.75]);
-  put(body, cyl(0.19, 0.19, 0.02, 16), matte(0xd8a040), [-0.3, 1.24, -0.75]);
-  rod(body, [-0.3, 1.15, -0.75], [-0.18, 1.5, -0.85], 0.02, steel);
-  put(body, cyl(0.12, 0.14, 0.9), matte(0x333333), [0.45, 1.35, -1.0]);
-  put(body, cyl(0.17, 0.12, 0.12), matte(0x333333), [0.45, 1.84, -1.0]);
-  put(body, cone(0.2, 0.12, 12), matte(0x333333), [0.45, 1.98, -1.0]);
-  // Frying pan and a knife rack off the sides; salt and pepper on the dash.
-  put(body, cyl(0.22, 0.2, 0.06, 16), dark, [-0.8, 0.85, 0.2], [0, 0, Math.PI / 2]);
-  put(body, box(0.05, 0.05, 0.4), dark, [-0.8, 0.85, 0.55]);
-  put(body, box(0.06, 0.12, 0.5), matte(0x6a4a2a), [0.78, 0.98, 0.0]);
-  for (let k = 0; k < 4; k++) put(body, box(0.01, 0.22, 0.05), chrome(), [0.8, 1.12, -0.18 + k * 0.12]);
-  put(body, cyl(0.04, 0.05, 0.12, 8), matte(0xf4f4f4), [-0.15, 0.95, 0.95]);
-  put(body, cyl(0.04, 0.05, 0.12, 8), matte(0x2a2a2a), [0.15, 0.95, 0.95]);
+  // Transom boards across the stern, a bottom and floorboards inside.
+  for (const [k, st] of strakes.entries()) put(body, box(st.hw * 1.72 + 0.05, 0.155, 0.05), strakeMats[k], [0, st.y, STERN - 0.01]);
+  put(body, box(0.8, 0.04, 1.55), strakeMats[0], [0, 0.37, -0.37]);
+  for (let k = -1; k <= 1; k++) put(body, box(0.2, 0.03, 1.5), wood, [k * 0.23, 0.48, -0.3]);
+  // The stem post, raked forward, and a foredeck.
+  rod(body, [0, 0.36, 1.15], [0, 1.05, 1.58], 0.045, rail);
+  const deck = new THREE.Shape();
+  deck.moveTo(-0.46, 0.85);
+  deck.lineTo(0.46, 0.85);
+  deck.lineTo(0, 1.46);
+  deck.closePath();
+  put(body, new THREE.ExtrudeGeometry(deck, { depth: 0.04, bevelEnabled: false }).rotateX(Math.PI / 2), wood, [0, 0.94, 0]);
+  // Thwarts: the robot sits on the middle one; the stern one carries the catch.
+  put(body, box(1.42, 0.05, 0.28), wood, [0, 0.86, 0.15]);
+  put(body, box(1.32, 0.05, 0.34), wood, [0, 0.86, -0.8]);
+
+  // A hurricane lantern hung off the stem for a headlight.
+  rod(body, [0, 1.05, 1.58], [0, 1.14, 1.72], 0.015, dark);
+  put(body, cone(0.07, 0.06, 10), dark, [0, 1.1, 1.72]);
+  put(body, cyl(0.055, 0.055, 0.1, 10), glow(0xffd88a), [0, 1.02, 1.72]);
+  put(body, cyl(0.07, 0.07, 0.025, 10), dark, [0, 0.96, 1.72]);
+  glowSprite(body, [0, 1.02, 1.74], 0.45, 0xffc870);
+  // A coil of rope on the foredeck, its end made fast to the stem.
+  for (let k = 0; k < 3; k++) put(body, ring(0.11 - k * 0.012, 0.025), rope, [-0.17, 0.95 + k * 0.035, 1.02], [Math.PI / 2, 0, 0]);
+  rod(body, [-0.08, 1.02, 1.08], [0, 1.0, 1.52], 0.015, rope);
+
+  // The catch on the stern thwart: the FISH FO FISH crate, a bucket with a goldfish's tail out of it, a tackle box.
+  const slats = matte(0xffffff, { map: tex('fish-crate', crateTexture) });
+  const plain = matte(0xd0ae78);
+  put(body, box(0.44, 0.32, 0.32), [slats, slats, plain, plain, slats, slats], [0.32, 1.045, -0.8]);
+  for (const x of [-1, 1]) for (const z of [-1, 1]) put(body, box(0.04, 0.33, 0.04), matte(0x8a6a40), [0.32 + x * 0.21, 1.045, -0.8 + z * 0.15]);
+  const tin = gloss(0xb8c2cc, { reflectivity: 0.2 });
+  put(body, cyl(0.12, 0.1, 0.22, 14), tin, [-0.45, 0.995, -0.8]);
+  put(body, ring(0.12, 0.012), tin, [-0.45, 1.105, -0.8], [Math.PI / 2, 0, 0]);
+  put(body, cyl(0.11, 0.11, 0.01, 14), glow(0x3a7ab8), [-0.45, 1.09, -0.8]);
+  put(body, ring(0.12, 0.008, Math.PI), dark, [-0.45, 1.1, -0.8], [0, Math.PI / 2, 0]);
+  const fish = new THREE.Group();
+  fish.position.set(-0.47, 1.1, -0.8);
+  fish.rotation.set(-Math.PI / 2 + 0.35, 0, 0.3);
+  const scales = gloss(0xf09a2a);
+  put(fish, ball(0.06, 10, 8), scales, [0, 0, 0.02], [0, 0, 0], [0.6, 1, 1.9]);
+  for (const side of [-1, 1]) put(fish, box(0.012, 0.11, 0.06), scales, [0, side * 0.04, 0.16], [side * 0.5, 0, 0]);
+  body.add(fish);
+  const tackle = gloss(0x2f8a48);
+  put(body, box(0.22, 0.14, 0.3), tackle, [-0.12, 0.955, -0.8]);
+  put(body, box(0.235, 0.04, 0.315), matte(0x1e5a30), [-0.12, 1.04, -0.8]);
+  put(body, ring(0.06, 0.012, Math.PI), dark, [-0.12, 1.06, -0.8], [0, Math.PI / 2, 0]);
+  put(body, box(0.05, 0.04, 0.01), brass(), [-0.12, 1.01, -0.96]);
+
+  // An outboard on the transom: clamp, cowling with a red band and a tiller, the leg down to a propeller.
+  put(body, box(0.2, 0.18, 0.12), dark, [0, 0.88, STERN - 0.07]);
+  const cowl = matte(0xeeeae0, { shininess: 60, specular: 0x444444 });
+  put(body, box(0.3, 0.26, 0.4), cowl, [0, 1.1, -1.34]);
+  put(body, ball(0.2, 14, 10), cowl, [0, 1.23, -1.34], [0, 0, 0], [0.75, 0.45, 1.0]);
+  put(body, box(0.31, 0.05, 0.41), gloss(r.accent), [0, 1.03, -1.34]);
+  put(body, box(0.08, 0.04, 0.02), dark, [0, 1.15, -1.55]);
+  rod(body, [-0.1, 1.08, -1.16], [-0.3, 1.22, -0.98], 0.025, dark);
+  put(body, cyl(0.035, 0.035, 0.1, 8), matte(0x111111), [-0.33, 1.24, -0.95], [0, 0, Math.PI / 2]);
+  put(body, box(0.1, 0.62, 0.12), dark, [0, 0.66, -1.4]);
+  put(body, box(0.26, 0.02, 0.22), dark, [0, 0.42, -1.42]);
+  put(body, cyl(0.07, 0.05, 0.3, 10), dark, [0, 0.3, -1.42], [Math.PI / 2, 0, 0]);
+  const prop = new THREE.Group();
+  prop.position.set(0, 0.3, -1.6);
+  const blade = box(0.06, 0.15, 0.015).translate(0, 0.075, 0);
+  for (let k = 0; k < 3; k++) put(prop, blade, brass(), [0, 0, 0], [0, 0.3, (k * Math.PI * 2) / 3]);
+  put(prop, cyl(0.03, 0.03, 0.06, 8), dark, [0, 0, 0], [Math.PI / 2, 0, 0]);
+  body.add(prop);
+
+  // A net draped over the starboard side, corks along the top, a little fish caught in it.
+  const net = matte(0x5a6a3a);
+  for (let k = 0; k < 6; k++) {
+    const z = -0.42 + k * 0.14;
+    rod(body, [-0.79, 0.93, z], [-0.55, 0.5, z + 0.28], 0.007, net);
+    rod(body, [-0.79, 0.93, z + 0.28], [-0.55, 0.5, z], 0.007, net);
+  }
+  for (let k = 0; k < 4; k++) put(body, cyl(0.03, 0.03, 0.05, 8), matte(0xd88a3a), [-0.8, 0.95, -0.35 + k * 0.2], [0, 0, Math.PI / 2]);
+  put(body, ball(0.04, 8, 6), gloss(0x7ac0d8), [-0.67, 0.68, -0.05], [0, 0, 0], [0.5, 1, 1.8]);
+  put(body, cone(0.035, 0.06, 4), gloss(0x7ac0d8), [-0.67, 0.68, 0.07], [-Math.PI / 2, 0, 0], [0.4, 1, 1]);
+  // Lily pads plastered to the port planks, fresh out of the pond, one in flower, and weed off the stem.
+  for (const [k, z, a] of [[1, 0.1, 0.4], [0, -0.55, 2.2], [2, -0.3, 4.1]] as const) {
+    const pad = new THREE.Group();
+    pad.position.set(strakes[k].hw + 0.035, strakes[k].y, z);
+    pad.rotation.z = -FLARE;
+    put(pad, new THREE.CircleGeometry(0.12, 14, a, Math.PI * 2 - 0.6), matte(0x4a9a3a, { side: THREE.DoubleSide }), [0, 0, 0], [0, Math.PI / 2, 0]);
+    body.add(pad);
+  }
+  put(body, ball(0.04, 8, 6), matte(0xf4a0c0), [strakes[1].hw + 0.06, strakes[1].y, 0.1]);
+  for (let k = 0; k < 3; k++) put(body, cone(0.025, 0.22, 5), matte(0x3a7a2a), [-0.02 + k * 0.02, 0.5, 1.22 + k * 0.04], [Math.PI, 0, 0.2 - k * 0.2]);
+
+  // Stub axles out to the wheels, red mudguards over them.
+  for (const side of [-1, 1]) {
+    for (const z of [0.85, -0.85]) {
+      rod(body, [side * (z > 0 ? 0.2 : 0.38), 0.36, z], [side * 0.86, 0.36, z], 0.04, steel);
+      put(body, ring(0.42, 0.035, Math.PI), gloss(r.accent), [side * 0.9, 0.36, z], [0, Math.PI / 2, 0]);
+    }
+  }
+  // The cast: a bobber where the line ends.
+  put(body, ball(0.05, 10, 8), gloss(0xd8302a), [0.8, 2.08, -1.15]);
+  put(body, ball(0.05, 10, 8), gloss(0xffffff), [0.8, 2.12, -1.15], [0, 0, 0], [1, 0.4, 1]);
 
   // The Fishing for Fishies robot: blue overalls stitched in yellow, a bucket hat, a rod over the shoulder.
   const d = new THREE.Group();
@@ -359,124 +484,175 @@ function cyborgGourmand(r: RacerDef): KartModel {
   d.add(head);
   body.add(d);
 
-  const tire = matte(0x1c1c1c);
   return {
     body,
-    wheels: [0.85, -0.85].flatMap((x) => [
-      { x, z: 0.85, radius: 0.42, width: 0.4, front: true, material: tire },
-      { x, z: -0.85, radius: 0.42, width: 0.4, front: false, material: tire },
+    wheels: [0.9, -0.9].flatMap((x) => [
+      { x, z: 0.85, radius: 0.36, width: 0.28, front: true },
+      { x, z: -0.85, radius: 0.36, width: 0.28, front: false },
     ]),
-    exhausts: [new THREE.Vector3(0.45, 1.9, -1.0)],
-    rearTrack: 0.85,
+    // The outboard's propeller hub is the exhaust.
+    exhausts: [new THREE.Vector3(0, 0.3, -1.66)],
+    rearTrack: 0.9,
     rearZ: -0.9,
-    spinners: [],
-    shadow: [2.6, 3.0],
+    spinners: [prop],
+    shadow: [2.3, 3.3],
     head,
   };
 }
 
-// ---- Gila Rider: beaded gila monster flying a rotor chopper --------------------
+// ---- Gila Rider: a beaded dragon-gila flying on its own leathery wings ---------
 
 function gilaRider(r: RacerDef): KartModel {
   const body = new THREE.Group();
-  const hide = matte(0xffffff, { map: tex('beads', beadTexture) });
-  const paint = gloss(r.color);
-  const black = gloss(r.accent);
-  const steel = chrome();
+  // After PetroDragonic Apocalypse: charcoal beads on the back, orange and gold on the throat and belly.
+  const hide = matte(0xffffff, { map: tex('dragon-hide', dragonHideTexture), shininess: 30, specular: 0x332a22 });
+  const char = matte(0x1a1718, { shininess: 40, specular: 0x332222 });
+  const ember = glow(0xff6a1a);
+  const claw = matte(0xd8c8a8);
+  // Leather lit from below by its own fire.
+  const membrane = matte(0x3a1c18, { side: THREE.DoubleSide, emissive: 0x3a0e04, shininess: 20, specular: 0x221010 });
   // It flies: everything rides a metre off the road.
-  const ship = new THREE.Group();
-  ship.position.y = 0.95;
-  body.add(ship);
+  const gila = new THREE.Group();
+  gila.position.y = 0.95;
+  body.add(gila);
 
-  // A chopper bike with no wheels: teardrop tank, long raked forks ending in a nose pod, a tail boom.
-  put(ship, box(0.6, 0.3, 1.8), paint, [0, 0, -0.3]);
-  put(ship, ball(0.36, 16, 12), paint, [0, 0.2, 0.45], [0, 0, 0], [0.8, 0.6, 1.4]);
-  sideDecal(ship, tex('flames-gila', () => flameDecalTexture('#ffb070', '#c4501c')), 0.31, 0.2, 0.45, 0.9, 0.24);
-  for (const side of [-1, 1]) rod(ship, [side * 0.12, 0.45, 0.85], [side * 0.12, -0.15, 1.5], 0.04, steel);
-  put(ship, ball(0.24, 14, 10), black, [0, -0.15, 1.55], [0, 0, 0], [1, 0.8, 1.3]);
-  put(ship, ball(0.12, 10, 8), glow(0xfff2c0), [0, -0.12, 1.83], [0, 0, 0], [1, 1, 0.4]);
-  rod(ship, [0, 0.05, -1.1], [0, 0.35, -2.2], 0.07, paint, 0.04);
-  put(ship, box(0.04, 0.5, 0.35), black, [0, 0.5, -2.2]);
-  // The tail rotor turns about the boom's side axis: a mount turned side-on, spun about its own z.
-  const tailMount = new THREE.Group();
-  tailMount.position.set(0.08, 0.5, -2.2);
-  tailMount.rotation.y = Math.PI / 2;
-  const tailRotor = new THREE.Group();
-  for (let k = 0; k < 3; k++) put(tailRotor, box(0.06, 0.55, 0.02), black, [0, 0, 0], [0, 0, (k * Math.PI) / 3]);
-  tailMount.add(tailRotor);
-  ship.add(tailMount);
-  // Ape-hanger bars.
-  put(ship, box(0.9, 0.04, 0.04), steel, [0, 0.75, 0.85]);
-  for (const side of [-1, 1]) {
-    put(ship, cyl(0.03, 0.03, 0.5), steel, [side * 0.42, 0.95, 0.85]);
-    put(ship, cyl(0.045, 0.045, 0.14, 8), matte(0x111111), [side * 0.42, 1.24, 0.85]);
+  // A long, heavy body: chest, belly, haunches, then a fat tail tapering to a blunt tip.
+  put(gila, ball(0.42, 20, 14), hide, [0, 0, 0.05], [0, 0, 0], [1.05, 0.7, 1.75]);
+  put(gila, ball(0.32, 16, 12), hide, [0, 0.03, 0.68], [0, 0, 0], [1, 0.78, 1.05]);
+  put(gila, ball(0.34, 16, 12), hide, [0, -0.01, -0.58], [0, 0, 0], [1.08, 0.78, 1.1]);
+  const tail: [number, number, number][] = [];
+  for (let k = 0; k < 8; k++) {
+    const at: [number, number, number] = [Math.sin(k * 0.55) * 0.07, 0.02 - k * 0.012, -0.88 - k * 0.16];
+    put(gila, ball(0.27 - k * 0.024, 14, 10), hide, at, [0, 0, 0], [1, 0.85, 1.3]);
+    tail.push(at);
   }
-  // Landing skids and two downward thrusters with glowing pads.
-  const pads: THREE.Object3D[] = [];
-  for (const side of [-1, 1]) {
-    put(ship, box(0.06, 0.06, 1.9), steel, [side * 0.55, -0.82, -0.2]);
-    put(ship, cyl(0.04, 0.04, 0.12, 8), steel, [side * 0.55, -0.8, 0.78], [Math.PI / 2 - 0.5, 0, 0]);
-    rod(ship, [side * 0.25, -0.1, 0.25], [side * 0.55, -0.8, 0.35], 0.03, steel);
-    rod(ship, [side * 0.25, -0.1, -0.85], [side * 0.55, -0.8, -0.75], 0.03, steel);
-    const pod = put(ship, cyl(0.22, 0.18, 0.35, 14), black, [side * 0.62, -0.25, -0.35]);
-    put(pod, ring(0.21, 0.035), steel, [0, -0.17, 0], [Math.PI / 2, 0, 0]);
-    pads.push(glowSprite(ship, [side * 0.62, -0.5, -0.35], 0.8, 0xffa040));
-  }
-  // Main rotor on a mast.
-  put(ship, cyl(0.05, 0.06, 0.9), steel, [0, 1.15, -0.55]);
-  put(ship, cyl(0.12, 0.12, 0.1, 12), black, [0, 1.6, -0.55]);
-  const rotor = new THREE.Group();
-  rotor.position.set(0, 1.62, -0.55);
-  for (let k = 0; k < 3; k++) {
-    const hub = new THREE.Group();
-    hub.rotation.y = (k * Math.PI * 2) / 3;
-    const blade = put(hub, box(0.14, 0.02, 1.5), black, [0, 0, 0.78], [0, 0, 0.06]);
-    put(blade, box(0.15, 0.025, 0.12), matte(0xffb070), [0, 0, 0.7]);
-    rotor.add(hub);
-  }
-  // A blur disc so the spin reads at speed.
-  put(rotor, cyl(1.55, 1.55, 0.01, 32), new THREE.MeshBasicMaterial({ color: 0x1a1210, transparent: true, opacity: 0.12, depthWrite: false }), [0, 0, 0]);
-  ship.add(rotor);
+  // A scalloped ridge of rounded spines down the neck, back and tail: dark plates with a warm rim.
+  const spine = (parent: THREE.Object3D, at: [number, number, number], size: number) => {
+    put(parent, cyl(size, size, 0.035, 12), char, at, [0, 0, Math.PI / 2], [1, 1, 0.7]);
+    put(parent, cyl(size * 1.12, size * 1.12, 0.02, 12), matte(r.color, { emissive: 0x501404 }), [at[0], at[1] - size * 0.08, at[2]], [0, 0, Math.PI / 2], [1, 1, 0.7]);
+  };
+  for (let k = 0; k < 7; k++) spine(gila, [0, 0.27 - Math.abs(k - 2) * 0.012, 0.6 - k * 0.2], 0.1 - k * 0.004);
+  for (const [k, at] of tail.entries()) if (k % 2 === 0) spine(gila, [at[0], at[1] + 0.2 - k * 0.02, at[2]], 0.075 - k * 0.006);
 
-  const d = new THREE.Group();
-  d.position.set(0, -0.2, -0.3);
-  put(d, ball(0.38), hide, [0, 0.35, 0], [0.4, 0, 0], [1, 1.2, 0.9]);
-  // A bandana round the neck, feet on pegs, a fat tail over the back.
-  put(d, cyl(0.24, 0.3, 0.12, 14), gloss(0xd0303a), [0, 0.72, 0.1], [0.3, 0, 0]);
-  put(d, cone(0.12, 0.25, 4), gloss(0xd0303a), [0, 0.62, -0.18], [-2.4, 0, 0]);
+  // Four stubby legs splayed out and tucked back in flight, pale hooked claws.
+  const leg = (hip: [number, number, number], knee: [number, number, number], foot: [number, number, number]) => {
+    rod(gila, hip, knee, 0.1, hide, 0.08);
+    put(gila, ball(0.085, 10, 8), hide, knee);
+    rod(gila, knee, foot, 0.075, hide, 0.065);
+    put(gila, ball(0.09, 10, 8), hide, foot, [0, 0, 0], [1.25, 0.55, 1.3]);
+    const dir = new THREE.Vector3(...foot).sub(new THREE.Vector3(...knee)).setY(0).normalize();
+    for (let k = -2; k <= 2; k++) {
+      const c = put(gila, cone(0.018, 0.09, 5), claw, [foot[0], foot[1] - 0.02, foot[2]]);
+      const d = dir.clone().applyAxisAngle(UP, k * 0.35).setY(-0.25).normalize();
+      c.quaternion.setFromUnitVectors(UP, d);
+      c.position.addScaledVector(d, 0.1);
+    }
+  };
   for (const side of [-1, 1]) {
-    rod(d, [side * 0.25, 0.15, 0.1], [side * 0.35, -0.1, 0.5], 0.08, hide);
-    put(d, ball(0.09, 8, 6), hide, [side * 0.35, -0.12, 0.58], [0, 0, 0], [1, 0.6, 1.4]);
+    leg([side * 0.3, -0.08, 0.6], [side * 0.58, -0.2, 0.55], [side * 0.6, -0.3, 0.22]);
+    leg([side * 0.32, -0.08, -0.55], [side * 0.62, -0.16, -0.62], [side * 0.5, -0.24, -1.02]);
   }
-  for (let k = 0; k < 6; k++) put(d, ball(0.15 - k * 0.018, 10, 8), hide, [0, 0.05 - k * 0.04, -0.35 - k * 0.2]);
-  for (const side of [-1, 1]) arm(d, [side * 0.3, 0.6, 0.2], [side * 0.42, 1.45, 1.15], 0.08, hide, hide);
-  const face = new THREE.Group();
-  face.position.set(0, 0.95, 0.2);
-  put(face, ball(0.3), hide, [0, 0, 0], [0, 0, 0], [1.2, 0.7, 1.3]);
-  put(face, ball(0.2), hide, [0, -0.04, 0.3], [0, 0, 0], [1.2, 0.6, 1]);
-  eyes(face, 0.08, 0.2, 0.2, 0.06, 0x2a1408, false);
-  put(face, box(0.04, 0.01, 0.3), matte(0xd0303a), [0, -0.1, 0.55]);
-  for (const side of [-1, 1]) put(face, box(0.02, 0.01, 0.12), matte(0xd0303a), [side * 0.04, -0.1, 0.74], [0, side * 0.5, 0]);
-  // Sunglasses: every rider needs a pair. Aviators, for a pilot.
-  put(face, box(0.5, 0.02, 0.03), steel, [0, 0.15, 0.33]);
-  for (const side of [-1, 1]) put(face, ball(0.09, 12, 8), matte(0x050505, { shininess: 140, specular: 0xffffff }), [side * 0.12, 0.09, 0.35], [0, 0, 0], [1.1, 0.8, 0.3]);
-  // A leather pilot's cap with the flaps up.
-  put(face, ball(0.31, 16, 10), matte(0x5a3a22), [0, 0.08, -0.05], [0, 0, 0], [1.15, 0.6, 1.2]);
-  for (const side of [-1, 1]) put(face, box(0.04, 0.16, 0.14), matte(0x5a3a22), [side * 0.34, 0.08, -0.05], [0, 0, side * 0.5]);
-  d.add(face);
-  ship.add(d);
 
+  // Great leathery wings from the shoulders: an arm to the wrist, finger bones fanning back,
+  // a scalloped membrane between. Each beats in two hinged halves, the outer riding the inner, so the tips whip.
+  const SPAN = 0.85;
+  const innerShape = new THREE.Shape();
+  innerShape.moveTo(0, 0.2);
+  innerShape.lineTo(SPAN, 0.34);
+  innerShape.lineTo(SPAN, -0.85);
+  innerShape.quadraticCurveTo(SPAN * 0.5, -0.5, 0, -0.62);
+  innerShape.closePath();
+  const outerShape = new THREE.Shape();
+  outerShape.moveTo(0, 0.34);
+  outerShape.lineTo(0.9, -0.2);
+  outerShape.quadraticCurveTo(0.5, -0.3, 0.5, -0.78);
+  outerShape.quadraticCurveTo(0.22, -0.62, 0, -0.85);
+  outerShape.closePath();
+  // Flat in the wing's plane: the shape's y becomes z, forward.
+  const innerGeo = new THREE.ShapeGeometry(innerShape, 8).rotateX(Math.PI / 2);
+  const outerGeo = new THREE.ShapeGeometry(outerShape, 8).rotateX(Math.PI / 2);
+  const flappers: THREE.Object3D[] = [];
+  for (const side of [-1, 1]) {
+    const wing = new THREE.Group();
+    wing.position.set(side * 0.26, 0.2, 0.38);
+    wing.userData.side = side;
+    put(wing, innerGeo, membrane, [0, 0, 0], [0, 0, 0], [side, 1, 1]);
+    rod(wing, [0, 0, 0.12], [side * SPAN, 0, 0.34], 0.06, hide, 0.045);
+    rod(wing, [side * SPAN, 0, 0.34], [side * SPAN, 0, -0.85], 0.025, char, 0.012);
+    put(wing, ball(0.06, 10, 8), hide, [side * SPAN, 0, 0.34]);
+    put(wing, cone(0.03, 0.14, 6), claw, [side * (SPAN + 0.02), 0.02, 0.45], [Math.PI / 2, 0, 0]);
+    const tip = new THREE.Group();
+    tip.position.set(side * SPAN, 0, 0);
+    tip.userData.side = side;
+    put(tip, outerGeo, membrane, [0, 0, 0], [0, 0, 0], [side, 1, 1]);
+    rod(tip, [0, 0, 0.34], [side * 0.9, 0, -0.2], 0.025, char, 0.01);
+    rod(tip, [0, 0, 0.34], [side * 0.5, 0, -0.78], 0.022, char, 0.01);
+    wing.add(tip);
+    gila.add(wing);
+    flappers.push(wing, tip);
+  }
+  // Furnace glow under the belly and wings, kicking up the road.
+  const pads = [glowSprite(gila, [0, -0.45, 0], 0.85, 0xff5a10), ...[-1, 1].map((side) => glowSprite(gila, [side * 0.95, -0.45, -0.1], 0.6, 0xff7a20))];
+
+  // The head: broad, heavy and blunt, the jaw hanging open on a furnace, huge glowing slit eyes.
+  const head = new THREE.Group();
+  head.position.set(0, 0.12, 0.88);
+  head.scale.setScalar(1.15);
+  put(head, ball(0.34, 20, 14), hide, [0, 0.02, 0.15], [0, 0, 0], [1.15, 0.6, 1.1]);
+  put(head, ball(0.3, 18, 12), hide, [0, -0.02, 0.45], [0, 0, 0], [1.12, 0.45, 1.05]);
+  for (const side of [-1, 1]) put(head, ball(0.025, 6, 4), matte(0x050505), [side * 0.1, 0.1, 0.74]);
+  // Upper teeth along the whole long gape, two fangs at the front.
+  for (let k = 0; k < 7; k++) {
+    const a = (k / 6) * Math.PI;
+    const fang = k === 2 || k === 4;
+    put(head, cone(fang ? 0.03 : 0.018, fang ? 0.13 : 0.06, 5), claw, [Math.cos(a) * 0.3, fang ? -0.18 : -0.15, 0.42 + Math.sin(a) * 0.3], [Math.PI, 0, 0]);
+  }
+  for (const side of [-1, 1]) for (let k = 0; k < 3; k++) put(head, cone(0.018, 0.06, 4), claw, [side * 0.33, -0.15, 0.36 - k * 0.1], [Math.PI, 0, 0]);
+  // Fire in the throat, showing through the open mouth, and an ember breath at the front.
+  put(head, ball(0.25, 16, 10), ember, [0, -0.17, 0.38], [0, 0, 0], [1.05, 0.22, 1.05]);
+  glowSprite(head, [0, -0.17, 0.72], 0.5, 0xff6a1a);
+  // The lower jaw, hinged far back and dropped open, its own teeth pointing up.
+  const jaw = new THREE.Group();
+  jaw.position.set(0, -0.12, 0.05);
+  jaw.rotation.x = 0.22;
+  put(jaw, ball(0.28, 18, 12), hide, [0, -0.05, 0.32], [0, 0, 0], [1.08, 0.32, 1.12]);
+  for (let k = 0; k < 7; k++) {
+    const a = (k / 6) * Math.PI;
+    put(jaw, cone(0.018, 0.06, 4), claw, [Math.cos(a) * 0.27, 0.0, 0.33 + Math.sin(a) * 0.28]);
+  }
+  head.add(jaw);
+  // The signature eyes: big, bulging up out of the skull, fiery, with a black vertical slit and a halo seen from behind.
+  for (const side of [-1, 1]) {
+    const eye = new THREE.Group();
+    eye.position.set(side * 0.22, 0.14, 0.3);
+    eye.rotation.y = side * 0.45;
+    put(eye, ball(0.135, 16, 12), char, [0, 0, -0.03], [0, 0, 0], [1.1, 1, 1]);
+    put(eye, ball(0.12, 18, 14), glow(0xff3a0a), [0, 0, 0.01]);
+    put(eye, ball(0.085, 16, 12), glow(0xffa020), [0, 0, 0.06], [0, 0, 0], [1, 1, 0.6]);
+    put(eye, ball(0.045, 12, 8), glow(0xffe060), [0, 0, 0.1], [0, 0, 0], [1, 1.3, 0.4]);
+    put(eye, box(0.026, 0.17, 0.02), matte(0x050505), [0, 0, 0.125]);
+    // A heavy brow ridge low over each, angled down to the middle in a scowl.
+    put(eye, ball(0.13, 10, 8), char, [-side * 0.01, 0.11, -0.01], [-0.35, 0, side * 0.4], [1.35, 0.42, 1.15]);
+    glowSprite(eye, [0, 0, 0.12], 0.45, 0xff5a10);
+    head.add(eye);
+  }
+  // The crest carries on from the neck over the back of the skull.
+  for (let k = 0; k < 4; k++) spine(head, [0, 0.21 - k * 0.012, 0.22 - k * 0.12], 0.07 + k * 0.008);
+  gila.add(head);
+
+  const tipAt = tail[tail.length - 1];
   return {
     body,
     wheels: [],
-    exhausts: [-0.2, 0.2].map((x) => new THREE.Vector3(x, 0.95, -1.25)),
+    // Fire out of the tail tip under boost.
+    exhausts: [new THREE.Vector3(tipAt[0], tipAt[1] + 0.95, tipAt[2] - 0.15)],
     rearTrack: 0.55,
     rearZ: -0.9,
-    spinners: [tailRotor],
-    shadow: [2.2, 3.6],
-    rotors: [rotor],
+    spinners: [],
+    shadow: [3.0, 3.4],
     hover: { bob: 0.12, pads },
-    head: face,
+    head,
+    flappers,
   };
 }
 

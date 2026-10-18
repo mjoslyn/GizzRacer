@@ -21,7 +21,7 @@ export interface RacerDef {
 
 export const RACERS: readonly RacerDef[] = [
   { id: 'lizard-warlock', name: 'Lizard Wizard', stats: { speed: 3, accel: 3, weight: 3, handling: 3, drift: 4 }, color: 0x3fa34d, accent: 0x7a3fbf, bio: 'Robed reptile mage from the castle on the misty mountain, hot rod and all' },
-  { id: 'cyborg-gourmand', name: 'Han-Tyumi', stats: { speed: 4, accel: 2, weight: 4, handling: 2, drift: 3 }, color: 0x9aa4b1, accent: 0xd1342f, bio: 'The confused cyborg, last of the naturally born, cooking up a Soy-Protein Munt Machine' },
+  { id: 'cyborg-gourmand', name: 'Han-Tyumi', stats: { speed: 4, accel: 2, weight: 4, handling: 2, drift: 3 }, color: 0x9aa4b1, accent: 0xd1342f, bio: 'The confused cyborg, last of the naturally born, gone fishing for fishies in a leaky dinghy on wheels' },
   { id: 'gila-rider', name: 'Gila Rider', stats: { speed: 3, accel: 5, weight: 2, handling: 3, drift: 3 }, color: 0xe0702a, accent: 0x222222, bio: 'Keeper of the Gila Monster, flying high before the candle falls' },
   { id: 'swamp-witch', name: 'Beowulf\'s Witch', stats: { speed: 3, accel: 2, weight: 3, handling: 5, drift: 4 }, color: 0x2f6f5e, accent: 0xb7d14a, bio: 'Survivor of the Witchcraft ritual, with Beowulf the black cat on the dash: the one who knocked the candle over' },
   { id: 'microtonal-monk', name: 'Microtonal Monk', stats: { speed: 3, accel: 3, weight: 2, handling: 4, drift: 3 }, color: 0xe3a72f, accent: 0x7b2230, bio: 'One of the seven robed, floating on the lotus a quarter tone above the road' },

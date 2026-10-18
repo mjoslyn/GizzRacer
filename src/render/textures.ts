@@ -392,6 +392,39 @@ export function beadTexture(): THREE.CanvasTexture {
   return finish(c);
 }
 
+/**
+ * A dragon-gila's hide, after PetroDragonic Apocalypse: raised charcoal beads on top (v = 1 at a sphere's top),
+ * going to orange and then golden-yellow beads on the throat and belly underneath.
+ */
+export function dragonHideTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = valueNoise(S, 8, 131);
+  const bead = 8;
+  ctx.fillStyle = '#0c0b0c';
+  ctx.fillRect(0, 0, S, S);
+  for (let y = bead / 2; y < S; y += bead) {
+    // Offset alternate rows so the beads pack like scales.
+    for (let x = bead / 2 + ((y / bead) % 2 ? bead / 2 : 0); x < S + bead; x += bead) {
+      const xi = Math.floor(x) % S;
+      // 0 on the back, 1 at the belly, with a ragged edge where the colours meet.
+      const warm = Math.min(1, Math.max(0, (y / S - 0.5) * 4 + (n[Math.floor(y) * S + xi] - 0.5) * 1.6));
+      const [hi, lo] =
+        warm < 0.35 ? (n[Math.floor(y) * S + xi] > 0.7 ? ['#6a6266', '#1c1a1c'] : ['#4a4548', '#141214'])
+        : warm < 0.8 ? ['#ffa040', '#a8380e']
+        : ['#ffe27a', '#d88a1c'];
+      const g = ctx.createRadialGradient(x - 1.5, y - 1.5, 0.5, x, y, bead * 0.55);
+      g.addColorStop(0, hi);
+      g.addColorStop(1, lo);
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(x, y, bead * 0.47, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  return finish(c);
+}
+
 /** Weathered boat planks. */
 export function woodTexture(): THREE.CanvasTexture {
   const S = 256;
