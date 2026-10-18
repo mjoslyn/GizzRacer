@@ -250,5 +250,61 @@
     "bars": 24,
     "loopSamples": 1716324,
     "sampleRate": 44100
+  },
+  "infinite-loop-speedway-remix": {
+    "title": "robot stop (remix)",
+    "bpm": 172,
+    "bars": 22,
+    "loopSamples": 1353767,
+    "sampleRate": 44100
+  },
+  "infinite-loop-speedway-remix-final-lap": {
+    "title": "robot stop (remix, final lap)",
+    "bpm": 180,
+    "bars": 22,
+    "loopSamples": 1293600,
+    "sampleRate": 44100
+  },
+  "rattlesnake-run-remix": {
+    "title": "rattlesnake (remix)",
+    "bpm": 148,
+    "bars": 20,
+    "loopSamples": 1430270,
+    "sampleRate": 44100
+  },
+  "rattlesnake-run-remix-final-lap": {
+    "title": "rattlesnake (remix, final lap)",
+    "bpm": 156,
+    "bars": 20,
+    "loopSamples": 1356923,
+    "sampleRate": 44100
+  },
+  "volcano-fortress-remix": {
+    "title": "magma (remix)",
+    "bpm": 132,
+    "bars": 20,
+    "loopSamples": 1603636,
+    "sampleRate": 44100
+  },
+  "volcano-fortress-remix-final-lap": {
+    "title": "magma (remix, final lap)",
+    "bpm": 140,
+    "bars": 20,
+    "loopSamples": 1512000,
+    "sampleRate": 44100
+  },
+  "polygondwanaland-jungle-remix": {
+    "title": "crumbling castle (remix)",
+    "bpm": 150,
+    "bars": 24,
+    "loopSamples": 1481760,
+    "sampleRate": 44100
+  },
+  "polygondwanaland-jungle-remix-final-lap": {
+    "title": "crumbling castle (remix, final lap)",
+    "bpm": 158,
+    "bars": 24,
+    "loopSamples": 1406734,
+    "sampleRate": 44100
   }
 }
