@@ -7,6 +7,11 @@ const FINISH = 45;
 /** Downdraft: the road blows out round a flooded field in three arcs of this radius and turn. */
 const LEVEE_R = 34;
 const LEVEE_TURN = 70;
+/** The top of the trestle up round the silos. */
+const SILO_TOP = 16;
+/** The flooded creek: the boards just over the water at the bottom of its gully, and the washout below it. */
+const CREEK = -1.5;
+const WASHOUT_DEPTH = 6;
 
 /**
  * Supercell (hard): prairie roads under a storm the size of a county, in
@@ -15,6 +20,9 @@ const LEVEE_TURN = 70;
  * ring of warning closes, hail the size of boulders falls on the farm, a
  * creek has burst over the road, the bridge across it has no rails, and a
  * narrow levee (Converge) cuts straight across the flooded Downdraft.
+ * The county road rolls over the prairie, a wooden trestle climbs 16 m up
+ * round the silos and plunges back down, and the creek runs in a gully
+ * that the Washout follows down into the ground.
  */
 export function buildSupercell(): TrackDef {
   const b = new TrackBuilder(START, 'County Road', { halfWidth: 11, surface: 'wet' });
@@ -26,9 +34,10 @@ export function buildSupercell(): TrackDef {
   b.mark('alley');
   b.straight(40).mark('kick1').kicker().straight(30).mark('kick2').kicker().straight(57.5);
 
-  b.section('Silo Hairpins', { halfWidth: 9, wallHeight: 1.2, surface: 'rock' });
+  // A trestle climbing round the silos, then the plunge.
+  b.section('Silo Hairpins', { halfWidth: 9, wallHeight: 1.2, surface: 'boards', bridge: true });
   b.mark('silo');
-  b.arc(26, -180).straight(40).arc(26, 180).straight(80).arc(42, 90);
+  b.arc(26, -180).straight(40).arc(26, 180).mark('siloTop').straight(80).arc(42, 90);
 
   b.section('Hailstone Farm', { halfWidth: 9, surface: 'wet' });
   b.mark('farm');
@@ -36,13 +45,13 @@ export function buildSupercell(): TrackDef {
 
   b.section('Flooded Creek', { halfWidth: 8, surface: 'boards' });
   b.mark('creek');
-  b.elevate(0).straight(10).elevate(1.5);
+  b.straight(10).elevate(CREEK);
   b.bridge(60, 30, 'water');
-  b.elevate(1.5).straight(10).elevate(0);
+  b.elevate(CREEK).straight(10);
 
   b.section('Washout', { halfWidth: 9, wallHeight: 1.2, surface: 'rock' });
   b.mark('washout');
-  b.arc(36, 90).straight(10).rise(18, 3);
+  b.arc(36, 90).straight(10).mark('ramp').elevate(0).rise(18, 3);
   b.gap(13, 30, 'water');
   b.elevate(0).straight(20);
 
@@ -54,7 +63,21 @@ export function buildSupercell(): TrackDef {
   b.mark('leveeTo');
   b.turnTo(offsetPose(START, -FINISH * K), 38);
   b.section('Finish Straight', { halfWidth: 11, surface: 'wet' });
+  b.mark('finish');
   b.straight(FINISH);
+
+  // Heights, over the layout: prairie swells, the trestle, a hill on the farm, the creek's gully.
+  const m = (name: string, d = 0) => b.marks[name].s + d * K;
+  b.profile(30, m('alley', -20), (u) => 3.5 * Math.sin(2 * Math.PI * u) ** 2);
+  ease(b, m('silo'), 0, m('siloTop'), SILO_TOP);
+  plunge(b, m('siloTop'), SILO_TOP, m('siloTop', 70), 0);
+  ease(b, m('farm', 10), 0, m('farm', 35), 5);
+  plunge(b, m('farm', 35), 5, m('farm', 60), 0);
+  b.profile(m('farm', 70), m('farm', 160), (u) => 2.5 * Math.sin(Math.PI * u) ** 2);
+  ease(b, m('farm', 165), 0, m('creek', 10), CREEK);
+  ease(b, m('washout', 10), CREEK, m('washout', 30), -WASHOUT_DEPTH);
+  ease(b, m('washout', 30), -WASHOUT_DEPTH, m('ramp'), 0);
+  b.profile(m('leveeTo', 40), m('finish', -10), (u) => 4 * Math.sin(Math.PI * u) ** 2);
 
   const main = b.finish(true);
   const levee = buildLevee(b.marks.leveeFrom, b.marks.leveeTo);
@@ -93,6 +116,16 @@ export function buildSupercell(): TrackDef {
     theme: 'storm',
     music: { lap: 'supercell', finalLap: 'supercell-final-lap' },
   };
+}
+
+/** Eases the road's height from y0 at arc length s0 to y1 at s1. */
+function ease(b: TrackBuilder, s0: number, y0: number, s1: number, y1: number): void {
+  b.profile(s0, s1, (u) => y0 + (y1 - y0) * u * u * (3 - 2 * u));
+}
+
+/** Drops the road from y0 at s0 to y1 at s1, falling away at once over the top (a crest to fly off) and easing out at the bottom. */
+function plunge(b: TrackBuilder, s0: number, y0: number, s1: number, y1: number): void {
+  b.profile(s0, s1, (u) => y0 + (y1 - y0) * Math.sin((Math.PI * u) / 2));
 }
 
 /**

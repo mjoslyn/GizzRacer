@@ -4,6 +4,11 @@ import type { BranchDef, TrackDef } from './track';
 const K = 1.25;
 const START: Pose = { x: -60 * K, z: 170 * K, h: Math.PI / 2 };
 const FINISH = 55;
+/** Heights of the coaster: the top of the first lift, the kicker straight, Balrog Bend and the top of the spiral. */
+const LIFT = 20;
+const KICK = 6;
+const BALROG = 14;
+const TOP = 26;
 
 /**
  * Murder of the Universe (hard): a road of starlight over nothing. Leave
@@ -13,7 +18,10 @@ const FINISH = 55;
  * then Han-Tyumi and the end of everything. Black holes drift across the
  * road dragging karts round and in, lightning strikes on the straights,
  * the cyborg's great eye watches the line, and Digital Black, a thread of
- * road with no rails, cuts out over the void past the spiral.
+ * road with no rails, cuts out over the void past the spiral. It rides
+ * like a coaster: a lift up to the Altered Beast, a plunge onto the
+ * Lord of Lightning, the leap from Balrog Bend, a helix up the spiral and
+ * two drops down the Vomit Coffin.
  */
 export function buildMurderOfTheUniverse(): TrackDef {
   const b = new TrackBuilder(START, 'Event Horizon', { halfWidth: 10.5, surface: 'cosmic' });
@@ -25,7 +33,8 @@ export function buildMurderOfTheUniverse(): TrackDef {
   // Two kickers down the straight, under the lightning.
   b.section('Lord of Lightning', { halfWidth: 9, surface: 'neon' });
   b.mark('lightning');
-  b.straight(48).mark('kick1').kicker().straight(24).mark('kick2').kicker().straight(36.8).arc(55, -35).arc(55, 35);
+  b.straight(48).elevate(KICK).mark('kick1').kicker().straight(24).mark('kick2').kicker().mark('kicked');
+  b.straight(36.8).arc(55, -35).arc(55, 35);
 
   b.section('Balrog Bend', { halfWidth: 9.5, wallHeight: 1.2, surface: 'cosmic' });
   b.mark('balrog');
@@ -33,9 +42,9 @@ export function buildMurderOfTheUniverse(): TrackDef {
 
   b.section('Floating Fire Leap', { halfWidth: 9, surface: 'cosmic' });
   b.mark('leap');
-  b.straight(15).elevate(0).rise(20, 3);
+  b.straight(15).elevate(BALROG).rise(20, BALROG + 3);
   b.gap(18, 30);
-  b.elevate(0).straight(6);
+  b.elevate(BALROG).straight(6);
   b.mark('blackFrom');
   // The spiral's first bend is open until Digital Black is well clear of it.
   b.straight(19).arc(24, 35);
@@ -55,8 +64,20 @@ export function buildMurderOfTheUniverse(): TrackDef {
   b.section('Finish Straight', { halfWidth: 10.5, surface: 'cosmic' });
   b.straight(FINISH);
 
+  // Heights, over the layout.
+  const m = (name: string, d = 0) => b.marks[name].s + d * K;
+  ease(b, 40, 0, 210, LIFT);
+  b.profile(210, m('lightning'), () => LIFT, 20);
+  plunge(b, m('lightning'), LIFT, m('kick1', -5), KICK);
+  ease(b, m('kicked', 4), KICK, m('balrog'), BALROG);
+  ease(b, m('spiral', 4), BALROG, m('han', -8), TOP);
+  b.profile(m('han', -8), m('oblivion', 36), () => TOP, 20);
+  plunge(b, m('oblivion', 36), TOP, m('oblivion', 90), 10);
+  ease(b, m('oblivion', 90), 10, m('oblivion', 110), 14);
+  plunge(b, m('oblivion', 110), 14, m('oblivion', 155), 0);
+
   const main = b.finish(true);
-  const black = buildDigitalBlack(b.marks.blackFrom, b.marks.blackTo);
+  const black = buildDigitalBlack(b.marks.blackFrom, b.marks.blackTo, BALROG, TOP);
   const at = (mark: string, d: number) => b.marks[mark].s + d * K;
   return {
     id: 'murder-of-the-universe',
@@ -94,16 +115,30 @@ export function buildMurderOfTheUniverse(): TrackDef {
   };
 }
 
+/** Eases the road's height from y0 at arc length s0 to y1 at s1. */
+function ease(b: TrackBuilder, s0: number, y0: number, s1: number, y1: number): void {
+  b.profile(s0, s1, (u) => y0 + (y1 - y0) * u * u * (3 - 2 * u));
+}
+
+/** Drops the road from y0 at s0 to y1 at s1, falling away at once over the top (a crest to fly off) and easing out at the bottom. */
+function plunge(b: TrackBuilder, s0: number, y0: number, s1: number, y1: number): void {
+  b.profile(s0, s1, (u) => y0 + (y1 - y0) * Math.sin((Math.PI * u) / 2));
+}
+
 /**
  * Digital Black: a thread of road with no rails that swings out over the
  * void, round the outside of the spiral, and drops onto the Han-Tyumi
  * Straight. Narrow enough that a nudge sends you off it.
  */
-function buildDigitalBlack(from: { s: number; pose: Pose }, to: { s: number; pose: Pose }) {
+function buildDigitalBlack(from: { s: number; pose: Pose }, to: { s: number; pose: Pose }, y0: number, y1: number) {
   const b = new TrackBuilder(from.pose, 'Digital Black', { halfWidth: 4.5, surface: 'neon' });
   // Out over the void, then in from the outside of the straight, clear of the spiral.
   const approach = offsetPose(to.pose, -42, 22);
   b.straight(3).arc(22, -50).turnTo(approach, 28).hermiteTo(offsetPose(to.pose, -6)).straight(6);
+  // Climbing from the leap's height to the straight's, level where it runs beside the main road.
+  b.elevate(y1);
+  b.profile(0, 45, () => y0, 45);
+  ease(b, 45, y0, b.s - 45, y1);
   const branch: BranchDef = { name: 'Digital Black', mainFrom: from.s, mainTo: to.s, ...b.finish(false) };
   return { branch, boxes: branch.length / 2 };
 }
