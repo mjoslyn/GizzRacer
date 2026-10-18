@@ -5,15 +5,17 @@ import type { BranchDef, TrackDef } from './track';
 const K = 1.5;
 const START: Pose = { x: -18 * K, z: 107 * K, h: Math.PI / 2 };
 const FINISH = 60;
-const DECK_Y = 8;
+/** Top of the skyway, between the towers. */
+const SKY_Y = 20;
 /** The Robot Stop bulge: three arcs out and back. */
 const BUMP_R = 18;
 const BUMP_DEG = 80;
 
 /**
  * Cyboogie City (circuit 2, medium): Han-Tyumi's neon downtown at night.
- * A walled boulevard, a tight alley chicane, an elevated freeway, and
- * laser gates that fire on the beat.
+ * A walled boulevard, a tight alley chicane, an elevated freeway that
+ * climbs into a coaster skyway between the towers and plunges back to the
+ * street, and laser gates that fire on the beat in a sunken underpass.
  */
 export function buildCyboogieCity(): TrackDef {
   const b = new TrackBuilder(START, 'Neon Boulevard', { halfWidth: 11, wallHeight: 1.2, surface: 'neon' });
@@ -38,13 +40,20 @@ export function buildCyboogieCity(): TrackDef {
   b.section('Alley Exit', { halfWidth: 9, wallHeight: 6, surface: 'neon' });
   b.arc(28, 90);
 
+  // Up a ramp onto the skyway, round its S high between the towers, and a plunge back to the street.
   b.section('Freeway Ramp', { halfWidth: 10, wallHeight: 1.2 });
   b.mark('freeway');
-  b.straight(10).elevate(0).straight(45).elevate(DECK_Y);
+  b.straight(10);
+  b.section('Freeway Ramp', { halfWidth: 10, wallHeight: 1.2, bridge: true });
+  b.straight(45);
   b.section('Level 5 Freeway', { halfWidth: 10, wallHeight: 1.2, bridge: true });
-  b.arc(60, 40).arc(60, -40).elevate(DECK_Y);
+  b.mark('sky');
+  b.arc(60, 40).arc(60, -40);
+  b.section('Freeway Exit', { halfWidth: 10, wallHeight: 1.2, bridge: true });
+  b.mark('plunge');
+  b.straight(45);
   b.section('Freeway Exit', { halfWidth: 10, wallHeight: 1.2 });
-  b.straight(45).elevate(0).straight(10);
+  b.straight(10);
   b.arc(30, 90);
 
   b.section('Laser Gates', { halfWidth: 10, wallHeight: 3, surface: 'neon' });
@@ -57,6 +66,7 @@ export function buildCyboogieCity(): TrackDef {
   b.section('Finish Straight', { halfWidth: 11, wallHeight: 1.2, surface: 'neon' });
   // A pair of trick kickers, clear of the starting grid.
   b.straight(3).kicker().straight(16).kicker().straight(FINISH - 19 - 14 / K);
+  shapeCity(b);
 
   const main = b.finish(true);
   const munt = buildMuntMachine(b.marks.robotStop, b.marks.robotStopEnd);
@@ -108,4 +118,37 @@ function buildMuntMachine(from: { s: number; pose: Pose }, to: { s: number; pose
   b.straight(chord - b.s);
   const branch: BranchDef = { name: 'Soy-Protein Munt Machine', mainFrom: from.s, mainTo: to.s, ...b.finish(false) };
   return { branch, pits: b.pits, boxes: 26 };
+}
+
+/**
+ * Heights, laid over the layout: the skyway's lift, its swell between the
+ * towers and the plunge off the end, the underpass through the laser
+ * gates, and a rise over the sweep. Robot Stop, the alley and the finish
+ * stay at street level.
+ */
+function shapeCity(b: TrackBuilder): void {
+  const m = (k: string) => b.marks[k].s;
+  const sky = m('sky');
+  ease(b, m('freeway') + 12, sky + 8, 0, SKY_Y - 2);
+  ease(b, sky + 8, sky + 45, SKY_Y - 2, SKY_Y - 6);
+  ease(b, sky + 45, sky + 95, SKY_Y - 6, SKY_Y);
+  // Over the top at the end of the skyway: a drop too steep to touch at speed, to the street.
+  const crest = m('plunge') + 6;
+  line(b, crest, crest + 24, SKY_Y, 6);
+  ease(b, crest + 24, crest + 44, 6, 0);
+  // The laser gates fire across a sunken underpass.
+  ease(b, m('lasers') + 2, m('lasers') + 40, 0, -5);
+  ease(b, m('lasers') + 40, m('sweep') - 4, -5, 0);
+  ease(b, m('sweep') + 6, m('sweep') + 50, 0, 3);
+  ease(b, m('sweep') + 50, m('sweep') + 96, 3, 0);
+}
+
+/** Eases the road from height y0 to y1 between arc lengths s0 and s1, level at both ends. */
+function ease(b: TrackBuilder, s0: number, s1: number, y0: number, y1: number): void {
+  b.profile(s0, s1, (u) => y0 + ((y1 - y0) * (1 - Math.cos(Math.PI * u))) / 2);
+}
+
+/** A straight slope from y0 to y1: a plunge, with a crest at its top. */
+function line(b: TrackBuilder, s0: number, s1: number, y0: number, y1: number): void {
+  b.profile(s0, s1, (u) => y0 + (y1 - y0) * u);
 }
