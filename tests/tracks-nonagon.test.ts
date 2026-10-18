@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { NEUTRAL_INPUT } from '../src/core/input';
 import { PHYSICS_DT } from '../src/core/loop';
 import { clamp, wrapAngle } from '../src/core/math';
+import { Race } from '../src/core/race';
 import { createKartState, stepKart, type KartState } from '../src/physics/kart';
 import { RACERS, kartParams } from '../src/physics/racers';
 import { buildInfiniteLoopSpeedway } from '../src/tracks/infiniteLoopSpeedway';
@@ -11,12 +12,16 @@ import { nearestOnSpline, pointAt } from '../src/tracks/spline';
 import { Track, type TrackDef } from '../src/tracks/track';
 import { buildVolcanoFortress } from '../src/tracks/volcanoFortress';
 
-/** The Nonagon Cup's shortcuts: each track's branch, and how much of each end may run alongside the main road. */
-const CUP: { name: string; build: () => TrackDef; near: number }[] = [
-  { name: 'Infinite Loop Speedway', build: buildInfiniteLoopSpeedway, near: 60 },
-  { name: 'Rattlesnake Run', build: buildRattlesnakeRun, near: 55 },
-  { name: 'Volcano Fortress', build: buildVolcanoFortress, near: 50 },
-  { name: 'Polygondwanaland Jungle', build: buildPolygondwanalandJungle, near: 55 },
+/**
+ * The Nonagon Cup's shortcuts: each track's branch, and how much of each end
+ * may run alongside the main road. `high` is how far the road climbs (on a
+ * deck), `low` how deep its cut sinks.
+ */
+const CUP: { name: string; build: () => TrackDef; near: number; high: number; low: number }[] = [
+  { name: 'Infinite Loop Speedway', build: buildInfiniteLoopSpeedway, near: 60, high: 16, low: -3 },
+  { name: 'Rattlesnake Run', build: buildRattlesnakeRun, near: 55, high: 12, low: -7 },
+  { name: 'Volcano Fortress', build: buildVolcanoFortress, near: 50, high: 18, low: -5 },
+  { name: 'Polygondwanaland Jungle', build: buildPolygondwanalandJungle, near: 55, high: 12, low: -5 },
 ];
 
 const lizard = RACERS[0];
@@ -30,6 +35,13 @@ function kickerLips(elevation: [number, number][]): number[] {
     if (s1 - s0 < 1e-6 && y0 - y1 > 0.5) lips.push(s1);
   }
   return lips;
+}
+
+/** Below the ground and not on a road there (a cut holds you up): fallen. */
+function fallen(track: Track, kart: KartState): boolean {
+  if (kart.y > -2) return false;
+  const loc = track.locate(kart.x, kart.z, kart.y, kart.trackHint);
+  return !(loc.onRoad && kart.y > loc.height - 1.5);
 }
 
 /** Steers toward a point 14 m further along a ribbon. */
@@ -67,7 +79,7 @@ function splitTime(track: Track, branch: number, viaBranch: boolean, boost = 0):
       kart.boostTime = Math.max(kart.boostTime, boost);
     }
     stepKart(kart, autopilot(track, started && viaBranch ? branch : -1, kart), p, track, PHYSICS_DT);
-    if (kart.y < -2) return Infinity;
+    if (fallen(track, kart)) return Infinity;
     if (started && past(kart, to) >= 0 && Math.hypot(kart.x - to.x, kart.z - to.z) < 20) return t - t0;
   }
   return Infinity;
@@ -83,12 +95,12 @@ function jump(track: Track, s: number, ribbon: number, speed: number, boost: num
   kart.boostTime = boost;
   for (let t = 0; t < 4; t += PHYSICS_DT) {
     stepKart(kart, { ...NEUTRAL_INPUT, throttle: 1 }, p, track, PHYSICS_DT);
-    if (kart.y < -2) return 'fell';
+    if (fallen(track, kart)) return 'fell';
   }
   return 'cleared';
 }
 
-describe.each(CUP)('$name', ({ build, near }) => {
+describe.each(CUP)('$name', ({ build, near, high, low }) => {
   const def = build();
   const track = new Track(def);
   const branch = def.branches[0];
@@ -134,7 +146,50 @@ describe.each(CUP)('$name', ({ build, near }) => {
     const main = splitTime(track, 0, false);
     const cut = splitTime(track, 0, true);
     console.log(`${def.name}: main ${main.toFixed(2)} s, ${branch.name} ${cut.toFixed(2)} s, saves ${(main - cut).toFixed(2)} s`);
+    expect(main).toBeLessThan(Infinity);
     expect(cut).toBeLessThan(main);
+  });
+
+  it('climbs onto a high deck and sinks into a cut', () => {
+    const sp = track.spline;
+    let max = -Infinity;
+    let min = Infinity;
+    let deck = -Infinity;
+    for (let i = 0; i < sp.count; i++) {
+      const y = track.main.heightAt(sp.dist[i]);
+      max = Math.max(max, y);
+      min = Math.min(min, y);
+      if (def.main.sections[track.main.sectionIndex[i]].bridge) deck = Math.max(deck, y);
+    }
+    console.log(`${def.name}: road from ${min.toFixed(1)} m to ${max.toFixed(1)} m`);
+    expect(max).toBeGreaterThan(high);
+    expect(deck).toBeGreaterThan(high);
+    expect(min).toBeLessThan(low);
+    expect(track.main.cut.some((c) => c > 0)).toBe(true);
+  });
+
+  it('a 150cc autopilot laps it without a respawn, and flies off a crest (not a kicker or a jump) on the way', () => {
+    const race = new Race(track);
+    const kart = race.addKart(lizard, '150cc', null);
+    race.time = 0;
+    let respawns = 0;
+    let takeoff = -1;
+    let crests = 0;
+    const gaps = def.main.gaps;
+    const ramp = (s: number) => lips.some((l) => s > l - 10 && s < l + 4) || gaps.some(([a, b]) => s > a - 4 && s < b + 4);
+    for (let t = 0; t < 200 && kart.laps.lap < 1; t += PHYSICS_DT) {
+      race.step(PHYSICS_DT, [autopilot(track, -1, kart.state)]);
+      if (kart.respawned) respawns++;
+      const s = track.main.toBuilder(kart.progressS);
+      if (!kart.state.grounded && takeoff < 0) takeoff = ramp(s) ? Infinity : t;
+      if (kart.state.grounded && takeoff >= 0) {
+        if (t - takeoff > 0.25) crests++;
+        takeoff = -1;
+      }
+    }
+    expect(kart.laps.lap).toBe(1);
+    expect(respawns).toBe(0);
+    expect(crests).toBeGreaterThan(0);
   });
 
   it('puts double item boxes on the shortcut', () => {
