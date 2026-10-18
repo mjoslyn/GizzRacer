@@ -15,7 +15,6 @@ const DUST_LIFE = 0.75;
 const HIT_TIME = 0.35;
 const TRICK_TIME = 0.55;
 /** Below this height a kart has gone over the edge: it dissolves until the gate brings it back. */
-const VANISH_Y = -1.2;
 const STAR_COLORS = [0xff5a7a, 0xffa64a, 0xffe45a, 0x6aef7a, 0x4ad0ff, 0xc86aff];
 const TAU = Math.PI * 2;
 const SKID_MARKS = 160;
@@ -283,14 +282,14 @@ export class KartView {
     this.vanished = false;
   }
 
-  /** `s` is an interpolated render snapshot; `frameDt` is real time since the last frame. */
-  update(s: KartState, topSpeed: number, frameDt: number, time: number): void {
+  /** `s` is an interpolated render snapshot; `frameDt` is real time since the last frame; `fell` is the race's call that it's gone over an edge. */
+  update(s: KartState, topSpeed: number, frameDt: number, time: number, fell = false): void {
     this.root.position.set(s.x, s.y, s.z);
     this.updateSkid(s, topSpeed, frameDt, time);
     this.root.rotation.y = s.heading - s.slip + s.spinAngle + this.skidYaw;
     // Horology shrinks you a little while it lasts.
     this.body.scale.setScalar(s.slowTime > 0 ? 0.8 : 1);
-    this.updatePresence(s, frameDt, time);
+    this.updatePresence(fell, frameDt, time);
     this.animateCannon(s, frameDt, time);
 
     const speedRatio = clamp(Math.abs(s.speed) / topSpeed, 0, 1.5);
@@ -390,11 +389,10 @@ export class KartView {
   }
 
   /** Over the edge: shrink away in a puff of stars. Through the gate: grow back, with a little overshoot. */
-  private updatePresence(s: KartState, dt: number, time: number): void {
+  private updatePresence(fell: boolean, dt: number, time: number): void {
     this.gate.update(dt, time);
-    // Below ground is a fall only with nothing under you: a road sunk in a cut or under water holds you.
-    const falling = s.y < VANISH_Y && (this.vanished || (!s.grounded && s.y - s.groundY > 2.5));
-    if (falling && !this.gate.active) {
+    // Only the race knows a fall from a jump down into a cut or a dive under water, which hold you.
+    if (fell && !this.gate.active) {
       if (!this.vanished) {
         this.vanished = true;
         for (let i = 0; i < 14; i++) this.emitStar(0.5);

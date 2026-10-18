@@ -934,10 +934,10 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
   if (podium) {
     podium.update(dt, elapsed, camera);
   } else if (intro > 0) {
-    race.karts.forEach((k, i) => views[i].update(snaps[i], k.params.topSpeed, dt, elapsed));
+    race.karts.forEach((k, i) => views[i].update(snaps[i], k.params.topSpeed, dt, elapsed, k.fallTime > 0));
     introCamera();
   } else {
-    race.karts.forEach((k, i) => views[i].update(snaps[i], k.params.topSpeed, dt, elapsed));
+    race.karts.forEach((k, i) => views[i].update(snaps[i], k.params.topSpeed, dt, elapsed, k.fallTime > 0));
     chase.update(s, f.params.topSpeed, player ? lastInput.lookBack : false, dt);
   }
   document.body.classList.toggle('intro', intro > 0);
@@ -1336,6 +1336,10 @@ Object.assign(window, {
     /** Runs the simulation ahead by `seconds` without rendering (testing). */
     simulate(seconds: number) {
       for (let t = 0; t < seconds; t += 1 / 60) step(1 / 60);
+    },
+    /** Picks the player's racer by id for the next race (testing). */
+    pick(id: string) {
+      choice.racer = RACERS.find((r) => r.id === id) ?? choice.racer;
     },
     race_: (trackIndex: number) => {
       choice.track = trackIndex;

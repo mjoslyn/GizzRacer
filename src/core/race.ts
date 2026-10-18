@@ -253,6 +253,8 @@ export class Race {
         if (kart.respawned) copyKartState(kart.state, kart.prev);
         use[i] = kart.pendingUse && this.started;
         kart.pendingUse = false;
+        // Not ours to respawn, but shown falling all the same.
+        kart.fallTime = this.overEdge(kart) ? kart.fallTime + dt : 0;
         this.updateLaps(kart);
         return { ...NO_EVENTS };
       }
@@ -415,11 +417,17 @@ export class Race {
     }
   }
 
-  private updateFall(kart: RaceKart, dt: number): void {
-    // Below ground is only a fall off the road: a road sunk in a cut (or under water) holds you up.
-    // Above it, dropping well below the last road you were on (off a coaster deck) is a fall too.
+  /**
+   * Gone over an edge. Below ground is only a fall off the road: a road sunk in a cut (or under water) holds you up.
+   * Above it, dropping well below the last road you were on (off a coaster deck) is a fall too.
+   */
+  private overEdge(kart: RaceKart): boolean {
     const offHigh = !kart.onRoad && (kart.state.y < kart.roadY - HIGH_FALL || this.track.underDeck(kart.state));
-    if ((kart.state.y > FALL_DEPTH && !offHigh) || (kart.state.y <= FALL_DEPTH && this.onSunkRoad(kart.state))) {
+    return kart.state.y > FALL_DEPTH ? offHigh : !this.onSunkRoad(kart.state);
+  }
+
+  private updateFall(kart: RaceKart, dt: number): void {
+    if (!this.overEdge(kart)) {
       kart.fallTime = 0;
       return;
     }

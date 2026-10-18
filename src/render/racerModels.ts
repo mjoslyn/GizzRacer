@@ -273,7 +273,7 @@ function lizardWarlock(r: RacerDef): KartModel {
   };
 }
 
-// ---- Cyborg Gourmand: robot chef in a kitchen cart -----------------------------
+// ---- Cyborg Gourmand: the Fishies robot in a kitchen cart------------------------
 
 function cyborgGourmand(r: RacerDef): KartModel {
   const body = new THREE.Group();
@@ -313,35 +313,49 @@ function cyborgGourmand(r: RacerDef): KartModel {
   put(body, cyl(0.04, 0.05, 0.12, 8), matte(0xf4f4f4), [-0.15, 0.95, 0.95]);
   put(body, cyl(0.04, 0.05, 0.12, 8), matte(0x2a2a2a), [0.15, 0.95, 0.95]);
 
+  // The Fishing for Fishies robot: blue overalls stitched in yellow, a bucket hat, a rod over the shoulder.
   const d = new THREE.Group();
   d.position.set(0, 0.9, 0.15);
-  put(d, box(0.62, 0.55, 0.42), steel, [0, 0.32, 0]);
-  put(d, box(0.5, 0.3, 0.05), red, [0, 0.38, 0.22]);
-  // Chest gauges and a neckerchief.
-  for (const side of [-1, 1]) put(d, cyl(0.05, 0.05, 0.02, 12), glow(side < 0 ? 0x7aff7a : 0xffd23a), [side * 0.13, 0.42, 0.25], [Math.PI / 2, 0, 0]);
-  put(d, cone(0.16, 0.2, 4), red, [0, 0.52, 0.22], [Math.PI, Math.PI / 4, 0]);
-  for (const side of [-1, 1]) put(d, ball(0.1, 10, 8), steel, [side * 0.36, 0.52, 0], [0, 0, 0], [1, 0.8, 1]);
+  const denim = matte(0x2d5cb8);
+  const stitch = matte(0xf2c230);
+  put(d, box(0.54, 0.5, 0.36), steel, [0, 0.34, 0]);
+  put(d, box(0.6, 0.34, 0.42), denim, [0, 0.2, 0]);
+  put(d, box(0.4, 0.26, 0.04), denim, [0, 0.46, 0.2]);
+  for (const side of [-1, 1]) {
+    // Straps over the shoulders, a button each, a pocket each side of the bib.
+    put(d, box(0.08, 0.04, 0.4), denim, [side * 0.16, 0.6, 0], [0.15, 0, 0]);
+    put(d, ball(0.03, 8, 6), stitch, [side * 0.15, 0.56, 0.22]);
+    put(d, box(0.13, 0.1, 0.02), denim, [side * 0.12, 0.42, 0.225]);
+    put(d, box(0.13, 0.012, 0.025), stitch, [side * 0.12, 0.47, 0.226]);
+    put(d, box(0.012, 0.26, 0.025), stitch, [side * 0.18, 0.46, 0.226]);
+  }
+  put(d, box(0.36, 0.012, 0.025), stitch, [0, 0.335, 0.226]);
+  for (const side of [-1, 1]) put(d, ball(0.1, 10, 8), steel, [side * 0.34, 0.52, 0], [0, 0, 0], [1, 0.8, 1]);
   const grips = steeringWheel(d, 0.32, 0.65, 0.2);
-  arm(d, [-0.36, 0.5, 0.02], grips[0], 0.06, steel, dark);
-  // The other hand waves a spatula.
-  arm(d, [0.36, 0.5, 0.02], [0.6, 0.85, 0.3], 0.06, steel, dark);
-  rod(d, [0.6, 0.85, 0.3], [0.7, 1.15, 0.38], 0.015, matte(0x6a4a2a));
-  put(d, box(0.14, 0.12, 0.01), chrome(), [0.73, 1.24, 0.4], [-0.3, 0, -0.3]);
+  arm(d, [-0.34, 0.5, 0.02], grips[0], 0.06, steel, dark);
+  // The other hand holds a fishing rod up over the cart, the line trailing back.
+  arm(d, [0.34, 0.5, 0.02], [0.55, 0.75, 0.25], 0.06, steel, dark);
+  rod(d, [0.55, 0.68, 0.3], [0.58, 0.95, 0.2], 0.035, matte(0xc89a5a));
+  rod(d, [0.58, 0.95, 0.2], [0.75, 2.1, -0.6], 0.015, matte(0x2a2a2a));
+  put(d, cyl(0.05, 0.05, 0.05, 10), steel, [0.6, 0.86, 0.26], [0, 0, Math.PI / 2]);
+  rod(d, [0.75, 2.1, -0.6], [0.8, 1.2, -1.3], 0.004, matte(0xeeeeee));
+  put(d, cyl(0.07, 0.11, 0.18), denim, [0, 0.66, 0]);
   const head = new THREE.Group();
-  head.position.set(0, 0.86, 0.02);
-  put(head, box(0.5, 0.42, 0.44), steel, [0, 0, 0]);
-  put(head, box(0.42, 0.1, 0.05), glow(0xff2a2a), [0, 0.05, 0.23]);
-  put(head, box(0.46, 0.14, 0.02), matte(0x111111), [0, 0.05, 0.225]);
-  // Curled chef's moustache over a grille mouth.
-  for (const side of [-1, 1]) put(head, new THREE.TorusGeometry(0.06, 0.022, 6, 12, Math.PI * 1.4), matte(0x1a1a1a), [side * 0.07, -0.07, 0.24], [0, 0, side < 0 ? 0.3 : -0.3 - Math.PI * 0.4]);
-  for (let k = 0; k < 4; k++) put(head, box(0.2, 0.012, 0.02), dark, [0, -0.13 - k * 0.03, 0.23]);
-  for (const side of [-1, 1]) put(head, cyl(0.06, 0.06, 0.06, 12), dark, [side * 0.27, 0, 0], [0, 0, Math.PI / 2]);
-  put(head, cyl(0.02, 0.02, 0.25), steel, [0.18, 0.32, 0]);
-  put(head, ball(0.05, 8, 6), glow(0xff2a2a), [0.18, 0.46, 0]);
-  // Chef's hat.
-  const white = matte(0xfafaf4);
-  put(head, cyl(0.26, 0.24, 0.3, 16), white, [0, 0.36, 0]);
-  for (let k = 0; k < 5; k++) put(head, ball(0.16, 10, 8), white, [Math.cos(k * 1.26) * 0.13, 0.56, Math.sin(k * 1.26) * 0.13]);
+  head.position.set(0, 0.92, 0.02);
+  put(head, box(0.48, 0.4, 0.42), steel, [0, 0, 0]);
+  // Red round eyes in dark sockets, a grille of teeth for a mouth.
+  for (const side of [-1, 1]) {
+    put(head, cyl(0.08, 0.08, 0.03, 14), dark, [side * 0.11, 0.06, 0.215], [Math.PI / 2, 0, 0]);
+    put(head, cyl(0.05, 0.05, 0.03, 14), glow(0xff2a2a), [side * 0.11, 0.06, 0.23], [Math.PI / 2, 0, 0]);
+    put(head, cyl(0.06, 0.06, 0.06, 12), dark, [side * 0.26, 0, 0], [0, 0, Math.PI / 2]);
+  }
+  put(head, box(0.3, 0.1, 0.02), dark, [0, -0.11, 0.215]);
+  for (let k = 0; k < 6; k++) put(head, box(0.04, 0.08, 0.02), matte(0xd8d8d8), [-0.125 + k * 0.05, -0.11, 0.225]);
+  // Bucket hat, brim turned down.
+  const hat = matte(0x2a63c8);
+  put(head, cyl(0.25, 0.27, 0.2, 18), hat, [0, 0.29, 0]);
+  put(head, cyl(0.25, 0.25, 0.02, 18), hat, [0, 0.4, 0]);
+  put(head, cyl(0.29, 0.38, 0.06, 20), hat, [0, 0.2, 0]);
   d.add(head);
   body.add(d);
 
