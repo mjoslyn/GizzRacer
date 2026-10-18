@@ -171,6 +171,8 @@ The Track Generator mode builds a track at race time from a seed and three dials
 - A kart is only falling if it's below ground with no road under it, so sunk and submerged roads hold
 - A road raised on the ground sits on an earth bank (1 m up for every 2 m out) that you can drive back up; a deck on pillars (`bridge` sections) has nothing under it, and dropping off one (or 5 m below the last road under you) is a fall
 - `TrackBuilder.profile` shapes a stretch of road's height after the layout is drawn (hills, dips, coaster drops). Over a crest that drops away faster than gravity, a kart takes off with the climb it had: airtime and a trick window, like a ramp lip
+- Every cup track climbs and dips, with at least one coaster stretch and crest airtime. Nonagon Cup: People-Vultures and a camelback on the speedway, Rattle Canyon sunk, the volcano and jungle climbs and drops. Microtonal Cup: dunes and a high pier on Fishies Lagoon, a glacier climb and plunge plus a sunk ice canyon on Ice V, a pillared freeway skyway over Cyboogie City, and a lift to 26 m with a climbing helix on the Butterfly 3000 Skyway. Apocalypse Cup: Olympus Climb and the Valles Rift leap on Hell on Mars, a pillared trestle through the Silo Hairpins on Supercell, a whole-lap coaster on Murder of the Universe (nothing sunk over the abyss), and Dragon's Gullet dug 8 m down with Skull Bridge 12 m over the oil lake on Petrodragonic Apocalypse, where the dragons hang down the gullet's walls
+- A landing never sends a kart upward, so a curb or a rising road under a landing can't throw it into the air
 
 ### Shortcuts, kickers and double boxes
 
