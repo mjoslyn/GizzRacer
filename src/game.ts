@@ -166,8 +166,8 @@ type VhsMoment = 'flyover' | 'attract' | 'race' | 'finalLap' | 'other';
  * the road; Full washes the races in it too.
  */
 const VHS_LEVELS: Record<'full' | 'light' | 'off', { vhs: Record<VhsMoment, number>; duo: Record<VhsMoment, number>; bite: number }> = {
-  light: { vhs: { flyover: 1, attract: 0.7, race: 0.45, finalLap: 0.6, other: 0 }, duo: { flyover: 0.85, attract: 0.75, race: 0, finalLap: 0, other: 0 }, bite: 0.55 },
-  full: { vhs: { flyover: 1, attract: 0.8, race: 0.55, finalLap: 0.7, other: 0 }, duo: { flyover: 1, attract: 0.95, race: 0.4, finalLap: 0.55, other: 0 }, bite: 0.6 },
+  light: { vhs: { flyover: 1, attract: 0.7, race: 0.8, finalLap: 0.95, other: 0 }, duo: { flyover: 0.85, attract: 0.75, race: 0, finalLap: 0, other: 0 }, bite: 0.55 },
+  full: { vhs: { flyover: 1, attract: 0.9, race: 1, finalLap: 1, other: 0 }, duo: { flyover: 1, attract: 0.95, race: 0.4, finalLap: 0.55, other: 0 }, bite: 0.6 },
   off: { vhs: { flyover: 0, attract: 0, race: 0, finalLap: 0, other: 0 }, duo: { flyover: 0, attract: 0, race: 0, finalLap: 0, other: 0 }, bite: 0 },
 };
 

@@ -74,7 +74,7 @@ export interface StepEvents {
  * Bump whenever kart physics, racer stats or a track layout change lap
  * times: online leaderboards and ghosts are kept per version.
  */
-export const PHYSICS_VERSION = 6;
+export const PHYSICS_VERSION = 7;
 export const KART_RADIUS = 1;
 export const GRAVITY = 30;
 export const HOP_VELOCITY = 4.5;
@@ -122,7 +122,14 @@ const COAST_DECEL = 6;
 const OVERSPEED_DECEL = 15;
 const REVERSE_MAX = 8;
 const REVERSE_ACCEL = 10;
-const DRIFT_SLIP_ANGLE = 0.45;
+const DRIFT_SLIP_ANGLE = 0.6;
+/**
+ * Mario Kart's drift: a steady arc you hold through the corner. With the
+ * stick centred it's gentler than full lock gripping; steering in tightens
+ * it to about full lock, steering out opens it right up.
+ */
+export const DRIFT_YAW_BASE = 0.62;
+export const DRIFT_YAW_STEER = 0.33;
 const SLIP_RESPONSE = 3;
 const EXT_DAMPING = 4;
 /**
@@ -136,8 +143,8 @@ const SLIDE: Record<SurfaceType, number> = { road: 0.2, boost: 0.2, offroad: 0.3
  * tires grip: the kart slides out wide of its nose, and the harder it's
  * steered into the drift, the further out it slides.
  */
-const DRIFT_SLIDE = 0.15;
-const DRIFT_HARD_SLIDE = 0.25;
+const DRIFT_SLIDE = 0.08;
+const DRIFT_HARD_SLIDE = 0.14;
 const WALL_SPEED_LOSS = 0.7;
 const WALL_BOUNCE = 4;
 
@@ -291,7 +298,7 @@ export function stepKart(s: KartState, input: InputFrame, p: KartParams, env: Dr
   // Yaw.
   let yawRate: number;
   if (s.driftDir !== 0) {
-    yawRate = s.driftDir * p.driftTurnRate * (0.75 + 0.55 * steer * s.driftDir);
+    yawRate = s.driftDir * p.driftTurnRate * (DRIFT_YAW_BASE + DRIFT_YAW_STEER * steer * s.driftDir);
   } else {
     const lowSpeed = clamp(Math.abs(s.speed) / TURN_FULL_SPEED, 0, 1);
     const highSpeedDamp = 1 - 0.25 * clamp(Math.abs(s.speed) / p.topSpeed, 0, 1);

@@ -1,7 +1,7 @@
 import { NEUTRAL_INPUT, type InputFrame } from '../core/inputFrame';
 import { clamp, seededRandom, wrapAngle } from '../core/math';
 import { CABLE_RANGE, FLUTE_CONE, FLUTE_RANGE, HARMONICA_CONE, HARMONICA_RANGE, LASER_RANGE, LASER_WIDTH, inCone, type ItemKind } from '../items/items';
-import { DRIFT_MIN_SPEED, driftTier, type KartState } from '../physics/kart';
+import { DRIFT_MIN_SPEED, DRIFT_YAW_BASE, DRIFT_YAW_STEER, driftTier, type KartState } from '../physics/kart';
 import type { EngineClass, KartParams } from '../physics/racers';
 import { pointAt } from '../tracks/spline';
 import type { Ribbon, Track } from '../tracks/track';
@@ -115,7 +115,7 @@ export class CpuDriver {
     this.updateDrift(s, p, input, err, turnAhead, ribbon, progress, dt);
 
     // Lift or brake for corners the kart can't hold at this speed.
-    const capacity = this.drifting ? p.driftTurnRate * 1.25 : p.turnRate * (1 - 0.25 * Math.min(1, speed / p.topSpeed));
+    const capacity = this.drifting ? p.driftTurnRate * (DRIFT_YAW_BASE + DRIFT_YAW_STEER) : p.turnRate * (1 - 0.25 * Math.min(1, speed / p.topSpeed));
     const required = speed * curv;
     if (required > capacity * 1.05) input.throttle = 0;
     if (required > capacity * 1.45 && speed > 12 && !this.drifting) input.brake = 1;
@@ -216,7 +216,7 @@ export class CpuDriver {
     const slide = -s.extX * Math.cos(s.heading) + s.extZ * Math.sin(s.heading);
     const wantYaw = -(s.speed * ribbon.curvatureAt(progress)) - err * 3 - slide * DRIFT_CATCH;
     const dir = s.driftDir;
-    input.steer = clamp((dir * ((wantYaw * dir) / p.driftTurnRate - 0.75)) / 0.55, -1, 1);
+    input.steer = clamp((dir * ((wantYaw * dir) / p.driftTurnRate - DRIFT_YAW_BASE)) / DRIFT_YAW_STEER, -1, 1);
 
     const straightening = Math.abs(turnAhead) < 0.35;
     const reversed = wantYaw * dir < -0.4; // the road now bends the other way
