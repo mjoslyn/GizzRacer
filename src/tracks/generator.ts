@@ -1,6 +1,7 @@
 import { clamp, seededRandom } from '../core/math';
 import { TrackBuilder, dubins, offsetPose, type Pose, type RoadSurface, type SectionProps } from './builder';
-import { Track, type HazardDef, type Landmark, type TrackDef } from './track';
+import { nearestOnSpline } from './spline';
+import { Track, inPit, type BranchDef, type HazardDef, type ItemBoxRow, type Landmark, type TrackDef } from './track';
 
 /**
  * Generated tracks: a seeded loop built from themed corner modules. The
@@ -40,6 +41,16 @@ export interface GenParams {
 const LENGTH_M: Record<GenLength, number> = { short: 950, medium: 1350, long: 1800 };
 const FINISH = 50;
 const MAX_ATTEMPTS = 60;
+/** Trick kickers: run-up to the first, lip to the next ramp of a pair, and the clear landing after the last. */
+const KICKER_LEAD = 12;
+const KICKER_PAIR: [number, number] = [36, 50];
+const KICKER_LANDING = 45;
+/** Shortcut jump: ramp length and lip height; the gap grows with twists. */
+const SHORTCUT_RAMP = 12;
+const SHORTCUT_LIP = 2.5;
+/** How far from either end a shortcut may still share road with the sweep it cuts across. */
+export const SHORTCUT_JUNCTION = 65;
+const SHORTCUT_NAMES = ['Gamma Knife', 'Robot Stop', 'Hot Water', 'Head On', 'Cut Throat Boogie', 'Mind Fuzz', 'Planet B', 'Doom City', 'Nuclear Fusion', 'Crumbling Castle'];
 
 type HazardKind = HazardDef['kind'];
 
@@ -228,10 +239,11 @@ export function generateTrack(p: GenParams): TrackDef {
   return attemptTrack({ ...p, complexity: 1 }, 0, true)!;
 }
 
-/** Road that doesn't cross itself (overpasses aside) and checkpoints on solid road. */
+/** Road that doesn't cross itself (overpasses aside), shortcuts clear of the rest of the road, and checkpoints on solid road. */
 export function isPlayable(def: TrackDef): boolean {
   const track = new Track(def);
   if (selfGap(track) < 5) return false;
+  if (track.branches.some((_, k) => branchGap(track, k) < 5)) return false;
   return def.checkpoints.every((cp) => {
     const pose = track.respawnPose(cp * track.length + 2);
     return track.locate(pose.x, pose.z, pose.y).onRoad;
@@ -254,12 +266,58 @@ export function selfGap(track: Track): number {
   return min;
 }
 
+/**
+ * Closest a branch comes to the main road, edge to edge, away from its
+ * junctions: near either end (SHORTCUT_JUNCTION) the road it cuts across,
+ * and 60 m either side of it, doesn't count; the rest of the lap does.
+ * Its pits must stay off the main road too.
+ */
+export function branchGap(track: Track, k: number): number {
+  const br = track.branches[k];
+  const def = track.def.branches[k];
+  const main = track.main;
+  const sp = main.spline;
+  const from = track.mainS(def.mainFrom);
+  const to = track.mainS(def.mainTo);
+  const L = br.spline.length;
+  let min = Infinity;
+  for (let i = 0; i < br.spline.count; i++) {
+    const s = br.spline.dist[i];
+    const nearEnd = s < SHORTCUT_JUNCTION || s > L - SHORTCUT_JUNCTION;
+    for (let j = 0; j < sp.count; j += 2) {
+      const m = sp.dist[j];
+      const cut = m > from - 60 && m < to + 60;
+      if (cut && nearEnd) continue;
+      const gap = Math.hypot(br.spline.px[i] - sp.px[j], br.spline.pz[i] - sp.pz[j]) - br.halfWidth[i] - main.halfWidth[j];
+      if (gap < min) min = gap;
+    }
+  }
+  for (const pit of track.def.pits) {
+    // The branch's own pits sit on its centerline.
+    if (nearestOnSpline(br.spline, pit.x, pit.z).distance > 1) continue;
+    for (let j = 0; j < sp.count; j++) {
+      const hw = main.halfWidth[j];
+      if (inPit({ ...pit, halfLength: pit.halfLength + hw, halfWidth: pit.halfWidth + hw }, sp.px[j], sp.pz[j])) return 0;
+    }
+  }
+  return min;
+}
+
 interface Module {
   name: string;
   /** Hazards that fit it: crossing kinds need a straight-ish run. */
   open: boolean;
   props: Partial<SectionProps>;
   build: (b: TrackBuilder, side: number) => void;
+  /** Kicker lips, metres into the module. */
+  kickers?: number[];
+  /** A bulge a shortcut can cut straight across. */
+  bulge?: boolean;
+}
+
+/** A spot on a risky line for the double item box row; the highest rank gets it. */
+interface RiskySpot extends ItemBoxRow {
+  rank: number;
 }
 
 function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | null {
@@ -290,6 +348,12 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
   let jumps = 0;
   let bridges = 0;
   let lateral = 0;
+  let kickers = 0;
+  /** The last module was a kicker run: no gap or tight turn straight after its landing. */
+  let landing = false;
+  let bulge: { from: { s: number; pose: Pose }; to: { s: number; pose: Pose } } | null = null;
+  const risky: RiskySpot[] = [];
+  const edge = () => (rand() < 0.5 ? 1 : -1);
 
   // Modules: each leaves the road heading the way it came in.
   const straight = (len: number): Module => ({ name: pick(['Straight', 'Run', 'Dash']), open: true, props: {}, build: (bb) => bb.straight(len) });
@@ -347,6 +411,36 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
       bb.elevate(1.5).rise(12, 0);
     },
   });
+  // A trick kicker, or a pair a second or so apart so tricks chain, with a clear straight to land on.
+  const kickerRun = (pair: boolean, room: number): Module => {
+    // Clear of the boxes at the start of the side.
+    const row = itemBoxes.length ? itemBoxes[itemBoxes.length - 1].s + 10 - b.s : 0;
+    const lead = Math.max(row, Math.min(between(KICKER_LEAD, KICKER_LEAD + 12), room - 7 - KICKER_LANDING));
+    const apart = between(...KICKER_PAIR);
+    return {
+      name: pair ? 'Kickers' : 'Kicker',
+      open: false,
+      props: { wallHeight: abyss ? 1.2 : 0, surface: pal.surface },
+      kickers: pair ? [lead + 7, lead + 14 + apart] : [lead + 7],
+      build: (bb) => {
+        bb.straight(lead).kicker();
+        if (pair) bb.straight(apart).kicker();
+        bb.straight(KICKER_LANDING);
+      },
+    };
+  };
+  // A wide swing out of the rectangle and back onto the side's line, open-edged so a shortcut can cut straight across.
+  const sweep = (): Module => {
+    const r = between(42, 52);
+    const a = between(60, 68);
+    return {
+      name: pick(['Swing', 'Detour', 'Long Way Round']),
+      open: false,
+      props: { wallHeight: 0, surface: pal.surface },
+      bulge: true,
+      build: (bb) => bb.straight(6).arc(r, -a).arc(r, 2 * a).arc(r, -a).straight(6),
+    };
+  };
 
   /** How far along its heading a module would take the road. */
   const measure = (m: Module): number => {
@@ -355,16 +449,28 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
     return (scratch.pose.x - b.pose.x) * Math.sin(b.pose.h) + (scratch.pose.z - b.pose.z) * Math.cos(b.pose.h);
   };
 
-  const chooseModule = (room: number): Module => {
+  const chooseModule = (room: number, side: number): Module => {
     const options: [number, () => Module][] = [
       [3 - c * 0.4, () => straight(Math.min(room, between(15, 60 - c * 7)))],
       [1.5, sBend],
       [c * 0.5, () => esses(false)],
     ];
-    if (c >= 2) options.push([c * 0.4, () => esses(true)]);
-    if (c >= 3 && room > 90) options.push([(c - 2) * 0.6, hairpins]);
-    if (c >= 2 && jumps < 2 && room > 110) options.push([0.5 + c * 0.15, jump]);
+    if (c >= 2 && !landing) options.push([c * 0.4, () => esses(true)]);
+    if (c >= 3 && room > 90 && !landing) options.push([(c - 2) * 0.6, hairpins]);
+    if (c >= 2 && jumps < 2 && room > 110 && !landing) options.push([0.5 + c * 0.15, jump]);
     if (pal.liquid && bridges < 1 && room > 110) options.push([0.6, bridge]);
+    // Kickers: more at higher twists, and every track gets one once it's past the first side;
+    // none where the grid and the first boxes are.
+    const single = KICKER_LEAD + 7 + KICKER_LANDING;
+    if (kickers < 1 + c && room > single && b.s > FINISH) {
+      const pair = kickers + 2 <= 1 + c && room > single + KICKER_PAIR[1] + 7 && rand() < 0.15 + c * 0.12;
+      const make = () => kickerRun(pair, pair ? room - KICKER_PAIR[1] - 7 : room);
+      // None yet by the second half of the lap: this is it.
+      if (kickers === 0 && side >= 2 && !plain) return make();
+      options.push([kickers === 0 && side > 0 ? 12 : 0.2 + c * 0.25, make]);
+    }
+    // Not over an abyss: the open bends where it meets the shortcut would be a long way down.
+    if (c >= 3 && !abyss && !bulge && room > 160) options.push([1.5 + (c - 3) * 0.5, sweep]);
     if (plain) options.splice(1);
     const total = options.reduce((t, [w]) => t + Math.max(0, w), 0);
     let r = rand() * total;
@@ -403,7 +509,7 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
       // Try a few modules for one that fits what's left of the side; otherwise run straight to the end.
       let m: Module | null = null;
       for (let tries = 0; tries < 6 && !m; tries++) {
-        const cand = chooseModule(room);
+        const cand = chooseModule(room, side);
         if (measure(cand) <= room + 4) m = cand;
       }
       m ??= straight(room);
@@ -416,20 +522,38 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
       // Sideways drift, measured: positive is to the left of the side's heading.
       lateral += (b.pose.x - before.x) * Math.cos(from.h) - (b.pose.z - before.z) * Math.sin(from.h);
       const s1 = b.s;
-      if (m.open && s1 - s0 > 35) addHazard(s0, s1);
+      const hw = m.props.halfWidth ?? halfWidth;
+      if (m.open && s1 - s0 > 35 && addHazard(s0, s1)) risky.push({ rank: 2, s: (s0 + s1) / 2, count: 1, lateral: edge() * (hw - 2) });
+      landing = !!m.kickers;
+      for (const at of m.kickers ?? []) {
+        kickers++;
+        // Up on the lip, out by the edge.
+        risky.push({ rank: 1, s: s0 + at - 1.5, count: 1, lateral: edge() * (hw - 2) });
+      }
+      if (m.bulge && !bulge) bulge = { from: { s: s0, pose: before }, to: { s: s1, pose: { ...b.pose } } };
       if (m.name === 'Straight' && s1 - s0 > 40 && boostPads.length < 3 && rand() < 0.5) boostPads.push({ s: s0 + 10, length: 8, lateral: 0, halfWidth: 2.5 });
       if (side === 0 && marks.length === 0 && along() > sides[0] / 2) {
         b.mark('mid');
         marks.push('mid');
       }
-      if (m.name === 'Leap' || m.name === 'Jump') jumps++;
-      if (m.name === 'Bridge' || m.name === 'Causeway' || m.name === 'Crossing') bridges++;
+      if (m.name === 'Leap' || m.name === 'Jump') {
+        jumps++;
+        // Just past the landing, by the wall.
+        risky.push({ rank: 2, s: s1 - 19, count: 2, span: 3, lateral: edge() * (hw - 3) });
+      }
+      if (m.name === 'Bridge' || m.name === 'Causeway' || m.name === 'Crossing') {
+        bridges++;
+        // Out on the rail-less edge, over the drop.
+        risky.push({ rank: 3, s: (s0 + s1) / 2, count: 1, lateral: edge() * (hw - 2) });
+      }
       if (pal.landmarks.length && landmarks.length < 3 && m.open && rand() < 0.35) landmarks.push({ kind: pick(pal.landmarks), ribbon: -1, s: s0 + 4 });
     }
     // Whatever's left of the side, straight.
     if (goal() > 0.5) b.straight(goal());
     if (side < 3) {
       b.section(`${place()} ${pick(['Bend', 'Turn', 'Corner', 'Sweeper'])}`, { halfWidth, wallHeight: wall, surface: surface() });
+      // Tight on the apex: the fallback spot for the double boxes.
+      risky.push({ rank: 0, s: b.s + (R * Math.PI) / 4, count: 1, lateral: -(halfWidth - 1.5) });
       b.arc(R, 90);
     }
   }
@@ -454,15 +578,27 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
   itemBoxes.unshift({ s: 30, count: halfWidth > 10 ? 4 : 3 });
 
   const main = b.finish(true);
+  const branches: BranchDef[] = [];
+  const pits = b.pits.slice();
+  if (bulge) {
+    const cut = shortcut(bulge.from, bulge.to);
+    branches.push(cut.branch);
+    pits.push(...cut.pits);
+    risky.push(cut.spot);
+  }
+  // One row of double boxes, on the riskiest line there is.
+  const best = risky.reduce((a, r) => (r.rank > a.rank ? r : a));
+  const { rank: _rank, ...row } = best;
+  itemBoxes.push({ ...row, double: true });
   let extent = 0;
-  for (const [x, z] of main.points) extent = Math.max(extent, Math.abs(x), Math.abs(z));
+  for (const ribbon of [main, ...branches]) for (const [x, z] of ribbon.points) extent = Math.max(extent, Math.abs(x), Math.abs(z));
   const uniqueMarks = [...new Set(marks)];
   return {
     id: trackId(p),
     name: trackName(p),
     main,
-    branches: [],
-    pits: b.pits,
+    branches,
+    pits,
     boostPads,
     checkpoints: uniqueMarks.map((m) => b.marks[m].s / main.length).sort((a, b2) => a - b2),
     laps: 3,
@@ -475,8 +611,32 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
     music: pal.music,
   };
 
-  function addHazard(s0: number, s1: number): void {
-    if (!pal.hazards.length || hazards.length >= 1 + c || rand() > 0.2 + c * 0.12) return;
+  /**
+   * A straight chord across a sweep, narrow and rail-less, with a jump over a
+   * pit in the middle: a slow kart at 100cc needs a mini-turbo to clear it,
+   * and at 50cc it takes a boost.
+   */
+  function shortcut(from: { s: number; pose: Pose }, to: { s: number; pose: Pose }) {
+    const name = pick(SHORTCUT_NAMES);
+    const chord = Math.hypot(to.pose.x - from.pose.x, to.pose.z - from.pose.z);
+    const hw = Math.max(6, halfWidth - 3);
+    const gapLen = 17 + c;
+    const sb = new TrackBuilder(from.pose, `${name} Cut`, { halfWidth: hw, wallHeight: 0, surface: pal.surface });
+    sb.straight((chord - gapLen) / 2 - SHORTCUT_RAMP - 6);
+    sb.section(`${name} Leap`, { halfWidth: hw, wallHeight: 0, surface: pal.deck });
+    sb.straight(6).elevate(0).rise(SHORTCUT_RAMP, SHORTCUT_LIP);
+    sb.gap(gapLen, hw + 6, pal.liquid);
+    sb.elevate(0);
+    const landed = sb.s;
+    sb.section(`${name} Cut`, { halfWidth: hw, wallHeight: 0, surface: pal.surface });
+    sb.straight(chord - sb.s);
+    const branch: BranchDef = { name: `${name} Shortcut`, mainFrom: from.s, mainTo: to.s, ...sb.finish(false) };
+    const spot: RiskySpot = { rank: 4, ribbon: 0, s: landed + 8, count: rand() < 0.5 ? 1 : 2, span: 4 };
+    return { branch, pits: sb.pits, spot };
+  }
+
+  function addHazard(s0: number, s1: number): boolean {
+    if (!pal.hazards.length || hazards.length >= 1 + c || rand() > 0.2 + c * 0.12) return false;
     const kind = pick(pal.hazards);
     const from = s0 + 8;
     const to = s1 - 8;
@@ -527,5 +687,6 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
         hazards.push({ kind, at: at(count), period: 3.6 });
         break;
     }
+    return true;
   }
 }
