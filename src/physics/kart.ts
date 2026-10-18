@@ -209,6 +209,8 @@ function approachSteer(current: number, target: number, dt: number): number {
 /** Advances one kart by dt, mutating `s`. */
 export function stepKart(s: KartState, input: InputFrame, p: KartParams, env: DriveEnv, dt: number): StepEvents {
   const ev: StepEvents = { hopped: false, landed: 0, driftStarted: false, boostTier: 0, wallHit: 0, launched: false, trick: false, trickStreak: 0 };
+  // A zero-length step moves nothing; the slopes below divide by dt.
+  if (dt <= 0) return ev;
   s.invulnTime = Math.max(0, s.invulnTime - dt);
   s.ramTime = Math.max(0, s.ramTime - dt);
   s.trickChain = Math.max(0, s.trickChain - dt);
@@ -360,7 +362,8 @@ export function stepKart(s: KartState, input: InputFrame, p: KartParams, env: Dr
       ev.landed = Math.max(0.01, -s.vy);
       s.y = ground.height;
       // Land moving with the road (down a slope it falls away): from a standstill the next tick would read as a crest and hop again.
-      s.vy = Math.abs(drop) < 2 ? clamp(-drop / dt, -MAX_GROUND_VY, MAX_GROUND_VY) : 0;
+      // Never moving up, though: ground higher than last tick's probe (a curb, a rising road) would read as a launch next tick.
+      s.vy = Math.abs(drop) < 2 && dt > 0 ? clamp(-drop / dt, -MAX_GROUND_VY, 0) : 0;
       s.grounded = true;
       s.trickWindow = 0;
       if (s.trick) {
