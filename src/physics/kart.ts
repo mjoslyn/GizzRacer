@@ -344,7 +344,8 @@ export function stepKart(s: KartState, input: InputFrame, p: KartParams, env: Dr
     if (s.y <= ground.height) {
       ev.landed = Math.max(0.01, -s.vy);
       s.y = ground.height;
-      s.vy = 0;
+      // Land moving with the road (down a slope it falls away): from a standstill the next tick would read as a crest and hop again.
+      s.vy = Math.abs(drop) < 2 ? clamp(-drop / dt, -MAX_GROUND_VY, MAX_GROUND_VY) : 0;
       s.grounded = true;
       s.trickWindow = 0;
       if (s.trick) {
