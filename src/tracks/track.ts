@@ -110,6 +110,21 @@ export interface StartSlot {
   heading: number;
 }
 
+/** A kart's place across the road it's on (Track.roadFrame). */
+export interface RoadFrame {
+  /** Metres right of the centre line (negative is left). */
+  lateral: number;
+  halfWidth: number;
+  /** The road's direction of travel, a unit vector. */
+  tx: number;
+  tz: number;
+  walled: boolean;
+  /** Signed curvature (rad/m); positive turns left. */
+  curvature: number;
+}
+
+type Support = { ribbon: Ribbon; hit: SplineHit; branch: number };
+
 /** Everything known about a point on the track. */
 export interface TrackLocation {
   hint: number; // main sample index, for the next lookup
@@ -338,10 +353,11 @@ export class Track implements DriveEnv {
     return builderS * this.main.scale;
   }
 
-  locate(x: number, z: number, y: number, hint = -1): TrackLocation {
+  /** The road under a point (the highest one within a step up), and the main ribbon's nearest point. */
+  private support(x: number, z: number, y: number, hint: number): { mainHit: SplineHit; support: Support | null; bestY: number } {
     const mainHit = this.nearestMain(x, z, hint);
     let bestY = -Infinity;
-    let support: { ribbon: Ribbon; hit: SplineHit; branch: number } | null = null;
+    let support: Support | null = null;
 
     const consider = (ribbon: Ribbon, hit: SplineHit, branch: number) => {
       if (Math.abs(hit.lateral) > ribbon.halfWidthAt(hit) + CURB || pastEnd(ribbon, hit)) return;
@@ -353,7 +369,19 @@ export class Track implements DriveEnv {
     };
     consider(this.main, mainHit, -1);
     this.branches.forEach((r, k) => consider(r, nearestOnSpline(r.spline, x, z), k));
+    return { mainHit, support, bestY };
+  }
 
+  /** Where a kart sits on the road it's driving: its offset from the centre line, the road's edge and direction there, and whether that edge is walled. Null off the road. */
+  roadFrame(s: KartState): RoadFrame | null {
+    const { support } = this.support(s.x, s.z, s.y, s.trackHint);
+    if (!support) return null;
+    const { ribbon, hit } = support as Support;
+    return { lateral: hit.lateral, halfWidth: ribbon.halfWidthAt(hit), tx: hit.tx, tz: hit.tz, walled: ribbon.wallHeight[hit.index] > 0.5, curvature: ribbon.curvature[hit.index] };
+  }
+
+  locate(x: number, z: number, y: number, hint = -1): TrackLocation {
+    const { mainHit, support, bestY } = this.support(x, z, y, hint);
     let progress = mainHit.s;
     if (!support) {
       // Off the road: the ground, or the bank of a raised road beside it.

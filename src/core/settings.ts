@@ -20,12 +20,14 @@ export interface Settings {
   videoLook: VideoLook;
   /** The player picked a video look themselves; until then it follows the default. */
   videoLookChosen: boolean;
+  /** Smart steering (physics/steerAssist.ts): steers back in from edges and straightens up out of turns. */
+  smartSteering: boolean;
 }
 
 export type VideoLook = 'full' | 'light' | 'off';
 export const VIDEO_LOOKS: readonly VideoLook[] = ['full', 'light', 'off'];
 
-export const DEFAULT_SETTINGS: Settings = { music: 0.6, sfx: 1, tilt: false, tiltRange: 24, tiltInvert: false, autoAccelerate: true, steeringChosen: false, musicVersion: 'remix', videoLook: 'light', videoLookChosen: false };
+export const DEFAULT_SETTINGS: Settings = { music: 0.6, sfx: 1, tilt: false, tiltRange: 24, tiltInvert: false, autoAccelerate: true, steeringChosen: false, musicVersion: 'remix', videoLook: 'light', videoLookChosen: false, smartSteering: true };
 export const TILT_RANGES = [16, 24, 34] as const;
 
 const KEY = 'gizzracer.settings';

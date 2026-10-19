@@ -1,5 +1,6 @@
 import { AUTOPILOT_SKILL, CpuDriver, type CpuSkill, type Obstacle } from '../ai/cpuDriver';
 import { HazardSystem } from '../items/hazards';
+import { assistSteer } from '../physics/steerAssist';
 import { CANNON_FAR, CANNON_FAR_BOOST, CANNON_FAR_FROM, CANNON_MIN_TIME, CANNON_PAST_MAX, CANNON_PAST_MIN, CANNON_SPEED_MUL, CANNON_SPIN, CANNON_TIME, ItemSystem, SIGNATURE_ITEMS, type ItemEvent, type ItemHolder, type ItemKind } from '../items/items';
 import { NEUTRAL_INPUT, type InputFrame } from './inputFrame';
 import { seededRandom } from './math';
@@ -112,6 +113,8 @@ export class RaceKart implements ItemHolder {
    * last fed to it.
    */
   remote = false;
+  /** A player with smart steering on (physics/steerAssist.ts). */
+  assist = false;
   /** Online: the remote player pressed their item button. */
   pendingUse = false;
   private incoming: readonly number[] | null = null;
@@ -266,6 +269,7 @@ export class Race {
       }
       const d = kart.driver;
       let input = (d ? d.drive(kart.state, kart.params, kart.progressS, this.track, states, this.obstacles, dt) : humanInputs[i]) ?? NEUTRAL_INPUT;
+      if (!d && kart.assist) input = assistSteer(input, kart.state, this.track);
       if (d && kart.trickPlan && kart.state.trickWindow > 0) input = { ...input, driftPressed: true };
       kart.trickPlan = false;
       if (d) input = this.items.dodge(kart, input, d);

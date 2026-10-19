@@ -114,6 +114,9 @@ export class SettingsScreen {
       case 'auto':
         updateSettings({ autoAccelerate: !s.autoAccelerate });
         break;
+      case 'smart':
+        updateSettings({ smartSteering: !s.smartSteering });
+        break;
       case 'done':
         this.close();
         return;
@@ -155,6 +158,7 @@ export class SettingsScreen {
             ${s.musicVersion === 'official' && !this.officialAvailable ? '<div class="lobby-note">The band\'s recordings aren\'t in yet: the remixes play until they are.</div>' : ''}
             <div class="lobby-row"><span class="lobby-label">VHS</span>${arrows('look', { full: 'Full', light: 'Light', off: 'Off' }[s.videoLook])}</div>
             <div class="lobby-row"><span class="lobby-label">Throttle</span>${toggle('auto', s.autoAccelerate, s.autoAccelerate ? 'Automatic' : 'Manual')}</div>
+            <div class="lobby-row"><span class="lobby-label">Steering</span>${toggle('smart', s.smartSteering, s.smartSteering ? 'Smart' : 'Manual')}</div>
           </div>
           ${
             this.tilt.available

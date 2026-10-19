@@ -105,7 +105,7 @@ export const RAM_SPEED_MUL = 1.1;
 const STEER_IN_RATE = 3.5;
 const STEER_OUT_RATE = 10;
 /** Response curve exponent: small inputs turn gently, full lock is unchanged. */
-const STEER_EXPO = 1.6;
+export const STEER_EXPO = 1.6;
 /** A drop bigger than this under the kart counts as leaving a ledge. */
 const LEDGE_DROP = 0.3;
 const MAX_GROUND_VY = 20;

@@ -572,6 +572,7 @@ function step(dt: number): void {
   if (online && race.time < 0) race.time = Math.min(0, -(online.start.at - online.client.serverNow()) / 1000) - dt;
   const net = player && online?.net;
   if (net) netStep(net, player!);
+  if (player) player.assist = settings().smartSteering;
   const inputs = race.karts.map((k) => (k === player ? lastInput : undefined));
   const events = race.step(dt, inputs);
   events.forEach((ev, i) => {
