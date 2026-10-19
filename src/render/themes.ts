@@ -35,6 +35,8 @@ export interface Theme {
   barrier: { map: () => THREE.Texture; crawl: boolean };
   /** Rain sheeting down round the camera, and lightning lighting up the sky. */
   storm?: boolean;
+  /** Dark worlds: the road glows this much with its own texture, and its curbs half again, so the way stays readable. */
+  roadGlow?: number;
 }
 
 export const THEMES: Record<ThemeId, Theme> = {
@@ -169,9 +171,9 @@ export const THEMES: Record<ThemeId, Theme> = {
   // Petrodragonic Apocalypse: a black sky choked with smoke over a burning oil field, a blood-red sun low on the horizon.
   petro: {
     sky: { zenith: '#030102', high: '#140405', low: '#3a0a06', horizon: '#c8341a', below: '#1a0604', ground: '#080303', cloud: '40,22,20', clouds: 48 },
-    fog: { color: 0x200806, near: 70, far: 480 },
-    hemi: { sky: 0xff5a2a, ground: 0x0a0303, intensity: 1.1 },
-    sun: { color: 0xff6a3a, intensity: 1.7 },
+    fog: { color: 0x3a120c, near: 110, far: 520 },
+    hemi: { sky: 0xff6a3a, ground: 0x3a1a12, intensity: 1.7 },
+    sun: { color: 0xff7a4a, intensity: 2.3 },
     ground: tex.oilEarthTexture,
     groundTile: 22,
     cliff: () => tex.stoneTexture([22, 16, 16], [70, 46, 40]),
@@ -182,6 +184,7 @@ export const THEMES: Record<ThemeId, Theme> = {
     skyCycle: false,
     dust: 0x2a1c18,
     barrier: { map: tex.rustTexture, crawl: false },
+    roadGlow: 0.35,
   },
   // Hell on Mars: a red planet gone wrong, the sky the colour of rust and blood, the colony burning.
   mars: {

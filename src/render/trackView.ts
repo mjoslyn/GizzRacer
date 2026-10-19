@@ -59,7 +59,7 @@ function materials(theme: Theme): Materials {
   };
   const neon = tex.neonRoadTexture();
   const rainbow = tex.rainbowTexture();
-  return {
+  const m: Materials = {
     road: {
       asphalt: lambert(tex.asphaltTexture()),
       salt: lambert(tex.saltTexture()),
@@ -78,7 +78,11 @@ function materials(theme: Theme): Materials {
         return lambert(map, { emissive: 0xffffff, emissiveMap: map, emissiveIntensity: 0.55 });
       })(),
     },
-    curb: lambert(tex.curbTexture()),
+    curb: (() => {
+      const map = tex.curbTexture();
+      const glow = (theme.roadGlow ?? 0) * 1.5;
+      return lambert(map, glow > 0 ? { emissive: 0xffffff, emissiveMap: map, emissiveIntensity: glow } : {});
+    })(),
     strata: lambert(theme.cliff(), { side: THREE.DoubleSide }),
     barrier: lambert(theme.barrier.map(), { side: THREE.DoubleSide }),
     mud: lambert(tex.mudTexture()),
@@ -89,6 +93,17 @@ function materials(theme: Theme): Materials {
     water: new THREE.MeshPhongMaterial({ color: 0x2a7a8a, shininess: 120, specular: 0xffffff, transparent: true, opacity: 0.85, side: THREE.DoubleSide }),
     oil: new THREE.MeshPhongMaterial({ color: 0x0a0608, emissive: 0x2a0800, shininess: 140, specular: 0xaa8866, side: THREE.DoubleSide }),
   };
+  // A dark world: every road surface lit a little by its own texture, so it reads against the ground.
+  const glow = theme.roadGlow ?? 0;
+  if (glow > 0) {
+    for (const mat of Object.values(m.road) as (THREE.MeshLambertMaterial | THREE.MeshPhongMaterial)[]) {
+      if (mat.emissiveMap) continue;
+      mat.emissive.set(0xffffff);
+      mat.emissiveMap = mat.map;
+      mat.emissiveIntensity = glow;
+    }
+  }
+  return m;
 }
 
 /** Textured visuals for a spline track, in a sharp early-2000s console style. */
