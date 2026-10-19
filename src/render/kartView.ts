@@ -505,12 +505,12 @@ export class KartView {
     const side = s.grounded ? s.extX * rx + s.extZ * rz : 0;
     // How hard it's skidding, 0..1: from the slide itself, or from cornering hard at speed.
     const fast = s.grounded && Math.abs(s.speed) > 8 && s.driftDir === 0 && s.spinTime === 0;
-    const cornering = fast ? clamp((Math.abs(s.steer) * Math.abs(s.speed) / topSpeed - 0.4) / 0.45, 0, 1) : 0;
+    const cornering = fast ? clamp((Math.abs(s.steer) * Math.abs(s.speed) / topSpeed - 0.55) / 0.4, 0, 1) : 0;
     const k = Math.max(cornering, fast ? clamp(Math.abs(side) / 2.5, 0, 1) : 0);
     // The tail steps out: the nose swings into the turn (a right turn turns it further right, like the drift slip),
     // with a shimmy as the tires fight for grip.
     const into = side !== 0 && Math.abs(side) > 0.3 ? Math.sign(side) : -Math.sign(s.steer);
-    const target = into * 0.28 * k + Math.sin(time * 38) * 0.03 * k;
+    const target = into * 0.16 * k + Math.sin(time * 38) * 0.02 * k;
     this.skidYaw += (target - this.skidYaw) * damp(12, dt);
     // Nothing to mark the road with when nothing touches it.
     const skidding = !this.hover && s.grounded && s.surface !== 'offroad' && (k > 0.3 || s.driftDir !== 0) && Math.abs(s.speed) > 8;

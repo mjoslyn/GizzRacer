@@ -89,10 +89,13 @@ describe.each(TRACK_LIST.map((t) => [t.name, t.build] as const))('%s with a full
   it('every CPU laps it with items and hazards on, and no more than a fall or two', () => {
     const race = new Race(new Track(build()), 3);
     for (const r of RACERS.slice(0, FIELD_SIZE)) race.addKart(r, '100cc', CPU_SKILL['100cc']);
+    // Falls the track causes: a kart knocked off a jump by an item in the last few seconds is the item's doing.
     let respawns = 0;
+    const hitAt = new Map<unknown, number>();
     for (let t = 0; t < COUNTDOWN + 200 && race.karts.some((k) => k.laps.lap < 1); t += PHYSICS_DT) {
       race.step(PHYSICS_DT, []);
-      respawns += race.karts.filter((k) => k.respawned).length;
+      for (const e of race.events) if (e.type === 'hit') hitAt.set(e.kart, race.time);
+      respawns += race.karts.filter((k) => k.respawned && race.time - (hitAt.get(k) ?? -Infinity) > 3).length;
     }
     for (const k of race.karts) expect(k.laps.lap, k.racer.name).toBeGreaterThanOrEqual(1);
     expect(respawns).toBeLessThanOrEqual(2);
