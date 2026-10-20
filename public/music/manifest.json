@@ -418,5 +418,117 @@
     "bars": 32,
     "loopSamples": 2065171,
     "sampleRate": 44100
+  },
+  "magenta-mountain": {
+    "title": "magenta mountain",
+    "bpm": 124,
+    "bars": 28,
+    "loopSamples": 2389935,
+    "sampleRate": 44100
+  },
+  "magenta-mountain-final-lap": {
+    "title": "magenta mountain (final lap)",
+    "bpm": 132,
+    "bars": 28,
+    "loopSamples": 2245091,
+    "sampleRate": 44100
+  },
+  "magenta-mountain-remix": {
+    "title": "magenta mountain (remix)",
+    "bpm": 128,
+    "bars": 28,
+    "loopSamples": 2315250,
+    "sampleRate": 44100
+  },
+  "magenta-mountain-remix-final-lap": {
+    "title": "magenta mountain (remix, final lap)",
+    "bpm": 136,
+    "bars": 28,
+    "loopSamples": 2179059,
+    "sampleRate": 44100
+  },
+  "kepler-22b": {
+    "title": "kepler-22b",
+    "bpm": 96,
+    "bars": 24,
+    "loopSamples": 2646000,
+    "sampleRate": 44100
+  },
+  "kepler-22b-final-lap": {
+    "title": "kepler-22b (final lap)",
+    "bpm": 102,
+    "bars": 24,
+    "loopSamples": 2490353,
+    "sampleRate": 44100
+  },
+  "kepler-22b-remix": {
+    "title": "kepler-22b (remix)",
+    "bpm": 120,
+    "bars": 28,
+    "loopSamples": 2469600,
+    "sampleRate": 44100
+  },
+  "kepler-22b-remix-final-lap": {
+    "title": "kepler-22b (remix, final lap)",
+    "bpm": 128,
+    "bars": 28,
+    "loopSamples": 2315250,
+    "sampleRate": 44100
+  },
+  "goblin-garden": {
+    "title": "goblin garden",
+    "bpm": 118,
+    "bars": 28,
+    "loopSamples": 2511458,
+    "sampleRate": 44100
+  },
+  "goblin-garden-final-lap": {
+    "title": "goblin garden (final lap)",
+    "bpm": 126,
+    "bars": 28,
+    "loopSamples": 2352000,
+    "sampleRate": 44100
+  },
+  "goblin-garden-remix": {
+    "title": "the garden goblin (remix)",
+    "bpm": 124,
+    "bars": 28,
+    "loopSamples": 2389935,
+    "sampleRate": 44100
+  },
+  "goblin-garden-remix-final-lap": {
+    "title": "the garden goblin (remix, final lap)",
+    "bpm": 132,
+    "bars": 28,
+    "loopSamples": 2245091,
+    "sampleRate": 44100
+  },
+  "predator-x": {
+    "title": "predator x",
+    "bpm": 192,
+    "bars": 40,
+    "loopSamples": 2205000,
+    "sampleRate": 44100
+  },
+  "predator-x-final-lap": {
+    "title": "predator x (final lap)",
+    "bpm": 204,
+    "bars": 40,
+    "loopSamples": 2075294,
+    "sampleRate": 44100
+  },
+  "predator-x-remix": {
+    "title": "predator x (remix)",
+    "bpm": 200,
+    "bars": 40,
+    "loopSamples": 2116800,
+    "sampleRate": 44100
+  },
+  "predator-x-remix-final-lap": {
+    "title": "predator x (remix, final lap)",
+    "bpm": 210,
+    "bars": 40,
+    "loopSamples": 2016000,
+    "sampleRate": 44100
   }
 }

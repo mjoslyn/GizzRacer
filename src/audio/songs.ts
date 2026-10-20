@@ -26,6 +26,10 @@ export const TRACK_SONGS: Record<string, TrackSong> = {
   'deadstick-drop': { title: 'Deadstick', album: 'Phantom Island', year: 2025 },
   'panpsych-grove': { title: 'Panpsych', album: 'Phantom Island', year: 2025 },
   'sea-of-doubt': { title: 'Sea of Doubt', album: 'Phantom Island', year: 2025 },
+  'magenta-mountain': { title: 'Magenta Mountain', album: 'Omnium Gatherum', year: 2022 },
+  'kepler-22b': { title: 'Kepler-22b', album: 'Omnium Gatherum', year: 2022 },
+  'goblin-garden': { title: 'The Garden Goblin', album: 'Omnium Gatherum', year: 2022 },
+  'predator-x': { title: 'Predator X', album: 'Omnium Gatherum', year: 2022 },
 };
 
 const FINAL = '-final-lap';

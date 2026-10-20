@@ -42,6 +42,14 @@ const BPM: Record<string, number> = {
   'panpsych-grove-final-lap': 130,
   'sea-of-doubt': 150,
   'sea-of-doubt-final-lap': 160,
+  'magenta-mountain': 124,
+  'magenta-mountain-final-lap': 132,
+  'kepler-22b': 96,
+  'kepler-22b-final-lap': 102,
+  'goblin-garden': 118,
+  'goblin-garden-final-lap': 126,
+  'predator-x': 192,
+  'predator-x-final-lap': 204,
 };
 
 interface ManifestEntry {

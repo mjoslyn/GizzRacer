@@ -61,6 +61,15 @@ const CUES = [
   { id: 'panpsych-grove-final-lap', title: 'panpsych grove (final lap)', bars: 24 },
   { id: 'sea-of-doubt', title: 'sea of doubt', bars: 32 },
   { id: 'sea-of-doubt-final-lap', title: 'sea of doubt (final lap)', bars: 32 },
+  // Cup five, the Omnium Gatherum Cup.
+  { id: 'magenta-mountain', title: 'magenta mountain', bars: 28 },
+  { id: 'magenta-mountain-final-lap', title: 'magenta mountain (final lap)', bars: 28 },
+  { id: 'kepler-22b', title: 'kepler-22b', bars: 24 },
+  { id: 'kepler-22b-final-lap', title: 'kepler-22b (final lap)', bars: 24 },
+  { id: 'goblin-garden', title: 'goblin garden', bars: 28 },
+  { id: 'goblin-garden-final-lap', title: 'goblin garden (final lap)', bars: 28 },
+  { id: 'predator-x', title: 'predator x', bars: 40 },
+  { id: 'predator-x-final-lap', title: 'predator x (final lap)', bars: 40 },
 ];
 
 process.env.SEQBABY_DIR = SEQBABY_DIR;
