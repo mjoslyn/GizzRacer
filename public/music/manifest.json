@@ -306,5 +306,61 @@
     "bars": 24,
     "loopSamples": 1406734,
     "sampleRate": 44100
+  },
+  "phantom-island": {
+    "title": "phantom island",
+    "bpm": 130,
+    "bars": 28,
+    "loopSamples": 2279631,
+    "sampleRate": 44100
+  },
+  "phantom-island-final-lap": {
+    "title": "phantom island (final lap)",
+    "bpm": 138,
+    "bars": 28,
+    "loopSamples": 2147478,
+    "sampleRate": 44100
+  },
+  "phantom-island-remix": {
+    "title": "phantom island (remix)",
+    "bpm": 132,
+    "bars": 24,
+    "loopSamples": 1924364,
+    "sampleRate": 44100
+  },
+  "phantom-island-remix-final-lap": {
+    "title": "phantom island (remix, final lap)",
+    "bpm": 140,
+    "bars": 24,
+    "loopSamples": 1814400,
+    "sampleRate": 44100
+  },
+  "deadstick-drop": {
+    "title": "deadstick drop",
+    "bpm": 160,
+    "bars": 32,
+    "loopSamples": 2116800,
+    "sampleRate": 44100
+  },
+  "deadstick-drop-final-lap": {
+    "title": "deadstick drop (final lap)",
+    "bpm": 170,
+    "bars": 32,
+    "loopSamples": 1992282,
+    "sampleRate": 44100
+  },
+  "deadstick-drop-remix": {
+    "title": "deadstick (remix)",
+    "bpm": 166,
+    "bars": 32,
+    "loopSamples": 2040289,
+    "sampleRate": 44100
+  },
+  "deadstick-drop-remix-final-lap": {
+    "title": "deadstick (remix, final lap)",
+    "bpm": 176,
+    "bars": 32,
+    "loopSamples": 1924364,
+    "sampleRate": 44100
   }
 }

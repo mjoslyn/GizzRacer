@@ -34,6 +34,14 @@ const BPM: Record<string, number> = {
   'supercell-final-lap': 184,
   'murder-of-the-universe': 150,
   'murder-of-the-universe-final-lap': 160,
+  'phantom-island': 130,
+  'phantom-island-final-lap': 138,
+  'deadstick-drop': 160,
+  'deadstick-drop-final-lap': 170,
+  'panpsych-grove': 122,
+  'panpsych-grove-final-lap': 130,
+  'sea-of-doubt': 150,
+  'sea-of-doubt-final-lap': 160,
 };
 
 interface ManifestEntry {

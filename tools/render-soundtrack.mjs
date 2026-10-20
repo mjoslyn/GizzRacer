@@ -52,6 +52,15 @@ const CUES = [
   { id: 'supercell-final-lap', title: 'supercell (final lap)', bars: 14 },
   { id: 'murder-of-the-universe', title: 'murder of the universe', bars: 16 },
   { id: 'murder-of-the-universe-final-lap', title: 'murder of the universe (final lap)', bars: 14 },
+  // Cup four, the Phantom Island Cup. Panpsych runs in 5/4, so its bars are five beats.
+  { id: 'phantom-island', title: 'phantom island', bars: 28 },
+  { id: 'phantom-island-final-lap', title: 'phantom island (final lap)', bars: 28 },
+  { id: 'deadstick-drop', title: 'deadstick drop', bars: 32 },
+  { id: 'deadstick-drop-final-lap', title: 'deadstick drop (final lap)', bars: 32 },
+  { id: 'panpsych-grove', title: 'panpsych grove', bars: 24 },
+  { id: 'panpsych-grove-final-lap', title: 'panpsych grove (final lap)', bars: 24 },
+  { id: 'sea-of-doubt', title: 'sea of doubt', bars: 32 },
+  { id: 'sea-of-doubt-final-lap', title: 'sea of doubt (final lap)', bars: 32 },
 ];
 
 process.env.SEQBABY_DIR = SEQBABY_DIR;

@@ -23,6 +23,10 @@ export const TRACK_SONGS: Record<string, TrackSong> = {
   supercell: { title: 'Supercell', album: 'PetroDragonic Apocalypse', year: 2023 },
   'murder-of-the-universe': { title: 'The Lord of Lightning', album: 'Murder of the Universe', year: 2017 },
   'petrodragonic-apocalypse': { title: 'Dragon', album: 'PetroDragonic Apocalypse', year: 2023 },
+  'phantom-island': { title: 'Phantom Island', album: 'Phantom Island', year: 2025 },
+  'deadstick-drop': { title: 'Deadstick', album: 'Phantom Island', year: 2025 },
+  'panpsych-grove': { title: 'Panpsych', album: 'Phantom Island', year: 2025 },
+  'sea-of-doubt': { title: 'Sea of Doubt', album: 'Phantom Island', year: 2025 },
 };
 
 /** Which music plays in a race: the classic themes, the remixes, the band's recordings, or a pick per race. */
