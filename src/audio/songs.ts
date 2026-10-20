@@ -1,8 +1,7 @@
 /**
- * The King Gizzard & the Lizard Wizard song each track is themed on, and
- * the versions of its music: the classic seqbaby theme, a video game
- * remix of the song, and the band's own recording from the Bootlegger
- * archive (public/music/official/, added once cleared with the band).
+ * The King Gizzard & the Lizard Wizard song each track is themed on. A race
+ * plays the video game remix of it; the track's classic seqbaby theme is
+ * only a fallback for a remix that isn't there.
  */
 export interface TrackSong {
   title: string;
@@ -29,23 +28,15 @@ export const TRACK_SONGS: Record<string, TrackSong> = {
   'sea-of-doubt': { title: 'Sea of Doubt', album: 'Phantom Island', year: 2025 },
 };
 
-/** Which music plays in a race: the classic themes, the remixes, the band's recordings, or a pick per race. */
-export type MusicVersion = 'remix' | 'official' | 'classic' | 'random';
-export const MUSIC_VERSIONS: readonly MusicVersion[] = ['remix', 'official', 'classic', 'random'];
-export const MUSIC_VERSION_NAMES: Record<MusicVersion, string> = { remix: 'Remix', official: 'Official', classic: 'Classic', random: 'Random' };
-
 const FINAL = '-final-lap';
 
 /**
- * The cues to try for a classic cue in a version, best first; the classic
- * cue itself is always last, so a missing file falls back to it. A final
- * lap without its own remix falls back to the lap remix.
+ * The cues to try for a track's classic cue, best first: its remix, then
+ * the classic cue itself, so a missing file falls back to it. A final lap
+ * without its own remix falls back to the lap remix.
  */
-export function versionCues(cue: string, version: Exclude<MusicVersion, 'random'>): string[] {
+export function remixCues(cue: string): string[] {
   const final = cue.endsWith(FINAL);
   const base = final ? cue.slice(0, -FINAL.length) : cue;
-  if (version === 'remix') return final ? [`${base}-remix${FINAL}`, `${base}-remix`, cue] : [`${base}-remix`, cue];
-  // A recording plays whole, final lap and all.
-  if (version === 'official') return [`official/${base}`, cue];
-  return [cue];
+  return final ? [`${base}-remix${FINAL}`, `${base}-remix`, cue] : [`${base}-remix`, cue];
 }

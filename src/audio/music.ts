@@ -6,9 +6,9 @@
  */
 
 /**
- * A file in public/music: a classic theme (its id), a remix (`<track>-remix`,
- * `<track>-remix-final-lap`) or a recording (`official/<track>`). Which exist
- * is in manifest.json.
+ * A file in public/music: a remix (`<track>-remix`, `<track>-remix-final-lap`),
+ * which is what races play, or a classic theme (its id), the fallback and the
+ * title and podium music. Which exist is in manifest.json.
  */
 export type MusicCue = string;
 
@@ -206,11 +206,6 @@ export class MusicPlayer {
   private async available(cues: readonly MusicCue[]): Promise<MusicCue | null> {
     const m = await this.entries();
     return cues.find((c) => c in m) ?? (Object.keys(m).length ? null : cues[cues.length - 1] ?? null);
-  }
-
-  /** Whether any cue under `prefix` exists (e.g. 'official/'). */
-  async hasAny(prefix: string): Promise<boolean> {
-    return Object.keys(await this.entries()).some((k) => k.startsWith(prefix));
   }
 
   /** Whether `cue` exists. */

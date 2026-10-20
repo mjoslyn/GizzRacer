@@ -393,15 +393,20 @@ describe('online', () => {
   });
 });
 
-describe('soundtrack versions', () => {
-  it('a remix falls back to the classic theme, and a final lap to the lap remix', async () => {
-    const { versionCues, TRACK_SONGS } = await import('../src/audio/songs');
-    expect(versionCues('rattlesnake-run', 'remix')).toEqual(['rattlesnake-run-remix', 'rattlesnake-run']);
-    expect(versionCues('rattlesnake-run-final-lap', 'remix')).toEqual(['rattlesnake-run-remix-final-lap', 'rattlesnake-run-remix', 'rattlesnake-run-final-lap']);
-    expect(versionCues('supercell', 'official')).toEqual(['official/supercell', 'supercell']);
-    expect(versionCues('supercell', 'classic')).toEqual(['supercell']);
+describe('soundtrack', () => {
+  it('a race plays the remix, falling back to the classic theme, and a final lap to the lap remix', async () => {
+    const { remixCues, TRACK_SONGS } = await import('../src/audio/songs');
+    expect(remixCues('rattlesnake-run')).toEqual(['rattlesnake-run-remix', 'rattlesnake-run']);
+    expect(remixCues('rattlesnake-run-final-lap')).toEqual(['rattlesnake-run-remix-final-lap', 'rattlesnake-run-remix', 'rattlesnake-run-final-lap']);
     const { TRACK_LIST } = await import('../src/tracks/index');
-    for (const t of TRACK_LIST) expect(TRACK_SONGS[t.build().music.lap], t.id).toBeTruthy();
+    const manifest = (await import('../public/music/manifest.json')).default as Record<string, unknown>;
+    for (const t of TRACK_LIST) {
+      const { lap, finalLap } = t.build().music;
+      expect(TRACK_SONGS[lap], t.id).toBeTruthy();
+      // Every track has its remix, and its final-lap remix.
+      expect(manifest[remixCues(lap)[0]], t.id).toBeTruthy();
+      expect(manifest[remixCues(finalLap ?? `${lap}-final-lap`)[0]], `${t.id} final lap`).toBeTruthy();
+    }
   });
 });
 

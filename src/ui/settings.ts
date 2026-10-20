@@ -1,4 +1,3 @@
-import { MUSIC_VERSIONS, MUSIC_VERSION_NAMES } from '../audio/songs';
 import { TILT_RANGES, VIDEO_LOOKS, settings, updateSettings, type Settings } from '../core/settings';
 import type { TiltSteering } from './tilt';
 
@@ -14,8 +13,6 @@ export class SettingsScreen {
   private status = '';
   private last = '';
   private asking = false;
-  /** The band's recordings are in public/music/official/ (the game checks the manifest). */
-  officialAvailable = false;
 
   constructor(
     parent: HTMLElement,
@@ -81,11 +78,6 @@ export class SettingsScreen {
       case 'look': {
         const i = VIDEO_LOOKS.indexOf(s.videoLook);
         updateSettings({ videoLook: VIDEO_LOOKS[(Math.max(0, i) + dir + VIDEO_LOOKS.length) % VIDEO_LOOKS.length], videoLookChosen: true });
-        break;
-      }
-      case 'version': {
-        const i = MUSIC_VERSIONS.indexOf(s.musicVersion);
-        updateSettings({ musicVersion: MUSIC_VERSIONS[(Math.max(0, i) + dir + MUSIC_VERSIONS.length) % MUSIC_VERSIONS.length] });
         break;
       }
       case 'tilt':
@@ -154,8 +146,6 @@ export class SettingsScreen {
             <div class="settings-group">Sound and driving</div>
             <div class="lobby-row"><span class="lobby-label">Music</span>${arrows('music', pct(s.music))}</div>
             <div class="lobby-row"><span class="lobby-label">Effects</span>${arrows('sfx', pct(s.sfx))}</div>
-            <div class="lobby-row"><span class="lobby-label">Soundtrack</span>${arrows('version', MUSIC_VERSION_NAMES[s.musicVersion])}</div>
-            ${s.musicVersion === 'official' && !this.officialAvailable ? '<div class="lobby-note">The band\'s recordings aren\'t in yet: the remixes play until they are.</div>' : ''}
             <div class="lobby-row"><span class="lobby-label">VHS</span>${arrows('look', { full: 'Full', light: 'Light', off: 'Off' }[s.videoLook])}</div>
             <div class="lobby-row"><span class="lobby-label">Throttle</span>${toggle('auto', s.autoAccelerate, s.autoAccelerate ? 'Automatic' : 'Manual')}</div>
             <div class="lobby-row"><span class="lobby-label">Steering</span>${toggle('smart', s.smartSteering, s.smartSteering ? 'Smart' : 'Manual')}</div>
