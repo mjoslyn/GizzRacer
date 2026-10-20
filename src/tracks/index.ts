@@ -2,15 +2,19 @@ import { buildButterflySkyway } from './butterflySkyway';
 import { buildCyboogieCity } from './cyboogieCity';
 import { buildDeadstickDrop } from './deadstickDrop';
 import { buildFishiesLagoon } from './fishiesLagoon';
+import { buildGoblinGarden } from './goblinGarden';
 import { buildHellOnMars } from './hellOnMars';
 import { buildMurderOfTheUniverse } from './murderOfTheUniverse';
 import { buildSupercell } from './supercell';
 import { buildIceVGlacier } from './iceVGlacier';
 import { buildInfiniteLoopSpeedway } from './infiniteLoopSpeedway';
+import { buildKepler22b } from './kepler22b';
+import { buildMagentaMountain } from './magentaMountain';
 import { buildPetrodragonicApocalypse } from './petrodragonicApocalypse';
 import { buildPanpsychGrove } from './panpsychGrove';
 import { buildPhantomIsland } from './phantomIsland';
 import { buildPolygondwanalandJungle } from './polygondwanalandJungle';
+import { buildPredatorX } from './predatorX';
 import { buildRattlesnakeRun } from './rattlesnakeRun';
 import { buildSeaOfDoubt } from './seaOfDoubt';
 import type { TrackDef } from './track';
@@ -34,6 +38,10 @@ export const TRACK_LIST: { id: string; name: string; build: () => TrackDef }[] =
   { id: 'deadstick-drop', name: 'Deadstick Drop', build: buildDeadstickDrop },
   { id: 'panpsych-grove', name: 'Panpsych Grove', build: buildPanpsychGrove },
   { id: 'sea-of-doubt', name: 'Sea of Doubt', build: buildSeaOfDoubt },
+  { id: 'magenta-mountain', name: 'Magenta Mountain', build: buildMagentaMountain },
+  { id: 'kepler-22b', name: 'Kepler-22b', build: buildKepler22b },
+  { id: 'goblin-garden', name: 'Goblin Garden', build: buildGoblinGarden },
+  { id: 'predator-x', name: 'Predator X', build: buildPredatorX },
 ];
 
 /** Grand Prix cups: four tracks each, in race order (indexes into TRACK_LIST). */
@@ -44,4 +52,6 @@ export const CUPS: { name: string; tracks: number[] }[] = [
   { name: 'Apocalypse Cup', tracks: [9, 10, 11, 8] },
   // Phantom Island (2025): the island in the mist, the plane with no engine, the forest that's awake, and the sea at night.
   { name: 'Phantom Island Cup', tracks: [12, 13, 14, 15] },
+  // Omnium Gatherum (2022): the pink mountain, the ocean planet, the goblin's garden, and the pliosaur.
+  { name: 'Omnium Gatherum Cup', tracks: [16, 17, 18, 19] },
 ];

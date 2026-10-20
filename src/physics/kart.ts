@@ -13,6 +13,8 @@ export interface WallHit {
 export interface GroundInfo {
   height: number;
   surface: SurfaceType;
+  /** Gravity here as a share of the usual (a low-gravity stretch); 1 when absent. */
+  gravity?: number;
 }
 
 /** What the kart controller needs to know about the world. */
@@ -358,6 +360,7 @@ export function stepKart(s: KartState, input: InputFrame, p: KartParams, env: Dr
   // so a ramp lip launches them.
   const ground = env.probe(s);
   s.surface = ground.surface;
+  const gravity = GRAVITY * (ground.gravity ?? 1);
   const drop = s.groundY - ground.height;
   s.groundY = ground.height;
   let crest = false;
@@ -366,7 +369,7 @@ export function stepKart(s: KartState, input: InputFrame, p: KartParams, env: Dr
       s.grounded = false;
     } else {
       const vy = clamp((ground.height - s.y) / dt, -MAX_GROUND_VY, MAX_GROUND_VY);
-      if (vy < s.vy - GRAVITY * dt - CREST_SLACK) {
+      if (vy < s.vy - gravity * dt - CREST_SLACK) {
         // Off the top of a hill: away into the air, still rising as it was.
         s.grounded = false;
         crest = true;
@@ -383,7 +386,7 @@ export function stepKart(s: KartState, input: InputFrame, p: KartParams, env: Dr
     else s.trickWindow = TRICK_WINDOW;
   }
   if (!s.grounded) {
-    s.vy -= GRAVITY * dt;
+    s.vy -= gravity * dt;
     s.y += s.vy * dt;
     if (s.y <= ground.height) {
       ev.landed = Math.max(0.01, -s.vy);

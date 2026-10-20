@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { BOULDER_STAGES, HOLE_CORE, JET_STAGES, LIGHTNING_STRIKE, type HazardPose } from '../items/hazards';
+import { BOULDER_STAGES, GEYSER_ERUPT, HOLE_CORE, JAWS_LUNGE, JET_STAGES, LIGHTNING_STRIKE, type HazardPose } from '../items/hazards';
+import { goblinFigure } from './omnium';
 import { BOX_RESPAWN, SHIELD_ITEMS, WAVE_RANGE, type ItemHolder, type ItemSystem } from '../items/items';
 import type { KartState } from '../physics/kart';
 import type { HazardSystem } from '../items/hazards';
@@ -532,6 +533,15 @@ export class HazardsView {
     const waterMat = new THREE.MeshPhongMaterial({ color: 0x4ab0c8, emissive: 0x1a6a80, shininess: 140, specular: 0xffffff, transparent: true, opacity: 0.88, side: THREE.DoubleSide, depthWrite: false });
     const foamTex = glowTexture('rgba(240,250,255,1)', 'rgba(200,230,255,0)');
 
+    const crystalMat = new THREE.MeshPhongMaterial({ color: 0xff4ad8, emissive: 0x6a0a5a, shininess: 160, specular: 0xffffff, transparent: true, opacity: 0.9, flatShading: true });
+    const crystalGlow = glowTexture('rgba(255,140,240,1)', 'rgba(255,60,200,0)');
+    const geyserMat = new THREE.MeshPhongMaterial({ color: 0x9ae8ff, emissive: 0x2a8aa8, shininess: 120, transparent: true, opacity: 0.75, depthWrite: false, side: THREE.DoubleSide });
+    const bubbleMat = new THREE.MeshPhongMaterial({ color: 0xc8f6ff, emissive: 0x3a9ab8, transparent: true, opacity: 0.8 });
+    const pliosaur = new THREE.MeshPhongMaterial({ color: 0x3a5060, shininess: 30, flatShading: true });
+    const pliosaurBelly = new THREE.MeshLambertMaterial({ color: 0xc8c0a8 });
+    const toothMat = new THREE.MeshLambertMaterial({ color: 0xfaf6e8 });
+    const mouthMat = new THREE.MeshBasicMaterial({ color: 0x5a1010 });
+
     for (const pose of hazards.poses) {
       const obj = new THREE.Group();
       const parts: THREE.Object3D[] = [];
@@ -747,6 +757,104 @@ export class HazardsView {
           this.group.add(rope);
           obj.add(log);
           parts.push(rope, log);
+          break;
+        }
+        case 'crystals': {
+          // A tumbling magenta octahedron with a glow at its heart.
+          const c = new THREE.Mesh(new THREE.OctahedronGeometry(1.5, 0), crystalMat);
+          c.scale.y = 1.4;
+          c.add(sprite(crystalGlow, 0xff6ae0, 3.5));
+          obj.add(c);
+          parts.push(c);
+          break;
+        }
+        case 'goblins': {
+          // A garden goblin, scurrying across, hat bobbing.
+          const g = goblinFigure(0.6);
+          obj.add(g);
+          parts.push(g);
+          break;
+        }
+        case 'geysers': {
+          // A ring of bubbles on the road (the warning), then a column of water bursting up.
+          const bubbles = new THREE.Group();
+          for (let i = 0; i < 9; i++) {
+            const b = new THREE.Mesh(new THREE.SphereGeometry(0.45, 8, 6), bubbleMat);
+            b.userData.k = i;
+            bubbles.add(b);
+          }
+          const column = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 2.6, 1, 16, 1, true), geyserMat);
+          column.geometry.translate(0, 0.5, 0);
+          const spray = new THREE.Group();
+          for (let i = 0; i < 6; i++) {
+            const f = sprite(foamTex, 0xe8f8ff, 4);
+            (f.material as THREE.SpriteMaterial).blending = THREE.NormalBlending;
+            f.position.set(Math.cos(i) * 1.5, 0, Math.sin(i) * 1.5);
+            spray.add(f);
+          }
+          obj.add(bubbles, column, spray);
+          parts.push(bubbles, column, spray);
+          break;
+        }
+        case 'jaws': {
+          // Predator X: a fin cutting the water, then the head bursting out over the road's edge, jaws wide.
+          const fin = new THREE.Group();
+          const blade = new THREE.Mesh(new THREE.ConeGeometry(0.9, 2.4, 4), pliosaur);
+          blade.scale.z = 0.25;
+          // The wake it cuts, so it reads against dark water.
+          const wake = sprite(foamTex, 0xf0faff, 3.2);
+          (wake.material as THREE.SpriteMaterial).blending = THREE.NormalBlending;
+          wake.position.y = -0.6;
+          fin.add(blade, wake);
+          const head = new THREE.Group();
+          const skull = new THREE.Mesh(new THREE.ConeGeometry(1.4, 5, 8), pliosaur);
+          skull.rotation.x = Math.PI / 2;
+          skull.scale.y = 1;
+          skull.position.set(0, 0.5, 1.6);
+          const jaw = new THREE.Group();
+          const lower = new THREE.Mesh(new THREE.ConeGeometry(1.2, 4.6, 8), pliosaurBelly);
+          lower.rotation.x = Math.PI / 2;
+          lower.position.z = 1.6;
+          lower.scale.x = 0.9;
+          jaw.add(lower);
+          const mouth = new THREE.Mesh(new THREE.ConeGeometry(1.1, 4.2, 8), mouthMat);
+          mouth.rotation.x = Math.PI / 2;
+          mouth.position.set(0, 0.1, 1.5);
+          mouth.scale.y = 0.4;
+          for (let k = 0; k < 6; k++) {
+            for (const side of [-1, 1]) {
+              const t1 = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.6, 4), toothMat);
+              const z = 0.4 + k * 0.55;
+              const x = side * (1 - k * 0.15);
+              t1.position.set(x, 0.1, z);
+              t1.rotation.x = Math.PI;
+              head.add(t1);
+              const t2 = t1.clone();
+              t2.rotation.x = 0;
+              t2.position.y = 0.25;
+              jaw.add(t2);
+            }
+          }
+          for (const side of [-1, 1]) {
+            const eye = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffd23a }));
+            eye.position.set(side * 0.9, 1.1, 0.2);
+            head.add(eye);
+          }
+          const neck = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 2, 4, 10), pliosaur);
+          neck.rotation.x = Math.PI / 2;
+          neck.position.z = -2.2;
+          head.add(skull, mouth, jaw, neck);
+          const splash = new THREE.Group();
+          for (let i = 0; i < 7; i++) {
+            const f = sprite(foamTex, 0xe8f6ff, 3);
+            (f.material as THREE.SpriteMaterial).blending = THREE.NormalBlending;
+            f.position.set((i / 6 - 0.5) * 5, 0.5, -1 + Math.sin(i * 2) * 1.5);
+            splash.add(f);
+          }
+          fin.scale.multiplyScalar(1.5);
+          head.scale.setScalar(1.6);
+          obj.add(fin, head, splash);
+          parts.push(fin, head, jaw, splash);
           break;
         }
         case 'rollers': {
@@ -972,6 +1080,61 @@ export class HazardsView {
           rope.position.copy(top);
           rope.scale.y = top.distanceTo(end);
           rope.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), end.sub(top).normalize());
+          break;
+        }
+        case 'crystals':
+          obj.rotation.y = p.heading;
+          parts[0].rotation.set(p.phase * 0.6, p.phase * 0.4, 0);
+          parts[0].position.y = 0.2;
+          break;
+        case 'goblins':
+          obj.rotation.y = p.heading;
+          parts[0].position.set(0, Math.abs(Math.sin(p.phase * 3)) * 0.3 - 0.9, 0);
+          parts[0].rotation.z = Math.sin(p.phase * 3) * 0.2;
+          break;
+        case 'geysers': {
+          const [bubbles, column, spray] = parts;
+          const u = p.phase;
+          const erupt = u >= BOULDER_STAGES.land && u < BOULDER_STAGES.land + GEYSER_ERUPT;
+          const warn = u > BOULDER_STAGES.land * 0.45 && u < BOULDER_STAGES.land;
+          obj.position.y = p.ground;
+          bubbles.visible = warn || erupt;
+          const fizz = warn ? (u - BOULDER_STAGES.land * 0.45) / (BOULDER_STAGES.land * 0.55) : 1;
+          bubbles.children.forEach((b) => {
+            const k = b.userData.k as number;
+            const a = k * 0.7 + elapsed * 1.5;
+            const r = 0.6 + (k % 3) * 0.7;
+            b.position.set(Math.cos(a) * r, ((elapsed * 2.5 + k * 0.37) % 1) * (0.4 + fizz), Math.sin(a) * r);
+            b.scale.setScalar(0.5 + fizz * 0.8);
+          });
+          const e = erupt ? (u - BOULDER_STAGES.land) / GEYSER_ERUPT : 0;
+          const h = erupt ? 16 * Math.sin(Math.PI * Math.min(1, e * 1.6 + 0.1)) + 2 : 0;
+          column.visible = spray.visible = erupt;
+          column.scale.set(1 + Math.sin(elapsed * 30) * 0.05, Math.max(0.1, h), 1);
+          spray.position.y = h;
+          spray.children.forEach((f, i) => f.scale.setScalar(3 + Math.sin(elapsed * 14 + i) * 1));
+          break;
+        }
+        case 'jaws': {
+          const [fin, head, jaw, splash] = parts;
+          const u = p.phase;
+          obj.rotation.y = p.heading;
+          obj.position.y = p.ground;
+          const lunging = u >= BOULDER_STAGES.land && u < BOULDER_STAGES.land + JAWS_LUNGE * 2.2;
+          // Circling: the fin traces small loops in the water beside the road.
+          fin.visible = !lunging && u > 0.15;
+          fin.position.set(Math.sin(elapsed * 2.2) * 2, 0.6, Math.cos(elapsed * 2.2) * 2);
+          fin.rotation.y = elapsed * 2.2;
+          head.visible = splash.visible = lunging;
+          if (lunging) {
+            const l = (u - BOULDER_STAGES.land) / (JAWS_LUNGE * 2.2);
+            const rise = Math.sin(Math.PI * l);
+            head.position.set(0, -1.5 + rise * 3.2, -2 + rise * 1.5);
+            head.rotation.x = -0.5 + l * 0.9;
+            const snap = l < 0.45 ? 1 : Math.max(0, 1 - (l - 0.45) * 5);
+            jaw.rotation.x = 0.75 * snap;
+            splash.children.forEach((f, i) => f.scale.setScalar(2 + rise * 2.5 + Math.sin(elapsed * 12 + i) * 0.5));
+          }
           break;
         }
         case 'rollers':

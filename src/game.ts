@@ -781,6 +781,10 @@ const HIT_TEXT: Record<ItemKind | HazardKind, string> = {
   gliders: 'DEADSTICKED!',
   stones: 'ROCKED!',
   waves: 'WIPED OUT!',
+  crystals: 'CRYSTALLISED!',
+  geysers: 'BLOWN SKY HIGH!',
+  goblins: 'GOBLINED!',
+  jaws: 'CHOMPED!',
 };
 
 /** What a hazard used well says: the ones that can help. */
@@ -808,6 +812,10 @@ const BONUS_TEXT: Record<HazardKind, string> = {
   blackHoles: 'GRAVITY ASSIST!',
   lightning: 'CHARGED!',
   vines: 'SWUNG!',
+  crystals: 'CRYSTAL CRUSHER!',
+  geysers: 'GEYSER RIDE!',
+  goblins: 'GOBLIN HOP!',
+  jaws: 'JUMPED THE JAWS!',
 };
 
 /** Takes a group out of the scene and frees what it built. */

@@ -92,6 +92,8 @@ export const WAVE_SPIN = 1.0;
  * - hop in a dust devil or a tornado and it throws you up for a trick
  * - drifting through a butterfly swarm charges the sparks faster
  * - skimming a black hole's pull on a boost is a gravity assist
+ * - a geyser erupting under a kart that hopped onto it is ridden up high, with a boost
+ * - hop as Predator X snaps and you're over its jaws, on a boost
  */
 /** A reward can't pay out again to the same kart for this long. */
 export const REWARD_COOLDOWN = 1.5;
@@ -118,8 +120,20 @@ export const WING_CHARGE = 1;
 /** Boost seconds gained per second skimming a black hole's pull on a boost. */
 export const GRAVITY_ASSIST = 0.8;
 const RAMPS = new Set<HazardKind>(['gliders', 'lavaBombs', 'meteors']);
-const RAMMABLE = new Set<HazardKind>(['stones', 'rollers', 'iceBlocks', 'hail', 'oilBombs', 'boulders', 'tumbleweeds']);
-const HOPPABLE = new Set<HazardKind>(['waves', 'snakes', 'fish']);
+const RAMMABLE = new Set<HazardKind>(['stones', 'rollers', 'iceBlocks', 'hail', 'oilBombs', 'boulders', 'tumbleweeds', 'crystals']);
+const HOPPABLE = new Set<HazardKind>(['waves', 'snakes', 'fish', 'goblins', 'jaws']);
+/** A geyser erupts for this share of its cycle, after its warning. */
+export const GEYSER_ERUPT = 0.18;
+const GEYSER_RADIUS = 2.8;
+/** An eruption throws a kart up this fast (m/s), and slows it; hopped onto, it's ridden higher, with a boost. */
+export const GEYSER_THROW = 9;
+export const GEYSER_RIDE = 14;
+export const GEYSER_SLOW = 0.5;
+const GOBLIN_RADIUS = 0.9;
+/** Predator X lunges over this share of its cycle, and its jaws reach this far. */
+export const JAWS_LUNGE = 0.08;
+const JAWS_RADIUS = 3.2;
+const CRYSTAL_RADIUS = 1.4;
 const WARMING = new Set<HazardKind>(['lasers', 'flameJets']);
 
 /** Throws a grounded kart up at `vy` with a trick window. */
@@ -150,6 +164,10 @@ const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds' | 'butterfli
   stones: STONE_SPIN,
   gliders: GLIDER_SPIN,
   waves: WAVE_SPIN,
+  crystals: ROLLER_SPIN,
+  goblins: SNAKE_SPIN,
+  jaws: SNAKE_SPIN,
+  geysers: JET_SPIN,
 };
 
 /** Kinds that fill the whole road across, on a rhythm: nothing to steer round, only to time. */
@@ -206,10 +224,12 @@ export class HazardSystem {
         case 'snakes':
         case 'rollers':
         case 'iceBlocks':
-        case 'stones': {
+        case 'stones':
+        case 'crystals':
+        case 'goblins': {
           const s = def.from + ((def.to - def.from) * (i + 0.5)) / def.count;
           const roller = def.kind !== 'snakes';
-          const size = def.kind === 'iceBlocks' ? ICE_BLOCK_RADIUS : def.kind === 'stones' ? STONE_RADIUS : ROLLER_RADIUS;
+          const size = def.kind === 'iceBlocks' ? ICE_BLOCK_RADIUS : def.kind === 'stones' ? STONE_RADIUS : def.kind === 'goblins' ? GOBLIN_RADIUS : def.kind === 'crystals' ? CRYSTAL_RADIUS : ROLLER_RADIUS;
           const hw = this.halfWidth(s) + (roller ? 1 : 2.5);
           const u = (((t + 10) / def.period + i * 0.37) % 1 + 1) % 1;
           // Triangle wave: edge to edge at a steady pace, then back.
@@ -285,6 +305,37 @@ export class HazardSystem {
           p.radius = TUMBLEWEED_RADIUS;
           p.active = true;
           p.phase = bounce;
+          break;
+        }
+        case 'jaws': {
+          // A fin circles off one edge of the road (the warning), then the pliosaur lunges over that edge and snaps.
+          const at = def.at[i];
+          const tt = t + 10 + (i * def.period) / def.at.length;
+          const cycle = Math.floor(tt / def.period);
+          const u = tt / def.period - cycle;
+          const side = cycle % 2 === 0 ? 1 : -1;
+          const hw = this.halfWidth(at);
+          const lunge = u >= BOULDER_STAGES.land ? Math.min(1, (u - BOULDER_STAGES.land) / JAWS_LUNGE) : 0;
+          // Out in the water while it circles; across the road's edge as it lunges.
+          this.place(p, at, side * (hw + 6 - lunge * (6 + hw * 0.45)), 0);
+          p.heading -= (side * Math.PI) / 2;
+          p.radius = JAWS_RADIUS;
+          // Biting once it's halfway over the edge.
+          p.active = u >= BOULDER_STAGES.land + JAWS_LUNGE * 0.5 && u < BOULDER_STAGES.land + JAWS_LUNGE * 1.4;
+          p.phase = u;
+          break;
+        }
+        case 'geysers': {
+          // Bubbling over the warning, then a column of water for a moment.
+          const at = def.at[i];
+          const tt = t + 10 + (i * def.period) / def.at.length;
+          const cycle = Math.floor(tt / def.period);
+          const u = tt / def.period - cycle;
+          const lat = this.halfWidth(at) * 0.5 * Math.sin(cycle * 1.97 + i * 2.1);
+          this.place(p, at, lat, 0);
+          p.radius = GEYSER_RADIUS;
+          p.active = u >= BOULDER_STAGES.land && u < BOULDER_STAGES.land + GEYSER_ERUPT;
+          p.phase = u;
           break;
         }
         case 'lightning': {
@@ -382,6 +433,22 @@ export class HazardSystem {
           }
           if (d > HOLE_CORE + KART_RADIUS) continue;
         }
+        if (p.kind === 'geysers') {
+          // An eruption throws you up whatever you do: hopped onto, you ride it high on a boost; caught, it costs you speed.
+          // (Not one it has just thrown: that kart is in the air too.)
+          if ((s.hopAge < HOP_WINDOW || !s.grounded) && !this.cooldown.has(s)) {
+            this.reward(hit, s, p.kind, () => {
+              launch(s, GEYSER_RIDE);
+              s.boostTime = Math.max(s.boostTime, HOP_BOOST);
+            });
+          } else if (!this.cooldown.has(s)) {
+            this.cooldown.set(s, HIT_COOLDOWN);
+            launch(s, GEYSER_THROW);
+            s.speed *= GEYSER_SLOW;
+            hit.push({ kart: s, by: p.kind });
+          }
+          continue;
+        }
         // Rammed on a boost it gives way and the boost runs on; hopped as it comes, it's ridden.
         const rammed = RAMMABLE.has(p.kind) && s.boostTime > 0;
         const hopped = HOPPABLE.has(p.kind) && (!s.grounded || s.hopAge < HOP_WINDOW);
@@ -409,7 +476,7 @@ export class HazardSystem {
     for (const p of this.poses) {
       if (isSheet(p.kind)) continue; // the whole road: nothing to steer around
       const falling = isFalling(p.kind);
-      if (p.kind === 'lightning') {
+      if (p.kind === 'lightning' || p.kind === 'geysers' || p.kind === 'jaws') {
         if (p.phase < BOULDER_STAGES.fall * 0.5 || p.phase > BOULDER_STAGES.land + LIGHTNING_STRIKE) continue;
       } else if (falling ? p.phase > BOULDER_STAGES.crumble || p.phase < BOULDER_STAGES.fall * 0.5 : !p.active) continue;
       if (p.kind === 'snakes') {

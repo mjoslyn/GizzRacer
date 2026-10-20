@@ -1401,3 +1401,152 @@ export function nightSeaTexture(): THREE.CanvasTexture {
   });
   return finish(c);
 }
+
+/** Magenta Mountain: snow gone pink in the light, magenta shadows, glints of crystal. */
+export function magentaSnowTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 5, 701);
+  const drift = fbm(S, 2, 3, 702);
+  paint(ctx, S, S, (_x, _y, i) => shade(mix([196, 120, 190], [252, 214, 240], n[i]), 0.85 + drift[i] * 0.2));
+  const rand = seededRandom(703);
+  for (let k = 0; k < 220; k++) {
+    ctx.fillStyle = rand() < 0.5 ? 'rgba(255,240,255,0.9)' : 'rgba(255,90,220,0.8)';
+    ctx.fillRect(rand() * S, rand() * S, 1.5, 1.5);
+  }
+  return finish(c);
+}
+
+/** A road of magenta crystal: facets, light running through the cracks. */
+export function crystalRoadTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 3, 4, 711);
+  paint(ctx, S, S, (x, y, i) => {
+    const facet = (Math.floor(x / 32) + Math.floor(y / 48)) % 2 ? 1 : 0.86;
+    return shade(mix([120, 30, 110], [220, 80, 200], n[i]), facet);
+  });
+  cracks(ctx, S, 10, 'rgba(255,190,250,0.7)', 2, 712);
+  return finish(c);
+}
+
+/** Kepler-22b's shallows: teal water over violet sand, glowing specks of life. */
+export function alienShoreTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 3, 5, 721);
+  const bar = fbm(S, 2, 3, 722);
+  paint(ctx, S, S, (x, y, i) => {
+    const ripple = Math.sin((x / S) * Math.PI * 2 * 11 + n[i] * 6 + y * 0.01) * 0.5 + 0.5;
+    if (bar[i] > 0.66) return mix([110, 70, 150], [170, 120, 200], n[i]);
+    return shade(mix([20, 120, 140], [60, 200, 200], n[i]), 0.9 + ripple * 0.15);
+  });
+  const rand = seededRandom(723);
+  for (let k = 0; k < 160; k++) {
+    ctx.fillStyle = rand() < 0.5 ? 'rgba(140,255,230,0.9)' : 'rgba(255,140,255,0.8)';
+    ctx.beginPath();
+    ctx.arc(rand() * S, rand() * S, 1 + rand() * 1.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  return finish(c);
+}
+
+/** A road over Kepler-22b's reef: coral pink and violet, teal pools between. */
+export function reefRoadTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 4, 731);
+  const pool = fbm(S, 3, 3, 732);
+  paint(ctx, S, S, (_x, _y, i) => {
+    if (pool[i] > 0.7) return mix([30, 140, 150], [70, 190, 190], n[i]);
+    return mix([170, 80, 130], [230, 140, 170], n[i]);
+  });
+  return finish(c);
+}
+
+/** A clipped garden hedge: a wall of small dark leaves with lighter ones catching the sun, the odd red berry. */
+export function hedgeTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 6, 5, 913);
+  paint(ctx, S, S, (_x, _y, i) => mix([20, 60, 22], [50, 110, 40], n[i]));
+  const rand = seededRandom(914);
+  for (let k = 0; k < 2600; k++) {
+    const x = rand() * S;
+    const y = rand() * S;
+    const g = 70 + Math.floor(rand() * 90);
+    ctx.fillStyle = `rgba(${Math.floor(g * 0.45)},${g},${Math.floor(g * 0.35)},0.85)`;
+    ctx.beginPath();
+    ctx.ellipse(x, y, 5, 2.6, rand() * Math.PI, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  for (let k = 0; k < 40; k++) {
+    ctx.fillStyle = '#c82a2a';
+    ctx.beginPath();
+    ctx.arc(rand() * S, rand() * S, 2.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  return finish(c);
+}
+
+/** The Garden Goblin's lawn, seen by someone very small: big blades, clover, daisies. */
+export function lawnTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 5, 5, 741);
+  paint(ctx, S, S, (_x, _y, i) => mix([50, 120, 40], [120, 190, 70], n[i]));
+  const rand = seededRandom(742);
+  for (let k = 0; k < 900; k++) {
+    const x = rand() * S;
+    const y = rand() * S;
+    ctx.strokeStyle = rand() < 0.5 ? 'rgba(30,90,25,0.7)' : 'rgba(150,210,90,0.6)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + (rand() - 0.5) * 6, y - 8 - rand() * 10);
+    ctx.stroke();
+  }
+  for (let k = 0; k < 30; k++) {
+    const x = rand() * S;
+    const y = rand() * S;
+    ctx.fillStyle = '#ffffff';
+    for (let p = 0; p < 6; p++) {
+      ctx.beginPath();
+      ctx.arc(x + Math.cos(p) * 4, y + Math.sin(p) * 4, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = '#ffd23a';
+    ctx.beginPath();
+    ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  return finish(c);
+}
+
+/** Crazy paving: flat stones in warm greys and buffs, moss in the joints. */
+export function pavingTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 4, 751);
+  paint(ctx, S, S, (_x, _y, i) => mix([150, 140, 120], [200, 190, 165], n[i]));
+  cracks(ctx, S, 26, 'rgba(70,110,50,0.9)', 3, 752);
+  return finish(c);
+}
+
+/** A primeval shore: black volcanic sand, green weed, shells. */
+export function primevalShoreTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 5, 761);
+  const weed = fbm(S, 3, 3, 762);
+  paint(ctx, S, S, (_x, _y, i) => {
+    if (weed[i] > 0.63) return mix([40, 70, 40], [80, 110, 50], n[i]);
+    return mix([30, 30, 34], [80, 76, 74], n[i]);
+  });
+  const rand = seededRandom(763);
+  for (let k = 0; k < 120; k++) {
+    ctx.fillStyle = rand() < 0.5 ? 'rgba(230,220,200,0.8)' : 'rgba(200,160,120,0.7)';
+    ctx.fillRect(rand() * S, rand() * S, 2, 2);
+  }
+  return finish(c);
+}

@@ -8,14 +8,15 @@ No install and no account. It will always be free.
 
 ## What's in it
 
-- **16 tracks in 4 cups**, each built around an album or a song
+- **20 tracks in 5 cups**, each built around an album or a song
   - **Nonagon Cup:** Infinite Loop Speedway, Rattlesnake Run, Volcano Fortress, Polygondwanaland Jungle
   - **Microtonal Cup:** Fishies Lagoon, Ice V Glacier, Cyboogie City, Butterfly 3000 Skyway
   - **Apocalypse Cup:** Hell on Mars, Supercell, Murder of the Universe, Petrodragonic Apocalypse
   - **Phantom Island Cup:** Phantom Island, Deadstick Drop, Panpsych Grove, Sea of Doubt
+  - **Omnium Gatherum Cup:** Magenta Mountain, Kepler-22b, Goblin Garden, Predator X
 - **Roller-coaster tracks:** climbs onto pillared decks, plunges you fly off, canyons sunk into the ground, and a causeway that dives under the lagoon
 - **Shortcuts on every track** that come and go by lap: a phantom causeway that only appears on lap 2, a snake that shuts its jaws, a tide that floods the boardwalk, a wall of fire that only drops on the final lap. Trick kickers on the straights and double item boxes on the risky lines
-- **Hazards** from the songs: rattlesnakes, flame jets, tornadoes, black holes, dragons breathing fire across a gullet, planes gliding in with their propellers stopped, and waves breaking over a causeway. Use them well and they help: surf the wave, hop onto a crashed plane for a ramp, ram a boulder on a boost, slip through a laser gate as it warms up
+- **Hazards** from the songs: rattlesnakes, flame jets, tornadoes, black holes, dragons breathing fire across a gullet, planes gliding in with their propellers stopped, waves breaking over a causeway, garden goblins, geysers and a pliosaur snapping over the road's edge. Use them well and they help: surf the wave, hop onto a crashed plane for a ramp, ram a boulder on a boost, slip through a laser gate as it warms up
 - **20 racers**, each with their own vehicle: the Lizard Wizard, Han-Tyumi in a fishing dinghy, a flying Gila monster, Beowulf's Witch, the Fuzz Golem, Arlo the poodle in a dog bed, and more. The band are in it too: Amby, Cavs, Cookie, Jason, Joey, Lukey and Stu
 - **13 items**, each with a Gizzverse name:
   - Mind Fuzz, Microtonal Banana, Nuclear Fusion, Big Fig Wasp, Horology and the Woo Cannon

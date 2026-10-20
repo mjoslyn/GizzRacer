@@ -10,7 +10,7 @@ import { Track, inPit, type BranchDef, type HazardDef, type ItemBoxRow, type Lan
  */
 
 export type GenTheme = TrackDef['theme'];
-export const GEN_THEMES: readonly GenTheme[] = ['desert', 'speedway', 'volcano', 'jungle', 'lagoon', 'glacier', 'neon', 'dream', 'petro', 'mars', 'storm', 'void', 'phantom', 'airfield', 'grove', 'doubt'];
+export const GEN_THEMES: readonly GenTheme[] = ['desert', 'speedway', 'volcano', 'jungle', 'lagoon', 'glacier', 'neon', 'dream', 'petro', 'mars', 'storm', 'void', 'phantom', 'airfield', 'grove', 'doubt', 'magenta', 'kepler', 'goblin', 'primeval'];
 export const GEN_THEME_NAMES: Record<GenTheme, string> = {
   desert: 'Desert',
   speedway: 'Speedway',
@@ -28,6 +28,10 @@ export const GEN_THEME_NAMES: Record<GenTheme, string> = {
   airfield: 'Airfield',
   grove: 'Grove',
   doubt: 'Sea of Doubt',
+  magenta: 'Magenta Mountain',
+  kepler: 'Kepler-22b',
+  goblin: 'Goblin Garden',
+  primeval: 'Predator X',
 };
 export type GenLength = 'short' | 'medium' | 'long';
 export const GEN_LENGTHS: readonly GenLength[] = ['short', 'medium', 'long'];
@@ -282,6 +286,53 @@ const PALETTES: Record<GenTheme, Palette> = {
     tallWalls: 1.5,
     places: ['Doubt', 'Undertow', 'Breaker', 'Spacesick', 'Lonely', 'Riptide', 'Squall', 'Fathom', 'Wreck'],
     music: { lap: 'sea-of-doubt', finalLap: 'sea-of-doubt-final-lap' },
+  },
+  magenta: {
+    surface: 'crystal',
+    deck: 'rock',
+    alt: 'ice',
+    hazards: ['crystals', 'hail'],
+    start: 'crystalGate',
+    landmarks: ['crystalGate'],
+    tallWalls: 2,
+    places: ['Magenta', 'Summit', 'Crystal', 'Avalanche', 'Switchback', 'Pink Peak', 'Rosy', 'Altitude', 'Omnium'],
+    music: { lap: 'magenta-mountain', finalLap: 'magenta-mountain-final-lap' },
+  },
+  kepler: {
+    surface: 'reef',
+    deck: 'boards',
+    alt: 'sand',
+    liquid: 'water',
+    hazards: ['geysers', 'wisps'],
+    start: 'keplerArch',
+    landmarks: ['keplerArch'],
+    tallWalls: 1.5,
+    places: ['Kepler', 'Habitable', 'Ocean World', 'Weightless', 'Exoplanet', 'Shallows', 'Red Dwarf', 'Light Year', 'Goldilocks'],
+    music: { lap: 'kepler-22b', finalLap: 'kepler-22b-final-lap' },
+  },
+  goblin: {
+    surface: 'paving',
+    deck: 'boards',
+    alt: 'rock',
+    liquid: 'water',
+    hazards: ['goblins', 'vines'],
+    start: 'goblinGate',
+    landmarks: ['goblinGate'],
+    tallWalls: 5,
+    places: ['Goblin', 'Hedge', 'Topiary', 'Gnome', 'Rose Bed', 'Compost', 'Worm', 'Greenhouse', 'Mischief'],
+    music: { lap: 'goblin-garden', finalLap: 'goblin-garden-final-lap' },
+  },
+  primeval: {
+    surface: 'rock',
+    deck: 'boards',
+    alt: 'sand',
+    liquid: 'water',
+    hazards: ['jaws', 'geysers'],
+    start: 'jawsGate',
+    landmarks: ['jawsGate'],
+    tallWalls: 1.5,
+    places: ['Predator', 'Pliosaur', 'Jurassic', 'Apex', 'Bone', 'Abyssal', 'Fossil', 'Tidal', 'Primeval'],
+    music: { lap: 'predator-x', finalLap: 'predator-x-final-lap' },
   },
 };
 
@@ -930,9 +981,11 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
     const count = (to - from) > 80 ? 3 : 2;
     switch (kind) {
       case 'snakes':
+      case 'goblins':
         hazards.push({ kind, from, to, count, period: 3.5 });
         break;
       case 'rollers':
+      case 'crystals':
         hazards.push({ kind, from, to, count: count - 1, period: 7 });
         break;
       case 'fish':
@@ -971,7 +1024,11 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
         hazards.push({ kind, at: at(count), period: 2.6 });
         break;
       case 'lightning':
+      case 'geysers':
         hazards.push({ kind, at: at(count), period: 4.5 });
+        break;
+      case 'jaws':
+        hazards.push({ kind, at: at(count - 1), period: 4 });
         break;
       case 'vines':
         hazards.push({ kind, at: at(count), period: 3.6 });

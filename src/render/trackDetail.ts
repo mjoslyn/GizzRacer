@@ -132,6 +132,33 @@ const STYLES: Record<DecorKind, DetailStyle> = {
     boards: { words: ['DOUBT', 'TURN BACK', 'NO SHORE', 'MAYBE'], bg: ['#0a1420', '#1a2a3a'], fg: '#c0f0ff' },
     crowd: false,
   },
+  peaks: {
+    edge: { kind: 'pole', height: 1.6, spacing: 11, color: 0xff5ad0, stripe: 0xffffff },
+    light: 0xff8ae8,
+    cover: { shape: 'crystal', colors: [0xff5ad8, 0xffc0f0, 0xc040ff, 0xffffff], count: 1300 },
+    boards: { words: ['MAGENTA', 'WANDER', 'SUMMIT', 'GLOW'], bg: ['#8a1a8a', '#3a0a5a'], fg: '#ffd0f0' },
+    crowd: true,
+  },
+  alienSea: {
+    edge: { kind: 'buoy', height: 1.2, spacing: 13, color: 0x7affe0, stripe: 0xc06aff },
+    light: 0x7affe0,
+    cover: { shape: 'none', colors: [], count: 0 },
+    boards: { words: ['KEPLER', '22B', 'SUPER EARTH', 'SPLASH'], bg: ['#0a3a5a', '#4a1a6a'], fg: '#9affe8' },
+    crowd: true,
+  },
+  garden: {
+    edge: { kind: 'fence', height: 1.3, spacing: 8, color: 0xf4f4ec, stripe: 0xd8302a },
+    cover: { shape: 'tuft', colors: [0x3a8a2a, 0x5aa83a, 0xffe45a, 0xff6ad8, 0xffffff], count: 1800 },
+    boards: { words: ['GOBLIN', 'KEEP OFF', 'GRASS', 'DIG IT'], bg: ['#2a7a2a', '#a0502a'], fg: '#fff4c0' },
+    crowd: true,
+  },
+  shore: {
+    edge: { kind: 'torch', height: 1.4, spacing: 15, color: 0x3a3030, stripe: 0x6a5a4a },
+    light: 0xffa040,
+    cover: { shape: 'pebble', colors: [0x2a2a2e, 0x4a4844, 0xe8dcc0, 0x3a5a30], count: 1300 },
+    boards: { words: ['PREDATOR X', 'BEWARE', 'JURASSIC', 'TEETH'], bg: ['#3a2a20', '#1a2a2a'], fg: '#ffb060' },
+    crowd: false,
+  },
   sky: {
     edge: { kind: 'star', height: 1.4, spacing: 14, color: 0xffe8a0, stripe: 0xffffff },
     light: 0xfff0ff,
@@ -205,7 +232,7 @@ export function roadPaint(ribbon: Ribbon, decor: DecorKind): THREE.Group {
     line[i] = -Math.max(-0.55, Math.min(0.55, (sum / 25) * 14));
   }
   const paintable = new Set(['asphalt']);
-  const wearable = new Set(['asphalt', 'salt', 'rock', 'sand', 'boards', 'regolith', 'wet']);
+  const wearable = new Set(['asphalt', 'salt', 'rock', 'sand', 'boards', 'regolith', 'wet', 'paving', 'reef']);
   for (let i = 0; i < segs; i++) {
     const j = (i + 1) % n;
     const sMid = (sp.dist[i] + (j === 0 ? sp.length : sp.dist[j])) / 2;

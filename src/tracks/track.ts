@@ -60,7 +60,7 @@ export function branchOpen(def: BranchDef, ctx?: LapContext): boolean {
 }
 
 export interface Landmark {
-  kind: 'skeletonArch' | 'fangs' | 'fortressGate' | 'templeGate' | 'waterfall' | 'gantry' | 'lighthouse' | 'iceArch' | 'neonArch' | 'rainbowArch' | 'dragonGate' | 'dragonFlight' | 'colonyGate' | 'rodGate' | 'voidEye' | 'phantomArch' | 'runwayGate' | 'treeGate' | 'wreckGate' | 'worldTree';
+  kind: 'skeletonArch' | 'fangs' | 'fortressGate' | 'templeGate' | 'waterfall' | 'gantry' | 'lighthouse' | 'iceArch' | 'neonArch' | 'rainbowArch' | 'dragonGate' | 'dragonFlight' | 'colonyGate' | 'rodGate' | 'voidEye' | 'phantomArch' | 'runwayGate' | 'treeGate' | 'wreckGate' | 'worldTree' | 'crystalGate' | 'magentaPeak' | 'keplerArch' | 'goblinGate' | 'jawsGate';
   ribbon: number; // -1 = main, else branch index
   s: number; // builder units
   /** Metres to the right of the road (left if negative), for a landmark that stands off it. */
@@ -89,7 +89,7 @@ export interface TrackDef {
   itemBoxes: ItemBoxRow[];
   hazards: HazardDef[];
   /** Visual theme (render/themes.ts). */
-  theme: 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt';
+  theme: 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval';
   /** No ground: off the road is a long drop (the sky track). */
   abyss?: boolean;
   /** Music cues (public/music/<cue>.mp3): one for the race, one for the final lap. */
@@ -153,7 +153,15 @@ export type HazardDef =
   /** Panpsych Grove: standing stones, awake, shuffling across the road and back. */
   | { kind: 'stones'; from: number; to: number; count: number; period: number }
   /** Sea of Doubt: waves breaking right across the causeway, on a rhythm. */
-  | { kind: 'waves'; at: number[]; period: number };
+  | { kind: 'waves'; at: number[]; period: number }
+  /** Magenta Mountain: magenta crystals tumbling across the road and back. */
+  | { kind: 'crystals'; from: number; to: number; count: number; period: number }
+  /** Kepler-22b: geysers that bubble as a warning, then erupt, throwing karts up. */
+  | { kind: 'geysers'; at: number[]; period: number }
+  /** The Garden Goblin: goblins scurrying across the path. */
+  | { kind: 'goblins'; from: number; to: number; count: number; period: number }
+  /** Predator X: the pliosaur circles (a fin, ripples), then lunges out of the water and snaps across the road's edge. */
+  | { kind: 'jaws'; at: number[]; period: number };
 
 export interface StartSlot {
   x: number;
@@ -498,7 +506,9 @@ export class Track implements DriveEnv {
   probe(s: KartState): GroundInfo {
     const loc = this.locateKart(s);
     s.trackHint = loc.hint;
-    return { height: loc.height, surface: loc.surface };
+    // Gravity goes with the stretch of main road nearest, on it or flying over a gap beside it.
+    const gravity = this.main.def.sections[this.main.sectionIndex[loc.hint]]?.gravity;
+    return gravity === undefined ? { height: loc.height, surface: loc.surface } : { height: loc.height, surface: loc.surface, gravity };
   }
 
   collide(s: KartState, radius: number): WallHit | null {

@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import * as tex from './textures';
 import { DESERT_SKY, type SkyColors } from './textures';
 
-export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt';
-export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea';
+export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval';
+export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore';
 
 /** Everything that makes a track's world look like itself. */
 export interface Theme {
@@ -307,5 +307,74 @@ export const THEMES: Record<ThemeId, Theme> = {
     barrier: { map: () => tex.stoneTexture([60, 66, 70], [130, 140, 146]), crawl: false },
     storm: true,
     roadGlow: 0.3,
+  },
+  // Magenta Mountain: a glowing magenta mountain at sunset, pink snow, crystals catching the light.
+  magenta: {
+    sky: { zenith: '#3a0a5a', high: '#8a1a8a', low: '#f05ab0', horizon: '#ffc0a0', below: '#c05aa0', ground: '#a04a90', cloud: '255,190,230', clouds: 34 },
+    fog: { color: 0xe0a0d8, near: 140, far: 760 },
+    hemi: { sky: 0xffc8f0, ground: 0xa04a90, intensity: 1.6 },
+    sun: { color: 0xffd0c0, intensity: 2.1 },
+    ground: tex.magentaSnowTexture,
+    groundTile: 18,
+    cliff: () => tex.stoneTexture([110, 40, 100], [210, 120, 200]),
+    decor: 'peaks',
+    distant: { shape: 'mountain', color: 0xa02a8a },
+    haze: 0.2,
+    duotone: [0x0a0010, 0xd020a0, 0xffe0f8],
+    skyCycle: true,
+    dust: 0xffd8f4,
+    barrier: { map: () => tex.stoneTexture([150, 70, 140], [230, 160, 220]), crawl: false },
+  },
+  // Kepler-22b: an ocean planet under a teal sky, two suns, a reef road between glowing alien life.
+  kepler: {
+    sky: { zenith: '#0a3a5a', high: '#1a7a8a', low: '#7ad8c8', horizon: '#f0fff0', below: '#3a8a9a', ground: '#2a6a7a', cloud: '220,255,250', clouds: 26 },
+    fog: { color: 0x9ad8d0, near: 150, far: 820 },
+    hemi: { sky: 0xc8fff0, ground: 0x2a6a7a, intensity: 1.6 },
+    sun: { color: 0xf0fff0, intensity: 2.0 },
+    ground: tex.alienShoreTexture,
+    groundTile: 22,
+    cliff: () => tex.stoneTexture([60, 50, 100], [140, 120, 190]),
+    decor: 'alienSea',
+    distant: { shape: 'planet', color: 0x6a5aaa },
+    haze: 0,
+    duotone: [0x000a10, 0x10a0a0, 0xffa0ff],
+    skyCycle: false,
+    dust: 0xc8fff0,
+    barrier: { map: tex.reefRoadTexture, crawl: false },
+  },
+  // The Garden Goblin: a garden on a summer's day, seen from the height of a goblin.
+  goblin: {
+    sky: { zenith: '#2a7ae0', high: '#5aa8f8', low: '#bfe4ff', horizon: '#fffbe8', below: '#9ac87a', ground: '#4a8a3a', cloud: '255,255,255', clouds: 40 },
+    fog: { color: 0xdcf0ff, near: 160, far: 900 },
+    hemi: { sky: 0xe0f4ff, ground: 0x5a9a3a, intensity: 1.7 },
+    sun: { color: 0xfff6e0, intensity: 2.3 },
+    ground: tex.lawnTexture,
+    groundTile: 14,
+    // Walls are hedges.
+    cliff: tex.hedgeTexture,
+    decor: 'garden',
+    distant: { shape: 'hill', color: 0x3a7a2a },
+    haze: 0.2,
+    duotone: [0x020800, 0x30a020, 0xffe060],
+    skyCycle: false,
+    dust: 0xd8c8a0,
+    barrier: { map: tex.woodTexture, crawl: false },
+  },
+  // Predator X: a primeval coast, an orange sky over smoking volcanoes, something huge in the water.
+  primeval: {
+    sky: { zenith: '#2a2a3a', high: '#5a4a4a', low: '#c07a4a', horizon: '#ffc080', below: '#4a5a5a', ground: '#2a3030', cloud: '200,170,150', clouds: 38 },
+    fog: { color: 0x8a8070, near: 110, far: 640 },
+    hemi: { sky: 0xffd8b0, ground: 0x2a3a30, intensity: 1.45 },
+    sun: { color: 0xffc890, intensity: 1.9 },
+    ground: tex.primevalShoreTexture,
+    groundTile: 20,
+    cliff: () => tex.stoneTexture([50, 50, 54], [120, 116, 110]),
+    decor: 'shore',
+    distant: { shape: 'volcano', color: 0x3a3436 },
+    haze: 0.3,
+    duotone: [0x040404, 0x8a3a10, 0xffd080],
+    skyCycle: false,
+    dust: 0x8a8a80,
+    barrier: { map: () => tex.stoneTexture([70, 70, 74], [140, 136, 130]), crawl: false },
   },
 };

@@ -382,7 +382,10 @@ export class Sfx {
     }
     if (by === 'dustDevils' || by === 'butterflies' || by === 'tornadoes' || by === 'wisps') return;
     this.onDuck(0.4, 0.8);
-    if (by === 'boulders' || by === 'lavaBombs' || by === 'oilBombs' || by === 'meteors' || by === 'hail' || by === 'rollers' || by === 'vines' || by === 'iceBlocks' || by === 'stones' || by === 'gliders') this.hit(0.3, 180, 0.5);
+    if (by === 'boulders' || by === 'lavaBombs' || by === 'oilBombs' || by === 'meteors' || by === 'hail' || by === 'rollers' || by === 'vines' || by === 'iceBlocks' || by === 'stones' || by === 'gliders' || by === 'crystals' || by === 'goblins') this.hit(0.3, 180, 0.5);
+    // A geyser goes up in a roar of water; Predator X snaps with a bellow.
+    if (by === 'geysers') this.whoosh(0.9, 300, 2600, 0.35);
+    if (by === 'jaws') this.tone(70, 0.7, 'sawtooth', 0.14, 40, 0, true);
     // A wave breaking over you: a crash of white noise; a glider comes in with a whistle of wind.
     if (by === 'waves') this.whoosh(0.8, 2400, 300, 0.35);
     if (by === 'gliders') this.whoosh(0.5, 1800, 500, 0.2);

@@ -8,7 +8,14 @@ export interface Pose {
 }
 
 /** How the road looks; 'ice' and 'oil' also slide (physics/kart.ts). */
-export type RoadSurface = 'asphalt' | 'salt' | 'rock' | 'sand' | 'boards' | 'ice' | 'neon' | 'rainbow' | 'oil' | 'regolith' | 'wet' | 'cosmic';
+export type RoadSurface =
+  | 'asphalt' | 'salt' | 'rock' | 'sand' | 'boards' | 'ice' | 'neon' | 'rainbow' | 'oil' | 'regolith' | 'wet' | 'cosmic'
+  /** Magenta Mountain's glowing crystal road. */
+  | 'crystal'
+  /** Kepler-22b's alien reef. */
+  | 'reef'
+  /** The Garden Goblin's paths: crazy paving. */
+  | 'paving';
 
 export interface SectionProps {
   halfWidth: number;
@@ -17,6 +24,8 @@ export interface SectionProps {
   surface?: RoadSurface;
   /** Raised deck on pillars (an overpass) rather than an earth embankment. */
   bridge?: boolean;
+  /** Gravity over this stretch, as a share of the usual: below 1, karts float. */
+  gravity?: number;
 }
 
 export interface SectionDef extends SectionProps {
