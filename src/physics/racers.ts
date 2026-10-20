@@ -33,7 +33,7 @@ export const RACERS: readonly RacerDef[] = [
   { id: 'mushroom-sage', name: 'Mushroom Sage', stats: { speed: 3, accel: 3, weight: 2, handling: 4, drift: 4 }, color: 0x7a5adf, accent: 0xf4e8d0, bio: 'Mycelium mystic who knows the secret of the Fourth Colour' },
   { id: 'arlo', name: 'Arlo', stats: { speed: 3, accel: 4, weight: 2, handling: 4, drift: 3 }, color: 0xd09a62, accent: 0x3a4250, bio: 'An apricot standard poodle, booked on Flight b741 for when pigs fly' },
   { id: 'octo-organist', name: 'Kraken', stats: { speed: 4, accel: 2, weight: 3, handling: 2, drift: 3 }, color: 0xff7aa8, accent: 0x2ad8b0, bio: 'Up from Open Water at the keys of a steam pipe-organ, dragging sailors under' },
-  // The band, with their blessing.
+  // The band.
   { id: 'ambrose-kenny-smith', name: 'Amby', stats: { speed: 3, accel: 5, weight: 2, handling: 3, drift: 3 }, color: 0x2a8ad8, accent: 0xff5a3a, bio: 'Harmonica raised, boogie in the blood: Boogieman Sam\'s own' },
   { id: 'michael-cavanagh', name: 'Cavs', stats: { speed: 4, accel: 2, weight: 3, handling: 2, drift: 3 }, color: 0x1a3a6a, accent: 0xffd23a, bio: 'Rolling on two bass drums, sticks up, a Road Train with no brakes' },
   { id: 'cook-craig', name: 'Cookie', stats: { speed: 3, accel: 2, weight: 3, handling: 5, drift: 4 }, color: 0x3aa04a, accent: 0xffe14d, bio: 'Keytar, guitar and keyboard in one deck, with a Gamma Knife on the neck' },
