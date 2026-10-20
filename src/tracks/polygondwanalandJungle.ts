@@ -149,7 +149,8 @@ function buildFourthColour(from: { s: number; pose: Pose }, to: { s: number; pos
   b.straight((b.pose.z - to.pose.z - r * (1 - Math.sin((veer * Math.PI) / 180))) / slant);
   b.arc(r, 90 - veer);
   b.straight(b.pose.x - to.pose.x);
-  const branch: BranchDef = { name: 'The Fourth Colour', mainFrom: from.s, mainTo: to.s, ...b.finish(false) };
+  // The castle in the air crumbles away on the final lap.
+  const branch: BranchDef = { name: 'The Fourth Colour', mainFrom: from.s, mainTo: to.s, ...b.finish(false), openOn: [1, 2], shut: { kind: 'vanish' } };
   return { branch, landing };
 }
 

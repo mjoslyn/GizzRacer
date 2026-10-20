@@ -25,13 +25,7 @@ export const TRIAL_LAPS = 1;
  * on the old layout don't stand against the new one (a physics version
  * bump does the same for every track at once).
  */
-export const TRACK_REVISIONS: Record<string, number> = {
-  // Lap-changing shortcuts, hazards that help, and Panpsych Grove's Root Knot.
-  'phantom-island': 2,
-  'deadstick-drop': 2,
-  'panpsych-grove': 2,
-  'sea-of-doubt': 2,
-};
+export const TRACK_REVISIONS: Record<string, number> = {};
 
 /** A track's id for its records: with its revision, once it has one. */
 export function recordId(trackId: string): string {

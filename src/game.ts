@@ -618,7 +618,7 @@ function step(dt: number): void {
     }
     if (e.type === 'bonus') {
       if (e.kart === player) {
-        hud.flash(BONUS_TEXT[e.by] ?? 'NICE!');
+        hud.flash(BONUS_TEXT[e.by]);
         sfx.boost(2);
       }
       continue;
@@ -784,11 +784,30 @@ const HIT_TEXT: Record<ItemKind | HazardKind, string> = {
 };
 
 /** What a hazard used well says: the ones that can help. */
-const BONUS_TEXT: Partial<Record<HazardKind, string>> = {
+const BONUS_TEXT: Record<HazardKind, string> = {
   wisps: 'SPIRITED AWAY!',
   gliders: 'WRECK RAMP!',
-  stones: 'ROCK SMASH!',
+  lavaBombs: 'LAVA RAMP!',
+  meteors: 'METEOR RAMP!',
+  stones: 'STONE SMASH!',
+  boulders: 'ROCK SMASH!',
+  rollers: 'POLYGON SMASH!',
+  iceBlocks: 'ICE BREAKER!',
+  hail: 'HAIL BREAKER!',
+  oilBombs: 'BLASTED THROUGH!',
+  tumbleweeds: 'WEED WHACKER!',
   waves: 'SURFED!',
+  snakes: 'CHARMED!',
+  fish: 'CAUGHT ONE!',
+  lasers: 'OVERCLOCKED!',
+  flameJets: 'FIREWALKER!',
+  dragonFire: 'DRAGON RIDER!',
+  dustDevils: 'UPDRAFT!',
+  tornadoes: 'TWISTED UP!',
+  butterflies: 'ON THE WING!',
+  blackHoles: 'GRAVITY ASSIST!',
+  lightning: 'CHARGED!',
+  vines: 'SWUNG!',
 };
 
 /** Takes a group out of the scene and frees what it built. */

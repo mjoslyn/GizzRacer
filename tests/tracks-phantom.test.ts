@@ -5,7 +5,7 @@ import { clamp, wrapAngle } from '../src/core/math';
 import { FUZZ_BOOST } from '../src/items/items';
 import { CPU_SKILL } from '../src/ai/cpuDriver';
 import { Race } from '../src/core/race';
-import { BOULDER_STAGES, GLIDER_LAUNCH, HazardSystem, STONE_BOOST, WAVE_SURF, WISP_BOOST, type HazardPose } from '../src/items/hazards';
+import { BOULDER_STAGES, RAMP_LAUNCH, HazardSystem, RAM_BOOST, WAVE_SURF, WISP_BOOST, type HazardPose } from '../src/items/hazards';
 import { createKartState, stepKart, type KartState } from '../src/physics/kart';
 import { RACERS, kartParams, type EngineClass } from '../src/physics/racers';
 import { buildDeadstickDrop } from '../src/tracks/deadstickDrop';
@@ -259,12 +259,16 @@ describe('hazards that help when you use them', () => {
     expect(s.boostTime).toBeCloseTo(WISP_BOOST);
   });
 
-  it('a plane that has crash-landed is a ramp: it throws you up with a trick window, no spin', () => {
+  it('a plane that has crash-landed is a ramp, hopped onto: it throws you up with a trick window, no spin', () => {
     const h = new HazardSystem(new Track(buildDeadstickDrop()));
     const p = hazardWhen(h, 'gliders', (q) => q.phase > BOULDER_STAGES.land + 0.05 && q.phase < BOULDER_STAGES.crumble - 0.05);
+    const driven = kartAt(p);
+    h.collide([driven], PHYSICS_DT);
+    expect(driven.spinTime).toBeGreaterThan(0);
     const s = kartAt(p);
+    s.hopAge = 0.1;
     expect(h.collide([s], PHYSICS_DT)[0]).toMatchObject({ by: 'gliders', good: true });
-    expect(s.vy).toBe(GLIDER_LAUNCH);
+    expect(s.vy).toBe(RAMP_LAUNCH);
     expect(s.grounded).toBe(false);
     expect(s.trickWindow).toBeGreaterThan(0);
     expect(s.spinTime).toBe(0);
@@ -279,7 +283,7 @@ describe('hazards that help when you use them', () => {
     const boosting = kartAt(p);
     boosting.boostTime = 0.5;
     expect(h.collide([boosting], PHYSICS_DT)[0]).toMatchObject({ by: 'stones', good: true });
-    expect(boosting.boostTime).toBeCloseTo(0.5 + STONE_BOOST);
+    expect(boosting.boostTime).toBeCloseTo(0.5 + RAM_BOOST);
     expect(boosting.spinTime).toBe(0);
   });
 

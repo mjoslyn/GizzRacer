@@ -148,6 +148,7 @@ function buildHollowLog(from: { s: number; pose: Pose }, to: { s: number; pose: 
   b.elevate(1).straight(12).elevate(0);
   b.section('Hollow Log Bank', { halfWidth: 6, surface: 'rock' });
   b.straight(chord - b.s);
-  const branch: BranchDef = { name: 'Hollow Log', mainFrom: from.s, mainTo: to.s, ...b.finish(false) };
+  // The log is awake too: on the second lap it has wandered off, and the pond is open.
+  const branch: BranchDef = { name: 'Hollow Log', mainFrom: from.s, mainTo: to.s, ...b.finish(false), openOn: [1, 'final'], shut: { kind: 'vanish' } };
   return { branch, pits: b.pits, boxes };
 }

@@ -262,4 +262,35 @@ describe('kart walls', () => {
     expect(events.some((e) => e.wallHit > 0.9)).toBe(true);
     expect(s.z).toBeLessThanOrEqual(9 + 1e-9);
   });
+
+  it('bounces back off a wall it hits square-on, a lot slower', () => {
+    const s = createKartState(0, 5, 0);
+    s.speed = 25;
+    let hitAt = -1;
+    let furthestBack = Infinity;
+    const steps = Math.round(0.6 / PHYSICS_DT);
+    for (let i = 0; i < steps; i++) {
+      const ev = stepKart(s, input({}), params, flatEnv('road', 10), PHYSICS_DT);
+      if (ev.wallHit > 0.9 && hitAt < 0) hitAt = i;
+      if (hitAt >= 0) furthestBack = Math.min(furthestBack, s.z);
+    }
+    expect(hitAt).toBeGreaterThanOrEqual(0);
+    // Thrown back off the wall, not pinned to it.
+    expect(furthestBack).toBeLessThan(9 - 0.5);
+    expect(s.speed).toBeLessThan(25 * 0.5);
+  });
+
+  it('glances off a wall it hits at an angle: the nose turns along it, and it drives away instead of sticking', () => {
+    // Heading 30 degrees into a wall across +z.
+    const s = createKartState(0, 5, Math.PI / 3);
+    s.speed = 25;
+    const env = flatEnv('road', 10);
+    const events = run(s, env, 1.2, input({ throttle: 1 }));
+    expect(events.some((e) => e.wallHit > 0.3)).toBe(true);
+    // Once glanced off it runs along the wall, close to parallel, still quick.
+    expect(Math.abs(Math.sin(s.heading))).toBeGreaterThan(0.95);
+    expect(s.speed).toBeGreaterThan(18);
+    // And it isn't ground against the wall the whole way: only one impact.
+    expect(events.filter((e) => e.wallHit > 0).length).toBe(1);
+  });
 });

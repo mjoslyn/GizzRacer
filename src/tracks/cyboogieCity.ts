@@ -116,7 +116,9 @@ function buildMuntMachine(from: { s: number; pose: Pose }, to: { s: number; pose
   b.elevate(0);
   b.section('Soy-Protein Munt Machine', { halfWidth: 5.5, surface: 'neon' });
   b.straight(chord - b.s);
-  const branch: BranchDef = { name: 'Soy-Protein Munt Machine', mainFrom: from.s, mainTo: to.s, ...b.finish(false) };
+  // The machine's shutter is only up on the second lap.
+  const shutter = { style: 'wall', color: 0xff3ad8, glow: true } as const;
+  const branch: BranchDef = { name: 'Soy-Protein Munt Machine', mainFrom: from.s, mainTo: to.s, ...b.finish(false), openOn: [2], shut: { kind: 'barrier', at: 38, look: shutter } };
   return { branch, pits: b.pits, boxes: 26 };
 }
 

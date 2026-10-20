@@ -14,8 +14,8 @@ No install and no account. It will always be free.
   - **Apocalypse Cup:** Hell on Mars, Supercell, Murder of the Universe, Petrodragonic Apocalypse
   - **Phantom Island Cup:** Phantom Island, Deadstick Drop, Panpsych Grove, Sea of Doubt
 - **Roller-coaster tracks:** climbs onto pillared decks, plunges you fly off, canyons sunk into the ground, and a causeway that dives under the lagoon
-- **Shortcuts on every track**, trick kickers on the straights and double item boxes on the risky lines
-- **Hazards** from the songs: rattlesnakes, flame jets, tornadoes, black holes, dragons breathing fire across a gullet, planes gliding in with their propellers stopped, and waves breaking over a causeway
+- **Shortcuts on every track** that come and go by lap: a phantom causeway that only appears on lap 2, a snake that shuts its jaws, a tide that floods the boardwalk, a wall of fire that only drops on the final lap. Trick kickers on the straights and double item boxes on the risky lines
+- **Hazards** from the songs: rattlesnakes, flame jets, tornadoes, black holes, dragons breathing fire across a gullet, planes gliding in with their propellers stopped, and waves breaking over a causeway. Use them well and they help: surf the wave, hop onto a crashed plane for a ramp, ram a boulder on a boost, slip through a laser gate as it warms up
 - **20 racers**, each with their own vehicle: the Lizard Wizard, Han-Tyumi in a fishing dinghy, a flying Gila monster, Beowulf's Witch, the Fuzz Golem, Arlo the poodle in a dog bed, and more. The band are in it too: Amby, Cavs, Cookie, Jason, Joey, Lukey and Stu
 - **13 items**, each with a Gizzverse name:
   - Mind Fuzz, Microtonal Banana, Nuclear Fusion, Big Fig Wasp, Horology and the Woo Cannon

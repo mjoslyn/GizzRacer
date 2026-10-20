@@ -9,7 +9,7 @@ import { buildInfiniteLoopSpeedway } from '../src/tracks/infiniteLoopSpeedway';
 import { buildPolygondwanalandJungle } from '../src/tracks/polygondwanalandJungle';
 import { buildRattlesnakeRun } from '../src/tracks/rattlesnakeRun';
 import { nearestOnSpline, pointAt } from '../src/tracks/spline';
-import { Track, type TrackDef } from '../src/tracks/track';
+import { Track, shortcutLap, type TrackDef } from '../src/tracks/track';
 import { buildVolcanoFortress } from '../src/tracks/volcanoFortress';
 
 /**
@@ -69,6 +69,7 @@ function splitTime(track: Track, branch: number, viaBranch: boolean, boost = 0):
   const to = pointAt(track.spline, track.mainS(def.mainTo));
   const s0 = pointAt(track.spline, track.mainS(def.mainFrom - 60));
   const kart = createKartState(s0.x, s0.z, Math.atan2(s0.tx, s0.tz));
+  Object.assign(kart, shortcutLap(track.def));
   kart.y = kart.groundY = track.main.heightAt(track.mainS(def.mainFrom - 60));
   kart.speed = p.topSpeed;
   let t0 = -1;
@@ -90,6 +91,7 @@ function jump(track: Track, s: number, ribbon: number, speed: number, boost: num
   const r = track.ribbon(ribbon);
   const pt = pointAt(r.spline, s);
   const kart = createKartState(pt.x, pt.z, Math.atan2(pt.tx, pt.tz));
+  Object.assign(kart, shortcutLap(track.def));
   kart.y = kart.groundY = r.heightAt(s);
   kart.speed = speed;
   kart.boostTime = boost;
@@ -209,6 +211,7 @@ describe.each(CUP)('$name', ({ build, near, high, low }) => {
     const s = track.mainS(lip - 30);
     const pt = pointAt(track.spline, s);
     const kart = createKartState(pt.x, pt.z, Math.atan2(pt.tx, pt.tz));
+    Object.assign(kart, shortcutLap(track.def));
     kart.y = kart.groundY = track.main.heightAt(s);
     kart.speed = p.topSpeed;
     let launched = false;

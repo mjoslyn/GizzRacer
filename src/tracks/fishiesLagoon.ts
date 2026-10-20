@@ -111,7 +111,8 @@ function buildOpenWater(from: { s: number; pose: Pose }, to: { s: number; pose: 
   b.bridge(straight[1], 12, 'water');
   b.section('Open Water', { halfWidth: 7, surface: 'sand' });
   turn(last);
-  const branch: BranchDef = { name: 'Open Water', mainFrom: from.s, mainTo: to.s, ...b.finish(false) };
+  // High tide on the first lap: the boardwalk is under water until it goes out.
+  const branch: BranchDef = { name: 'Open Water', mainFrom: from.s, mainTo: to.s, ...b.finish(false), openOn: [2, 'final'], shut: { kind: 'flood' } };
   return { branch, pits: b.pits, boardsFrom };
 }
 

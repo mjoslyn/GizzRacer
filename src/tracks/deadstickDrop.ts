@@ -147,7 +147,8 @@ function buildTailwind(from: { s: number; pose: Pose }, to: { s: number; pose: P
   const b = new TrackBuilder(from.pose, 'Tailwind', { halfWidth: 6, surface: 'asphalt' });
   b.straight(30);
   b.section('Tailwind Taxiway', { halfWidth: 4, surface: 'boards' });
-  const bar = b.s;
+  // The bar stands where the taxiway is clear of the perimeter road, just before the planks go out over the water.
+  const bar = b.s + 10;
   b.elevate(0).straight(12).elevate(1);
   const basin = chord - 2 * b.s;
   const boxes = b.s + basin / 2;

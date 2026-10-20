@@ -25,7 +25,15 @@ export interface BranchDef extends RibbonDef {
    * the water), drowned by the tide ('flood'), or barred from this far along
    * it, in builder units ('barrier': karts bounce off the bar).
    */
-  shut?: { kind: 'vanish' } | { kind: 'flood' } | { kind: 'barrier'; at: number };
+  shut?: { kind: 'vanish' } | { kind: 'flood' } | { kind: 'barrier'; at: number; look?: BarrierLook };
+}
+
+/** How a bar across a road looks: a striped boom that swings up, or a wall (of ice, fire, bone, steel) that sinks away. */
+export interface BarrierLook {
+  style: 'boom' | 'wall';
+  color?: number;
+  /** Lit from within (fire, neon). */
+  glow?: boolean;
 }
 
 /** Which lap a kart is on, for the roads that are only there on some (BranchDef.openOn). */
@@ -34,6 +42,15 @@ export interface LapContext {
   lap: number;
   /** The last lap of a race of more than one. */
   lastLap: boolean;
+}
+
+/** The first lap of a race of `laps` on which every one of a track's shortcuts is there (for tests and tools). */
+export function shortcutLap(def: TrackDef, laps = 3): LapContext {
+  for (let lap = 1; lap <= laps; lap++) {
+    const ctx = { lap, lastLap: laps > 1 && lap === laps };
+    if (def.branches.every((b) => branchOpen(b, ctx))) return ctx;
+  }
+  return { lap: 1, lastLap: false };
 }
 
 /** Whether a branch is there on a lap; with no lap given, every branch is. */

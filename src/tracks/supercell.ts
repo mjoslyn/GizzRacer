@@ -142,6 +142,7 @@ function buildLevee(from: { s: number; pose: Pose }, to: { s: number; pose: Pose
   b.elevate(1).straight(12).elevate(0);
   b.section('Converge', { halfWidth: 6, surface: 'wet' });
   b.straight(chord - b.s);
-  const branch: BranchDef = { name: 'Converge', mainFrom: from.s, mainTo: to.s, ...b.finish(false) };
+  // The storm surge floods the levee on the second lap, and it drains for the last.
+  const branch: BranchDef = { name: 'Converge', mainFrom: from.s, mainTo: to.s, ...b.finish(false), openOn: [1, 'final'], shut: { kind: 'flood' } };
   return { branch, pits: b.pits, boxes };
 }

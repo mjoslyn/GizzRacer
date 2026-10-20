@@ -81,17 +81,53 @@ const STONE_RADIUS = 1.5;
 export const STONE_SPIN = 1.0;
 export const GLIDER_SPIN = 1.1;
 export const WAVE_SPIN = 1.0;
+/*
+ * Hazards that help when used well (a 'good' hit, the race's 'bonus' event):
+ * - a ghost light's core carries you on a boost
+ * - something that has come down (a crashed plane, a lava bomb, a meteor) is a ramp, hopped onto
+ * - rammed on a boost, a stone, boulder, ice block, hailstone, tumbleweed or
+ *   glob of burning oil gives way and the boost runs on
+ * - hopped, a snake is cleared, a leaping fish caught and a wave surfed, each for a boost
+ * - a laser gate or flame jet slipped through while it's warming up is a boost
+ * - hop in a dust devil or a tornado and it throws you up for a trick
+ * - drifting through a butterfly swarm charges the sparks faster
+ * - skimming a black hole's pull on a boost is a gravity assist
+ */
+/** A reward can't pay out again to the same kart for this long. */
+export const REWARD_COOLDOWN = 1.5;
 /** Touch a ghost light's core and it carries you: a boost this long. */
 export const WISP_CORE = 1.4;
 export const WISP_BOOST = 0.9;
-/** A plane that has crash-landed is a ramp: it throws you up at this speed (m/s), with a trick window. */
-export const GLIDER_LAUNCH = 9;
-/** Ram a living stone while boosting and it moves for you: the boost runs on this much longer. */
-export const STONE_BOOST = 0.6;
-/** Hop (or be in the air) as a wave breaks over you and you surf it: a boost this long. */
+/** What has come down is a ramp, hopped onto: it throws you up at this speed (m/s), with a trick window. */
+export const RAMP_LAUNCH = 9;
+/** Rammed on a boost, the boost runs on this much longer. */
+export const RAM_BOOST = 0.6;
+/** A hop this recent (or being in the air) counts as hopping a hazard. */
+export const HOP_WINDOW = 0.35;
+/** Hopped: a snake cleared or a fish caught is a boost this long; a wave surfed, longer. */
+export const HOP_BOOST = 0.7;
 export const WAVE_SURF = 1.1;
-/** How recent a hop counts as riding the wave. */
-export const WAVE_HOP = 0.35;
+/** A gate slipped through as it warms up: a boost this long. */
+export const GATE_BOOST = 0.7;
+/** A hop this recent in a dust devil or tornado gets you thrown up, this fast (m/s). */
+export const UPDRAFT_HOP = 0.3;
+export const DEVIL_LIFT = 9;
+export const TORNADO_LIFT = 12;
+/** Drift charge gained per second in a butterfly swarm, on top of the drift's own. */
+export const WING_CHARGE = 1;
+/** Boost seconds gained per second skimming a black hole's pull on a boost. */
+export const GRAVITY_ASSIST = 0.8;
+const RAMPS = new Set<HazardKind>(['gliders', 'lavaBombs', 'meteors']);
+const RAMMABLE = new Set<HazardKind>(['stones', 'rollers', 'iceBlocks', 'hail', 'oilBombs', 'boulders', 'tumbleweeds']);
+const HOPPABLE = new Set<HazardKind>(['waves', 'snakes', 'fish']);
+const WARMING = new Set<HazardKind>(['lasers', 'flameJets']);
+
+/** Throws a grounded kart up at `vy` with a trick window. */
+function launch(s: KartState, vy: number): void {
+  s.grounded = false;
+  s.vy = Math.max(s.vy, vy);
+  s.trickWindow = TRICK_WINDOW;
+}
 const SWIRL_PUSH: Partial<Record<HazardKind, number>> = { dustDevils: DEVIL_PUSH, butterflies: BUTTERFLY_PUSH, tornadoes: TORNADO_PUSH, blackHoles: HOLE_PUSH, wisps: WISP_PUSH };
 /** A bolt strikes for this share of the cycle after its warning ring closes. */
 export const LIGHTNING_STRIKE = 0.12;
@@ -143,6 +179,8 @@ export class HazardSystem {
   readonly poses: HazardPose[] = [];
   private readonly slots: { def: HazardDef; index: number }[] = [];
   private readonly cooldown = new Map<KartState, number>();
+  /** Per kart: a hazard used well can't pay out again for this long. */
+  private readonly rewarded = new Map<KartState, number>();
   private lastT = 0;
 
   constructor(private readonly track: Track) {
@@ -293,56 +331,68 @@ export class HazardSystem {
 
   /**
    * Hits karts touching an active hazard. Returns the karts that got hit
-   * (spun or slowed) and by what; `good` marks a hazard used well (a ghost
-   * light's core, a wreck taken as a ramp, a stone rammed on a boost, a wave
-   * surfed), which helps rather than hurts.
+   * (spun or slowed) and by what; `good` marks a hazard used well, which
+   * helps rather than hurts (see the reward rules above).
    */
   collide(karts: readonly KartState[], dt: number): { kart: KartState; by: HazardKind; good?: boolean }[] {
     const hit: { kart: KartState; by: HazardKind; good?: boolean }[] = [];
-    for (const [k, v] of this.cooldown) {
-      if (v - dt <= 0) this.cooldown.delete(k);
-      else this.cooldown.set(k, v - dt);
+    for (const map of [this.cooldown, this.rewarded]) {
+      for (const [k, v] of map) {
+        if (v - dt <= 0) map.delete(k);
+        else map.set(k, v - dt);
+      }
     }
     for (const s of karts) {
       for (const p of this.poses) {
-        if (!p.active) continue;
         if (Math.abs(s.y - p.ground) > 2.2) continue;
+        // A gate warming up is a gap to slip through, and a boost for making it.
+        if (WARMING.has(p.kind) && !p.active) {
+          if (p.phase >= JET_STAGES.sputter && this.distance(p, s) <= p.radius + KART_RADIUS) this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, GATE_BOOST)));
+          continue;
+        }
+        if (!p.active) continue;
         const d = this.distance(p, s);
         if (d > p.radius + KART_RADIUS) continue;
         if (isSwirl(p.kind)) {
           this.swirl(p, s, dt);
-          // Right through the middle of the ghost lights: they carry you.
-          if (p.kind === 'wisps' && d < WISP_CORE + KART_RADIUS && !this.cooldown.has(s)) {
-            this.cooldown.set(s, HIT_COOLDOWN * 2);
-            s.boostTime = Math.max(s.boostTime, WISP_BOOST);
-            hit.push({ kart: s, by: p.kind, good: true });
+          if (p.kind === 'wisps' && d < WISP_CORE + KART_RADIUS) {
+            // Right through the middle of the ghost lights: they carry you.
+            this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, WISP_BOOST)));
+          } else if ((p.kind === 'dustDevils' || p.kind === 'tornadoes') && s.hopAge < UPDRAFT_HOP) {
+            // Hop in the wind and it throws you up: airtime and a trick.
+            this.reward(hit, s, p.kind, () => launch(s, p.kind === 'tornadoes' ? TORNADO_LIFT : DEVIL_LIFT));
+          } else if (p.kind === 'butterflies' && s.driftDir !== 0) {
+            // Drifting on the wings of the swarm charges the sparks faster.
+            s.driftCharge += dt * WING_CHARGE;
+            this.reward(hit, s, p.kind, () => {});
           }
           continue;
         }
-        // A plane already down is a wreck to drive up and fly off.
-        if (p.kind === 'gliders' && p.phase >= BOULDER_STAGES.land) {
-          if (this.cooldown.has(s) || !s.grounded) continue;
-          this.cooldown.set(s, HIT_COOLDOWN);
-          s.grounded = false;
-          s.vy = Math.max(s.vy, GLIDER_LAUNCH);
-          s.trickWindow = TRICK_WINDOW;
-          hit.push({ kart: s, by: p.kind, good: true });
+        // Something that has come down is a ramp to fly off, hopped onto; driven into, it's as solid as a boulder.
+        if (RAMPS.has(p.kind) && p.phase >= BOULDER_STAGES.land && s.hopAge < HOP_WINDOW) {
+          this.reward(hit, s, p.kind, () => launch(s, RAMP_LAUNCH));
           continue;
         }
         if (p.kind === 'blackHoles') {
           this.swirl(p, s, dt);
+          // Skim the edge on a boost: a gravity assist, the boost running on.
+          if (s.boostTime > 0 && d > HOLE_CORE + KART_RADIUS) {
+            s.boostTime += dt * GRAVITY_ASSIST;
+            this.reward(hit, s, p.kind, () => {});
+          }
           if (d > HOLE_CORE + KART_RADIUS) continue;
+        }
+        // Rammed on a boost it gives way and the boost runs on; hopped as it comes, it's ridden.
+        const rammed = RAMMABLE.has(p.kind) && s.boostTime > 0;
+        const hopped = HOPPABLE.has(p.kind) && (!s.grounded || s.hopAge < HOP_WINDOW);
+        if (rammed || hopped) {
+          this.reward(hit, s, p.kind, () => (rammed ? (s.boostTime += RAM_BOOST) : (s.boostTime = Math.max(s.boostTime, p.kind === 'waves' ? WAVE_SURF : HOP_BOOST))));
+          continue;
         }
         if (isFalling(p.kind)) this.pushOut(p, s);
         if (this.cooldown.has(s)) continue;
         this.cooldown.set(s, HIT_COOLDOWN);
-        // Rammed on a boost, a stone gives way; a wave hopped as it breaks is surfed.
-        const used =
-          (p.kind === 'stones' && s.boostTime > 0) || (p.kind === 'waves' && (!s.grounded || s.hopAge < WAVE_HOP));
-        if (used) {
-          s.boostTime = p.kind === 'stones' ? s.boostTime + STONE_BOOST : Math.max(s.boostTime, WAVE_SURF);
-          hit.push({ kart: s, by: p.kind, good: true });
-        } else if (p.kind === 'tumbleweeds') {
+        if (p.kind === 'tumbleweeds') {
           s.speed *= TUMBLEWEED_SLOW;
           s.vy = Math.max(s.vy, 2.5);
           hit.push({ kart: s, by: p.kind });
@@ -371,6 +421,14 @@ export class HazardSystem {
         out.push({ x: p.x, z: p.z, r: p.radius, vx: p.vx, vz: p.vz });
       }
     }
+  }
+
+  /** Pays a kart for using a hazard well, once in a while. */
+  private reward(hit: { kart: KartState; by: HazardKind; good?: boolean }[], s: KartState, by: HazardKind, pay: () => void): void {
+    if (this.rewarded.has(s)) return;
+    this.rewarded.set(s, REWARD_COOLDOWN);
+    pay();
+    hit.push({ kart: s, by, good: true });
   }
 
   private place(p: HazardPose, builderS: number, lateral: number, lift: number): void {

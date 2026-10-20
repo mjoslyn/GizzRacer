@@ -506,7 +506,25 @@ function lapRoad(def: BranchDef, ribbon: Ribbon, g: THREE.Group): LapRoad {
   let last = 0;
   let barrier: THREE.Group | null = null;
   let boom: THREE.Object3D | null = null;
-  if (def.shut?.kind === 'barrier') {
+  let wall: THREE.Object3D | null = null;
+  // A flooded road sinks its own height and then some, so even an arched bridge goes under.
+  let floodDepth = FLOOD_DEPTH;
+  for (let s = 0; s < ribbon.spline.length; s += 4) floodDepth = Math.max(floodDepth, FLOOD_DEPTH + ribbon.heightAt(s));
+  if (def.shut?.kind === 'barrier' && def.shut.look?.style === 'wall') {
+    // A wall right across the road that sinks into the ground when it opens.
+    const { color = 0x8a8a90, glow = false } = def.shut.look;
+    barrier = new THREE.Group();
+    const s = def.shut.at * ribbon.scale;
+    const p = pointAt(ribbon.spline, s);
+    const hw = ribbon.halfWidthAtS(s) + 1.5;
+    const mat = glow
+      ? new THREE.MeshLambertMaterial({ color, emissive: color, emissiveIntensity: 0.6, transparent: true, opacity: 0.92 })
+      : new THREE.MeshLambertMaterial({ color, flatShading: true });
+    wall = new THREE.Mesh(new THREE.BoxGeometry(hw * 2, 3.4, 0.9), mat);
+    barrier.add(wall);
+    barrier.position.set(p.x, ribbon.heightAt(s), p.z);
+    barrier.rotation.y = Math.atan2(p.tx, p.tz);
+  } else if (def.shut?.kind === 'barrier') {
     barrier = new THREE.Group();
     const s = def.shut.at * ribbon.scale;
     const p = pointAt(ribbon.spline, s);
@@ -544,11 +562,15 @@ function lapRoad(def: BranchDef, ribbon: Ribbon, g: THREE.Group): LapRoad {
           g.visible = shown >= 1 || (shown > 0 && Math.random() < shown);
           break;
         case 'flood':
-          g.position.y = -FLOOD_DEPTH * (1 - shown);
-          g.visible = shown > 0 || g.position.y > -FLOOD_DEPTH;
+          g.position.y = -floodDepth * (1 - shown);
+          g.visible = shown > 0;
           break;
         case 'barrier':
           if (boom) boom.rotation.z = shown * Math.PI * 0.45;
+          if (wall) {
+            wall.position.y = 1.7 - 3.6 * shown;
+            wall.visible = shown < 1;
+          }
           break;
       }
     },

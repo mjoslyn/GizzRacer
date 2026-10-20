@@ -166,6 +166,7 @@ function buildCatchingSmoke(from: { s: number; pose: Pose }, to: { s: number; po
   b.straight(chord);
   // Level where it runs beside the main road at either end.
   b.profile(35, chord - 35, (u) => GARDEN_Y - 2 * Math.sin(Math.PI * u) ** 2);
-  const branch: BranchDef = { name: 'Catching Smoke', mainFrom: from.s, mainTo: to.s, ...b.finish(false) };
+  // Smoke you can only catch on the final lap: the rest of the race it isn't there.
+  const branch: BranchDef = { name: 'Catching Smoke', mainFrom: from.s, mainTo: to.s, ...b.finish(false), openOn: ['final'], shut: { kind: 'vanish' } };
   return { branch, boxes: chord / 2 };
 }

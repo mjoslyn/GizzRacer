@@ -118,7 +118,9 @@ function buildMycelium(from: { s: number; pose: Pose }, to: { s: number; pose: P
   b.elevate(0);
   b.section('Mycelium', { halfWidth: 5, surface: 'ice' });
   b.straight(chord - b.s);
-  const branch: BranchDef = { name: 'Mycelium', mainFrom: from.s, mainTo: to.s, ...b.finish(false) };
+  // Frozen shut on the first lap: a wall of ice that's thawed by the second.
+  const ice = { style: 'wall', color: 0x6ab8f0, glow: true } as const;
+  const branch: BranchDef = { name: 'Mycelium', mainFrom: from.s, mainTo: to.s, ...b.finish(false), openOn: [2, 'final'], shut: { kind: 'barrier', at: 33, look: ice } };
   return { branch, pits: b.pits, boxes: 17 };
 }
 

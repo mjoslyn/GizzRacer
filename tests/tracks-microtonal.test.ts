@@ -10,7 +10,7 @@ import { buildCyboogieCity } from '../src/tracks/cyboogieCity';
 import { buildFishiesLagoon } from '../src/tracks/fishiesLagoon';
 import { buildIceVGlacier } from '../src/tracks/iceVGlacier';
 import { nearestOnSpline, pointAt } from '../src/tracks/spline';
-import { Track, inPit, type Ribbon, type TrackDef } from '../src/tracks/track';
+import { Track, inPit, shortcutLap, type Ribbon, type TrackDef } from '../src/tracks/track';
 
 /** A shortcut jump's design: at `engine`, every racer clears it at `clear` and falls at `fail` (speed as a share of top speed, boost seconds). */
 interface JumpSpec {
@@ -78,6 +78,7 @@ function driveRoute(track: Track, pts: { x: number; z: number }[], p: ReturnType
   const a = pts[0];
   const b = pts[1];
   const kart = createKartState(a.x, a.z, heading(b.x - a.x, b.z - a.z));
+  Object.assign(kart, shortcutLap(track.def));
   kart.y = kart.groundY = track.locate(a.x, a.z, 100).height;
   kart.speed = p.topSpeed;
   let i = 0;
@@ -105,6 +106,7 @@ function jump(track: Track, s: number, ribbon: number, speed: number, boost: num
   const r = track.ribbon(ribbon);
   const pt = pointAt(r.spline, s);
   const kart = createKartState(pt.x, pt.z, Math.atan2(pt.tx, pt.tz));
+  Object.assign(kart, shortcutLap(track.def));
   kart.y = kart.groundY = r.heightAt(s);
   kart.speed = speed;
   kart.boostTime = boost;
@@ -120,6 +122,7 @@ function followRibbon(track: Track, ribbon: number, s: number, time: number, p: 
   const r = track.ribbon(ribbon);
   const pt = pointAt(r.spline, s);
   const kart: KartState = createKartState(pt.x, pt.z, heading(pt.tx, pt.tz));
+  Object.assign(kart, shortcutLap(track.def));
   kart.y = kart.groundY = r.heightAt(s);
   kart.speed = p.topSpeed;
   let launched = false;

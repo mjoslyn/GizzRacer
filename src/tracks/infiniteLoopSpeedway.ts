@@ -142,5 +142,6 @@ function shape(b: TrackBuilder, pts: number[][], step = 6): void {
 function buildInvisibleFace(from: { s: number; pose: Pose }, to: { s: number; pose: Pose }): BranchDef {
   const b = new TrackBuilder(from.pose, 'Invisible Face', { halfWidth: 5, surface: 'sand' });
   b.turnTo(to.pose, FACE_R);
-  return { name: 'Invisible Face', mainFrom: from.s, mainTo: to.s, ...b.finish(false) };
+  // Invisible on the first lap: it shows its face from the second.
+  return { name: 'Invisible Face', mainFrom: from.s, mainTo: to.s, ...b.finish(false), openOn: [2, 'final'], shut: { kind: 'vanish' } };
 }

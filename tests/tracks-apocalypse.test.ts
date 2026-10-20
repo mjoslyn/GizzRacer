@@ -12,7 +12,7 @@ import { buildMurderOfTheUniverse } from '../src/tracks/murderOfTheUniverse';
 import { buildPetrodragonicApocalypse } from '../src/tracks/petrodragonicApocalypse';
 import { nearestOnSpline, pointAt } from '../src/tracks/spline';
 import { buildSupercell } from '../src/tracks/supercell';
-import { Track, inPit, type Ribbon, type TrackDef } from '../src/tracks/track';
+import { Track, inPit, shortcutLap, type Ribbon, type TrackDef } from '../src/tracks/track';
 
 /** How a shortcut's jump is meant to go: who makes it, and who doesn't. */
 interface JumpSpec {
@@ -140,6 +140,7 @@ describe.each(CASES.map((c) => [c.name, c] as const))('%s shortcut and kickers',
       const start = track.mainS(lip - 7 - 25);
       const pt = pointAt(track.spline, start);
       const kart = createKartState(pt.x, pt.z, Math.atan2(pt.tx, pt.tz));
+      Object.assign(kart, shortcutLap(track.def));
       kart.y = kart.groundY = track.main.heightAt(start);
       kart.speed = p.topSpeed;
       let launched = false;
@@ -171,6 +172,7 @@ describe('Petrodragonic Apocalypse Flamethrower pad', () => {
       const s0 = track.mainS(pad.s - 12);
       const pt = pointAt(track.spline, s0);
       const kart = createKartState(pt.x - pt.tz * pad.lateral, pt.z + pt.tx * pad.lateral, Math.atan2(pt.tx, pt.tz));
+      Object.assign(kart, shortcutLap(track.def));
       kart.speed = p.topSpeed;
       let boosted = false;
       for (let t = 0; t < 6; t += PHYSICS_DT) {
@@ -304,6 +306,7 @@ function drive(track: Track, ribbon: Ribbon, to: number, p: ReturnType<typeof ka
   const s0 = from === undefined ? 0 : track.mainS(from);
   const pt = pointAt(ribbon.spline, s0);
   const kart = createKartState(pt.x, pt.z, Math.atan2(pt.tx, pt.tz));
+  Object.assign(kart, shortcutLap(track.def));
   kart.y = kart.groundY = ribbon.heightAt(s0);
   kart.speed = p.topSpeed;
   const goal = pointAt(track.spline, track.mainS(to));
@@ -330,6 +333,7 @@ function jump(track: Track, s: number, ribbon: number, speed: number, boost: num
   const r = track.ribbon(ribbon);
   const pt = pointAt(r.spline, s);
   const kart = createKartState(pt.x, pt.z, Math.atan2(pt.tx, pt.tz));
+  Object.assign(kart, shortcutLap(track.def));
   kart.y = kart.groundY = r.heightAt(s);
   kart.speed = speed;
   kart.boostTime = boost;

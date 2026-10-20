@@ -139,6 +139,7 @@ function buildDigitalBlack(from: { s: number; pose: Pose }, to: { s: number; pos
   b.elevate(y1);
   b.profile(0, 45, () => y0, 45);
   ease(b, 45, y0, b.s - 45, y1);
-  const branch: BranchDef = { name: 'Digital Black', mainFrom: from.s, mainTo: to.s, ...b.finish(false) };
+  // The universe is murdered by the final lap: Digital Black is gone.
+  const branch: BranchDef = { name: 'Digital Black', mainFrom: from.s, mainTo: to.s, ...b.finish(false), openOn: [1, 2], shut: { kind: 'vanish' } };
   return { branch, boxes: branch.length / 2 };
 }

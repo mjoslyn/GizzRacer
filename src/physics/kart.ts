@@ -57,6 +57,7 @@ export interface KartState {
   ramTime: number; // seconds of Road Train left: immune, a little faster, spins out whoever it touches
   trickStreak: number; // tricks landed back to back
   trickChain: number; // seconds left to land the next trick and keep the streak
+  wallTime: number; // seconds since a wall impact still counted as the same one
   lap: number; // the lap it's on, 1 first: some roads are only there on some laps (set by the race)
   lastLap: boolean; // on the last lap of a race of more than one
 }
@@ -76,7 +77,7 @@ export interface StepEvents {
  * Bump whenever kart physics, racer stats or a track layout change lap
  * times: online leaderboards and ghosts are kept per version.
  */
-export const PHYSICS_VERSION = 9;
+export const PHYSICS_VERSION = 10;
 export const KART_RADIUS = 1;
 export const GRAVITY = 30;
 export const HOP_VELOCITY = 4.5;
@@ -147,8 +148,29 @@ const SLIDE: Record<SurfaceType, number> = { road: 0.1, boost: 0.1, offroad: 0.2
  */
 const DRIFT_SLIDE = 0.05;
 const DRIFT_HARD_SLIDE = 0.09;
-const WALL_SPEED_LOSS = 0.7;
-const WALL_BOUNCE = 4;
+/**
+ * Walls: an impact costs speed (a little even glancing, most of it
+ * square-on) and bounces the kart back off with some of the speed it hit
+ * with; a glancing one also turns the nose along the wall, so the kart
+ * glances off instead of grinding along it. Contact after that only scrapes,
+ * and a graze barely touches the line.
+ */
+const WALL_SPEED_LOSS = 0.6;
+const WALL_MIN_LOSS = 0.2;
+const WALL_RESTITUTION = 0.3;
+const WALL_BOUNCE = 2.5;
+/** Speed lost per second scraping along a wall, square-on. */
+const WALL_SCRAPE = 1.5;
+/** Seconds after an impact before contact counts as another. */
+const WALL_RECOVER = 0.3;
+/** A touch shallower than this (cosine of the angle off the wall's normal) is a graze: a little speed and a nudge off, no bounce. */
+const WALL_GRAZE = 0.25;
+const GRAZE_LOSS = 0.7;
+const GRAZE_PUSH = 4;
+/** A hit this square-on bounces the kart straight back. */
+const WALL_SQUARE = 0.85;
+/** A glancing hit turns the nose along the wall and this far (rad) away from it. */
+const WALL_GLANCE = 0.06;
 
 export function createKartState(x = 0, z = 0, heading = 0): KartState {
   return {
@@ -182,6 +204,7 @@ export function createKartState(x = 0, z = 0, heading = 0): KartState {
     ramTime: 0,
     trickStreak: 0,
     trickChain: 0,
+    wallTime: 0,
     lap: 1,
     lastLap: false,
   };
@@ -382,23 +405,48 @@ export function stepKart(s: KartState, input: InputFrame, p: KartParams, env: Dr
     }
   }
 
-  // Walls.
+  // Walls: slow down and bounce off.
+  s.wallTime = Math.max(0, s.wallTime - dt);
   const hit = env.collide(s, KART_RADIUS);
   if (hit) {
     s.x += hit.nx * hit.depth;
     s.z += hit.nz * hit.depth;
-    const into = -(fx * hit.nx + fz * hit.nz) * Math.sign(s.speed);
-    if (into > 0) {
-      s.speed *= 1 - WALL_SPEED_LOSS * into;
-      ev.wallHit = into;
-    }
+    const dir = Math.sign(s.speed);
+    const into = -(fx * hit.nx + fz * hit.nz) * dir;
+    // Whatever was carrying the kart into the wall (a slide, a bump) stops there.
     const extInto = s.extX * hit.nx + s.extZ * hit.nz;
     if (extInto < 0) {
-      s.extX -= 1.5 * extInto * hit.nx;
-      s.extZ -= 1.5 * extInto * hit.nz;
+      s.extX -= extInto * hit.nx;
+      s.extZ -= extInto * hit.nz;
     }
-    s.extX += hit.nx * WALL_BOUNCE * Math.max(into, 0);
-    s.extZ += hit.nz * WALL_BOUNCE * Math.max(into, 0);
+    if (into > 0 && into < WALL_GRAZE) {
+      // A graze: shaved speed and a nudge away, the line kept.
+      s.speed *= 1 - GRAZE_LOSS * into;
+      s.extX += hit.nx * GRAZE_PUSH * into;
+      s.extZ += hit.nz * GRAZE_PUSH * into;
+      ev.wallHit = into;
+    } else if (into >= WALL_GRAZE && s.wallTime === 0) {
+      const vIn = Math.abs(s.speed) * into;
+      const out = WALL_BOUNCE + vIn * WALL_RESTITUTION;
+      if (into >= WALL_SQUARE) {
+        // Square-on: thrown straight back, rolling backwards off the wall.
+        s.speed = -dir * out;
+      } else {
+        s.speed *= 1 - (WALL_MIN_LOSS + (WALL_SPEED_LOSS - WALL_MIN_LOSS) * into);
+        s.extX += hit.nx * out;
+        s.extZ += hit.nz * out;
+        if (dir > 0) {
+          // Glancing: the nose turns along the wall and a touch away from it.
+          const along = Math.atan2(fx + hit.nx * into, fz + hit.nz * into);
+          const away = Math.sign(wrapAngle(Math.atan2(hit.nx, hit.nz) - along)) * WALL_GLANCE;
+          s.heading = wrapAngle(along + away);
+        }
+      }
+      s.wallTime = WALL_RECOVER;
+      ev.wallHit = into;
+    } else if (into > 0) {
+      s.speed *= 1 - WALL_SCRAPE * into * dt;
+    }
   }
 
   return ev;
