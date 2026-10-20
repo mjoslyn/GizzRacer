@@ -390,5 +390,33 @@
     "bars": 24,
     "loopSamples": 2405455,
     "sampleRate": 44100
+  },
+  "sea-of-doubt": {
+    "title": "sea of doubt",
+    "bpm": 150,
+    "bars": 32,
+    "loopSamples": 2257920,
+    "sampleRate": 44100
+  },
+  "sea-of-doubt-final-lap": {
+    "title": "sea of doubt (final lap)",
+    "bpm": 160,
+    "bars": 32,
+    "loopSamples": 2116800,
+    "sampleRate": 44100
+  },
+  "sea-of-doubt-remix": {
+    "title": "sea of doubt (remix)",
+    "bpm": 156,
+    "bars": 32,
+    "loopSamples": 2171077,
+    "sampleRate": 44100
+  },
+  "sea-of-doubt-remix-final-lap": {
+    "title": "sea of doubt (remix, final lap)",
+    "bpm": 164,
+    "bars": 32,
+    "loopSamples": 2065171,
+    "sampleRate": 44100
   }
 }
