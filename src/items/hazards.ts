@@ -1,4 +1,4 @@
-import { KART_RADIUS, spinOut, type KartState } from '../physics/kart';
+import { KART_RADIUS, TRICK_WINDOW, spinOut, type KartState } from '../physics/kart';
 import { pointAt } from '../tracks/spline';
 import type { HazardDef, Track } from '../tracks/track';
 
@@ -81,6 +81,17 @@ const STONE_RADIUS = 1.5;
 export const STONE_SPIN = 1.0;
 export const GLIDER_SPIN = 1.1;
 export const WAVE_SPIN = 1.0;
+/** Touch a ghost light's core and it carries you: a boost this long. */
+export const WISP_CORE = 1.4;
+export const WISP_BOOST = 0.9;
+/** A plane that has crash-landed is a ramp: it throws you up at this speed (m/s), with a trick window. */
+export const GLIDER_LAUNCH = 9;
+/** Ram a living stone while boosting and it moves for you: the boost runs on this much longer. */
+export const STONE_BOOST = 0.6;
+/** Hop (or be in the air) as a wave breaks over you and you surf it: a boost this long. */
+export const WAVE_SURF = 1.1;
+/** How recent a hop counts as riding the wave. */
+export const WAVE_HOP = 0.35;
 const SWIRL_PUSH: Partial<Record<HazardKind, number>> = { dustDevils: DEVIL_PUSH, butterflies: BUTTERFLY_PUSH, tornadoes: TORNADO_PUSH, blackHoles: HOLE_PUSH, wisps: WISP_PUSH };
 /** A bolt strikes for this share of the cycle after its warning ring closes. */
 export const LIGHTNING_STRIKE = 0.12;
@@ -280,9 +291,14 @@ export class HazardSystem {
     });
   }
 
-  /** Hits karts touching an active hazard. Returns the karts that got hit (spun or slowed) and by what. */
-  collide(karts: readonly KartState[], dt: number): { kart: KartState; by: HazardKind }[] {
-    const hit: { kart: KartState; by: HazardKind }[] = [];
+  /**
+   * Hits karts touching an active hazard. Returns the karts that got hit
+   * (spun or slowed) and by what; `good` marks a hazard used well (a ghost
+   * light's core, a wreck taken as a ramp, a stone rammed on a boost, a wave
+   * surfed), which helps rather than hurts.
+   */
+  collide(karts: readonly KartState[], dt: number): { kart: KartState; by: HazardKind; good?: boolean }[] {
+    const hit: { kart: KartState; by: HazardKind; good?: boolean }[] = [];
     for (const [k, v] of this.cooldown) {
       if (v - dt <= 0) this.cooldown.delete(k);
       else this.cooldown.set(k, v - dt);
@@ -295,6 +311,22 @@ export class HazardSystem {
         if (d > p.radius + KART_RADIUS) continue;
         if (isSwirl(p.kind)) {
           this.swirl(p, s, dt);
+          // Right through the middle of the ghost lights: they carry you.
+          if (p.kind === 'wisps' && d < WISP_CORE + KART_RADIUS && !this.cooldown.has(s)) {
+            this.cooldown.set(s, HIT_COOLDOWN * 2);
+            s.boostTime = Math.max(s.boostTime, WISP_BOOST);
+            hit.push({ kart: s, by: p.kind, good: true });
+          }
+          continue;
+        }
+        // A plane already down is a wreck to drive up and fly off.
+        if (p.kind === 'gliders' && p.phase >= BOULDER_STAGES.land) {
+          if (this.cooldown.has(s) || !s.grounded) continue;
+          this.cooldown.set(s, HIT_COOLDOWN);
+          s.grounded = false;
+          s.vy = Math.max(s.vy, GLIDER_LAUNCH);
+          s.trickWindow = TRICK_WINDOW;
+          hit.push({ kart: s, by: p.kind, good: true });
           continue;
         }
         if (p.kind === 'blackHoles') {
@@ -304,7 +336,13 @@ export class HazardSystem {
         if (isFalling(p.kind)) this.pushOut(p, s);
         if (this.cooldown.has(s)) continue;
         this.cooldown.set(s, HIT_COOLDOWN);
-        if (p.kind === 'tumbleweeds') {
+        // Rammed on a boost, a stone gives way; a wave hopped as it breaks is surfed.
+        const used =
+          (p.kind === 'stones' && s.boostTime > 0) || (p.kind === 'waves' && (!s.grounded || s.hopAge < WAVE_HOP));
+        if (used) {
+          s.boostTime = p.kind === 'stones' ? s.boostTime + STONE_BOOST : Math.max(s.boostTime, WAVE_SURF);
+          hit.push({ kart: s, by: p.kind, good: true });
+        } else if (p.kind === 'tumbleweeds') {
           s.speed *= TUMBLEWEED_SLOW;
           s.vy = Math.max(s.vy, 2.5);
           hit.push({ kart: s, by: p.kind });

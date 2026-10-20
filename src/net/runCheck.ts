@@ -19,9 +19,29 @@ export interface RunSubmission {
 /** A Time Trial run is a single lap from a standing start. */
 export const TRIAL_LAPS = 1;
 
-/** Leaderboard name: one board per track, class and physics version. */
+/**
+ * Tracks reworked since their boards opened, and how many times: each
+ * rework opens fresh boards and records for that track alone, so times set
+ * on the old layout don't stand against the new one (a physics version
+ * bump does the same for every track at once).
+ */
+export const TRACK_REVISIONS: Record<string, number> = {
+  // Lap-changing shortcuts, hazards that help, and Panpsych Grove's Root Knot.
+  'phantom-island': 2,
+  'deadstick-drop': 2,
+  'panpsych-grove': 2,
+  'sea-of-doubt': 2,
+};
+
+/** A track's id for its records: with its revision, once it has one. */
+export function recordId(trackId: string): string {
+  const rev = TRACK_REVISIONS[trackId];
+  return rev ? `${trackId}.r${rev}` : trackId;
+}
+
+/** Leaderboard name: one board per track (and revision), class and physics version. */
 export function boardName(trackId: string, engine: EngineClass, version = PHYSICS_VERSION): string {
-  return `${trackId}.${engine}.v${version}`;
+  return `${recordId(trackId)}.${engine}.v${version}`;
 }
 
 /** Times a ghost may jump further than physics allows (falls put you back at a checkpoint). */

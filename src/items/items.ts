@@ -238,7 +238,9 @@ export type ItemEvent =
   /** A held item took the hit instead. */
   | { type: 'block'; kart: ItemHolder; by: ItemKind; from?: ItemHolder }
   /** Rode over a Nonagon Infinity. */
-  | { type: 'dodge'; kart: ItemHolder; by: ItemKind; from?: ItemHolder };
+  | { type: 'dodge'; kart: ItemHolder; by: ItemKind; from?: ItemHolder }
+  /** Used a hazard well: a ghost light's core, a wreck as a ramp, a stone rammed on a boost, a wave surfed. */
+  | { type: 'bonus'; kart: ItemHolder; by: HazardKind };
 
 /**
  * Item odds by race position (spec section 6): `p` runs from 0 (leading)

@@ -15,12 +15,39 @@ export interface BranchDef extends RibbonDef {
   name: string;
   mainFrom: number; // main arc length where it leaves (builder units)
   mainTo: number; // and where it rejoins
+  /**
+   * The laps it's there on, by the lap each kart is on (1 is the first;
+   * 'final' is the last lap of a race of more than one). Always, when absent.
+   */
+  openOn?: (number | 'final')[];
+  /**
+   * What it is on the other laps: gone ('vanish': drive on and you're in
+   * the water), drowned by the tide ('flood'), or barred from this far along
+   * it, in builder units ('barrier': karts bounce off the bar).
+   */
+  shut?: { kind: 'vanish' } | { kind: 'flood' } | { kind: 'barrier'; at: number };
+}
+
+/** Which lap a kart is on, for the roads that are only there on some (BranchDef.openOn). */
+export interface LapContext {
+  /** 1 is the first lap. */
+  lap: number;
+  /** The last lap of a race of more than one. */
+  lastLap: boolean;
+}
+
+/** Whether a branch is there on a lap; with no lap given, every branch is. */
+export function branchOpen(def: BranchDef, ctx?: LapContext): boolean {
+  if (!ctx || !def.openOn) return true;
+  return def.openOn.some((o) => (o === 'final' ? ctx.lastLap : o === ctx.lap));
 }
 
 export interface Landmark {
-  kind: 'skeletonArch' | 'fangs' | 'fortressGate' | 'templeGate' | 'waterfall' | 'gantry' | 'lighthouse' | 'iceArch' | 'neonArch' | 'rainbowArch' | 'dragonGate' | 'dragonFlight' | 'colonyGate' | 'rodGate' | 'voidEye' | 'phantomArch' | 'runwayGate' | 'treeGate' | 'wreckGate';
+  kind: 'skeletonArch' | 'fangs' | 'fortressGate' | 'templeGate' | 'waterfall' | 'gantry' | 'lighthouse' | 'iceArch' | 'neonArch' | 'rainbowArch' | 'dragonGate' | 'dragonFlight' | 'colonyGate' | 'rodGate' | 'voidEye' | 'phantomArch' | 'runwayGate' | 'treeGate' | 'wreckGate' | 'worldTree';
   ribbon: number; // -1 = main, else branch index
   s: number; // builder units
+  /** Metres to the right of the road (left if negative), for a landmark that stands off it. */
+  lateral?: number;
 }
 
 /** Serializable track description (spec section 11). */
@@ -361,8 +388,18 @@ export class Track implements DriveEnv {
     return builderS * this.main.scale;
   }
 
+  /**
+   * How far along branch `k` (spline metres) it can be driven on this lap:
+   * all of it when it's open, none when it's gone, up to the bar when it's barred.
+   */
+  private branchReach(k: number, ctx?: LapContext): number {
+    const def = this.def.branches[k];
+    if (branchOpen(def, ctx)) return Infinity;
+    return def.shut?.kind === 'barrier' ? def.shut.at * this.branches[k].scale : -Infinity;
+  }
+
   /** The road under a point (the highest one within a step up), and the main ribbon's nearest point. */
-  private support(x: number, z: number, y: number, hint: number): { mainHit: SplineHit; support: Support | null; bestY: number } {
+  private support(x: number, z: number, y: number, hint: number, ctx?: LapContext): { mainHit: SplineHit; support: Support | null; bestY: number } {
     const mainHit = this.nearestMain(x, z, hint);
     let bestY = -Infinity;
     let support: Support | null = null;
@@ -376,27 +413,35 @@ export class Track implements DriveEnv {
       support = { ribbon, hit, branch };
     };
     consider(this.main, mainHit, -1);
-    this.branches.forEach((r, k) => consider(r, nearestOnSpline(r.spline, x, z), k));
+    this.branches.forEach((r, k) => {
+      const reach = this.branchReach(k, ctx);
+      if (reach === -Infinity) return;
+      const hit = nearestOnSpline(r.spline, x, z);
+      if (hit.s <= reach) consider(r, hit, k);
+    });
     return { mainHit, support, bestY };
   }
 
   /** Where a kart sits on the road it's driving: its offset from the centre line, the road's edge and direction there, and whether that edge is walled. Null off the road. */
   roadFrame(s: KartState): RoadFrame | null {
-    const { support } = this.support(s.x, s.z, s.y, s.trackHint);
+    const { support } = this.support(s.x, s.z, s.y, s.trackHint, s);
     if (!support) return null;
     const { ribbon, hit } = support as Support;
     return { lateral: hit.lateral, halfWidth: ribbon.halfWidthAt(hit), tx: hit.tx, tz: hit.tz, walled: ribbon.wallHeight[hit.index] > 0.5, curvature: ribbon.curvature[hit.index] };
   }
 
-  locate(x: number, z: number, y: number, hint = -1): TrackLocation {
-    const { mainHit, support, bestY } = this.support(x, z, y, hint);
+  /** The road (or ground) at a point; `ctx` leaves out the roads that aren't there on that lap. */
+  locate(x: number, z: number, y: number, hint = -1, ctx?: LapContext): TrackLocation {
+    const { mainHit, support, bestY } = this.support(x, z, y, hint, ctx);
     let progress = mainHit.s;
     if (!support) {
       // Off the road: the ground, or the bank of a raised road beside it.
       let ground = this.terrainHeight(x, z, y);
       if (y >= -1) {
         ground = Math.max(ground, this.bankHeight(this.main, mainHit));
-        this.branches.forEach((r) => (ground = Math.max(ground, this.bankHeight(r, nearestOnSpline(r.spline, x, z)))));
+        this.branches.forEach((r, k) => {
+          if (this.branchReach(k, ctx) === Infinity) ground = Math.max(ground, this.bankHeight(r, nearestOnSpline(r.spline, x, z)));
+        });
       }
       return {
         hint: mainHit.index,
@@ -428,8 +473,13 @@ export class Track implements DriveEnv {
     };
   }
 
+  /** Where a kart is, on the lap it's on. */
+  locateKart(s: KartState): TrackLocation {
+    return this.locate(s.x, s.z, s.y, s.trackHint, s);
+  }
+
   probe(s: KartState): GroundInfo {
-    const loc = this.locate(s.x, s.z, s.y, s.trackHint);
+    const loc = this.locateKart(s);
     s.trackHint = loc.hint;
     return { height: loc.height, surface: loc.surface };
   }
@@ -440,7 +490,16 @@ export class Track implements DriveEnv {
       if (h && (!best || h.depth > best.depth)) best = h;
     };
     keep(this.ribbonWalls(this.main, this.nearestMain(s.x, s.z, s.trackHint), s.y, radius));
-    for (const r of this.branches) keep(this.ribbonWalls(r, nearestOnSpline(r.spline, s.x, s.z), s.y, radius));
+    this.branches.forEach((r, k) => {
+      const reach = this.branchReach(k, s);
+      if (reach === -Infinity) return;
+      const hit = nearestOnSpline(r.spline, s.x, s.z);
+      if (hit.s <= reach) keep(this.ribbonWalls(r, hit, s.y, radius));
+      // Barred: a bar across the road there, from the side the kart comes from.
+      if (reach !== Infinity && !pastEnd(r, hit) && Math.abs(hit.lateral) < r.halfWidthAt(hit) + 1 && hit.s > reach - radius && hit.s < reach + 2 && Math.abs(s.y - r.heightAt(hit.s)) < 3) {
+        keep({ nx: -hit.tx, nz: -hit.tz, depth: hit.s - (reach - radius) });
+      }
+    });
 
     const b = this.def.bounds - radius;
     if (s.x > b) keep({ nx: -1, nz: 0, depth: s.x - b });
@@ -510,7 +569,7 @@ export class Track implements DriveEnv {
   underDeck(s: KartState): boolean {
     const deck = (r: Ribbon, hit: SplineHit) =>
       !pastEnd(r, hit) && !!r.def.sections[r.sectionIndex[hit.index]]?.bridge && Math.abs(hit.lateral) < r.halfWidthAt(hit) + 3 && r.heightAt(hit.s) > s.y + STEP_UP;
-    return deck(this.main, this.nearestMain(s.x, s.z, s.trackHint)) || this.branches.some((r) => deck(r, nearestOnSpline(r.spline, s.x, s.z)));
+    return deck(this.main, this.nearestMain(s.x, s.z, s.trackHint)) || this.branches.some((r, k) => this.branchReach(k, s) === Infinity && deck(r, nearestOnSpline(r.spline, s.x, s.z)));
   }
 
   private ribbonWalls(ribbon: Ribbon, hit: SplineHit, y: number, radius: number): WallHit | null {

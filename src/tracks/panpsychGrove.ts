@@ -7,7 +7,9 @@ const FINISH = 45;
 /** Silent Spirit: the path winds out round a still pond in three arcs of this radius and turn. */
 const POND_R = 34;
 const POND_TURN = 70;
-/** The top of the Root Bridge, high in the canopy. */
+/** The Root Knot's radius, round the World Tree. */
+const KNOT_R = 26;
+/** The top of the Root Knot, high in the canopy. */
 const CANOPY = 14;
 /** How deep Lichen Hollow sinks below the forest floor. */
 const HOLLOW_DEPTH = 6;
@@ -16,8 +18,10 @@ const HOLLOW_DEPTH = 6;
  * Panpsych Grove (the Phantom Island Cup's third): a forest older than
  * anyone where everything is awake, after the song that says so. A dirt
  * path through the Heartwood, standing stones shuffling across the road
- * at Humming Stones (two kickers among them), the Root Bridge climbing in
- * esses up into the canopy on roots grown into a deck, and a plunge off
+ * at Humming Stones (two kickers among them), the Root Knot: three
+ * quarters of a turn round the trunk of the World Tree on a deck of living
+ * roots, climbing into the canopy and crossing over the road it came in
+ * on, then a plunge off
  * its end, logs swinging on vines down in Lichen Hollow, sunk 6 m into the
  * floor, a jump over Mossy Ford, and the path winding round a still pond
  * at Silent Spirit, which the Hollow Log, a fallen trunk with nothing either
@@ -31,14 +35,14 @@ export function buildPanpsychGrove(): TrackDef {
   // Stones awake and wandering, between two kickers.
   b.section('Humming Stones', { halfWidth: 10, surface: 'rock' });
   b.mark('stones');
-  b.straight(40).mark('kick1').kicker().straight(30).mark('kick2').kicker().straight(30);
+  b.straight(40).mark('kick1').kicker().straight(30).mark('kick2').kicker().straight(100);
 
-  // Up into the canopy in esses on a deck of living roots, then off the top.
-  b.section('Root Bridge', { halfWidth: 9, wallHeight: 1.2, surface: 'boards', bridge: true });
+  // Round the World Tree on a deck of roots, up into the canopy and over the road you came in on.
+  b.section('Root Knot', { halfWidth: 9, wallHeight: 1.2, surface: 'boards', bridge: true });
   b.mark('roots');
-  b.arc(30, 90).straight(20).arc(26, -100).arc(26, 100).arc(26, -100).arc(26, 100);
+  b.arc(KNOT_R, -270);
   b.mark('rootTop');
-  b.straight(60);
+  b.straight(160);
   b.section('Canopy Drop', { halfWidth: 9.5, surface: 'rock' });
   b.mark('drop');
   b.arc(40, 90).straight(10);
@@ -46,9 +50,9 @@ export function buildPanpsychGrove(): TrackDef {
   // Down in the hollow, logs swinging across on vines.
   b.section('Lichen Hollow', { halfWidth: 9, surface: 'rock' });
   b.mark('hollow');
-  b.arc(32, 60).arc(32, -60).straight(40);
+  b.arc(32, 60).arc(32, -60).straight(15);
   b.mark('hollowEnd');
-  b.straight(20);
+  b.straight(5);
 
   b.section('Mossy Ford', { halfWidth: 9, wallHeight: 1.2, surface: 'rock' });
   b.mark('ford');
@@ -71,8 +75,9 @@ export function buildPanpsychGrove(): TrackDef {
   const m = (name: string, d = 0) => b.marks[name].s + d * K;
   b.profile(30, m('stones', -20), (u) => 2.5 * Math.sin(3 * Math.PI * u) ** 2);
   ease(b, m('roots'), 0, m('rootTop'), CANOPY);
-  b.profile(m('rootTop'), m('rootTop', 20), () => CANOPY, 10);
-  plunge(b, m('rootTop', 20), CANOPY, m('drop', 30), 0);
+  // Level over the road below, then off the end of the roots.
+  b.profile(m('rootTop'), m('rootTop', 40), () => CANOPY, 10);
+  plunge(b, m('rootTop', 40), CANOPY, m('rootTop', 95), 0);
   ease(b, m('hollow', 5), 0, m('hollow', 40), -HOLLOW_DEPTH);
   ease(b, m('hollow', 40), -HOLLOW_DEPTH, m('hollowEnd', 10), 0);
   b.profile(m('logTo', 40), m('finish', -10), (u) => 3 * Math.sin(Math.PI * u) ** 2);
@@ -96,6 +101,8 @@ export function buildPanpsychGrove(): TrackDef {
     bounds: 440,
     landmarks: [
       { kind: 'treeGate', ribbon: -1, s: 6 },
+      // In the middle of the knot.
+      { kind: 'worldTree', ribbon: -1, s: b.marks.roots.s, lateral: KNOT_R * K },
       { kind: 'treeGate', ribbon: -1, s: at('hollow', 2) },
     ],
     itemBoxes: [
@@ -108,7 +115,7 @@ export function buildPanpsychGrove(): TrackDef {
     ],
     hazards: [
       { kind: 'stones', from: at('stones', 5), to: at('stones', 135), count: 3, period: 6 },
-      { kind: 'vines', at: [at('hollow', 30), at('hollow', 75), at('hollow', 105)], period: 3.6 },
+      { kind: 'vines', at: [at('hollow', 25), at('hollow', 55), at('hollow', 80)], period: 3.6 },
     ],
     theme: 'grove',
     music: { lap: 'panpsych-grove', finalLap: 'panpsych-grove-final-lap' },

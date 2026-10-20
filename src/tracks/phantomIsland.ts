@@ -141,6 +141,7 @@ function buildEternalReturn(from: { s: number; pose: Pose }, to: { s: number; po
   b.elevate(1).straight(12).elevate(0);
   b.section('Eternal Return', { halfWidth: 6, surface: 'sand' });
   b.straight(chord - b.s);
-  const branch: BranchDef = { name: 'Eternal Return', mainFrom: from.s, mainTo: to.s, ...b.finish(false) };
+  // A phantom: it's only there on the second lap.
+  const branch: BranchDef = { name: 'Eternal Return', mainFrom: from.s, mainTo: to.s, ...b.finish(false), openOn: [2], shut: { kind: 'vanish' } };
   return { branch, pits: b.pits, boxes };
 }

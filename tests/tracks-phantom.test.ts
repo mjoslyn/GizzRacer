@@ -5,6 +5,7 @@ import { clamp, wrapAngle } from '../src/core/math';
 import { FUZZ_BOOST } from '../src/items/items';
 import { CPU_SKILL } from '../src/ai/cpuDriver';
 import { Race } from '../src/core/race';
+import { BOULDER_STAGES, GLIDER_LAUNCH, HazardSystem, STONE_BOOST, WAVE_SURF, WISP_BOOST, type HazardPose } from '../src/items/hazards';
 import { createKartState, stepKart, type KartState } from '../src/physics/kart';
 import { RACERS, kartParams, type EngineClass } from '../src/physics/racers';
 import { buildDeadstickDrop } from '../src/tracks/deadstickDrop';
@@ -13,7 +14,7 @@ import { buildPanpsychGrove } from '../src/tracks/panpsychGrove';
 import { buildPhantomIsland } from '../src/tracks/phantomIsland';
 import { buildSeaOfDoubt } from '../src/tracks/seaOfDoubt';
 import { nearestOnSpline, pointAt } from '../src/tracks/spline';
-import { Track, inPit, type Ribbon, type TrackDef } from '../src/tracks/track';
+import { Track, inPit, type LapContext, type Ribbon, type TrackDef } from '../src/tracks/track';
 
 /** How a shortcut's jump is meant to go: who makes it, and who doesn't. */
 interface JumpSpec {
@@ -25,6 +26,8 @@ interface JumpSpec {
 
 interface Case {
   name: string;
+  /** The lap the shortcut is open on, when it isn't on every lap. */
+  lap?: LapContext;
   build: () => TrackDef;
   branch: string;
   /** Branch arc length (m) at each end where it may still run alongside the main road. */
@@ -35,8 +38,8 @@ interface Case {
 }
 
 const CASES: Case[] = [
-  { name: 'Phantom Island', build: buildPhantomIsland, branch: 'Eternal Return', junction: 40 },
-  { name: 'Deadstick Drop', build: buildDeadstickDrop, branch: 'Tailwind', junction: 40 },
+  { name: 'Phantom Island', build: buildPhantomIsland, branch: 'Eternal Return', junction: 40, lap: { lap: 2, lastLap: false } },
+  { name: 'Deadstick Drop', build: buildDeadstickDrop, branch: 'Tailwind', junction: 40, lap: { lap: 3, lastLap: true } },
   { name: 'Panpsych Grove', build: buildPanpsychGrove, branch: 'Hollow Log', junction: 40 },
   { name: 'Sea of Doubt', build: buildSeaOfDoubt, branch: 'Riptide', junction: 40 },
 ];
@@ -118,15 +121,15 @@ describe.each(CASES.map((c) => [c.name, c] as const))('%s shortcut and kickers',
     // A Fuzz boost fired 30 m before the jump, if there is one.
     const p = kartParams(first.stats, '100cc');
     const boostAt = bdef.gaps.length ? branch.scale * bdef.gaps[0][0] - 30 : 0;
-    const run = drive(track, branch, bdef.mainTo, p, FUZZ_BOOST, undefined, boostAt);
+    const run = drive(track, branch, bdef.mainTo, p, FUZZ_BOOST, undefined, boostAt, c.lap);
     expect(run.fell).toBe(false);
     expect(run.time).toBeLessThan(20);
   });
 
   it('is quicker than the main line at 150cc', () => {
     const p = kartParams(first.stats, '150cc');
-    const viaBranch = drive(track, branch, bdef.mainTo, p, c.boost ?? 0);
-    const viaMain = drive(track, track.main, bdef.mainTo, p, c.boost ?? 0, bdef.mainFrom);
+    const viaBranch = drive(track, branch, bdef.mainTo, p, c.boost ?? 0, undefined, -Infinity, c.lap);
+    const viaMain = drive(track, track.main, bdef.mainTo, p, c.boost ?? 0, bdef.mainFrom, -Infinity, c.lap);
     console.log(`${c.name}: ${c.branch} ${viaBranch.time.toFixed(2)} s, main line ${viaMain.time.toFixed(2)} s, saves ${(viaMain.time - viaBranch.time).toFixed(2)} s`);
     expect(viaBranch.fell).toBe(false);
     expect(viaMain.fell).toBe(false);
@@ -176,6 +179,121 @@ describe('Deadstick Drop: off the end of the runway with no engine', () => {
       const p = kartParams(r.stats, '50cc');
       expect(jump(track, track.mainS(lip) - 30, -1, p.topSpeed, 0, p), r.id).toBe('cleared');
     }
+  });
+});
+
+/** The shortcuts that are only there on some laps, and what they are on the others. */
+const LAP_ROADS: { name: string; build: () => TrackDef; branch: string; open: LapContext; shut: LapContext; shutIs: 'fall' | 'barred' }[] = [
+  { name: 'Phantom Island', build: buildPhantomIsland, branch: 'Eternal Return', open: { lap: 2, lastLap: false }, shut: { lap: 1, lastLap: false }, shutIs: 'fall' },
+  { name: 'Phantom Island (final lap)', build: buildPhantomIsland, branch: 'Eternal Return', open: { lap: 2, lastLap: false }, shut: { lap: 3, lastLap: true }, shutIs: 'fall' },
+  { name: 'Deadstick Drop', build: buildDeadstickDrop, branch: 'Tailwind', open: { lap: 3, lastLap: true }, shut: { lap: 2, lastLap: false }, shutIs: 'barred' },
+  { name: 'Sea of Doubt', build: buildSeaOfDoubt, branch: 'Riptide', open: { lap: 2, lastLap: false }, shut: { lap: 3, lastLap: true }, shutIs: 'fall' },
+];
+
+describe.each(LAP_ROADS.map((c) => [c.name, c] as const))('%s: a road that comes and goes', (_name, c) => {
+  const def = c.build();
+  const track = new Track(def);
+  const k = def.branches.findIndex((b) => b.name === c.branch);
+  const branch = track.branches[k];
+  const p = kartParams(first.stats, '150cc');
+
+  it('is there on its lap: driven, it reaches the rejoin', () => {
+    const run = drive(track, branch, def.branches[k].mainTo, p, 0, undefined, -Infinity, c.open);
+    expect(run.fell).toBe(false);
+    expect(run.time).toBeLessThan(20);
+  });
+
+  it(c.shutIs === 'fall' ? 'is gone on the other laps: drive on and you fall' : 'is barred on the other laps: you bounce off the bar', () => {
+    const run = drive(track, branch, def.branches[k].mainTo, p, 0, undefined, -Infinity, c.shut);
+    if (c.shutIs === 'fall') expect(run.fell).toBe(true);
+    else {
+      expect(run.fell).toBe(false);
+      expect(run.time).toBe(Infinity);
+    }
+  });
+
+  it('is always there for a lookup that names no lap', () => {
+    const mid = pointAt(branch.spline, branch.spline.length / 2);
+    expect(track.locate(mid.x, mid.z, 10).onRoad).toBe(true);
+  });
+});
+
+describe('a race tells each kart which lap it is on', () => {
+  it('lap 1 to start with, the last lap only in a race of more than one', () => {
+    const race = new Race(new Track(buildSeaOfDoubt()));
+    const kart = race.addKart(RACERS[0], '150cc', null);
+    race.step(PHYSICS_DT, []);
+    expect(kart.state.lap).toBe(1);
+    expect(kart.state.lastLap).toBe(false);
+    const trial = new Race(new Track(buildSeaOfDoubt()), 1, false, 1);
+    const solo = trial.addKart(RACERS[0], '150cc', null);
+    trial.step(PHYSICS_DT, []);
+    expect(solo.state.lastLap).toBe(false);
+  });
+});
+
+/** Steps race time until hazard `kind` is in a stage `ok` likes, and returns that pose. */
+function hazardWhen(h: HazardSystem, kind: HazardPose['kind'], ok: (p: HazardPose) => boolean): HazardPose {
+  for (let t = 0; t < 60; t += 0.02) {
+    h.update(t);
+    const p = h.poses.find((q) => q.kind === kind && ok(q));
+    if (p) return p;
+  }
+  throw new Error(`no ${kind} in that stage`);
+}
+
+/** A kart sitting right on a hazard. */
+function kartAt(p: HazardPose): KartState {
+  const s = createKartState(p.x, p.z, p.heading);
+  s.y = s.groundY = p.ground;
+  return s;
+}
+
+describe('hazards that help when you use them', () => {
+  it('a ghost light carries you through its core with a boost', () => {
+    const h = new HazardSystem(new Track(buildPhantomIsland()));
+    const p = hazardWhen(h, 'wisps', () => true);
+    const s = kartAt(p);
+    const hits = h.collide([s], PHYSICS_DT);
+    expect(hits).toEqual([{ kart: s, by: 'wisps', good: true }]);
+    expect(s.boostTime).toBeCloseTo(WISP_BOOST);
+  });
+
+  it('a plane that has crash-landed is a ramp: it throws you up with a trick window, no spin', () => {
+    const h = new HazardSystem(new Track(buildDeadstickDrop()));
+    const p = hazardWhen(h, 'gliders', (q) => q.phase > BOULDER_STAGES.land + 0.05 && q.phase < BOULDER_STAGES.crumble - 0.05);
+    const s = kartAt(p);
+    expect(h.collide([s], PHYSICS_DT)[0]).toMatchObject({ by: 'gliders', good: true });
+    expect(s.vy).toBe(GLIDER_LAUNCH);
+    expect(s.grounded).toBe(false);
+    expect(s.trickWindow).toBeGreaterThan(0);
+    expect(s.spinTime).toBe(0);
+  });
+
+  it('a stone spins you out, unless you ram it on a boost, which runs on longer', () => {
+    const h = new HazardSystem(new Track(buildPanpsychGrove()));
+    const p = hazardWhen(h, 'stones', () => true);
+    const plain = kartAt(p);
+    expect(h.collide([plain], PHYSICS_DT)[0]).toMatchObject({ by: 'stones' });
+    expect(plain.spinTime).toBeGreaterThan(0);
+    const boosting = kartAt(p);
+    boosting.boostTime = 0.5;
+    expect(h.collide([boosting], PHYSICS_DT)[0]).toMatchObject({ by: 'stones', good: true });
+    expect(boosting.boostTime).toBeCloseTo(0.5 + STONE_BOOST);
+    expect(boosting.spinTime).toBe(0);
+  });
+
+  it('a breaking wave spins you out, unless you hop as it breaks and surf it', () => {
+    const h = new HazardSystem(new Track(buildSeaOfDoubt()));
+    const p = hazardWhen(h, 'waves', (q) => q.active);
+    const plain = kartAt(p);
+    expect(h.collide([plain], PHYSICS_DT)[0]).toMatchObject({ by: 'waves' });
+    expect(plain.spinTime).toBeGreaterThan(0);
+    const hopped = kartAt(p);
+    hopped.hopAge = 0.1;
+    expect(h.collide([hopped], PHYSICS_DT)[0]).toMatchObject({ by: 'waves', good: true });
+    expect(hopped.boostTime).toBeCloseTo(WAVE_SURF);
+    expect(hopped.spinTime).toBe(0);
   });
 });
 
@@ -263,7 +381,7 @@ describe.each(HEIGHTS.map((c) => [c.name, c] as const))('%s elevation', (_name, 
 /** Below the ground and not on a road there (a road sunk in a cut holds you up): fallen. */
 function fallen(track: Track, kart: KartState): boolean {
   if (kart.y > -2) return false;
-  const loc = track.locate(kart.x, kart.z, kart.y, kart.trackHint);
+  const loc = track.locateKart(kart);
   return !(loc.onRoad && kart.y > loc.height - 1.5);
 }
 
@@ -290,10 +408,11 @@ function steerAlong(ribbon: Ribbon, s: ReturnType<typeof createKartState>, progr
  * pose at builder arc length `to`; reports the time and whether it fell.
  * A boost of `boost` seconds kicks in at ribbon arc length `boostAt`.
  */
-function drive(track: Track, ribbon: Ribbon, to: number, p: ReturnType<typeof kartParams>, boost: number, from?: number, boostAt = -Infinity) {
+function drive(track: Track, ribbon: Ribbon, to: number, p: ReturnType<typeof kartParams>, boost: number, from?: number, boostAt = -Infinity, lap?: LapContext) {
   const s0 = from === undefined ? 0 : track.mainS(from);
   const pt = pointAt(ribbon.spline, s0);
   const kart = createKartState(pt.x, pt.z, Math.atan2(pt.tx, pt.tz));
+  if (lap) Object.assign(kart, lap);
   kart.y = kart.groundY = ribbon.heightAt(s0);
   kart.speed = p.topSpeed;
   const goal = pointAt(track.spline, track.mainS(to));

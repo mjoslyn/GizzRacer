@@ -2,12 +2,12 @@ import * as THREE from 'three';
 import { seededRandom } from '../core/math';
 import { nearestOnSpline, pointAt } from '../tracks/spline';
 import type { PitDef, RoadSurface } from '../tracks/builder';
-import { BANK, inPit, type Ribbon, type Track } from '../tracks/track';
+import { BANK, branchOpen, inPit, type BranchDef, type LapContext, type Ribbon, type Track } from '../tracks/track';
 import * as tex from './textures';
 import { THEMES, type Theme } from './themes';
-import { CURB_WIDTH, trackDetail } from './trackDetail';
+import { CURB_WIDTH, roadPaint, trackDetail } from './trackDetail';
 import { colonyFeature, colonyGate, cosmosFeature, plainsFeature, rodGate, stormWeather, voidEye } from './apocalypse';
-import { airstripFeature, groveFeature, isleFeature, phantomArch, runwayGate, seaFeature, treeGate, wreckGate } from './phantom';
+import { airstripFeature, groveFeature, isleFeature, phantomArch, runwayGate, seaFeature, treeGate, worldTree, wreckGate } from './phantom';
 
 /** Meters of road per texture repeat along the track. */
 const ROAD_TILE = 14;
@@ -22,8 +22,11 @@ export interface TrackView {
   theme: Theme;
   /** Pits of water a road dives into, for the under-water look (game.ts). */
   dives: PitDef[];
-  /** `skyHue` rotates the sky's colors, in radians. */
-  update(time: number, cameraPos: THREE.Vector3, skyHue?: number): void;
+  /**
+   * `skyHue` rotates the sky's colors, in radians; `lap` is the lap of the
+   * kart being watched, for the roads that are only there on some laps.
+   */
+  update(time: number, cameraPos: THREE.Vector3, skyHue?: number, lap?: LapContext): void;
 }
 
 interface Materials {
@@ -125,7 +128,18 @@ export function buildTrackView(track: Track): TrackView {
     group.add(ground(track, theme));
     for (const pit of track.def.pits) group.add(pitMesh(pit, mats));
   }
-  for (const ribbon of [track.main, ...track.branches]) group.add(ribbonMeshes(ribbon, mats, abyss));
+  const lapRoads: LapRoad[] = [];
+  [track.main, ...track.branches].forEach((ribbon, i) => {
+    const g = ribbonMeshes(ribbon, mats, abyss);
+    group.add(g);
+    const def = i > 0 ? track.def.branches[i - 1] : null;
+    if (def?.openOn) {
+      g.add(roadPaint(ribbon, theme.decor));
+      const road = lapRoad(def, ribbon, g);
+      if (road.barrier) group.add(road.barrier);
+      lapRoads.push(road);
+    }
+  });
 
   const animated: ((time: number) => void)[] = [];
   const padTexture = tex.chevronTexture();
@@ -162,6 +176,7 @@ export function buildTrackView(track: Track): TrackView {
     if (lm.kind === 'runwayGate') group.add(runwayGate(ribbon, s, animated));
     if (lm.kind === 'treeGate') group.add(treeGate(ribbon, s, animated));
     if (lm.kind === 'wreckGate') group.add(wreckGate(ribbon, s, animated));
+    if (lm.kind === 'worldTree') group.add(worldTree(ribbon, s, lm.lateral ?? 0, animated));
     if (lm.kind === 'dragonFlight') {
       const d = dragonFlight(track.def.bounds);
       group.add(d.group);
@@ -194,7 +209,8 @@ export function buildTrackView(track: Track): TrackView {
     group,
     theme,
     dives,
-    update(time: number, cameraPos: THREE.Vector3, hue = 0) {
+    update(time: number, cameraPos: THREE.Vector3, hue = 0, lap?: LapContext) {
+      for (const r of lapRoads) r.update(time, lap);
       skyHue.value = hue;
       padTexture.offset.y = -time * 2;
       // Desert barrier diamonds crawl along like scales.
@@ -471,6 +487,74 @@ function pitMesh(p: PitDef, mats: Materials): THREE.Group {
 
 /** Builds road, curbs, walls, ramp skirts and lip faces for one ribbon. */
 /** `floating`: every stretch is a deck with an underside (the sky track), with no pillars. */
+interface LapRoad {
+  barrier: THREE.Group | null;
+  update(time: number, lap?: LapContext): void;
+}
+
+/** How deep a flooded road sinks: under the water's surface. */
+const FLOOD_DEPTH = 4.5;
+
+/**
+ * A road that's only there on some laps (BranchDef.openOn), shown for the
+ * lap of the kart being watched. A phantom flickers into being and out
+ * again; a flooded road sinks under the tide; a barred one drops a striped
+ * boom across it at the bar.
+ */
+function lapRoad(def: BranchDef, ribbon: Ribbon, g: THREE.Group): LapRoad {
+  let shown = 1;
+  let last = 0;
+  let barrier: THREE.Group | null = null;
+  let boom: THREE.Object3D | null = null;
+  if (def.shut?.kind === 'barrier') {
+    barrier = new THREE.Group();
+    const s = def.shut.at * ribbon.scale;
+    const p = pointAt(ribbon.spline, s);
+    const hw = ribbon.halfWidthAtS(s) + 1;
+    const white = new THREE.MeshLambertMaterial({ color: 0xf4f4f0 });
+    const red = new THREE.MeshLambertMaterial({ color: 0xd8302a });
+    for (const side of [-1, 1]) {
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.5, 1.6, 0.5), side < 0 ? red : white);
+      post.position.set(side * (hw + 0.3), 0.8, 0);
+      barrier.add(post);
+    }
+    // The boom hinges on the left post and swings up out of the way when it opens.
+    const pivot = new THREE.Group();
+    pivot.position.set(-hw - 0.3, 1.3, 0);
+    for (let k = 0; k < 8; k++) {
+      const seg = new THREE.Mesh(new THREE.BoxGeometry((hw * 2 + 0.6) / 8, 0.35, 0.25), k % 2 ? white : red);
+      seg.position.x = ((k + 0.5) * (hw * 2 + 0.6)) / 8;
+      pivot.add(seg);
+    }
+    barrier.add(pivot);
+    boom = pivot;
+    barrier.position.set(p.x, ribbon.heightAt(s), p.z);
+    barrier.rotation.y = Math.atan2(p.tx, p.tz);
+  }
+  return {
+    barrier,
+    update(time, lap) {
+      const target = branchOpen(def, lap) ? 1 : 0;
+      const dt = Math.min(0.1, Math.max(0, time - last));
+      last = time;
+      // A second or so to come and go; at once on a fresh track.
+      shown = time < 0.2 ? target : target > shown ? Math.min(1, shown + dt * 0.7) : Math.max(0, shown - dt * 0.7);
+      switch (def.shut?.kind) {
+        case 'vanish':
+          g.visible = shown >= 1 || (shown > 0 && Math.random() < shown);
+          break;
+        case 'flood':
+          g.position.y = -FLOOD_DEPTH * (1 - shown);
+          g.visible = shown > 0 || g.position.y > -FLOOD_DEPTH;
+          break;
+        case 'barrier':
+          if (boom) boom.rotation.z = shown * Math.PI * 0.45;
+          break;
+      }
+    },
+  };
+}
+
 function ribbonMeshes(ribbon: Ribbon, mats: Materials, floating = false): THREE.Group {
   const g = new THREE.Group();
   const sp = ribbon.spline;

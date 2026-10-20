@@ -154,9 +154,11 @@ export function trackDetail(track: Track, theme: Theme, animated: ((time: number
       return hit.distance > r.halfWidth[hit.index] + margin;
     }) && track.def.pits.every((p) => !inPit({ ...p, halfWidth: p.halfWidth + 2, halfLength: p.halfLength + 2 }, x, z));
 
-  for (const r of ribbons) g.add(roadPaint(r, theme.decor));
-  g.add(edgeProps(ribbons, style, abyss, clear, animated));
-  g.add(cornerBoards(ribbons, abyss, clear));
+  // Roads that are only there on some laps carry their own paint (render/trackView.ts) and no posts or boards.
+  const fixed = ribbons.filter((_, i) => i === 0 || !track.def.branches[i - 1].openOn);
+  for (const r of fixed) g.add(roadPaint(r, theme.decor));
+  g.add(edgeProps(fixed, style, abyss, clear, animated));
+  g.add(cornerBoards(fixed, abyss, clear));
   if (!abyss) {
     if (style.crowd) {
       const stand = grandstand(track, theme, clear, animated);
@@ -175,7 +177,7 @@ export function trackDetail(track: Track, theme: Theme, animated: ((time: number
  * racing line wears into any hard surface, swinging to the inside of each
  * corner.
  */
-function roadPaint(ribbon: Ribbon, decor: DecorKind): THREE.Group {
+export function roadPaint(ribbon: Ribbon, decor: DecorKind): THREE.Group {
   const g = new THREE.Group();
   const sp = ribbon.spline;
   const segs = sp.closed ? sp.count : sp.count - 1;

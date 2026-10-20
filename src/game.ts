@@ -9,7 +9,7 @@ import { Sfx } from './audio/sfx';
 import { remixCues } from './audio/songs';
 import { GHOST_HZ, GHOST_OVERRUN, GhostRecorder, decodeGhost, encodeGhost, ghostPose, type GhostRun } from './core/ghost';
 import { identity } from './net/identity';
-import { TRIAL_LAPS } from './net/runCheck';
+import { TRIAL_LAPS, recordId } from './net/runCheck';
 import { fetchGhost, uploadRun } from './net/trials';
 import { LeaderboardPanel } from './ui/leaderboard';
 import { LobbyScreen } from './ui/lobby';
@@ -238,7 +238,7 @@ const screenFit = new ScreenFit(document.body, fitRenderer);
 const board = new LeaderboardPanel(document.body, () => {
   // The local record for the board showing (the picker's track and class).
   try {
-    const rec = JSON.parse(localStorage.getItem(`gizzracer.tt.${TRACK_LIST[choice.track].id}.${choice.engine}.v${PHYSICS_VERSION}`) ?? 'null') as { total: number } | null;
+    const rec = JSON.parse(localStorage.getItem(`gizzracer.tt.${recordId(TRACK_LIST[choice.track].id)}.${choice.engine}.v${PHYSICS_VERSION}`) ?? 'null') as { total: number } | null;
     return rec ? Math.round(rec.total * 1000) : null;
   } catch {
     return null;
@@ -421,7 +421,7 @@ function startRace(withPlayer: boolean): void {
 }
 
 // Keyed by physics version: older records and ghosts (e.g. 3-lap ones) don't carry over.
-const ghostKey = () => `gizzracer.ghost.${track.def.id}.${choice.engine}.v${PHYSICS_VERSION}`;
+const ghostKey = () => `gizzracer.ghost.${recordId(track.def.id)}.${choice.engine}.v${PHYSICS_VERSION}`;
 
 /** In Time Trial, starts recording and brings back your best run, and any leaderboard run you picked, as ghosts. */
 function setupGhost(trial: boolean): void {
@@ -616,6 +616,13 @@ function step(dt: number): void {
       }
       continue;
     }
+    if (e.type === 'bonus') {
+      if (e.kart === player) {
+        hud.flash(BONUS_TEXT[e.by] ?? 'NICE!');
+        sfx.boost(2);
+      }
+      continue;
+    }
     if (e.type === 'use' && e.kart === player) {
       sfx.use(e.item);
       if (e.item === 'wooCannon') {
@@ -776,6 +783,14 @@ const HIT_TEXT: Record<ItemKind | HazardKind, string> = {
   waves: 'WIPED OUT!',
 };
 
+/** What a hazard used well says: the ones that can help. */
+const BONUS_TEXT: Partial<Record<HazardKind, string>> = {
+  wisps: 'SPIRITED AWAY!',
+  gliders: 'WRECK RAMP!',
+  stones: 'ROCK SMASH!',
+  waves: 'SURFED!',
+};
+
 /** Takes a group out of the scene and frees what it built. */
 function dispose(group: THREE.Group): void {
   scene.remove(group);
@@ -933,7 +948,7 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
   document.body.classList.toggle('intro', intro > 0);
   const theme = trackView!.theme;
   const L = track.length;
-  trackView!.update(elapsed, camera.position, theme.skyCycle ? Math.PI * 2 * clamp(f.distance / (L * race.laps), 0, 1) : 0);
+  trackView!.update(elapsed, camera.position, theme.skyCycle ? Math.PI * 2 * clamp(f.distance / (L * race.laps), 0, 1) : 0, f.state);
   itemsView!.update(elapsed, race.karts.map((k, i) => ({ state: snaps[i], holder: k })));
   hazardsView!.update(elapsed);
   sunAnchor.position.copy(camera.position).addScaledVector(SUN_DIR, 1400);
@@ -1065,7 +1080,7 @@ function finishOrder(): RaceKart[] {
 
 /** Stores a Time Trial run and describes it against the best so far. */
 function saveTrial(total: number, bestLap: number, racerId: string): string {
-  const key = `gizzracer.tt.${track.def.id}.${choice.engine}.v${PHYSICS_VERSION}`;
+  const key = `gizzracer.tt.${recordId(track.def.id)}.${choice.engine}.v${PHYSICS_VERSION}`;
   let prev: { total: number; lap: number } | null = null;
   try {
     prev = JSON.parse(localStorage.getItem(key) ?? 'null');

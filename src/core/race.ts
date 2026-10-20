@@ -310,7 +310,8 @@ export class Race {
       // Hazards hit the karts simulated here; remote ones are hit where they're driven.
       const local = this.karts.filter((k) => !k.remote).map((k) => k.state);
       for (const h of this.hazards.collide(local, dt)) {
-        this.events.push({ type: 'hit', kart: this.karts.find((k) => k.state === h.kart)!, by: h.by });
+        const kart = this.karts.find((k) => k.state === h.kart)!;
+        this.events.push(h.good ? { type: 'bonus', kart, by: h.by } : { type: 'hit', kart, by: h.by });
       }
     }
     return events;
@@ -452,13 +453,16 @@ export class Race {
   }
 
   private onSunkRoad(s: KartState): boolean {
-    const loc = this.track.locate(s.x, s.z, s.y, s.trackHint);
+    const loc = this.track.locateKart(s);
     return loc.onRoad && s.y > loc.height - 1.5;
   }
 
   private updateLaps(kart: RaceKart): void {
     const s = kart.state;
-    const loc = this.track.locate(s.x, s.z, s.y, s.trackHint);
+    // The lap it's on decides which roads are there for it.
+    s.lap = Math.min(kart.laps.lap + 1, this.laps);
+    s.lastLap = this.laps > 1 && s.lap === this.laps;
+    const loc = this.track.locateKart(s);
     const L = this.track.length;
     let delta = loc.progress - kart.progressS;
     if (delta > L / 2) delta -= L;

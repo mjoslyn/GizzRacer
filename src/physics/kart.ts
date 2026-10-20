@@ -57,6 +57,8 @@ export interface KartState {
   ramTime: number; // seconds of Road Train left: immune, a little faster, spins out whoever it touches
   trickStreak: number; // tricks landed back to back
   trickChain: number; // seconds left to land the next trick and keep the streak
+  lap: number; // the lap it's on, 1 first: some roads are only there on some laps (set by the race)
+  lastLap: boolean; // on the last lap of a race of more than one
 }
 
 export interface StepEvents {
@@ -180,6 +182,8 @@ export function createKartState(x = 0, z = 0, heading = 0): KartState {
     ramTime: 0,
     trickStreak: 0,
     trickChain: 0,
+    lap: 1,
+    lastLap: false,
   };
 }
 
@@ -437,11 +441,10 @@ export function slowDown(s: KartState, duration: number): boolean {
 
 /** Places a kart at rest, e.g. after falling off the track. */
 export function respawnKart(s: KartState, x: number, y: number, z: number, heading: number): void {
-  const hint = s.trackHint;
-  Object.assign(s, createKartState(x, z, heading));
+  const { trackHint, lap, lastLap } = s;
+  Object.assign(s, createKartState(x, z, heading), { trackHint, lap, lastLap });
   s.y = y;
   s.groundY = y;
-  s.trackHint = hint;
 }
 
 /** Adds an external velocity impulse, scaled down by the kart's mass. */

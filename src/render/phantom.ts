@@ -671,3 +671,59 @@ export function wreckGate(ribbon: Ribbon, s: number, animated: Animated): THREE.
   g.rotation.y = f.heading;
   return g;
 }
+
+/**
+ * The World Tree, in the middle of Panpsych Grove's Root Knot: a trunk as
+ * wide as a house with the road wound round it, roots spreading out over
+ * the ground, a crown over the whole knot, and a face in the bark with eyes
+ * that follow the karts round.
+ */
+export function worldTree(ribbon: Ribbon, s: number, lateral: number, animated: Animated): THREE.Group {
+  const g = new THREE.Group();
+  const p = pointAt(ribbon.spline, s);
+  const bark = new THREE.MeshLambertMaterial({ map: tex.woodTexture(), color: 0x6a4a2e });
+  const leafs = [0x2e6a2a, 0x3e7a2a, 0x5a8a30].map((c) => lambert(c, { flatShading: true }));
+  const white = new THREE.MeshBasicMaterial({ color: 0xfff8e0 });
+  const pupil = new THREE.MeshBasicMaterial({ color: 0x1a0a04 });
+  const R = 9;
+  const H = 46;
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(R * 0.75, R * 1.15, H, 16), bark);
+  trunk.position.y = H / 2;
+  g.add(trunk);
+  // Roots buttressing the trunk out across the floor of the knot.
+  for (let k = 0; k < 7; k++) {
+    const a = (k / 7) * Math.PI * 2;
+    const root = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 1.8, 9, 6), bark);
+    root.position.set(Math.cos(a) * (R + 2.5), 2, Math.sin(a) * (R + 2.5));
+    root.rotation.set(Math.sin(a) * 1.1, 0, -Math.cos(a) * 1.1);
+    g.add(root);
+  }
+  for (let k = 0; k < 9; k++) {
+    const a = (k / 9) * Math.PI * 2;
+    const crown = new THREE.Mesh(new THREE.IcosahedronGeometry(12 + (k % 3) * 3, 0), leafs[k % leafs.length]);
+    crown.position.set(Math.cos(a) * 18, H + 4 + (k % 2) * 6, Math.sin(a) * 18);
+    g.add(crown);
+  }
+  const top = new THREE.Mesh(new THREE.IcosahedronGeometry(18, 0), leafs[0]);
+  top.position.y = H + 14;
+  g.add(top);
+  // The face turns to keep watching whoever is going round it.
+  const face = new THREE.Group();
+  face.position.y = 7;
+  const look = new THREE.Group();
+  look.position.z = R * 0.95;
+  glance(eyes(look, 0, 0, 3.4, 1.1, white, pupil), animated, 1.3, 1.1);
+  const mouth = new THREE.Mesh(new THREE.TorusGeometry(1.2, 0.3, 6, 12, Math.PI), pupil);
+  mouth.position.set(0, -2.4, 0.2);
+  mouth.rotation.z = Math.PI;
+  look.add(mouth);
+  face.add(look);
+  g.add(face);
+  animated.push((time) => (face.rotation.y = time * 0.5));
+  const glow = new THREE.Sprite(additive(tex.glowTexture(), 0xffe890));
+  glow.scale.setScalar(30);
+  glow.position.y = H;
+  g.add(glow);
+  g.position.set(p.x - p.tz * lateral, ribbon.heightAt(s) - 1, p.z + p.tx * lateral);
+  return g;
+}
