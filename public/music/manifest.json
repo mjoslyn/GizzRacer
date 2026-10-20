@@ -362,5 +362,33 @@
     "bars": 32,
     "loopSamples": 1924364,
     "sampleRate": 44100
+  },
+  "panpsych-grove": {
+    "title": "panpsych grove",
+    "bpm": 122,
+    "bars": 24,
+    "loopSamples": 2602623,
+    "sampleRate": 44100
+  },
+  "panpsych-grove-final-lap": {
+    "title": "panpsych grove (final lap)",
+    "bpm": 130,
+    "bars": 24,
+    "loopSamples": 2442462,
+    "sampleRate": 44100
+  },
+  "panpsych-grove-remix": {
+    "title": "panpsych (remix)",
+    "bpm": 124,
+    "bars": 24,
+    "loopSamples": 2560645,
+    "sampleRate": 44100
+  },
+  "panpsych-grove-remix-final-lap": {
+    "title": "panpsych (remix, final lap)",
+    "bpm": 132,
+    "bars": 24,
+    "loopSamples": 2405455,
+    "sampleRate": 44100
   }
 }
