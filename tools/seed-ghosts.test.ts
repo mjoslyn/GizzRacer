@@ -17,12 +17,15 @@ import { TRIAL_LAPS, boardName, type RunSubmission } from '../src/net/runCheck';
  *
  *   npm run seed:ghosts                                  # local wrangler dev
  *   SEED_URL=https://www.gizzracer.com npm run seed:ghosts
+ *   SEED_TRACKS=phantom-island,deadstick-drop npm run seed:ghosts   # only these boards
  *
  * Bot identities live in tools/.seed-identities.json (not committed), so
  * re-runs post as the same bots.
  */
 const BASE = (process.env.SEED_URL ?? 'http://127.0.0.1:8787') + '/parties';
 const IDS = 'tools/.seed-identities.json';
+/** Track ids to seed (comma-separated); every track when unset. */
+const ONLY = process.env.SEED_TRACKS?.split(',').map((s) => s.trim()).filter(Boolean);
 const TIERS: CpuSkill[] = [CPU_SKILL['150cc'], CPU_SKILL['100cc'], CPU_SKILL['50cc']];
 
 type Ids = Record<string, { playerId: string; token: string }>;
@@ -70,6 +73,7 @@ it('seeds starter ghosts', async () => {
     return { name, ...ids[name] };
   };
   for (const [ti, entry] of TRACK_LIST.entries()) {
+    if (ONLY && !ONLY.includes(entry.id)) continue;
     for (const [ei, engine] of ENGINE_CLASSES.entries()) {
       const line: string[] = [];
       for (const [k, skill] of TIERS.entries()) {
