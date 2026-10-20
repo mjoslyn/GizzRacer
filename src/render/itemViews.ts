@@ -522,6 +522,16 @@ export class HazardsView {
     const diskTex = flames.clone();
     diskTex.needsUpdate = true;
 
+    const wispGlow = glowTexture();
+    const wispColors = [0x7affe0, 0xc8a0ff, 0xe8fff8];
+    const planeBody = new THREE.MeshPhongMaterial({ color: 0xd8302a, shininess: 60 });
+    const planeWing = new THREE.MeshPhongMaterial({ color: 0xf4f4f0, shininess: 40 });
+    const planeDark = new THREE.MeshLambertMaterial({ color: 0x2a2a30 });
+    const stoneMat = new THREE.MeshPhongMaterial({ map: stoneTexture([80, 90, 70], [150, 160, 130]), flatShading: true, shininess: 6 });
+    const stoneEye = new THREE.MeshBasicMaterial({ color: 0xb8ffd8 });
+    const waterMat = new THREE.MeshPhongMaterial({ color: 0x4ab0c8, emissive: 0x1a6a80, shininess: 140, specular: 0xffffff, transparent: true, opacity: 0.88, side: THREE.DoubleSide, depthWrite: false });
+    const foamTex = glowTexture('rgba(240,250,255,1)', 'rgba(200,230,255,0)');
+
     for (const pose of hazards.poses) {
       const obj = new THREE.Group();
       const parts: THREE.Object3D[] = [];
@@ -788,6 +798,73 @@ export class HazardsView {
           parts.push(beams, ...glows);
           break;
         }
+        case 'wisps': {
+          // Ghost lights: a cluster of cold glows circling each other, one big and faint round them all.
+          const haze = sprite(wispGlow, 0x8ab8ff, 9);
+          (haze.material as THREE.SpriteMaterial).opacity = 0.35;
+          obj.add(haze);
+          for (let i = 0; i < 7; i++) {
+            const w = sprite(wispGlow, wispColors[i % wispColors.length], 1.2 + (i % 3) * 0.5);
+            obj.add(w);
+            parts.push(w);
+          }
+          break;
+        }
+        case 'gliders': {
+          // A light plane gliding in with its propeller stopped, and the shadow of where it's coming down.
+          const craft = new THREE.Group();
+          const fuse = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.3, 6, 10), planeBody);
+          fuse.rotation.x = Math.PI / 2;
+          const wings = new THREE.Mesh(new THREE.BoxGeometry(9, 0.14, 1.4), planeWing);
+          wings.position.set(0, 0.4, 0.6);
+          const tail = new THREE.Mesh(new THREE.BoxGeometry(3, 0.1, 0.8), planeWing);
+          tail.position.set(0, 0.1, -2.7);
+          const fin = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.2, 0.9), planeBody);
+          fin.position.set(0, 0.7, -2.7);
+          const prop = new THREE.Mesh(new THREE.BoxGeometry(0.16, 2.2, 0.06), planeDark);
+          prop.position.z = 3.1;
+          prop.rotation.z = 0.4;
+          craft.add(fuse, wings, tail, fin, prop);
+          const warn = new THREE.Mesh(warnGeo, new THREE.MeshBasicMaterial({ map: warnTex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 }));
+          parts.push(craft, warn);
+          this.group.add(warn);
+          obj.add(craft);
+          break;
+        }
+        case 'stones': {
+          // A standing stone, awake: a face of two glowing eyes, shuffling across the road.
+          const body = new THREE.Group();
+          const st = new THREE.Mesh(new THREE.CylinderGeometry(1, 1.4, 3.6, 6), stoneMat);
+          st.position.y = 0.3;
+          body.add(st);
+          for (const side of [-1, 1]) {
+            const eye = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 6), stoneEye);
+            eye.position.set(side * 0.4, 1.3, 1.05);
+            body.add(eye);
+          }
+          const hum = sprite(wispGlow, 0x9affd0, 3);
+          hum.position.y = -1.2;
+          body.add(hum);
+          obj.add(body);
+          parts.push(body);
+          break;
+        }
+        case 'waves': {
+          // A wall of water across the whole road: it swells, then breaks in a curl of foam.
+          const wall = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.2, 1, 16, 1, true, 0, Math.PI * 1.2), waterMat);
+          wall.rotation.z = Math.PI / 2;
+          wall.scale.y = pose.radius * 2;
+          const foam = new THREE.Group();
+          for (let i = 0; i < 8; i++) {
+            const f = sprite(foamTex, 0xe8f6ff, 3);
+            (f.material as THREE.SpriteMaterial).blending = THREE.NormalBlending;
+            f.position.x = (i / 7 - 0.5) * pose.radius * 2;
+            foam.add(f);
+          }
+          obj.add(wall, foam);
+          parts.push(wall, foam);
+          break;
+        }
         case 'butterflies': {
           // A swarm: each butterfly two wings that flap, circling the centre.
           for (let i = 0; i < 16; i++) {
@@ -923,6 +1000,57 @@ export class HazardsView {
           beams.scale.y = firing ? 1 : 0.4;
           ((beams.children[0] as THREE.Mesh).material as THREE.MeshBasicMaterial).opacity = firing ? 0.95 : 0.4;
           for (const g of glows) g.scale.setScalar(firing ? 2.4 : warning ? 1.6 : 0.9);
+          break;
+        }
+        case 'wisps':
+          parts.forEach((w, i) => {
+            const a = elapsed * (0.9 + (i % 3) * 0.3) + (i / parts.length) * Math.PI * 2;
+            const r = 1.2 + (i % 4) * 0.8;
+            w.position.set(Math.cos(a) * r, 0.6 + Math.sin(elapsed * 1.7 + i) * 0.8 + (i % 3) * 0.5, Math.sin(a) * r);
+            w.scale.setScalar((1.2 + (i % 3) * 0.5) * (0.8 + Math.sin(elapsed * 5 + i * 2) * 0.2));
+          });
+          break;
+        case 'gliders': {
+          const [craft, warn] = parts;
+          const u = p.phase;
+          // Comes in from far up the road on a shallow glide, lands on the shadow, sits there wrecked, then sinks away.
+          const start = 0.05;
+          const g = Math.min(1, Math.max(0, (u - start) / (BOULDER_STAGES.land - start)));
+          obj.position.set(p.x, p.ground, p.z);
+          obj.rotation.y = p.heading + Math.PI;
+          craft.visible = u >= start;
+          if (u < BOULDER_STAGES.land) {
+            craft.position.set(0, 1 + 26 * (1 - g), -70 * (1 - g));
+            craft.rotation.set(0.32, 0, Math.sin(elapsed * 2) * 0.08);
+          } else {
+            craft.position.set(0, 0.7 + (p.y - p.ground - 1.7), 0);
+            craft.rotation.set(-0.12, 0.5, 0.35);
+          }
+          warn.visible = u >= start && u < BOULDER_STAGES.land;
+          warn.position.set(p.x, p.ground + 0.05, p.z);
+          warn.scale.setScalar(1.5 + 3 * g);
+          (warn as THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>).material.opacity = 0.5 + 0.5 * Math.abs(Math.sin(elapsed * (6 + g * 10)));
+          break;
+        }
+        case 'stones': {
+          // A waddle: rocking side to side as it shuffles.
+          obj.rotation.y = p.heading;
+          parts[0].rotation.z = Math.sin(p.phase * 2.2) * 0.14;
+          parts[0].position.y = Math.abs(Math.sin(p.phase * 2.2)) * 0.25;
+          break;
+        }
+        case 'waves': {
+          const [wall, foam] = parts;
+          obj.rotation.y = p.heading;
+          const u = p.phase;
+          const breaking = u >= JET_STAGES.fire;
+          const swell = u >= JET_STAGES.sputter && !breaking;
+          wall.visible = foam.visible = breaking || swell;
+          const k = breaking ? 1 : swell ? 0.25 + 0.6 * ((u - JET_STAGES.sputter) / (JET_STAGES.fire - JET_STAGES.sputter)) : 0;
+          wall.scale.x = wall.scale.z = Math.max(0.05, k);
+          wall.position.y = 2.2 * k - 0.6;
+          foam.position.y = 4.4 * k - 0.4;
+          foam.children.forEach((f, i) => f.scale.setScalar((breaking ? 3.4 : 1.6) + Math.sin(elapsed * 12 + i) * 0.5));
           break;
         }
         case 'butterflies':

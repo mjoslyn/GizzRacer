@@ -74,10 +74,17 @@ const HOLE_RADIUS = 7;
 export const HOLE_CORE = 1.6;
 export const HOLE_SPIN = 1.1;
 const LIGHTNING_RADIUS = 2.6;
-const SWIRL_PUSH: Partial<Record<HazardKind, number>> = { dustDevils: DEVIL_PUSH, butterflies: BUTTERFLY_PUSH, tornadoes: TORNADO_PUSH, blackHoles: HOLE_PUSH };
+/** Sideways shove inside a cluster of ghost lights, m/s^2: a cold draught, gentler than a dust devil. */
+export const WISP_PUSH = 18;
+const WISP_RADIUS = 4.5;
+const STONE_RADIUS = 1.5;
+export const STONE_SPIN = 1.0;
+export const GLIDER_SPIN = 1.1;
+export const WAVE_SPIN = 1.0;
+const SWIRL_PUSH: Partial<Record<HazardKind, number>> = { dustDevils: DEVIL_PUSH, butterflies: BUTTERFLY_PUSH, tornadoes: TORNADO_PUSH, blackHoles: HOLE_PUSH, wisps: WISP_PUSH };
 /** A bolt strikes for this share of the cycle after its warning ring closes. */
 export const LIGHTNING_STRIKE = 0.12;
-const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds' | 'butterflies' | 'tornadoes'>, number> = {
+const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds' | 'butterflies' | 'tornadoes' | 'wisps'>, number> = {
   snakes: SNAKE_SPIN,
   fish: FISH_SPIN,
   iceBlocks: ICE_BLOCK_SPIN,
@@ -93,11 +100,24 @@ const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds' | 'butterfli
   blackHoles: HOLE_SPIN,
   vines: VINE_SPIN,
   rollers: ROLLER_SPIN,
+  stones: STONE_SPIN,
+  gliders: GLIDER_SPIN,
+  waves: WAVE_SPIN,
 };
+
+/** Kinds that fill the whole road across, on a rhythm: nothing to steer round, only to time. */
+export function isSheet(kind: HazardKind): boolean {
+  return kind === 'flameJets' || kind === 'dragonFire' || kind === 'lasers' || kind === 'waves';
+}
+
+/** Kinds that swirl a kart round rather than hitting it. */
+function isSwirl(kind: HazardKind): kind is 'dustDevils' | 'butterflies' | 'tornadoes' | 'wisps' {
+  return kind === 'dustDevils' || kind === 'butterflies' || kind === 'tornadoes' || kind === 'wisps';
+}
 
 /** Kinds that drop from the sky and sit where they land, solid. */
 export function isFalling(kind: HazardKind): boolean {
-  return kind === 'boulders' || kind === 'lavaBombs' || kind === 'oilBombs' || kind === 'meteors' || kind === 'hail';
+  return kind === 'boulders' || kind === 'lavaBombs' || kind === 'oilBombs' || kind === 'meteors' || kind === 'hail' || kind === 'gliders';
 }
 
 /** Boulder cycle stages, as fractions of the period. */
@@ -136,10 +156,11 @@ export class HazardSystem {
       switch (def.kind) {
         case 'snakes':
         case 'rollers':
-        case 'iceBlocks': {
+        case 'iceBlocks':
+        case 'stones': {
           const s = def.from + ((def.to - def.from) * (i + 0.5)) / def.count;
           const roller = def.kind !== 'snakes';
-          const size = def.kind === 'iceBlocks' ? ICE_BLOCK_RADIUS : ROLLER_RADIUS;
+          const size = def.kind === 'iceBlocks' ? ICE_BLOCK_RADIUS : def.kind === 'stones' ? STONE_RADIUS : ROLLER_RADIUS;
           const hw = this.halfWidth(s) + (roller ? 1 : 2.5);
           const u = (((t + 10) / def.period + i * 0.37) % 1 + 1) % 1;
           // Triangle wave: edge to edge at a steady pace, then back.
@@ -182,7 +203,8 @@ export class HazardSystem {
         }
         case 'flameJets':
         case 'dragonFire':
-        case 'lasers': {
+        case 'lasers':
+        case 'waves': {
           const at = def.at[i];
           this.place(p, at, 0, 0);
           const u = (((t + 10) / def.period + i * 0.31) % 1 + 1) % 1;
@@ -194,11 +216,12 @@ export class HazardSystem {
         case 'dustDevils':
         case 'butterflies':
         case 'tornadoes':
-        case 'blackHoles': {
+        case 'blackHoles':
+        case 'wisps': {
           const s = def.from + (def.to - def.from) * (0.5 + 0.45 * Math.sin(t * 0.11 * (1 + i * 0.4) + i * 2.1));
           const lat = this.halfWidth(s) * 0.7 * Math.sin(t * 0.33 + i * 1.7);
-          this.place(p, s, lat, def.kind === 'blackHoles' ? 1.2 : 0);
-          p.radius = { dustDevils: DEVIL_RADIUS, butterflies: BUTTERFLY_RADIUS, tornadoes: TORNADO_RADIUS, blackHoles: HOLE_RADIUS }[def.kind];
+          this.place(p, s, lat, def.kind === 'blackHoles' ? 1.2 : def.kind === 'wisps' ? 1 : 0);
+          p.radius = { dustDevils: DEVIL_RADIUS, butterflies: BUTTERFLY_RADIUS, tornadoes: TORNADO_RADIUS, blackHoles: HOLE_RADIUS, wisps: WISP_RADIUS }[def.kind];
           p.active = true;
           p.phase = t * 7;
           break;
@@ -232,7 +255,8 @@ export class HazardSystem {
         case 'lavaBombs':
         case 'oilBombs':
         case 'meteors':
-        case 'hail': {
+        case 'hail':
+        case 'gliders': {
           const at = def.at[i];
           const tt = t + 10 + (i * def.period) / def.at.length;
           const cycle = Math.floor(tt / def.period);
@@ -269,7 +293,7 @@ export class HazardSystem {
         if (Math.abs(s.y - p.ground) > 2.2) continue;
         const d = this.distance(p, s);
         if (d > p.radius + KART_RADIUS) continue;
-        if (p.kind === 'dustDevils' || p.kind === 'butterflies' || p.kind === 'tornadoes') {
+        if (isSwirl(p.kind)) {
           this.swirl(p, s, dt);
           continue;
         }
@@ -295,7 +319,7 @@ export class HazardSystem {
   /** Circles for CPU avoidance, including boulders about to land. */
   obstacles(out: { x: number; z: number; r: number; vx: number; vz: number }[]): void {
     for (const p of this.poses) {
-      if (p.kind === 'flameJets' || p.kind === 'dragonFire' || p.kind === 'lasers') continue; // the whole road: nothing to steer around
+      if (isSheet(p.kind)) continue; // the whole road: nothing to steer around
       const falling = isFalling(p.kind);
       if (p.kind === 'lightning') {
         if (p.phase < BOULDER_STAGES.fall * 0.5 || p.phase > BOULDER_STAGES.land + LIGHTNING_STRIKE) continue;
@@ -334,7 +358,7 @@ export class HazardSystem {
    * thin sheet across the road; everything else is a circle.
    */
   private distance(p: HazardPose, s: KartState): number {
-    if (p.kind === 'flameJets' || p.kind === 'dragonFire' || p.kind === 'lasers') {
+    if (isSheet(p.kind)) {
       const fx = Math.sin(p.heading);
       const fz = Math.cos(p.heading);
       const along = Math.abs((s.x - p.x) * fx + (s.z - p.z) * fz);

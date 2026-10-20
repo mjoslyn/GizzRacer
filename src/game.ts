@@ -784,6 +784,10 @@ const HIT_TEXT: Record<ItemKind | HazardKind, string> = {
   lightning: 'STRUCK!',
   tornadoes: '',
   blackHoles: 'SPAGHETTIFIED!',
+  wisps: '',
+  gliders: 'DEADSTICKED!',
+  stones: 'ROCKED!',
+  waves: 'WIPED OUT!',
 };
 
 /** Takes a group out of the scene and frees what it built. */
@@ -869,7 +873,7 @@ function updateSounds(dt: number): void {
     }
     return best;
   };
-  sfx.hazards(dt, near('snakes'), near('dustDevils') ?? near('tornadoes') ?? near('blackHoles') ?? near('butterflies'));
+  sfx.hazards(dt, near('snakes'), near('dustDevils') ?? near('tornadoes') ?? near('blackHoles') ?? near('butterflies') ?? near('wisps'));
 }
 
 function updateMusic(p: RaceKart): void {

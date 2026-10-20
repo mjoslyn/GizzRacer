@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import * as tex from './textures';
 import { DESERT_SKY, type SkyColors } from './textures';
 
-export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void';
-export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos';
+export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt';
+export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea';
 
 /** Everything that makes a track's world look like itself. */
 export interface Theme {
@@ -237,5 +237,75 @@ export const THEMES: Record<ThemeId, Theme> = {
     skyCycle: false,
     dust: 0xb08aff,
     barrier: { map: tex.cosmicRoadTexture, crawl: true },
+  },
+  // Phantom Island: an island that isn't always there, at dusk, in a sea mist. Violet sky, teal water, ghost lights.
+  phantom: {
+    sky: { zenith: '#120a2a', high: '#2e1c5a', low: '#6a4a9a', horizon: '#e0a8c8', below: '#4a5a7a', ground: '#2a3a44', cloud: '200,190,230', clouds: 30 },
+    fog: { color: 0x8a90b8, near: 60, far: 520 },
+    hemi: { sky: 0xc8b8ff, ground: 0x2a4a52, intensity: 1.45 },
+    sun: { color: 0xffd0e0, intensity: 1.6 },
+    ground: tex.phantomShoreTexture,
+    groundTile: 18,
+    cliff: () => tex.stoneTexture([58, 62, 78], [120, 128, 150]),
+    decor: 'isle',
+    distant: { shape: 'mountain', color: 0x4a4a78 },
+    haze: 0,
+    duotone: [0x04020e, 0x5a40c0, 0xa0fff0],
+    skyCycle: false,
+    dust: 0xc8d0e8,
+    barrier: { map: () => tex.stoneTexture([80, 84, 100], [150, 156, 178]), crawl: false },
+  },
+  // Deadstick Drop: a cliff-top airfield on a bright windy day, the sea far below, seaplanes and a stopped propeller.
+  airfield: {
+    sky: { zenith: '#1a5ad0', high: '#3c86ec', low: '#9ccaf8', horizon: '#f4f8ff', below: '#7aa8c8', ground: '#4a7a3a', cloud: '255,255,255', clouds: 40 },
+    fog: { color: 0xd8eaff, near: 200, far: 1000 },
+    hemi: { sky: 0xc8e4ff, ground: 0x5a8a3a, intensity: 1.6 },
+    sun: { color: 0xfff6e8, intensity: 2.3 },
+    ground: tex.turfTexture,
+    groundTile: 16,
+    cliff: () => tex.stoneTexture([150, 140, 120], [220, 210, 190]),
+    decor: 'airstrip',
+    distant: { shape: 'hill', color: 0x5a8a5a },
+    haze: 0.3,
+    duotone: [0x020812, 0x2a7ad8, 0xffe880],
+    skyCycle: false,
+    dust: 0xe0dcc8,
+    barrier: { map: tex.curbTexture, crawl: false },
+  },
+  // Panpsych Grove: a forest older than anyone, every tree and stone in it awake, light coming through it like amber.
+  grove: {
+    sky: { zenith: '#2a5a4a', high: '#5a8a5a', low: '#c8c070', horizon: '#ffe0a0', below: '#4a6a3a', ground: '#2a3a1a', cloud: '255,240,200', clouds: 22 },
+    fog: { color: 0x9aa868, near: 70, far: 480 },
+    hemi: { sky: 0xffe8a8, ground: 0x3a5a2a, intensity: 1.5 },
+    sun: { color: 0xffd890, intensity: 2.0 },
+    ground: tex.groveFloorTexture,
+    groundTile: 16,
+    cliff: () => tex.stoneTexture([70, 80, 56], [140, 150, 110]),
+    decor: 'grove',
+    distant: { shape: 'hill', color: 0x2e4a2a },
+    haze: 0.25,
+    duotone: [0x040800, 0x3a8a20, 0xffd040],
+    skyCycle: true,
+    dust: 0xc8b080,
+    barrier: { map: tex.woodTexture, crawl: false },
+  },
+  // Sea of Doubt: the cup's end, a causeway over a black sea at night in a gale, waves breaking over it, lightning.
+  doubt: {
+    sky: { zenith: '#020408', high: '#0a1420', low: '#1a2a3a', horizon: '#4a6a7a', below: '#0a1418', ground: '#04080a', cloud: '50,60,70', clouds: 56 },
+    fog: { color: 0x1a2630, near: 60, far: 460 },
+    hemi: { sky: 0x8ab0c8, ground: 0x0a1a20, intensity: 1.25 },
+    sun: { color: 0xb8d0e8, intensity: 1.2 },
+    ground: tex.nightSeaTexture,
+    groundTile: 30,
+    cliff: () => tex.stoneTexture([26, 32, 36], [80, 92, 100]),
+    decor: 'sea',
+    distant: { shape: 'mountain', color: 0x0e161c },
+    haze: 0,
+    duotone: [0x000206, 0x105a8a, 0xc0f0ff],
+    skyCycle: false,
+    dust: 0xd8e8f0,
+    barrier: { map: () => tex.stoneTexture([60, 66, 70], [130, 140, 146]), crawl: false },
+    storm: true,
+    roadGlow: 0.3,
   },
 };

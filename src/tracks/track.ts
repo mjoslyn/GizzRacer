@@ -18,7 +18,7 @@ export interface BranchDef extends RibbonDef {
 }
 
 export interface Landmark {
-  kind: 'skeletonArch' | 'fangs' | 'fortressGate' | 'templeGate' | 'waterfall' | 'gantry' | 'lighthouse' | 'iceArch' | 'neonArch' | 'rainbowArch' | 'dragonGate' | 'dragonFlight' | 'colonyGate' | 'rodGate' | 'voidEye';
+  kind: 'skeletonArch' | 'fangs' | 'fortressGate' | 'templeGate' | 'waterfall' | 'gantry' | 'lighthouse' | 'iceArch' | 'neonArch' | 'rainbowArch' | 'dragonGate' | 'dragonFlight' | 'colonyGate' | 'rodGate' | 'voidEye' | 'phantomArch' | 'runwayGate' | 'treeGate' | 'wreckGate';
   ribbon: number; // -1 = main, else branch index
   s: number; // builder units
 }
@@ -45,7 +45,7 @@ export interface TrackDef {
   itemBoxes: ItemBoxRow[];
   hazards: HazardDef[];
   /** Visual theme (render/themes.ts). */
-  theme: 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void';
+  theme: 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt';
   /** No ground: off the road is a long drop (the sky track). */
   abyss?: boolean;
   /** Music cues (public/music/<cue>.mp3): one for the race, one for the final lap. */
@@ -101,7 +101,15 @@ export type HazardDef =
   /** Supercell: tornadoes wandering the road, flinging karts round and out. */
   | { kind: 'tornadoes'; from: number; to: number; count: number }
   /** Murder of the Universe: black holes drifting across the road, dragging karts round and in. */
-  | { kind: 'blackHoles'; from: number; to: number; count: number };
+  | { kind: 'blackHoles'; from: number; to: number; count: number }
+  /** Phantom Island: ghost lights drifting over the road, buffeting karts round. */
+  | { kind: 'wisps'; from: number; to: number; count: number }
+  /** Deadstick Drop: planes with their propellers stopped, gliding in to crash-land on the road. */
+  | { kind: 'gliders'; at: number[]; period: number }
+  /** Panpsych Grove: standing stones, awake, shuffling across the road and back. */
+  | { kind: 'stones'; from: number; to: number; count: number; period: number }
+  /** Sea of Doubt: waves breaking right across the causeway, on a rhythm. */
+  | { kind: 'waves'; at: number[]; period: number };
 
 export interface StartSlot {
   x: number;

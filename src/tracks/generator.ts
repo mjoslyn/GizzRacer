@@ -10,7 +10,7 @@ import { Track, inPit, type BranchDef, type HazardDef, type ItemBoxRow, type Lan
  */
 
 export type GenTheme = TrackDef['theme'];
-export const GEN_THEMES: readonly GenTheme[] = ['desert', 'speedway', 'volcano', 'jungle', 'lagoon', 'glacier', 'neon', 'dream', 'petro', 'mars', 'storm', 'void'];
+export const GEN_THEMES: readonly GenTheme[] = ['desert', 'speedway', 'volcano', 'jungle', 'lagoon', 'glacier', 'neon', 'dream', 'petro', 'mars', 'storm', 'void', 'phantom', 'airfield', 'grove', 'doubt'];
 export const GEN_THEME_NAMES: Record<GenTheme, string> = {
   desert: 'Desert',
   speedway: 'Speedway',
@@ -24,6 +24,10 @@ export const GEN_THEME_NAMES: Record<GenTheme, string> = {
   mars: 'Mars',
   storm: 'Supercell',
   void: 'Void',
+  phantom: 'Phantom Island',
+  airfield: 'Airfield',
+  grove: 'Grove',
+  doubt: 'Sea of Doubt',
 };
 export type GenLength = 'short' | 'medium' | 'long';
 export const GEN_LENGTHS: readonly GenLength[] = ['short', 'medium', 'long'];
@@ -230,6 +234,54 @@ const PALETTES: Record<GenTheme, Palette> = {
     tallWalls: 1.2,
     places: ['Han-Tyumi', 'Altered Beast', 'Balrog', 'Nebula', 'Event Horizon', 'Murder', 'Cyborg', 'Quasar', 'Oblivion'],
     music: { lap: 'murder-of-the-universe', finalLap: 'murder-of-the-universe-final-lap' },
+  },
+  phantom: {
+    surface: 'sand',
+    deck: 'boards',
+    alt: 'rock',
+    liquid: 'water',
+    hazards: ['wisps', 'vines'],
+    start: 'phantomArch',
+    landmarks: ['phantomArch', 'lighthouse'],
+    tallWalls: 1.5,
+    places: ['Phantom', 'Mist', 'Wraith', 'Ghost Light', 'Vanishing', 'Spectre', 'Isle', 'Tideline', 'Eternal Return'],
+    music: { lap: 'phantom-island', finalLap: 'phantom-island-final-lap' },
+  },
+  airfield: {
+    surface: 'asphalt',
+    deck: 'boards',
+    alt: 'rock',
+    liquid: 'water',
+    hazards: ['gliders', 'dustDevils'],
+    start: 'runwayGate',
+    landmarks: ['runwayGate'],
+    tallWalls: 1.2,
+    places: ['Deadstick', 'Runway', 'Aerodynamic', 'Propeller', 'Hangar', 'Mayday', 'Tailwind', 'Glide', 'Grow Wings'],
+    music: { lap: 'deadstick-drop', finalLap: 'deadstick-drop-final-lap' },
+  },
+  grove: {
+    surface: 'rock',
+    deck: 'boards',
+    alt: 'sand',
+    liquid: 'water',
+    hazards: ['stones', 'vines'],
+    start: 'treeGate',
+    landmarks: ['treeGate'],
+    tallWalls: 1.5,
+    places: ['Panpsych', 'Root', 'Mossy', 'Humming', 'Heartwood', 'Silent Spirit', 'Canopy', 'Lichen', 'Awake'],
+    music: { lap: 'panpsych-grove', finalLap: 'panpsych-grove-final-lap' },
+  },
+  doubt: {
+    surface: 'wet',
+    deck: 'boards',
+    alt: 'rock',
+    liquid: 'water',
+    hazards: ['waves', 'lightning'],
+    start: 'wreckGate',
+    landmarks: ['wreckGate', 'lighthouse'],
+    tallWalls: 1.5,
+    places: ['Doubt', 'Undertow', 'Breaker', 'Spacesick', 'Lonely', 'Riptide', 'Squall', 'Fathom', 'Wreck'],
+    music: { lap: 'sea-of-doubt', finalLap: 'sea-of-doubt-final-lap' },
   },
 };
 
@@ -887,6 +939,7 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
         hazards.push({ kind, from, to, count, period: 3.4 });
         break;
       case 'iceBlocks':
+      case 'stones':
         hazards.push({ kind, from, to, count: count - 1, period: 5 });
         break;
       case 'tumbleweeds':
@@ -896,6 +949,7 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
       case 'butterflies':
       case 'tornadoes':
       case 'blackHoles':
+      case 'wisps':
         hazards.push({ kind, from, to, count: 1 });
         break;
       case 'boulders':
@@ -905,10 +959,12 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
       case 'oilBombs':
       case 'meteors':
       case 'hail':
+      case 'gliders':
         hazards.push({ kind, at: at(count - 1), period: 6 });
         break;
       case 'flameJets':
       case 'dragonFire':
+      case 'waves':
         hazards.push({ kind, at: at(count), period: 3.2 });
         break;
       case 'lasers':

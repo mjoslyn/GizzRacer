@@ -8,13 +8,14 @@ No install and no account. It will always be free.
 
 ## What's in it
 
-- **12 tracks in 3 cups**, each built around an album or a song
+- **16 tracks in 4 cups**, each built around an album or a song
   - **Nonagon Cup:** Infinite Loop Speedway, Rattlesnake Run, Volcano Fortress, Polygondwanaland Jungle
   - **Microtonal Cup:** Fishies Lagoon, Ice V Glacier, Cyboogie City, Butterfly 3000 Skyway
   - **Apocalypse Cup:** Hell on Mars, Supercell, Murder of the Universe, Petrodragonic Apocalypse
+  - **Phantom Island Cup:** Phantom Island, Deadstick Drop, Panpsych Grove, Sea of Doubt
 - **Roller-coaster tracks:** climbs onto pillared decks, plunges you fly off, canyons sunk into the ground, and a causeway that dives under the lagoon
 - **Shortcuts on every track**, trick kickers on the straights and double item boxes on the risky lines
-- **Hazards** from the songs: rattlesnakes, flame jets, tornadoes, black holes, and dragons breathing fire across a gullet
+- **Hazards** from the songs: rattlesnakes, flame jets, tornadoes, black holes, dragons breathing fire across a gullet, planes gliding in with their propellers stopped, and waves breaking over a causeway
 - **20 racers**, each with their own vehicle: the Lizard Wizard, Han-Tyumi in a fishing dinghy, a flying Gila monster, Beowulf's Witch, the Fuzz Golem, Arlo the poodle in a dog bed, and more. The band are in it too: Amby, Cavs, Cookie, Jason, Joey, Lukey and Stu
 - **13 items**, each with a Gizzverse name:
   - Mind Fuzz, Microtonal Banana, Nuclear Fusion, Big Fig Wasp, Horology and the Woo Cannon

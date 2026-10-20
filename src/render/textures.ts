@@ -1344,3 +1344,60 @@ export function yikesTexture(): THREE.CanvasTexture {
   }
   return finish(c, false);
 }
+
+/** Phantom Island: dark wet sand and sea grass under a violet dusk, pools of mist-blue water left by the tide. */
+export function phantomShoreTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 5, 601);
+  const pool = fbm(S, 3, 3, 602);
+  paint(ctx, S, S, (_x, _y, i) => {
+    if (pool[i] > 0.66) return mix([60, 92, 120], [120, 168, 190], (pool[i] - 0.66) * 3);
+    if (pool[i] > 0.56) return mix([74, 70, 88], [104, 98, 116], n[i]);
+    return mix([46, 62, 66], [86, 104, 96], n[i]);
+  });
+  return finish(c);
+}
+
+/** Cliff-top turf by an airfield: short bright grass, clover, mown stripes. */
+export function turfTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 5, 5, 611);
+  const clover = fbm(S, 2, 3, 612);
+  paint(ctx, S, S, (_x, y, i) => {
+    const stripe = Math.floor((y / S) * 8) % 2 ? 1.06 : 0.94;
+    const base = mix([70, 132, 52], [128, 184, 80], n[i]);
+    return shade(clover[i] > 0.7 ? mix(base, [150, 200, 110], 0.4) : base, stripe);
+  });
+  return finish(c);
+}
+
+/** The grove's floor: moss, leaf litter in amber and rust, roots showing through. */
+export function groveFloorTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 5, 5, 621);
+  const moss = fbm(S, 3, 4, 622);
+  paint(ctx, S, S, (_x, _y, i) => {
+    if (moss[i] > 0.55) return mix([44, 86, 40], [96, 140, 60], n[i]);
+    return mix([92, 58, 30], [176, 118, 52], n[i]);
+  });
+  cracks(ctx, S, 18, 'rgba(40,26,16,0.55)', 3, 623);
+  return finish(c);
+}
+
+/** The Sea of Doubt at night: black-green water, whitecaps streaking it. */
+export function nightSeaTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 3, 5, 631);
+  const warp = fbm(S, 2, 3, 632);
+  paint(ctx, S, S, (x, y, i) => {
+    const swell = Math.sin(((x + warp[i] * 160) / S) * Math.PI * 2 * 9 + y * 0.02) * 0.5 + 0.5;
+    const cap = Math.max(0, swell * n[i] - 0.55) * 4;
+    const b = mix([8, 20, 26], [24, 52, 62], n[i]);
+    return mix(b, [190, 210, 214], Math.min(1, cap));
+  });
+  return finish(c);
+}

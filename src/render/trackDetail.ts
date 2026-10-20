@@ -102,6 +102,36 @@ const STYLES: Record<DecorKind, DetailStyle> = {
     boards: { words: [], bg: [], fg: '#ffffff' },
     crowd: false,
   },
+  isle: {
+    edge: { kind: 'torch', height: 1.5, spacing: 15, color: 0x3a3a4a, stripe: 0x5a5a6a },
+    // Lanterns that burn the colour of the ghost lights.
+    light: 0x7affe0,
+    cover: { shape: 'tuft', colors: [0x4a6a5a, 0x6a8a7a, 0x8a7aa8, 0x3a5048], count: 1300 },
+    boards: { words: ['PHANTOM', 'NOT HERE', 'WHERE AM I', 'GHOST LIGHTS'], bg: ['#2e1c5a', '#1a3a4a'], fg: '#a0fff0' },
+    crowd: true,
+  },
+  airstrip: {
+    edge: { kind: 'pole', height: 1.0, spacing: 10, color: 0xffffff, stripe: 0xff6a1a },
+    light: 0x40a0ff,
+    cover: { shape: 'tuft', colors: [0x5a9a3a, 0x7ab84a, 0xffe45a, 0xffffff], count: 1500 },
+    boards: { words: ['DEADSTICK', 'MAYDAY', 'CLEAR PROP', 'GLIDE'], bg: ['#1a5ad0', '#e04a2a', '#2a8a4a'], fg: '#ffffff' },
+    crowd: true,
+  },
+  grove: {
+    edge: { kind: 'torch', height: 1.4, spacing: 16, color: 0x5a3a20, stripe: 0x3a2a14 },
+    light: 0xffd060,
+    cover: { shape: 'tuft', colors: [0x3a7a2a, 0x5a9a3a, 0xc8a040, 0xff8ad8, 0x9affd0], count: 1800 },
+    boards: { words: ['PANPSYCH', 'ALL AWAKE', 'HUM', 'I AM TREE'], bg: ['#2a5a2a', '#6a4a1a'], fg: '#ffe890' },
+    crowd: true,
+  },
+  sea: {
+    edge: { kind: 'buoy', height: 1.1, spacing: 12, color: 0xe8e8e0, stripe: 0xd8302a },
+    light: 0xff3a2a,
+    // Off the road is the sea: nothing to scatter on it.
+    cover: { shape: 'none', colors: [], count: 0 },
+    boards: { words: ['DOUBT', 'TURN BACK', 'NO SHORE', 'MAYBE'], bg: ['#0a1420', '#1a2a3a'], fg: '#c0f0ff' },
+    crowd: false,
+  },
   sky: {
     edge: { kind: 'star', height: 1.4, spacing: 14, color: 0xffe8a0, stripe: 0xffffff },
     light: 0xfff0ff,

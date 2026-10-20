@@ -380,9 +380,12 @@ export class Sfx {
       this.hit(0.18, 1200, 0.25);
       return;
     }
-    if (by === 'dustDevils' || by === 'butterflies' || by === 'tornadoes') return;
+    if (by === 'dustDevils' || by === 'butterflies' || by === 'tornadoes' || by === 'wisps') return;
     this.onDuck(0.4, 0.8);
-    if (by === 'boulders' || by === 'lavaBombs' || by === 'oilBombs' || by === 'meteors' || by === 'hail' || by === 'rollers' || by === 'vines' || by === 'iceBlocks') this.hit(0.3, 180, 0.5);
+    if (by === 'boulders' || by === 'lavaBombs' || by === 'oilBombs' || by === 'meteors' || by === 'hail' || by === 'rollers' || by === 'vines' || by === 'iceBlocks' || by === 'stones' || by === 'gliders') this.hit(0.3, 180, 0.5);
+    // A wave breaking over you: a crash of white noise; a glider comes in with a whistle of wind.
+    if (by === 'waves') this.whoosh(0.8, 2400, 300, 0.35);
+    if (by === 'gliders') this.whoosh(0.5, 1800, 500, 0.2);
     if (by === 'fish') this.hit(0.25, 900, 0.4);
     if (by === 'lasers') this.tone(1760, 0.3, 'square', 0.06, 220);
     if (by === 'flameJets' || by === 'lavaBombs' || by === 'oilBombs' || by === 'dragonFire' || by === 'meteors') this.whoosh(0.6, 300, 1400, 0.3);

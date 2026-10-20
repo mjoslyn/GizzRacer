@@ -7,6 +7,7 @@ import * as tex from './textures';
 import { THEMES, type Theme } from './themes';
 import { CURB_WIDTH, trackDetail } from './trackDetail';
 import { colonyFeature, colonyGate, cosmosFeature, plainsFeature, rodGate, stormWeather, voidEye } from './apocalypse';
+import { airstripFeature, groveFeature, isleFeature, phantomArch, runwayGate, seaFeature, treeGate, wreckGate } from './phantom';
 
 /** Meters of road per texture repeat along the track. */
 const ROAD_TILE = 14;
@@ -56,6 +57,10 @@ function materials(theme: Theme): Materials {
     colony: () => tex.stoneTexture([100, 40, 22], [180, 90, 54]),
     plains: () => tex.stoneTexture([70, 74, 70], [130, 136, 128]),
     cosmos: () => tex.stoneTexture([50, 30, 80], [130, 100, 180]),
+    isle: () => tex.stoneTexture([62, 66, 82], [130, 136, 160]),
+    airstrip: () => tex.stoneTexture([150, 140, 120], [220, 210, 190]),
+    grove: () => tex.stoneTexture([70, 84, 60], [140, 150, 110]),
+    sea: () => tex.stoneTexture([26, 32, 36], [80, 92, 100]),
   };
   const neon = tex.neonRoadTexture();
   const rainbow = tex.rainbowTexture();
@@ -153,6 +158,10 @@ export function buildTrackView(track: Track): TrackView {
     if (lm.kind === 'colonyGate') group.add(colonyGate(ribbon, s, animated));
     if (lm.kind === 'rodGate') group.add(rodGate(ribbon, s, animated));
     if (lm.kind === 'voidEye') group.add(voidEye(ribbon, s, animated));
+    if (lm.kind === 'phantomArch') group.add(phantomArch(ribbon, s, animated));
+    if (lm.kind === 'runwayGate') group.add(runwayGate(ribbon, s, animated));
+    if (lm.kind === 'treeGate') group.add(treeGate(ribbon, s, animated));
+    if (lm.kind === 'wreckGate') group.add(wreckGate(ribbon, s, animated));
     if (lm.kind === 'dragonFlight') {
       const d = dragonFlight(track.def.bounds);
       group.add(d.group);
@@ -1150,8 +1159,8 @@ function decor(track: Track, mats: Materials, theme: Theme, animated: ((time: nu
     ribbons.every((r) => nearestOnSpline(r.spline, x, z).distance > Math.max(...r.halfWidth) + 8) &&
     track.def.pits.every((p) => !inPit({ ...p, halfWidth: p.halfWidth + 6, halfLength: p.halfLength + 6 }, x, z));
 
-  const rockCount = { jungle: 120, city: 0, sky: 0, lagoon: 60, glacier: 140, wasteland: 150, colony: 170, plains: 60, cosmos: 0 }[theme.decor as string] ?? 220;
-  const featureCount = { jungle: 150, meadow: 110, lagoon: 120, glacier: 160, city: 90, sky: 90, wasteland: 110, colony: 110, plains: 140, cosmos: 110 }[theme.decor as string] ?? 70;
+  const rockCount = { jungle: 120, city: 0, sky: 0, lagoon: 60, glacier: 140, wasteland: 150, colony: 170, plains: 60, cosmos: 0, isle: 90, airstrip: 40, grove: 90, sea: 70 }[theme.decor as string] ?? 220;
+  const featureCount = { jungle: 150, meadow: 110, lagoon: 120, glacier: 160, city: 90, sky: 90, wasteland: 110, colony: 110, plains: 140, cosmos: 110, isle: 140, airstrip: 110, grove: 170, sea: 120 }[theme.decor as string] ?? 70;
   // Sky and void scenery floats at all heights; city towers need room off the road.
   const floating = theme.decor === 'sky' || theme.decor === 'cosmos';
   const rocks = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 1), mats.rock, rockCount);
@@ -1213,6 +1222,14 @@ function featureBuilder(theme: Theme, mats: Materials, animated: ((time: number)
       return plainsFeature(animated);
     case 'cosmos':
       return cosmosFeature(mats.rock, animated);
+    case 'isle':
+      return isleFeature(mats.rock, animated);
+    case 'airstrip':
+      return airstripFeature(animated);
+    case 'grove':
+      return groveFeature(animated);
+    case 'sea':
+      return seaFeature(mats.rock, animated);
     case 'lagoon': {
       const bark = lambert(0x9a7a52);
       const frond = lambert(0x3aa04a, { side: THREE.DoubleSide, flatShading: true });
