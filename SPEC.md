@@ -212,7 +212,7 @@ Every track has a shortcut or alternate route (a branch) that trades risk for ti
 - Grand Prix grid: first race as picked (player in 5th), then the standings reversed so the leader starts at the back. Ties go to the better place in the latest race
 - Time Trial: a single lap, alone, no item boxes, best total and lap per track and class saved in the browser. The fastest run per track and class is recorded (15 samples/s, about 75 KB) and replays as a see-through ghost
 - Extra mode beyond the spec: Single Race (any track, full field)
-- HUD: position, lap counter, item slot, minimap, timer, drift spark meter
+- HUD: position, lap counter, item slot, minimap (the main road only: shortcuts are for finding), timer, drift spark meter
 - Grand Prix points: 15, 12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 (twelve to a race)
 
 ## 10. Audio

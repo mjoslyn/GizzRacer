@@ -23,6 +23,7 @@ export class Minimap {
   }
 
   setTrack(track: Track): void {
+    // Framed to every road, so a kart out on a shortcut stays on the map, but only the main road is drawn: shortcuts are for finding.
     const ribbons = [track.main, ...track.branches];
     let minX = Infinity;
     let maxX = -Infinity;
@@ -49,22 +50,18 @@ export class Minimap {
       [9, 'rgba(40,10,50,0.85)'],
       [5, '#fff6dc'],
     ] as const) {
-      for (const r of ribbons) {
-        ctx.strokeStyle = r === track.main ? color : color === '#fff6dc' ? '#ffb347' : color;
-        ctx.lineWidth = r === track.main ? width : width - 2;
-        ctx.setLineDash(r === track.main ? [] : [4, 3]);
-        ctx.beginPath();
-        const sp = r.spline;
-        for (let i = 0; i < sp.count; i++) {
-          const [x, y] = this.project(sp.px[i], sp.pz[i]);
-          if (i === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        }
-        if (sp.closed) ctx.closePath();
-        ctx.stroke();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      ctx.beginPath();
+      const sp = track.main.spline;
+      for (let i = 0; i < sp.count; i++) {
+        const [x, y] = this.project(sp.px[i], sp.pz[i]);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
       }
+      if (sp.closed) ctx.closePath();
+      ctx.stroke();
     }
-    ctx.setLineDash([]);
     const [sx, sy] = this.project(track.spline.px[0], track.spline.pz[0]);
     ctx.fillStyle = '#111';
     ctx.fillRect(sx - 4, sy - 4, 8, 8);
