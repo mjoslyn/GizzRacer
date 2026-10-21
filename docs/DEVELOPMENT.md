@@ -89,3 +89,5 @@ The songs live in seqbaby. `public/music/*.mp3` are rendered from them by playin
 node tools/render-soundtrack.mjs            # all cues
 node tools/render-soundtrack.mjs podium     # one cue
 ```
+
+Some remixes play bars of the band's own recordings (`seqbaby-seed/gizzracer/remix-sampled.mjs`, audio in `gizzracer/samples/`, cut by `seqbaby-seed/tools/chop.py`); they render the same way.

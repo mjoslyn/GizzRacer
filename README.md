@@ -58,7 +58,7 @@ On phones, turn the phone sideways. On iPhone, use Share, then Add to Home Scree
 ## Credits
 
 - GizzRacer is an unofficial fan game, made with love for King Gizzard & the Lizard Wizard and their fans
-- The music is written and remixed in [seqbaby](https://playseqbaby.com)
+- The music is written and remixed in [seqbaby](https://playseqbaby.com). The Crumbling Castle remix plays bars of the band's own recording, from Polygondwanaland, which King Gizzard & the Lizard Wizard released free for anyone to use
 - Lettering in Metal Mania by Open Window (SIL Open Font License, `public/fonts/OFL.txt`)
 - Built with [Three.js](https://threejs.org). Online play runs on [PartyKit](https://www.partykit.io) and Cloudflare.
 

@@ -295,16 +295,16 @@
   },
   "polygondwanaland-jungle-remix": {
     "title": "crumbling castle (remix)",
-    "bpm": 150,
+    "bpm": 120,
     "bars": 24,
-    "loopSamples": 1481760,
+    "loopSamples": 1852200,
     "sampleRate": 44100
   },
   "polygondwanaland-jungle-remix-final-lap": {
     "title": "crumbling castle (remix, final lap)",
-    "bpm": 158,
+    "bpm": 128,
     "bars": 24,
-    "loopSamples": 1406734,
+    "loopSamples": 1736438,
     "sampleRate": 44100
   },
   "phantom-island": {
