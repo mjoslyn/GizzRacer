@@ -295,16 +295,16 @@
   },
   "polygondwanaland-jungle-remix": {
     "title": "crumbling castle (remix)",
-    "bpm": 120,
-    "bars": 24,
-    "loopSamples": 1852200,
+    "bpm": 108,
+    "bars": 27,
+    "loopSamples": 2315250,
     "sampleRate": 44100
   },
   "polygondwanaland-jungle-remix-final-lap": {
     "title": "crumbling castle (remix, final lap)",
-    "bpm": 128,
-    "bars": 24,
-    "loopSamples": 1736438,
+    "bpm": 116,
+    "bars": 27,
+    "loopSamples": 2155578,
     "sampleRate": 44100
   },
   "phantom-island": {
@@ -435,16 +435,16 @@
   },
   "magenta-mountain-remix": {
     "title": "magenta mountain (remix)",
-    "bpm": 116,
-    "bars": 24,
-    "loopSamples": 2189793,
+    "bpm": 112,
+    "bars": 32,
+    "loopSamples": 3024000,
     "sampleRate": 44100
   },
   "magenta-mountain-remix-final-lap": {
     "title": "magenta mountain (remix, final lap)",
-    "bpm": 124,
-    "bars": 24,
-    "loopSamples": 2048516,
+    "bpm": 120,
+    "bars": 32,
+    "loopSamples": 2822400,
     "sampleRate": 44100
   },
   "kepler-22b": {
@@ -463,16 +463,16 @@
   },
   "kepler-22b-remix": {
     "title": "kepler-22b (remix)",
-    "bpm": 124,
-    "bars": 24,
-    "loopSamples": 2048516,
+    "bpm": 118,
+    "bars": 32,
+    "loopSamples": 2870237,
     "sampleRate": 44100
   },
   "kepler-22b-remix-final-lap": {
     "title": "kepler-22b (remix, final lap)",
-    "bpm": 132,
-    "bars": 24,
-    "loopSamples": 1924364,
+    "bpm": 126,
+    "bars": 32,
+    "loopSamples": 2688000,
     "sampleRate": 44100
   },
   "goblin-garden": {
@@ -491,16 +491,16 @@
   },
   "goblin-garden-remix": {
     "title": "the garden goblin (remix)",
-    "bpm": 150,
-    "bars": 24,
-    "loopSamples": 1693440,
+    "bpm": 144,
+    "bars": 32,
+    "loopSamples": 2352000,
     "sampleRate": 44100
   },
   "goblin-garden-remix-final-lap": {
     "title": "the garden goblin (remix, final lap)",
-    "bpm": 158,
-    "bars": 24,
-    "loopSamples": 1607696,
+    "bpm": 152,
+    "bars": 32,
+    "loopSamples": 2228211,
     "sampleRate": 44100
   },
   "predator-x": {
@@ -520,22 +520,22 @@
   "predator-x-remix": {
     "title": "predator x (remix)",
     "bpm": 184,
-    "bars": 24,
-    "loopSamples": 1380522,
+    "bars": 32,
+    "loopSamples": 1840696,
     "sampleRate": 44100
   },
   "predator-x-remix-final-lap": {
     "title": "predator x (remix, final lap)",
     "bpm": 192,
-    "bars": 24,
-    "loopSamples": 1323000,
+    "bars": 32,
+    "loopSamples": 1764000,
     "sampleRate": 44100
   },
   "title-remix": {
     "title": "ice v (title remix)",
-    "bpm": 120,
-    "bars": 24,
-    "loopSamples": 2116800,
+    "bpm": 115,
+    "bars": 32,
+    "loopSamples": 2945113,
     "sampleRate": 44100
   }
 }

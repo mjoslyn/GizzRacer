@@ -1,9 +1,9 @@
-import { SAMPLED, TRACK_SONGS } from '../audio/songs';
+import { TRACK_SONGS, TRANSCRIBED } from '../audio/songs';
 import { CUPS, TRACK_LIST } from '../tracks/index';
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-/** The credits: the band and the song behind each track, the recordings the remixes use, and what the game is made with. */
+/** The credits: the band and the song behind each track, the recordings the remixes were written from, and what the game is made with. */
 export function creditsHtml(): string {
   const cups = CUPS.map((cup) => {
     const rows = cup.tracks
@@ -11,13 +11,13 @@ export function creditsHtml(): string {
         const t = TRACK_LIST[i];
         const song = TRACK_SONGS[t.id];
         if (!song) return '';
-        const sampled = SAMPLED[t.id] ? '<span class="credits-tag">their recording</span>' : '';
+        const sampled = TRANSCRIBED[t.id] ? '<span class="credits-tag">from their recording</span>' : '';
         return `<li><span class="credits-track">${esc(t.name)}</span><span class="credits-song">${esc(song.title)} <small>${esc(song.album)}, ${song.year}</small>${sampled}</span></li>`;
       })
       .join('');
     return `<div class="settings-group">${esc(cup.name)}</div><ul class="credits-list">${rows}</ul>`;
   }).join('');
-  const samples = Object.entries(SAMPLED)
+  const samples = Object.entries(TRANSCRIBED)
     .map(([id, s]) => {
       const t = TRACK_LIST.find((x) => x.id === id);
       return `<li><span class="credits-track">${esc(t?.name ?? (id === 'title' ? 'Title and menus' : id))}</span><span class="credits-song">${esc(s.recording)} <small>${esc(s.release)}</small></span></li>`;
@@ -28,7 +28,7 @@ export function creditsHtml(): string {
       <p class="credits-lead">GizzRacer is an unofficial fan game, made with love for <b>King Gizzard &amp; the Lizard Wizard</b> and their fans. Every track is themed on one of their songs.</p>
       ${cups}
       <div class="settings-group">The band's own recordings</div>
-      <p class="credits-note">These remixes play bars of the real songs, from releases the band put out for anyone to use: kinggizzardandthelizardwizard.com/bootlegger</p>
+      <p class="credits-note">These remixes are transcribed from the band's recordings, releases they put out for anyone to use (kinggizzardandthelizardwizard.com/bootlegger), and played in seqbaby</p>
       <ul class="credits-list">${samples}</ul>
       <div class="settings-group">Music</div>
       <p class="credits-note">Written and remixed in seqbaby (playseqbaby.com)</p>

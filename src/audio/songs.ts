@@ -33,13 +33,13 @@ export const TRACK_SONGS: Record<string, TrackSong> = {
 };
 
 /**
- * Remixes that play bars of the band's own recordings, by track (`title`
- * is the title and menu music): which
- * recording, and the release it came from. King Gizzard & the Lizard Wizard
- * let anyone use their Bootlegger releases
- * (kinggizzardandthelizardwizard.com/bootlegger). Shown in the credits.
+ * Remixes written from the band's own recordings, by track (`title` is the
+ * title and menu music): which recording they were transcribed from, and the
+ * release it came from. King Gizzard & the Lizard Wizard let anyone use their
+ * Bootlegger releases (kinggizzardandthelizardwizard.com/bootlegger). Shown
+ * in the credits.
  */
-export const SAMPLED: Record<string, { recording: string; release: string }> = {
+export const TRANSCRIBED: Record<string, { recording: string; release: string }> = {
   title: { recording: 'Ice V', release: "Live At Red Rocks '22" },
   'polygondwanaland-jungle': { recording: 'Crumbling Castle', release: 'Polygondwanaland (2017), the album master' },
   'magenta-mountain': { recording: 'Magenta Mountain', release: "Live At Red Rocks '22" },
