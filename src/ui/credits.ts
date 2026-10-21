@@ -20,7 +20,7 @@ export function creditsHtml(): string {
   const samples = Object.entries(SAMPLED)
     .map(([id, s]) => {
       const t = TRACK_LIST.find((x) => x.id === id);
-      return `<li><span class="credits-track">${esc(t?.name ?? id)}</span><span class="credits-song">${esc(s.recording)} <small>${esc(s.release)}</small></span></li>`;
+      return `<li><span class="credits-track">${esc(t?.name ?? (id === 'title' ? 'Title and menus' : id))}</span><span class="credits-song">${esc(s.recording)} <small>${esc(s.release)}</small></span></li>`;
     })
     .join('');
   return `

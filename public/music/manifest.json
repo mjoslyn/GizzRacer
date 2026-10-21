@@ -530,5 +530,12 @@
     "bars": 24,
     "loopSamples": 1323000,
     "sampleRate": 44100
+  },
+  "title-remix": {
+    "title": "ice v (title remix)",
+    "bpm": 120,
+    "bars": 24,
+    "loopSamples": 2116800,
+    "sampleRate": 44100
   }
 }

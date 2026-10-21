@@ -289,7 +289,7 @@ function setMode(next: Mode): void {
   savePanel.show(generated ? track.def.name : null, generated && !!findSaved(choice.gen.params));
   touch.setVisible(next === 'race');
   loop.paused = false;
-  if (next === 'title' || next === 'menu' || next === 'lobby') music.play('title');
+  if (next === 'title' || next === 'menu' || next === 'lobby') music.play(remixCues('title'));
   // Back at the picker: fetch the board again, it may include the run just posted.
   updateBoard(true);
 }
