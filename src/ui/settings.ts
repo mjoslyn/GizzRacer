@@ -1,11 +1,14 @@
 import { TILT_RANGES, VIDEO_LOOKS, settings, updateSettings, type Settings } from '../core/settings';
+import { creditsHtml } from './credits';
 import type { TiltSteering } from './tilt';
 
 const SENSITIVITY = ['High', 'Medium', 'Low'];
 
 /**
  * Settings, from the title screen and the pause menu: volumes, tilt
- * steering and auto-accelerate. Changes apply at once and are saved.
+ * steering and auto-accelerate. Changes apply at once and are saved. The
+ * credits are a second page of it, reached from Settings or straight from
+ * the title screen.
  */
 export class SettingsScreen {
   private readonly el = document.createElement('div');
@@ -13,6 +16,9 @@ export class SettingsScreen {
   private status = '';
   private last = '';
   private asking = false;
+  private credits = false;
+  /** Opened straight onto the credits (the title screen), so Done closes rather than going back. */
+  private creditsOnly = false;
 
   constructor(
     parent: HTMLElement,
@@ -47,7 +53,15 @@ export class SettingsScreen {
   open(onClose: () => void = () => {}): void {
     this.onClose = onClose;
     this.status = '';
+    this.credits = this.creditsOnly = false;
     this.el.classList.add('show');
+    this.render();
+  }
+
+  /** The credits on their own, from the title screen. */
+  openCredits(onClose: () => void = () => {}): void {
+    this.open(onClose);
+    this.credits = this.creditsOnly = true;
     this.render();
   }
 
@@ -112,6 +126,16 @@ export class SettingsScreen {
       case 'done':
         this.close();
         return;
+      case 'credits':
+        this.credits = true;
+        break;
+      case 'back':
+        if (this.creditsOnly) {
+          this.close();
+          return;
+        }
+        this.credits = false;
+        break;
       case 'choose-drag':
         this.tilt.stop();
         updateSettings({ tilt: false, steeringChosen: true });
@@ -132,6 +156,7 @@ export class SettingsScreen {
 
   private render(): void {
     if (this.asking) return this.renderAsk();
+    if (this.credits) return this.renderCredits();
     const s: Settings = settings();
     const pct = (v: number) => `${Math.round(v * 100)}%`;
     const arrows = (act: string, value: string) =>
@@ -163,9 +188,20 @@ export class SettingsScreen {
           }
         </div>
         ${this.status ? `<div class="lobby-status">${this.status}</div>` : ''}
+        <button class="settings-credits" data-act="credits">Credits</button>
         <button class="lobby-big hud-big" data-act="done">DONE</button>
       </div>`;
     this.show(html);
+  }
+
+  private renderCredits(): void {
+    this.show(`
+      <div class="lobby-panel settings-panel credits-panel">
+        <div class="lobby-title hud-big">CREDITS</div>
+        ${creditsHtml()}
+        <button class="lobby-big hud-big" data-act="back">${this.creditsOnly ? 'DONE' : 'BACK'}</button>
+      </div>`);
+    this.el.querySelector('.credits-panel')?.scrollTo(0, 0);
   }
 
   private renderAsk(): void {

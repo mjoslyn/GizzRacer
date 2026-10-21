@@ -257,6 +257,7 @@ onSettings((s) => {
 // Android allows the sensor straight away; iPhones need a tap (see touchend below).
 if (settings().tilt) void tilt.start();
 hud.onTitleSettings = () => settingsScreen.open();
+hud.onTitleCredits = () => settingsScreen.openCredits();
 
 /** The leaderboard shows beside the picker in Time Trial mode. */
 function updateBoard(refresh = false): void {

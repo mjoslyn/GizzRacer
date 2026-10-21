@@ -189,7 +189,10 @@ export class Hud {
         <div class="hud-title-logo hud-big">GIZZRACER</div>
         <div class="hud-title-sub">psychedelic kart racing</div>
         <div class="hud-title-press">${'ontouchstart' in window ? 'tap to start' : 'press any key'}</div>
-        <button class="hud-title-settings">SETTINGS</button>
+        <div class="hud-title-buttons">
+          <button class="hud-title-settings" data-title="settings">SETTINGS</button>
+          <button class="hud-title-settings" data-title="credits">CREDITS</button>
+        </div>
         <div class="hud-title-ios">For full screen: Share &rarr; Add to Home Screen</div>
       </div>`;
     parent.appendChild(this.el);
@@ -208,7 +211,8 @@ export class Hud {
     this.count = q('.hud-count');
     this.standings = q('.hud-standings');
     this.title = q('.hud-title');
-    q('.hud-title-settings').addEventListener('click', () => this.onTitleSettings?.());
+    q('[data-title="settings"]').addEventListener('click', () => this.onTitleSettings?.());
+    q('[data-title="credits"]').addEventListener('click', () => this.onTitleCredits?.());
     this.itemSlot = q('.hud-item');
     this.itemImg = q('.hud-item img') as HTMLImageElement;
     this.itemName = q('.hud-item-name');
@@ -253,6 +257,7 @@ export class Hud {
 
   /** The title screen's Settings button. */
   onTitleSettings: (() => void) | null = null;
+  onTitleCredits: (() => void) | null = null;
 
   showTitle(show: boolean): void {
     this.title.classList.toggle('show', show);

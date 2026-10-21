@@ -1539,6 +1539,88 @@ body:not([data-mode='race']) .hud-item {
   font-size: 16px;
 }
 
+/* Settings and Credits side by side under the title. */
+.hud-title-buttons {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+}
+
+/* ---- Credits (a page of Settings) ---- */
+.settings-credits {
+  align-self: center;
+  padding: 6px 16px !important;
+  font-size: 14px;
+}
+
+.credits-panel {
+  width: min(560px, calc(100vw - 32px));
+}
+
+.credits-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-style: normal;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.credits-body .settings-group {
+  font-family: var(--hud-font);
+  font-style: italic;
+  margin-top: 10px;
+}
+
+.credits-lead,
+.credits-note {
+  margin: 0;
+}
+
+.credits-note {
+  opacity: 0.8;
+  overflow-wrap: anywhere;
+}
+
+.credits-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.credits-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 10px;
+}
+
+.credits-track {
+  color: #fff27a;
+}
+
+.credits-song small {
+  opacity: 0.7;
+}
+
+.credits-tag {
+  margin-left: 6px;
+  padding: 0 5px;
+  font-size: 11px;
+  color: #3a0f45;
+  background: #ffd23a;
+  white-space: nowrap;
+}
+
+@media (max-height: 460px) {
+  .credits-panel {
+    width: min(620px, calc(100vw - 24px));
+  }
+}
+
 /* Tilt steering on: the drag pad is hidden and off. */
 .touch.tilt-mode .touch-steer {
   display: none;

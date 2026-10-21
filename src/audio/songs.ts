@@ -32,6 +32,16 @@ export const TRACK_SONGS: Record<string, TrackSong> = {
   'predator-x': { title: 'Predator X', album: 'Omnium Gatherum', year: 2022 },
 };
 
+/**
+ * Remixes that play bars of the band's own recordings, by track: which
+ * recording, and the release it came from. King Gizzard & the Lizard Wizard
+ * let anyone use their Bootlegger releases
+ * (kinggizzardandthelizardwizard.com/bootlegger). Shown in the credits.
+ */
+export const SAMPLED: Record<string, { recording: string; release: string }> = {
+  'polygondwanaland-jungle': { recording: 'Crumbling Castle', release: 'Polygondwanaland (2017), the album master' },
+};
+
 const FINAL = '-final-lap';
 
 /**
