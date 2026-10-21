@@ -1,8 +1,4 @@
-/**
- * The King Gizzard & the Lizard Wizard song each track is themed on. A race
- * plays the video game remix of it; the track's classic seqbaby theme is
- * only a fallback for a remix that isn't there.
- */
+/** The King Gizzard & the Lizard Wizard song each track is themed on. A race plays the track's own seqbaby theme. */
 export interface TrackSong {
   title: string;
   album: string;
@@ -32,15 +28,7 @@ export const TRACK_SONGS: Record<string, TrackSong> = {
   'predator-x': { title: 'Predator X', album: 'Omnium Gatherum', year: 2022 },
 };
 
-const FINAL = '-final-lap';
-
-/**
- * The cues to try for a track's classic cue, best first: its remix, then
- * the classic cue itself, so a missing file falls back to it. A final lap
- * without its own remix falls back to the lap remix.
- */
-export function remixCues(cue: string): string[] {
-  const final = cue.endsWith(FINAL);
-  const base = final ? cue.slice(0, -FINAL.length) : cue;
-  return final ? [`${base}-remix${FINAL}`, `${base}-remix`, cue] : [`${base}-remix`, cue];
+/** What a race plays: the track's theme, and on the final lap its faster cut, or the theme again for a track without one. */
+export function raceCue(music: { lap: string; finalLap?: string }, finalLap: boolean): string {
+  return finalLap ? (music.finalLap ?? music.lap) : music.lap;
 }

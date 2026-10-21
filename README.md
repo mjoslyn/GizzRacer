@@ -23,7 +23,7 @@ No install and no account. It will always be free.
   - a signature move for each band member, for example Stu's Sleep Drifter flute flurry or Cavs's Road Train
   - the Nonagon Infinity, a nine-sided ring that rolls down the road to the leader
 - **Track Generator:** a new track from a seed, with your choice of world, twists and length. Save the ones you like.
-- **A soundtrack** of video-game remixes of the band's songs, one per track, with a faster cut on the final lap
+- **A soundtrack** after the band's songs, one per track, with a faster cut on the final lap
 - **A VHS look** after the Rattlesnake video: tape wobble and a duotone in each world's colours. You can turn it down or off.
 
 ## Modes

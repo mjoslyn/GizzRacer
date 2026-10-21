@@ -6,9 +6,10 @@
  */
 
 /**
- * A file in public/music: a remix (`<track>-remix`, `<track>-remix-final-lap`),
- * which is what races play, or a classic theme (its id), the fallback and the
- * title and podium music. Which exist is in manifest.json.
+ * A file in public/music: a track's theme (its id) or final-lap cut
+ * (`<track>-final-lap`), which is what races play, or the title and podium
+ * music. The remixes (`<track>-remix`, `<track>-remix-final-lap`) are there
+ * but nothing plays them. Which exist is in manifest.json.
  */
 export type MusicCue = string;
 
@@ -186,8 +187,8 @@ export class MusicPlayer {
   }
 
   /**
-   * Crossfades to `cue`, or to the first of a list that exists (a remix,
-   * falling back to the classic theme); a no-op if it is already playing.
+   * Crossfades to `cue`, or to the first of a list that exists; a no-op if
+   * it is already playing.
    * Remembered until audio unlocks.
    */
   play(cue: MusicCue | readonly MusicCue[]): void {

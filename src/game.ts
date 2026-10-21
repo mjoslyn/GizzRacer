@@ -6,7 +6,7 @@ import { clamp, damp, lerp, lerpAngle } from './core/math';
 import { CPU_SKILL, CpuDriver } from './ai/cpuDriver';
 import { MusicPlayer } from './audio/music';
 import { Sfx } from './audio/sfx';
-import { remixCues } from './audio/songs';
+import { raceCue } from './audio/songs';
 import { GHOST_HZ, GHOST_OVERRUN, GhostRecorder, decodeGhost, encodeGhost, ghostPose, type GhostRun } from './core/ghost';
 import { identity } from './net/identity';
 import { TRIAL_LAPS, recordId } from './net/runCheck';
@@ -416,7 +416,7 @@ function startRace(withPlayer: boolean): void {
   if (net) race.time = Math.max(-10, -(net.start.at - net.client.serverNow()) / 1000);
   if (withPlayer) {
     setMode('race');
-    music.play(remixCues(track.def.music.lap));
+    music.play(raceCue(track.def.music, false));
   }
 }
 
@@ -905,10 +905,8 @@ function updateSounds(dt: number): void {
 }
 
 function updateMusic(p: RaceKart): void {
-  const { lap, finalLap } = track.def.music;
   if (p.finishTime !== null) music.play('podium');
-  else if (race.laps > 1 && p.laps.lap === race.laps - 1) music.play(remixCues(finalLap ?? `${lap}-final-lap`).filter((c) => finalLap || c !== `${lap}-final-lap`));
-  else music.play(remixCues(lap));
+  else music.play(raceCue(track.def.music, race.laps > 1 && p.laps.lap === race.laps - 1));
 }
 
 function interpolate(kart: RaceKart, alpha: number): KartState {
