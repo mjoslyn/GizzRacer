@@ -40,6 +40,10 @@ export const TRACK_SONGS: Record<string, TrackSong> = {
  */
 export const SAMPLED: Record<string, { recording: string; release: string }> = {
   'polygondwanaland-jungle': { recording: 'Crumbling Castle', release: 'Polygondwanaland (2017), the album master' },
+  'magenta-mountain': { recording: 'Magenta Mountain', release: "Live At Red Rocks '22" },
+  'kepler-22b': { recording: 'Kepler-22b', release: "Live at Field of Vision '25, the soundboard mix" },
+  'goblin-garden': { recording: 'The Garden Goblin', release: "Live At Red Rocks '22" },
+  'predator-x': { recording: 'Predator X', release: "Live At Red Rocks '22" },
 };
 
 const FINAL = '-final-lap';

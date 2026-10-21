@@ -435,16 +435,16 @@
   },
   "magenta-mountain-remix": {
     "title": "magenta mountain (remix)",
-    "bpm": 128,
-    "bars": 28,
-    "loopSamples": 2315250,
+    "bpm": 116,
+    "bars": 24,
+    "loopSamples": 2189793,
     "sampleRate": 44100
   },
   "magenta-mountain-remix-final-lap": {
     "title": "magenta mountain (remix, final lap)",
-    "bpm": 136,
-    "bars": 28,
-    "loopSamples": 2179059,
+    "bpm": 124,
+    "bars": 24,
+    "loopSamples": 2048516,
     "sampleRate": 44100
   },
   "kepler-22b": {
@@ -463,16 +463,16 @@
   },
   "kepler-22b-remix": {
     "title": "kepler-22b (remix)",
-    "bpm": 120,
-    "bars": 28,
-    "loopSamples": 2469600,
+    "bpm": 124,
+    "bars": 24,
+    "loopSamples": 2048516,
     "sampleRate": 44100
   },
   "kepler-22b-remix-final-lap": {
     "title": "kepler-22b (remix, final lap)",
-    "bpm": 128,
-    "bars": 28,
-    "loopSamples": 2315250,
+    "bpm": 132,
+    "bars": 24,
+    "loopSamples": 1924364,
     "sampleRate": 44100
   },
   "goblin-garden": {
@@ -491,16 +491,16 @@
   },
   "goblin-garden-remix": {
     "title": "the garden goblin (remix)",
-    "bpm": 124,
-    "bars": 28,
-    "loopSamples": 2389935,
+    "bpm": 150,
+    "bars": 24,
+    "loopSamples": 1693440,
     "sampleRate": 44100
   },
   "goblin-garden-remix-final-lap": {
     "title": "the garden goblin (remix, final lap)",
-    "bpm": 132,
-    "bars": 28,
-    "loopSamples": 2245091,
+    "bpm": 158,
+    "bars": 24,
+    "loopSamples": 1607696,
     "sampleRate": 44100
   },
   "predator-x": {
@@ -519,16 +519,16 @@
   },
   "predator-x-remix": {
     "title": "predator x (remix)",
-    "bpm": 200,
-    "bars": 40,
-    "loopSamples": 2116800,
+    "bpm": 184,
+    "bars": 24,
+    "loopSamples": 1380522,
     "sampleRate": 44100
   },
   "predator-x-remix-final-lap": {
     "title": "predator x (remix, final lap)",
-    "bpm": 210,
-    "bars": 40,
-    "loopSamples": 2016000,
+    "bpm": 192,
+    "bars": 24,
+    "loopSamples": 1323000,
     "sampleRate": 44100
   }
 }
