@@ -108,4 +108,4 @@ The Polygondwanaland Cup's remixes and Polygondwanaland Jungle's are transcribed
 SEQBABY_SEED_DIR=/path/to/that/folder node tools/render-soundtrack.mjs tetrachromacy-remix
 ```
 
-The Crumbling Castle remix now plays on Crumbling Castle (`crumbling-castle-remix`); its song in seqbaby-seed still names the old cue, `polygondwanaland-jungle-remix`, and needs renaming before the next full render.
+The Crumbling Castle remix plays on Crumbling Castle (`crumbling-castle-remix`, named by its song in seqbaby-seed's `gizzracer/remix-live.mjs`); Polygondwanaland Jungle's cue belongs to the title song above.

@@ -296,15 +296,15 @@
   "crumbling-castle-remix": {
     "title": "crumbling castle (remix)",
     "bpm": 108,
-    "bars": 27,
-    "loopSamples": 2315250,
+    "bars": 37,
+    "loopSamples": 3172750,
     "sampleRate": 44100
   },
   "crumbling-castle-remix-final-lap": {
     "title": "crumbling castle (remix, final lap)",
     "bpm": 116,
-    "bars": 27,
-    "loopSamples": 2155578,
+    "bars": 37,
+    "loopSamples": 2953940,
     "sampleRate": 44100
   },
   "phantom-island": {
