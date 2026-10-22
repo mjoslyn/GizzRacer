@@ -1,7 +1,7 @@
 import { NEUTRAL_INPUT, type InputFrame } from '../core/inputFrame';
 import { clamp, seededRandom, wrapAngle } from '../core/math';
 import { CABLE_RANGE, FLUTE_CONE, FLUTE_RANGE, HARMONICA_CONE, HARMONICA_RANGE, LASER_RANGE, LASER_WIDTH, inCone, type ItemKind } from '../items/items';
-import { DRIFT_MIN_SPEED, DRIFT_YAW_BASE, DRIFT_YAW_STEER, driftTier, type KartState } from '../physics/kart';
+import { DRIFT_MIN_SPEED, DRIFT_YAW_BASE, DRIFT_YAW_STEER, KART_RADIUS, driftTier, type KartState } from '../physics/kart';
 import type { EngineClass, KartParams } from '../physics/racers';
 import { pointAt } from '../tracks/spline';
 import type { Ribbon, Track } from '../tracks/track';
@@ -59,6 +59,10 @@ const DRIFT_TURN = 0.75;
 const STUCK_TIME = 1.2;
 /** How hard a drifting CPU yaws into its own outward slide (rad/s per m/s of slide). */
 const DRIFT_CATCH = 0.15;
+/** The most opposite lock a drifting CPU uses: more throws its tail out toward the edge. */
+const CPU_COUNTER_LOCK = 0.3;
+/** Brake when the skid would reach the road's edge within this long. */
+const EDGE_GUARD_TIME = 0.7;
 /** After a fall, this long of driving the centerline, no wander and no drifts: the same line twice is the same fall twice. */
 const CALM_TIME = 8;
 /** A CPU that isn't waiting for a good moment fires its item after this long, give or take. */
@@ -126,8 +130,12 @@ export class CpuDriver {
     // Aim point: ahead on the centerline, shifted onto this driver's lane.
     const look = 8 + speed * 0.45;
     const hw = ribbon.halfWidthAtS(progress + look);
+    const turnAhead = ribbon.turnBetween(progress, progress + 30 + speed * 0.3);
     const wander = this.calm > 0 ? 0 : this.skill.wander;
     let lateral = (this.lane * (this.calm > 0 ? 0.5 : 1) + Math.sin(progress / 70 + this.phase) * 0.3 * wander) * hw;
+    // Into a corner, aim inside by about the room the skid will take (stepKart's slide: a tenth of the speed at
+    // handling 3), so sliding out lands the kart on its lane rather than over the outside edge.
+    lateral += Math.sign(turnAhead) * Math.min(hw * 0.45, 0.1 * speed * p.slide) * clamp(Math.abs(turnAhead) / 0.5, 0, 1);
     lateral += avoid(s, others);
     lateral += dodge(s, obstacles, lateral, progress, ribbon, 0.35 + 0.65 * this.skill.itemIq);
     lateral = clamp(lateral, -(hw - 2), hw - 2);
@@ -142,15 +150,22 @@ export class CpuDriver {
     const travel = speed > 4 ? Math.atan2(vx, vz) : s.heading;
     const err = wrapAngle(Math.atan2(ax - s.x, az - s.z) - travel);
 
-    const turnAhead = ribbon.turnBetween(progress, progress + 30 + speed * 0.3);
     const curv = ribbon.maxCurvature(progress, progress + 20 + speed * 0.6);
 
     const input: InputFrame = { ...NEUTRAL_INPUT, throttle: this.skill.speedCap, steer: clamp(-err * STEER_GAIN, -1, 1) };
-    // Where the kart sits across the road, left positive (the builder's lateral), for the drift's room check.
+    // Where the kart sits across the road (left positive, the builder's lateral) and how fast it's moving across it.
     const here = pointAt(ribbon.spline, progress);
-    const hl = here.tx * here.tx + here.tz * here.tz || 1;
+    const hl = Math.hypot(here.tx, here.tz) || 1;
     const across = (-(s.x - here.x) * here.tz + (s.z - here.z) * here.tx) / hl;
+    const acrossVel = (-vx * here.tz + vz * here.tx) / hl;
     this.updateDrift(s, p, input, err, turnAhead, ribbon, progress, across, dt);
+
+    // Skidding toward an edge with no time left to catch it: brake, which shrinks the skid with the speed.
+    const roomAhead = (acrossVel > 0 ? hw - across : hw + across) - KART_RADIUS - 1;
+    if (s.grounded && Math.abs(acrossVel) > 2 && roomAhead / Math.abs(acrossVel) < EDGE_GUARD_TIME) {
+      input.throttle = 0;
+      input.brake = 1;
+    }
 
     // Lift or brake for corners the kart can't hold at this speed.
     const capacity = this.drifting ? p.driftTurnRate * (DRIFT_YAW_BASE + DRIFT_YAW_STEER) : p.turnRate * (1 - 0.25 * Math.min(1, speed / p.topSpeed));
@@ -259,11 +274,15 @@ export class CpuDriver {
     const slide = -s.extX * Math.cos(s.heading) + s.extZ * Math.sin(s.heading);
     const wantYaw = -(s.speed * ribbon.curvatureAt(progress)) - err * 3 - slide * DRIFT_CATCH;
     const dir = s.driftDir;
-    input.steer = clamp((dir * ((wantYaw * dir) / p.driftTurnRate - DRIFT_YAW_BASE)) / DRIFT_YAW_STEER, -1, 1);
+    // Opposite lock in a drift throws the tail out (stepKart's DRIFT_COUNTER_PUSH): a CPU wanting less yaw than the
+    // drift's base opens the arc only a little that way, and lets the drift go when the road straightens.
+    const lock = ((wantYaw * dir) / p.driftTurnRate - DRIFT_YAW_BASE) / DRIFT_YAW_STEER;
+    input.steer = dir * clamp(lock, -CPU_COUNTER_LOCK, 1);
+    const tooTight = lock < -0.6; // the road wants less yaw than the drift gives even with the lock it'll use
 
     const straightening = Math.abs(turnAhead) < 0.35;
     const reversed = wantYaw * dir < -0.4; // the road now bends the other way
-    if ((driftTier(s.driftCharge) >= this.wantTier && straightening) || (straightening && this.driftAge > 1.2) || reversed || this.driftAge > 4) {
+    if ((driftTier(s.driftCharge) >= this.wantTier && straightening) || (straightening && this.driftAge > 1.2) || reversed || tooTight || this.driftAge > 4) {
       this.endDrift(input);
     }
   }

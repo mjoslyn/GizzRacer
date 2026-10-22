@@ -79,7 +79,7 @@ export interface StepEvents {
  * Bump whenever kart physics, racer stats or a track layout change lap
  * times: online leaderboards and ghosts are kept per version.
  */
-export const PHYSICS_VERSION = 16;
+export const PHYSICS_VERSION = 17;
 export const KART_RADIUS = 1;
 export const GRAVITY = 30;
 export const HOP_VELOCITY = 4.5;
@@ -168,6 +168,13 @@ const DRIFT_SLIDE = 0.15;
 const DRIFT_HARD_SLIDE = 0.15;
 /** The outward lurch as a drift catches: this share of the speed, sideways, the hop's momentum breaking the tires loose. */
 const DRIFT_KICK = 0.2;
+/**
+ * Counter-steering in a drift (steering against it) throws the tail out: an
+ * outward push of this share of the speed per second at full opposite lock,
+ * on top of the arc opening up, so the kart slides wide and sideways
+ * instead of just turning less.
+ */
+const DRIFT_COUNTER_PUSH = 1.6;
 /**
  * Walls: an impact costs speed (a little even glancing, most of it
  * square-on) and bounces the kart back off with some of the speed it hit
@@ -373,6 +380,15 @@ export function stepKart(s: KartState, input: InputFrame, p: KartParams, env: Dr
     slide = Math.min(0.98, slide * p.slide);
     s.extX += (Math.sin(s.heading + turned) - fx) * s.speed * slide;
     s.extZ += (Math.cos(s.heading + turned) - fz) * s.speed * slide;
+  }
+  if (s.grounded && s.driftDir !== 0) {
+    // Steering against the drift throws the tail out: an outward push (a right drift slides left) that grows with the opposite lock.
+    const counter = clamp(-steerIn * s.driftDir, 0, 1);
+    if (counter > 0) {
+      const push = s.speed * DRIFT_COUNTER_PUSH * p.slide * counter * dt;
+      s.extX += s.driftDir * fz * push;
+      s.extZ -= s.driftDir * fx * push;
+    }
   }
   s.x += (fx * s.speed + s.extX) * dt;
   s.z += (fz * s.speed + s.extZ) * dt;
