@@ -347,9 +347,11 @@ hud.onTitleCredits = () => settingsScreen.openCredits();
 
 /** The leaderboard shows beside the picker: Time Trial's ghosts, or the race-time and cup boards for the other modes. */
 function updateBoard(refresh = false): void {
-  const on = mode === 'menu' && choice.mode === 'timeTrial';
+  // Beside the picker's track and speed screens only: the mode list and the racer gallery stand alone.
+  const picking = mode === 'menu' && menu.showsBoard;
+  const on = picking && choice.mode === 'timeTrial';
   board.show(on);
-  const rec = mode === 'menu' && !on && choice.mode !== 'online';
+  const rec = picking && !on && choice.mode !== 'online';
   records.show(rec);
   document.body.classList.toggle('board-open', on || rec);
   if (on) board.load(TRACK_LIST[choice.track].id, TRACK_LIST[choice.track].name, choice.engine, refresh);
@@ -1192,7 +1194,10 @@ function drawGallery(dt: number): boolean {
 }
 
 const loop = new FixedLoop(step, (alpha, frameDt) => {
-  if (input.consumePause() && mode === 'race') requestPause(!loop.paused);
+  if (input.consumePause() && mode === 'race') {
+    if (hud.confirmingRestart) hud.onPauseAction?.('keepRacing');
+    else requestPause(!loop.paused);
+  }
   // A phone turned upright mid-race pauses; Resume once it's back on its side.
   if (screenFit.portrait && mode === 'race' && !loop.paused) requestPause(true);
   // A debug freeze (gizz.freeze) still animates the karts, so poses can be inspected.
@@ -1254,7 +1259,7 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
       trackName: gp && !gp.finished ? `${track.def.name} · race ${gp.round + 1}/${gp.tracks.length}${gp.rivals.length ? ` · vs ${gp.rivals.map((r) => r.name).join(' & ')}` : ''}` : ghosts.length ? `${track.def.name} · ${ghosts.map((g) => `${g.label} ${formatTime(g.run.total)}`).join(' · ')}` : `${track.def.name}${mirrored() ? ' · Mirror' : ''}`,
       autoAccelerate: input.autoAccelerate,
       finished,
-      paused: loop.paused && !frozen,
+      paused: loop.paused && !frozen && !hud.confirmingRestart,
       pausedBy,
       online: !!online,
       ghostGap: (() => {
@@ -1521,12 +1526,24 @@ function backToLobby(): void {
   startRace(false);
 }
 
+/** Whether the pause menu was up when a restart was asked for, so declining goes back to it rather than the race. */
+let restartFromPause = false;
+
 hud.onPauseAction = (action) => {
   if (action === 'resume') {
     requestPause(false);
   } else if (action === 'restart') {
-    // An online race runs on the room's clock: no restarts.
-    if (!online) startRace(true);
+    // An online race runs on the room's clock: no restarts. Offline, ask first: R is next to nothing mid-race.
+    if (online || hud.confirmingRestart) return;
+    restartFromPause = loop.paused;
+    setPaused(true);
+    hud.confirmRestart(true);
+  } else if (action === 'restartNow') {
+    hud.confirmRestart(false);
+    startRace(true);
+  } else if (action === 'keepRacing') {
+    hud.confirmRestart(false);
+    if (!restartFromPause) setPaused(false);
   } else if (action === 'settings') {
     settingsScreen.open();
   } else if (action === 'quit') {
@@ -1567,6 +1584,11 @@ window.addEventListener('keydown', (e) => {
   if (!e.repeat && skipIntro()) return;
   if (menu.key(e.code)) return;
   if (e.repeat || mode !== 'race') return;
+  if (hud.confirmingRestart) {
+    if (e.code === 'KeyR' || e.code === 'Enter' || e.code === 'Space') hud.onPauseAction?.('restartNow');
+    else if (e.code === 'Backspace') hud.onPauseAction?.('keepRacing');
+    return;
+  }
   if (loop.paused) {
     if (e.code === 'KeyR') hud.onPauseAction?.('restart');
     else if (e.code === 'Backspace') hud.onPauseAction?.('quit');

@@ -9,7 +9,9 @@ import { STEER_EXPO, type KartState } from './kart';
  * edge (firmly at an open edge or a drop, lightly at a wall), and with the
  * stick let go it eases the nose back in line with the road, so a kart
  * coming out of a turn straightens up instead of carrying on sideways.
- * The player can always steer through it.
+ * The player can always steer through it, and a stick held toward an edge
+ * is taken as meaning it: the correction fades with the stick and is gone
+ * at full lock, so a track without a wall can still be left on purpose.
  */
 
 /** Seconds ahead it looks for the edge. */
@@ -58,7 +60,10 @@ export function assistSteer(input: InputFrame, s: KartState, env: AssistEnv): In
   const ahead = road.lateral + sideways * LOOK_AHEAD;
   const over = Math.abs(ahead) - (road.halfWidth - EDGE_MARGIN);
   if (over > 0 && Math.sign(sideways) === Math.sign(road.lateral || ahead) && !roadBeyond(s, vx, vz, tx, tz, ahead, road, env)) {
-    steer -= Math.sign(ahead) * clamp(over / EDGE_RAMP, 0, 1) * (road.walled ? WALL_PUSH : OPEN_PUSH);
+    // A stick held toward the edge is the player meaning to leave the road (a cut across the grass, a leap off a
+    // ledge): the hand on the wheel lets go by as much as the stick says, and at full lock not at all.
+    const intent = clamp(Math.sign(ahead) * input.steer, 0, 1);
+    steer -= Math.sign(ahead) * clamp(over / EDGE_RAMP, 0, 1) * (road.walled ? WALL_PUSH : OPEN_PUSH) * (1 - intent);
   }
 
   // Stick let go, not drifting: ease the nose back in line with the road.

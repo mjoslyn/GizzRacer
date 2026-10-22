@@ -208,6 +208,40 @@ body {
   display: flex;
 }
 
+/* The restart confirmation: over the pause menu, or over the race itself when R was pressed. */
+.hud-confirm {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(20, 0, 40, 0.6);
+  pointer-events: auto;
+  z-index: 2;
+}
+
+.hud-confirm.show {
+  display: flex;
+}
+
+.hud-confirm-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 22px 34px 26px;
+  font-size: 48px;
+  letter-spacing: 4px;
+  background: linear-gradient(180deg, rgba(60, 15, 75, 0.92), rgba(25, 5, 40, 0.94));
+  box-shadow: 0 0 0 3px #ffd23a, 0 0 0 6px #3a0f45, 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.hud-confirm-sub {
+  font-size: 14px;
+  letter-spacing: 1px;
+  opacity: 0.85;
+}
+
 .hud-boost {
   color: #ffb347;
   letter-spacing: 2px;
@@ -334,6 +368,7 @@ body {
 
 /* Buttons: chunky, skewed, outlined. Shared by pause, menu and touch controls. */
 .hud-pause button,
+.hud-confirm button,
 .menu button,
 .lobby button,
 .board button,
@@ -524,6 +559,123 @@ body.touch-mode .hud-help {
   flex-shrink: 0;
 }
 
+/* The stepped picker: crumbs along the top, a list or a carousel, back and next underneath. */
+.menu-crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.menu .menu-crumb {
+  padding: 2px 8px;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  background: rgba(60, 10, 30, 0.75);
+  box-shadow: 0 0 0 2px #3a0f45;
+  color: #fff6d0;
+  opacity: 0.8;
+  text-shadow: 1px 1px 0 #3a0f45;
+}
+
+.menu .menu-crumb small {
+  font-size: 10px;
+  opacity: 0.7;
+  margin-right: 2px;
+}
+
+.menu .menu-crumb.on {
+  opacity: 1;
+  box-shadow: 0 0 0 2px #ffd23a, 0 0 0 4px #3a0f45;
+  background: linear-gradient(180deg, #7a2a8a, #3a0f45);
+}
+
+.menu .menu-crumb.todo {
+  opacity: 0.5;
+}
+
+.menu-crumb-sep {
+  font-size: 14px;
+  opacity: 0.6;
+}
+
+.menu-opts {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(2px, 0.8vh, 6px);
+  padding: 2px 0 2px 4px;
+  flex-shrink: 1;
+  min-height: 0;
+}
+
+.menu-opts.on {
+  box-shadow: inset 4px 0 0 #ffd23a;
+}
+
+.menu .menu-opt {
+  display: grid;
+  grid-template-columns: minmax(130px, auto) 1fr;
+  align-items: center;
+  gap: 4px 14px;
+  width: 100%;
+  padding: clamp(3px, 1vh, 8px) 12px;
+  text-align: left;
+  opacity: 0.7;
+  background: rgba(60, 10, 30, 0.55);
+  box-shadow: 0 0 0 2px #3a0f45;
+}
+
+.menu .menu-opt.on {
+  opacity: 1;
+  background: linear-gradient(180deg, #7a2a8a, #3a0f45);
+  box-shadow: 0 0 0 3px #ffd23a, 0 0 0 5px #3a0f45;
+}
+
+.menu .menu-opt.locked {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.menu-opt-name {
+  font-size: clamp(16px, min(3.6vh, 5vw), 24px);
+  white-space: nowrap;
+}
+
+.menu-opt-blurb {
+  font-family: Verdana, sans-serif;
+  font-style: normal;
+  font-size: 11px;
+  line-height: 1.3;
+  opacity: 0.85;
+  text-shadow: 1px 1px 0 #3a0f45;
+}
+
+.menu-nav {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: stretch;
+  margin-top: clamp(2px, 1vh, 10px);
+  flex-shrink: 0;
+}
+
+.menu .menu-back {
+  padding: 6px 14px;
+  font-size: 14px;
+  letter-spacing: 1px;
+}
+
+.menu .menu-back:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.menu .menu-nav .menu-start {
+  margin-top: 0;
+}
+
 /* Short screens: the bio and the key hint go before anything scrolls. */
 @media (max-height: 560px) {
   .menu-bio,
@@ -532,10 +684,14 @@ body.touch-mode .hud-help {
   }
 }
 
-/* Narrow screens: the stat bars in two columns. */
+/* Narrow screens: the stat bars in two columns, an option's blurb under its name. */
 @media (max-width: 520px) {
   .menu-stats {
     grid-template-columns: 1fr 1fr;
+  }
+  .menu .menu-opt {
+    grid-template-columns: 1fr;
+    gap: 0;
   }
 }
 

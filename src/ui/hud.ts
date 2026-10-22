@@ -109,7 +109,7 @@ export interface Callout {
 const CALLOUT_TIME = 2.5;
 const CALLOUT_MAX = 2;
 
-export type PauseAction = 'resume' | 'restart' | 'quit' | 'settings';
+export type PauseAction = 'resume' | 'restart' | 'restartNow' | 'keepRacing' | 'quit' | 'settings';
 
 export class Hud {
   readonly minimap = new Minimap();
@@ -125,6 +125,7 @@ export class Hud {
   private readonly racer: HTMLElement;
   private readonly banner: HTMLElement;
   private readonly pause: HTMLElement;
+  private confirmEl: HTMLElement;
   private readonly position: HTMLElement;
   private readonly count: HTMLElement;
   private readonly standings: HTMLElement;
@@ -199,6 +200,16 @@ export class Hud {
           <button data-act="quit">Quit to menu <small>Backspace</small></button>
         </div>
       </div>
+      <div class="hud-confirm">
+        <div class="hud-confirm-box">
+          <div class="hud-big">RESTART?</div>
+          <div class="hud-confirm-sub">The race starts over from the grid.</div>
+          <div class="hud-pause-buttons">
+            <button data-act="restartNow">Restart <small>R / Enter</small></button>
+            <button data-act="keepRacing">Keep racing <small>Esc</small></button>
+          </div>
+        </div>
+      </div>
       <div class="hud-title">
         <div class="hud-title-logo hud-big">GIZZRACER</div>
         <div class="hud-title-sub">psychedelic kart racing</div>
@@ -240,10 +251,24 @@ export class Hud {
     this.splitsEl = q('.hud-splits');
     this.introEl = q('.hud-intro');
     q('.hud-tr').appendChild(this.minimap.canvas);
+    this.confirmEl = q('.hud-confirm');
+    this.confirmEl.addEventListener('click', (e) => {
+      const act = (e.target as HTMLElement).closest<HTMLElement>('[data-act]')?.dataset.act as PauseAction | undefined;
+      if (act) this.onPauseAction?.(act);
+    });
     this.pause.addEventListener('click', (e) => {
       const act = (e.target as HTMLElement).closest<HTMLElement>('[data-act]')?.dataset.act as PauseAction | undefined;
       if (act) this.onPauseAction?.(act);
     });
+  }
+
+  /** Asks before a restart (R, or the pause menu's Restart): a key is easy to press by accident mid-race. */
+  confirmRestart(on: boolean): void {
+    this.confirmEl.classList.toggle('show', on);
+  }
+
+  get confirmingRestart(): boolean {
+    return this.confirmEl.classList.contains('show');
   }
 
   /** Big callout in the middle of the screen: hits taken and landed. */

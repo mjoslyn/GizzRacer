@@ -56,9 +56,32 @@ export function availableClasses(u: Unlocks = unlocks(progress())): EngineClass[
   return ENGINE_CLASSES.filter((e) => e !== '200cc' || u.class200);
 }
 
-/** Mode, track, racer and class picker (and the track generator's dials). Keyboard, gamepad-ish arrows, mouse and touch. */
+/** The picker's screens, in order; a mode without a track screen (Online picks it in the room) skips it. */
+export type MenuStep = 'mode' | 'track' | 'racer' | 'engine';
+const STEP_TITLES: Record<MenuStep, string> = { mode: 'CHOOSE A MODE', track: 'PICK A TRACK', racer: 'PICK A RACER', engine: 'PICK A SPEED' };
+const MODE_BLURBS: Record<RaceMode, string> = {
+  grandPrix: 'Four races for the cup, points across them, rivals who want it too',
+  single: 'One track, a full field, items on',
+  timeTrial: 'Alone against the clock, the ghosts and the leaderboard',
+  generator: 'A track made on the spot: the daily, your saved ones, or a new roll',
+  online: 'Race friends with a room code',
+};
+const CLASS_BLURBS: Record<EngineClass, string> = {
+  '50cc': 'Easy: slow karts, forgiving corners',
+  '100cc': 'The standard race',
+  '150cc': 'Fast: the real thing',
+  '200cc': 'Flat out: faster than the tracks were drawn for',
+};
+
+/**
+ * Mode, track, racer and class picker (and the track generator's dials),
+ * one choice to a screen: mode, then the track or cup, the racer, and the
+ * speed with the RACE! button. Keyboard, gamepad-ish arrows, mouse and
+ * touch; the crumbs along the top jump between screens.
+ */
 export class Menu {
   private readonly el = document.createElement('div');
+  private step = 0;
   private row = 0;
   choice: MenuChoice;
 
@@ -76,24 +99,16 @@ export class Menu {
     this.el.className = 'menu';
     parent.appendChild(this.el);
     this.el.addEventListener('click', (e) => {
-      const t = (e.target as HTMLElement).closest<HTMLElement>('[data-row], [data-start], [data-delete], [data-random], [data-random-track]');
+      const t = (e.target as HTMLElement).closest<HTMLElement>('[data-row], [data-start], [data-next], [data-back], [data-step], [data-pick], [data-delete], [data-random], [data-random-track]');
       if (!t) return;
-      if (t.dataset.start !== undefined) {
-        this.onStart(this.choice);
-        return;
-      }
-      if (t.dataset.delete !== undefined) {
-        this.deleteSaved();
-        return;
-      }
-      if (t.dataset.random !== undefined) {
-        this.randomRacer();
-        return;
-      }
-      if (t.dataset.randomTrack !== undefined) {
-        this.randomTrack();
-        return;
-      }
+      if (t.dataset.start !== undefined) return this.onStart(this.choice);
+      if (t.dataset.next !== undefined) return this.next();
+      if (t.dataset.back !== undefined) return this.back();
+      if (t.dataset.step !== undefined) return this.goTo(Number(t.dataset.step));
+      if (t.dataset.pick !== undefined) return this.pick(t.dataset.pick);
+      if (t.dataset.delete !== undefined) return this.deleteSaved();
+      if (t.dataset.random !== undefined) return this.randomRacer();
+      if (t.dataset.randomTrack !== undefined) return this.randomTrack();
       this.row = this.rows().indexOf(t.dataset.row as MenuRow);
       if (t.dataset.dir) this.change(Number(t.dataset.dir));
       else this.render();
@@ -104,6 +119,17 @@ export class Menu {
   /** The row being used: the game shows the racer gallery while it's 'racer'. */
   get activeRow(): MenuRow {
     return this.rows()[this.row];
+  }
+
+  /** The screen showing. */
+  get activeStep(): MenuStep {
+    return this.steps()[this.step];
+  }
+
+  /** Whether the leaderboard belongs beside this screen: the track's and the speed's, not the mode's or the gallery's. */
+  get showsBoard(): boolean {
+    const s = this.activeStep;
+    return s === 'track' || s === 'engine';
   }
 
   get visible(): boolean {
@@ -118,11 +144,14 @@ export class Menu {
   /** Returns true if the key was used. */
   key(code: string): boolean {
     if (!this.visible) return false;
-    if (code === 'ArrowUp' || code === 'KeyW') this.moveRow(-1);
-    else if (code === 'ArrowDown' || code === 'KeyS') this.moveRow(1);
+    const rows = this.rows();
+    const vertical = (dir: number) => (rows.length > 1 ? this.moveRow(dir) : this.change(dir));
+    if (code === 'ArrowUp' || code === 'KeyW') vertical(-1);
+    else if (code === 'ArrowDown' || code === 'KeyS') vertical(1);
     else if (code === 'ArrowLeft' || code === 'KeyA') return this.change(-1), true;
     else if (code === 'ArrowRight' || code === 'KeyD') return this.change(1), true;
-    else if (code === 'Enter' || code === 'Space') return this.onStart(this.choice), true;
+    else if (code === 'Enter' || code === 'Space') return this.next(), true;
+    else if (code === 'Backspace' || code === 'Escape') return this.back(), true;
     else if (code === 'KeyR' && this.choice.mode !== 'online') return this.randomRacer(), true;
     else if (code === 'KeyT' && this.choice.mode === 'single') return this.randomTrack(), true;
     else return false;
@@ -130,20 +159,64 @@ export class Menu {
     return true;
   }
 
-  /** The rows this mode shows. Online picks its track in the room; a Grand Prix's track row picks the cup; Mirror once it's unlocked. */
+  /** The screens this mode has: Online picks its track in the room. */
+  private steps(): MenuStep[] {
+    return this.choice.mode === 'online' ? ['mode', 'racer', 'engine'] : ['mode', 'track', 'racer', 'engine'];
+  }
+
+  /** The rows on the screen showing: the generator's dials share the track screen, Mirror the speed's once it's unlocked. */
   private rows(): MenuRow[] {
     const m = this.choice.mode;
-    const mirror: MenuRow[] = unlocks(progress()).mirror && (m === 'grandPrix' || m === 'single') ? ['mirror'] : [];
-    if (m === 'generator') return ['mode', 'gen', 'theme', 'complexity', 'length', 'racer', 'engine'];
-    if (m === 'online') return ['mode', 'racer', 'engine'];
-    return ['mode', 'track', 'racer', 'engine', ...mirror];
+    switch (this.activeStep) {
+      case 'mode':
+        return ['mode'];
+      case 'track':
+        return m === 'generator' ? ['gen', 'theme', 'complexity', 'length'] : ['track'];
+      case 'racer':
+        return ['racer'];
+      default:
+        return unlocks(progress()).mirror && (m === 'grandPrix' || m === 'single') ? ['engine', 'mirror'] : ['engine'];
+    }
+  }
+
+  /** On to the next screen; from the last, the race (or the rooms). */
+  private next(): void {
+    if (this.step >= this.steps().length - 1) {
+      this.onStart(this.choice);
+      return;
+    }
+    this.goTo(this.step + 1);
+  }
+
+  private back(): void {
+    if (this.step > 0) this.goTo(this.step - 1);
+  }
+
+  private goTo(step: number): void {
+    const n = this.steps().length;
+    this.step = Math.max(0, Math.min(n - 1, step));
+    this.row = 0;
+    this.render();
+    // The game follows the screen: the track shown behind it, the board beside it, the gallery on the racer's.
+    this.onChange(this.choice, this.rows()[0]);
+  }
+
+  /** A choice from a list screen (`mode:single`, `engine:150cc`). */
+  private pick(what: string): void {
+    const [row, value] = what.split(':');
+    if (row === 'mode') {
+      this.choice.mode = value as RaceMode;
+      this.step = 0;
+    } else if (row === 'engine') this.choice.engine = value as EngineClass;
+    this.row = 0;
+    this.render();
+    this.onChange(this.choice, row as MenuRow);
   }
 
   /** Picks a track at random for a Single Race (the track row's dice, or T). */
   randomTrack(): void {
     const others = TRACK_LIST.map((_, i) => i).filter((i) => i !== this.choice.track);
     this.choice.track = others[Math.floor(Math.random() * others.length)];
-    this.row = this.rows().indexOf('track');
     this.render();
     this.onChange(this.choice, 'track');
   }
@@ -152,7 +225,6 @@ export class Menu {
   randomRacer(): void {
     const others = RACERS.filter((r) => r !== this.choice.racer);
     this.choice.racer = others[Math.floor(Math.random() * others.length)];
-    this.row = this.rows().indexOf('racer');
     this.render();
     this.onChange(this.choice, 'racer');
   }
@@ -193,6 +265,7 @@ export class Menu {
     };
     if (row === 'mode') {
       c.mode = step(MODES, c.mode);
+      this.step = 0;
       this.row = 0;
     } else if (row === 'track' && c.mode === 'grandPrix') {
       // The cups, then the Random Cup (once a trophy has unlocked it), which draws four new tracks every time you land on it.
@@ -223,10 +296,8 @@ export class Menu {
 
   private render(): void {
     const c = this.choice;
-    const color = `#${c.racer.color.toString(16).padStart(6, '0')}`;
-    const stats = STAT_NAMES.map(
-      (k) => `<div class="menu-stat"><span>${k}</span><i style="width:${c.racer.stats[k] * 20}%;background:${color}"></i></div>`,
-    ).join('');
+    const steps = this.steps();
+    const at = this.activeStep;
     const rows = this.rows();
     const line = (row: MenuRow, label: string, value: string, extra = '', small = false) => `
       <div class="menu-row${rows[this.row] === row ? ' on' : ''}${small ? ' small' : ''}" data-row="${row}">
@@ -236,25 +307,65 @@ export class Menu {
         <button class="menu-arrow" data-row="${row}" data-dir="1">&#9654;</button>
         ${extra}
       </div>`;
+    let title = STEP_TITLES[at];
+    let body: string;
+    if (at === 'mode') {
+      body = this.optionList(MODES.map((m) => ({ pick: `mode:${m}`, name: MODE_NAMES[m], blurb: MODE_BLURBS[m], on: m === c.mode })));
+    } else if (at === 'track') {
+      if (c.mode === 'grandPrix') {
+        title = 'PICK A CUP';
+        body = line('track', 'Cup', chosenCup(c).name, `<div class="menu-cup-tracks">${chosenCup(c).tracks.map((t) => TRACK_LIST[t].name).join(' &middot; ')}</div>${this.trophyLine()}`);
+      } else if (c.mode === 'generator') {
+        title = 'BUILD A TRACK';
+        body = this.generatorRows(line);
+      } else {
+        body = line('track', 'Track', `${TRACK_LIST[c.track].name}${c.mode === 'single' ? DICE('data-random-track', 'Random track (T)') : ''}`, `${this.bestLine(TRACK_LIST[c.track].id)}<div class="menu-cup-tracks">${c.track + 1} of ${TRACK_LIST.length}</div>`);
+      }
+    } else if (at === 'racer') {
+      const color = `#${c.racer.color.toString(16).padStart(6, '0')}`;
+      const stats = STAT_NAMES.map((k) => `<div class="menu-stat"><span>${k}</span><i style="width:${c.racer.stats[k] * 20}%;background:${color}"></i></div>`).join('');
+      body = line('racer', 'Racer', `${c.racer.name}${c.mode === 'online' ? '' : DICE('data-random', 'Random racer (R)')}`, `<div class="menu-stats">${stats}</div><div class="menu-bio">${c.racer.bio}</div>`);
+    } else {
+      const classes = availableClasses();
+      body =
+        this.optionList(
+          ENGINE_CLASSES.map((e) => ({ pick: `engine:${e}`, name: e, blurb: classes.includes(e) ? CLASS_BLURBS[e] : 'Locked: gold at 150cc in a cup unlocks it', on: e === c.engine, locked: !classes.includes(e) })),
+          rows[this.row] === 'engine',
+        ) +
+        (rows.includes('mirror') ? line('mirror', 'Mirror', c.mirror ? 'ON' : 'OFF', '<div class="menu-cup-tracks">Every track flipped left for right</div>', true) : '') +
+        this.unlockLine();
+    }
+    const last = this.step === steps.length - 1;
+    const crumbs = steps
+      .map((s, i) => `<button class="menu-crumb${i === this.step ? ' on' : ''}${i > this.step ? ' todo' : ''}" data-step="${i}"><small>${i + 1}</small> ${esc(this.crumb(s))}</button>`)
+      .join('<span class="menu-crumb-sep">&rsaquo;</span>');
     this.el.innerHTML = `
       <div class="menu-panel">
-        <div class="menu-title hud-big">CHOOSE YOUR RACE</div>
-        ${line('mode', 'Mode', MODE_NAMES[c.mode])}
-        ${
-          c.mode === 'grandPrix'
-            ? line('track', 'Cup', chosenCup(c).name, `<div class="menu-cup-tracks">${chosenCup(c).tracks.map((t) => TRACK_LIST[t].name).join(' &middot; ')}</div>${this.trophyLine()}`)
-            : c.mode === 'online'
-              ? `<div class="menu-row menu-cup"><div class="menu-label">Rooms</div><div class="menu-value">Race friends with a room code</div></div>`
-              : c.mode === 'generator'
-                ? this.generatorRows(line)
-                : line('track', 'Track', `${TRACK_LIST[c.track].name}${c.mode === 'single' ? DICE('data-random-track', 'Random track (T)') : ''}`, this.bestLine(TRACK_LIST[c.track].id))
-        }
-        ${line('racer', 'Racer', `${c.racer.name}${c.mode === 'online' ? '' : DICE('data-random', 'Random racer (R)')}`, `<div class="menu-stats">${stats}</div><div class="menu-bio">${c.racer.bio}</div>`)}
-        ${line('engine', 'Class', c.engine, this.unlockLine())}
-        ${rows.includes('mirror') ? line('mirror', 'Mirror', c.mirror ? 'ON' : 'OFF', '', true) : ''}
-        <button class="menu-start hud-big" data-start>${c.mode === 'online' ? 'ROOMS' : 'RACE!'}</button>
-        <div class="menu-hint">&uarr;&darr; choose &middot; &larr;&rarr; change &middot; Enter race</div>
+        <div class="menu-crumbs">${crumbs}</div>
+        <div class="menu-title hud-big">${title}</div>
+        ${body}
+        <div class="menu-nav">
+          <button class="menu-back" data-back${this.step === 0 ? ' disabled' : ''}>&lsaquo; back</button>
+          ${last ? `<button class="menu-start hud-big" data-start>${c.mode === 'online' ? 'ROOMS' : 'RACE!'}</button>` : `<button class="menu-start menu-next hud-big" data-next>next &rsaquo;</button>`}
+        </div>
+        <div class="menu-hint">${at === 'mode' || (at === 'engine' && rows.length === 1) ? '&uarr;&darr; choose' : '&larr;&rarr; change'} &middot; Enter ${last ? (c.mode === 'online' ? 'rooms' : 'race') : 'next'} &middot; Backspace back</div>
       </div>`;
+  }
+
+  /** What a crumb says for a screen: the pick made there, or what it's for. */
+  private crumb(s: MenuStep): string {
+    const c = this.choice;
+    if (s === 'mode') return MODE_NAMES[c.mode];
+    if (s === 'track') return c.mode === 'grandPrix' ? chosenCup(c).name : c.mode === 'generator' ? (this.saved()[c.gen.slot]?.name ?? (c.gen.slot === DAILY_SLOT ? 'Daily' : 'New track')) : TRACK_LIST[c.track].name;
+    if (s === 'racer') return c.racer.name;
+    return `${c.engine}${c.mirror && (c.mode === 'grandPrix' || c.mode === 'single') ? ' Mirror' : ''}`;
+  }
+
+  /** A screen's choices as a list, the current one lit (and the list's focus marked when the screen has other rows). */
+  private optionList(opts: { pick: string; name: string; blurb: string; on: boolean; locked?: boolean }[], focused = true): string {
+    return `<div class="menu-opts${focused ? ' on' : ''}" data-row="${opts[0].pick.split(':')[0]}">${opts
+      .map((o) => `<button class="menu-opt${o.on ? ' on' : ''}${o.locked ? ' locked' : ''}" data-pick="${o.pick}"${o.locked ? ' disabled' : ''}><span class="menu-opt-name hud-big">${esc(o.name)}</span><span class="menu-opt-blurb">${esc(o.blurb)}</span></button>`)
+      .join('')}</div>`;
   }
 
   /** The trophies won on the chosen cup, by class, or what's left to win. */
@@ -272,10 +383,10 @@ export class Menu {
   private bestLine(trackId: string): string {
     const c = this.choice;
     const best = progress().races[raceKey(trackId, c.engine, c.mirror)];
-    return `<div class="menu-cup-tracks">${best ? `Your best race: ${formatTime(best.ms / 1000)}` : 'No race time yet'}${c.mirror ? ' (Mirror)' : ''}</div>`;
+    return `<div class="menu-cup-tracks">${best ? `Your best race: ${formatTime(best.ms / 1000)}` : 'No race time yet'}${c.mirror ? ' (Mirror)' : ''} at ${c.engine}</div>`;
   }
 
-  /** The next thing a trophy unlocks, until everything is. One line: the picker has to fit a phone on its side. */
+  /** The next thing a trophy unlocks, until everything is. */
   private unlockLine(): string {
     const u = unlocks(progress());
     const next = !u.randomCup ? 'a trophy unlocks the Random Cup' : !u.class200 ? 'gold at 150cc unlocks 200cc' : !u.mirror ? 'gold in every cup unlocks Mirror' : '';

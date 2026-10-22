@@ -39,6 +39,14 @@ describe('smart steering', () => {
     expect(saved.offRoad).toBe(false);
   });
 
+  it('lets a stick held toward an open edge leave the road: the correction fades with the stick, gone at full lock', () => {
+    // Heading 0.25 rad left of the road at top speed: full lock left goes off, half lock is held longer than no lock.
+    expect(drive(onStraight(0.25), -1, true, 1.6).offRoad).toBe(true);
+    const half = drive(onStraight(0.25), -0.5, true, 1.6);
+    const none = drive(onStraight(0.25), 0, true, 1.6);
+    expect(half.maxLateral).toBeGreaterThan(none.maxLateral);
+  });
+
   it('straightens the nose up with the road when the stick is let go', () => {
     const s = onStraight(0.2);
     drive(s, 0, true, 1.2);
