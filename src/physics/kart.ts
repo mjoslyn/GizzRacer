@@ -79,7 +79,7 @@ export interface StepEvents {
  * Bump whenever kart physics, racer stats or a track layout change lap
  * times: online leaderboards and ghosts are kept per version.
  */
-export const PHYSICS_VERSION = 14;
+export const PHYSICS_VERSION = 15;
 export const KART_RADIUS = 1;
 export const GRAVITY = 30;
 export const HOP_VELOCITY = 4.5;
@@ -132,7 +132,7 @@ const OVERSPEED_DECEL = 15;
 const REVERSE_MAX = 8;
 const REVERSE_ACCEL = 10;
 /** How far the nose points into a drift (visual yaw): a kart sideways through the corner, the Mario Kart way. */
-const DRIFT_SLIP_ANGLE = 0.55;
+const DRIFT_SLIP_ANGLE = 0.45;
 /**
  * Mario Kart's drift: a steady arc you hold through the corner. With the
  * stick centred it's gentler than full lock gripping; steering in tightens
@@ -142,13 +142,13 @@ export const DRIFT_YAW_BASE = 0.62;
 export const DRIFT_YAW_STEER = 0.33;
 const SLIP_RESPONSE = 3;
 /** How fast a slide dies away (1/s): lower and the kart carries its skid further out of the corner. */
-const EXT_DAMPING = 4.5;
+const EXT_DAMPING = 4;
 /**
  * The share of each turn's momentum that keeps going the old way, by
  * surface: karts skid wide through every turn, a little on the road, more
  * on dirt, a lot on ice.
  */
-const SLIDE: Record<SurfaceType, number> = { road: 0.18, boost: 0.18, offroad: 0.3, ice: 0.55, oil: 0.5 };
+const SLIDE: Record<SurfaceType, number> = { road: 0.26, boost: 0.26, offroad: 0.36, ice: 0.6, oil: 0.55 };
 /**
  * Drifting, more of the momentum keeps going the old way than when the
  * tires grip: the kart slides out wide of its nose, and the harder it's

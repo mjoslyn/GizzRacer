@@ -8,6 +8,8 @@ import { NonagonGate } from './nonagonGate';
 import { blobShadowTexture, glowTexture } from './textures';
 
 const SPARK_COLORS = [0xfff2a8, 0x3fa9ff, 0xff8a1f, 0xc04bff, 0xffffff];
+/** The most the drawn nose may point off the direction of travel (rad): sideways enough to read as a drift, never a right angle. */
+const NOSE_MAX = 0.5;
 const SPARK_POOL = 48;
 const SPARK_LIFE = 0.28;
 const DUST_POOL = 28;
@@ -152,6 +154,8 @@ export class KartView {
   private wasDrifting = false;
   /** Skid: the nose swung into a slide, and the marks it leaves. */
   private skidYaw = 0;
+  /** The yaw the model is drawn at, off its heading: the drift slip and the skid, capped against the direction it's actually travelling (NOSE_MAX). */
+  private noseYaw = 0;
   private readonly marks: THREE.InstancedMesh;
   private readonly markAge = new Float32Array(SKID_MARKS).fill(SKID_LIFE);
   private readonly markPose: { x: number; y: number; z: number; yaw: number }[] = [];
@@ -292,7 +296,7 @@ export class KartView {
   update(s: KartState, topSpeed: number, frameDt: number, time: number, fell = false): void {
     this.root.position.set(s.x, s.y, s.z);
     this.updateSkid(s, topSpeed, frameDt, time);
-    this.root.rotation.y = s.heading - s.slip + s.spinAngle + this.skidYaw;
+    this.root.rotation.y = s.heading - this.noseYaw + s.spinAngle;
     // Horology shrinks you a little while it lasts.
     this.body.scale.setScalar(s.slowTime > 0 ? 0.8 : 1);
     this.updatePresence(fell, frameDt, time);
@@ -518,13 +522,19 @@ export class KartView {
     const into = side !== 0 && Math.abs(side) > 0.3 ? Math.sign(side) : -Math.sign(s.steer);
     const target = into * 0.16 * k + Math.sin(time * 38) * 0.02 * k;
     this.skidYaw += (target - this.skidYaw) * damp(12, dt);
+    // The nose points into a drift and a skid, but never near a right angle to the way the kart is going:
+    // the slide already carries the travel off the heading, so the drawn yaw is capped against that.
+    const travel = Math.atan2(side, Math.max(1, Math.abs(s.speed)));
+    const want = s.slip - this.skidYaw;
+    const room = Math.max(0, NOSE_MAX - Math.abs(travel));
+    this.noseYaw = clamp(want, -room, room);
     // Nothing to mark the road with when nothing touches it.
     const skidding = !this.hover && s.grounded && s.surface !== 'offroad' && (k > 0.3 || s.driftDir !== 0) && Math.abs(s.speed) > 8;
     if (skidding) {
       this.markAccum += dt * Math.abs(s.speed) * 0.9;
       while (this.markAccum >= 1) {
         this.markAccum -= 1;
-        const yaw = s.heading - s.slip + this.skidYaw;
+        const yaw = s.heading - this.noseYaw;
         for (const lat of [-this.rearTrack, this.rearTrack]) {
           this.tmp.set(lat, 0, this.rearZ).applyAxisAngle(THREE.Object3D.DEFAULT_UP, yaw);
           const m = this.markPose[this.markCursor];

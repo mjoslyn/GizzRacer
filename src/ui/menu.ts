@@ -247,9 +247,9 @@ export class Menu {
               ? `<div class="menu-row menu-cup"><div class="menu-label">Rooms</div><div class="menu-value">Race friends with a room code</div></div>`
               : c.mode === 'generator'
                 ? this.generatorRows(line)
-                : line('track', 'Track', TRACK_LIST[c.track].name, `${this.bestLine(TRACK_LIST[c.track].id)}${c.mode === 'single' ? '<button class="menu-random" data-random-track title="Random track (T)">&#9860; random track</button>' : ''}`)
+                : line('track', 'Track', `${TRACK_LIST[c.track].name}${c.mode === 'single' ? DICE('data-random-track', 'Random track (T)') : ''}`, this.bestLine(TRACK_LIST[c.track].id))
         }
-        ${line('racer', 'Racer', c.racer.name, `<div class="menu-stats">${stats}</div><div class="menu-bio">${c.racer.bio}</div><button class="menu-random" data-random title="Random racer (R)">&#9860; random</button>`)}
+        ${line('racer', 'Racer', `${c.racer.name}${c.mode === 'online' ? '' : DICE('data-random', 'Random racer (R)')}`, `<div class="menu-stats">${stats}</div><div class="menu-bio">${c.racer.bio}</div>`)}
         ${line('engine', 'Class', c.engine, this.unlockLine())}
         ${rows.includes('mirror') ? line('mirror', 'Mirror', c.mirror ? 'ON' : 'OFF', '', true) : ''}
         <button class="menu-start hud-big" data-start>${c.mode === 'online' ? 'ROOMS' : 'RACE!'}</button>
@@ -275,14 +275,11 @@ export class Menu {
     return `<div class="menu-cup-tracks">${best ? `Your best race: ${formatTime(best.ms / 1000)}` : 'No race time yet'}${c.mirror ? ' (Mirror)' : ''}</div>`;
   }
 
-  /** What the next trophies unlock, until they have. */
+  /** The next thing a trophy unlocks, until everything is. One line: the picker has to fit a phone on its side. */
   private unlockLine(): string {
     const u = unlocks(progress());
-    const todo: string[] = [];
-    if (!u.randomCup) todo.push('a trophy unlocks the Random Cup');
-    if (!u.class200) todo.push('gold at 150cc unlocks 200cc');
-    if (!u.mirror) todo.push('gold in every cup unlocks Mirror');
-    return todo.length ? `<div class="menu-cup-tracks menu-unlocks">${todo.join(' &middot; ')}</div>` : '';
+    const next = !u.randomCup ? 'a trophy unlocks the Random Cup' : !u.class200 ? 'gold at 150cc unlocks 200cc' : !u.mirror ? 'gold in every cup unlocks Mirror' : '';
+    return next ? `<div class="menu-cup-tracks menu-unlocks">Next: ${next}</div>` : '';
   }
 
   private generatorRows(line: (row: MenuRow, label: string, value: string, extra?: string, small?: boolean) => string): string {
@@ -305,6 +302,11 @@ export class Menu {
       line('length', 'Length', LENGTH_NAMES[g.params.length], '', true)
     );
   }
+}
+
+/** A dice button inside a row's value: one tap rolls that row. */
+function DICE(attr: string, title: string): string {
+  return `<button class="menu-dice" ${attr} title="${title}">&#9860;</button>`;
 }
 
 function esc(s: string): string {
