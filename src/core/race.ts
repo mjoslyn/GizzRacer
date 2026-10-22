@@ -467,6 +467,7 @@ export class Race {
     copyKartState(kart.state, kart.prev);
     kart.fallTime = 0;
     kart.respawned = true;
+    kart.driver?.onRespawn();
   }
 
   private onSunkRoad(s: KartState): boolean {

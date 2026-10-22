@@ -9,7 +9,7 @@ import { blobShadowTexture, glowTexture } from './textures';
 
 const SPARK_COLORS = [0xfff2a8, 0x3fa9ff, 0xff8a1f, 0xc04bff, 0xffffff];
 /** The most the drawn nose may point off the direction of travel (rad): sideways enough to read as a drift, never a right angle. */
-const NOSE_MAX = 0.5;
+const NOSE_MAX = 0.6;
 const SPARK_POOL = 48;
 const SPARK_LIFE = 0.28;
 const DUST_POOL = 28;

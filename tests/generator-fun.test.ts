@@ -288,8 +288,11 @@ function autopilotLap(def: TrackDef, racer: (typeof RACERS)[number], engine: '10
   let falls = 0;
   for (let t = 0; t < 200 && kart.laps.lap < 1; t += PHYSICS_DT) {
     const s = kart.state;
-    const aim = pointAt(track.spline, kart.progressS + 14);
-    const err = wrapAngle(Math.atan2(aim.x - s.x, aim.z - s.z) - s.heading);
+    // Looks further ahead the faster it goes, and steers the direction of travel at the aim point, as a driver does:
+    // the kart skids wide of its nose through a turn, and a lookahead shorter than the skid's lag oscillates wide.
+    const aim = pointAt(track.spline, kart.progressS + 10 + s.speed * 0.4);
+    const travel = s.speed > 4 ? Math.atan2(Math.sin(s.heading) * s.speed + s.extX, Math.cos(s.heading) * s.speed + s.extZ) : s.heading;
+    const err = wrapAngle(Math.atan2(aim.x - s.x, aim.z - s.z) - travel);
     race.step(PHYSICS_DT, [{ ...NEUTRAL_INPUT, throttle: 1, steer: clamp(-err * 2.5, -1, 1) }]);
     if (kart.respawned) falls++;
   }

@@ -455,12 +455,15 @@ function kickerLips(def: TrackDef): number[] {
   return lips;
 }
 
-/** Steers toward a point 14 m further along `ribbon`, as the autopilot in tests/track.test.ts does. */
+/** Steers the kart's travel toward a point further along `ribbon` (further the faster it goes), as the autopilot in tests/track.test.ts does. */
 function steerAlong(ribbon: Ribbon, s: ReturnType<typeof createKartState>, progress: number) {
   const sp = ribbon.spline;
-  const p = pointAt(sp, sp.closed ? progress + 14 : Math.min(progress + 14, sp.length));
+  const look = 10 + s.speed * 0.4;
+  const p = pointAt(sp, sp.closed ? progress + look : Math.min(progress + look, sp.length));
   const desired = Math.atan2(p.x - s.x, p.z - s.z);
-  const err = wrapAngle(desired - s.heading);
+  // The direction of travel, not the nose: a kart skids wide of its heading through a turn (stepKart's slide).
+  const travel = s.speed > 4 ? Math.atan2(Math.sin(s.heading) * s.speed + s.extX, Math.cos(s.heading) * s.speed + s.extZ) : s.heading;
+  const err = wrapAngle(desired - travel);
   return { ...NEUTRAL_INPUT, throttle: 1, steer: clamp(-err * 2.5, -1, 1) };
 }
 

@@ -58,7 +58,9 @@ const STEER_GAIN = 2.8;
 const DRIFT_TURN = 0.75;
 const STUCK_TIME = 1.2;
 /** How hard a drifting CPU yaws into its own outward slide (rad/s per m/s of slide). */
-const DRIFT_CATCH = 0.25;
+const DRIFT_CATCH = 0.15;
+/** After a fall, this long of driving the centerline, no wander and no drifts: the same line twice is the same fall twice. */
+const CALM_TIME = 8;
 /** A CPU that isn't waiting for a good moment fires its item after this long, give or take. */
 const ITEM_HOLD_MIN = 1;
 const ITEM_HOLD_SPREAD = 4;
@@ -71,8 +73,9 @@ const ITEM_HOLD_MAX = 9;
  */
 export class CpuDriver {
   private readonly rand: () => number;
-  private readonly lane: number;
-  private readonly phase: number;
+  private lane: number;
+  private phase: number;
+  private calm = 0;
   private drifting = false;
   private driftAge = 0;
   private driftDir: -1 | 1 = 1;
@@ -91,6 +94,15 @@ export class CpuDriver {
     this.phase = this.rand() * Math.PI * 2;
   }
 
+  /** Back on the road after a fall: a new lane and wander phase, and a calm spell, so the retry is not the fall again. */
+  onRespawn(): void {
+    this.lane = (this.rand() - 0.5) * 0.6;
+    this.phase = this.rand() * Math.PI * 2;
+    this.calm = CALM_TIME;
+    this.drifting = false;
+    this.cornerDecided = false;
+  }
+
   /** One roll against a chance, on this driver's own dice (rocket starts, tricks, dodges). */
   roll(chance: number): boolean {
     return this.rand() < chance;
@@ -99,6 +111,7 @@ export class CpuDriver {
   drive(s: KartState, p: KartParams, progress: number, track: Track, others: readonly KartState[], obstacles: readonly Obstacle[], dt: number): InputFrame {
     const ribbon = track.main;
     const speed = Math.max(s.speed, 0);
+    this.calm = Math.max(0, this.calm - dt);
 
     if (this.reversing > 0) {
       this.reversing -= dt;
@@ -113,7 +126,8 @@ export class CpuDriver {
     // Aim point: ahead on the centerline, shifted onto this driver's lane.
     const look = 8 + speed * 0.45;
     const hw = ribbon.halfWidthAtS(progress + look);
-    let lateral = (this.lane + Math.sin(progress / 70 + this.phase) * 0.3 * this.skill.wander) * hw;
+    const wander = this.calm > 0 ? 0 : this.skill.wander;
+    let lateral = (this.lane * (this.calm > 0 ? 0.5 : 1) + Math.sin(progress / 70 + this.phase) * 0.3 * wander) * hw;
     lateral += avoid(s, others);
     lateral += dodge(s, obstacles, lateral, progress, ribbon, 0.35 + 0.65 * this.skill.itemIq);
     lateral = clamp(lateral, -(hw - 2), hw - 2);
@@ -121,13 +135,22 @@ export class CpuDriver {
     const tl = Math.hypot(aim.tx, aim.tz) || 1;
     const ax = aim.x - (aim.tz / tl) * lateral;
     const az = aim.z + (aim.tx / tl) * lateral;
-    const err = wrapAngle(Math.atan2(ax - s.x, az - s.z) - s.heading);
+    // Aim the direction of TRAVEL, not the nose: a kart skids wide of its heading through every turn (stepKart's slide),
+    // and steering the nose at the point would carry it outside the line, over an open edge on a track without walls.
+    const vx = Math.sin(s.heading) * speed + s.extX;
+    const vz = Math.cos(s.heading) * speed + s.extZ;
+    const travel = speed > 4 ? Math.atan2(vx, vz) : s.heading;
+    const err = wrapAngle(Math.atan2(ax - s.x, az - s.z) - travel);
 
     const turnAhead = ribbon.turnBetween(progress, progress + 30 + speed * 0.3);
     const curv = ribbon.maxCurvature(progress, progress + 20 + speed * 0.6);
 
     const input: InputFrame = { ...NEUTRAL_INPUT, throttle: this.skill.speedCap, steer: clamp(-err * STEER_GAIN, -1, 1) };
-    this.updateDrift(s, p, input, err, turnAhead, ribbon, progress, dt);
+    // Where the kart sits across the road, left positive (the builder's lateral), for the drift's room check.
+    const here = pointAt(ribbon.spline, progress);
+    const hl = here.tx * here.tx + here.tz * here.tz || 1;
+    const across = (-(s.x - here.x) * here.tz + (s.z - here.z) * here.tx) / hl;
+    this.updateDrift(s, p, input, err, turnAhead, ribbon, progress, across, dt);
 
     // Lift or brake for corners the kart can't hold at this speed.
     const capacity = this.drifting ? p.driftTurnRate * (DRIFT_YAW_BASE + DRIFT_YAW_STEER) : p.turnRate * (1 - 0.25 * Math.min(1, speed / p.topSpeed));
@@ -197,18 +220,22 @@ export class CpuDriver {
     this.itemPlan = null;
   }
 
-  private updateDrift(s: KartState, p: KartParams, input: InputFrame, err: number, turnAhead: number, ribbon: Ribbon, progress: number, dt: number): void {
+  private updateDrift(s: KartState, p: KartParams, input: InputFrame, err: number, turnAhead: number, ribbon: Ribbon, progress: number, across: number, dt: number): void {
     if (Math.abs(turnAhead) < 0.3) this.cornerDecided = false;
 
     if (!this.drifting) {
-      const worth = Math.abs(turnAhead) > DRIFT_TURN && s.speed > DRIFT_MIN_SPEED + 4 && s.grounded;
+      const worth = Math.abs(turnAhead) > DRIFT_TURN && s.speed > DRIFT_MIN_SPEED + 4 && s.grounded && this.calm <= 0;
+      // A drift catching lurches the kart outward (stepKart's DRIFT_KICK, about a tenth of the speed in metres): not from the outer edge.
+      const dir = turnAhead > 0 ? -1 : 1;
+      const room = ribbon.halfWidthAtS(progress) - dir * across;
+      if (worth && room < 0.1 * s.speed * p.slide + 3) return;
       if (worth && !this.cornerDecided) {
         this.cornerDecided = true;
         if (this.rand() < this.skill.driftChance) {
           this.drifting = true;
           this.driftAge = 0;
           // Positive turn is left, and a left drift is driftDir -1.
-          this.driftDir = turnAhead > 0 ? -1 : 1;
+          this.driftDir = dir;
           this.wantTier = 1 + Math.floor(this.rand() * this.skill.maxTier);
           input.drift = input.driftPressed = true;
           input.steer = this.driftDir;

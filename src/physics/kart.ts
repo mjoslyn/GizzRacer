@@ -79,7 +79,7 @@ export interface StepEvents {
  * Bump whenever kart physics, racer stats or a track layout change lap
  * times: online leaderboards and ghosts are kept per version.
  */
-export const PHYSICS_VERSION = 15;
+export const PHYSICS_VERSION = 16;
 export const KART_RADIUS = 1;
 export const GRAVITY = 30;
 export const HOP_VELOCITY = 4.5;
@@ -132,7 +132,7 @@ const OVERSPEED_DECEL = 15;
 const REVERSE_MAX = 8;
 const REVERSE_ACCEL = 10;
 /** How far the nose points into a drift (visual yaw): a kart sideways through the corner, the Mario Kart way. */
-const DRIFT_SLIP_ANGLE = 0.45;
+const DRIFT_SLIP_ANGLE = 0.25;
 /**
  * Mario Kart's drift: a steady arc you hold through the corner. With the
  * stick centred it's gentler than full lock gripping; steering in tightens
@@ -141,21 +141,33 @@ const DRIFT_SLIP_ANGLE = 0.45;
 export const DRIFT_YAW_BASE = 0.62;
 export const DRIFT_YAW_STEER = 0.33;
 const SLIP_RESPONSE = 3;
-/** How fast a slide dies away (1/s): lower and the kart carries its skid further out of the corner. */
-const EXT_DAMPING = 4;
+/**
+ * How fast a slide dies away (1/s), by direction. Sideways momentum (the
+ * skid out wide) lingers, so the kart carries it out of the corner and on
+ * past the point where the steering stopped; the share pointing back along
+ * the kart (the scrub) is taken up quickly by the engine, so a long drift
+ * loses some speed but not a third of it.
+ */
+const EXT_DAMPING_SIDE = 3;
+const EXT_DAMPING_ALONG = 8;
 /**
  * The share of each turn's momentum that keeps going the old way, by
- * surface: karts skid wide through every turn, a little on the road, more
- * on dirt, a lot on ice.
+ * surface: karts skid wide through every turn, plenty on the road, more on
+ * dirt, almost all of it on ice. In a steady turn the skid settles at
+ * yaw * slide / EXT_DAMPING_SIDE of the speed, sideways: full lock on the
+ * road travels about 12 degrees outside the nose.
  */
-const SLIDE: Record<SurfaceType, number> = { road: 0.26, boost: 0.26, offroad: 0.36, ice: 0.6, oil: 0.55 };
+const SLIDE: Record<SurfaceType, number> = { road: 0.45, boost: 0.45, offroad: 0.55, ice: 0.8, oil: 0.75 };
 /**
  * Drifting, more of the momentum keeps going the old way than when the
- * tires grip: the kart slides out wide of its nose, and the harder it's
- * steered into the drift, the further out it slides.
+ * tires grip: the kart slides out wide of its nose (about 25 degrees in a
+ * steady drift), and the harder it's steered into the drift, the further
+ * out it slides.
  */
-const DRIFT_SLIDE = 0.14;
-const DRIFT_HARD_SLIDE = 0.16;
+const DRIFT_SLIDE = 0.15;
+const DRIFT_HARD_SLIDE = 0.15;
+/** The outward lurch as a drift catches: this share of the speed, sideways, the hop's momentum breaking the tires loose. */
+const DRIFT_KICK = 0.2;
 /**
  * Walls: an impact costs speed (a little even glancing, most of it
  * square-on) and bounces the kart back off with some of the speed it hit
@@ -292,6 +304,10 @@ export function stepKart(s: KartState, input: InputFrame, p: KartParams, env: Dr
     s.driftDir = steerIn > 0 ? 1 : -1;
     s.driftCharge = 0;
     ev.driftStarted = true;
+    // The kart breaks loose outward (a right drift slides left) before the turn gathers it in.
+    const kick = s.speed * DRIFT_KICK * p.slide;
+    s.extX += s.driftDir * Math.cos(s.heading) * kick;
+    s.extZ -= s.driftDir * Math.sin(s.heading) * kick;
   }
   // Too slow, or off the road: the drift is lost, charge and all.
   if (s.driftDir !== 0 && (s.speed < DRIFT_MIN_SPEED * 0.6 || (s.grounded && s.surface === 'offroad'))) {
@@ -353,16 +369,18 @@ export function stepKart(s: KartState, input: InputFrame, p: KartParams, env: Dr
     // The kart turns but its momentum doesn't all follow, so it skids wide; a drift slides out further,
     // and a kart with less handling slides out further still (p.slide, from the racer's stat).
     let slide = SLIDE[s.surface];
-    if (s.driftDir !== 0) slide = Math.min(0.75, slide + DRIFT_SLIDE + DRIFT_HARD_SLIDE * clamp(steerIn * s.driftDir, 0, 1));
-    slide = Math.min(0.95, slide * p.slide);
+    if (s.driftDir !== 0) slide += DRIFT_SLIDE + DRIFT_HARD_SLIDE * clamp(steerIn * s.driftDir, 0, 1);
+    slide = Math.min(0.98, slide * p.slide);
     s.extX += (Math.sin(s.heading + turned) - fx) * s.speed * slide;
     s.extZ += (Math.cos(s.heading + turned) - fz) * s.speed * slide;
   }
   s.x += (fx * s.speed + s.extX) * dt;
   s.z += (fz * s.speed + s.extZ) * dt;
-  const decay = Math.exp(-EXT_DAMPING * dt);
-  s.extX *= decay;
-  s.extZ *= decay;
+  // The skid decays by direction: sideways it lingers, back along the kart it's soon driven out.
+  const along = (s.extX * fx + s.extZ * fz) * Math.exp(-EXT_DAMPING_ALONG * dt);
+  const side = (s.extX * fz - s.extZ * fx) * Math.exp(-EXT_DAMPING_SIDE * dt);
+  s.extX = along * fx + side * fz;
+  s.extZ = along * fz - side * fx;
 
   // Vertical. Grounded karts follow the road and carry its slope as vy,
   // so a ramp lip launches them.
