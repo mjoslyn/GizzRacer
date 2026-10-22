@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import * as tex from './textures';
 import { DESERT_SKY, type SkyColors } from './textures';
 
-export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval';
-export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore';
+export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism';
+export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum';
 
 /** Everything that makes a track's world look like itself. */
 export interface Theme {
@@ -376,5 +376,78 @@ export const THEMES: Record<ThemeId, Theme> = {
     skyCycle: false,
     dust: 0x8a8a80,
     barrier: { map: () => tex.stoneTexture([70, 70, 74], [140, 136, 130]), crawl: false },
+  },
+  // Crumbling Castle: a dark castle in a lava moat under a red night sky, the stone giving way.
+  castle: {
+    sky: { zenith: '#0a0410', high: '#2a0a18', low: '#7a1a14', horizon: '#ff6a2a', below: '#3a1410', ground: '#1a0e0c', cloud: '90,50,60', clouds: 24 },
+    fog: { color: 0x4a1a18, near: 120, far: 680 },
+    hemi: { sky: 0xffa080, ground: 0x2a1410, intensity: 1.35 },
+    sun: { color: 0xffb080, intensity: 1.9 },
+    ground: tex.castleGroundTexture,
+    groundTile: 16,
+    // Walls are the castle's.
+    cliff: tex.castleWallTexture,
+    decor: 'ruins',
+    distant: { shape: 'volcano', color: 0x2a1418 },
+    haze: 0.4,
+    duotone: [0x060004, 0xb02010, 0xffc060],
+    skyCycle: false,
+    dust: 0x8a8078,
+    barrier: { map: tex.castleWallTexture, crawl: false },
+  },
+  // The Castle in the Air: a white castle on the clouds in a golden afternoon, nothing below.
+  skycastle: {
+    sky: { zenith: '#2a6ad8', high: '#6aa0f0', low: '#ffd8a0', horizon: '#fff4d8', below: '#f0e0f0', ground: '#e0d0ec', cloud: '255,252,245', clouds: 48 },
+    fog: { color: 0xfff0e0, near: 170, far: 920 },
+    hemi: { sky: 0xfff4e0, ground: 0xc0b0e0, intensity: 1.7 },
+    sun: { color: 0xfff0d0, intensity: 2.3 },
+    ground: tex.cloudSeaTexture,
+    groundTile: 60,
+    cliff: () => tex.stoneTexture([200, 190, 180], [250, 246, 236]),
+    decor: 'clouds',
+    distant: { shape: 'cloud', color: 0xfffaf0 },
+    haze: 0,
+    duotone: [0x0a0818, 0x4a7ad8, 0xfff0a0],
+    skyCycle: false,
+    dust: 0xffffff,
+    barrier: { map: () => tex.stoneTexture([200, 190, 180], [250, 246, 236]), crawl: false },
+  },
+  // Inner Cell: inside a living cell, a violet murk lit pink by the membranes, organelles drifting.
+  cell: {
+    sky: { zenith: '#2a0a3a', high: '#5a1a5a', low: '#c05a9a', horizon: '#ffb0d0', below: '#6a2a6a', ground: '#3a143a', cloud: '255,170,220', clouds: 30 },
+    fog: { color: 0x8a3a7a, near: 100, far: 620 },
+    hemi: { sky: 0xffc0e0, ground: 0x4a1a4a, intensity: 1.5 },
+    sun: { color: 0xffd0e8, intensity: 1.8 },
+    ground: tex.cytoplasmTexture,
+    groundTile: 20,
+    // Walls are folds of membrane.
+    cliff: tex.cellWallTexture,
+    decor: 'cytoplasm',
+    distant: { shape: 'planet', color: 0x8a2a7a },
+    haze: 0.5,
+    duotone: [0x0a0008, 0xc02080, 0x90ffd0],
+    skyCycle: true,
+    dust: 0xffb0d8,
+    barrier: { map: tex.membraneTexture, crawl: true },
+    roadGlow: 0.15,
+  },
+  // Tetrachromacy: a black world split into four colours of light, prisms everywhere, the fourth colour the one you've never seen.
+  prism: {
+    sky: { zenith: '#04020c', high: '#1a0a3a', low: '#3a2a8a', horizon: '#d0a0ff', below: '#0a0a1a', ground: '#06060e', cloud: '200,180,255', clouds: 22 },
+    fog: { color: 0x1a1040, near: 130, far: 720 },
+    hemi: { sky: 0xd0c0ff, ground: 0x10102a, intensity: 1.4 },
+    sun: { color: 0xf0e8ff, intensity: 1.9 },
+    ground: tex.prismGroundTexture,
+    groundTile: 26,
+    // Walls are mirrors.
+    cliff: tex.mirrorTexture,
+    decor: 'spectrum',
+    distant: { shape: 'mountain', color: 0x2a1a5a },
+    haze: 0,
+    duotone: [0x020008, 0x6020d0, 0xa0fff0],
+    skyCycle: true,
+    dust: 0xe0d0ff,
+    barrier: { map: tex.mirrorTexture, crawl: true },
+    roadGlow: 0.3,
   },
 };

@@ -10,7 +10,7 @@ import { Track, inPit, type BranchDef, type HazardDef, type ItemBoxRow, type Lan
  */
 
 export type GenTheme = TrackDef['theme'];
-export const GEN_THEMES: readonly GenTheme[] = ['desert', 'speedway', 'volcano', 'jungle', 'lagoon', 'glacier', 'neon', 'dream', 'petro', 'mars', 'storm', 'void', 'phantom', 'airfield', 'grove', 'doubt', 'magenta', 'kepler', 'goblin', 'primeval'];
+export const GEN_THEMES: readonly GenTheme[] = ['desert', 'speedway', 'volcano', 'jungle', 'lagoon', 'glacier', 'neon', 'dream', 'petro', 'mars', 'storm', 'void', 'phantom', 'airfield', 'grove', 'doubt', 'magenta', 'kepler', 'goblin', 'primeval', 'castle', 'skycastle', 'cell', 'prism'];
 export const GEN_THEME_NAMES: Record<GenTheme, string> = {
   desert: 'Desert',
   speedway: 'Speedway',
@@ -32,6 +32,10 @@ export const GEN_THEME_NAMES: Record<GenTheme, string> = {
   kepler: 'Kepler-22b',
   goblin: 'Goblin Garden',
   primeval: 'Predator X',
+  castle: 'Crumbling Castle',
+  skycastle: 'Castle in the Air',
+  cell: 'Inner Cell',
+  prism: 'Tetrachromacy',
 };
 export type GenLength = 'short' | 'medium' | 'long';
 export const GEN_LENGTHS: readonly GenLength[] = ['short', 'medium', 'long'];
@@ -334,6 +338,52 @@ const PALETTES: Record<GenTheme, Palette> = {
     places: ['Predator', 'Pliosaur', 'Jurassic', 'Apex', 'Bone', 'Abyssal', 'Fossil', 'Tidal', 'Primeval'],
     music: { lap: 'predator-x', finalLap: 'predator-x-final-lap' },
   },
+  castle: {
+    surface: 'flagstone',
+    deck: 'boards',
+    alt: 'rock',
+    liquid: 'lava',
+    hazards: ['crushers', 'flameJets'],
+    start: 'castleGate',
+    landmarks: ['castleGate'],
+    tallWalls: 6,
+    places: ['Crumbling', 'Thwomp', 'Keep', 'Dungeon', 'Rampart', 'Moat', 'Gallery', 'Portcullis', 'Battlement'],
+    music: { lap: 'crumbling-castle', finalLap: 'crumbling-castle-final-lap' },
+  },
+  skycastle: {
+    surface: 'cloud',
+    deck: 'flagstone',
+    alt: 'flagstone',
+    hazards: ['gusts'],
+    start: 'cloudGate',
+    landmarks: ['cloudGate'],
+    tallWalls: 1.2,
+    places: ['Cloud', 'Turret', 'Skyward', 'Drawbridge', 'Pennant', 'Zephyr', 'Lofty', 'Spire', 'Daydream'],
+    music: { lap: 'castle-in-the-air', finalLap: 'castle-in-the-air-final-lap' },
+  },
+  cell: {
+    surface: 'membrane',
+    deck: 'membrane',
+    alt: 'membrane',
+    liquid: 'water',
+    hazards: ['vesicles'],
+    start: 'cellGate',
+    landmarks: ['cellGate'],
+    tallWalls: 4,
+    places: ['Mitochondria', 'Golgi', 'Ribosome', 'Lysosome', 'Cytoplasm', 'Membrane', 'Vesicle', 'Nucleolus', 'Organelle'],
+    music: { lap: 'inner-cell', finalLap: 'inner-cell-final-lap' },
+  },
+  prism: {
+    surface: 'prism',
+    deck: 'prism',
+    alt: 'prism',
+    hazards: ['prisms'],
+    start: 'prismGate',
+    landmarks: ['prismGate'],
+    tallWalls: 5,
+    places: ['Spectrum', 'Prism', 'Cone Cell', 'Ultraviolet', 'Refraction', 'Mirror', 'Afterimage', 'Iris', 'Fourth Colour'],
+    music: { lap: 'tetrachromacy', finalLap: 'tetrachromacy-final-lap' },
+  },
 };
 
 const NAME_ADJECTIVES = ['Microtonal', 'Polygon', 'Infinite', 'Nonagon', 'Fuzz', 'Quarter-Tone', 'Psychedelic', 'Altered', 'Cosmic', 'Crumbling', 'Sleepy', 'Plastic', 'Gumboot', 'Robot', 'Hypertension'];
@@ -485,7 +535,7 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
   const between = (a: number, b: number) => a + rand() * (b - a);
   const c = plain ? 1 : clamp(Math.round(p.complexity), 1, GEN_COMPLEXITY_MAX);
   const pal = PALETTES[p.theme];
-  const abyss = p.theme === 'dream' || p.theme === 'void';
+  const abyss = p.theme === 'dream' || p.theme === 'void' || p.theme === 'skycastle';
   const halfWidth = 12.6 - c * 0.8;
   const R = 52 - c * 5;
   const wall = abyss || c <= 3 ? 1.2 : 0;
@@ -986,6 +1036,7 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
         break;
       case 'rollers':
       case 'crystals':
+      case 'vesicles':
         hazards.push({ kind, from, to, count: count - 1, period: 7 });
         break;
       case 'fish':
@@ -1028,6 +1079,11 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
         hazards.push({ kind, at: at(count), period: 4.5 });
         break;
       case 'jaws':
+      case 'crushers':
+        hazards.push({ kind, at: at(count - 1), period: 4 });
+        break;
+      case 'gusts':
+      case 'prisms':
         hazards.push({ kind, at: at(count - 1), period: 4 });
         break;
       case 'vines':

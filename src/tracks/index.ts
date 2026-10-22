@@ -1,4 +1,6 @@
 import { buildButterflySkyway } from './butterflySkyway';
+import { buildCastleInTheAir } from './castleInTheAir';
+import { buildCrumblingCastle } from './crumblingCastle';
 import { buildCyboogieCity } from './cyboogieCity';
 import { buildDeadstickDrop } from './deadstickDrop';
 import { buildFishiesLagoon } from './fishiesLagoon';
@@ -7,6 +9,7 @@ import { buildHellOnMars } from './hellOnMars';
 import { buildMurderOfTheUniverse } from './murderOfTheUniverse';
 import { buildSupercell } from './supercell';
 import { buildIceVGlacier } from './iceVGlacier';
+import { buildInnerCell } from './innerCell';
 import { buildInfiniteLoopSpeedway } from './infiniteLoopSpeedway';
 import { buildKepler22b } from './kepler22b';
 import { buildMagentaMountain } from './magentaMountain';
@@ -17,6 +20,7 @@ import { buildPolygondwanalandJungle } from './polygondwanalandJungle';
 import { buildPredatorX } from './predatorX';
 import { buildRattlesnakeRun } from './rattlesnakeRun';
 import { buildSeaOfDoubt } from './seaOfDoubt';
+import { buildTetrachromacy } from './tetrachromacy';
 import type { TrackDef } from './track';
 import { buildVolcanoFortress } from './volcanoFortress';
 
@@ -42,6 +46,10 @@ export const TRACK_LIST: { id: string; name: string; build: () => TrackDef }[] =
   { id: 'kepler-22b', name: 'Kepler-22b', build: buildKepler22b },
   { id: 'goblin-garden', name: 'Goblin Garden', build: buildGoblinGarden },
   { id: 'predator-x', name: 'Predator X', build: buildPredatorX },
+  { id: 'crumbling-castle', name: 'Crumbling Castle', build: buildCrumblingCastle },
+  { id: 'castle-in-the-air', name: 'The Castle in the Air', build: buildCastleInTheAir },
+  { id: 'inner-cell', name: 'Inner Cell', build: buildInnerCell },
+  { id: 'tetrachromacy', name: 'Tetrachromacy', build: buildTetrachromacy },
 ];
 
 /** Grand Prix cups: four tracks each, in race order (indexes into TRACK_LIST). */
@@ -54,4 +62,19 @@ export const CUPS: { name: string; tracks: number[] }[] = [
   { name: 'Phantom Island Cup', tracks: [12, 13, 14, 15] },
   // Omnium Gatherum (2022): the pink mountain, the ocean planet, the goblin's garden, and the pliosaur.
   { name: 'Omnium Gatherum Cup', tracks: [16, 17, 18, 19] },
+  // Polygondwanaland (2017), in album order: the castle falling down, the castle on the clouds, the inside of a cell, and the fourth colour.
+  { name: 'Polygondwanaland Cup', tracks: [20, 21, 22, 23] },
 ];
+
+/** The Random Cup, after the others in the picker: four of the premade tracks drawn at random. */
+export const RANDOM_CUP_NAME = 'Random Cup';
+
+/** Draws a Random Cup: four different tracks from TRACK_LIST, in a random order. */
+export function randomCupTracks(rand: () => number = Math.random): number[] {
+  const all = TRACK_LIST.map((_, i) => i);
+  for (let i = all.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [all[i], all[j]] = [all[j], all[i]];
+  }
+  return all.slice(0, 4);
+}

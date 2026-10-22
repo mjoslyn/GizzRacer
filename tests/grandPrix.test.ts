@@ -53,3 +53,22 @@ describe('grand prix', () => {
     expect(next[0]).toBe(grid[grid.length - 1]);
   });
 });
+
+describe('Random Cup', () => {
+  it('draws four different premade tracks, a new four each time', async () => {
+    const { RANDOM_CUP_NAME, TRACK_LIST, randomCupTracks } = await import('../src/tracks/index');
+    const { chosenCup } = await import('../src/ui/menu');
+    const draws = Array.from({ length: 30 }, () => randomCupTracks());
+    for (const d of draws) {
+      expect(d).toHaveLength(4);
+      expect(new Set(d).size).toBe(4);
+      for (const t of d) expect(TRACK_LIST[t]).toBeDefined();
+    }
+    expect(new Set(draws.map((d) => d.join())).size).toBeGreaterThan(20);
+    // Past the last of the cups, the picker's choice is the Random Cup with its draw.
+    const { CUPS } = await import('../src/tracks/index');
+    const cup = chosenCup({ cup: CUPS.length, randomTracks: draws[0] } as Parameters<typeof chosenCup>[0]);
+    expect(cup).toEqual({ name: RANDOM_CUP_NAME, tracks: draws[0] });
+    expect(chosenCup({ cup: 0, randomTracks: draws[0] } as Parameters<typeof chosenCup>[0])).toBe(CUPS[0]);
+  });
+});

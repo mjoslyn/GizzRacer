@@ -23,6 +23,8 @@ export interface HazardPose {
   vz: number;
   /** Can hit karts right now. */
   active: boolean;
+  /** Which way across the road it goes, 1 (to the right) or -1: a gust's direction. 0 when it doesn't matter. */
+  side: number;
   /**
    * Kind-specific: boulder cycle stage (0..1), tumbleweed bounce height,
    * snake slither phase, dust devil spin.
@@ -94,6 +96,10 @@ export const WAVE_SPIN = 1.0;
  * - skimming a black hole's pull on a boost is a gravity assist
  * - a geyser erupting under a kart that hopped onto it is ridden up high, with a boost
  * - hop as Predator X snaps and you're over its jaws, on a boost
+ * - a crusher slamming down just behind you throws you on in its shockwave, a boost
+ * - hop as a gust blows and you catch the wind, a boost instead of a shove
+ * - hop onto a vesicle and it bounces you up high, for a trick
+ * - a prism beam in the fourth colour is a boost to drive through
  */
 /** A reward can't pay out again to the same kart for this long. */
 export const REWARD_COOLDOWN = 1.5;
@@ -134,6 +140,35 @@ const GOBLIN_RADIUS = 0.9;
 export const JAWS_LUNGE = 0.08;
 const JAWS_RADIUS = 3.2;
 const CRYSTAL_RADIUS = 1.4;
+/**
+ * Crusher cycle: hanging high (shaking loose from the warning on), the
+ * slam, sitting on the road as a block, and hauling back up.
+ */
+export const CRUSHER_STAGES = { shake: 0.3, slam: 0.46, landed: 0.52, rise: 0.78 } as const;
+export const CRUSHER_RADIUS = 2.4;
+/** How high a crusher hangs over the road. */
+export const CRUSHER_HANG = 7;
+/** Caught under it: spun out and this much of your speed kept. */
+export const CRUSHER_SLOW = 0.4;
+export const CRUSHER_SPIN = 1.2;
+/** Its shockwave reaches this far past the block, and throws a kart ahead of it on for a boost this long. */
+export const SHOCKWAVE_REACH = 3.5;
+export const SHOCKWAVE_BOOST = 0.8;
+/** A gust gathers (a warning) and then blows over these shares of its cycle. */
+export const GUST_STAGES = { gather: 0.5, blow: 0.68 } as const;
+/** How hard a gust shoves a kart across the road, m/s (it dies away like a bump). */
+export const GUST_SHOVE = 15;
+/** Hop as it blows and you catch the wind: a boost this long. */
+export const GUST_BOOST = 0.8;
+const VESICLE_RADIUS = 1.7;
+/** Driven into, a vesicle bounces you back, keeping this much of your speed; hopped onto, it bounces you this high (m/s). */
+export const VESICLE_SLOW = 0.55;
+export const VESICLE_BOUNCE = 11;
+/** A prism beam's four colours each get a quarter of its cycle, lit over this stretch of the quarter. */
+export const PRISM_LIT = [0.35, 0.7] as const;
+/** The fourth colour is the last quarter's: drive through it lit for a boost this long. */
+export const PRISM_BOOST = 0.9;
+export const PRISM_SPIN = 1.0;
 const WARMING = new Set<HazardKind>(['lasers', 'flameJets']);
 
 /** Throws a grounded kart up at `vy` with a trick window. */
@@ -168,11 +203,23 @@ const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds' | 'butterfli
   goblins: SNAKE_SPIN,
   jaws: SNAKE_SPIN,
   geysers: JET_SPIN,
+  crushers: CRUSHER_SPIN,
+  vesicles: ROLLER_SPIN,
+  prisms: PRISM_SPIN,
+  gusts: 0,
 };
 
 /** Kinds that fill the whole road across, on a rhythm: nothing to steer round, only to time. */
 export function isSheet(kind: HazardKind): boolean {
-  return kind === 'flameJets' || kind === 'dragonFire' || kind === 'lasers' || kind === 'waves';
+  return kind === 'flameJets' || kind === 'dragonFire' || kind === 'lasers' || kind === 'waves' || kind === 'gusts' || kind === 'prisms';
+}
+
+/** Which of a prism beam's four colours it is showing at cycle stage `u` (3 is the fourth colour), and whether it is lit. */
+export function prismColour(u: number): { colour: number; lit: boolean } {
+  const q = u * 4;
+  const colour = Math.min(3, Math.floor(q));
+  const w = q - colour;
+  return { colour, lit: w >= PRISM_LIT[0] && w < PRISM_LIT[1] };
 }
 
 /** Kinds that swirl a kart round rather than hitting it. */
@@ -206,7 +253,7 @@ export class HazardSystem {
       const n = 'at' in def ? def.at.length : def.count;
       for (let i = 0; i < n; i++) {
         this.slots.push({ def, index: i });
-        this.poses.push({ kind: def.kind, x: 0, y: 0, z: 0, heading: 0, radius: 0, ground: 0, ax: 0, az: 0, vx: 0, vz: 0, active: false, phase: 0 });
+        this.poses.push({ kind: def.kind, x: 0, y: 0, z: 0, heading: 0, radius: 0, ground: 0, ax: 0, az: 0, vx: 0, vz: 0, active: false, phase: 0, side: 0 });
       }
     }
     this.update(0);
@@ -226,10 +273,11 @@ export class HazardSystem {
         case 'iceBlocks':
         case 'stones':
         case 'crystals':
-        case 'goblins': {
+        case 'goblins':
+        case 'vesicles': {
           const s = def.from + ((def.to - def.from) * (i + 0.5)) / def.count;
           const roller = def.kind !== 'snakes';
-          const size = def.kind === 'iceBlocks' ? ICE_BLOCK_RADIUS : def.kind === 'stones' ? STONE_RADIUS : def.kind === 'goblins' ? GOBLIN_RADIUS : def.kind === 'crystals' ? CRYSTAL_RADIUS : ROLLER_RADIUS;
+          const size = def.kind === 'iceBlocks' ? ICE_BLOCK_RADIUS : def.kind === 'stones' ? STONE_RADIUS : def.kind === 'goblins' ? GOBLIN_RADIUS : def.kind === 'crystals' ? CRYSTAL_RADIUS : def.kind === 'vesicles' ? VESICLE_RADIUS : ROLLER_RADIUS;
           const hw = this.halfWidth(s) + (roller ? 1 : 2.5);
           const u = (((t + 10) / def.period + i * 0.37) % 1 + 1) % 1;
           // Triangle wave: edge to edge at a steady pace, then back.
@@ -279,6 +327,49 @@ export class HazardSystem {
           const u = (((t + 10) / def.period + i * 0.31) % 1 + 1) % 1;
           p.radius = this.halfWidth(at) + 1;
           p.active = u >= JET_STAGES.fire;
+          p.phase = u;
+          break;
+        }
+        case 'gusts': {
+          // Gathering at one edge (the warning), then blowing right across to the other; the next blows back.
+          const at = def.at[i];
+          this.place(p, at, 0, 0);
+          const tt = (t + 10) / def.period + i * 0.31;
+          const cycle = Math.floor(tt);
+          const u = tt - cycle;
+          p.radius = this.halfWidth(at) + 1;
+          p.active = u >= GUST_STAGES.blow;
+          p.phase = u;
+          p.side = cycle % 2 === 0 ? 1 : -1;
+          break;
+        }
+        case 'prisms': {
+          const at = def.at[i];
+          this.place(p, at, 0, 0);
+          const u = (((t + 10) / def.period + i * 0.37) % 1 + 1) % 1;
+          const { colour, lit } = prismColour(u);
+          p.radius = this.halfWidth(at) + 1;
+          // Red, green and blue hurt; the fourth colour is a boost (collide pays it out).
+          p.active = lit;
+          p.side = colour === 3 ? 1 : 0;
+          p.phase = u;
+          break;
+        }
+        case 'crushers': {
+          // Masonry hanging over the road, alternating sides, shaking loose, then slamming down and hauling back up.
+          const at = def.at[i];
+          const tt = t + 10 + (i * def.period) / def.at.length;
+          const cycle = Math.floor(tt / def.period);
+          const u = tt / def.period - cycle;
+          const lat = this.halfWidth(at) * 0.42 * ((cycle + i) % 2 === 0 ? 1 : -1);
+          const C = CRUSHER_STAGES;
+          let lift = CRUSHER_HANG;
+          if (u >= C.slam && u < C.landed) lift = CRUSHER_HANG * (1 - ((u - C.slam) / (C.landed - C.slam)) ** 2);
+          else if (u >= C.landed && u < C.rise) lift = 0;
+          else if (u >= C.rise) lift = CRUSHER_HANG * Math.min(1, (u - C.rise) / (1 - C.rise) * 1.5);
+          this.place(p, at, lat, lift);
+          p.radius = CRUSHER_RADIUS;
+          p.active = u >= C.slam && u < C.rise;
           p.phase = u;
           break;
         }
@@ -401,6 +492,10 @@ export class HazardSystem {
           if (p.phase >= JET_STAGES.sputter && this.distance(p, s) <= p.radius + KART_RADIUS) this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, GATE_BOOST)));
           continue;
         }
+        if (p.kind === 'crushers') {
+          this.crush(hit, p, s);
+          continue;
+        }
         if (!p.active) continue;
         const d = this.distance(p, s);
         if (d > p.radius + KART_RADIUS) continue;
@@ -432,6 +527,38 @@ export class HazardSystem {
             this.reward(hit, s, p.kind, () => {});
           }
           if (d > HOLE_CORE + KART_RADIUS) continue;
+        }
+        if (p.kind === 'gusts') {
+          // Hop as it blows and you catch the wind; otherwise it shoves you across the road, once a gust.
+          if (s.hopAge < HOP_WINDOW || !s.grounded) this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, GUST_BOOST)));
+          else if (!this.cooldown.has(s)) {
+            this.cooldown.set(s, HIT_COOLDOWN);
+            const rx = -Math.cos(p.heading);
+            const rz = Math.sin(p.heading);
+            s.extX += rx * p.side * GUST_SHOVE;
+            s.extZ += rz * p.side * GUST_SHOVE;
+            hit.push({ kart: s, by: p.kind });
+          }
+          continue;
+        }
+        if (p.kind === 'prisms' && p.side === 1) {
+          // The fourth colour: a boost.
+          this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, PRISM_BOOST)));
+          continue;
+        }
+        if (p.kind === 'vesicles') {
+          // Hopped onto, it bounces you up high; driven into, it bounces you back.
+          if (s.hopAge < HOP_WINDOW || !s.grounded) {
+            this.reward(hit, s, p.kind, () => launch(s, VESICLE_BOUNCE));
+            continue;
+          }
+          this.pushOut(p, s);
+          if (this.cooldown.has(s)) continue;
+          this.cooldown.set(s, HIT_COOLDOWN);
+          s.speed *= VESICLE_SLOW;
+          s.vy = Math.max(s.vy, 3);
+          hit.push({ kart: s, by: p.kind });
+          continue;
         }
         if (p.kind === 'geysers') {
           // An eruption throws you up whatever you do: hopped onto, you ride it high on a boost; caught, it costs you speed.
@@ -478,6 +605,9 @@ export class HazardSystem {
       const falling = isFalling(p.kind);
       if (p.kind === 'lightning' || p.kind === 'geysers' || p.kind === 'jaws') {
         if (p.phase < BOULDER_STAGES.fall * 0.5 || p.phase > BOULDER_STAGES.land + LIGHTNING_STRIKE) continue;
+      } else if (p.kind === 'crushers') {
+        // From when it starts shaking loose until it is hauled back up out of the way.
+        if (p.phase < CRUSHER_STAGES.shake || p.phase > CRUSHER_STAGES.rise + 0.05) continue;
       } else if (falling ? p.phase > BOULDER_STAGES.crumble || p.phase < BOULDER_STAGES.fall * 0.5 : !p.active) continue;
       if (p.kind === 'snakes') {
         // The body trails the head: aim to miss its middle.
@@ -487,6 +617,35 @@ export class HazardSystem {
       } else {
         out.push({ x: p.x, z: p.z, r: p.radius, vx: p.vx, vz: p.vz });
       }
+    }
+  }
+
+  /**
+   * A crusher: caught under it as it slams, you're squashed; just ahead of
+   * it, its shockwave throws you on; once it's down it's a block to drive round.
+   */
+  private crush(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+    if (!p.active) return;
+    const d = Math.hypot(s.x - p.x, s.z - p.z);
+    const C = CRUSHER_STAGES;
+    const slamming = p.phase >= C.slam && p.phase < C.landed + 0.02;
+    if (d <= p.radius + KART_RADIUS) {
+      if (!slamming) {
+        this.pushOut(p, s);
+        return;
+      }
+      if (this.cooldown.has(s)) return;
+      this.cooldown.set(s, HIT_COOLDOWN);
+      if (spinOut(s, CRUSHER_SPIN)) {
+        s.speed *= CRUSHER_SLOW;
+        hit.push({ kart: s, by: p.kind });
+      }
+      return;
+    }
+    // The shockwave, as it lands: only for a kart past it, going away.
+    const ahead = (s.x - p.x) * Math.sin(p.heading) + (s.z - p.z) * Math.cos(p.heading) > 0;
+    if (p.phase >= C.landed - 0.01 && p.phase < C.landed + 0.03 && ahead && d <= p.radius + KART_RADIUS + SHOCKWAVE_REACH) {
+      this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, SHOCKWAVE_BOOST)));
     }
   }
 

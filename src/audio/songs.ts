@@ -13,7 +13,7 @@ export const TRACK_SONGS: Record<string, TrackSong> = {
   'infinite-loop-speedway': { title: 'Robot Stop', album: 'Nonagon Infinity', year: 2016 },
   'rattlesnake-run': { title: 'Rattlesnake', album: 'Flying Microtonal Banana', year: 2017 },
   'volcano-fortress': { title: 'Magma', album: 'Ice, Death, Planets, Lungs, Mushrooms and Lava', year: 2022 },
-  'polygondwanaland-jungle': { title: 'Crumbling Castle', album: 'Polygondwanaland', year: 2017 },
+  'polygondwanaland-jungle': { title: 'Polygondwanaland', album: 'Polygondwanaland', year: 2017 },
   'fishies-lagoon': { title: 'Fishing for Fishies', album: 'Fishing for Fishies', year: 2019 },
   'ice-v-glacier': { title: 'Ice V', album: 'Ice, Death, Planets, Lungs, Mushrooms and Lava', year: 2022 },
   'cyboogie-city': { title: 'Cyboogie', album: 'Fishing for Fishies', year: 2019 },
@@ -30,6 +30,10 @@ export const TRACK_SONGS: Record<string, TrackSong> = {
   'kepler-22b': { title: 'Kepler-22b', album: 'Omnium Gatherum', year: 2022 },
   'goblin-garden': { title: 'The Garden Goblin', album: 'Omnium Gatherum', year: 2022 },
   'predator-x': { title: 'Predator X', album: 'Omnium Gatherum', year: 2022 },
+  'crumbling-castle': { title: 'Crumbling Castle', album: 'Polygondwanaland', year: 2017 },
+  'castle-in-the-air': { title: 'The Castle in the Air', album: 'Polygondwanaland', year: 2017 },
+  'inner-cell': { title: 'Inner Cell', album: 'Polygondwanaland', year: 2017 },
+  tetrachromacy: { title: 'Tetrachromacy', album: 'Polygondwanaland', year: 2017 },
 };
 
 /**
@@ -41,7 +45,7 @@ export const TRACK_SONGS: Record<string, TrackSong> = {
  */
 export const TRANSCRIBED: Record<string, { recording: string; release: string }> = {
   title: { recording: 'Ice V', release: "Live At Red Rocks '22" },
-  'polygondwanaland-jungle': { recording: 'Crumbling Castle', release: 'Polygondwanaland (2017), the album master' },
+  'crumbling-castle': { recording: 'Crumbling Castle', release: 'Polygondwanaland (2017), the album master' },
   'magenta-mountain': { recording: 'Magenta Mountain', release: "Live At Red Rocks '22" },
   'kepler-22b': { recording: 'Kepler-22b', release: "Live at Field of Vision '25, the soundboard mix" },
   'goblin-garden': { recording: 'The Garden Goblin', release: "Live At Red Rocks '22" },

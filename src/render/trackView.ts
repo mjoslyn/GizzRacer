@@ -8,6 +8,7 @@ import { THEMES, type Theme } from './themes';
 import { CURB_WIDTH, roadPaint, trackDetail } from './trackDetail';
 import { colonyFeature, colonyGate, cosmosFeature, plainsFeature, rodGate, stormWeather, voidEye } from './apocalypse';
 import { alienSeaFeature, crystalGate, gardenFeature, goblinGate, jawsGate, keplerArch, magentaPeak, peaksFeature, shoreFeature } from './omnium';
+import { airCastle, castleGate, castleKeep, cellGate, cloudGate, cloudsFeature, cytoplasmFeature, nucleus, prismEye, prismGate, ruinsFeature, skyTower, spectrumFeature } from './polygondwanaland';
 import { airstripFeature, groveFeature, isleFeature, phantomArch, runwayGate, seaFeature, treeGate, worldTree, wreckGate } from './phantom';
 
 /** Meters of road per texture repeat along the track. */
@@ -69,6 +70,10 @@ function materials(theme: Theme): Materials {
     alienSea: () => tex.stoneTexture([70, 50, 110], [150, 120, 200]),
     garden: () => tex.stoneTexture([120, 110, 90], [190, 180, 150]),
     shore: () => tex.stoneTexture([46, 46, 50], [110, 106, 100]),
+    ruins: () => tex.stoneTexture([62, 60, 64], [126, 122, 120]),
+    clouds: () => tex.stoneTexture([200, 190, 180], [250, 246, 236]),
+    cytoplasm: () => tex.stoneTexture([130, 50, 110], [230, 140, 190]),
+    spectrum: () => tex.stoneTexture([30, 26, 60], [110, 100, 180]),
   };
   const neon = tex.neonRoadTexture();
   const rainbow = tex.rainbowTexture();
@@ -92,6 +97,16 @@ function materials(theme: Theme): Materials {
       })(),
       reef: lambert(tex.reefRoadTexture()),
       paving: lambert(tex.pavingTexture()),
+      flagstone: lambert(tex.flagstoneTexture()),
+      cloud: (() => {
+        const map = tex.cloudRoadTexture();
+        return lambert(map, { emissive: 0xffffff, emissiveMap: map, emissiveIntensity: 0.2 });
+      })(),
+      membrane: new THREE.MeshPhongMaterial({ map: tex.membraneTexture(), shininess: 70, specular: 0x8a4a6a }),
+      prism: (() => {
+        const map = tex.prismRoadTexture();
+        return new THREE.MeshPhongMaterial({ map, emissive: 0xffffff, emissiveMap: map, emissiveIntensity: 0.15, shininess: 60, specular: 0x8a8aa0 });
+      })(),
       cosmic: (() => {
         const map = tex.cosmicRoadTexture();
         return lambert(map, { emissive: 0xffffff, emissiveMap: map, emissiveIntensity: 0.55 });
@@ -193,6 +208,15 @@ export function buildTrackView(track: Track): TrackView {
     if (lm.kind === 'keplerArch') group.add(keplerArch(ribbon, s, animated));
     if (lm.kind === 'goblinGate') group.add(goblinGate(ribbon, s, animated));
     if (lm.kind === 'jawsGate') group.add(jawsGate(ribbon, s, animated));
+    if (lm.kind === 'castleGate') group.add(castleGate(ribbon, s, animated));
+    if (lm.kind === 'castleKeep') group.add(castleKeep(ribbon, s, lm.lateral ?? 0, animated));
+    if (lm.kind === 'cloudGate') group.add(cloudGate(ribbon, s, animated));
+    if (lm.kind === 'airCastle') group.add(airCastle(ribbon, s, lm.lateral ?? 0, animated));
+    if (lm.kind === 'skyTower') group.add(skyTower(ribbon, s, lm.lateral ?? 0));
+    if (lm.kind === 'cellGate') group.add(cellGate(ribbon, s, animated));
+    if (lm.kind === 'nucleus') group.add(nucleus(ribbon, s, animated));
+    if (lm.kind === 'prismGate') group.add(prismGate(ribbon, s, animated));
+    if (lm.kind === 'prismEye') group.add(prismEye(ribbon, s, lm.lateral ?? 0, animated));
     if (lm.kind === 'dragonFlight') {
       const d = dragonFlight(track.def.bounds);
       group.add(d.group);
@@ -1281,10 +1305,10 @@ function decor(track: Track, mats: Materials, theme: Theme, animated: ((time: nu
     ribbons.every((r) => nearestOnSpline(r.spline, x, z).distance > Math.max(...r.halfWidth) + 8) &&
     track.def.pits.every((p) => !inPit({ ...p, halfWidth: p.halfWidth + 6, halfLength: p.halfLength + 6 }, x, z));
 
-  const rockCount = { jungle: 120, city: 0, sky: 0, lagoon: 60, glacier: 140, wasteland: 150, colony: 170, plains: 60, cosmos: 0, isle: 90, airstrip: 40, grove: 90, sea: 70, peaks: 120, alienSea: 40, garden: 30, shore: 110 }[theme.decor as string] ?? 220;
-  const featureCount = { jungle: 150, meadow: 110, lagoon: 120, glacier: 160, city: 90, sky: 90, wasteland: 110, colony: 110, plains: 140, cosmos: 110, isle: 140, airstrip: 110, grove: 170, sea: 120, peaks: 140, alienSea: 150, garden: 170, shore: 140 }[theme.decor as string] ?? 70;
+  const rockCount = { jungle: 120, city: 0, sky: 0, lagoon: 60, glacier: 140, wasteland: 150, colony: 170, plains: 60, cosmos: 0, isle: 90, airstrip: 40, grove: 90, sea: 70, peaks: 120, alienSea: 40, garden: 30, shore: 110, ruins: 160, clouds: 0, cytoplasm: 60, spectrum: 40 }[theme.decor as string] ?? 220;
+  const featureCount = { jungle: 150, meadow: 110, lagoon: 120, glacier: 160, city: 90, sky: 90, wasteland: 110, colony: 110, plains: 140, cosmos: 110, isle: 140, airstrip: 110, grove: 170, sea: 120, peaks: 140, alienSea: 150, garden: 170, shore: 140, ruins: 120, clouds: 110, cytoplasm: 160, spectrum: 150 }[theme.decor as string] ?? 70;
   // Sky and void scenery floats at all heights; city towers need room off the road.
-  const floating = theme.decor === 'sky' || theme.decor === 'cosmos';
+  const floating = theme.decor === 'sky' || theme.decor === 'cosmos' || theme.decor === 'clouds';
   const rocks = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 1), mats.rock, rockCount);
   const feature = featureBuilder(theme, mats, animated);
   const m = new THREE.Matrix4();
@@ -1360,6 +1384,14 @@ function featureBuilder(theme: Theme, mats: Materials, animated: ((time: number)
       return gardenFeature(animated);
     case 'shore':
       return shoreFeature(mats.rock, animated);
+    case 'ruins':
+      return ruinsFeature(mats.rock, animated);
+    case 'clouds':
+      return cloudsFeature(animated);
+    case 'cytoplasm':
+      return cytoplasmFeature(animated);
+    case 'spectrum':
+      return spectrumFeature(animated);
     case 'lagoon': {
       const bark = lambert(0x9a7a52);
       const frond = lambert(0x3aa04a, { side: THREE.DoubleSide, flatShading: true });

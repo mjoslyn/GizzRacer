@@ -293,14 +293,14 @@
     "loopSamples": 1512000,
     "sampleRate": 44100
   },
-  "polygondwanaland-jungle-remix": {
+  "crumbling-castle-remix": {
     "title": "crumbling castle (remix)",
     "bpm": 108,
     "bars": 27,
     "loopSamples": 2315250,
     "sampleRate": 44100
   },
-  "polygondwanaland-jungle-remix-final-lap": {
+  "crumbling-castle-remix-final-lap": {
     "title": "crumbling castle (remix, final lap)",
     "bpm": 116,
     "bars": 27,

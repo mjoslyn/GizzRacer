@@ -386,6 +386,11 @@ export class Sfx {
     // A geyser goes up in a roar of water; Predator X snaps with a bellow.
     if (by === 'geysers') this.whoosh(0.9, 300, 2600, 0.35);
     if (by === 'jaws') this.tone(70, 0.7, 'sawtooth', 0.14, 40, 0, true);
+    // Masonry slamming down is a deep crunch; a gust a rush of air; a vesicle a rubbery boing; a prism beam a glassy zap.
+    if (by === 'crushers') this.hit(0.6, 70, 0.8);
+    if (by === 'gusts') this.whoosh(0.7, 500, 2200, 0.3);
+    if (by === 'vesicles') this.tone(180, 0.35, 'sine', 0.12, 520);
+    if (by === 'prisms') this.tone(2600, 0.25, 'triangle', 0.07, 900);
     // A wave breaking over you: a crash of white noise; a glider comes in with a whistle of wind.
     if (by === 'waves') this.whoosh(0.8, 2400, 300, 0.35);
     if (by === 'gliders') this.whoosh(0.5, 1800, 500, 0.2);

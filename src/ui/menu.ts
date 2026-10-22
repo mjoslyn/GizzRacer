@@ -1,7 +1,7 @@
 import type { SavedTrack } from '../core/savedTracks';
 import { ENGINE_CLASSES, RACERS, type EngineClass, type RacerDef } from '../physics/racers';
 import { GEN_COMPLEXITY_MAX, GEN_LENGTHS, GEN_THEMES, GEN_THEME_NAMES, trackName, type GenParams } from '../tracks/generator';
-import { CUPS, TRACK_LIST } from '../tracks/index';
+import { CUPS, RANDOM_CUP_NAME, TRACK_LIST, randomCupTracks } from '../tracks/index';
 
 export type RaceMode = 'grandPrix' | 'single' | 'timeTrial' | 'generator' | 'online';
 
@@ -23,8 +23,10 @@ export interface GenChoice {
 export interface MenuChoice {
   mode: RaceMode;
   track: number;
-  /** The Grand Prix cup (index into CUPS). */
+  /** The Grand Prix cup: an index into CUPS, or CUPS.length for the Random Cup. */
   cup: number;
+  /** The Random Cup's tracks, drawn each time the picker lands on it. */
+  randomTracks: number[];
   gen: GenChoice;
   racer: RacerDef;
   engine: EngineClass;
@@ -35,6 +37,11 @@ const STAT_NAMES = ['speed', 'accel', 'weight', 'handling'] as const;
 const LENGTH_NAMES = { short: 'Short', medium: 'Medium', long: 'Long' };
 
 export const newSeed = () => Math.floor(Math.random() * 1e9);
+
+/** The cup a Grand Prix choice is for: one of CUPS, or the Random Cup and its draw. */
+export function chosenCup(c: MenuChoice): { name: string; tracks: number[] } {
+  return c.cup < CUPS.length ? CUPS[c.cup] : { name: RANDOM_CUP_NAME, tracks: c.randomTracks };
+}
 
 /** Mode, track, racer and class picker (and the track generator's dials). Keyboard, gamepad-ish arrows, mouse and touch. */
 export class Menu {
@@ -145,7 +152,11 @@ export class Menu {
     if (row === 'mode') {
       c.mode = step(MODES, c.mode);
       this.row = 0;
-    } else if (row === 'track' && c.mode === 'grandPrix') c.cup = (c.cup + dir + CUPS.length) % CUPS.length;
+    } else if (row === 'track' && c.mode === 'grandPrix') {
+      // The cups, then the Random Cup, which draws four new tracks every time you land on it.
+      c.cup = (c.cup + dir + CUPS.length + 1) % (CUPS.length + 1);
+      if (c.cup === CUPS.length) c.randomTracks = randomCupTracks();
+    }
     else if (row === 'gen') {
       // New, then each saved track; landing on New rolls a fresh one.
       const saved = this.saved();
@@ -186,7 +197,7 @@ export class Menu {
         ${line('mode', 'Mode', MODE_NAMES[c.mode])}
         ${
           c.mode === 'grandPrix'
-            ? line('track', 'Cup', CUPS[c.cup].name, `<div class="menu-cup-tracks">${CUPS[c.cup].tracks.map((t) => TRACK_LIST[t].name).join(' &middot; ')}</div>`)
+            ? line('track', 'Cup', chosenCup(c).name, `<div class="menu-cup-tracks">${chosenCup(c).tracks.map((t) => TRACK_LIST[t].name).join(' &middot; ')}</div>`)
             : c.mode === 'online'
               ? `<div class="menu-row menu-cup"><div class="menu-label">Rooms</div><div class="menu-value">Race friends with a room code</div></div>`
               : c.mode === 'generator'
