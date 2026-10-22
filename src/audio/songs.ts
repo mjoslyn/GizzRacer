@@ -46,6 +46,10 @@ export const TRANSCRIBED: Record<string, { recording: string; release: string }>
   'kepler-22b': { recording: 'Kepler-22b', release: "Live at Field of Vision '25, the soundboard mix" },
   'goblin-garden': { recording: 'The Garden Goblin', release: "Live At Red Rocks '22" },
   'predator-x': { recording: 'Predator X', release: "Live At Red Rocks '22" },
+  'phantom-island': { recording: 'Phantom Island', release: "Live in New York '25, the soundboard mix" },
+  'deadstick-drop': { recording: 'Deadstick', release: "Live in New York '25, the soundboard mix" },
+  'panpsych-grove': { recording: 'Panpsych', release: "Live in New York '25, the soundboard mix" },
+  'sea-of-doubt': { recording: 'Sea of Doubt', release: "Live in New York '25, the soundboard mix" },
 };
 
 const FINAL = '-final-lap';
