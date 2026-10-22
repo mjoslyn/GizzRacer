@@ -10,7 +10,7 @@ import { Track, inPit, type BranchDef, type HazardDef, type ItemBoxRow, type Lan
  */
 
 export type GenTheme = TrackDef['theme'];
-export const GEN_THEMES: readonly GenTheme[] = ['desert', 'speedway', 'volcano', 'jungle', 'lagoon', 'glacier', 'neon', 'dream', 'petro', 'mars', 'storm', 'void', 'phantom', 'airfield', 'grove', 'doubt', 'magenta', 'kepler', 'goblin', 'primeval', 'castle', 'skycastle', 'cell', 'prism'];
+export const GEN_THEMES: readonly GenTheme[] = ['desert', 'speedway', 'volcano', 'jungle', 'lagoon', 'glacier', 'neon', 'dream', 'petro', 'mars', 'storm', 'void', 'phantom', 'airfield', 'grove', 'doubt', 'magenta', 'kepler', 'goblin', 'primeval', 'castle', 'skycastle', 'cell', 'prism', 'factory', 'gamma', 'carrion', 'wah'];
 export const GEN_THEME_NAMES: Record<GenTheme, string> = {
   desert: 'Desert',
   speedway: 'Speedway',
@@ -36,6 +36,10 @@ export const GEN_THEME_NAMES: Record<GenTheme, string> = {
   skycastle: 'Castle in the Air',
   cell: 'Inner Cell',
   prism: 'Tetrachromacy',
+  factory: 'Robot Stop',
+  gamma: 'Gamma Knife',
+  carrion: 'People-Vultures',
+  wah: 'Wah Wah',
 };
 export type GenLength = 'short' | 'medium' | 'long';
 export const GEN_LENGTHS: readonly GenLength[] = ['short', 'medium', 'long'];
@@ -383,6 +387,52 @@ const PALETTES: Record<GenTheme, Palette> = {
     tallWalls: 5,
     places: ['Spectrum', 'Prism', 'Cone Cell', 'Ultraviolet', 'Refraction', 'Mirror', 'Afterimage', 'Iris', 'Fourth Colour'],
     music: { lap: 'tetrachromacy', finalLap: 'tetrachromacy-final-lap' },
+  },
+  factory: {
+    surface: 'steel',
+    deck: 'steel',
+    alt: 'asphalt',
+    liquid: 'lava',
+    hazards: ['robots'],
+    start: 'factoryGate',
+    landmarks: ['factoryGate'],
+    tallWalls: 6,
+    places: ['Assembly', 'Conveyor', 'Press', 'Smelter', 'Scrapyard', 'Robot', 'Piston', 'Foundry', 'Loading Bay'],
+    music: { lap: 'robot-stop', finalLap: 'robot-stop-final-lap' },
+  },
+  gamma: {
+    surface: 'chrome',
+    deck: 'chrome',
+    alt: 'chrome',
+    liquid: 'water',
+    hazards: ['gammaRays'],
+    start: 'gammaGate',
+    landmarks: ['gammaGate'],
+    tallWalls: 5,
+    places: ['Collimator', 'Cortex', 'Scalpel', 'Isotope', 'Synapse', 'Lesion', 'Cranial', 'Focal', 'Theatre'],
+    music: { lap: 'gamma-knife', finalLap: 'gamma-knife-final-lap' },
+  },
+  carrion: {
+    surface: 'scorched',
+    deck: 'boards',
+    alt: 'sand',
+    hazards: ['vultures', 'tumbleweeds'],
+    start: 'carrionGate',
+    landmarks: ['carrionGate'],
+    tallWalls: 4,
+    places: ['Carcass', 'Scavenger', 'Ribcage', 'Thermal', 'Bone', 'Gizzard', 'Circling', 'Talon', 'Dry Lake'],
+    music: { lap: 'people-vultures', finalLap: 'people-vultures-final-lap' },
+  },
+  wah: {
+    surface: 'fret',
+    deck: 'fret',
+    alt: 'neon',
+    hazards: ['wahs'],
+    start: 'wahGate',
+    landmarks: ['wahGate'],
+    tallWalls: 5,
+    places: ['Pedalboard', 'Heel Down', 'Toe Down', 'Sweep', 'Resonance', 'Feedback', 'Filter', 'Octave', 'Fuzz'],
+    music: { lap: 'wah-wah', finalLap: 'wah-wah-final-lap' },
   },
 };
 
@@ -1084,7 +1134,13 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
         break;
       case 'gusts':
       case 'prisms':
+      case 'robots':
+      case 'wahs':
         hazards.push({ kind, at: at(count - 1), period: 4 });
+        break;
+      case 'gammaRays':
+      case 'vultures':
+        hazards.push({ kind, at: at(count - 1), period: 4.5 });
         break;
       case 'vines':
         hazards.push({ kind, at: at(count), period: 3.6 });

@@ -8,16 +8,17 @@ No install and no account. It will always be free.
 
 ## What's in it
 
-- **24 tracks in 6 cups**, plus a Random Cup of four drawn from them,, each built around an album or a song
+- **28 tracks in 7 cups**, plus a Random Cup of four drawn from them, each built around an album or a song
   - **Nonagon Cup:** Infinite Loop Speedway, Rattlesnake Run, Volcano Fortress, Polygondwanaland Jungle
   - **Microtonal Cup:** Fishies Lagoon, Ice V Glacier, Cyboogie City, Butterfly 3000 Skyway
   - **Apocalypse Cup:** Hell on Mars, Supercell, Murder of the Universe, Petrodragonic Apocalypse
   - **Phantom Island Cup:** Phantom Island, Deadstick Drop, Panpsych Grove, Sea of Doubt
   - **Omnium Gatherum Cup:** Magenta Mountain, Kepler-22b, Goblin Garden, Predator X
   - **Polygondwanaland Cup:** Crumbling Castle (on the N64 castle's layout), The Castle in the Air, Inner Cell, Tetrachromacy
+  - **Nonagon Infinity Cup:** Robot Stop, Gamma Knife, People-Vultures, Wah Wah
 - **Roller-coaster tracks:** climbs onto pillared decks, plunges you fly off, canyons sunk into the ground, and a causeway that dives under the lagoon
 - **Shortcuts on every track** that come and go by lap: a phantom causeway that only appears on lap 2, a snake that shuts its jaws, a tide that floods the boardwalk, a wall of fire that only drops on the final lap. Trick kickers on the straights and double item boxes on the risky lines
-- **Hazards** from the songs: rattlesnakes, flame jets, tornadoes, black holes, dragons breathing fire across a gullet, planes gliding in with their propellers stopped, waves breaking over a causeway, garden goblins, geysers, a pliosaur snapping over the road's edge, castle masonry slamming down, gusts over the clouds, vesicles and prism beams in four colours. Use them well and they help: surf the wave, catch the fourth colour, hop onto a crashed plane for a ramp, ram a boulder on a boost, slip through a laser gate as it warms up
+- **Hazards** from the songs: rattlesnakes, flame jets, tornadoes, black holes, dragons breathing fire across a gullet, planes gliding in with their propellers stopped, waves breaking over a causeway, garden goblins, geysers, a pliosaur snapping over the road's edge, castle masonry slamming down, gusts over the clouds, vesicles and prism beams in four colours, robots that stop dead in the road, a gamma knife's beams closing on one point, vultures diving at the road and wah pedals stamping down on it. Use them well and they help: surf the wave, catch the fourth colour, hop onto a crashed plane for a ramp, ram a boulder on a boost, slip through a laser gate as it warms up, slip through the gamma knife's crosshair as it closes, hop as a vulture swoops and it carries you
 - **20 racers**, each with their own vehicle: the Lizard Wizard, Han-Tyumi in a fishing dinghy, a flying Gila monster, Beowulf's Witch, the Fuzz Golem, Arlo the poodle in a dog bed, and more. The band are in it too: Amby, Cavs, Cookie, Jason, Joey, Lukey and Stu
 - **13 items**, each with a Gizzverse name:
   - Mind Fuzz, Microtonal Banana, Nuclear Fusion, Big Fig Wasp, Horology and the Woo Cannon
@@ -59,7 +60,7 @@ On phones, turn the phone sideways. On iPhone, use Share, then Add to Home Scree
 ## Credits
 
 - GizzRacer is an unofficial fan game, made with love for King Gizzard & the Lizard Wizard and their fans
-- The music is written and remixed in [seqbaby](https://playseqbaby.com). The Polygondwanaland Cup, Polygondwanaland Jungle, Omnium Gatherum Cup and title remixes are transcribed from the band's own recordings (Polygondwanaland and their live bootlegs), which King Gizzard & the Lizard Wizard released for anyone to use
+- The music is written and remixed in [seqbaby](https://playseqbaby.com). The Polygondwanaland Cup, Polygondwanaland Jungle, Omnium Gatherum Cup, Phantom Island Cup, Nonagon Infinity Cup and title remixes are transcribed from the band's own recordings (Polygondwanaland and their live bootlegs), which King Gizzard & the Lizard Wizard released for anyone to use
 - Lettering in Metal Mania by Open Window (SIL Open Font License, `public/fonts/OFL.txt`)
 - Built with [Three.js](https://threejs.org). Online play runs on [PartyKit](https://www.partykit.io) and Cloudflare.
 

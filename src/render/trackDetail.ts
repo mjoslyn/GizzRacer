@@ -187,6 +187,33 @@ const STYLES: Record<DecorKind, DetailStyle> = {
     boards: { words: ['TETRACHROMACY', 'FOURTH COLOUR', 'SEE IT', 'PRISM'], bg: ['#1a0a3a', '#3a0a5a'], fg: '#e0c0ff' },
     crowd: true,
   },
+  foundry: {
+    edge: { kind: 'lamp', height: 3.4, spacing: 15, color: 0x3a3e46, stripe: 0xe07020 },
+    light: 0xffa040,
+    cover: { shape: 'pebble', colors: [0x3a3e46, 0x6a6e76, 0xe07020, 0x1a1a1c], count: 1100 },
+    boards: { words: ['ROBOT STOP', 'LOOSEN UP', 'TIME TO DROP', 'NONAGON'], bg: ['#1a1a1c', '#3a2a14'], fg: '#ff9020' },
+    crowd: true,
+  },
+  theatre: {
+    edge: { kind: 'pole', height: 1.6, spacing: 12, color: 0xe0e8f0, stripe: 0x40ff80 },
+    light: 0xa0ffc0,
+    cover: { shape: 'crystal', colors: [0x60ff90, 0x30c060, 0xb080ff, 0xe0ffe8], count: 1000 },
+    boards: { words: ['GAMMA KNIFE', 'CUT IT OUT', 'PIERCED', 'MY MIND'], bg: ['#08141a', '#0a3a30'], fg: '#80ffb0' },
+    crowd: true,
+  },
+  boneyard: {
+    edge: { kind: 'fence', height: 1.1, spacing: 10, color: 0x4a3a2a, stripe: 0xe8e0d0 },
+    cover: { shape: 'tuft', colors: [0xb89860, 0x8a7040, 0xe8e0d0, 0x6a4a30], count: 1500 },
+    boards: { words: ['PEOPLE-VULTURES', 'CIRCLING', 'CARCASS', 'PICK IT CLEAN'], bg: ['#2a1408', '#6a3a1a'], fg: '#e8c070' },
+    crowd: true,
+  },
+  pedalboard: {
+    edge: { kind: 'lamp', height: 3, spacing: 14, color: 0x1a1416, stripe: 0xd83a7a },
+    light: 0xff80d0,
+    cover: { shape: 'pebble', colors: [0xd83a7a, 0x3ab0d8, 0xe0b030, 0x8a3ad8], count: 1100 },
+    boards: { words: ['WAH WAH', 'HEEL DOWN', 'TOE DOWN', 'SWEEP IT'], bg: ['#1a0a2a', '#4a1a6a'], fg: '#ffd040' },
+    crowd: true,
+  },
   sky: {
     edge: { kind: 'star', height: 1.4, spacing: 14, color: 0xffe8a0, stripe: 0xffffff },
     light: 0xfff0ff,
@@ -260,7 +287,7 @@ export function roadPaint(ribbon: Ribbon, decor: DecorKind): THREE.Group {
     line[i] = -Math.max(-0.55, Math.min(0.55, (sum / 25) * 14));
   }
   const paintable = new Set(['asphalt']);
-  const wearable = new Set(['asphalt', 'salt', 'rock', 'sand', 'boards', 'regolith', 'wet', 'paving', 'reef', 'flagstone', 'membrane']);
+  const wearable = new Set(['asphalt', 'salt', 'rock', 'sand', 'boards', 'regolith', 'wet', 'paving', 'reef', 'flagstone', 'membrane', 'steel', 'scorched', 'fret']);
   for (let i = 0; i < segs; i++) {
     const j = (i + 1) % n;
     const sMid = (sp.dist[i] + (j === 0 ? sp.length : sp.dist[j])) / 2;

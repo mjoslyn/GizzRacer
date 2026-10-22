@@ -391,6 +391,14 @@ export class Sfx {
     if (by === 'gusts') this.whoosh(0.7, 500, 2200, 0.3);
     if (by === 'vesicles') this.tone(180, 0.35, 'sine', 0.12, 520);
     if (by === 'prisms') this.tone(2600, 0.25, 'triangle', 0.07, 900);
+    // A robot walks into you with a clank; the gamma knife is a glassy zap; a vulture a screech; a wah pedal a stamp and a sweep.
+    if (by === 'robots') this.tone(240, 0.3, 'square', 0.08, 120);
+    if (by === 'gammaRays') this.tone(3400, 0.35, 'sawtooth', 0.06, 700);
+    if (by === 'vultures') this.tone(1900, 0.4, 'sawtooth', 0.07, 1100);
+    if (by === 'wahs') {
+      this.hit(0.4, 120, 0.6);
+      this.tone(320, 0.45, 'sawtooth', 0.09, 1500);
+    }
     // A wave breaking over you: a crash of white noise; a glider comes in with a whistle of wind.
     if (by === 'waves') this.whoosh(0.8, 2400, 300, 0.35);
     if (by === 'gliders') this.whoosh(0.5, 1800, 500, 0.2);

@@ -10,10 +10,10 @@ import { GEN_COMPLEXITY_MAX, GEN_LENGTHS, GEN_THEMES, SHORTCUT_JUNCTION, generat
 import { nearestOnSpline, pointAt } from '../src/tracks/spline';
 import { Track, inPit, type Ribbon, type TrackDef } from '../src/tracks/track';
 
-/** Every theme, twist and length, a few seeds each. */
-const DIALS: GenParams[] = GEN_THEMES.flatMap((theme, t) =>
+/** Every theme, twist and length, a few seeds each (`k` says which of the two seed sets a dial is from). */
+const DIALS: (GenParams & { k: number })[] = GEN_THEMES.flatMap((theme, t) =>
   Array.from({ length: GEN_COMPLEXITY_MAX }, (_, i) => i + 1).flatMap((complexity) =>
-    GEN_LENGTHS.flatMap((length, l) => [0, 1].map((k) => ({ seed: 100 + t * 37 + complexity * 11 + l * 5 + k * 1000, theme, complexity, length }))),
+    GEN_LENGTHS.flatMap((length, l) => [0, 1].map((k) => ({ seed: 100 + t * 37 + complexity * 11 + l * 5 + k * 1000, theme, complexity, length, k }))),
   ),
 );
 const BUILT = DIALS.map((p) => ({ p, def: generateTrack(p) }));
@@ -272,7 +272,8 @@ describe('generated tracks: kickers, double boxes and shortcuts', () => {
   }, 60_000);
 
   describe.each(GEN_THEMES)('%s: autopilot laps every dial', (theme) => {
-    it.each(BUILT.filter(({ p }) => p.theme === theme && p.seed < 1000).map(({ p, def }) => [label(p), def] as const))('%s', (_name, def) => {
+    // The first seed set only (past the first twenty-four themes its seeds run over 1000, so the set is named rather than read off the seed).
+    it.each(BUILT.filter(({ p }) => p.theme === theme && p.k === 0).map(({ p, def }) => [label(p), def] as const))('%s', (_name, def) => {
       expect(autopilotLap(def, RACERS[0], '100cc')).toEqual({ laps: 1, falls: 0 });
     }, 30_000);
   });

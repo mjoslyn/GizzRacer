@@ -23,7 +23,15 @@ export type RoadSurface =
   /** Inner Cell's living membrane. */
   | 'membrane'
   /** Tetrachromacy's glass in four colours. */
-  | 'prism';
+  | 'prism'
+  /** Robot Stop's factory floor: diamond plate steel. */
+  | 'steel'
+  /** Gamma Knife's operating theatre: white tiles, green seams. */
+  | 'chrome'
+  /** People-Vultures' dry lake: cracked, scorched earth. */
+  | 'scorched'
+  /** Wah Wah's fretboard: dark wood with frets across it. */
+  | 'fret';
 
 export interface SectionProps {
   halfWidth: number;

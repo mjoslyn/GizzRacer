@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import * as tex from './textures';
 import { DESERT_SKY, type SkyColors } from './textures';
 
-export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism';
-export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum';
+export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism' | 'factory' | 'gamma' | 'carrion' | 'wah';
+export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard';
 
 /** Everything that makes a track's world look like itself. */
 export interface Theme {
@@ -449,5 +449,78 @@ export const THEMES: Record<ThemeId, Theme> = {
     dust: 0xe0d0ff,
     barrier: { map: tex.mirrorTexture, crawl: true },
     roadGlow: 0.3,
+  },
+  // Robot Stop: a robot factory at night, sodium lamps on steel, sparks, the line stopped.
+  factory: {
+    sky: { zenith: '#060608', high: '#14121a', low: '#3a2416', horizon: '#c06a20', below: '#1a1410', ground: '#141416', cloud: '70,60,60', clouds: 26 },
+    fog: { color: 0x2a2018, near: 130, far: 700 },
+    hemi: { sky: 0xffb060, ground: 0x1a1a20, intensity: 1.4 },
+    sun: { color: 0xffc080, intensity: 1.8 },
+    ground: tex.factoryGroundTexture,
+    groundTile: 16,
+    // Walls are riveted steel.
+    cliff: tex.steelWallTexture,
+    decor: 'foundry',
+    distant: { shape: 'city', color: 0x1a1618 },
+    haze: 0.5,
+    duotone: [0x040404, 0xd06010, 0xffd060],
+    skyCycle: false,
+    dust: 0x8a8074,
+    barrier: { map: tex.steelWallTexture, crawl: false },
+    roadGlow: 0.12,
+  },
+  // Gamma Knife: a black operating theatre lit green and violet, every beam meeting on one point.
+  gamma: {
+    sky: { zenith: '#020406', high: '#061418', low: '#0a3a30', horizon: '#60e0a0', below: '#061010', ground: '#040a0c', cloud: '120,255,200', clouds: 18 },
+    fog: { color: 0x0a2a24, near: 130, far: 720 },
+    hemi: { sky: 0xa0ffd0, ground: 0x081418, intensity: 1.4 },
+    sun: { color: 0xe0fff0, intensity: 1.9 },
+    ground: tex.gammaGroundTexture,
+    groundTile: 26,
+    cliff: () => tex.stoneTexture([200, 214, 222], [240, 248, 252]),
+    decor: 'theatre',
+    distant: { shape: 'mountain', color: 0x0a2a24 },
+    haze: 0,
+    duotone: [0x000806, 0x10a060, 0xd0ffe0],
+    skyCycle: true,
+    dust: 0xc0ffe0,
+    barrier: { map: tex.chromeTileTexture, crawl: false },
+    roadGlow: 0.25,
+  },
+  // People-Vultures: a dry lake under a bruised afternoon sky, dead trees, bones, the birds circling.
+  carrion: {
+    sky: { zenith: '#3a1a4a', high: '#7a3a4a', low: '#d08a4a', horizon: '#f8d8a0', below: '#8a6a4a', ground: '#6a4a30', cloud: '240,200,170', clouds: 30 },
+    fog: { color: 0xd8a878, near: 170, far: 900 },
+    hemi: { sky: 0xffd0a0, ground: 0x6a4a30, intensity: 1.5 },
+    sun: { color: 0xffe0b0, intensity: 2.2 },
+    ground: tex.boneyardGroundTexture,
+    groundTile: 18,
+    cliff: tex.strataTexture,
+    decor: 'boneyard',
+    distant: { shape: 'mesa', color: 0x6a3a40 },
+    haze: 0.9,
+    duotone: [0x0a0206, 0xa03020, 0xf0c060],
+    skyCycle: true,
+    dust: 0xe8c898,
+    barrier: { map: tex.boneTexture, crawl: false },
+  },
+  // Wah Wah: a pedalboard the size of a city under a purple night, every light sweeping with the filter.
+  wah: {
+    sky: { zenith: '#0a0418', high: '#2a0a4a', low: '#6a1a7a', horizon: '#ff8ad0', below: '#2a1030', ground: '#180a20', cloud: '255,160,230', clouds: 24 },
+    fog: { color: 0x3a1040, near: 130, far: 740 },
+    hemi: { sky: 0xffa0e0, ground: 0x1a0a20, intensity: 1.4 },
+    sun: { color: 0xffd0f0, intensity: 1.9 },
+    ground: tex.wahGroundTexture,
+    groundTile: 40,
+    // Walls are speaker grille.
+    cliff: tex.grilleTexture,
+    decor: 'pedalboard',
+    distant: { shape: 'city', color: 0x2a0a3a },
+    haze: 0,
+    duotone: [0x08000c, 0xa020a0, 0xffe060],
+    skyCycle: true,
+    dust: 0xe0b0f0,
+    barrier: { map: tex.grilleTexture, crawl: true },
+    roadGlow: 0.18,
   },
 };
