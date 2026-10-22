@@ -8,6 +8,8 @@ export interface WallHit {
   nx: number; // push-out normal
   nz: number;
   depth: number;
+  /** A bar across a shut shortcut: it stops a kart dead rather than turning it along itself (there's a road past its end). */
+  bar?: boolean;
 }
 
 export interface GroundInfo {
@@ -60,6 +62,9 @@ export interface KartState {
   trickStreak: number; // tricks landed back to back
   trickChain: number; // seconds left to land the next trick and keep the streak
   wallTime: number; // seconds since a wall impact still counted as the same one
+  wallAlign: number; // seconds left of the wall turning the nose along itself after a hit
+  wallTx: number; // the direction along the wall the nose is being turned to
+  wallTz: number;
   lap: number; // the lap it's on, 1 first: some roads are only there on some laps (set by the race)
   lastLap: boolean; // on the last lap of a race of more than one
 }
@@ -79,7 +84,7 @@ export interface StepEvents {
  * Bump whenever kart physics, racer stats or a track layout change lap
  * times: online leaderboards and ghosts are kept per version.
  */
-export const PHYSICS_VERSION = 17;
+export const PHYSICS_VERSION = 18;
 export const KART_RADIUS = 1;
 export const GRAVITY = 30;
 export const HOP_VELOCITY = 4.5;
@@ -198,6 +203,9 @@ const GRAZE_PUSH = 4;
 const WALL_SQUARE = 0.85;
 /** A glancing hit turns the nose along the wall and this far (rad) away from it. */
 const WALL_GLANCE = 0.06;
+/** After a hit the wall turns the nose along itself at this rate (rad/s), for this long times how square the hit was. */
+const WALL_ALIGN = 3.5;
+const WALL_ALIGN_TIME = 0.7;
 
 export function createKartState(x = 0, z = 0, heading = 0): KartState {
   return {
@@ -232,6 +240,9 @@ export function createKartState(x = 0, z = 0, heading = 0): KartState {
     trickStreak: 0,
     trickChain: 0,
     wallTime: 0,
+    wallAlign: 0,
+    wallTx: 0,
+    wallTz: 1,
     lap: 1,
     lastLap: false,
   };
@@ -489,9 +500,25 @@ export function stepKart(s: KartState, input: InputFrame, p: KartParams, env: Dr
       }
       s.wallTime = WALL_RECOVER;
       ev.wallHit = into;
+      if (!hit.bar) {
+        // Which way along the wall to turn: the way the nose already leans, the steering deciding a dead-square hit.
+        const lean = fx * -hit.nz + fz * hit.nx;
+        const side = Math.abs(lean) > 0.05 ? Math.sign(lean) : steerIn !== 0 ? -Math.sign(steerIn) : 1;
+        s.wallTx = -hit.nz * side;
+        s.wallTz = hit.nx * side;
+        s.wallAlign = WALL_ALIGN_TIME * into;
+      }
     } else if (into > 0) {
       s.speed *= 1 - WALL_SCRAPE * into * dt;
     }
+  }
+
+  // After a hit the wall turns the nose along itself, so a kart that nosed in comes round to run beside the wall
+  // instead of sitting square against it, nosing in again every time the throttle is touched.
+  if (s.wallAlign > 0) {
+    s.wallAlign = Math.max(0, s.wallAlign - dt);
+    const delta = wrapAngle(Math.atan2(s.wallTx, s.wallTz) - s.heading);
+    s.heading = wrapAngle(s.heading + clamp(delta, -WALL_ALIGN * dt, WALL_ALIGN * dt));
   }
 
   return ev;

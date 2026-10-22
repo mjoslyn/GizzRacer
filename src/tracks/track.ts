@@ -544,7 +544,7 @@ export class Track implements DriveEnv {
       if (hit.s <= reach) keep(this.ribbonWalls(r, hit, s.y, radius));
       // Barred: a bar across the road there, from the side the kart comes from.
       if (reach !== Infinity && !pastEnd(r, hit) && Math.abs(hit.lateral) < r.halfWidthAt(hit) + 1 && hit.s > reach - radius && hit.s < reach + 2 && Math.abs(s.y - r.heightAt(hit.s)) < 3) {
-        keep({ nx: -hit.tx, nz: -hit.tz, depth: hit.s - (reach - radius) });
+        keep({ nx: -hit.tx, nz: -hit.tz, depth: hit.s - (reach - radius), bar: true });
       }
     });
 
