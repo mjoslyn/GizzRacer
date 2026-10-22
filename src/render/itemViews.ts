@@ -1,6 +1,7 @@
 import * as THREE from 'three';
-import { BOULDER_STAGES, CRUSHER_STAGES, GEYSER_ERUPT, GUST_STAGES, HOLE_CORE, JAWS_LUNGE, JET_STAGES, LIGHTNING_STRIKE, prismColour, type HazardPose } from '../items/hazards';
+import { BOULDER_STAGES, CRUSHER_STAGES, GAMMA_EDGE, GAMMA_STAGES, GEYSER_ERUPT, GUST_STAGES, HOLE_CORE, JAWS_LUNGE, JET_STAGES, LIGHTNING_STRIKE, ROBOT_STAGES, VULTURE_STAGES, WAH_LIFT, WAH_STAGES, prismColour, type HazardPose } from '../items/hazards';
 import { goblinFigure } from './omnium';
+import { robotFigure, vultureFigure, wahPedalFigure } from './nonagon';
 import { BOX_RESPAWN, SHIELD_ITEMS, WAVE_RANGE, type ItemHolder, type ItemSystem } from '../items/items';
 import type { KartState } from '../physics/kart';
 import type { HazardSystem } from '../items/hazards';
@@ -552,6 +553,11 @@ export class HazardsView {
     const vesicleMat = new THREE.MeshPhongMaterial({ color: 0xff8ac8, emissive: 0x6a1a4a, shininess: 140, specular: 0xffffff, transparent: true, opacity: 0.6, depthWrite: false });
     const cargoMat = new THREE.MeshLambertMaterial({ color: 0x9affd0, emissive: 0x2a6a4a });
     const prismGlass = new THREE.MeshPhongMaterial({ color: 0xf0f0ff, emissive: 0x3a3a6a, shininess: 150, specular: 0xffffff, transparent: true, opacity: 0.8, flatShading: true });
+    const robotBody = new THREE.MeshPhongMaterial({ color: 0x8a9098, shininess: 60, specular: 0xffffff, flatShading: true });
+    const robotEye = new THREE.MeshBasicMaterial({ color: 0xff3020 });
+    const gammaBeam = new THREE.MeshBasicMaterial({ color: 0x60ff90, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending, depthWrite: false });
+    const gammaGlow = glowTexture('rgba(160,255,200,1)', 'rgba(60,255,140,0)');
+    const shadowTex = glowTexture('rgba(0,0,0,1)', 'rgba(0,0,0,0)');
 
     for (const pose of hazards.poses) {
       const obj = new THREE.Group();
@@ -870,6 +876,61 @@ export class HazardsView {
           const g = goblinFigure(0.6);
           obj.add(g);
           parts.push(g);
+          break;
+        }
+        case 'robots': {
+          // A robot marching across the road: legs and arms swinging, eyes lit red the moment it stops.
+          const r = robotFigure(0.85, robotBody, robotEye.clone());
+          const halt = sprite(glowTexture('rgba(255,80,40,1)', 'rgba(255,40,20,0)'), 0xff4020, 3);
+          halt.position.y = 3.6;
+          obj.add(r.group, halt);
+          parts.push(r.group, halt, ...r.legs, ...r.arms, r.head);
+          break;
+        }
+        case 'gammaRays': {
+          // Thin beams converging from above on a crosshair on the road, and the burst where they meet.
+          const beams = new THREE.Group();
+          for (let i = 0; i < 7; i++) {
+            const a = (i / 7) * Math.PI * 2;
+            const b = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.25, 1, 5), gammaBeam);
+            b.userData.a = a;
+            beams.add(b);
+          }
+          const cross = new THREE.Mesh(warnGeo, new THREE.MeshBasicMaterial({ map: warnTex, color: 0x80ffb0, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 }));
+          this.group.add(cross);
+          const burst = sprite(gammaGlow, 0xc0ffe0, 9);
+          burst.position.y = 1.5;
+          const core = new THREE.Mesh(new THREE.SphereGeometry(0.8, 12, 8), new THREE.MeshBasicMaterial({ color: 0xe0ffe8 }));
+          core.position.y = 1;
+          obj.add(beams, burst, core);
+          parts.push(beams, cross, burst, core);
+          break;
+        }
+        case 'vultures': {
+          // A vulture, and its shadow on the road under it.
+          const v = vultureFigure(0.9);
+          const shadow = new THREE.Mesh(new THREE.PlaneGeometry(6, 6), new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 }));
+          shadow.rotation.x = -Math.PI / 2;
+          this.group.add(shadow);
+          obj.add(v.group);
+          parts.push(v.group, shadow, ...v.wings, v.neck);
+          break;
+        }
+        case 'wahs': {
+          // A giant wah pedal on the road, rocking; a glow under the toe when it is down.
+          const pedal = wahPedalFigure(1.1, []);
+          pedal.group.rotation.y = Math.PI;
+          const stamp = sprite(laserGlow, 0xff60c0, 5);
+          stamp.position.set(0, 0.5, -2);
+          const dust = new THREE.Group();
+          for (let i = 0; i < 6; i++) {
+            const d = sprite(dust0, 0xd0b0e0, 2.5);
+            (d.material as THREE.SpriteMaterial).blending = THREE.NormalBlending;
+            d.userData.k = i;
+            dust.add(d);
+          }
+          obj.add(pedal.group, stamp, dust);
+          parts.push(pedal.treadle, stamp, dust);
           break;
         }
         case 'geysers': {
@@ -1271,6 +1332,104 @@ export class HazardsView {
           parts[0].position.set(0, Math.abs(Math.sin(p.phase * 3)) * 0.3 - 0.9, 0);
           parts[0].rotation.z = Math.sin(p.phase * 3) * 0.2;
           break;
+        case 'robots': {
+          const [figure, halt, legL, legR, armL, armR, head] = parts;
+          const u = p.phase;
+          const stopped = u >= ROBOT_STAGES.stop && u < ROBOT_STAGES.go;
+          // Facing the way it walks; stopped, it turns to face the karts coming.
+          obj.rotation.y = stopped ? p.heading + Math.PI : p.heading;
+          const stride = stopped ? 0 : Math.sin(elapsed * 9);
+          legL.rotation.x = stride * 0.7;
+          legR.rotation.x = -stride * 0.7;
+          armL.rotation.x = -stride * 0.6;
+          armR.rotation.x = stopped ? -Math.PI / 2 : stride * 0.6;
+          head.rotation.y = stopped ? Math.sin(elapsed * 1.5) * 0.3 : 0;
+          figure.position.y = stopped ? 0 : Math.abs(stride) * 0.08;
+          halt.visible = stopped;
+          ((halt as THREE.Sprite).material as THREE.SpriteMaterial).opacity = 0.4 + 0.5 * Math.abs(Math.sin(elapsed * 6));
+          break;
+        }
+        case 'gammaRays': {
+          const [beams, cross, burst, core] = parts;
+          const u = p.phase;
+          const G = GAMMA_STAGES;
+          obj.rotation.y = p.heading;
+          const aiming = u >= G.aim && u < G.fire;
+          const firing = p.active;
+          // The beams come down from a ring high over the road, closing on the focus as they aim.
+          const a = aiming ? (u - G.aim) / (G.fire - G.aim) : 1;
+          beams.visible = aiming || firing;
+          beams.children.forEach((b) => {
+            const ang = b.userData.a as number;
+            const top = new THREE.Vector3(Math.cos(ang) * 9, 26, Math.sin(ang) * 9 - 6);
+            const spread = firing ? 0 : (1 - a) * 4;
+            const foot = new THREE.Vector3(Math.cos(ang) * spread, 0.6, Math.sin(ang) * spread);
+            const len = top.distanceTo(foot);
+            b.scale.set(firing ? 2.5 : 1, len, firing ? 2.5 : 1);
+            b.position.copy(top).lerp(foot, 0.5);
+            b.lookAt(obj.localToWorld(foot.clone()));
+            b.rotateX(Math.PI / 2);
+          });
+          cross.visible = aiming;
+          cross.position.set(p.x, p.ground + 0.05, p.z);
+          cross.scale.setScalar(2 + 6 * (1 - a));
+          (cross as THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>).material.opacity = (u >= GAMMA_EDGE ? 0.9 : 0.5) * (0.6 + 0.4 * Math.abs(Math.sin(elapsed * (5 + a * 12))));
+          burst.visible = core.visible = firing;
+          if (firing) {
+            const f = (u - G.fire) / (G.done - G.fire);
+            burst.scale.setScalar(4 + 8 * Math.sin(Math.PI * f));
+            core.scale.setScalar(0.5 + 1.5 * Math.sin(Math.PI * f));
+          }
+          break;
+        }
+        case 'vultures': {
+          const [figure, shadow, wingL, wingR, neck] = parts;
+          const u = p.phase;
+          const V = VULTURE_STAGES;
+          obj.rotation.y = p.heading;
+          // Circling: banked, going round. Diving and swooping: wings swept back, then flapping away up.
+          const circling = u < V.dive;
+          const climbing = u >= V.climb;
+          figure.rotation.set(circling ? 0 : u < V.swoop ? -0.5 : climbing ? 0.4 : 0.1, circling ? elapsed * 1.6 : 0, circling ? 0.35 : 0);
+          figure.position.set(circling ? Math.cos(elapsed * 1.6) * 4 : 0, 0, circling ? Math.sin(elapsed * 1.6) * 4 : 0);
+          const flap = climbing || circling ? Math.sin(elapsed * (climbing ? 14 : 3)) * (climbing ? 0.7 : 0.15) : -0.25;
+          wingL.rotation.z = flap + (u >= V.dive && u < V.swoop ? 0.9 : 0);
+          wingR.rotation.z = -flap - (u >= V.dive && u < V.swoop ? 0.9 : 0);
+          neck.rotation.x = circling ? 0.3 : p.active ? -0.2 : 0.1;
+          shadow.visible = u < V.swoop;
+          shadow.position.set(p.x + (circling ? Math.cos(elapsed * 1.6) * 4 : 0), p.ground + 0.05, p.z + (circling ? Math.sin(elapsed * 1.6) * 4 : 0));
+          // The shadow is the warning: big enough to read from the road while the bird is up out of the chase camera's view.
+          const closeness = 1 - Math.min(1, (p.y - p.ground) / 16);
+          shadow.scale.setScalar(1.4 + 0.8 * closeness);
+          (shadow as THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>).material.opacity = 0.75 + 0.25 * closeness;
+          break;
+        }
+        case 'wahs': {
+          const [treadle, stamp, dust] = parts;
+          const u = p.phase;
+          const W = WAH_STAGES;
+          obj.rotation.y = p.heading;
+          // Toe up, the stamp, flat, and rocking back up: the treadle's angle over the cycle.
+          let lift = 1;
+          if (u >= W.stamp && u < W.down) lift = 1 - ((u - W.stamp) / (W.down - W.stamp)) ** 2;
+          else if (u >= W.down && u < W.rise) lift = 0;
+          else if (u >= W.rise) lift = Math.min(1, (u - W.rise) / (1 - W.rise) * 1.3);
+          treadle.rotation.x = -Math.atan2(WAH_LIFT * lift, 4.6);
+          stamp.visible = u >= W.down && u < W.rise;
+          ((stamp as THREE.Sprite).material as THREE.SpriteMaterial).opacity = 0.5 + 0.4 * Math.abs(Math.sin(elapsed * 8));
+          const puff = u >= W.down && u < W.down + 0.08 ? (u - W.down) / 0.08 : -1;
+          dust.visible = puff >= 0;
+          if (puff >= 0) {
+            dust.children.forEach((d) => {
+              const k = d.userData.k as number;
+              const a = (k / 6) * Math.PI * 2;
+              d.position.set(Math.cos(a) * (2.5 + puff * 3), 0.3 + puff * 0.8, -2 + Math.sin(a) * (2.5 + puff * 3));
+              d.scale.setScalar(1.5 + puff * 3);
+              ((d as THREE.Sprite).material as THREE.SpriteMaterial).opacity = 1 - puff;
+            });
+          }
+          break;
+        }
         case 'geysers': {
           const [bubbles, column, spray] = parts;
           const u = p.phase;

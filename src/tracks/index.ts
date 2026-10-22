@@ -23,6 +23,10 @@ import { buildSeaOfDoubt } from './seaOfDoubt';
 import { buildTetrachromacy } from './tetrachromacy';
 import type { TrackDef } from './track';
 import { buildVolcanoFortress } from './volcanoFortress';
+import { buildRobotStop } from './robotStop';
+import { buildGammaKnife } from './gammaKnife';
+import { buildPeopleVultures } from './peopleVultures';
+import { buildWahWah } from './wahWah';
 
 /** Every track the picker offers, in cup order. */
 export const TRACK_LIST: { id: string; name: string; build: () => TrackDef }[] = [
@@ -50,6 +54,10 @@ export const TRACK_LIST: { id: string; name: string; build: () => TrackDef }[] =
   { id: 'castle-in-the-air', name: 'The Castle in the Air', build: buildCastleInTheAir },
   { id: 'inner-cell', name: 'Inner Cell', build: buildInnerCell },
   { id: 'tetrachromacy', name: 'Tetrachromacy', build: buildTetrachromacy },
+  { id: 'robot-stop', name: 'Robot Stop', build: buildRobotStop },
+  { id: 'gamma-knife', name: 'Gamma Knife', build: buildGammaKnife },
+  { id: 'people-vultures', name: 'People-Vultures', build: buildPeopleVultures },
+  { id: 'wah-wah', name: 'Wah Wah', build: buildWahWah },
 ];
 
 /** Grand Prix cups: four tracks each, in race order (indexes into TRACK_LIST). */
@@ -64,6 +72,8 @@ export const CUPS: { name: string; tracks: number[] }[] = [
   { name: 'Omnium Gatherum Cup', tracks: [16, 17, 18, 19] },
   // Polygondwanaland (2017), in album order: the castle falling down, the castle on the clouds, the inside of a cell, and the fourth colour.
   { name: 'Polygondwanaland Cup', tracks: [20, 21, 22, 23] },
+  // Nonagon Infinity (2016), in album order: the robot factory, the gamma knife, the vultures' dry lake and the pedalboard. The album never ends, so Wah Wah's finish is Robot Stop's start.
+  { name: 'Nonagon Infinity Cup', tracks: [24, 25, 26, 27] },
 ];
 
 /** The Random Cup, after the others in the picker: four of the premade tracks drawn at random. */

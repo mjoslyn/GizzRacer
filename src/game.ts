@@ -791,6 +791,10 @@ const HIT_TEXT: Record<ItemKind | HazardKind, string> = {
   gusts: 'BLOWN AWAY!',
   vesicles: 'BOUNCED!',
   prisms: 'REFRACTED!',
+  robots: 'ROBOT STOP!',
+  gammaRays: 'PIERCED!',
+  vultures: 'PICKED OFF!',
+  wahs: 'STOMPED!',
 };
 
 /** What a hazard used well says: the ones that can help. */
@@ -826,6 +830,10 @@ const BONUS_TEXT: Record<HazardKind, string> = {
   gusts: 'CAUGHT THE WIND!',
   vesicles: 'BOUNCE HOUSE!',
   prisms: 'THE FOURTH COLOUR!',
+  robots: 'ROBOT HOP!',
+  gammaRays: "KNIFE'S EDGE!",
+  vultures: 'CARRIED OFF!',
+  wahs: 'WAH!',
 };
 
 /** Takes a group out of the scene and frees what it built. */

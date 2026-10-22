@@ -593,5 +593,61 @@
     "bars": 32,
     "loopSamples": 2152678,
     "sampleRate": 44100
+  },
+  "people-vultures-remix": {
+    "title": "people-vultures (remix)",
+    "bpm": 112,
+    "bars": 32,
+    "loopSamples": 3024000,
+    "sampleRate": 44100
+  },
+  "people-vultures-remix-final-lap": {
+    "title": "people-vultures (remix, final lap)",
+    "bpm": 120,
+    "bars": 32,
+    "loopSamples": 2822400,
+    "sampleRate": 44100
+  },
+  "robot-stop-remix": {
+    "title": "robot stop (live remix)",
+    "bpm": 108,
+    "bars": 32,
+    "loopSamples": 3136000,
+    "sampleRate": 44100
+  },
+  "robot-stop-remix-final-lap": {
+    "title": "robot stop (live remix, final lap)",
+    "bpm": 116,
+    "bars": 32,
+    "loopSamples": 2919724,
+    "sampleRate": 44100
+  },
+  "gamma-knife-remix": {
+    "title": "gamma knife (remix)",
+    "bpm": 112,
+    "bars": 32,
+    "loopSamples": 3024000,
+    "sampleRate": 44100
+  },
+  "gamma-knife-remix-final-lap": {
+    "title": "gamma knife (remix, final lap)",
+    "bpm": 120,
+    "bars": 32,
+    "loopSamples": 2822400,
+    "sampleRate": 44100
+  },
+  "wah-wah-remix": {
+    "title": "wah wah (remix)",
+    "bpm": 176,
+    "bars": 32,
+    "loopSamples": 2405455,
+    "sampleRate": 44100
+  },
+  "wah-wah-remix-final-lap": {
+    "title": "wah wah (remix, final lap)",
+    "bpm": 184,
+    "bars": 32,
+    "loopSamples": 2300870,
+    "sampleRate": 44100
   }
 }

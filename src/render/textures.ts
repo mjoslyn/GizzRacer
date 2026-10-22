@@ -1725,3 +1725,170 @@ export function mirrorTexture(): THREE.CanvasTexture {
   });
   return finish(c);
 }
+
+/** Robot Stop's factory floor: diamond plate steel, dark and scuffed, oil in the tread. */
+export function steelPlateTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 4, 901);
+  paint(ctx, S, S, (x, y, i) => {
+    // Raised lozenges in staggered rows, lit from the top left.
+    const row = Math.floor(y / 32);
+    const lx = (x + (row % 2) * 16) % 32;
+    const ly = y % 32;
+    const d = Math.abs(lx - 16) + Math.abs(ly - 16);
+    const base = mix([44, 46, 52], [92, 96, 104], n[i]);
+    if (d < 11) return shade(base, lx + ly < 32 ? 1.35 : 0.8);
+    return shade(base, 0.9 + n[i] * 0.2);
+  });
+  cracks(ctx, S, 6, 'rgba(10,8,6,0.5)', 2, 902);
+  return finish(c);
+}
+
+/** The ground round the factory: concrete, oil stains, scraps of orange paint. */
+export function factoryGroundTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 5, 911);
+  paint(ctx, S, S, (_x, _y, i) => mix([40, 40, 44], [86, 84, 86], n[i]));
+  const rand = seededRandom(912);
+  for (let k = 0; k < 40; k++) {
+    const x = rand() * S;
+    const y = rand() * S;
+    const r = 6 + rand() * 20;
+    ctx.fillStyle = rand() < 0.75 ? 'rgba(12,10,14,0.55)' : 'rgba(230,120,20,0.35)';
+    wrapStroke(ctx, S, () => {
+      ctx.beginPath();
+      ctx.ellipse(x, y, r, r * (0.4 + rand() * 0.6), rand() * Math.PI, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+  cracks(ctx, S, 16, 'rgba(14,14,16,0.6)', 1.5, 913);
+  return finish(c);
+}
+
+/** A factory wall: riveted steel plates, rust bleeding down from the seams, a warning stripe along the foot. */
+export function steelWallTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 4, 921);
+  const rust = fbm(S, 2, 3, 922);
+  paint(ctx, S, S, (x, y, i) => {
+    const seam = x % 128 < 4 || y % 64 < 4;
+    const base = mix([58, 62, 70], [110, 114, 120], n[i]);
+    const streak = Math.max(0, rust[i] - 0.55) * 2.5 * ((y % 64) / 64);
+    const plate = mix(base, [140, 70, 30], Math.min(0.8, streak));
+    if (seam) return shade(plate, 0.55);
+    if (y > S - 20) return ((x + y) % 40 < 20 ? [230, 170, 20] : [20, 18, 18]) as RGB;
+    return plate;
+  });
+  ctx.fillStyle = 'rgba(24,26,30,0.95)';
+  for (let x = 12; x < S; x += 24) for (let y = 12; y < S - 24; y += 64) {
+    ctx.beginPath();
+    ctx.arc(x, y, 3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  return finish(c);
+}
+
+/** Gamma Knife's theatre floor: white tiles with green seams, a sterile glow in the grout. */
+export function chromeTileTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 3, 931);
+  paint(ctx, S, S, (x, y, i) => {
+    const seam = x % 64 < 3 || y % 64 < 3;
+    if (seam) return mix([40, 220, 120], [120, 255, 180], n[i]);
+    const tile = Math.floor(x / 64) + Math.floor(y / 64) * 4;
+    return shade(mix([200, 214, 222], [240, 248, 252], n[i]), 0.9 + ((tile * 29) % 7) * 0.02);
+  });
+  return finish(c);
+}
+
+/** The ground round the gamma knife: dark, a green grid under glass, pinpoints of light. */
+export function gammaGroundTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 3, 4, 941);
+  paint(ctx, S, S, (x, y, i) => {
+    const grid = x % 64 < 2 || y % 64 < 2;
+    if (grid) return mix([20, 90, 60], [60, 200, 120], n[i]);
+    return mix([8, 14, 18], [22, 34, 40], n[i]);
+  });
+  const rand = seededRandom(942);
+  for (let k = 0; k < 120; k++) {
+    ctx.fillStyle = rand() < 0.6 ? 'rgba(120,255,180,0.6)' : 'rgba(200,160,255,0.5)';
+    ctx.fillRect(rand() * S, rand() * S, 2, 2);
+  }
+  return finish(c);
+}
+
+/** People-Vultures' dry lake: cracked earth, bleached, a bone poking through here and there. */
+export function scorchedTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 5, 951);
+  paint(ctx, S, S, (_x, _y, i) => mix([150, 120, 86], [206, 180, 140], n[i]));
+  cracks(ctx, S, 22, 'rgba(60,40,24,0.7)', 2.5, 952);
+  cracks(ctx, S, 18, 'rgba(90,64,40,0.5)', 1.2, 953);
+  const rand = seededRandom(954);
+  for (let k = 0; k < 10; k++) {
+    ctx.fillStyle = 'rgba(240,232,210,0.85)';
+    wrapStroke(ctx, S, () => {
+      ctx.beginPath();
+      ctx.ellipse(rand() * S, rand() * S, 5 + rand() * 8, 2, rand() * Math.PI, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+  return finish(c);
+}
+
+/** The ground round the carcass: ochre dust and dead grass, dark where something was dragged. */
+export function boneyardGroundTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 5, 961);
+  const drag = fbm(S, 2, 3, 962);
+  paint(ctx, S, S, (_x, _y, i) => mix(mix([120, 84, 50], [176, 140, 92], n[i]), [70, 40, 30], Math.max(0, drag[i] - 0.6) * 1.8));
+  const rand = seededRandom(963);
+  for (let k = 0; k < 400; k++) {
+    ctx.fillStyle = rand() < 0.5 ? 'rgba(200,170,100,0.6)' : 'rgba(90,60,30,0.5)';
+    ctx.fillRect(rand() * S, rand() * S, 1.5, 4 + rand() * 6);
+  }
+  return finish(c);
+}
+
+/** Wah Wah's road: a fretboard, dark rosewood with frets across it and dot inlays down the middle. */
+export function fretboardTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 3, 4, 971);
+  paint(ctx, S, S, (_x, y, i) => {
+    const grain = Math.sin((y / S) * Math.PI * 2 * 3 + n[i] * 4) * 0.5 + 0.5;
+    if (y % 128 < 6) return mix([180, 180, 190], [240, 240, 248], (y % 128) / 6);
+    return mix([54, 30, 22], [96, 58, 38], grain * 0.6 + n[i] * 0.4);
+  });
+  ctx.fillStyle = 'rgba(240,236,220,0.95)';
+  for (const y of [64, 192]) {
+    ctx.beginPath();
+    ctx.arc(S / 2, y, 8, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  return finish(c);
+}
+
+/** The ground round the pedalboard: a swirl of purple, teal and gold, a filter sweep drawn out. */
+export function wahGroundTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 3, 5, 981);
+  const stops: RGB[] = [[60, 20, 90], [20, 110, 120], [200, 150, 40], [120, 30, 110]];
+  paint(ctx, S, S, (x, y, i) => {
+    const a = Math.atan2(y - S / 2, x - S / 2);
+    const r = Math.hypot(x - S / 2, y - S / 2) / S;
+    const band = (((a / Math.PI) * 2 + r * 6 + n[i] * 2) % 4 + 4) % 4;
+    const k = Math.floor(band);
+    return mix(mix(stops[k], stops[(k + 1) % 4], band - k), [20, 10, 30], 0.35);
+  });
+  return finish(c);
+}

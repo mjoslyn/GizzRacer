@@ -34,6 +34,10 @@ export const TRACK_SONGS: Record<string, TrackSong> = {
   'castle-in-the-air': { title: 'The Castle in the Air', album: 'Polygondwanaland', year: 2017 },
   'inner-cell': { title: 'Inner Cell', album: 'Polygondwanaland', year: 2017 },
   tetrachromacy: { title: 'Tetrachromacy', album: 'Polygondwanaland', year: 2017 },
+  'robot-stop': { title: 'Robot Stop', album: 'Nonagon Infinity', year: 2016 },
+  'gamma-knife': { title: 'Gamma Knife', album: 'Nonagon Infinity', year: 2016 },
+  'people-vultures': { title: 'People-Vultures', album: 'Nonagon Infinity', year: 2016 },
+  'wah-wah': { title: 'Wah Wah', album: 'Nonagon Infinity', year: 2016 },
 };
 
 /**
@@ -58,6 +62,10 @@ export const TRANSCRIBED: Record<string, { recording: string; release: string }>
   'deadstick-drop': { recording: 'Deadstick', release: "Live in New York '25, the soundboard mix" },
   'panpsych-grove': { recording: 'Panpsych', release: "Live in New York '25, the soundboard mix" },
   'sea-of-doubt': { recording: 'Sea of Doubt', release: "Live in New York '25, the soundboard mix" },
+  'robot-stop': { recording: 'Robot Stop', release: "Live In Brussels '19" },
+  'gamma-knife': { recording: 'Gamma Knife', release: "Live In Brussels '19" },
+  'people-vultures': { recording: 'People-Vultures', release: "Live In Brussels '19" },
+  'wah-wah': { recording: 'Wah Wah', release: "Live In Chicago '23" },
 };
 
 const FINAL = '-final-lap';

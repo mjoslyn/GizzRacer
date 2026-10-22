@@ -100,6 +100,10 @@ export const WAVE_SPIN = 1.0;
  * - hop as a gust blows and you catch the wind, a boost instead of a shove
  * - hop onto a vesicle and it bounces you up high, for a trick
  * - a prism beam in the fourth colour is a boost to drive through
+ * - a robot stopped dead in the road is a ramp, hopped onto
+ * - the gamma knife's crosshair, slipped through as it closes, is a boost
+ * - hop as a vulture swoops and it carries you: up, and on with a boost
+ * - a wah pedal stamped flat is a springboard, hopped onto: up high, with a boost
  */
 /** A reward can't pay out again to the same kart for this long. */
 export const REWARD_COOLDOWN = 1.5;
@@ -170,6 +174,41 @@ export const PRISM_LIT = [0.35, 0.7] as const;
 export const PRISM_BOOST = 0.9;
 export const PRISM_SPIN = 1.0;
 const WARMING = new Set<HazardKind>(['lasers', 'flameJets']);
+/**
+ * Robot cycle: marching in from one edge, stopped dead in the middle of the
+ * road (a block, and a ramp if you hop onto it), marching off the other side.
+ */
+export const ROBOT_STAGES = { stop: 0.38, go: 0.72 } as const;
+export const ROBOT_RADIUS = 1.5;
+export const ROBOT_SPIN = 1.0;
+/** Gamma knife cycle: the beams converge (a crosshair closing, the warning) and then the burst at the focus. */
+export const GAMMA_STAGES = { aim: 0.12, fire: 0.6, done: 0.74 } as const;
+/** The crosshair is nearly closed from here: slip through it then and the knife misses, a boost. */
+export const GAMMA_EDGE = 0.46;
+export const GAMMA_RADIUS = 2.4;
+export const GAMMA_BOOST = 0.8;
+export const GAMMA_SPIN = 1.1;
+/** Vulture cycle: circling high (its shadow on the road), the dive, the swoop low along the road, the climb away. */
+export const VULTURE_STAGES = { dive: 0.55, swoop: 0.68, climb: 0.82 } as const;
+export const VULTURE_RADIUS = 1.8;
+/** How high it circles, and how far along the road its swoop runs. */
+export const VULTURE_HEIGHT = 16;
+export const VULTURE_RUN = 14;
+export const VULTURE_SPIN = 1.0;
+/** Hop as it swoops and it carries you: thrown up this fast (m/s), with a boost this long. */
+export const VULTURE_LIFT = 10;
+export const VULTURE_BOOST = 0.8;
+/** Wah pedal cycle: toe up (harmless), the stamp, sitting stamped flat (a springboard, hopped onto), rocking back up. */
+export const WAH_STAGES = { stamp: 0.5, down: 0.58, rise: 0.85 } as const;
+export const WAH_RADIUS = 2.6;
+/** How high the toe of the pedal rocks up. */
+export const WAH_LIFT = 3.2;
+/** Caught under the stamp: spun out and this much of your speed kept. */
+export const WAH_SLOW = 0.5;
+export const WAH_SPIN = 1.1;
+/** Hopped onto stamped flat: a springboard, this fast up (m/s), and a boost this long. */
+export const WAH_SPRING = 12;
+export const WAH_BOOST = 0.7;
 
 /** Throws a grounded kart up at `vy` with a trick window. */
 function launch(s: KartState, vy: number): void {
@@ -207,6 +246,10 @@ const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds' | 'butterfli
   vesicles: ROLLER_SPIN,
   prisms: PRISM_SPIN,
   gusts: 0,
+  robots: ROBOT_SPIN,
+  gammaRays: GAMMA_SPIN,
+  vultures: VULTURE_SPIN,
+  wahs: WAH_SPIN,
 };
 
 /** Kinds that fill the whole road across, on a rhythm: nothing to steer round, only to time. */
@@ -373,6 +416,83 @@ export class HazardSystem {
           p.phase = u;
           break;
         }
+        case 'robots': {
+          // Marching in from one edge, stopping dead in the middle of the road, marching off the other side; the next crossing comes back.
+          const at = def.at[i];
+          const tt = (t + 10) / def.period + i * 0.31;
+          const cycle = Math.floor(tt);
+          const u = tt - cycle;
+          const side = cycle % 2 === 0 ? 1 : -1;
+          const hw = this.halfWidth(at) + 1;
+          const R = ROBOT_STAGES;
+          const stopped = u >= R.stop && u < R.go;
+          const walk = u < R.stop ? u / R.stop : u >= R.go ? (u - R.go) / (1 - R.go) : 0;
+          // Halfway across while stopped (a little off centre, by the crossing); the rest of the way after.
+          const pause = 0.15 * Math.sin(cycle * 1.9 + i);
+          const lat = u < R.stop ? side * (hw - (hw + pause * hw) * walk) : stopped ? -side * pause * hw : -side * (pause * hw + (hw - pause * hw) * walk);
+          this.place(p, at, lat, 0);
+          p.heading = stopped ? p.heading : p.heading + (side * Math.PI) / 2;
+          p.radius = ROBOT_RADIUS;
+          p.active = true;
+          p.side = side;
+          p.phase = u;
+          break;
+        }
+        case 'gammaRays': {
+          // The beams converge on a point (the crosshair closing: the warning), then the burst at the focus.
+          const at = def.at[i];
+          const tt = t + 10 + (i * def.period) / def.at.length;
+          const cycle = Math.floor(tt / def.period);
+          const u = tt / def.period - cycle;
+          const lat = this.halfWidth(at) * 0.55 * Math.sin(cycle * 2.39 + i * 1.3);
+          this.place(p, at, lat, 0);
+          p.radius = GAMMA_RADIUS;
+          p.active = u >= GAMMA_STAGES.fire && u < GAMMA_STAGES.done;
+          p.phase = u;
+          break;
+        }
+        case 'vultures': {
+          // Circling high over one spot (its shadow on the road), the dive, a swoop low along the road, and the climb away.
+          const at = def.at[i];
+          const tt = t + 10 + (i * def.period) / def.at.length;
+          const cycle = Math.floor(tt / def.period);
+          const u = tt / def.period - cycle;
+          const lat = this.halfWidth(at) * 0.5 * Math.sin(cycle * 1.97 + i * 2.1);
+          const V = VULTURE_STAGES;
+          let along = -VULTURE_RUN / 2;
+          let lift = VULTURE_HEIGHT;
+          if (u >= V.dive && u < V.swoop) {
+            const d = (u - V.dive) / (V.swoop - V.dive);
+            along = -VULTURE_RUN / 2 - 10 * (1 - d);
+            lift = 1.2 + (VULTURE_HEIGHT - 1.2) * (1 - d) ** 2;
+          } else if (u >= V.swoop && u < V.climb) {
+            along = -VULTURE_RUN / 2 + (VULTURE_RUN * (u - V.swoop)) / (V.climb - V.swoop);
+            lift = 1.2;
+          } else if (u >= V.climb) {
+            const c = (u - V.climb) / (1 - V.climb);
+            along = VULTURE_RUN / 2 + 10 * c;
+            lift = 1.2 + (VULTURE_HEIGHT - 1.2) * c * c;
+          }
+          this.place(p, at + along, lat, lift);
+          p.radius = VULTURE_RADIUS;
+          p.active = u >= V.swoop && u < V.climb;
+          p.phase = u;
+          break;
+        }
+        case 'wahs': {
+          // A pedal on the road, alternating sides: toe up, the stamp, stamped flat, and rocking back up.
+          const at = def.at[i];
+          const tt = t + 10 + (i * def.period) / def.at.length;
+          const cycle = Math.floor(tt / def.period);
+          const u = tt / def.period - cycle;
+          const lat = this.halfWidth(at) * 0.4 * ((cycle + i) % 2 === 0 ? 1 : -1);
+          this.place(p, at, lat, 0);
+          p.radius = WAH_RADIUS;
+          const W = WAH_STAGES;
+          p.active = u >= W.stamp && u < W.rise;
+          p.phase = u;
+          break;
+        }
         case 'dustDevils':
         case 'butterflies':
         case 'tornadoes':
@@ -496,9 +616,53 @@ export class HazardSystem {
           this.crush(hit, p, s);
           continue;
         }
+        if (p.kind === 'gammaRays' && !p.active) {
+          // The crosshair nearly closed: slip through it and the knife misses, a boost.
+          if (p.phase >= GAMMA_EDGE && p.phase < GAMMA_STAGES.fire && this.distance(p, s) <= p.radius + KART_RADIUS) this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, GAMMA_BOOST)));
+          continue;
+        }
         if (!p.active) continue;
         const d = this.distance(p, s);
         if (d > p.radius + KART_RADIUS) continue;
+        if (p.kind === 'robots') {
+          // Stopped dead, it is a block to drive round and a ramp to hop onto; marching, it walks straight into you.
+          if (p.phase >= ROBOT_STAGES.stop && p.phase < ROBOT_STAGES.go) {
+            if (s.hopAge < HOP_WINDOW || !s.grounded) this.reward(hit, s, p.kind, () => launch(s, RAMP_LAUNCH));
+            else this.pushOut(p, s);
+            continue;
+          }
+        }
+        if (p.kind === 'vultures') {
+          // Hop as it swoops and it carries you: up, and on with a boost. Caught flat, it knocks you flying.
+          if (s.hopAge < HOP_WINDOW || !s.grounded) {
+            this.reward(hit, s, p.kind, () => {
+              launch(s, VULTURE_LIFT);
+              s.boostTime = Math.max(s.boostTime, VULTURE_BOOST);
+            });
+            continue;
+          }
+        }
+        if (p.kind === 'wahs') {
+          const W = WAH_STAGES;
+          if (p.phase >= W.down) {
+            // Stamped flat: a springboard, hopped onto; otherwise a pedal to drive round, or up and over as it rocks back.
+            if (s.hopAge < HOP_WINDOW || !s.grounded) {
+              this.reward(hit, s, p.kind, () => {
+                launch(s, WAH_SPRING);
+                s.boostTime = Math.max(s.boostTime, WAH_BOOST);
+              });
+            } else if (p.phase < W.rise) this.pushOut(p, s);
+            continue;
+          }
+          // The stamp: squashed.
+          if (this.cooldown.has(s)) continue;
+          this.cooldown.set(s, HIT_COOLDOWN);
+          if (spinOut(s, WAH_SPIN)) {
+            s.speed *= WAH_SLOW;
+            hit.push({ kart: s, by: p.kind });
+          }
+          continue;
+        }
         if (isSwirl(p.kind)) {
           this.swirl(p, s, dt);
           if (p.kind === 'wisps' && d < WISP_CORE + KART_RADIUS) {
@@ -608,6 +772,11 @@ export class HazardSystem {
       } else if (p.kind === 'crushers') {
         // From when it starts shaking loose until it is hauled back up out of the way.
         if (p.phase < CRUSHER_STAGES.shake || p.phase > CRUSHER_STAGES.rise + 0.05) continue;
+      } else if (p.kind === 'gammaRays') {
+        if (p.phase < GAMMA_STAGES.aim || p.phase > GAMMA_STAGES.done) continue;
+      } else if (p.kind === 'wahs') {
+        // From just before the stamp until the pedal is back up.
+        if (p.phase < WAH_STAGES.stamp - 0.08 || p.phase > WAH_STAGES.rise) continue;
       } else if (falling ? p.phase > BOULDER_STAGES.crumble || p.phase < BOULDER_STAGES.fall * 0.5 : !p.active) continue;
       if (p.kind === 'snakes') {
         // The body trails the head: aim to miss its middle.
