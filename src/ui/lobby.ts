@@ -1,4 +1,5 @@
-import { ENGINE_CLASSES, RACERS, type RacerDef } from '../physics/racers';
+import { RACERS, type RacerDef } from '../physics/racers';
+import { availableClasses } from './menu';
 import { identity, setName } from '../net/identity';
 import { isRoomCode, makeRoomCode, type RoomSettings, type RoomStart, type RoomState } from '../net/protocol';
 import { RoomClient } from '../net/room';
@@ -180,8 +181,10 @@ export class LobbyScreen {
     } else if (act === 'track' && host) {
       c.send({ t: 'settings', settings: { track: (s.settings.track + dir + TRACK_LIST.length) % TRACK_LIST.length } });
     } else if (act === 'engine' && host) {
-      const i = ENGINE_CLASSES.indexOf(s.settings.engine);
-      c.send({ t: 'settings', settings: { engine: ENGINE_CLASSES[(i + dir + ENGINE_CLASSES.length) % ENGINE_CLASSES.length] } });
+      // The host's own unlocks decide which classes the room can run.
+      const classes = availableClasses();
+      const i = Math.max(0, classes.indexOf(s.settings.engine));
+      c.send({ t: 'settings', settings: { engine: classes[(i + dir + classes.length) % classes.length] } });
     } else if (act === 'ready' && me) {
       c.send({ t: 'ready', ready: !me.ready });
     } else if (act === 'start' && host) {

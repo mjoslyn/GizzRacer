@@ -209,6 +209,8 @@ export interface TrackLocation {
   surface: SurfaceType;
   section: string;
   onRoad: boolean;
+  /** The branch (shortcut) the road is, as an index into the track's branches; -1 on the main road or off it. */
+  branch: number;
 }
 
 const CURB = 1.2;
@@ -491,6 +493,7 @@ export class Track implements DriveEnv {
         surface: 'offroad',
         section: this.main.sectionName(mainHit.index),
         onRoad: false,
+        branch: -1,
       };
     }
     const sup = support as { ribbon: Ribbon; hit: SplineHit; branch: number };
@@ -511,6 +514,7 @@ export class Track implements DriveEnv {
       surface,
       section: sup.ribbon.sectionName(sup.hit.index),
       onRoad: true,
+      branch: sup.branch,
     };
   }
 

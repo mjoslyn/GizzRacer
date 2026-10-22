@@ -14,7 +14,7 @@ npm run build     # typecheck + production build
 npm run balance   # slow: all-CPU races on every track, wins and average place per racer
 npm run dev:party # build, then run the game and its PartyKit servers locally on :8787 (wrangler dev)
 npm run deploy    # build and deploy to Cloudflare (needs CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID)
-npm run seed:ghosts  # post CPU starter ghosts to every leaderboard (SEED_URL=https://www.gizzracer.com for live)
+npm run seed:ghosts  # post CPU starter ghosts to every leaderboard (SEED_URL=https://www.gizzracer.com for live); rerun after a PHYSICS_VERSION bump
 ```
 
 ## Status
@@ -66,7 +66,12 @@ Milestones 1 to 7 are in (driving feel, the Rattlesnake Run greybox, CPU racers,
 - Race: checkpointed laps, fall detection and respawn at the last checkpoint after 1.5 s (`src/core/race.ts`)
 - CPU racers (`src/ai/cpuDriver.ts`): own racing lane, corner braking, drifts for mini-turbos, steer around karts ahead, recover when stuck; difficulty follows the class; mild rubber-banding; kart bumps by weight; positions and results
 - Items (`src/items/items.ts`, SPEC section 6), named for the Gizzverse: Mind Fuzz, Microtonal Banana, Nuclear Fusion, Big Fig Wasp, Horology (longest on the leader, shortest on last place), the Woo Cannon for the last three (a catch-up shell that flies itself down the road, with its own shout, `public/sfx/woo.mp3`), one for each band member (Sleep Drifter, Stu's flute; Road Train, Cavs' battering ram; Superheavy, Lukey's bass; The Silver Cord, Joey's tether; Boogieman Sam, Amby's harmonica shove; Gamma Knife, Cookie's beam), and Nonagon Infinity, a ring that rolls down the road to the leader unless they hop it. Position-biased odds, a 1 s roulette, item boxes that break with a sound and respawn after 3 s, gold double boxes on risky lines (a spare beside the slot), a held banana or wasp as a shield, and a who-hit-whom callout feed. CPUs save items for a good moment, more often at higher classes
-- Driving extras: rocket starts (hop in the last half second before GO; too early bogs), slipstream boosts behind other karts, trick kickers on the straights with trick streaks, quicker respawns (`src/core/race.ts`, `src/physics/kart.ts`)
+- Driving extras: rocket starts (hop in the last half second before GO; too early bogs), slipstream boosts behind other karts, trick kickers on the straights with trick streaks, quicker respawns, a fourth (rainbow) drift tier (`src/core/race.ts`, `src/physics/kart.ts`)
+- Progression (`src/core/progress.ts`): trophies per cup and class on the cup picker, best race times, best style scores, shortcuts found; unlocks (Random Cup, 200cc, Mirror mode) fall out of it. Mirror mode is a render-and-input flip in `src/game.ts` (`mirrored`, `mirrorState`); the simulation is untouched
+- Rivals and rubber-banding: `GrandPrix.rivals` (the two nearest the player in the standings, driving on `rivalSkill`), `Race.focus` (CPUs ahead of the player hold back a little, `DRAG_MAX`)
+- Style (`src/core/style.ts`): a running score for drifts, tricks, slipstreams, hazard plays, item plays and shortcuts, chained, on the HUD and the results
+- Records leaderboards (`party/records.ts`, `src/net/recordCheck.ts`, `src/net/records.ts`, `src/ui/recordsPanel.ts`): the fastest full race per track and class (generated tracks and the daily included) and the best result per cup, beside the picker in Grand Prix, Single Race and Track Generator modes; posted when a race or cup finishes offline, for a player with a name
+- The daily track (`src/core/daily.ts`): the generator's Daily slot, dials drawn from the UTC date
 - Lettering in Metal Mania (SIL OFL, `public/fonts`), after the PetroDragonic Apocalypse logo
 - Every track has a shortcut, kickers and a double box row on its risky line, with sections named for its album (SPEC section 7)
 - Elevation (SPEC section 7): every cup track climbs and dips like a roller coaster, with pillared decks, earth banks, sunk cuts (Rattle Canyon, Dragon's Gullet, the Ice V canyon) and crests you fly off; Fishies Lagoon's causeway dives under the water (with an underwater look, sound and sea life). The chase camera sits low and close behind, Mario Kart style
@@ -88,7 +93,7 @@ Controls: auto-accelerate, arrows steer, Down brakes/reverses, Shift/Space hop+d
 
 Credits (title screen, and a page of Settings): the song behind each track, the band's recordings the transcribed remixes were written from (`TRANSCRIBED` in `src/audio/songs.ts`), and what the game is made with (`src/ui/credits.ts`). Settings (title screen and pause menu): music and effects volume (races play the remix of the band's song each track is themed on, `src/audio/songs.ts`), automatic or manual throttle, and tilt steering for phones that have the sensor (turn the phone like a wheel; sensitivity, invert, recentre; it recentres at every race start, and the drag pad hides while it's on). The first tap on a phone with tilt asks drag or tilt, once. Phones: the first tap goes fullscreen and locks to landscape where the browser allows it (Android Chrome). Held upright, the game shows a "turn your phone sideways" card and pauses the race. iPhone Safari can't go fullscreen from a page, so the title suggests Share, Add to Home Screen; the web app manifest launches it fullscreen in landscape from there.
 
-In a race: `R` restart, `M` manual throttle, `N` music on/off, `B` sound effects on/off. In the picker, the racer row shows the racer gallery. `?showroom` shows every racer on a turntable (`&racer=<id>&face` for a close-up of one driver's head). In the console, `gizz.warp(0.5)` jumps halfway round the lap and `gizz.autopilot()` lets the CPU drive your kart, `gizz.give('riffMissile')` fills the item slot.
+In a race: `R` restart, `M` manual throttle, `N` music on/off, `B` sound effects on/off. In the picker, the racer row shows the racer gallery, and `R` picks a racer at random. `?showroom` shows every racer on a turntable (`&racer=<id>&face` for a close-up of one driver's head). In the console, `gizz.warp(0.5)` jumps halfway round the lap and `gizz.autopilot()` lets the CPU drive your kart, `gizz.give('riffMissile')` fills the item slot.
 
 ## Soundtrack
 

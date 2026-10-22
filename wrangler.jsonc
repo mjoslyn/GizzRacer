@@ -13,11 +13,13 @@
     "bindings": [
       { "name": "Players", "class_name": "Players" },
       { "name": "Trials", "class_name": "Trials" },
-      { "name": "Room", "class_name": "Room" }
+      { "name": "Room", "class_name": "Room" },
+      { "name": "Records", "class_name": "Records" }
     ]
   },
   "migrations": [
     { "tag": "v1", "new_sqlite_classes": ["Players", "Trials"] },
-    { "tag": "v2", "new_sqlite_classes": ["Room"] }
+    { "tag": "v2", "new_sqlite_classes": ["Room"] },
+    { "tag": "v3", "new_sqlite_classes": ["Records"] }
   ]
 }

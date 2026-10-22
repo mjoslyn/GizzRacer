@@ -57,9 +57,10 @@ export function pickRivals(taken: ReadonlySet<string>, count: number, seed: numb
   return pool.slice(0, Math.max(0, count));
 }
 
-export type EngineClass = '50cc' | '100cc' | '150cc';
-export const ENGINE_CLASSES: readonly EngineClass[] = ['50cc', '100cc', '150cc'];
-const CLASS_SPEED: Record<EngineClass, number> = { '50cc': 0.8, '100cc': 1, '150cc': 1.15 };
+export type EngineClass = '50cc' | '100cc' | '150cc' | '200cc';
+/** Every class; 200cc is unlocked by a gold at 150cc (core/progress.ts). */
+export const ENGINE_CLASSES: readonly EngineClass[] = ['50cc', '100cc', '150cc', '200cc'];
+const CLASS_SPEED: Record<EngineClass, number> = { '50cc': 0.8, '100cc': 1, '150cc': 1.15, '200cc': 1.3 };
 
 /** Derived physical tuning for one kart. */
 export interface KartParams {

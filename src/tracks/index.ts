@@ -61,23 +61,24 @@ export const TRACK_LIST: { id: string; name: string; build: () => TrackDef }[] =
 ];
 
 /** Grand Prix cups: four tracks each, in race order (indexes into TRACK_LIST). */
-export const CUPS: { name: string; tracks: number[] }[] = [
-  { name: 'Nonagon Cup', tracks: [0, 1, 2, 3] },
-  { name: 'Microtonal Cup', tracks: [4, 5, 6, 7] },
+export const CUPS: { id: string; name: string; tracks: number[] }[] = [
+  { id: 'nonagon', name: 'Nonagon Cup', tracks: [0, 1, 2, 3] },
+  { id: 'microtonal', name: 'Microtonal Cup', tracks: [4, 5, 6, 7] },
   // Four ends of the world, the oil-field dragons last.
-  { name: 'Apocalypse Cup', tracks: [9, 10, 11, 8] },
+  { id: 'apocalypse', name: 'Apocalypse Cup', tracks: [9, 10, 11, 8] },
   // Phantom Island (2025): the island in the mist, the plane with no engine, the forest that's awake, and the sea at night.
-  { name: 'Phantom Island Cup', tracks: [12, 13, 14, 15] },
+  { id: 'phantom-island', name: 'Phantom Island Cup', tracks: [12, 13, 14, 15] },
   // Omnium Gatherum (2022): the pink mountain, the ocean planet, the goblin's garden, and the pliosaur.
-  { name: 'Omnium Gatherum Cup', tracks: [16, 17, 18, 19] },
+  { id: 'omnium-gatherum', name: 'Omnium Gatherum Cup', tracks: [16, 17, 18, 19] },
   // Polygondwanaland (2017), in album order: the castle falling down, the castle on the clouds, the inside of a cell, and the fourth colour.
-  { name: 'Polygondwanaland Cup', tracks: [20, 21, 22, 23] },
+  { id: 'polygondwanaland', name: 'Polygondwanaland Cup', tracks: [20, 21, 22, 23] },
   // Nonagon Infinity (2016), in album order: the robot factory, the gamma knife, the vultures' dry lake and the pedalboard. The album never ends, so Wah Wah's finish is Robot Stop's start.
-  { name: 'Nonagon Infinity Cup', tracks: [24, 25, 26, 27] },
+  { id: 'nonagon-infinity', name: 'Nonagon Infinity Cup', tracks: [24, 25, 26, 27] },
 ];
 
 /** The Random Cup, after the others in the picker: four of the premade tracks drawn at random. */
 export const RANDOM_CUP_NAME = 'Random Cup';
+export const RANDOM_CUP_ID = 'random';
 
 /** Draws a Random Cup: four different tracks from TRACK_LIST, in a random order. */
 export function randomCupTracks(rand: () => number = Math.random): number[] {

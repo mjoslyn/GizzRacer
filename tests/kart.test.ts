@@ -161,6 +161,7 @@ describe('kart drift', () => {
     expect(driftTier(DRIFT_TIERS[0])).toBe(1);
     expect(driftTier(DRIFT_TIERS[1])).toBe(2);
     expect(driftTier(DRIFT_TIERS[2])).toBe(3);
+    expect(driftTier(DRIFT_TIERS[3])).toBe(4);
   });
 
   // Holds include ~0.3 s of hop airtime, during which nothing charges.
@@ -168,7 +169,8 @@ describe('kart drift', () => {
     [0.3, 0],
     [0.55, 1],
     [0.7, 2],
-    [1, 3],
+    [0.95, 3],
+    [1.3, 4],
   ])('holding a drift for %ss releases tier %i', (hold, tier) => {
     const s = createKartState();
     s.speed = params.topSpeed;

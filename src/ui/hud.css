@@ -12,6 +12,7 @@
   --tier-1: #3fa9ff;
   --tier-2: #ff8a1f;
   --tier-3: #c04bff;
+  --tier-4: #ffffff;
   --hud-font: 'Metal Mania', 'Arial Black', 'Arial Bold', Gadget, sans-serif;
 }
 
@@ -845,26 +846,127 @@ body:not([data-mode='race']) .hud-warn {
   from { transform: translateY(-8px); opacity: 0; }
 }
 
-/* A Nonagon Infinity coming for the leader: louder and faster as it closes. */
+/* A Nonagon Infinity coming for the leader: louder and faster as it closes, a bar filling to the moment to hop. */
 .hud-warn {
   position: absolute;
   top: 25%;
   left: 0;
   right: 0;
   text-align: center;
-  font-size: calc(18px + 10px * var(--near, 0));
-  color: #7dffb0;
   opacity: 0;
   pointer-events: none;
 }
 
+.hud-warn-text {
+  font-size: calc(18px + 10px * var(--near, 0));
+  color: #7dffb0;
+}
+
 .hud-warn.show {
   opacity: 1;
+}
+
+.hud-warn.show .hud-warn-text {
   animation: hud-warn-pulse calc(0.5s - 0.35s * var(--near, 0)) ease-in-out infinite alternate;
+}
+
+.hud-warn-bar {
+  width: min(260px, 50vw);
+  height: 10px;
+  margin: 6px auto 0;
+  background: rgba(30, 0, 40, 0.6);
+  box-shadow: 0 0 0 2px #3a0f45;
+  transform: skewX(-12deg);
+}
+
+.hud-warn-bar i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, #7dffb0, #30ff90);
+}
+
+.hud-warn.now .hud-warn-bar i {
+  background: #ffffff;
+}
+
+.hud-warn-hop {
+  margin-top: 4px;
+  font-size: 34px;
+  color: #ffffff;
+  opacity: 0;
+}
+
+.hud-warn.now .hud-warn-hop {
+  opacity: 1;
+  animation: hud-warn-hop 0.18s ease-in-out infinite alternate;
+}
+
+@keyframes hud-warn-hop {
+  to { transform: scale(1.25); }
 }
 
 @keyframes hud-warn-pulse {
   to { transform: scale(1.12); color: #ffffff; }
+}
+
+/* Style: the running score under the laps, and a pop for each move over the drift bar. */
+.hud-style {
+  margin-top: 4px;
+  font-size: 15px;
+  letter-spacing: 1px;
+  color: #ffd23a;
+  text-shadow: 2px 2px 0 #3a0f45;
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+
+.hud-style.show {
+  opacity: 1;
+}
+
+.hud-style b {
+  color: #ffffff;
+}
+
+.hud-splits {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 2px 2px 0 #3a0f45;
+}
+
+.hud-splits .ahead {
+  color: #7dffb0;
+}
+
+.hud-splits .behind {
+  color: #ff9a9a;
+}
+
+.hud-style-pop {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 68px;
+  text-align: center;
+  font-size: 26px;
+  letter-spacing: 1px;
+  color: #ffd23a;
+  opacity: 0;
+  transition: opacity 0.25s;
+  pointer-events: none;
+}
+
+.hud-style-pop.show {
+  opacity: 1;
+}
+
+.hud-style-pop.pop {
+  animation: hud-flash-pop 0.3s ease-out;
+}
+
+body:not([data-mode='race']) .hud-style-pop {
+  display: none;
 }
 
 @media (max-width: 700px) {
@@ -915,6 +1017,7 @@ body.touch-mode .hud-item-name {
 @media (max-height: 460px) {
   .hud-flash { top: 31%; }
   .hud-warn { top: 40%; }
+  .hud-style-pop { bottom: 190px; font-size: 20px; }
 }
 
 /* ---- Phones: keep clear of notches, and ask for landscape ---- */
@@ -1860,6 +1963,44 @@ button.hud-big {
   color: #3a0f45;
   -webkit-text-stroke: 0;
   text-shadow: none;
+}
+
+.menu-trophies {
+  opacity: 1;
+}
+
+.menu-trophy {
+  display: inline-block;
+  padding: 1px 7px;
+  margin: 1px 2px;
+  font-size: 11px;
+  letter-spacing: 1px;
+  border: 2px solid #3a0f45;
+  color: #3a0f45;
+  -webkit-text-stroke: 0;
+  text-shadow: none;
+}
+
+.menu-trophy.gold { background: #ffd23a; }
+.menu-trophy.silver { background: #d8dde8; }
+.menu-trophy.bronze { background: #d98c4a; }
+
+.menu-unlocks {
+  color: #ffd0dc;
+}
+
+.menu-random {
+  grid-column: 2 / 5;
+  justify-self: center;
+  margin-top: 2px;
+  padding: 1px 10px;
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 1px;
+  border: 2px solid #ffd23a;
+  background: rgba(60, 10, 30, 0.8);
+  color: #fff6d0;
+  cursor: pointer;
 }
 
 .menu-delete {

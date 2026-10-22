@@ -1,6 +1,6 @@
 import { CPU_SKILL, CpuDriver } from '../ai/cpuDriver';
 import { Race, type RaceKart } from '../core/race';
-import { BASS_SLOW, CABLE_TIME, CANNON_TIME, DRUM_TIME, FLUTE_WOBBLE, FUZZ_BOOST, HARMONICA_WOBBLE, ITEM_KINDS, LASER_SPIN, MINE_WOBBLE, MISSILE_SPIN, SURGE_SPIN, WAVE_SPIN, tempoSlowFor, type ItemKind } from '../items/items';
+import { BASS_SLOW, CABLE_TIME, CANNON_TIME, DRIP_BOOST, DRUM_TIME, FLUTE_WOBBLE, FUZZ_BOOST, HARMONICA_WOBBLE, ITEM_KINDS, LASER_SPIN, MINE_WOBBLE, MISSILE_SPIN, SURGE_SPIN, WAVE_SPIN, tempoSlowFor, type ItemKind } from '../items/items';
 import { RACERS } from '../physics/racers';
 import { TRACK_LIST } from '../tracks/index';
 import { Track } from '../tracks/track';
@@ -94,6 +94,7 @@ export class RoomRace {
     for (const e of this.race.events) {
       const k = e.kart as RaceKart;
       if (e.type === 'use' && e.item === 'fuzzPedal') add(k, { k: 'boost', t: FUZZ_BOOST, by: e.item });
+      if (e.type === 'use' && e.item === 'drippingTap') add(k, { k: 'boost', t: DRIP_BOOST, by: e.item });
       // Items that boost their user: the room set the boost on the kart as it last heard it.
       if (e.type === 'use' && (e.item === 'patchCable' || e.item === 'harmonicaWail')) add(k, { k: 'boost', t: k.state.boostTime, by: e.item });
       // The player's own client flies their cannon, and rolls their drum.

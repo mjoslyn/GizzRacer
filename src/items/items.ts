@@ -23,7 +23,8 @@ export type ItemKind =
   | 'patchCable'
   | 'harmonicaWail'
   | 'keytarLaser'
-  | 'gizzardWave';
+  | 'gizzardWave'
+  | 'drippingTap';
 
 export const ITEMS: Record<ItemKind, { name: string }> = {
   fuzzPedal: { name: 'Mind Fuzz' },
@@ -40,6 +41,8 @@ export const ITEMS: Record<ItemKind, { name: string }> = {
   harmonicaWail: { name: 'Boogieman Sam' },
   keytarLaser: { name: 'Gamma Knife' },
   gizzardWave: { name: 'Nonagon Infinity' },
+  // The long jam, for the back of the field: a boost that keeps dripping.
+  drippingTap: { name: 'The Dripping Tap' },
 };
 export const ITEM_KINDS = Object.keys(ITEMS) as ItemKind[];
 
@@ -64,6 +67,8 @@ export function tempoSlowFor(position: number, karts: number): number {
 }
 
 export const FUZZ_BOOST = 1.2;
+/** The Dripping Tap: one long boost, back-of-the-field only. */
+export const DRIP_BOOST = 3.2;
 export const MINE_WOBBLE = 1.5;
 export const WAVE_RANGE = 8;
 export const WAVE_SPIN = 1.0;
@@ -119,7 +124,7 @@ export const SURGE_FAST = 80;
 export const SURGE_CLOSE = 60;
 export const SURGE_CLOSING = 22;
 export const SURGE_SPIN = 1.8;
-export const SURGE_DODGE = 0.25;
+export const SURGE_DODGE = 0.32;
 const SURGE_LIFE = 25;
 /** Metres behind the middle of the field past which an item box always gives a Woo Cannon. */
 export const FAR_BEHIND = 250;
@@ -242,21 +247,32 @@ export type ItemEvent =
   /** Used a hazard well: a ghost light's core, a wreck as a ramp, a stone rammed on a boost, a wave surfed. */
   | { type: 'bonus'; kart: ItemHolder; by: HazardKind };
 
+/** Horology comes out of the box from this far back (0 leading .. 1 last); the Woo Cannon from COMEBACK_CANNON. */
+export const COMEBACK_HOROLOGY = 0.6;
+export const COMEBACK_CANNON = 0.7;
+/** The Dripping Tap is for the back half. */
+export const COMEBACK_TAP = 0.5;
+
 /**
  * Item odds by race position (spec section 6): `p` runs from 0 (leading)
  * to 1 (last). Fuzz everywhere, mines up front, waves mid-pack, missiles
- * from the middle back, Horology for the last two only, and the Woo
- * Cannon for the last three, likelier the further back.
+ * from the middle back. The comeback items start in the back half of the
+ * field, not the last two or three places: in a field of twelve a bad hit
+ * on lap 2 puts you 8th, and 8th used to get nothing but fuzz. Horology
+ * from 60% back, the Woo Cannon from 70%, the Dripping Tap from halfway,
+ * all likelier the further back.
  */
 export function itemWeights(position: number, karts: number, signature: ItemKind | null = null): Record<ItemKind, number> {
   const p = karts > 1 ? (position - 1) / (karts - 1) : 0;
+  const back = (from: number) => (p >= from - 1e-9 ? (p - from) / Math.max(1e-9, 1 - from) : -1);
   const w: Record<ItemKind, number> = {
     fuzzPedal: 2 + 2 * p,
     microtonalMine: 4 * (1 - p),
     feedbackWave: 4 * Math.max(0, 1 - Math.abs(p - 0.5) * 2),
     riffMissile: position === 1 ? 0 : 3.5 * Math.min(1, p * 1.6),
-    tempoShift: karts > 2 && position >= karts - 1 ? 2.5 : 0,
-    wooCannon: karts > 3 && position >= karts - 2 ? 1.5 + (position - (karts - 2)) : 0,
+    tempoShift: karts > 2 && back(COMEBACK_HOROLOGY) >= 0 ? 1 + 2 * back(COMEBACK_HOROLOGY) : 0,
+    wooCannon: karts > 3 && back(COMEBACK_CANNON) >= 0 ? 1 + 2.5 * back(COMEBACK_CANNON) : 0,
+    drippingTap: karts > 2 && back(COMEBACK_TAP) >= 0 ? 1 + 1.5 * back(COMEBACK_TAP) : 0,
     // The band's own: something for every place, the ones that reach ahead only for those behind.
     fluteFlurry: 1.4 * (1 - 0.5 * p),
     drumRoll: 1 + 0.8 * p,
@@ -401,6 +417,9 @@ export class ItemSystem {
     switch (item) {
       case 'fuzzPedal':
         s.boostTime = Math.max(s.boostTime, FUZZ_BOOST);
+        break;
+      case 'drippingTap':
+        s.boostTime = Math.max(s.boostTime, DRIP_BOOST);
         break;
       case 'microtonalMine': {
         this.mines.push({ x: s.x - fx * 2.6, y: s.groundY, z: s.z - fz * 2.6, owner: k, arm: MINE_ARM });

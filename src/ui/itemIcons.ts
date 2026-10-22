@@ -326,6 +326,34 @@ function draw(kind: ItemKind): string {
       for (let i = 0; i < 6; i++) g.fillRect(-35 + i * 6.5, 4, 5, 11);
       break;
     }
+    case 'drippingTap': {
+      // The Dripping Tap: a brass tap with a stream falling from its spout, drips under it.
+      g.fillStyle = grad(g, '#ffe28a', '#b8841a');
+      roundRect(g, -30, -22, 34, 14, 6);
+      g.fill();
+      outline(4);
+      roundRect(g, -8, -30, 12, 30, 5);
+      g.fill();
+      outline(4);
+      // The handle on top.
+      g.beginPath();
+      g.arc(-13, -30, 9, 0, Math.PI * 2);
+      g.fillStyle = '#ff5a4a';
+      g.fill();
+      outline(3.5);
+      // The stream, and drips.
+      g.fillStyle = '#5ad8ff';
+      roundRect(g, -5, -1, 7, 24, 3);
+      g.fill();
+      outline(3);
+      for (const [x, y, r] of [[-1.5, 30, 4.5], [12, 18, 3], [-14, 24, 3]] as const) {
+        g.beginPath();
+        g.arc(x, y, r, 0, Math.PI * 2);
+        g.fill();
+        outline(2.5);
+      }
+      break;
+    }
     case 'gizzardWave': {
       // Nonagon Infinity: a nine-sided ring, an endless loop.
       for (const [r, w, col] of [[30, 12, '#1a0620'], [30, 7, '#30ff90']] as const) {
