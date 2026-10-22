@@ -691,7 +691,6 @@ function step(dt: number): void {
   if (ev.trick) {
     chase.bump(0.6);
     chase.kick(4 + ev.trickStreak * 2);
-    if (ev.trickStreak > 1) hud.flash(`TRICK x${ev.trickStreak}!`);
     st?.add('trick', ev.trickStreak);
   }
   if (player.drafted) {

@@ -14,6 +14,16 @@ describe('style meter', () => {
     expect(m.bestChain).toBe(2);
   });
 
+  it('tricks and slipstreams score quietly: no pop for the HUD', () => {
+    const m = new StyleMeter();
+    m.add('trick', 2);
+    m.add('slipstream');
+    expect(m.last).toBeNull();
+    expect(m.score).toBe(STYLE_POINTS.trick + 50 + STYLE_POINTS.slipstream * 2);
+    m.add('drift2');
+    expect(m.last?.move).toBe('drift2');
+  });
+
   it('caps the chain', () => {
     const m = new StyleMeter();
     for (let i = 0; i < 10; i++) m.add('drift2');

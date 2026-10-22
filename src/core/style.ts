@@ -42,6 +42,8 @@ export const CHAIN_WINDOW = 4;
 export const CHAIN_MAX = 5;
 /** Each trick in a streak past the first adds this. */
 const TRICK_STREAK_POINTS = 50;
+/** Moves that score without a pop on the HUD: they happen too often to call out every time. */
+export const QUIET_MOVES: ReadonlySet<StyleMove> = new Set<StyleMove>(['trick', 'slipstream']);
 
 export interface StyleEvent {
   move: StyleMove;
@@ -57,7 +59,7 @@ export class StyleMeter {
   chainLeft = 0;
   bestChain = 0;
   readonly counts: Record<StyleMove, number> = { drift1: 0, drift2: 0, drift3: 0, drift4: 0, trick: 0, slipstream: 0, rocket: 0, hazard: 0, hit: 0, dodge: 0, block: 0, shortcut: 0 };
-  /** The last move, for the HUD. */
+  /** The last move the HUD should pop (QUIET_MOVES never land here). */
   last: StyleEvent | null = null;
 
   /** Lets the chain run out. */
@@ -77,8 +79,9 @@ export class StyleMeter {
     const points = base * this.chain;
     this.score += points;
     const text = move === 'trick' && streak > 1 ? `TRICK x${streak}` : STYLE_NAMES[move];
-    this.last = { move, points, chain: this.chain, text };
-    return this.last;
+    const event = { move, points, chain: this.chain, text };
+    if (!QUIET_MOVES.has(move)) this.last = event;
+    return event;
   }
 
   get drifts(): number {
