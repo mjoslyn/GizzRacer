@@ -56,6 +56,7 @@ No install and no account. It will always be free.
 | Pause | Esc | Start | Pause button |
 
 - **Drift:** hold hop while turning. Sparks charge from blue to orange to purple, and letting go gives a boost. The longer you hold, the bigger it is. Hold a purple on through the corner for **rainbow** sparks, the longest boost there is.
+- **Handling:** every kart skids a little wide through a turn, and wider in a drift. How wide is the racer's handling stat: a Fuzz Golem runs out toward the edge where Beowulf's Witch holds the line.
 - **Tricks:** tap hop just as you leave a ramp or a crest for a boost when you land. Chain them for bigger ones.
 - **Rocket start:** hop just as the countdown's 1 goes out.
 - **Slipstream:** tuck in behind another kart to charge a boost.

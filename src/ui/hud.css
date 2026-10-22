@@ -943,31 +943,7 @@ body:not([data-mode='race']) .hud-warn {
   color: #ff9a9a;
 }
 
-.hud-style-pop {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 68px;
-  text-align: center;
-  font-size: 26px;
-  letter-spacing: 1px;
-  color: #ffd23a;
-  opacity: 0;
-  transition: opacity 0.25s;
-  pointer-events: none;
-}
 
-.hud-style-pop.show {
-  opacity: 1;
-}
-
-.hud-style-pop.pop {
-  animation: hud-flash-pop 0.3s ease-out;
-}
-
-body:not([data-mode='race']) .hud-style-pop {
-  display: none;
-}
 
 @media (max-width: 700px) {
   .hud-callout {
@@ -1017,7 +993,6 @@ body.touch-mode .hud-item-name {
 @media (max-height: 460px) {
   .hud-flash { top: 31%; }
   .hud-warn { top: 40%; }
-  .hud-style-pop { bottom: 190px; font-size: 20px; }
 }
 
 /* ---- Phones: keep clear of notches, and ask for landscape ---- */

@@ -31,12 +31,12 @@ const rampGround = (z: number) => (z < 0 ? 0 : z < 20 ? z * 0.125 : z < 32 ? -12
 
 const input = (over: Partial<InputFrame>): InputFrame => ({ ...NEUTRAL_INPUT, ...over });
 
-function run(s: KartState, env: DriveEnv, seconds: number, inp: InputFrame | ((t: number) => InputFrame)) {
+function run(s: KartState, env: DriveEnv, seconds: number, inp: InputFrame | ((t: number) => InputFrame), p = params) {
   const steps = Math.round(seconds / PHYSICS_DT);
   const events = [];
   for (let i = 0; i < steps; i++) {
     const frame = typeof inp === 'function' ? inp(i * PHYSICS_DT) : inp;
-    events.push(stepKart(s, frame, params, env, PHYSICS_DT));
+    events.push(stepKart(s, frame, p, env, PHYSICS_DT));
   }
   return events;
 }
@@ -154,6 +154,21 @@ describe('kart drift', () => {
     expect(events.some((e) => e.landed > 0)).toBe(true);
     expect(s.grounded).toBe(true);
     expect(s.y).toBe(0);
+  });
+
+  it('a kart with less handling skids wider through the same turn', () => {
+    const golem = kartParams(RACERS.find((r) => r.id === 'fuzz-golem')!.stats, '100cc');
+    const witch = kartParams(RACERS.find((r) => r.id === 'swamp-witch')!.stats, '100cc');
+    expect(golem.slide).toBeGreaterThan(witch.slide);
+    // The same turn (the same turn rate), only the slide differing: the low-handling kart carries more momentum wide.
+    const wide = (slide: number) => {
+      const s = createKartState();
+      s.speed = 25;
+      run(s, flatEnv(), 0.6, () => ({ ...NEUTRAL_INPUT, throttle: 1, steer: 1 }), { ...params, slide });
+      return Math.hypot(s.extX, s.extZ);
+    };
+    expect(wide(golem.slide)).toBeGreaterThan(wide(witch.slide) * 1.3);
+    expect(wide(golem.slide)).toBeCloseTo(wide(1) * golem.slide, 1);
   });
 
   it('tiers map to spec thresholds', () => {

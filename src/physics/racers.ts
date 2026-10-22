@@ -70,6 +70,8 @@ export interface KartParams {
   driftTurnRate: number; // rad/s baseline while drifting
   driftChargeRate: number; // charge seconds per real second at neutral steer bias
   mass: number; // relative, for bump knockback
+  /** How far the kart skids wide of its nose through a turn or a drift, as a share of the surface's own slide: handling 3 is 1, handling 1 a fifth more, handling 5 a fifth less. */
+  slide: number;
 }
 
 export function kartParams(stats: RacerStats, engine: EngineClass): KartParams {
@@ -82,5 +84,6 @@ export function kartParams(stats: RacerStats, engine: EngineClass): KartParams {
     driftTurnRate: 1.35 + 0.22 * stats.handling,
     driftChargeRate: 0.75 + 0.09 * stats.drift,
     mass: 0.9 + 0.06 * stats.weight,
+    slide: 1.3 - 0.1 * stats.handling,
   };
 }

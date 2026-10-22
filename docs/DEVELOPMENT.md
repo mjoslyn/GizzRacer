@@ -23,7 +23,7 @@ Milestones 1 to 7 are in (driving feel, the Rattlesnake Run greybox, CPU racers,
 
 - Fixed 60 Hz physics with interpolated rendering (`src/core/loop.ts`)
 - Keyboard + standard gamepad input as pure `InputFrame` data, auto-accelerate by default (`src/core/input.ts`), and smart steering that keeps you off the edges and straightens you out of turns (`src/physics/steerAssist.ts`)
-- Arcade kart controller: per-racer stats, engine classes, off-road penalty, fine steering (gradual ramp-in, response curve), hop, 3-tier drift boosts, ramps that launch off their lip, trick boosts, boost pads, walls you bounce off (square-on straight back, glancing along the wall; a graze only shaves speed) (`src/physics/kart.ts`)
+- Arcade kart controller: per-racer stats (handling also sets how wide a kart skids through turns and drifts, `KartParams.slide`), engine classes, off-road penalty, fine steering (gradual ramp-in, response curve), hop, 3-tier drift boosts, ramps that launch off their lip, trick boosts, boost pads, walls you bounce off (square-on straight back, glancing along the wall; a graze only shaves speed) (`src/physics/kart.ts`)
 - Track model: turtle-style builder (`src/tracks/builder.ts`), ribbons with per-section width, walls, surface and elevation, jump gaps over pits, branch shortcuts (`src/tracks/track.ts`)
 - Infinite Loop Speedway (`src/tracks/infiniteLoopSpeedway.ts`): a figure-8 on green hills; the two long straights cross in the middle, one flying over the other on an overpass on pillars
 - Volcano Fortress (`src/tracks/volcanoFortress.ts`): lava switchbacks, a walled basalt fortress behind two gatehouses with flame jets across the road, a rail-less bridge over a lava lake, and lava bombs on the open plains

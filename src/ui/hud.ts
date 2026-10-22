@@ -2,15 +2,12 @@ import { DRIFT_TIERS, driftTier, type KartState } from '../physics/kart';
 import { ordinal } from '../core/race';
 import { ITEMS, ITEM_KINDS, type ItemKind } from '../items/items';
 import { itemIcon } from './itemIcons';
-import type { StyleEvent } from '../core/style';
 import { Minimap } from './minimap';
 
 const TIER_NAMES = ['', 'BLUE', 'ORANGE', 'PURPLE', 'RAINBOW'];
 const TIER_COLORS = ['#fff2a8', 'var(--tier-1)', 'var(--tier-2)', 'var(--tier-3)', 'var(--tier-4)'];
 const MAX_CHARGE = DRIFT_TIERS[DRIFT_TIERS.length - 1];
 const FLASH_TIME = 1;
-/** Seconds a style move's pop stays up. */
-const STYLE_POP_TIME = 1.3;
 /** With a Nonagon Infinity this close (s), it's time to hop. */
 export const SURGE_HOP_WINDOW = 0.55;
 /** The warning's bar fills over the last few seconds of its approach. */
@@ -94,8 +91,8 @@ export interface HudData {
   spare: ItemKind | null;
   /** A Nonagon Infinity closing in on you: 0 far .. 1 arriving, and seconds until it does; null when none is. */
   surge: { near: number; eta: number } | null;
-  /** The style meter: the running score, the chain, and the last move (core/style.ts); null in Time Trial. */
-  style: { score: number; chain: number; last: StyleEvent | null } | null;
+  /** The style meter: the running score and the chain (core/style.ts); null in Time Trial. */
+  style: { score: number; chain: number } | null;
   /** Time Trial: the gap to the ghost at each checkpoint passed this run. */
   splits: { label: string; gap: number }[];
 }
@@ -141,10 +138,7 @@ export class Hud {
   private readonly warnEl: HTMLElement;
   private readonly warnBar: HTMLElement;
   private readonly styleEl: HTMLElement;
-  private readonly stylePop: HTMLElement;
   private readonly splitsEl: HTMLElement;
-  private lastStyle: StyleEvent | null = null;
-  private stylePopAt = -Infinity;
   private lastSplits = '';
   private readonly itemImg: HTMLImageElement;
   private readonly itemName: HTMLElement;
@@ -178,7 +172,6 @@ export class Hud {
       <div class="hud-item"><img alt="" /><div class="hud-item-name"></div><div class="hud-spare"><img alt="" /></div></div>
       <div class="hud-warn"><div class="hud-warn-text hud-big">NONAGON INFINITY!</div><div class="hud-warn-bar"><i></i></div><div class="hud-warn-hop hud-big">HOP!</div></div>
       <div class="hud-flash hud-big"></div>
-      <div class="hud-style-pop hud-big"></div>
       <div class="hud-intro"><div class="hud-intro-name hud-big"></div><div class="hud-intro-sub"></div><div class="hud-intro-skip">${'ontouchstart' in window ? 'tap' : 'press any key'} to skip</div></div>
       <div class="hud-drift">
         <div class="hud-drift-bar"><div class="hud-drift-fill"></div>${ticks}</div>
@@ -244,7 +237,6 @@ export class Hud {
     this.warnEl = q('.hud-warn');
     this.warnBar = q('.hud-warn-bar i');
     this.styleEl = q('.hud-style');
-    this.stylePop = q('.hud-style-pop');
     this.splitsEl = q('.hud-splits');
     this.introEl = q('.hud-intro');
     q('.hud-tr').appendChild(this.minimap.canvas);
@@ -309,7 +301,7 @@ export class Hud {
       this.lastSplits = splits;
       this.splitsEl.innerHTML = splits;
     }
-    this.updateStyle(d, now);
+    this.updateStyle(d);
     this.speed.innerHTML = `${Math.round(Math.abs(k.speed) * 3.6)}<small>km/h</small>`;
     this.surface.innerHTML = k.boostTime > 0 ? '<span class="hud-boost">BOOST!</span>' : k.surface;
     this.racer.innerHTML = `${d.trackName}<br />${d.racerName} &middot; ${d.engineClass}${d.autoAccelerate ? '' : ' &middot; manual'}${d.muted ? ' &middot; music off' : ''}${d.sfxMuted ? ' &middot; sfx off' : ''}`;
@@ -367,23 +359,14 @@ export class Hud {
     }
   }
 
-  /** The running style score, and a pop for each move as it lands. */
-  private updateStyle(d: HudData, now: number): void {
+  /** The running style score under the laps: the score and the chain, nothing popping. */
+  private updateStyle(d: HudData): void {
     const st = d.style;
     this.styleEl.classList.toggle('show', !!st && st.score > 0);
     if (!st) return;
     const chain = st.chain > 1 ? ` <b>x${st.chain}</b>` : '';
     const html = `STYLE ${st.score.toLocaleString('en-US')}${chain}`;
     if (this.styleEl.innerHTML !== html) this.styleEl.innerHTML = html;
-    if (st.last && st.last !== this.lastStyle) {
-      this.lastStyle = st.last;
-      this.stylePopAt = now;
-      this.stylePop.textContent = `${st.last.text}${st.last.chain > 1 ? ` x${st.last.chain}` : ''} +${st.last.points}`;
-      this.stylePop.classList.remove('pop');
-      void this.stylePop.offsetWidth;
-      this.stylePop.classList.add('pop');
-    }
-    this.stylePop.classList.toggle('show', now - this.stylePopAt < STYLE_POP_TIME && !d.paused && !d.finished);
   }
 
   private updateItem(d: HudData, now: number): void {

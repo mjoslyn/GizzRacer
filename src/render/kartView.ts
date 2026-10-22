@@ -189,8 +189,8 @@ export class KartView {
         spin.add(new THREE.Mesh(new THREE.TorusGeometry(w.radius - tube, tube, 10, 40).rotateY(Math.PI / 2), w.material ?? rubber));
         spin.add(new THREE.Mesh(new THREE.TorusGeometry(w.radius - tube * 2.2, tube * 0.35, 6, 40).rotateY(Math.PI / 2), hubMat));
       } else {
-        const tire = new THREE.Mesh(new THREE.CylinderGeometry(w.radius, w.radius, w.width, 18).rotateZ(Math.PI / 2), w.material ?? rubber);
-        const hub = new THREE.Mesh(new THREE.CylinderGeometry(w.radius * 0.5, w.radius * 0.5, w.width + 0.02, 10).rotateZ(Math.PI / 2), hubMat);
+        const tire = new THREE.Mesh(new THREE.CylinderGeometry(w.radius, w.radius, w.width, 36).rotateZ(Math.PI / 2), w.material ?? rubber);
+        const hub = new THREE.Mesh(new THREE.CylinderGeometry(w.radius * 0.5, w.radius * 0.5, w.width + 0.02, 20).rotateZ(Math.PI / 2), hubMat);
         // Tread blocks round the tire and a spoke, so the spin reads.
         const spoke = new THREE.Mesh(new THREE.BoxGeometry(w.width + 0.03, w.radius * 1.5, 0.06), hubMat);
         const lug = new THREE.BoxGeometry(w.width * 0.92, 0.035, w.radius * 0.18);

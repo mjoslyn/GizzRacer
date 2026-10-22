@@ -1247,7 +1247,7 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
       rolling: player?.rolling ?? 0,
       spare: player?.spare ?? null,
       surge: player ? surgeCloseness(player) : null,
-      style: style && player ? { score: style.score, chain: style.chainLeft > 0 ? style.chain : 0, last: style.last } : null,
+      style: style && player ? { score: style.score, chain: style.chainLeft > 0 ? style.chain : 0 } : null,
       splits,
     },
     elapsed,

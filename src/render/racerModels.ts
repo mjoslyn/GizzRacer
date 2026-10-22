@@ -87,10 +87,12 @@ function put(parent: THREE.Object3D, geo: THREE.BufferGeometry, mat: THREE.Mater
 }
 
 const box = (w: number, h: number, d: number) => new THREE.BoxGeometry(w, h, d);
-const ball = (r: number, w = 16, h = 12) => new THREE.SphereGeometry(r, w, h);
-const cyl = (rt: number, rb: number, h: number, seg = 12) => new THREE.CylinderGeometry(rt, rb, h, seg);
-const cone = (r: number, h: number, seg = 12) => new THREE.ConeGeometry(r, h, seg);
-const ring = (r: number, tube: number, arc = Math.PI * 2) => new THREE.TorusGeometry(r, tube, 8, 24, arc);
+/** Model resolution: every curved surface gets twice the segments it was drawn with (`RES`), so heads, helmets and wheels read round up close. */
+const RES = 2;
+const ball = (r: number, w = 16, h = 12) => new THREE.SphereGeometry(r, w * RES, h * RES);
+const cyl = (rt: number, rb: number, h: number, seg = 12) => new THREE.CylinderGeometry(rt, rb, h, seg < 6 ? seg : seg * RES);
+const cone = (r: number, h: number, seg = 12) => new THREE.ConeGeometry(r, h, seg < 6 ? seg : seg * RES);
+const ring = (r: number, tube: number, arc = Math.PI * 2) => new THREE.TorusGeometry(r, tube, 8 * RES, 24 * RES, arc);
 
 const UP = new THREE.Vector3(0, 1, 0);
 
@@ -1083,7 +1085,7 @@ function cosmicCoyote(r: RacerDef): KartModel {
   put(rocket, ring(0.24, 0.03), trim, [0, 0.2, 0], [Math.PI / 2, 0, 0]);
   put(rocket, cyl(0.2, 0.26, 0.12, 14), matte(0x2a2a2a), [0, -0.7, 0]);
   rod(body, [-0.45, 0.6, -0.5], [-0.45, 1.1, -0.6], 0.02, chrome());
-  put(body, new THREE.SphereGeometry(0.16, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), chrome(), [-0.45, 1.12, -0.6], [-0.9, 0.6, 0]);
+  put(body, new THREE.SphereGeometry(0.16, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2), chrome(), [-0.45, 1.12, -0.6], [-0.9, 0.6, 0]);
   // Stars painted down the sides, a ringed planet on the nose.
   for (let k = 0; k < 4; k++) for (const side of [-1, 1]) put(body, new THREE.OctahedronGeometry(0.06), glow(0xfff2a8), [side * 0.61, 0.45, 0.4 - k * 0.4]);
   put(body, ball(0.1, 12, 8), glow(0xff9a1f), [0, 0.68, 1.35]);
@@ -1331,7 +1333,7 @@ function mushroomSage(r: RacerDef): KartModel {
   body.add(saucer);
 
   // A wide toadstool cap, flat on top where the sage sits; gills underneath; a stubby stem as the keel.
-  put(saucer, new THREE.SphereGeometry(1.25, 28, 12, 0, Math.PI * 2, 0, Math.PI / 2), cap, [0, -0.2, 0], [0, 0, 0], [1, 0.42, 1.2]);
+  put(saucer, new THREE.SphereGeometry(1.25, 56, 24, 0, Math.PI * 2, 0, Math.PI / 2), cap, [0, -0.2, 0], [0, 0, 0], [1, 0.42, 1.2]);
   put(saucer, new THREE.CircleGeometry(1.25, 28), gill, [0, -0.2, 0], [Math.PI / 2, 0, 0], [1, 1.2, 1]);
   for (let k = 0; k < 24; k++) put(saucer, box(0.015, 0.06, 1.0), gill, [0, -0.23, 0], [0, (k / 24) * Math.PI, 0]);
   put(saucer, ring(1.22, 0.06), stem, [0, -0.2, 0], [Math.PI / 2, 0, 0], [1, 1.2, 1]);
@@ -1348,7 +1350,7 @@ function mushroomSage(r: RacerDef): KartModel {
   // Small mushrooms sprouting on the cap, a moss rim round the seat.
   for (const [x, z, s] of [[0.7, 0.5, 1], [-0.75, 0.3, 0.8], [0.5, -0.7, 0.7], [-0.4, -0.8, 1.1]] as const) {
     put(saucer, cyl(0.03 * s, 0.04 * s, 0.14 * s, 8), matte(0xf0e8d0), [x, 0.18 - Math.hypot(x, z) * 0.12, z]);
-    put(saucer, new THREE.SphereGeometry(0.09 * s, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), gloss(0xff7a3a), [x, 0.25 - Math.hypot(x, z) * 0.12, z]);
+    put(saucer, new THREE.SphereGeometry(0.09 * s, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), gloss(0xff7a3a), [x, 0.25 - Math.hypot(x, z) * 0.12, z]);
   }
   put(saucer, ring(0.45, 0.07), matte(0x5a8a3a, { flatShading: true }), [0, 0.3, -0.1], [Math.PI / 2, 0, 0]);
   // Spores drifting round in a slow ring.
@@ -1387,7 +1389,7 @@ function mushroomSage(r: RacerDef): KartModel {
   }
   for (const side of [-1, 1]) put(head, cone(0.035, 0.18, 6), matte(0xffffff), [side * 0.08, -0.06, 0.19], [0, 0, side * 2.0]);
   // Its own little cap, spotted like the saucer.
-  put(head, new THREE.SphereGeometry(0.34, 18, 8, 0, Math.PI * 2, 0, Math.PI / 2), cap, [0, 0.1, 0], [0, 0, 0], [1, 0.75, 1]);
+  put(head, new THREE.SphereGeometry(0.34, 36, 16, 0, Math.PI * 2, 0, Math.PI / 2), cap, [0, 0.1, 0], [0, 0, 0], [1, 0.75, 1]);
   put(head, new THREE.CircleGeometry(0.34, 18), gill, [0, 0.1, 0], [Math.PI / 2, 0, 0]);
   d.add(head);
   saucer.add(d);
@@ -1623,7 +1625,7 @@ function musician(d: THREE.Group, look: Look): THREE.Group {
     put(head, ball(0.028, 10, 8), iris, [x, 0.035, 0.235]);
     put(head, ball(0.014, 8, 6), matte(0x050505), [x, 0.035, 0.252]);
     put(head, ball(0.007, 6, 4), glow(0xffffff), [x + 0.008, 0.045, 0.258]);
-    put(head, new THREE.SphereGeometry(0.054, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2.2), skin, [x, 0.047, 0.201], [-0.42, 0, 0], [1.25, 0.8, 0.75]);
+    put(head, new THREE.SphereGeometry(0.054, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2.2), skin, [x, 0.047, 0.201], [-0.42, 0, 0], [1.25, 0.8, 0.75]);
     // Brows: the hair colour, thick and arched.
     put(head, box(0.11, 0.026, 0.03), hair, [x, 0.125, 0.225], [0, 0, side * -0.18]);
     // Ears with a shaded hollow.
@@ -1637,7 +1639,7 @@ function musician(d: THREE.Group, look: Look): THREE.Group {
   // A grin: a dark mouth, a curved row of upper teeth inside it, and lips round it.
   const lip = matte(new THREE.Color(look.skin).lerp(new THREE.Color(0xb05a50), 0.55).getHex(), { shininess: 40 });
   put(head, ball(0.065, 14, 10), matte(0x2a0808), [0, -0.122, 0.205], [0, 0, 0], [1.2, 0.5, 0.5]);
-  put(head, new THREE.SphereGeometry(0.06, 16, 6, 0, Math.PI * 2, 0, Math.PI / 2), matte(0xfaf8f0, { shininess: 90, specular: 0x666666 }), [0, -0.104, 0.214], [Math.PI, 0, 0], [1.15, 0.42, 0.55]);
+  put(head, new THREE.SphereGeometry(0.06, 32, 12, 0, Math.PI * 2, 0, Math.PI / 2), matte(0xfaf8f0, { shininess: 90, specular: 0x666666 }), [0, -0.104, 0.214], [Math.PI, 0, 0], [1.15, 0.42, 0.55]);
   put(head, new THREE.TorusGeometry(0.072, 0.011, 6, 18, Math.PI), lip, [0, -0.12, 0.215], [0.35, 0, Math.PI]);
   put(head, new THREE.TorusGeometry(0.07, 0.009, 6, 18, Math.PI), lip, [0, -0.104, 0.218], [-0.2, 0, 0], [1, 0.25, 1]);
   if (look.beard !== undefined) {
@@ -1679,8 +1681,8 @@ function musician(d: THREE.Group, look: Look): THREE.Group {
   // Hair, built up from clumps so it has some volume and shape.
   const clump = (pos: [number, number, number], size: number, stretch: [number, number, number], rot: [number, number, number] = [0, 0, 0]) => put(head, ball(size, 8, 6), hair, pos, rot, stretch);
   // The scalp: a full cap of hair, or only the crown for short back and sides.
-  if (look.style === 'short') put(head, new THREE.SphereGeometry(0.264, 18, 8, 0, Math.PI * 2, 0, Math.PI / 3.3), hair, [0, 0.07, -0.02], [-0.1, 0, 0], [1, 1.05, 1.05]);
-  else put(head, new THREE.SphereGeometry(0.265, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), hair, [0, 0.06, -0.02], [-0.15, 0, 0], [1, 0.95, 1.05]);
+  if (look.style === 'short') put(head, new THREE.SphereGeometry(0.264, 36, 16, 0, Math.PI * 2, 0, Math.PI / 3.3), hair, [0, 0.07, -0.02], [-0.1, 0, 0], [1, 1.05, 1.05]);
+  else put(head, new THREE.SphereGeometry(0.265, 36, 20, 0, Math.PI * 2, 0, Math.PI / 2), hair, [0, 0.06, -0.02], [-0.15, 0, 0], [1, 0.95, 1.05]);
   switch (look.style) {
     case 'long':
       // Long and straight-ish, down past the shoulders: a curtain behind, a lock either side of the face, parted in the middle.
@@ -1788,11 +1790,11 @@ function musician(d: THREE.Group, look: Look): THREE.Group {
       put(head, cyl(0.42, 0.42, 0.03, 22), hat, [0, 0.18, -0.01], [0.08, 0, 0]);
       put(head, ring(0.215, 0.015), matte(0x1a1a1a), [0, 0.22, -0.01], [Math.PI / 2, 0, 0]);
     } else if (look.hat.kind === 'cap') {
-      put(head, new THREE.SphereGeometry(0.275, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), hat, [0, 0.1, -0.02]);
+      put(head, new THREE.SphereGeometry(0.275, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2), hat, [0, 0.1, -0.02]);
       put(head, box(0.32, 0.03, 0.24), hat, [0, 0.11, 0.27], [0.15, 0, 0]);
       put(head, ball(0.025, 6, 4), hat, [0, 0.37, -0.02]);
     } else {
-      put(head, new THREE.SphereGeometry(0.275, 16, 8, 0, Math.PI * 2, 0, Math.PI / 1.9), hat, [0, 0.08, -0.02], [0, 0, 0], [1.03, 1.15, 1.03]);
+      put(head, new THREE.SphereGeometry(0.275, 32, 16, 0, Math.PI * 2, 0, Math.PI / 1.9), hat, [0, 0.08, -0.02], [0, 0, 0], [1.03, 1.15, 1.03]);
       put(head, ring(0.265, 0.04), hat, [0, 0.1, -0.02], [Math.PI / 2, 0, 0]);
     }
   }
@@ -2411,7 +2413,7 @@ export function buildWooCannon(r: RacerDef): WooCannonModel {
   const nose = gloss(r.color, { shininess: 120 });
   const band = gloss(r.accent);
   put(group, cyl(1, 1, 2.2, 28), shell, [0, 0, 0], [Math.PI / 2, 0, 0]);
-  put(group, new THREE.SphereGeometry(1, 28, 14, 0, Math.PI * 2, 0, Math.PI / 2), nose, [0, 0, 1.1], [Math.PI / 2, 0, 0]);
+  put(group, new THREE.SphereGeometry(1, 56, 28, 0, Math.PI * 2, 0, Math.PI / 2), nose, [0, 0, 1.1], [Math.PI / 2, 0, 0]);
   for (const z of [0.55, -0.45]) put(group, ring(1.0, 0.07), band, [0, 0, z]);
   // The letters down both flanks.
   const c = document.createElement('canvas');

@@ -79,7 +79,7 @@ export interface StepEvents {
  * Bump whenever kart physics, racer stats or a track layout change lap
  * times: online leaderboards and ghosts are kept per version.
  */
-export const PHYSICS_VERSION = 12;
+export const PHYSICS_VERSION = 13;
 export const KART_RADIUS = 1;
 export const GRAVITY = 30;
 export const HOP_VELOCITY = 4.5;
@@ -348,9 +348,11 @@ export function stepKart(s: KartState, input: InputFrame, p: KartParams, env: Dr
   const fx = Math.sin(s.heading);
   const fz = Math.cos(s.heading);
   if (s.grounded && turned !== 0) {
-    // The kart turns but its momentum doesn't all follow, so it skids wide; a drift slides out further.
+    // The kart turns but its momentum doesn't all follow, so it skids wide; a drift slides out further,
+    // and a kart with less handling slides out further still (p.slide, from the racer's stat).
     let slide = SLIDE[s.surface];
     if (s.driftDir !== 0) slide = Math.min(0.75, slide + DRIFT_SLIDE + DRIFT_HARD_SLIDE * clamp(steerIn * s.driftDir, 0, 1));
+    slide = Math.min(0.95, slide * p.slide);
     s.extX += (Math.sin(s.heading + turned) - fx) * s.speed * slide;
     s.extZ += (Math.cos(s.heading + turned) - fz) * s.speed * slide;
   }
