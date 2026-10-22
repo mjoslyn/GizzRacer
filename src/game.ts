@@ -34,7 +34,7 @@ import { ITEMS, type ItemHolder, type ItemKind } from './items/items';
 import { ChaseCamera, type CameraPlacement } from './render/chaseCamera';
 import { HazardsView, ItemsView } from './render/itemViews';
 import { KartView, setDustColor } from './render/kartView';
-import { setGraphicsDetail } from './render/detail';
+import { DETAIL_SPEC, setGraphicsDetail } from './render/detail';
 import { PostFx } from './render/postfx';
 import { RacerGallery } from './render/gallery';
 import { flareRingTexture, glowTexture, setTextureAnisotropy } from './render/textures';
@@ -54,9 +54,7 @@ const SUN_DIR = new THREE.Vector3(-0.5, 0.55, -0.65).normalize();
 
 const app = document.getElementById('app')!;
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-/** Device pixels per CSS pixel the game draws at: full on High (to 2x), a fraction on Low, where the fill cost is what a phone feels. */
-const PIXEL_RATIO = { high: 2, low: 1.25 } as const;
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, PIXEL_RATIO.high));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, DETAIL_SPEC.high.pixelRatio));
 renderer.setSize(window.innerWidth, window.innerHeight);
 app.appendChild(renderer.domElement);
 setTextureAnisotropy(renderer.capabilities.getMaxAnisotropy());
@@ -316,14 +314,23 @@ const settingsScreen = new SettingsScreen(document.body, tilt);
 /** The mix that sits right: music under the effects (see the audio commit). */
 const MUSIC_LEVEL = 0.63;
 onSettings((s) => {
-  // Detail: shadows switch at once; the road grain and the denser scenery arrive with the next track built.
-  const high = s.detail === 'high';
+  // Detail (render/detail.ts): shadows and the resolution switch at once; the road grain and the scenery arrive with the next track built.
+  const spec = DETAIL_SPEC[s.detail];
   setGraphicsDetail(s.detail);
-  renderer.shadowMap.enabled = high;
-  sun.castShadow = high;
-  KartView.realShadows = high;
-  // Low detail also draws at fewer pixels: on a phone that is most of the saving.
-  const ratio = Math.min(window.devicePixelRatio, PIXEL_RATIO[s.detail]);
+  renderer.shadowMap.enabled = spec.shadows;
+  sun.castShadow = spec.shadows;
+  KartView.realShadows = spec.shadows;
+  if (spec.shadows && (sun.shadow.mapSize.x !== spec.shadowMap || sun.shadow.camera.right !== spec.shadowReach)) {
+    // A new map size needs a new map; the reach is the shadow camera's frustum.
+    sun.shadow.mapSize.set(spec.shadowMap, spec.shadowMap);
+    sun.shadow.map?.dispose();
+    sun.shadow.map = null;
+    sun.shadow.camera.left = sun.shadow.camera.bottom = -spec.shadowReach;
+    sun.shadow.camera.right = sun.shadow.camera.top = spec.shadowReach;
+    sun.shadow.camera.updateProjectionMatrix();
+  }
+  // Low draws at fewer pixels: on a phone that is most of the saving.
+  const ratio = Math.min(window.devicePixelRatio, spec.pixelRatio);
   if (renderer.getPixelRatio() !== ratio) {
     renderer.setPixelRatio(ratio);
     fitRenderer();

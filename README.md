@@ -33,7 +33,7 @@ No install and no account. It will always be free.
 - **Leaderboards** for the fastest full race on every track (the daily included) and the best result in every cup, beside the picker, as well as Time Trial's
 - **A soundtrack** of video-game remixes of the band's songs, one per track, with a faster cut on the final lap
 - **A VHS look** after the Rattlesnake video: tape wobble and a duotone in each world's colours. You can turn it down or off.
-- **High detail** (Settings > Detail, on by default except on phones, which start on Low with fewer pixels to push): sun shadows from every kart, post, tree and stand, roads with grain that catches the light, and half again as much scenery
+- **Detail levels** (Settings > Detail; High by default, Low on phones): High has sun shadows from every kart, post, tree and stand, roads with grain that catches the light, and half again as much scenery; Medium keeps the resolution, the grain and nearby shadows with the usual scenery; Low draws fewer pixels with no shadows
 
 ## Modes
 

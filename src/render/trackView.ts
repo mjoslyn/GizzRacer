@@ -5,7 +5,7 @@ import type { PitDef, RoadSurface } from '../tracks/builder';
 import { BANK, branchOpen, inPit, type BranchDef, type LapContext, type Ribbon, type Track } from '../tracks/track';
 import * as tex from './textures';
 import { trackLife } from './trackLife';
-import { densityScale, graphicsDetail } from './detail';
+import { DETAIL_SPEC, densityScale, graphicsDetail } from './detail';
 import { THEMES, type Theme } from './themes';
 import { CURB_WIDTH, atmosphere, roadPaint, trackDetail } from './trackDetail';
 import { colonyFeature, colonyGate, cosmosFeature, plainsFeature, rodGate, stormWeather, voidEye } from './apocalypse';
@@ -85,7 +85,7 @@ function materials(theme: Theme): Materials {
   const neon = tex.neonRoadTexture();
   const rainbow = tex.rainbowTexture();
   // High detail: the road's own texture as a bump map, so its grain catches the sun.
-  const grain = graphicsDetail() === 'high';
+  const grain = DETAIL_SPEC[graphicsDetail()].grain;
   const bumpy = (map: THREE.Texture, scale: number, extra: THREE.MeshLambertMaterialParameters = {}) => lambert(map, grain ? { bumpMap: map, bumpScale: scale, ...extra } : extra);
   const m: Materials = {
     road: {

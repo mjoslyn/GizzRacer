@@ -1,4 +1,5 @@
 import { TILT_RANGES, VIDEO_LOOKS, settings, updateSettings, type Settings } from '../core/settings';
+import { DETAILS, DETAIL_NAMES } from '../render/detail';
 import { creditsHtml } from './credits';
 import type { TiltSteering } from './tilt';
 
@@ -123,10 +124,13 @@ export class SettingsScreen {
       case 'smart':
         updateSettings({ smartSteering: !s.smartSteering });
         break;
-      case 'detail':
-        updateSettings({ detail: s.detail === 'high' ? 'low' : 'high', detailChosen: true });
-        this.status = s.detail === 'high' ? 'Low detail: fewer pixels, no shadows, flatter roads, less scenery' : 'High detail: full resolution, shadows, bump-mapped roads, denser scenery (the next track loaded gets the scenery)';
+      case 'detail': {
+        const i = DETAILS.indexOf(s.detail);
+        const next = DETAILS[(Math.max(0, i) + dir + DETAILS.length) % DETAILS.length];
+        updateSettings({ detail: next, detailChosen: true });
+        this.status = { low: 'Low: fewer pixels, no shadows, flatter roads, less scenery', medium: 'Medium: full resolution, shadows nearby, bump-mapped roads (the next track loaded gets the scenery)', high: 'High: full resolution, long shadows, bump-mapped roads, denser scenery (the next track loaded gets the scenery)' }[next];
         break;
+      }
       case 'done':
         this.close();
         return;
@@ -178,7 +182,7 @@ export class SettingsScreen {
             <div class="lobby-row"><span class="lobby-label">VHS</span>${arrows('look', { full: 'Full', light: 'Light', off: 'Off' }[s.videoLook])}</div>
             <div class="lobby-row"><span class="lobby-label">Throttle</span>${toggle('auto', s.autoAccelerate, s.autoAccelerate ? 'Automatic' : 'Manual')}</div>
             <div class="lobby-row"><span class="lobby-label">Steering</span>${toggle('smart', s.smartSteering, s.smartSteering ? 'Smart' : 'Manual')}</div>
-            <div class="lobby-row"><span class="lobby-label">Detail</span>${toggle('detail', s.detail === 'high', s.detail === 'high' ? 'High' : 'Low')}</div>
+            <div class="lobby-row"><span class="lobby-label">Detail</span>${arrows('detail', DETAIL_NAMES[s.detail])}</div>
           </div>
           ${
             this.tilt.available
