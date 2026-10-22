@@ -76,7 +76,7 @@ export class Menu {
     this.el.className = 'menu';
     parent.appendChild(this.el);
     this.el.addEventListener('click', (e) => {
-      const t = (e.target as HTMLElement).closest<HTMLElement>('[data-row], [data-start], [data-delete], [data-random]');
+      const t = (e.target as HTMLElement).closest<HTMLElement>('[data-row], [data-start], [data-delete], [data-random], [data-random-track]');
       if (!t) return;
       if (t.dataset.start !== undefined) {
         this.onStart(this.choice);
@@ -88,6 +88,10 @@ export class Menu {
       }
       if (t.dataset.random !== undefined) {
         this.randomRacer();
+        return;
+      }
+      if (t.dataset.randomTrack !== undefined) {
+        this.randomTrack();
         return;
       }
       this.row = this.rows().indexOf(t.dataset.row as MenuRow);
@@ -120,6 +124,7 @@ export class Menu {
     else if (code === 'ArrowRight' || code === 'KeyD') return this.change(1), true;
     else if (code === 'Enter' || code === 'Space') return this.onStart(this.choice), true;
     else if (code === 'KeyR' && this.choice.mode !== 'online') return this.randomRacer(), true;
+    else if (code === 'KeyT' && this.choice.mode === 'single') return this.randomTrack(), true;
     else return false;
     this.render();
     return true;
@@ -132,6 +137,15 @@ export class Menu {
     if (m === 'generator') return ['mode', 'gen', 'theme', 'complexity', 'length', 'racer', 'engine'];
     if (m === 'online') return ['mode', 'racer', 'engine'];
     return ['mode', 'track', 'racer', 'engine', ...mirror];
+  }
+
+  /** Picks a track at random for a Single Race (the track row's dice, or T). */
+  randomTrack(): void {
+    const others = TRACK_LIST.map((_, i) => i).filter((i) => i !== this.choice.track);
+    this.choice.track = others[Math.floor(Math.random() * others.length)];
+    this.row = this.rows().indexOf('track');
+    this.render();
+    this.onChange(this.choice, 'track');
   }
 
   /** Picks a racer at random (the racer row's dice, or R). */
@@ -233,7 +247,7 @@ export class Menu {
               ? `<div class="menu-row menu-cup"><div class="menu-label">Rooms</div><div class="menu-value">Race friends with a room code</div></div>`
               : c.mode === 'generator'
                 ? this.generatorRows(line)
-                : line('track', 'Track', TRACK_LIST[c.track].name, this.bestLine(TRACK_LIST[c.track].id))
+                : line('track', 'Track', TRACK_LIST[c.track].name, `${this.bestLine(TRACK_LIST[c.track].id)}${c.mode === 'single' ? '<button class="menu-random" data-random-track title="Random track (T)">&#9860; random track</button>' : ''}`)
         }
         ${line('racer', 'Racer', c.racer.name, `<div class="menu-stats">${stats}</div><div class="menu-bio">${c.racer.bio}</div><button class="menu-random" data-random title="Random racer (R)">&#9860; random</button>`)}
         ${line('engine', 'Class', c.engine, this.unlockLine())}
