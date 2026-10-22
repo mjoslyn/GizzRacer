@@ -68,7 +68,34 @@ describe('Random Cup', () => {
     // Past the last of the cups, the picker's choice is the Random Cup with its draw.
     const { CUPS } = await import('../src/tracks/index');
     const cup = chosenCup({ cup: CUPS.length, randomTracks: draws[0] } as Parameters<typeof chosenCup>[0]);
-    expect(cup).toEqual({ name: RANDOM_CUP_NAME, tracks: draws[0] });
+    expect(cup).toEqual({ id: 'random', name: RANDOM_CUP_NAME, tracks: draws[0] });
     expect(chosenCup({ cup: 0, randomTracks: draws[0] } as Parameters<typeof chosenCup>[0])).toBe(CUPS[0]);
+  });
+});
+
+describe('rivals', () => {
+  it('are the two nearest the player in the standings, one above and one below', async () => {
+    const { RIVALS } = await import('../src/core/grandPrix');
+    const grid = RACERS.slice(0, FIELD_SIZE);
+    const gp = new GrandPrix(grid, [0, 1, 2, 3]);
+    expect(gp.rivals).toEqual([]);
+    const me = grid[5];
+    gp.record(grid, me);
+    expect(gp.rivals).toHaveLength(RIVALS);
+    expect(gp.rivals).toEqual([grid[4], grid[6]]);
+    expect(gp.rivals).not.toContain(me);
+  });
+
+  it('for the leader are the two just behind; nobody without a player', () => {
+    const grid = RACERS.slice(0, FIELD_SIZE);
+    const gp = new GrandPrix(grid, [0, 1]);
+    gp.record(grid, grid[0]);
+    expect(gp.rivals).toEqual([grid[1], grid[2]]);
+    const last = new GrandPrix(grid, [0, 1]);
+    last.record(grid, grid[11]);
+    expect(last.rivals).toEqual([grid[10], grid[9]]);
+    const nobody = new GrandPrix(grid, [0, 1]);
+    nobody.record(grid);
+    expect(nobody.rivals).toEqual([]);
   });
 });

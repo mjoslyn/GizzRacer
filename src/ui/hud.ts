@@ -2,12 +2,19 @@ import { DRIFT_TIERS, driftTier, type KartState } from '../physics/kart';
 import { ordinal } from '../core/race';
 import { ITEMS, ITEM_KINDS, type ItemKind } from '../items/items';
 import { itemIcon } from './itemIcons';
+import type { StyleEvent } from '../core/style';
 import { Minimap } from './minimap';
 
-const TIER_NAMES = ['', 'BLUE', 'ORANGE', 'PURPLE'];
-const TIER_COLORS = ['#fff2a8', 'var(--tier-1)', 'var(--tier-2)', 'var(--tier-3)'];
+const TIER_NAMES = ['', 'BLUE', 'ORANGE', 'PURPLE', 'RAINBOW'];
+const TIER_COLORS = ['#fff2a8', 'var(--tier-1)', 'var(--tier-2)', 'var(--tier-3)', 'var(--tier-4)'];
 const MAX_CHARGE = DRIFT_TIERS[DRIFT_TIERS.length - 1];
 const FLASH_TIME = 1;
+/** Seconds a style move's pop stays up. */
+const STYLE_POP_TIME = 1.3;
+/** With a Nonagon Infinity this close (s), it's time to hop. */
+export const SURGE_HOP_WINDOW = 0.55;
+/** The warning's bar fills over the last few seconds of its approach. */
+const SURGE_BAR_TIME = 4;
 /** Seconds per face of the item roulette. */
 const ROULETTE_STEP = 0.07;
 
@@ -85,8 +92,12 @@ export interface HudData {
   rolling: number;
   /** A second item from a double box. */
   spare: ItemKind | null;
-  /** A Nonagon Infinity closing in on you: 0 far .. 1 arriving; null when none is. */
-  surge: number | null;
+  /** A Nonagon Infinity closing in on you: 0 far .. 1 arriving, and seconds until it does; null when none is. */
+  surge: { near: number; eta: number } | null;
+  /** The style meter: the running score, the chain, and the last move (core/style.ts); null in Time Trial. */
+  style: { score: number; chain: number; last: StyleEvent | null } | null;
+  /** Time Trial: the gap to the ghost at each checkpoint passed this run. */
+  splits: { label: string; gap: number }[];
 }
 
 /** Who hit whom with what, for the callout feed. */
@@ -128,6 +139,13 @@ export class Hud {
   private readonly calloutsEl: HTMLElement;
   private readonly callouts: { el: HTMLElement; at: number }[] = [];
   private readonly warnEl: HTMLElement;
+  private readonly warnBar: HTMLElement;
+  private readonly styleEl: HTMLElement;
+  private readonly stylePop: HTMLElement;
+  private readonly splitsEl: HTMLElement;
+  private lastStyle: StyleEvent | null = null;
+  private stylePopAt = -Infinity;
+  private lastSplits = '';
   private readonly itemImg: HTMLImageElement;
   private readonly itemName: HTMLElement;
   private readonly flashEl: HTMLElement;
@@ -152,12 +170,15 @@ export class Hud {
         <div class="hud-time"></div>
         <div class="hud-ghost-gap"></div>
         <div class="hud-laps"></div>
+        <div class="hud-splits"></div>
+        <div class="hud-style"></div>
         <div class="hud-callouts"></div>
       </div>
       <div class="hud-tr"><div class="hud-racer"></div></div>
       <div class="hud-item"><img alt="" /><div class="hud-item-name"></div><div class="hud-spare"><img alt="" /></div></div>
-      <div class="hud-warn hud-big">NONAGON INFINITY! HOP!</div>
+      <div class="hud-warn"><div class="hud-warn-text hud-big">NONAGON INFINITY!</div><div class="hud-warn-bar"><i></i></div><div class="hud-warn-hop hud-big">HOP!</div></div>
       <div class="hud-flash hud-big"></div>
+      <div class="hud-style-pop hud-big"></div>
       <div class="hud-intro"><div class="hud-intro-name hud-big"></div><div class="hud-intro-sub"></div><div class="hud-intro-skip">${'ontouchstart' in window ? 'tap' : 'press any key'} to skip</div></div>
       <div class="hud-drift">
         <div class="hud-drift-bar"><div class="hud-drift-fill"></div>${ticks}</div>
@@ -221,6 +242,10 @@ export class Hud {
     this.spareImg = q('.hud-spare img') as HTMLImageElement;
     this.calloutsEl = q('.hud-callouts');
     this.warnEl = q('.hud-warn');
+    this.warnBar = q('.hud-warn-bar i');
+    this.styleEl = q('.hud-style');
+    this.stylePop = q('.hud-style-pop');
+    this.splitsEl = q('.hud-splits');
     this.introEl = q('.hud-intro');
     q('.hud-tr').appendChild(this.minimap.canvas);
     this.pause.addEventListener('click', (e) => {
@@ -279,6 +304,12 @@ export class Hud {
     this.laps.innerHTML = d.lapTimes
       .map((t, i) => `L${i + 1} ${formatTime(t)}${t === best ? ' &#9733;' : ''}`)
       .join('<br />');
+    const splits = d.splits.map((s) => `<span class="${s.gap < 0 ? 'ahead' : 'behind'}">${s.label} ${s.gap > 0 ? '+' : '-'}${Math.abs(s.gap).toFixed(2)}</span>`).join(' ');
+    if (splits !== this.lastSplits) {
+      this.lastSplits = splits;
+      this.splitsEl.innerHTML = splits;
+    }
+    this.updateStyle(d, now);
     this.speed.innerHTML = `${Math.round(Math.abs(k.speed) * 3.6)}<small>km/h</small>`;
     this.surface.innerHTML = k.boostTime > 0 ? '<span class="hud-boost">BOOST!</span>' : k.surface;
     this.racer.innerHTML = `${d.trackName}<br />${d.racerName} &middot; ${d.engineClass}${d.autoAccelerate ? '' : ' &middot; manual'}${d.muted ? ' &middot; music off' : ''}${d.sfxMuted ? ' &middot; sfx off' : ''}`;
@@ -336,6 +367,25 @@ export class Hud {
     }
   }
 
+  /** The running style score, and a pop for each move as it lands. */
+  private updateStyle(d: HudData, now: number): void {
+    const st = d.style;
+    this.styleEl.classList.toggle('show', !!st && st.score > 0);
+    if (!st) return;
+    const chain = st.chain > 1 ? ` <b>x${st.chain}</b>` : '';
+    const html = `STYLE ${st.score.toLocaleString('en-US')}${chain}`;
+    if (this.styleEl.innerHTML !== html) this.styleEl.innerHTML = html;
+    if (st.last && st.last !== this.lastStyle) {
+      this.lastStyle = st.last;
+      this.stylePopAt = now;
+      this.stylePop.textContent = `${st.last.text}${st.last.chain > 1 ? ` x${st.last.chain}` : ''} +${st.last.points}`;
+      this.stylePop.classList.remove('pop');
+      void this.stylePop.offsetWidth;
+      this.stylePop.classList.add('pop');
+    }
+    this.stylePop.classList.toggle('show', now - this.stylePopAt < STYLE_POP_TIME && !d.paused && !d.finished);
+  }
+
   private updateItem(d: HudData, now: number): void {
     const kind = d.rolling > 0 ? ITEM_KINDS[Math.floor(now / ROULETTE_STEP) % ITEM_KINDS.length] : d.item;
     const icon = kind ?? '';
@@ -364,7 +414,11 @@ export class Hud {
       }
     }
     this.warnEl.classList.toggle('show', d.surge !== null && !d.paused);
-    if (d.surge !== null) this.warnEl.style.setProperty('--near', d.surge.toFixed(2));
+    if (d.surge !== null) {
+      this.warnEl.style.setProperty('--near', d.surge.near.toFixed(2));
+      this.warnBar.style.width = `${Math.round(Math.min(1, Math.max(0, 1 - d.surge.eta / SURGE_BAR_TIME)) * 100)}%`;
+      this.warnEl.classList.toggle('now', d.surge.eta <= SURGE_HOP_WINDOW);
+    }
 
     if (this.flashPending) {
       this.flashPending = false;

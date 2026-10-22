@@ -23,6 +23,7 @@ export class Minimap {
   }
 
   setTrack(track: Track): void {
+    this.track = track;
     const ribbons = [track.main, ...track.branches];
     let minX = Infinity;
     let maxX = -Infinity;
@@ -70,23 +71,35 @@ export class Minimap {
     ctx.fillRect(sx - 4, sy - 4, 8, 8);
   }
 
-  /** Mirrors x so the map reads like the driver's left/right. */
-  private project(x: number, z: number): [number, number] {
-    return [SIZE / 2 - (x - this.cx) * this.scale, SIZE / 2 - (z - this.cz) * this.scale];
+  /** Mirror mode flips the map with the world. */
+  private mirror = false;
+  private track: Track | null = null;
+
+  setMirror(mirror: boolean): void {
+    if (mirror === this.mirror) return;
+    this.mirror = mirror;
+    if (this.track) this.setTrack(this.track);
   }
 
-  draw(karts: { x: number; z: number; color: string; player: boolean }[]): void {
+  /** Mirrors x so the map reads like the driver's left/right (and back again in Mirror mode). */
+  private project(x: number, z: number): [number, number] {
+    const mx = this.mirror ? -(x - this.cx) : x - this.cx;
+    return [SIZE / 2 - mx * this.scale, SIZE / 2 - (z - this.cz) * this.scale];
+  }
+
+  draw(karts: { x: number; z: number; color: string; player: boolean; rival?: boolean }[]): void {
     const ctx = this.ctx;
     ctx.clearRect(0, 0, SIZE, SIZE);
     ctx.drawImage(this.base, 0, 0, SIZE, SIZE);
     for (const k of karts) {
       const [x, y] = this.project(k.x, k.z);
       ctx.beginPath();
-      ctx.arc(x, y, k.player ? 6 : 4.5, 0, Math.PI * 2);
+      ctx.arc(x, y, k.player ? 6 : k.rival ? 5.5 : 4.5, 0, Math.PI * 2);
       ctx.fillStyle = k.color;
       ctx.fill();
       ctx.lineWidth = 2;
-      ctx.strokeStyle = k.player ? '#fff' : '#222';
+      // A Grand Prix rival wears a gold ring.
+      ctx.strokeStyle = k.player ? '#fff' : k.rival ? '#ffd23a' : '#222';
       ctx.stroke();
     }
   }

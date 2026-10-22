@@ -24,6 +24,14 @@ export const COUNTDOWN = 3;
 export const RUBBER_BAND_MAX = 0.08;
 /** Meters behind the leader at which rubber-banding is fully on. */
 const RUBBER_BAND_RANGE = 250;
+/**
+ * CPUs ahead of the player hold back a little, more the further ahead they
+ * are (up to this much top speed, fully on at this many metres), so the
+ * pack stays in play and the last lap is a fight. Offline only: online the
+ * room runs the race for everyone and has no player to lean toward.
+ */
+export const DRAG_MAX = 0.04;
+const DRAG_RANGE = 150;
 const FALL_DEPTH = -2;
 const BUMP_RESTITUTION = 0.4;
 const BUMP_MIN = 2;
@@ -115,6 +123,10 @@ export class RaceKart implements ItemHolder {
   remote = false;
   /** A player with smart steering on (physics/steerAssist.ts). */
   assist = false;
+  /** A Grand Prix rival: named on the HUD, a touch sharper to drive against. */
+  rival = false;
+  /** The branch (shortcut) it's on, -1 for the main road; and the last branch it was on, for noticing a new one. */
+  branch = -1;
   /** Online: the remote player pressed their item button. */
   pendingUse = false;
   private incoming: readonly number[] | null = null;
@@ -205,6 +217,8 @@ export class Race {
   events: ItemEvent[] = [];
   /** Online client: items are run by the room; this race only shows them. */
   remoteItems = false;
+  /** The player's kart, for the CPUs ahead to hold back from (rubberBand); null in attract mode and online. */
+  focus: RaceKart | null = null;
   private readonly obstacles: Obstacle[] = [];
   /** Karts knocked aside by a Woo Cannon this step, reported with the item events. */
   private readonly cannonHits: ItemEvent[] = [];
@@ -413,12 +427,15 @@ export class Race {
     }
   }
 
-  /** Trailing CPUs get a little more top speed; leaders get none. */
+  /** Trailing CPUs get a little more top speed; CPUs ahead of the player give a little up. The leader gets no help. */
   private rubberBand(): void {
     const lead = Math.max(...this.karts.map((k) => k.distance));
+    const focus = this.focus && !this.focus.isCpu && this.focus.finishTime === null ? this.focus : null;
     for (const k of this.karts) {
-      const behind = k.isCpu && k.finishTime === null ? Math.min(1, Math.max(0, (lead - k.distance) / RUBBER_BAND_RANGE)) : 0;
-      k.params.topSpeed = k.baseParams.topSpeed * (1 + RUBBER_BAND_MAX * behind);
+      const cpu = k.isCpu && k.finishTime === null;
+      const behind = cpu ? Math.min(1, Math.max(0, (lead - k.distance) / RUBBER_BAND_RANGE)) : 0;
+      const ahead = cpu && focus && k !== focus ? Math.min(1, Math.max(0, (k.distance - focus.distance) / DRAG_RANGE)) : 0;
+      k.params.topSpeed = k.baseParams.topSpeed * (1 + RUBBER_BAND_MAX * behind - DRAG_MAX * ahead);
     }
   }
 
@@ -471,6 +488,7 @@ export class Race {
     kart.progressS = loc.progress;
     kart.section = loc.section;
     kart.onRoad = loc.onRoad;
+    kart.branch = loc.branch;
     if (loc.onRoad) kart.roadY = loc.height;
     if (kart.finishTime !== null || !this.started) return;
     if (kart.laps.update(loc.progress)) {

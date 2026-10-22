@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CPU_SKILL } from '../src/ai/cpuDriver';
 import { NEUTRAL_INPUT } from '../src/core/input';
 import { PHYSICS_DT } from '../src/core/loop';
-import { COUNTDOWN, RUBBER_BAND_MAX, Race, ordinal } from '../src/core/race';
+import { COUNTDOWN, DRAG_MAX, RUBBER_BAND_MAX, Race, ordinal } from '../src/core/race';
 import { FIELD_SIZE, RACERS } from '../src/physics/racers';
 import { buildRattlesnakeRun } from '../src/tracks/rattlesnakeRun';
 import { TRACK_LIST } from '../src/tracks/index';
@@ -30,6 +30,30 @@ describe('race', () => {
     const race = cpuRace();
     expect(race.karts.map((k) => k.position).sort((a, b) => a - b)).toEqual(RACERS.slice(0, FIELD_SIZE).map((_, i) => i + 1));
     expect(race.karts[0].position).toBe(1);
+  });
+
+  it('CPUs ahead of the player hold back a little, scaled by how far ahead, and only CPUs', () => {
+    const race = cpuRace();
+    const me = race.addKart(RACERS[FIELD_SIZE], '100cc', null);
+    race.focus = me;
+    for (const k of race.karts) k.distance = 0;
+    const lead = race.karts[0];
+    lead.distance = 300;
+    race.karts[2].distance = -100;
+    race.step(PHYSICS_DT, []);
+    // The leader, well ahead of the player: the full drag, and no trailing boost (it leads).
+    expect(lead.params.topSpeed).toBeCloseTo(lead.baseParams.topSpeed * (1 - DRAG_MAX), 6);
+    // The player's own kart is never touched, and a kart behind the player gets no drag.
+    expect(me.params.topSpeed).toBeCloseTo(me.baseParams.topSpeed, 6);
+    expect(race.karts[2].params.topSpeed).toBeGreaterThanOrEqual(race.karts[2].baseParams.topSpeed);
+    // Just ahead: a fraction of it.
+    lead.distance = 60;
+    race.step(PHYSICS_DT, []);
+    expect(lead.params.topSpeed).toBeCloseTo(lead.baseParams.topSpeed * (1 - DRAG_MAX * 0.4), 6);
+    // No focus (attract mode, online): nobody holds back.
+    race.focus = null;
+    race.step(PHYSICS_DT, []);
+    expect(lead.params.topSpeed).toBeCloseTo(lead.baseParams.topSpeed, 6);
   });
 
   it('gives trailing CPUs extra top speed, never the leader', () => {

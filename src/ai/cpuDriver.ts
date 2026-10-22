@@ -33,7 +33,22 @@ export const CPU_SKILL: Record<EngineClass, CpuSkill> = {
   '50cc': { speedCap: 0.9, driftChance: 0.35, maxTier: 1, wander: 1, itemIq: 0.25 },
   '100cc': { speedCap: 0.95, driftChance: 0.65, maxTier: 2, wander: 0.7, itemIq: 0.55 },
   '150cc': { speedCap: 1, driftChance: 0.9, maxTier: 3, wander: 0.45, itemIq: 0.85 },
+  '200cc': { speedCap: 1, driftChance: 0.95, maxTier: 4, wander: 0.35, itemIq: 0.95 },
 };
+
+/**
+ * A Grand Prix rival (core/grandPrix.ts): the same class's driver, a
+ * touch sharper. Never past the limits a 200cc CPU drives at.
+ */
+export function rivalSkill(base: CpuSkill): CpuSkill {
+  return {
+    speedCap: Math.min(1, base.speedCap + 0.025),
+    driftChance: Math.min(1, base.driftChance + 0.15),
+    maxTier: Math.min(4, base.maxTier + 1),
+    wander: base.wander * 0.7,
+    itemIq: Math.min(1, base.itemIq + 0.15),
+  };
+}
 
 /** Drives a finished player's kart round to the line. */
 export const AUTOPILOT_SKILL: CpuSkill = { speedCap: 0.9, driftChance: 0, maxTier: 1, wander: 0.2, itemIq: 0.6 };
@@ -150,6 +165,7 @@ export class CpuDriver {
     }
     switch (item) {
       case 'fuzzPedal':
+      case 'drippingTap':
         return s.grounded && s.driftDir === 0 && Math.abs(track.main.turnBetween(progress, progress + 40)) < 0.25;
       case 'microtonalMine':
         return tailing;

@@ -5,11 +5,12 @@ interface __BaseEnv_Env {
 	Players: DurableObjectNamespace<import("./index").Players>;
 	Trials: DurableObjectNamespace<import("./index").Trials>;
 	Room: DurableObjectNamespace<import("./index").Room>;
+	Records: DurableObjectNamespace<import("./index").Records>;
 }
 declare namespace Cloudflare {
 	interface GlobalProps {
 		mainModule: typeof import("./index");
-		durableNamespaces: "Players" | "Trials" | "Room";
+		durableNamespaces: "Players" | "Trials" | "Room" | "Records";
 	}
 	interface Env extends __BaseEnv_Env {}
 }

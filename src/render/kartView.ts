@@ -7,7 +7,7 @@ import { buildKartModel, buildWooCannon, type WooCannonModel } from './racerMode
 import { NonagonGate } from './nonagonGate';
 import { blobShadowTexture, glowTexture } from './textures';
 
-const SPARK_COLORS = [0xfff2a8, 0x3fa9ff, 0xff8a1f, 0xc04bff];
+const SPARK_COLORS = [0xfff2a8, 0x3fa9ff, 0xff8a1f, 0xc04bff, 0xffffff];
 const SPARK_POOL = 48;
 const SPARK_LIFE = 0.28;
 const DUST_POOL = 28;

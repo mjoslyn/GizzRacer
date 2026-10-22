@@ -9,7 +9,7 @@ import { buildPolygondwanalandJungle } from '../src/tracks/polygondwanalandJungl
 import { buildHellOnMars } from '../src/tracks/hellOnMars';
 import { buildSupercell } from '../src/tracks/supercell';
 import { buildMurderOfTheUniverse } from '../src/tracks/murderOfTheUniverse';
-import { BOX_RESPAWN, FAR_BEHIND, CANNON_PAST_MAX, CANNON_PAST_MIN, CANNON_TIME, FUZZ_BOOST, ITEM_KINDS, MINE_WOBBLE, ROULETTE, TEMPO_SLOW_FIRST, TEMPO_SLOW_LAST, WAVE_RANGE, itemWeights, rollItem, tempoSlowFor, type ItemKind } from '../src/items/items';
+import { BOX_RESPAWN, FAR_BEHIND, CANNON_PAST_MAX, CANNON_PAST_MIN, CANNON_TIME, DRIP_BOOST, FUZZ_BOOST, ITEM_KINDS, MINE_WOBBLE, ROULETTE, TEMPO_SLOW_FIRST, TEMPO_SLOW_LAST, WAVE_RANGE, itemWeights, rollItem, tempoSlowFor, type ItemKind } from '../src/items/items';
 import { createKartState, respawnKart, slowDown, spinOut, stepKart } from '../src/physics/kart';
 import { FIELD_SIZE, RACERS, kartParams } from '../src/physics/racers';
 import { buildRattlesnakeRun } from '../src/tracks/rattlesnakeRun';
@@ -38,14 +38,38 @@ function give(race: Race, index: number, item: ItemKind) {
 }
 
 describe('item odds', () => {
-  it('never gives the leader a missile, and Horology only to the last two', () => {
+  it('never gives the leader a missile, and Horology only to the back of the field', () => {
     for (let pos = 1; pos <= 6; pos++) {
       const w = itemWeights(pos, 6);
       if (pos === 1) expect(w.riffMissile).toBe(0);
-      if (pos <= 4) expect(w.tempoShift).toBe(0);
+      if (pos <= 3) expect(w.tempoShift).toBe(0);
       else expect(w.tempoShift).toBeGreaterThan(0);
       for (const k of ITEM_KINDS) expect(w[k]).toBeGreaterThanOrEqual(0);
     }
+    expect(itemWeights(6, 6).tempoShift).toBeGreaterThan(itemWeights(4, 6).tempoShift);
+  });
+
+  it('the comeback items reach the middle of a big field, likelier further back', () => {
+    // Twelve karts: 8th is where a bad hit on lap 2 puts you.
+    for (let pos = 1; pos <= 6; pos++) {
+      expect(itemWeights(pos, 12).drippingTap).toBe(0);
+      expect(itemWeights(pos, 12).tempoShift).toBe(0);
+      expect(itemWeights(pos, 12).wooCannon).toBe(0);
+    }
+    expect(itemWeights(7, 12).drippingTap).toBeGreaterThan(0);
+    expect(itemWeights(8, 12).tempoShift).toBeGreaterThan(0);
+    expect(itemWeights(8, 12).wooCannon).toBe(0);
+    expect(itemWeights(9, 12).wooCannon).toBeGreaterThan(0);
+    expect(itemWeights(12, 12).drippingTap).toBeGreaterThan(itemWeights(7, 12).drippingTap);
+    expect(itemWeights(12, 12).tempoShift).toBeGreaterThan(itemWeights(8, 12).tempoShift);
+  });
+
+  it('the Dripping Tap is one long boost', () => {
+    const race = humanRace(3);
+    const k = give(race, 2, 'drippingTap');
+    race.step(PHYSICS_DT, [NEUTRAL_INPUT, NEUTRAL_INPUT, PRESS]);
+    expect(k.state.boostTime).toBeGreaterThan(DRIP_BOOST - 0.05);
+    expect(k.item).toBeNull();
   });
 
   it('biases mines to the front and missiles to the back', () => {

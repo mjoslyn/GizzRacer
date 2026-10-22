@@ -32,6 +32,7 @@ The game itself stays a static site and can be hosted anywhere (Netlify, Cloudfl
 | `room` | room code (`KZRT`) | lobby, race simulation, Grand Prix standings |
 | `trials` | leaderboard (`rattlesnake-run.100cc.v3`) | runs table, ghosts, top-N cache |
 | `players` | single instance (`global`) | guest identities and display names |
+| `records` | leaderboard (`race.rattlesnake-run.100cc.v11`, `cup.nonagon.150cc.v11`) | best full-race time per player, or best cup result |
 
 Code lives in `party/` (server) and `src/net/` (client), sharing `src/core`, `src/physics`, `src/items`, `src/tracks` and `src/ai`.
 
@@ -94,6 +95,10 @@ Re-simulating from the inputs is the stronger check, and it can run in the party
 ### 5.5 Versioning
 
 `PHYSICS_VERSION` in `src/physics/kart.ts` is bumped whenever kart physics, racer stats or a track layout change lap times. It's part of the board name, so a bump starts fresh boards; the old ones stay readable.
+
+### 5.6 Records boards
+
+`party/records.ts` keeps two more kinds of board, named by `recordBoardName` in `src/net/recordCheck.ts`: `race.{track}[.mirror].{class}.v{physics}` (the fastest full race on a track, items and CPUs and all, with the style score beside it) and `cup.{cup}[.mirror].{class}.v{physics}` (a Grand Prix's result: points, then the four races' total time as the tiebreak, with the places). Each holds one row per player (their best). A generated track's id rebuilds the track on the server (`parseGenId`), which is what gives the daily track a board. The checks are the Time Trial board's kind: the shape, the physics version, lap and cup floors, points that add up from the places. `GET /parties/records/{board}?player=` and `POST /parties/records/{board}` with `{ playerId, token, record }`. Offline results are still kept in the browser (`src/core/progress.ts`).
 
 ## 6. Rooms and lobby (8b)
 

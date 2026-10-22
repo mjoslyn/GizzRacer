@@ -3,7 +3,7 @@ import { Lensflare, LensflareElement } from 'three/addons/objects/Lensflare.js';
 import { InputManager, NEUTRAL_INPUT, type InputFrame } from './core/input';
 import { FixedLoop, PHYSICS_DT } from './core/loop';
 import { clamp, damp, lerp, lerpAngle } from './core/math';
-import { CPU_SKILL, CpuDriver } from './ai/cpuDriver';
+import { CPU_SKILL, CpuDriver, rivalSkill } from './ai/cpuDriver';
 import { MusicPlayer } from './audio/music';
 import { Sfx } from './audio/sfx';
 import { remixCues } from './audio/songs';
@@ -12,6 +12,11 @@ import { identity } from './net/identity';
 import { TRIAL_LAPS, recordId } from './net/runCheck';
 import { fetchGhost, uploadRun } from './net/trials';
 import { LeaderboardPanel } from './ui/leaderboard';
+import { RecordsPanel } from './ui/recordsPanel';
+import { cupBoard, postRecord, raceBoard } from './net/records';
+import { foundShortcut, recordCup, recordRace, recordStyle } from './core/progress';
+import { StyleMeter, driftMove } from './core/style';
+import { SURGE_CLOSE, SURGE_CLOSING, SURGE_FAST } from './items/items';
 import { LobbyScreen } from './ui/lobby';
 import { SettingsScreen } from './ui/settings';
 import { TiltSteering } from './ui/tilt';
@@ -38,7 +43,7 @@ import { generateTrack, trackId } from './tracks/generator';
 import { Track, inPit, type TrackDef } from './tracks/track';
 import { Hud, formatTime, type Table, type TableRow } from './ui/hud';
 import { deleteSaved, findSaved, saveTrack, savedTracks } from './core/savedTracks';
-import { Menu, chosenCup, newSeed, type MenuChoice } from './ui/menu';
+import { DAILY_SLOT, Menu, chosenCup, newSeed, type MenuChoice } from './ui/menu';
 import { SaveTrackPanel } from './ui/saveTrack';
 import { Podium } from './render/podium';
 import { ScreenFit } from './ui/screen';
@@ -106,12 +111,27 @@ let choice: MenuChoice = {
   gen: { slot: -1, params: { seed: newSeed(), theme: 'lagoon', complexity: 3, length: 'medium' } },
   racer: RACERS[0],
   engine: '100cc',
+  mirror: false,
 };
 /** The cup in progress, if racing a Grand Prix. */
 let gp: GrandPrix | null = null;
 let podium: Podium | null = null;
-/** Time Trial result line for the results screen. */
+/** The results screen's line under the title: a Time Trial's record, a race's style and best time. */
 let trialNote = '';
+/** The style meter for the race in progress (null in Time Trial and attract mode). */
+let style: StyleMeter | null = null;
+/** Time Trial: the gap to the ghost at each checkpoint passed, and the last checkpoint seen. */
+let splits: { label: string; gap: number }[] = [];
+let lastCheckpoint = -1;
+/** The shortcut the player was last on, so a new one is noticed once. */
+let lastBranch = -1;
+/** The race's records have been written (once per race, when the player finishes). */
+let raceRecorded = false;
+/** The player's times and places through the cup in progress, for its record. */
+let gpTimes: number[] = [];
+let gpPlaces: number[] = [];
+/** Snapshots mirrored for drawing in Mirror mode (one per kart, reused). */
+const mirrorSnaps: KartState[] = [];
 /** Time Trial: the run being recorded, and the best run replaying as a see-through kart. */
 let recorder: GhostRecorder | null = null;
 interface Ghost {
@@ -189,6 +209,29 @@ const SURGE_WARN = 120;
 let wrongWay = 0;
 const snapshots = new Map<RaceKart, KartState>();
 
+/** Mirror mode is on for what's showing: a Grand Prix or Single Race offline with the picker's Mirror on. */
+function mirrored(): boolean {
+  return choice.mirror && !online && (choice.mode === 'grandPrix' || choice.mode === 'single');
+}
+
+/**
+ * A kart as it's drawn in Mirror mode: the world is flipped left for right
+ * (the track, item and hazard views are scaled by -1 in x), so a kart's
+ * position and everything handed about it is flipped to match. The
+ * simulation never knows.
+ */
+function mirrorState(s: KartState, out: KartState): KartState {
+  copyKartState(s, out);
+  out.x = -s.x;
+  out.heading = -s.heading;
+  out.steer = -s.steer;
+  out.slip = -s.slip;
+  out.driftDir = -s.driftDir as KartState['driftDir'];
+  out.extX = -s.extX;
+  out.spinAngle = -s.spinAngle;
+  return out;
+}
+
 const menu = new Menu(
   document.body,
   choice,
@@ -198,6 +241,9 @@ const menu = new Menu(
     if (c.mode === 'online') return setMode('lobby');
     fieldSeed = Math.floor(Math.random() * 2 ** 31);
     gp = c.mode === 'grandPrix' ? new GrandPrix(defaultGrid(c.racer, fieldSeed), chosenCup(c).tracks) : null;
+    gpTimes = [];
+    gpPlaces = [];
+    cupNote = '';
     startRace(true);
   },
   savedTracks,
@@ -245,6 +291,8 @@ const board = new LeaderboardPanel(document.body, () => {
     return null;
   }
 });
+/** The race-time and cup leaderboards beside the picker, in the modes that post to them. */
+const records = new RecordsPanel(document.body);
 const tilt = new TiltSteering(input);
 const settingsScreen = new SettingsScreen(document.body, tilt);
 /** The mix that sits right: music under the effects (see the audio commit). */
@@ -260,12 +308,25 @@ if (settings().tilt) void tilt.start();
 hud.onTitleSettings = () => settingsScreen.open();
 hud.onTitleCredits = () => settingsScreen.openCredits();
 
-/** The leaderboard shows beside the picker in Time Trial mode. */
+/** The leaderboard shows beside the picker: Time Trial's ghosts, or the race-time and cup boards for the other modes. */
 function updateBoard(refresh = false): void {
   const on = mode === 'menu' && choice.mode === 'timeTrial';
   board.show(on);
-  document.body.classList.toggle('board-open', on);
+  const rec = mode === 'menu' && !on && choice.mode !== 'online';
+  records.show(rec);
+  document.body.classList.toggle('board-open', on || rec);
   if (on) board.load(TRACK_LIST[choice.track].id, TRACK_LIST[choice.track].name, choice.engine, refresh);
+  if (!rec) return;
+  const mirror = choice.mirror && choice.mode !== 'generator';
+  const tag = `${choice.engine}${mirror ? ' · Mirror' : ''}`;
+  if (choice.mode === 'grandPrix') {
+    const cup = chosenCup(choice);
+    records.load(cupBoard(cup.id, choice.engine, mirror), `${cup.name} · ${tag}`, refresh);
+  } else {
+    const t = choice.mode === 'generator' ? generatedTrack() : TRACK_LIST[choice.track];
+    const name = choice.mode === 'generator' ? (choice.gen.slot === DAILY_SLOT ? `Daily: ${track.def.name}` : track.def.name) : TRACK_LIST[choice.track].name;
+    records.load(raceBoard(t.id, choice.engine, mirror), `${name} · ${tag}`, refresh);
+  }
 }
 
 /** Matches the drawing buffer and camera to the viewport. */
@@ -298,11 +359,11 @@ function setMode(next: Mode): void {
 function onMenuChange(c: MenuChoice, row: string): void {
   choice = { ...c };
   sfx.menu();
-  updateBoard();
   if (row !== 'racer' && row !== 'engine') {
     const entry = menuTrack();
     if (track.def.id !== entry.id) loadTrack(entry);
   }
+  updateBoard();
 }
 
 /** A track to load: one of the list, or a generated one. */
@@ -394,9 +455,21 @@ function startRace(withPlayer: boolean): void {
     const grid = !withPlayer ? defaultGrid(null, raceSeed) : trial ? [choice.racer] : gp ? gp.grid() : defaultGrid(choice.racer, fieldSeed);
     for (const r of grid) {
       if (withPlayer && r === choice.racer) player = race.addKart(r, choice.engine, null);
-      else race.addKart(r, choice.engine, CPU_SKILL[choice.engine]);
+      else {
+        // A Grand Prix rival drives a touch sharper, and wears the name.
+        const rival = withPlayer && !!gp && gp.rivals.includes(r);
+        race.addKart(r, choice.engine, rival ? rivalSkill(CPU_SKILL[choice.engine]) : CPU_SKILL[choice.engine]).rival = rival;
+      }
     }
+    // The CPUs ahead hold back a little for the player (Race.rubberBand), never for a ghost or the attract mode.
+    race.focus = withPlayer && !trial ? player : null;
   }
+  style = withPlayer && !net && !trial ? new StyleMeter() : null;
+  splits = [];
+  lastCheckpoint = -1;
+  lastBranch = -1;
+  raceRecorded = false;
+  hud.minimap.setMirror(mirrored());
   // Attract mode skips the countdown.
   if (!withPlayer) race.time = 0;
   for (const v of [itemsView, hazardsView]) if (v) dispose(v.group);
@@ -532,8 +605,9 @@ function introCamera(): void {
   const p = pointAt(track.spline, s);
   const a = pointAt(track.spline, s + 30);
   const lateral = lerp(16, 0, e);
-  camera.position.set(p.x - p.tz * lateral, track.main.heightAt(((s % track.length) + track.length) % track.length) + lerp(24, 4.5, e), p.z + p.tx * lateral);
-  camera.lookAt(a.x, track.main.heightAt(((s + 30 + track.length) % track.length)) + 1.5, a.z);
+  const m = mirrored() ? -1 : 1;
+  camera.position.set(m * (p.x - p.tz * lateral), track.main.heightAt(((s % track.length) + track.length) % track.length) + lerp(24, 4.5, e), p.z + p.tx * lateral);
+  camera.lookAt(m * a.x, track.main.heightAt(((s + 30 + track.length) % track.length)) + 1.5, a.z);
 }
 
 function skipIntro(): boolean {
@@ -550,6 +624,8 @@ function focus(): RaceKart {
 
 function step(dt: number): void {
   lastInput = input.sample();
+  // Mirror mode flips the world on screen, so left is right at the wheel too.
+  if (mirrored() && (lastInput.steer !== 0)) lastInput = { ...lastInput, steer: -lastInput.steer };
   if (mode === 'podium') return;
   if (intro > 0) {
     intro = Math.max(0, intro - dt);
@@ -577,19 +653,27 @@ function step(dt: number): void {
     return;
   }
   const ev = events[race.karts.indexOf(player)];
+  style?.tick(dt);
+  // Nothing scores after the flag: the autopilot's laps are not yours.
+  const st = player.finishTime === null ? style : null;
   if (ev.boostTier > 0) {
     chase.bump(0.3 + ev.boostTier * 0.2);
     chase.kick(3 + ev.boostTier * 3);
+    st?.add(driftMove(ev.boostTier));
   }
   if (ev.trick) {
     chase.bump(0.6);
     chase.kick(4 + ev.trickStreak * 2);
     if (ev.trickStreak > 1) hud.flash(`TRICK x${ev.trickStreak}!`);
+    st?.add('trick', ev.trickStreak);
   }
   if (player.drafted) {
     sfx.slipstream();
     chase.kick(6);
+    st?.add('slipstream');
   }
+  checkShortcut(player);
+  checkSplit(player);
   if (player.bump > 3) sfx.bump(Math.min(1, player.bump / 10));
   if (ev.wallHit > 0.3) chase.bump(ev.wallHit);
   if (player.respawned) chase.snap();
@@ -599,6 +683,7 @@ function step(dt: number): void {
     if (player.launch === 'rocket') {
       sfx.rocket();
       chase.kick(8);
+      st?.add('rocket');
     } else {
       sfx.stall();
     }
@@ -615,6 +700,7 @@ function step(dt: number): void {
       if (mine) {
         if (e.type === 'block') sfx.block();
         else sfx.dodge();
+        st?.add(e.type === 'block' ? 'block' : 'dodge');
       }
       continue;
     }
@@ -622,6 +708,7 @@ function step(dt: number): void {
       if (e.kart === player) {
         hud.flash(BONUS_TEXT[e.by]);
         sfx.boost(2);
+        st?.add('hazard');
       }
       continue;
     }
@@ -651,9 +738,14 @@ function step(dt: number): void {
       hud.callout({ from: 'you', to: who(e.kart), by: item, kind: 'landed' });
       // The feed says who you hit; a sound is enough on top of it.
       if (e.by !== 'tempoShift' && e.by !== 'bassDrop') sfx.scored();
+      st?.add('hit');
     }
   }
   surgeWarning(player, dt);
+  if (player.finishTime !== null && !raceRecorded) {
+    raceRecorded = true;
+    if (!online && choice.mode !== 'timeTrial') finishRace(player);
+  }
   if (mode === 'race' && player.finishTime !== null && race.time - player.finishTime > RESULTS_DELAY) {
     if (choice.mode === 'timeTrial') {
       trialNote = saveTrial(player.finishTime, Math.min(...player.lapTimes), player.racer.id);
@@ -732,18 +824,103 @@ function boxSound(mine: boolean, x: number, z: number, double: boolean): void {
   if (d < 40) sfx.box(0.45 * (1 - d / 40), double);
 }
 
-/** How close a Nonagon Infinity coming for the player is, 0 (just in earshot) .. 1 (arriving), or null. */
-function surgeCloseness(p: RaceKart): number | null {
+/**
+ * How close a Nonagon Infinity coming for the player is, 0 (just in
+ * earshot) .. 1 (arriving), and how many seconds until it does (from how
+ * fast it closes: the gap it still has to make up at its closing speed),
+ * or null. The HUD counts that down to the moment to hop.
+ */
+function surgeCloseness(p: RaceKart): { near: number; eta: number } | null {
   const w = race.items.surge;
   if (!w || w.target !== p || p.finishTime !== null) return null;
   const d = Math.hypot(w.x - p.state.x, w.z - p.state.z);
-  return d < SURGE_WARN ? 1 - d / SURGE_WARN : null;
+  if (d >= SURGE_WARN) return null;
+  const gap = Math.max(0, p.distance - w.d);
+  // Far off it runs flat out; near, at the leader's speed plus its closing rate.
+  const closing = gap > SURGE_CLOSE ? Math.max(1, SURGE_FAST - Math.max(0, p.state.speed)) : SURGE_CLOSING;
+  const eta = gap > SURGE_CLOSE ? (gap - SURGE_CLOSE) / closing + SURGE_CLOSE / SURGE_CLOSING : gap / closing;
+  return { near: 1 - d / SURGE_WARN, eta };
 }
 
 /** The wave's alarm, faster as it closes. */
 function surgeWarning(p: RaceKart, dt: number): void {
   const near = surgeCloseness(p);
-  sfx.surgeAlarm(dt, near);
+  sfx.surgeAlarm(dt, near?.near ?? null);
+}
+
+/** A shortcut the player has just driven onto: style points, and a sting the first time it's found on this track. */
+function checkShortcut(p: RaceKart): void {
+  const b = p.branch;
+  if (b === lastBranch) return;
+  lastBranch = b;
+  if (b < 0 || !race.started || p.finishTime !== null) return;
+  const name = track.def.branches[b]?.name ?? 'shortcut';
+  style?.add('shortcut');
+  if (foundShortcut(track.def.id, name)) {
+    hud.flash(`SHORTCUT FOUND: ${name.toUpperCase()}`);
+    sfx.discover();
+    chase.kick(5);
+  }
+}
+
+/** Time Trial: at each checkpoint, the gap to the ghost being chased as a split. */
+function checkSplit(p: RaceKart): void {
+  if (!recorder) return;
+  const cp = p.laps.lastCheckpoint;
+  if (cp === lastCheckpoint) return;
+  lastCheckpoint = cp;
+  if (cp < 0) return;
+  const g = rivalGhost();
+  const gap = g ? ghostGap(g, p) : null;
+  if (gap !== null) splits.push({ label: `S${cp + 1}`, gap });
+}
+
+/** A finished race offline (Single Race or a Grand Prix race): the style tally, the best time, and the online board. */
+function finishRace(p: RaceKart): void {
+  const ms = Math.round(p.finishTime! * 1000);
+  const mirror = mirrored();
+  const parts: string[] = [];
+  if (style) {
+    parts.push(style.summary());
+    if (recordStyle(track.def.id, choice.engine, style.score).best) parts.push('NEW STYLE BEST!');
+  }
+  const rec = recordRace(track.def.id, choice.engine, mirror, ms);
+  parts.push(rec.best ? (rec.prevMs === null ? 'First race time set' : `BEST RACE! ${formatTime((rec.prevMs - ms) / 1000).replace(/^0:0?/, '-')}s`) : `Best race ${formatTime(rec.prevMs! / 1000)}`);
+  if (gp) {
+    // By round, so a restarted race replaces its own entry.
+    gpTimes[gp.round] = p.finishTime!;
+    gpPlaces[gp.round] = p.position;
+  }
+  trialNote = parts.join(' · ');
+  if (!identity().name) {
+    trialNote += ' · set a name in the picker to post times online';
+    return;
+  }
+  const before = trialNote;
+  postRecord({ kind: 'race', trackId: track.def.id, engine: choice.engine, mirror, racerId: p.racer.id, lapsMs: p.lapTimes.map((l) => Math.round(l * 1000)), totalMs: p.lapTimes.reduce((a, l) => a + Math.round(l * 1000), 0), style: style?.score ?? 0 })
+    .then((r) => (trialNote = `${before} · ${r.best ? 'posted! ' : ''}online #${r.rank}`))
+    .catch((err: Error) => (trialNote = `${before} · not posted: ${err.message}`));
+}
+
+/** A finished cup: its trophy, what it unlocked, and the online cup board. Returns the podium's line. */
+function finishCup(): string {
+  const cup = chosenCup(choice);
+  const table = gp!.standings();
+  const place = table.findIndex((e) => e.racer === choice.racer) + 1;
+  const entry = table[place - 1];
+  // Quit mid-cup and the record is no record.
+  if (!entry || gpTimes.length !== gp!.tracks.length || gpTimes.some((t) => t === undefined)) return '';
+  const mirror = mirrored();
+  const timeMs = Math.round(gpTimes.reduce((a, t) => a + t * 1000, 0));
+  const res = recordCup(cup.id, choice.engine, mirror, { place, points: entry.points, timeMs, sweep: gpPlaces.every((p) => p === 1) });
+  const parts: string[] = [];
+  if (res.trophy) parts.push(`${res.trophy.toUpperCase()} TROPHY${res.improved ? '!' : ''}`);
+  for (const u of res.unlocked) parts.push({ randomCup: 'RANDOM CUP UNLOCKED!', class200: '200cc UNLOCKED!', mirror: 'MIRROR MODE UNLOCKED!' }[u]);
+  if (res.trophy || res.unlocked.length) sfx.fanfare();
+  if (identity().name) {
+    postRecord({ kind: 'cup', cupId: cup.id, engine: choice.engine, mirror, racerId: choice.racer.id, points: entry.points, totalMs: timeMs, places: gpPlaces }).catch(() => {});
+  }
+  return parts.join(' · ');
 }
 
 const HIT_TEXT: Record<ItemKind | HazardKind, string> = {
@@ -760,6 +937,7 @@ const HIT_TEXT: Record<ItemKind | HazardKind, string> = {
   harmonicaWail: 'BOOGIED!',
   keytarLaser: 'SLICED!',
   gizzardWave: 'INFINITY!',
+  drippingTap: '',
   snakes: 'SNAKEBITE!',
   dustDevils: 'DUST DEVIL!',
   tumbleweeds: 'TUMBLEWEED!',
@@ -915,7 +1093,7 @@ function updateSounds(dt: number): void {
       const dz = h.z - s.z;
       const d = Math.hypot(dx, dz);
       // Pan by which side of the kart it's on.
-      if (!best || d < best.d) best = { d, pan: d > 0 ? (dx * -Math.cos(s.heading) + dz * Math.sin(s.heading)) / d : 0 };
+      if (!best || d < best.d) best = { d, pan: d > 0 ? ((dx * -Math.cos(s.heading) + dz * Math.sin(s.heading)) / d) * (mirrored() ? -1 : 1) : 0 };
     }
     return best;
   };
@@ -976,7 +1154,14 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
 
   const snaps = race.karts.map((k) => interpolate(k, alpha));
   const f = focus();
-  const s = snaps[race.karts.indexOf(f)];
+  // Mirror mode: the world's views are flipped in x, and the karts are drawn flipped to match (the podium stays as built).
+  const flip = mirrored() && !podium;
+  const m = flip ? -1 : 1;
+  trackView!.group.scale.x = m;
+  itemsView!.group.scale.x = m;
+  hazardsView!.group.scale.x = m;
+  const drawn = flip ? snaps.map((sn, i) => mirrorState(sn, (mirrorSnaps[i] ??= createKartState()))) : snaps;
+  const s = drawn[race.karts.indexOf(f)];
   for (const g of ghosts) {
     ghostPose(g.run, Math.max(0, race.time - (1 - alpha) * PHYSICS_DT), g.state);
     g.view.update(g.state, 30, dt, elapsed);
@@ -984,16 +1169,18 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
   if (podium) {
     podium.update(dt, elapsed, camera);
   } else if (intro > 0) {
-    race.karts.forEach((k, i) => views[i].update(snaps[i], k.params.topSpeed, dt, elapsed, k.fallTime > 0));
+    race.karts.forEach((k, i) => views[i].update(drawn[i], k.params.topSpeed, dt, elapsed, k.fallTime > 0));
     introCamera();
   } else {
-    race.karts.forEach((k, i) => views[i].update(snaps[i], k.params.topSpeed, dt, elapsed, k.fallTime > 0));
+    race.karts.forEach((k, i) => views[i].update(drawn[i], k.params.topSpeed, dt, elapsed, k.fallTime > 0));
     chase.update(s, f.params.topSpeed, player ? lastInput.lookBack : false, dt);
   }
+  // Where the camera is in the world the simulation knows (the views are flipped, the camera isn't).
+  const camWorld = flip ? new THREE.Vector3(-camera.position.x, camera.position.y, camera.position.z) : camera.position;
   document.body.classList.toggle('intro', intro > 0);
   const theme = trackView!.theme;
   const L = track.length;
-  trackView!.update(elapsed, camera.position, theme.skyCycle ? Math.PI * 2 * clamp(f.distance / (L * race.laps), 0, 1) : 0, f.state);
+  trackView!.update(elapsed, camWorld, theme.skyCycle ? Math.PI * 2 * clamp(f.distance / (L * race.laps), 0, 1) : 0, f.state);
   itemsView!.update(elapsed, race.karts.map((k, i) => ({ state: snaps[i], holder: k })));
   hazardsView!.update(elapsed);
   sunAnchor.position.copy(camera.position).addScaledVector(SUN_DIR, 1400);
@@ -1009,7 +1196,7 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
       lapTimes: f.lapTimes,
       racerName: f.racer.name,
       engineClass: choice.engine,
-      trackName: gp && !gp.finished ? `${track.def.name} · race ${gp.round + 1}/${gp.tracks.length}` : ghosts.length ? `${track.def.name} · ${ghosts.map((g) => `${g.label} ${formatTime(g.run.total)}`).join(' · ')}` : track.def.name,
+      trackName: gp && !gp.finished ? `${track.def.name} · race ${gp.round + 1}/${gp.tracks.length}${gp.rivals.length ? ` · vs ${gp.rivals.map((r) => r.name).join(' & ')}` : ''}` : ghosts.length ? `${track.def.name} · ${ghosts.map((g) => `${g.label} ${formatTime(g.run.total)}`).join(' · ')}` : `${track.def.name}${mirrored() ? ' · Mirror' : ''}`,
       autoAccelerate: input.autoAccelerate,
       finished,
       paused: loop.paused && !frozen,
@@ -1023,7 +1210,7 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
       position: f.position,
       karts: race.karts.length,
       countdown: intro > 0 ? -1 : -race.time,
-      intro: intro > 0 ? { name: track.def.name, sub: gp ? `Race ${gp.round + 1} of ${gp.tracks.length}` : choice.mode === 'timeTrial' ? 'Time Trial' : `${choice.engine}` } : null,
+      intro: intro > 0 ? { name: track.def.name, sub: gp ? `Race ${gp.round + 1} of ${gp.tracks.length}${gp.rivals.length ? ` · your rivals: ${gp.rivals.map((r) => r.name).join(' and ')}` : ''}${mirrored() ? ' · Mirror' : ''}` : choice.mode === 'timeTrial' ? 'Time Trial' : `${choice.engine}${mirrored() ? ' · Mirror' : ''}` } : null,
       table: table(),
       muted: musicMuted,
       sfxMuted,
@@ -1031,10 +1218,12 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
       rolling: player?.rolling ?? 0,
       spare: player?.spare ?? null,
       surge: player ? surgeCloseness(player) : null,
+      style: style && player ? { score: style.score, chain: style.chainLeft > 0 ? style.chain : 0, last: style.last } : null,
+      splits,
     },
     elapsed,
   );
-  hud.minimap.draw(race.karts.map((k, i) => ({ x: snaps[i].x, z: snaps[i].z, color: hex(k.racer.color), player: k === player })));
+  hud.minimap.draw(race.karts.map((k, i) => ({ x: snaps[i].x, z: snaps[i].z, color: hex(k.racer.color), player: k === player, rival: k.rival })));
   // Heat haze shimmers hardest on the straights; the kaleidoscope runs on the player's final lap.
   const straight = 1 - clamp(track.main.maxCurvature(f.progressS, f.progressS + 80) * 25, 0, 1);
   const hazeTarget = podium ? 0 : theme.haze * (0.3 + 0.7 * straight);
@@ -1051,7 +1240,7 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
   fx.duo += (look.duo[moment] + fx.bite * look.bite - fx.duo) * damp(8, frameDt);
   fx.box += ((flyover && look.vhs.flyover > 0 ? 1 : 0) - fx.box) * damp(6, frameDt);
   // Under water: the camera is below a dive's surface.
-  const submerged = trackView!.dives.some((p) => camera.position.y < WATER_LEVEL && inPit(p, camera.position.x, camera.position.z));
+  const submerged = trackView!.dives.some((p) => camWorld.y < WATER_LEVEL && inPit(p, camWorld.x, camWorld.z));
   fx.water += ((submerged ? 1 : 0) - fx.water) * damp(6, frameDt);
   underwaterFog(fx.water);
   music.setMuffle(fx.water);
@@ -1060,6 +1249,9 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
   postFx.render(scene, camera, { haze: fx.haze, kaleido: fx.kaleido, beat: beat >= 0 ? beat : (elapsed * 2.4) % 1, time: elapsed, vhs: fx.vhs, duo: fx.duo, box: fx.box, palette: theme.duotone, water: fx.water });
 });
 
+/** The podium's extra line: the trophy and what it unlocked. */
+let cupNote = '';
+
 /** The panel for the results, cup standings and podium screens. */
 function table(): Table | null {
   const kartRow = (k: RaceKart, i: number): TableRow => ({
@@ -1067,6 +1259,7 @@ function table(): Table | null {
     name: k.racer.name,
     color: hex(k.racer.color),
     value: k.finishTime === null ? '...' : formatTime(k.finishTime),
+    extra: k.rival ? 'RIVAL' : undefined,
     player: k === player,
   });
   const cupRows = (n: number) =>
@@ -1078,7 +1271,7 @@ function table(): Table | null {
         name: e.racer.name,
         color: hex(e.racer.color),
         value: `${e.points} pts`,
-        extra: mode === 'standings' && e.gained ? `+${e.gained}` : undefined,
+        extra: [mode === 'standings' && e.gained ? `+${e.gained}` : '', gp!.rivals.includes(e.racer) ? 'RIVAL' : ''].filter(Boolean).join(' ') || undefined,
         player: e.racer === choice.racer,
       }));
   if (mode === 'results') {
@@ -1093,7 +1286,7 @@ function table(): Table | null {
   if (mode === 'podium' && gp) {
     const champ = gp.standings()[0];
     const me = gp.standings().findIndex((e) => e.racer === choice.racer) + 1;
-    const note = champ.racer === choice.racer ? `You win the ${chosenCup(choice).name}!` : `You finished ${ordinal(me)}`;
+    const note = `${champ.racer === choice.racer ? `You win the ${chosenCup(choice).name}!` : `You finished ${ordinal(me)}`}${cupNote ? ` · ${cupNote}` : ''}`;
     return { kind: 'podium', title: `${champ.racer.name.toUpperCase()} WINS!`, note, rows: cupRows(3) };
   }
   return null;
@@ -1210,13 +1403,15 @@ function advance(): boolean {
       toMenu();
       return true;
     }
-    gp.record(finishOrder().map((k) => k.racer));
+    gp.record(finishOrder().map((k) => k.racer), choice.racer);
     setMode('standings');
     return true;
   }
   if (mode === 'standings') {
-    if (gp?.finished) startPodium();
-    else startRace(true);
+    if (gp?.finished) {
+      cupNote = finishCup();
+      startPodium();
+    } else startRace(true);
     return true;
   }
   if (mode === 'podium') {

@@ -79,7 +79,7 @@ export interface StepEvents {
  * Bump whenever kart physics, racer stats or a track layout change lap
  * times: online leaderboards and ghosts are kept per version.
  */
-export const PHYSICS_VERSION = 10;
+export const PHYSICS_VERSION = 11;
 export const KART_RADIUS = 1;
 export const GRAVITY = 30;
 export const HOP_VELOCITY = 4.5;
@@ -88,9 +88,13 @@ export const BOOST_SPEED_MUL = 1.35;
 export const BOOST_ACCEL = 30;
 export const PAD_BOOST_TIME = 1;
 export const DRIFT_MIN_SPEED = 10;
-/** Charge thresholds (s) and boost durations (s) for blue, orange, purple sparks. */
-export const DRIFT_TIERS = [0.15, 0.3, 0.475] as const;
-export const DRIFT_BOOSTS = [0.5, 1, 1.5] as const;
+/**
+ * Charge thresholds (s) and boost durations (s) for blue, orange, purple
+ * and rainbow sparks. Rainbow is the expert's edge: a purple held on
+ * through the rest of the corner, for the longest boost in the game.
+ */
+export const DRIFT_TIERS = [0.15, 0.3, 0.475, 0.8] as const;
+export const DRIFT_BOOSTS = [0.5, 1, 1.5, 2.1] as const;
 /** Top speed multiplier while slowed by Horology. */
 export const SLOW_MUL = 0.6;
 const SPIN_DECEL = 22;

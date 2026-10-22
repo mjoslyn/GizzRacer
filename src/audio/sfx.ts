@@ -104,9 +104,9 @@ export class Sfx {
     this.hit(0.14, 700, Math.min(0.4, 0.1 + intensity * 0.12));
   }
 
-  /** A drift reached spark tier 1..3. */
+  /** A drift reached spark tier 1..4. */
   driftTier(tier: number): void {
-    const f = [0, 660, 880, 1175][tier];
+    const f = [0, 660, 880, 1175, 1568][tier];
     this.tone(f, 0.12, 'triangle', 0.12);
     this.tone(f * 2, 0.1, 'sine', 0.05, undefined, 0.03);
   }
@@ -117,6 +117,8 @@ export class Sfx {
     // A purple release kicks in with a fuzzed fifth under it.
     if (tier >= 2) this.tone(tier === 3 ? 147 : 110, 0.35, 'sawtooth', 0.04 + tier * 0.015, tier === 3 ? 294 : 220, 0, true);
     if (tier === 3) this.tone(1760, 0.25, 'sine', 0.06, 2637);
+    // A rainbow release: the fifth and a shimmer on top.
+    if (tier >= 4) [1760, 2217, 2637].forEach((f, i) => this.tone(f, 0.3, 'sine', 0.05, f * 1.5, i * 0.05));
   }
 
   /** A trick landed; each one in a streak climbs a step higher. */
@@ -322,6 +324,11 @@ export class Sfx {
         this.tone(2400, 0.3, 'sawtooth', 0.07, 180, 0, true);
         this.tone(1200, 0.3, 'square', 0.04, 90);
         break;
+      case 'drippingTap':
+        // A tap turned on: drips quickening into a stream.
+        for (let i = 0; i < 8; i++) this.tone(1400 - i * 60, 0.05, 'sine', 0.08, 900, i * i * 0.012);
+        this.whoosh(0.9, 400, 2200, 0.1);
+        break;
       case 'gizzardWave':
         this.onDuck(0.4, 1.2);
         this.whoosh(1.2, 120, 900, 0.3);
@@ -418,6 +425,20 @@ export class Sfx {
   }
 
   /** The player's item hit someone. */
+  /** A shortcut found for the first time: a rising secret-found chime. */
+  discover(): void {
+    this.onDuck(0.6, 0.5);
+    [523, 659, 784, 1047, 1319].forEach((f, i) => this.tone(f, 0.22, 'triangle', 0.1, undefined, i * 0.07));
+    this.tone(2093, 0.5, 'sine', 0.06, undefined, 0.35);
+  }
+
+  /** A cup trophy, or something unlocked: a fanfare. */
+  fanfare(): void {
+    this.onDuck(0.5, 1.2);
+    [392, 392, 392, 523, 659, 784].forEach((f, i) => this.tone(f, i === 5 ? 0.6 : 0.16, 'square', 0.07, undefined, i * 0.14));
+    [196, 262, 330].forEach((f, i) => this.tone(f, 0.7, 'sawtooth', 0.04, undefined, 0.7 + i * 0.02, true));
+  }
+
   scored(): void {
     this.onDuck(0.55, 0.4);
     this.tone(523, 0.1, 'square', 0.08);
