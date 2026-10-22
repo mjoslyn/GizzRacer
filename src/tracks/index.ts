@@ -22,14 +22,16 @@ import { buildRattlesnakeRun } from './rattlesnakeRun';
 import { buildSeaOfDoubt } from './seaOfDoubt';
 import { buildTetrachromacy } from './tetrachromacy';
 import type { TrackDef } from './track';
+import { enrichTrack } from './enrich';
 import { buildVolcanoFortress } from './volcanoFortress';
 import { buildRobotStop } from './robotStop';
 import { buildGammaKnife } from './gammaKnife';
 import { buildPeopleVultures } from './peopleVultures';
 import { buildWahWah } from './wahWah';
 
-/** Every track the picker offers, in cup order. */
-export const TRACK_LIST: { id: string; name: string; build: () => TrackDef }[] = [
+/** Every track the picker offers, in cup order, each with its layout extras laid in (enrich.ts). */
+/** The tracks as drawn, before enrich.ts (tests and tools). */
+export const RAW_TRACK_LIST: { id: string; name: string; build: () => TrackDef }[] = [
   { id: 'infinite-loop-speedway', name: 'Infinite Loop Speedway', build: buildInfiniteLoopSpeedway },
   { id: 'rattlesnake-run', name: 'Rattlesnake Run', build: buildRattlesnakeRun },
   { id: 'volcano-fortress', name: 'Volcano Fortress', build: buildVolcanoFortress },
@@ -59,6 +61,8 @@ export const TRACK_LIST: { id: string; name: string; build: () => TrackDef }[] =
   { id: 'people-vultures', name: 'People-Vultures', build: buildPeopleVultures },
   { id: 'wah-wah', name: 'Wah Wah', build: buildWahWah },
 ];
+
+export const TRACK_LIST: { id: string; name: string; build: () => TrackDef }[] = RAW_TRACK_LIST.map((t) => ({ ...t, build: () => enrichTrack(t.build()) }));
 
 /** Grand Prix cups: four tracks each, in race order (indexes into TRACK_LIST). */
 export const CUPS: { id: string; name: string; tracks: number[] }[] = [

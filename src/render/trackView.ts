@@ -4,8 +4,9 @@ import { nearestOnSpline, pointAt } from '../tracks/spline';
 import type { PitDef, RoadSurface } from '../tracks/builder';
 import { BANK, branchOpen, inPit, type BranchDef, type LapContext, type Ribbon, type Track } from '../tracks/track';
 import * as tex from './textures';
+import { trackLife } from './trackLife';
 import { THEMES, type Theme } from './themes';
-import { CURB_WIDTH, roadPaint, trackDetail } from './trackDetail';
+import { CURB_WIDTH, atmosphere, roadPaint, trackDetail } from './trackDetail';
 import { colonyFeature, colonyGate, cosmosFeature, plainsFeature, rodGate, stormWeather, voidEye } from './apocalypse';
 import { alienSeaFeature, crystalGate, gardenFeature, goblinGate, jawsGate, keplerArch, magentaPeak, peaksFeature, shoreFeature } from './omnium';
 import { carcass, carrionGate, boneyardFeature, factoryGate, foundryFeature, gammaGate, gammaRing, pedalboardFeature, robotColossus, theatreFeature, wahGate, wahPedal } from './nonagon';
@@ -258,6 +259,8 @@ export function buildTrackView(track: Track): TrackView {
   for (const p of dives) group.add(underwater(track, p, animated));
   if (!abyss) group.add(boundaryCliffs(track.def.bounds, mats));
   group.add(trackDetail(track, theme, animated));
+  const life = trackLife(track, theme, animated);
+  group.add(life.group);
   group.add(decor(track, mats, theme, animated));
   group.add(distant(theme));
 
@@ -277,7 +280,9 @@ export function buildTrackView(track: Track): TrackView {
       if (theme.barrier.crawl && mats.barrier.map) mats.barrier.map.offset.x = -time * 0.15;
       if (mats.lava.map) mats.lava.map.offset.set(time * 0.02, time * 0.035);
       skyMesh.position.copy(cameraPos);
+      atmosphere.finalLap += ((lap?.lastLap ? 1 : 0) - atmosphere.finalLap) * 0.05;
       for (const a of animated) a(time);
+      life.update(time, cameraPos);
       weather?.update(time, cameraPos);
     },
   };

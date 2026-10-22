@@ -223,6 +223,14 @@ const STYLES: Record<DecorKind, DetailStyle> = {
   },
 };
 
+/** What the trackside layer knows about the race: the final lap lights everything up (set by trackView.update). */
+export const atmosphere = { finalLap: 0 };
+
+/** A theme's trackside style (trackLife.ts shares it). */
+export function detailStyle(decor: DecorKind): { crowd: boolean; light?: number; boards: { bg: string[]; fg: string } } {
+  return STYLES[decor];
+}
+
 /** The trackside layer for a track; `animated` gets the per-frame updates. */
 export function trackDetail(track: Track, theme: Theme, animated: ((time: number) => void)[]): THREE.Group {
   const g = new THREE.Group();
@@ -442,7 +450,9 @@ function edgeProps(ribbons: Ribbon[], style: DetailStyle, abyss: boolean, clear:
     const base = mat.size;
     const flicker = e.kind === 'torch';
     animated.push((time) => {
-      mat.size = base * (flicker ? 0.85 + Math.sin(time * 17) * 0.08 + Math.sin(time * 29) * 0.07 : 0.95 + Math.sin(time * 1.6) * 0.05);
+      // The final lap: every light along the road pulses to the beat.
+      const pulse = atmosphere.finalLap * (0.35 + 0.35 * Math.sin(time * 8));
+      mat.size = base * ((flicker ? 0.85 + Math.sin(time * 17) * 0.08 + Math.sin(time * 29) * 0.07 : 0.95 + Math.sin(time * 1.6) * 0.05) + pulse);
     });
     if (e.kind === 'lamp') {
       // Alternate pink and cyan heads on the city lamps.
@@ -528,11 +538,10 @@ function grandstand(track: Track, theme: Theme, clear: (x: number, z: number, m:
   return null;
 }
 
-function buildStand(x: number, z: number, yaw: number, len: number, depth: number, theme: Theme, animated: ((time: number) => void)[]): THREE.Group {
+export function buildStand(x: number, z: number, yaw: number, len: number, depth: number, theme: Theme, animated: ((time: number) => void)[], tiers = 5): THREE.Group {
   const g = new THREE.Group();
   const concrete = new THREE.MeshLambertMaterial({ map: theme.cliff() });
   const steel = new THREE.MeshPhongMaterial({ color: 0xd8dde8, shininess: 80, specular: 0xffffff });
-  const tiers = 5;
   const rise = 0.9;
   const tread = depth / tiers;
   // The stand faces local +z (toward the road); tiers step up toward the back.
@@ -595,8 +604,9 @@ function buildStand(x: number, z: number, yaw: number, len: number, depth: numbe
   // Flags along the roof line.
   const flags: THREE.Mesh[] = [];
   const flagColors = [0xff3a6a, 0xffd23a, 0x3adcff, 0x7aff9a];
-  for (let k = 0; k < 5; k++) {
-    const fx = -len / 2 + (k + 0.5) * (len / 5);
+  const nFlags = Math.max(2, Math.round(len / 5.6));
+  for (let k = 0; k < nFlags; k++) {
+    const fx = -len / 2 + (k + 0.5) * (len / nFlags);
     const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 3, 6), steel);
     pole.position.set(fx, top + 1.5, depth / 2 + 0.4);
     const flag = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.8, 6, 1).translate(0.7, 0, 0), new THREE.MeshLambertMaterial({ color: flagColors[k % flagColors.length], side: THREE.DoubleSide }));
@@ -606,11 +616,13 @@ function buildStand(x: number, z: number, yaw: number, len: number, depth: numbe
   }
   const base = (flags[0].geometry.getAttribute('position') as THREE.BufferAttribute).array.slice();
   animated.push((time) => {
+    // On the final lap the flags go wild.
+    const wave = 6 + atmosphere.finalLap * 6;
     flags.forEach((f, k) => {
       const pos = f.geometry.getAttribute('position') as THREE.BufferAttribute;
       for (let i = 0; i < pos.count; i++) {
         const fx = base[i * 3];
-        pos.setZ(i, Math.sin(fx * 3 - time * 6 + k) * 0.18 * fx);
+        pos.setZ(i, Math.sin(fx * 3 - time * wave + k) * (0.18 + atmosphere.finalLap * 0.08) * fx);
       }
       pos.needsUpdate = true;
     });

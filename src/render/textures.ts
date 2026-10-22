@@ -1074,6 +1074,43 @@ export function billboardTexture(text: string, bg: string, fg: string, ink = '#1
   return finish(c, false);
 }
 
+/** A roadside name board: the section's name on a dark plate with a coloured bar, readable at speed. */
+export function signTexture(text: string, bar: string, fg: string): THREE.CanvasTexture {
+  const [c, ctx] = canvas(512, 160);
+  ctx.fillStyle = '#1a1420';
+  ctx.fillRect(0, 0, 512, 160);
+  ctx.fillStyle = bar;
+  ctx.fillRect(0, 0, 512, 22);
+  ctx.fillRect(0, 138, 512, 22);
+  ctx.font = 'italic 900 64px Impact, "Arial Black", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.lineWidth = 8;
+  ctx.strokeStyle = '#000000';
+  ctx.strokeText(text.toUpperCase(), 256, 82, 470);
+  ctx.fillStyle = fg;
+  ctx.fillText(text.toUpperCase(), 256, 82, 470);
+  ctx.lineWidth = 6;
+  ctx.strokeStyle = '#000000';
+  ctx.strokeRect(3, 3, 506, 154);
+  return finish(c, false);
+}
+
+/** Words painted on the road: white letters with a dark edge on a clear ground. */
+export function roadTextTexture(text: string, fg = '#f4f4f0'): THREE.CanvasTexture {
+  const [c, ctx] = canvas(1024, 256);
+  ctx.clearRect(0, 0, 1024, 256);
+  ctx.font = '900 190px Impact, "Arial Black", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.lineWidth = 16;
+  ctx.strokeStyle = '#1a0a1a';
+  ctx.strokeText(text.toUpperCase(), 512, 134, 980);
+  ctx.fillStyle = fg;
+  ctx.fillText(text.toUpperCase(), 512, 134, 980);
+  return finish(c, false);
+}
+
 /** A corner warning board: white chevrons pointing left on red. Flip it for a right-hander. */
 export function chevronSignTexture(): THREE.CanvasTexture {
   const [c, ctx] = canvas(256, 128);
