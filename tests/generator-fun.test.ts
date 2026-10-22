@@ -165,7 +165,7 @@ describe('generated tracks: kickers, double boxes and shortcuts', () => {
 
   it('adds shortcuts only at twists 3 and up, now and then, on solid ground', () => {
     // Never over an abyss, where the open bends it leaves from would be a long way down.
-    for (const { p, def } of BUILT) if (p.complexity < 3 || p.theme === 'dream' || p.theme === 'void') expect(def.branches.length, label(p)).toBe(0);
+    for (const { p, def } of BUILT) if (p.complexity < 3 || ABYSS(p)) expect(def.branches.length, label(p)).toBe(0);
     const at = (c: number) => BUILT.filter(({ p }) => p.complexity === c && p.theme !== 'dream' && p.theme !== 'void');
     for (let c = 3; c <= GEN_COMPLEXITY_MAX; c++) {
       const share = at(c).filter(({ def }) => def.branches.length).length / at(c).length;
@@ -302,7 +302,7 @@ const MORE = GEN_THEMES.flatMap((theme, t) =>
   ),
 ).map((p) => ({ p, def: generateTrack(p) }));
 const ALL = [...BUILT, ...MORE];
-const ABYSS = (p: GenParams) => p.theme === 'dream' || p.theme === 'void';
+const ABYSS = (p: GenParams) => p.theme === 'dream' || p.theme === 'void' || p.theme === 'skycastle';
 const mean = (v: number[]) => v.reduce((a, b) => a + b, 0) / v.length;
 
 /** Main road heights every 2 m (spline units). */

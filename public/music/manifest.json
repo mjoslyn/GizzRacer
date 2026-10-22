@@ -293,14 +293,14 @@
     "loopSamples": 1512000,
     "sampleRate": 44100
   },
-  "polygondwanaland-jungle-remix": {
+  "crumbling-castle-remix": {
     "title": "crumbling castle (remix)",
     "bpm": 108,
     "bars": 27,
     "loopSamples": 2315250,
     "sampleRate": 44100
   },
-  "polygondwanaland-jungle-remix-final-lap": {
+  "crumbling-castle-remix-final-lap": {
     "title": "crumbling castle (remix, final lap)",
     "bpm": 116,
     "bars": 27,
@@ -536,6 +536,62 @@
     "bpm": 115,
     "bars": 32,
     "loopSamples": 2945113,
+    "sampleRate": 44100
+  },
+  "polygondwanaland-jungle-remix": {
+    "title": "polygondwanaland (remix)",
+    "bpm": 166.7,
+    "bars": 32,
+    "loopSamples": 2539652,
+    "sampleRate": 44100
+  },
+  "polygondwanaland-jungle-remix-final-lap": {
+    "title": "polygondwanaland (remix, final lap)",
+    "bpm": 174.7,
+    "bars": 32,
+    "loopSamples": 2423354,
+    "sampleRate": 44100
+  },
+  "castle-in-the-air-remix": {
+    "title": "castle in the air (remix)",
+    "bpm": 105.5,
+    "bars": 32,
+    "loopSamples": 2407735,
+    "sampleRate": 44100
+  },
+  "castle-in-the-air-remix-final-lap": {
+    "title": "castle in the air (remix, final lap)",
+    "bpm": 113.5,
+    "bars": 32,
+    "loopSamples": 2238026,
+    "sampleRate": 44100
+  },
+  "inner-cell-remix": {
+    "title": "inner cell (remix)",
+    "bpm": 99.4,
+    "bars": 32,
+    "loopSamples": 2129577,
+    "sampleRate": 44100
+  },
+  "inner-cell-remix-final-lap": {
+    "title": "inner cell (remix, final lap)",
+    "bpm": 107.4,
+    "bars": 32,
+    "loopSamples": 1970950,
+    "sampleRate": 44100
+  },
+  "tetrachromacy-remix": {
+    "title": "tetrachromacy (remix)",
+    "bpm": 110,
+    "bars": 32,
+    "loopSamples": 2309236,
+    "sampleRate": 44100
+  },
+  "tetrachromacy-remix-final-lap": {
+    "title": "tetrachromacy (remix, final lap)",
+    "bpm": 118,
+    "bars": 32,
+    "loopSamples": 2152678,
     "sampleRate": 44100
   }
 }

@@ -15,7 +15,15 @@ export type RoadSurface =
   /** Kepler-22b's alien reef. */
   | 'reef'
   /** The Garden Goblin's paths: crazy paving. */
-  | 'paving';
+  | 'paving'
+  /** Crumbling Castle's worn flagstones. */
+  | 'flagstone'
+  /** The Castle in the Air's road of cloud. */
+  | 'cloud'
+  /** Inner Cell's living membrane. */
+  | 'membrane'
+  /** Tetrachromacy's glass in four colours. */
+  | 'prism';
 
 export interface SectionProps {
   halfWidth: number;

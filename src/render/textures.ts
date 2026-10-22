@@ -1550,3 +1550,178 @@ export function primevalShoreTexture(): THREE.CanvasTexture {
   }
   return finish(c);
 }
+
+/** Crumbling Castle's floor: big worn flagstones, dark mortar, the odd crack and a little moss. */
+export function flagstoneTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 5, 801);
+  const rand = seededRandom(802);
+  // Two rows of stones per tile, each row offset half a stone, each stone its own shade.
+  const shadeOf: number[] = Array.from({ length: 8 }, () => 0.82 + rand() * 0.3);
+  paint(ctx, S, S, (x, y, i) => {
+    const row = Math.floor(y / 128);
+    const col = Math.floor((x + row * 64) / 128) % 2;
+    const lx = (x + row * 64) % 128;
+    const ly = y % 128;
+    const joint = lx < 4 || ly < 4;
+    if (joint) return mix([34, 32, 30], [60, 58, 52], n[i]);
+    return shade(mix([96, 92, 86], [150, 146, 136], n[i]), shadeOf[row * 2 + col]);
+  });
+  cracks(ctx, S, 9, 'rgba(20,18,16,0.55)', 1.5, 803);
+  for (let k = 0; k < 60; k++) {
+    ctx.fillStyle = 'rgba(70,96,50,0.5)';
+    ctx.fillRect(rand() * S, (rand() < 0.5 ? 0 : 126) + rand() * 6, 3 + rand() * 6, 2);
+  }
+  return finish(c);
+}
+
+/** A castle wall: courses of dark grey blocks, some fallen out, scorched near the foot. */
+export function castleWallTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 5, 811);
+  const rand = seededRandom(812);
+  const missing = new Set<number>();
+  for (let k = 0; k < 4; k++) missing.add(Math.floor(rand() * 32));
+  paint(ctx, S, S, (x, y, i) => {
+    const row = Math.floor(y / 32);
+    const lx = (x + (row % 2) * 32) % 64;
+    const block = row * 4 + Math.floor(((x + (row % 2) * 32) % S) / 64);
+    if (lx < 3 || y % 32 < 3) return mix([22, 20, 22], [40, 38, 40], n[i]);
+    // A block gone: the dark rubble core behind it.
+    if (missing.has(block)) return mix([16, 12, 12], [44, 34, 30], n[i]);
+    return shade(mix([70, 68, 72], [124, 120, 122], n[i]), 0.85 + ((block * 37) % 10) * 0.025);
+  });
+  cracks(ctx, S, 7, 'rgba(10,8,8,0.6)', 1.5, 813);
+  return finish(c);
+}
+
+/** The ground round Crumbling Castle: ash and cinders over cooled lava, embers glowing in the cracks. */
+export function castleGroundTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 5, 821);
+  paint(ctx, S, S, (_x, _y, i) => mix([26, 22, 22], [70, 60, 56], n[i]));
+  cracks(ctx, S, 30, 'rgba(255,90,20,0.55)', 1.6, 822);
+  const rand = seededRandom(823);
+  for (let k = 0; k < 160; k++) {
+    ctx.fillStyle = rand() < 0.5 ? 'rgba(110,100,96,0.7)' : 'rgba(30,26,26,0.8)';
+    ctx.fillRect(rand() * S, rand() * S, 2 + rand() * 4, 2 + rand() * 3);
+  }
+  return finish(c);
+}
+
+/** The Castle in the Air's road: packed cloud, white on top, lilac in the folds. */
+export function cloudRoadTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 3, 5, 831);
+  const puff = fbm(S, 6, 3, 832);
+  paint(ctx, S, S, (_x, _y, i) => {
+    const v = Math.min(1, Math.max(0, n[i] * 0.7 + puff[i] * 0.5 - 0.1));
+    return mix([196, 190, 232], [255, 252, 255], v);
+  });
+  return finish(c);
+}
+
+/** Inner Cell's road: a pink membrane, a lipid bilayer of tiny beads, veins of something running through it. */
+export function membraneTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 5, 841);
+  paint(ctx, S, S, (x, y, i) => {
+    const bead = Math.sin((x / S) * Math.PI * 2 * 32) * Math.sin((y / S) * Math.PI * 2 * 32) * 0.5 + 0.5;
+    return shade(mix([170, 60, 110], [236, 130, 170], n[i]), 0.88 + bead * 0.14);
+  });
+  cracks(ctx, S, 10, 'rgba(120,20,80,0.6)', 2.5, 842);
+  cracks(ctx, S, 8, 'rgba(255,190,220,0.5)', 1.2, 843);
+  return finish(c);
+}
+
+/** Inner Cell's floor: cytoplasm, violet and murky, organelles floating in it. */
+export function cytoplasmTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 3, 5, 851);
+  paint(ctx, S, S, (_x, _y, i) => mix([70, 30, 90], [150, 80, 150], n[i]));
+  const rand = seededRandom(852);
+  for (let k = 0; k < 90; k++) {
+    const x = rand() * S;
+    const y = rand() * S;
+    const r = 3 + rand() * 10;
+    const ry = r * (0.5 + rand() * 0.5);
+    const a = rand() * Math.PI;
+    ctx.fillStyle = rand() < 0.5 ? 'rgba(255,150,200,0.35)' : 'rgba(150,240,200,0.3)';
+    wrapStroke(ctx, S, () => {
+      ctx.beginPath();
+      ctx.ellipse(x, y, r, ry, a, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+  return finish(c);
+}
+
+/** A cell wall: folds of membrane, pink and wet-looking. */
+export function cellWallTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 3, 4, 861);
+  paint(ctx, S, S, (x, _y, i) => {
+    const fold = Math.sin((x / S) * Math.PI * 2 * 6 + n[i] * 5) * 0.5 + 0.5;
+    return mix([110, 30, 80], [230, 120, 170], fold * 0.7 + n[i] * 0.3);
+  });
+  return finish(c);
+}
+
+/** The four colours of Tetrachromacy, the last the one only a tetrachromat sees. */
+export const TETRA_COLOURS = [0xff3a4a, 0x3aff7a, 0x3a7aff, 0xd040ff] as const;
+
+/** Tetrachromacy's road: glass tiles in the four colours, bright edges between them. */
+export function prismRoadTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 3, 871);
+  const cols: RGB[] = TETRA_COLOURS.map((h) => [(h >> 16) & 255, (h >> 8) & 255, h & 255]);
+  paint(ctx, S, S, (x, y, i) => {
+    const tx = Math.floor(x / 64);
+    const ty = Math.floor(y / 64);
+    const edge = x % 64 < 3 || y % 64 < 3;
+    if (edge) return [200, 200, 230];
+    // A diagonal through each tile splits it in two colours, like light through a prism.
+    const diag = (x % 64) > (y % 64) ? 1 : 0;
+    const col = cols[(tx + ty * 2 + diag) % 4];
+    return mix(shade(col, 0.25), shade(col, 0.8), 0.4 + n[i] * 0.5);
+  });
+  return finish(c);
+}
+
+/** Tetrachromacy's floor: dark glass, bands of spectrum running under it. */
+export function prismGroundTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 3, 4, 881);
+  const cols: RGB[] = TETRA_COLOURS.map((h) => [(h >> 16) & 255, (h >> 8) & 255, h & 255]);
+  paint(ctx, S, S, (x, y, i) => {
+    const band = (((x + y) / S) * 4 + n[i] * 1.5) % 4;
+    const k = Math.floor(band);
+    const col = mix(cols[k], cols[(k + 1) % 4], band - k);
+    return mix([12, 10, 24], col, 0.18 + n[i] * 0.12);
+  });
+  return finish(c);
+}
+
+/** A mirror wall: silver, a spectrum smeared across it. */
+export function mirrorTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 2, 3, 891);
+  const cols: RGB[] = TETRA_COLOURS.map((h) => [(h >> 16) & 255, (h >> 8) & 255, h & 255]);
+  paint(ctx, S, S, (x, y, i) => {
+    const band = ((y / S) * 4 + n[i]) % 4;
+    const k = Math.floor(band);
+    const silver = mix([150, 156, 176], [236, 240, 255], (Math.sin((x / S) * Math.PI * 2) * 0.5 + 0.5) * 0.6 + n[i] * 0.4);
+    return mix(silver, cols[k], 0.22);
+  });
+  return finish(c);
+}

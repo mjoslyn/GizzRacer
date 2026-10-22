@@ -60,7 +60,7 @@ export function branchOpen(def: BranchDef, ctx?: LapContext): boolean {
 }
 
 export interface Landmark {
-  kind: 'skeletonArch' | 'fangs' | 'fortressGate' | 'templeGate' | 'waterfall' | 'gantry' | 'lighthouse' | 'iceArch' | 'neonArch' | 'rainbowArch' | 'dragonGate' | 'dragonFlight' | 'colonyGate' | 'rodGate' | 'voidEye' | 'phantomArch' | 'runwayGate' | 'treeGate' | 'wreckGate' | 'worldTree' | 'crystalGate' | 'magentaPeak' | 'keplerArch' | 'goblinGate' | 'jawsGate';
+  kind: 'skeletonArch' | 'fangs' | 'fortressGate' | 'templeGate' | 'waterfall' | 'gantry' | 'lighthouse' | 'iceArch' | 'neonArch' | 'rainbowArch' | 'dragonGate' | 'dragonFlight' | 'colonyGate' | 'rodGate' | 'voidEye' | 'phantomArch' | 'runwayGate' | 'treeGate' | 'wreckGate' | 'worldTree' | 'crystalGate' | 'magentaPeak' | 'keplerArch' | 'goblinGate' | 'jawsGate' | 'castleGate' | 'castleKeep' | 'cloudGate' | 'airCastle' | 'skyTower' | 'cellGate' | 'nucleus' | 'prismGate' | 'prismEye';
   ribbon: number; // -1 = main, else branch index
   s: number; // builder units
   /** Metres to the right of the road (left if negative), for a landmark that stands off it. */
@@ -89,7 +89,7 @@ export interface TrackDef {
   itemBoxes: ItemBoxRow[];
   hazards: HazardDef[];
   /** Visual theme (render/themes.ts). */
-  theme: 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval';
+  theme: 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism';
   /** No ground: off the road is a long drop (the sky track). */
   abyss?: boolean;
   /** Music cues (public/music/<cue>.mp3): one for the race, one for the final lap. */
@@ -161,7 +161,15 @@ export type HazardDef =
   /** The Garden Goblin: goblins scurrying across the path. */
   | { kind: 'goblins'; from: number; to: number; count: number; period: number }
   /** Predator X: the pliosaur circles (a fin, ripples), then lunges out of the water and snaps across the road's edge. */
-  | { kind: 'jaws'; at: number[]; period: number };
+  | { kind: 'jaws'; at: number[]; period: number }
+  /** Crumbling Castle: blocks of masonry that shake loose, slam down on the road and haul back up. */
+  | { kind: 'crushers'; at: number[]; period: number }
+  /** The Castle in the Air: gusts of wind blowing right across the road, on a rhythm, one way and then the other. */
+  | { kind: 'gusts'; at: number[]; period: number }
+  /** Inner Cell: vesicles drifting across the road and back, bouncy. */
+  | { kind: 'vesicles'; from: number; to: number; count: number; period: number }
+  /** Tetrachromacy: a beam of light across the road cycling red, green, blue and the fourth colour. */
+  | { kind: 'prisms'; at: number[]; period: number };
 
 export interface StartSlot {
   x: number;

@@ -32,13 +32,13 @@ import { PostFx } from './render/postfx';
 import { RacerGallery } from './render/gallery';
 import { flareRingTexture, glowTexture, setTextureAnisotropy } from './render/textures';
 import { WATER_LEVEL, buildTrackView, type TrackView } from './render/trackView';
-import { CUPS, TRACK_LIST } from './tracks/index';
+import { TRACK_LIST, randomCupTracks } from './tracks/index';
 import { pointAt } from './tracks/spline';
 import { generateTrack, trackId } from './tracks/generator';
 import { Track, inPit, type TrackDef } from './tracks/track';
 import { Hud, formatTime, type Table, type TableRow } from './ui/hud';
 import { deleteSaved, findSaved, saveTrack, savedTracks } from './core/savedTracks';
-import { Menu, newSeed, type MenuChoice } from './ui/menu';
+import { Menu, chosenCup, newSeed, type MenuChoice } from './ui/menu';
 import { SaveTrackPanel } from './ui/saveTrack';
 import { Podium } from './render/podium';
 import { ScreenFit } from './ui/screen';
@@ -102,6 +102,7 @@ let choice: MenuChoice = {
   mode: 'grandPrix',
   track: 1,
   cup: 0,
+  randomTracks: randomCupTracks(),
   gen: { slot: -1, params: { seed: newSeed(), theme: 'lagoon', complexity: 3, length: 'medium' } },
   racer: RACERS[0],
   engine: '100cc',
@@ -196,7 +197,7 @@ const menu = new Menu(
     choice = { ...c };
     if (c.mode === 'online') return setMode('lobby');
     fieldSeed = Math.floor(Math.random() * 2 ** 31);
-    gp = c.mode === 'grandPrix' ? new GrandPrix(defaultGrid(c.racer, fieldSeed), CUPS[c.cup].tracks) : null;
+    gp = c.mode === 'grandPrix' ? new GrandPrix(defaultGrid(c.racer, fieldSeed), chosenCup(c).tracks) : null;
     startRace(true);
   },
   savedTracks,
@@ -325,7 +326,7 @@ function generatedTrack(): TrackEntry {
 /** The track the menu is showing: the cup's first for a Grand Prix. */
 function menuTrack(): TrackEntry {
   if (choice.mode === 'generator') return generatedTrack();
-  return TRACK_LIST[choice.mode === 'grandPrix' ? CUPS[choice.cup].tracks[0] : choice.track];
+  return TRACK_LIST[choice.mode === 'grandPrix' ? chosenCup(choice).tracks[0] : choice.track];
 }
 
 /** The track the next race with the player runs on. */
@@ -786,6 +787,10 @@ const HIT_TEXT: Record<ItemKind | HazardKind, string> = {
   geysers: 'BLOWN SKY HIGH!',
   goblins: 'GOBLINED!',
   jaws: 'CHOMPED!',
+  crushers: 'CRUSHED!',
+  gusts: 'BLOWN AWAY!',
+  vesicles: 'BOUNCED!',
+  prisms: 'REFRACTED!',
 };
 
 /** What a hazard used well says: the ones that can help. */
@@ -817,6 +822,10 @@ const BONUS_TEXT: Record<HazardKind, string> = {
   geysers: 'GEYSER RIDE!',
   goblins: 'GOBLIN HOP!',
   jaws: 'JUMPED THE JAWS!',
+  crushers: 'SHOCKWAVE!',
+  gusts: 'CAUGHT THE WIND!',
+  vesicles: 'BOUNCE HOUSE!',
+  prisms: 'THE FOURTH COLOUR!',
 };
 
 /** Takes a group out of the scene and frees what it built. */
@@ -1076,7 +1085,7 @@ function table(): Table | null {
   if (mode === 'podium' && gp) {
     const champ = gp.standings()[0];
     const me = gp.standings().findIndex((e) => e.racer === choice.racer) + 1;
-    const note = champ.racer === choice.racer ? `You win the ${CUPS[choice.cup].name}!` : `You finished ${ordinal(me)}`;
+    const note = champ.racer === choice.racer ? `You win the ${chosenCup(choice).name}!` : `You finished ${ordinal(me)}`;
     return { kind: 'podium', title: `${champ.racer.name.toUpperCase()} WINS!`, note, rows: cupRows(3) };
   }
   return null;

@@ -1,11 +1,11 @@
 import * as THREE from 'three';
-import { BOULDER_STAGES, GEYSER_ERUPT, HOLE_CORE, JAWS_LUNGE, JET_STAGES, LIGHTNING_STRIKE, type HazardPose } from '../items/hazards';
+import { BOULDER_STAGES, CRUSHER_STAGES, GEYSER_ERUPT, GUST_STAGES, HOLE_CORE, JAWS_LUNGE, JET_STAGES, LIGHTNING_STRIKE, prismColour, type HazardPose } from '../items/hazards';
 import { goblinFigure } from './omnium';
 import { BOX_RESPAWN, SHIELD_ITEMS, WAVE_RANGE, type ItemHolder, type ItemSystem } from '../items/items';
 import type { KartState } from '../physics/kart';
 import type { HazardSystem } from '../items/hazards';
 import { CUT_RIM } from '../tracks/track';
-import { basaltTexture, dustTexture, wingTexture, flameTexture, glowTexture, itemBoxTexture, scaleTexture, stoneTexture, warningTexture, woodTexture } from './textures';
+import { TETRA_COLOURS, basaltTexture, castleWallTexture, dustTexture, wingTexture, flameTexture, glowTexture, itemBoxTexture, scaleTexture, stoneTexture, warningTexture, woodTexture } from './textures';
 
 const MINE_POOL = 12;
 const MISSILE_POOL = 8;
@@ -466,6 +466,7 @@ export class HazardsView {
     const warnGeo = new THREE.PlaneGeometry(1, 1);
     warnGeo.rotateX(-Math.PI / 2);
     const warnTex = warningTexture();
+    const dust0 = dustTexture();
 
     const magma = new THREE.MeshPhongMaterial({ map: basaltTexture(), color: 0x6a3020, emissive: 0xff3a08, emissiveIntensity: 0.6, flatShading: true });
     const crude = new THREE.MeshPhongMaterial({ color: 0x080506, emissive: 0x2a0800, shininess: 150, specular: 0xaa8866 });
@@ -541,6 +542,16 @@ export class HazardsView {
     const pliosaurBelly = new THREE.MeshLambertMaterial({ color: 0xc8c0a8 });
     const toothMat = new THREE.MeshLambertMaterial({ color: 0xfaf6e8 });
     const mouthMat = new THREE.MeshBasicMaterial({ color: 0x5a1010 });
+
+    const masonry = new THREE.MeshPhongMaterial({ map: castleWallTexture(), shininess: 8, flatShading: true });
+    const crusherEye = new THREE.MeshBasicMaterial({ color: 0xff3a10 });
+    const crusherDark = new THREE.MeshBasicMaterial({ color: 0x0a0606 });
+    // Standing across the road, so it reads from behind.
+    const gustGeo = new THREE.PlaneGeometry(6, 0.35);
+    const gustMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+    const vesicleMat = new THREE.MeshPhongMaterial({ color: 0xff8ac8, emissive: 0x6a1a4a, shininess: 140, specular: 0xffffff, transparent: true, opacity: 0.6, depthWrite: false });
+    const cargoMat = new THREE.MeshLambertMaterial({ color: 0x9affd0, emissive: 0x2a6a4a });
+    const prismGlass = new THREE.MeshPhongMaterial({ color: 0xf0f0ff, emissive: 0x3a3a6a, shininess: 150, specular: 0xffffff, transparent: true, opacity: 0.8, flatShading: true });
 
     for (const pose of hazards.poses) {
       const obj = new THREE.Group();
@@ -766,6 +777,92 @@ export class HazardsView {
           c.add(sprite(crystalGlow, 0xff6ae0, 3.5));
           obj.add(c);
           parts.push(c);
+          break;
+        }
+        case 'crushers': {
+          // A block of the castle's masonry with a scowl carved in it: hanging, shaking loose, slamming down.
+          const block = new THREE.Group();
+          block.add(new THREE.Mesh(new THREE.BoxGeometry(4.4, 3.2, 4.4), masonry));
+          for (const side of [-1, 1]) {
+            const eye = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.5, 0.1), crusherEye);
+            eye.position.set(side * 0.9, 0.5, -2.22);
+            eye.rotation.z = side * 0.25;
+            block.add(eye);
+          }
+          const mouth = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.35, 0.1), crusherDark);
+          mouth.position.set(0, -0.6, -2.22);
+          block.add(mouth);
+          // Studs of stone down its sides.
+          for (let i = 0; i < 4; i++) {
+            const stud = new THREE.Mesh(new THREE.ConeGeometry(0.4, 0.9, 4), masonry);
+            stud.rotation.z = (i % 2 ? -1 : 1) * Math.PI / 2;
+            stud.position.set((i % 2 ? 1 : -1) * 2.5, i < 2 ? 0.6 : -0.6, 0);
+            block.add(stud);
+          }
+          const dust = new THREE.Group();
+          for (let i = 0; i < 8; i++) {
+            const d = sprite(dust0, 0xb8a898, 3);
+            (d.material as THREE.SpriteMaterial).blending = THREE.NormalBlending;
+            d.userData.k = i;
+            dust.add(d);
+          }
+          const warn = new THREE.Mesh(warnGeo, new THREE.MeshBasicMaterial({ map: warnTex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 }));
+          this.group.add(warn);
+          obj.add(block, dust);
+          parts.push(block, dust, warn);
+          break;
+        }
+        case 'gusts': {
+          // Streaks of wind racing across the road, puffs of cloud gathering at the edge it blows from.
+          const streaks = new THREE.Group();
+          for (let i = 0; i < 9; i++) {
+            const st = new THREE.Mesh(gustGeo, gustMat.clone());
+            st.userData.k = i;
+            streaks.add(st);
+          }
+          const puffs = new THREE.Group();
+          for (let i = 0; i < 5; i++) {
+            const pf = sprite(dust0, 0xffffff, 3);
+            (pf.material as THREE.SpriteMaterial).blending = THREE.NormalBlending;
+            pf.userData.k = i;
+            puffs.add(pf);
+          }
+          obj.add(streaks, puffs);
+          parts.push(streaks, puffs);
+          break;
+        }
+        case 'vesicles': {
+          // A bubble of membrane with cargo jostling inside it.
+          const bubble = new THREE.Mesh(new THREE.SphereGeometry(1.7, 20, 14), vesicleMat);
+          for (let i = 0; i < 4; i++) {
+            const c = new THREE.Mesh(new THREE.SphereGeometry(0.35, 8, 6), cargoMat);
+            c.userData.k = i;
+            bubble.add(c);
+          }
+          obj.add(bubble);
+          parts.push(bubble);
+          break;
+        }
+        case 'prisms': {
+          // A prism on a post at each edge, and the beam between them in one of four colours.
+          const beam = new THREE.Mesh(
+            new THREE.PlaneGeometry(1, 2.6),
+            new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }),
+          );
+          beam.position.y = 1.4;
+          beam.scale.x = pose.radius * 2;
+          const glow = sprite(laserGlow, 0xffffff, pose.radius * 1.4);
+          glow.position.y = 1.4;
+          obj.add(beam, glow);
+          for (const side of [-1, 1]) {
+            const post = new THREE.Mesh(nozzleGeo, postMat);
+            post.position.set(side * pose.radius, 0.6, 0);
+            const prism = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 1.6, 3), prismGlass);
+            prism.position.set(side * pose.radius, 2, 0);
+            obj.add(post, prism);
+            parts.push(prism);
+          }
+          parts.unshift(beam, glow);
           break;
         }
         case 'goblins': {
@@ -1087,6 +1184,88 @@ export class HazardsView {
           parts[0].rotation.set(p.phase * 0.6, p.phase * 0.4, 0);
           parts[0].position.y = 0.2;
           break;
+        case 'crushers': {
+          const [block, dust, warn] = parts;
+          const u = p.phase;
+          const C = CRUSHER_STAGES;
+          obj.rotation.y = p.heading;
+          // Shaking loose before it drops; still once it's down.
+          const shaking = u >= C.shake && u < C.slam;
+          const shake = shaking ? (u - C.shake) / (C.slam - C.shake) : 0;
+          block.position.set(Math.sin(elapsed * 70) * 0.12 * shake, 1.6, Math.cos(elapsed * 53) * 0.08 * shake);
+          warn.visible = u >= C.shake && u < C.landed;
+          warn.position.set(p.x, p.ground + 0.05, p.z);
+          warn.scale.setScalar(2.5 + 3 * shake);
+          (warn as THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>).material.opacity = 0.5 + 0.5 * Math.abs(Math.sin(elapsed * (6 + shake * 12)));
+          // A burst of dust as it lands.
+          const puff = u >= C.landed && u < C.landed + 0.12 ? (u - C.landed) / 0.12 : -1;
+          dust.visible = puff >= 0;
+          dust.position.y = -p.y + p.ground + 0.4;
+          if (puff >= 0) {
+            dust.children.forEach((d) => {
+              const k = d.userData.k as number;
+              const a = (k / 8) * Math.PI * 2;
+              d.position.set(Math.cos(a) * (2.4 + puff * 3), puff * 0.8, Math.sin(a) * (2.4 + puff * 3));
+              d.scale.setScalar(2 + puff * 3);
+              ((d as THREE.Sprite).material as THREE.SpriteMaterial).opacity = 1 - puff;
+            });
+          }
+          break;
+        }
+        case 'gusts': {
+          const [streaks, puffs] = parts;
+          const u = p.phase;
+          obj.rotation.y = p.heading;
+          const R = p.radius;
+          // In the kart's frame +x is to the left, so a gust blowing right runs from +x to -x.
+          const from = p.side * R;
+          const blowing = u >= GUST_STAGES.blow;
+          const gathering = u >= GUST_STAGES.gather && !blowing;
+          streaks.visible = blowing;
+          if (blowing) {
+            const b = (u - GUST_STAGES.blow) / (1 - GUST_STAGES.blow);
+            streaks.children.forEach((st) => {
+              const k = st.userData.k as number;
+              const f = (b * 1.6 + k * 0.13) % 1.2;
+              st.position.set(from - p.side * f * 2 * R, 0.4 + (k % 3) * 0.7, ((k * 0.37) % 1 - 0.5) * 2.4);
+              ((st as THREE.Mesh).material as THREE.MeshBasicMaterial).opacity = 0.6 * Math.max(0, 1 - Math.abs(f - 0.6) * 1.4);
+            });
+          }
+          puffs.visible = gathering || blowing;
+          const g = gathering ? (u - GUST_STAGES.gather) / (GUST_STAGES.blow - GUST_STAGES.gather) : 1;
+          puffs.children.forEach((pf) => {
+            const k = pf.userData.k as number;
+            const a = elapsed * 3 + k * 1.3;
+            pf.position.set(from + p.side * (1 + Math.cos(a)), 0.8 + Math.sin(a) * 0.6 + k * 0.3, Math.sin(a * 0.7) * 1.5);
+            pf.scale.setScalar(1.5 + g * 2.5);
+          });
+          break;
+        }
+        case 'vesicles': {
+          obj.rotation.y = p.heading;
+          const bubble = parts[0];
+          const w = Math.sin(elapsed * 5 + p.phase);
+          bubble.scale.set(1 + w * 0.08, 1 - w * 0.08, 1 + w * 0.05);
+          bubble.children.forEach((c) => {
+            const k = c.userData.k as number;
+            c.position.set(Math.sin(elapsed * 1.3 + k * 1.7) * 0.8, Math.cos(elapsed * 1.1 + k * 2.3) * 0.7, Math.sin(elapsed * 0.9 + k) * 0.8);
+          });
+          break;
+        }
+        case 'prisms': {
+          const [beam, glow, ...prisms] = parts;
+          obj.rotation.y = p.heading;
+          const { colour, lit } = prismColour(p.phase);
+          const c = TETRA_COLOURS[colour];
+          const mat = (beam as THREE.Mesh).material as THREE.MeshBasicMaterial;
+          // The fourth colour shimmers, the others hold steady.
+          beam.visible = glow.visible = lit;
+          mat.color.setHex(c);
+          mat.opacity = colour === 3 ? 0.6 + 0.35 * Math.sin(elapsed * 30) : 0.85;
+          ((glow as THREE.Sprite).material as THREE.SpriteMaterial).color.setHex(c);
+          for (const pr of prisms) pr.rotation.y = elapsed * 2;
+          break;
+        }
         case 'goblins':
           obj.rotation.y = p.heading;
           parts[0].position.set(0, Math.abs(Math.sin(p.phase * 3)) * 0.3 - 0.9, 0);
