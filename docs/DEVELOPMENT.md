@@ -96,3 +96,11 @@ node tools/render-soundtrack.mjs podium     # one cue
 ```
 
 Some remixes are transcribed from the band's own recordings and written in seqbaby (`seqbaby-seed/gizzracer/remix-live.mjs`); they render the same way.
+
+The Polygondwanaland Cup's remixes and Polygondwanaland Jungle's are transcribed from the album masters (the band's free Polygondwanaland download) and written in `tools/polygondwanaland-cup-songs.mjs`, which exports `SONGS` in seqbaby-seed's shape (title, cue, bars, build) with each song's measured tempo, meter, key and section map in its comments. They belong in seqbaby-seed with the others; until they're moved there, render them through a seed folder whose `people.mjs` exports `PEOPLE = [{ handle: 'gizzracer', songs: SONGS }]`:
+
+```sh
+SEQBABY_SEED_DIR=/path/to/that/folder node tools/render-soundtrack.mjs tetrachromacy-remix
+```
+
+The Crumbling Castle remix now plays on Crumbling Castle (`crumbling-castle-remix`); its song in seqbaby-seed still names the old cue, `polygondwanaland-jungle-remix`, and needs renaming before the next full render.
