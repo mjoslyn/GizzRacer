@@ -14,9 +14,10 @@ export class LeaderboardPanel {
   picked: BoardEntry | null = null;
 
   /**
-   * The ghost to race: the picked run, or else the next one up from you,
-   * the run just faster than your best (2nd chases 1st). With no time yet,
-   * the slowest on the board; if you lead, none (your own best ghost races).
+   * The ghost to race, one only: the picked run, or else the next one up
+   * from you, the run just faster than your best (2nd chases 1st). With no
+   * time yet, the slowest on the board; if you lead, none (your own best
+   * ghost races). Beat one and the next race brings the one after.
    */
   get target(): BoardEntry | null {
     if (this.picked) return this.picked;
@@ -91,8 +92,8 @@ export class LeaderboardPanel {
     if (!this.board?.top.length) return '';
     if (this.picked && t) return `Racing ${escape(t.name)}'s ghost`;
     if (!t) return "You're the fastest here: racing your own best. Pick a run to race it.";
-    if (this.myBest() === null) return `Racing ${escape(t.name)}, the slowest here: beat them to climb. Pick any run to change.`;
-    return `Racing ${escape(t.name)}, the next one up from you. Pick any run to change.`;
+    if (this.myBest() === null) return `Racing ${escape(t.name)}, the slowest here: beat them and the next one up is next. Pick any run to change.`;
+    return `Racing ${escape(t.name)}, the next one up from you: beat them and the one after is next. Pick any run to change.`;
   }
 
   private render(trackName?: string, engine?: EngineClass): void {

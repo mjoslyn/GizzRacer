@@ -18,7 +18,7 @@ export interface Settings {
   videoLookChosen: boolean;
   /** Smart steering (physics/steerAssist.ts): steers back in from edges and straightens up out of turns. */
   smartSteering: boolean;
-  /** Graphics detail (render/detail.ts): sun shadows, bump-mapped roads and denser scenery, or the flat look. */
+  /** Graphics detail (render/detail.ts): sun shadows, bump-mapped roads, denser scenery and full resolution, or the flat look at fewer pixels. */
   detail: 'high' | 'low';
   /** The player picked a detail level themselves; until then phones get Low and everything else High. */
   detailChosen: boolean;

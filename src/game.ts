@@ -54,7 +54,9 @@ const SUN_DIR = new THREE.Vector3(-0.5, 0.55, -0.65).normalize();
 
 const app = document.getElementById('app')!;
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+/** Device pixels per CSS pixel the game draws at: full on High (to 2x), a fraction on Low, where the fill cost is what a phone feels. */
+const PIXEL_RATIO = { high: 2, low: 1.25 } as const;
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, PIXEL_RATIO.high));
 renderer.setSize(window.innerWidth, window.innerHeight);
 app.appendChild(renderer.domElement);
 setTextureAnisotropy(renderer.capabilities.getMaxAnisotropy());
@@ -320,6 +322,12 @@ onSettings((s) => {
   renderer.shadowMap.enabled = high;
   sun.castShadow = high;
   KartView.realShadows = high;
+  // Low detail also draws at fewer pixels: on a phone that is most of the saving.
+  const ratio = Math.min(window.devicePixelRatio, PIXEL_RATIO[s.detail]);
+  if (renderer.getPixelRatio() !== ratio) {
+    renderer.setPixelRatio(ratio);
+    fitRenderer();
+  }
   music.setVolume(s.music * MUSIC_LEVEL);
   sfx.setVolume(s.sfx);
   input.autoAccelerate = s.autoAccelerate;
@@ -521,27 +529,36 @@ function startRace(withPlayer: boolean): void {
 // Keyed by physics version: older records and ghosts (e.g. 3-lap ones) don't carry over.
 const ghostKey = () => `gizzracer.ghost.${recordId(track.def.id)}.${choice.engine}.v${PHYSICS_VERSION}`;
 
-/** In Time Trial, starts recording and brings back your best run, and any leaderboard run you picked, as ghosts. */
+/**
+ * In Time Trial, starts recording and brings back ONE ghost to chase: the
+ * leaderboard run you picked, else the next one up from your best, else
+ * (you lead the board, or it's out of reach) your own best run. Beat it
+ * and the next race brings the one after.
+ */
 function setupGhost(trial: boolean): void {
   for (const g of ghosts) scene.remove(g.view.root, g.view.fx);
   ghosts = [];
   recorder = trial ? new GhostRecorder() : null;
   if (!trial) return;
-  try {
-    const text = localStorage.getItem(ghostKey());
-    const run = text ? decodeGhost(text) : null;
-    if (run) addGhost(run, 'you');
-  } catch {
-    // Storage blocked: race without your ghost.
-  }
-  // The picked run, or the leader's: there's always someone to chase.
+  const own = () => {
+    try {
+      const text = localStorage.getItem(ghostKey());
+      const run = text ? decodeGhost(text) : null;
+      if (run && !ghosts.length) addGhost(run, 'you');
+    } catch {
+      // Storage blocked: race without your ghost.
+    }
+  };
   const picked = board.target;
-  if (picked) {
-    const raceAtStart = race;
-    fetchGhost(track.def.id, choice.engine, picked.runId)
-      .then((run) => race === raceAtStart && addGhost(run, picked.name, 0xff5ad0))
-      .catch(() => hud.flash('GHOST UNAVAILABLE'));
-  }
+  if (!picked) return own();
+  const raceAtStart = race;
+  fetchGhost(track.def.id, choice.engine, picked.runId)
+    .then((run) => race === raceAtStart && addGhost(run, picked.name, 0xff5ad0))
+    .catch(() => {
+      if (race !== raceAtStart) return;
+      hud.flash('GHOST UNAVAILABLE');
+      own();
+    });
 }
 
 /** A see-through kart replaying `run`, optionally tinted so two ghosts can be told apart. */
@@ -780,6 +797,8 @@ function step(dt: number): void {
         const gap = player.finishTime - rival.run.total;
         const who = rival.label === 'you' ? 'your best' : rival.label;
         trialNote += gap < 0 ? ` · beat ${who} by ${(-gap).toFixed(2)}s` : ` · ${gap.toFixed(2)}s behind ${who}`;
+        // A picked ghost beaten is done with: the next race brings the next one up the board.
+        if (gap < 0 && board.picked && rival.label !== 'you') board.picked = null;
       }
       postTrial(player);
     }

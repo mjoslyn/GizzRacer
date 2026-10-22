@@ -125,7 +125,7 @@ export class SettingsScreen {
         break;
       case 'detail':
         updateSettings({ detail: s.detail === 'high' ? 'low' : 'high', detailChosen: true });
-        this.status = s.detail === 'high' ? 'Low detail: no shadows, flatter roads, less scenery' : 'High detail: shadows, bump-mapped roads, denser scenery (the next track loaded gets the scenery)';
+        this.status = s.detail === 'high' ? 'Low detail: fewer pixels, no shadows, flatter roads, less scenery' : 'High detail: full resolution, shadows, bump-mapped roads, denser scenery (the next track loaded gets the scenery)';
         break;
       case 'done':
         this.close();
