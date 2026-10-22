@@ -18,12 +18,25 @@ export interface Settings {
   videoLookChosen: boolean;
   /** Smart steering (physics/steerAssist.ts): steers back in from edges and straightens up out of turns. */
   smartSteering: boolean;
+  /** Graphics detail (render/detail.ts): sun shadows, bump-mapped roads and denser scenery, or the flat look. */
+  detail: 'high' | 'low';
+  /** The player picked a detail level themselves; until then phones get Low and everything else High. */
+  detailChosen: boolean;
 }
 
 export type VideoLook = 'full' | 'light' | 'off';
 export const VIDEO_LOOKS: readonly VideoLook[] = ['full', 'light', 'off'];
 
-export const DEFAULT_SETTINGS: Settings = { music: 0.6, sfx: 1, tilt: false, tiltRange: 24, tiltInvert: false, autoAccelerate: true, steeringChosen: false, videoLook: 'light', videoLookChosen: false, smartSteering: true };
+export const DEFAULT_SETTINGS: Settings = { music: 0.6, sfx: 1, tilt: false, tiltRange: 24, tiltInvert: false, autoAccelerate: true, steeringChosen: false, videoLook: 'light', videoLookChosen: false, smartSteering: true, detail: 'high', detailChosen: false };
+
+/** A phone or tablet: Low detail unless the player says otherwise. */
+function coarseDevice(): boolean {
+  try {
+    return typeof matchMedia !== 'undefined' && (matchMedia('(pointer: coarse)').matches || (navigator.maxTouchPoints > 0 && matchMedia('(hover: none)').matches));
+  } catch {
+    return false;
+  }
+}
 export const TILT_RANGES = [16, 24, 34] as const;
 
 const KEY = 'gizzracer.settings';
@@ -35,6 +48,7 @@ function load(): Settings {
     const s = { ...DEFAULT_SETTINGS, ...(JSON.parse(localStorage.getItem(KEY) ?? '{}') as Partial<Settings>) };
     // Saved before the player chose one (with an older default): the current default.
     if (!s.videoLookChosen) s.videoLook = DEFAULT_SETTINGS.videoLook;
+    if (!s.detailChosen) s.detail = coarseDevice() ? 'low' : 'high';
     return s;
   } catch {
     return { ...DEFAULT_SETTINGS };

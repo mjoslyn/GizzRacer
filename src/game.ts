@@ -13,6 +13,7 @@ import { TRIAL_LAPS, recordId } from './net/runCheck';
 import { fetchGhost, uploadRun } from './net/trials';
 import { LeaderboardPanel } from './ui/leaderboard';
 import { RecordsPanel } from './ui/recordsPanel';
+import { NamePrompt } from './ui/namePrompt';
 import { cupBoard, postRecord, raceBoard } from './net/records';
 import { foundShortcut, recordCup, recordRace, recordStyle } from './core/progress';
 import { StyleMeter, driftMove } from './core/style';
@@ -33,6 +34,7 @@ import { ITEMS, type ItemHolder, type ItemKind } from './items/items';
 import { ChaseCamera, type CameraPlacement } from './render/chaseCamera';
 import { HazardsView, ItemsView } from './render/itemViews';
 import { KartView, setDustColor } from './render/kartView';
+import { setGraphicsDetail } from './render/detail';
 import { PostFx } from './render/postfx';
 import { RacerGallery } from './render/gallery';
 import { flareRingTexture, glowTexture, setTextureAnisotropy } from './render/textures';
@@ -64,7 +66,19 @@ const hemi = new THREE.HemisphereLight(0xa8c8ff, 0xc07a48, 1.5);
 scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xfff0d0, 2.4);
 sun.position.copy(SUN_DIR).multiplyScalar(100);
-scene.add(sun);
+scene.add(sun, sun.target);
+// Sun shadows (Settings > Detail): a shadow camera that rides with the kart being watched.
+const SHADOW_REACH = 70;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.left = sun.shadow.camera.bottom = -SHADOW_REACH;
+sun.shadow.camera.right = sun.shadow.camera.top = SHADOW_REACH;
+sun.shadow.camera.near = 1;
+sun.shadow.camera.far = 420;
+// A depth bias only: a normal bias blanks the shadows outright on this Three.js's depth-texture shadow maps.
+sun.shadow.bias = -0.0003;
+sun.shadow.normalBias = 0;
+sun.shadow.camera.updateProjectionMatrix();
+renderer.shadowMap.type = THREE.PCFShadowMap;
 
 const camera = new THREE.PerspectiveCamera(68, window.innerWidth / window.innerHeight, 0.1, 4000);
 const chase = new ChaseCamera(camera);
@@ -293,11 +307,19 @@ const board = new LeaderboardPanel(document.body, () => {
 });
 /** The race-time and cup leaderboards beside the picker, in the modes that post to them. */
 const records = new RecordsPanel(document.body);
+/** Asks for a name on the results screen the first time there's something to post. */
+const namePrompt = new NamePrompt(document.body);
 const tilt = new TiltSteering(input);
 const settingsScreen = new SettingsScreen(document.body, tilt);
 /** The mix that sits right: music under the effects (see the audio commit). */
 const MUSIC_LEVEL = 0.63;
 onSettings((s) => {
+  // Detail: shadows switch at once; the road grain and the denser scenery arrive with the next track built.
+  const high = s.detail === 'high';
+  setGraphicsDetail(s.detail);
+  renderer.shadowMap.enabled = high;
+  sun.castShadow = high;
+  KartView.realShadows = high;
   music.setVolume(s.music * MUSIC_LEVEL);
   sfx.setVolume(s.sfx);
   input.autoAccelerate = s.autoAccelerate;
@@ -341,6 +363,7 @@ function fitRenderer(): void {
 }
 
 function setMode(next: Mode): void {
+  if (next !== 'results' && next !== 'standings' && next !== 'podium') namePrompt.hide();
   mode = next;
   document.body.dataset.mode = next;
   hud.showTitle(next === 'title');
@@ -540,6 +563,10 @@ function addGhost(run: GhostRun, label: string, tint?: number): void {
   });
   // No shadow or sparks: it isn't really there.
   view.fx.visible = false;
+  // Nor a shadow.
+  view.root.traverse((o) => {
+    if (o instanceof THREE.Mesh) o.castShadow = false;
+  });
   scene.add(view.root, view.fx);
   ghosts.push({ run, view, state: createKartState(), label, dist: ghostDistances(run) });
 }
@@ -892,14 +919,15 @@ function finishRace(p: RaceKart): void {
     gpPlaces[gp.round] = p.position;
   }
   trialNote = parts.join(' · ');
-  if (!identity().name) {
-    trialNote += ' · set a name in the picker to post times online';
-    return;
-  }
   const before = trialNote;
-  postRecord({ kind: 'race', trackId: track.def.id, engine: choice.engine, mirror, racerId: p.racer.id, lapsMs: p.lapTimes.map((l) => Math.round(l * 1000)), totalMs: p.lapTimes.reduce((a, l) => a + Math.round(l * 1000), 0), style: style?.score ?? 0 })
-    .then((r) => (trialNote = `${before} · ${r.best ? 'posted! ' : ''}online #${r.rank}`))
-    .catch((err: Error) => (trialNote = `${before} · not posted: ${err.message}`));
+  const record = { kind: 'race' as const, trackId: track.def.id, engine: choice.engine, mirror, racerId: p.racer.id, lapsMs: p.lapTimes.map((l) => Math.round(l * 1000)), totalMs: p.lapTimes.reduce((a, l) => a + Math.round(l * 1000), 0), style: style?.score ?? 0 };
+  // Only a best is worth asking a name for; a known name posts every race (the server keeps the best).
+  if (!rec.best && !identity().name) return;
+  namePrompt.ask('your race time', () => {
+    postRecord(record)
+      .then((r) => (trialNote = `${before} · ${r.best ? 'posted! ' : ''}online #${r.rank}`))
+      .catch((err: Error) => (trialNote = `${before} · not posted: ${err.message}`));
+  });
 }
 
 /** A finished cup: its trophy, what it unlocked, and the online cup board. Returns the podium's line. */
@@ -917,9 +945,8 @@ function finishCup(): string {
   if (res.trophy) parts.push(`${res.trophy.toUpperCase()} TROPHY${res.improved ? '!' : ''}`);
   for (const u of res.unlocked) parts.push({ randomCup: 'RANDOM CUP UNLOCKED!', class200: '200cc UNLOCKED!', mirror: 'MIRROR MODE UNLOCKED!' }[u]);
   if (res.trophy || res.unlocked.length) sfx.fanfare();
-  if (identity().name) {
-    postRecord({ kind: 'cup', cupId: cup.id, engine: choice.engine, mirror, racerId: choice.racer.id, points: entry.points, totalMs: timeMs, places: gpPlaces }).catch(() => {});
-  }
+  const record = { kind: 'cup' as const, cupId: cup.id, engine: choice.engine, mirror, racerId: choice.racer.id, points: entry.points, totalMs: timeMs, places: gpPlaces.slice() };
+  namePrompt.ask('your cup result', () => postRecord(record).catch(() => {}));
   return parts.join(' · ');
 }
 
@@ -1184,6 +1211,9 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
   itemsView!.update(elapsed, race.karts.map((k, i) => ({ state: snaps[i], holder: k })));
   hazardsView!.update(elapsed);
   sunAnchor.position.copy(camera.position).addScaledVector(SUN_DIR, 1400);
+  // The shadow camera follows the kart on screen.
+  sun.target.position.set(s.x, s.y, s.z);
+  sun.position.copy(sun.target.position).addScaledVector(SUN_DIR, 200);
   updateSounds(dt);
 
   const finished = f.finishTime !== null;
@@ -1338,18 +1368,20 @@ function saveTrial(total: number, bestLap: number, racerId: string): string {
   return `Record ${formatTime(prev.total)} · best lap ${formatTime(best.lap)}`;
 }
 
-/** Sends a finished Time Trial to the online leaderboard and adds the outcome to the results note. */
+/** Sends a finished Time Trial to the online leaderboard and adds the outcome to the results note (asking for a name first, once). */
 function postTrial(p: RaceKart): void {
   if (!recorder) return;
-  if (!identity().name) {
-    trialNote += ' · set a name in the picker to post runs online';
-    return;
-  }
+  const run = recorder.finish(p.racer.id, p.finishTime!);
+  const laps = p.lapTimes.slice();
+  const trackId = track.def.id;
+  const engine = choice.engine;
   const local = trialNote;
-  trialNote = `${local} · posting...`;
-  uploadRun(track.def.id, choice.engine, p.lapTimes, recorder.finish(p.racer.id, p.finishTime!))
-    .then((r) => (trialNote = `${local} · ${r.best ? 'posted! ' : ''}online #${r.rank}`))
-    .catch((err: Error) => (trialNote = `${local} · not posted: ${err.message}`));
+  namePrompt.ask('your run', () => {
+    trialNote = `${local} · posting...`;
+    uploadRun(trackId, engine, laps, run)
+      .then((r) => (trialNote = `${local} · ${r.best ? 'posted! ' : ''}online #${r.rank}`))
+      .catch((err: Error) => (trialNote = `${local} · not posted: ${err.message}`));
+  });
 }
 
 /** Back to the picker, with the attract race on the picker's track. */
@@ -1491,7 +1523,7 @@ window.addEventListener(
 );
 window.addEventListener('pointerup', (e) => {
   if (settingsScreen.visible) return;
-  if ((e.target as HTMLElement).closest('.settings, .hud-title-settings, .lobby, .board, .savetrack')) return music.unlock();
+  if ((e.target as HTMLElement).closest('.settings, .hud-title-settings, .lobby, .board, .savetrack, .nameprompt')) return music.unlock();
   if (skipIntro()) return;
   if ((e.target as HTMLElement).closest('.menu, .touch, .hud-pause')) return music.unlock();
   advance();
@@ -1554,6 +1586,21 @@ Object.assign(window, {
     },
     get mode() {
       return mode;
+    },
+    /** The renderer, scene and sun (testing). */
+    get three() {
+      return { renderer, scene, sun, camera, postFx };
+    },
+    /** The sun shadow setup (testing): on, and how many meshes cast and receive. */
+    get shadows() {
+      let cast = 0;
+      let receive = 0;
+      scene.traverse((o) => {
+        if (!(o instanceof THREE.Mesh)) return;
+        if (o.castShadow) cast++;
+        if (o.receiveShadow) receive++;
+      });
+      return { enabled: renderer.shadowMap.enabled, sunCasts: sun.castShadow, cast, receive, frustum: sun.shadow.camera.right, mapSize: sun.shadow.mapSize.x };
     },
     /** Online race clock check: room offset, round trip, and seconds to GO by the room's clock. */
     get online() {

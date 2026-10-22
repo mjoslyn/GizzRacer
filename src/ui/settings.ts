@@ -123,6 +123,10 @@ export class SettingsScreen {
       case 'smart':
         updateSettings({ smartSteering: !s.smartSteering });
         break;
+      case 'detail':
+        updateSettings({ detail: s.detail === 'high' ? 'low' : 'high', detailChosen: true });
+        this.status = s.detail === 'high' ? 'Low detail: no shadows, flatter roads, less scenery' : 'High detail: shadows, bump-mapped roads, denser scenery (the next track loaded gets the scenery)';
+        break;
       case 'done':
         this.close();
         return;
@@ -174,6 +178,7 @@ export class SettingsScreen {
             <div class="lobby-row"><span class="lobby-label">VHS</span>${arrows('look', { full: 'Full', light: 'Light', off: 'Off' }[s.videoLook])}</div>
             <div class="lobby-row"><span class="lobby-label">Throttle</span>${toggle('auto', s.autoAccelerate, s.autoAccelerate ? 'Automatic' : 'Manual')}</div>
             <div class="lobby-row"><span class="lobby-label">Steering</span>${toggle('smart', s.smartSteering, s.smartSteering ? 'Smart' : 'Manual')}</div>
+            <div class="lobby-row"><span class="lobby-label">Detail</span>${toggle('detail', s.detail === 'high', s.detail === 'high' ? 'High' : 'Low')}</div>
           </div>
           ${
             this.tilt.available

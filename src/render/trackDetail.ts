@@ -5,6 +5,7 @@ import { nearestOnSpline } from '../tracks/spline';
 import { inPit, type Ribbon, type Track } from '../tracks/track';
 import * as tex from './textures';
 import type { DecorKind, Theme } from './themes';
+import { densityScale } from './detail';
 
 /**
  * The trackside layer: paint and rubber on the road, posts and lamps along
@@ -709,7 +710,8 @@ function groundCover(track: Track, style: DetailStyle, clear: (x: number, z: num
         ? new THREE.OctahedronGeometry(0.3, 0).scale(1, 2, 1).translate(0, 0.3, 0)
         : new THREE.DodecahedronGeometry(0.28, 0).scale(1, 0.6, 1);
   const mat = new THREE.MeshLambertMaterial({ flatShading: true, ...(c.shape === 'crystal' ? { emissive: 0x203040 } : {}) });
-  const mesh = new THREE.InstancedMesh(geo, mat, c.count);
+  const count = Math.round(c.count * densityScale());
+  const mesh = new THREE.InstancedMesh(geo, mat, count);
   const rand = seededRandom(17);
   const r = track.main;
   const sp = r.spline;
@@ -720,7 +722,7 @@ function groundCover(track: Track, style: DetailStyle, clear: (x: number, z: num
   const s = new THREE.Vector3();
   const col = new THREE.Color();
   let n = 0;
-  for (let tries = 0; tries < c.count * 3 && n < c.count; tries++) {
+  for (let tries = 0; tries < count * 3 && n < count; tries++) {
     const i = Math.floor(rand() * sp.count);
     const side = rand() < 0.5 ? -1 : 1;
     const lat = side * (r.halfWidth[i] + CURB_WIDTH + 0.6 + rand() * rand() * 30);

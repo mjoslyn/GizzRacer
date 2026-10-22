@@ -94,6 +94,8 @@ interface Spark {
  */
 export class KartView {
   readonly root = new THREE.Group();
+  /** Real sun shadows are on (render/detail.ts): the karts cast them and the blob shadow stays off. */
+  static realShadows = false;
   /** World-space effects (sparks, shadow) that shouldn't inherit kart rotation. */
   readonly fx = new THREE.Group();
   private readonly body: THREE.Group;
@@ -221,6 +223,10 @@ export class KartView {
       this.flames.push({ cone, glow });
     }
     this.root.add(this.body);
+    // The kart casts a sun shadow (drawn only while the renderer's shadow map is on).
+    this.body.traverse((o) => {
+      if (o instanceof THREE.Mesh) o.castShadow = true;
+    });
 
     this.shadow = new THREE.Mesh(
       new THREE.PlaneGeometry(model.shadow[0], model.shadow[1]).rotateX(-Math.PI / 2),
@@ -352,7 +358,7 @@ export class KartView {
 
     // Blob shadow on the ground, fading with height.
     const height = Math.max(0, s.y - s.groundY);
-    this.shadow.visible = s.groundY > -3 && this.presence > 0.05;
+    this.shadow.visible = !KartView.realShadows && s.groundY > -3 && this.presence > 0.05;
     this.shadow.position.set(s.x, s.groundY + 0.03, s.z);
     this.shadow.rotation.y = this.root.rotation.y;
     const shrink = clamp(1 - height * 0.08, 0.4, 1);

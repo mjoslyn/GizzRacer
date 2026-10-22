@@ -6,6 +6,7 @@ import { inPit, type Track } from '../tracks/track';
 import * as tex from './textures';
 import type { DecorKind, Theme } from './themes';
 import { CURB_WIDTH, buildStand, detailStyle } from './trackDetail';
+import { densityScale } from './detail';
 
 /**
  * Life and detail laid over every track (hand-built and generated):
@@ -319,7 +320,7 @@ function flock(track: Track, spec: NonNullable<LifeSpec['flock']>, clear: (x: nu
 
 /** Particles in the air round the camera, world-anchored and wrapped, drifting as the world's own do. */
 function motes(spec: NonNullable<LifeSpec['motes']>): Life {
-  const N = spec.count;
+  const N = Math.round(spec.count * densityScale());
   const W = 70;
   const H = 28;
   const offs = new Float32Array(N * 3);

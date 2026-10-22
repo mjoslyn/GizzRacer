@@ -5,6 +5,7 @@ import type { PitDef, RoadSurface } from '../tracks/builder';
 import { BANK, branchOpen, inPit, type BranchDef, type LapContext, type Ribbon, type Track } from '../tracks/track';
 import * as tex from './textures';
 import { trackLife } from './trackLife';
+import { densityScale, graphicsDetail } from './detail';
 import { THEMES, type Theme } from './themes';
 import { CURB_WIDTH, atmosphere, roadPaint, trackDetail } from './trackDetail';
 import { colonyFeature, colonyGate, cosmosFeature, plainsFeature, rodGate, stormWeather, voidEye } from './apocalypse';
@@ -83,27 +84,30 @@ function materials(theme: Theme): Materials {
   };
   const neon = tex.neonRoadTexture();
   const rainbow = tex.rainbowTexture();
+  // High detail: the road's own texture as a bump map, so its grain catches the sun.
+  const grain = graphicsDetail() === 'high';
+  const bumpy = (map: THREE.Texture, scale: number, extra: THREE.MeshLambertMaterialParameters = {}) => lambert(map, grain ? { bumpMap: map, bumpScale: scale, ...extra } : extra);
   const m: Materials = {
     road: {
-      asphalt: lambert(tex.asphaltTexture()),
-      salt: lambert(tex.saltTexture()),
-      rock: lambert(tex.dirtTexture()),
-      sand: lambert(sand),
-      boards: lambert(tex.boardsTexture()),
+      asphalt: bumpy(tex.asphaltTexture(), 0.08),
+      salt: bumpy(tex.saltTexture(), 0.05),
+      rock: bumpy(tex.dirtTexture(), 0.1),
+      sand: bumpy(sand, 0.06),
+      boards: bumpy(tex.boardsTexture(), 0.08),
       ice: new THREE.MeshPhongMaterial({ map: tex.iceTexture(), shininess: 60, specular: 0x4a5a6a }),
       neon: lambert(neon, { emissive: 0xffffff, emissiveMap: neon, emissiveIntensity: 0.7 }),
       rainbow: lambert(rainbow, { emissive: 0xffffff, emissiveMap: rainbow, emissiveIntensity: 0.35 }),
       // Wet and black, with a hard highlight: it looks as slippery as it is.
       oil: new THREE.MeshPhongMaterial({ map: tex.oilRoadTexture(), shininess: 110, specular: 0x8a7a90 }),
-      regolith: lambert(tex.regolithRoadTexture()),
+      regolith: bumpy(tex.regolithRoadTexture(), 0.1),
       wet: new THREE.MeshPhongMaterial({ map: tex.wetRoadTexture(), shininess: 80, specular: 0x6a7a80 }),
       crystal: (() => {
         const map = tex.crystalRoadTexture();
         return lambert(map, { emissive: 0xffffff, emissiveMap: map, emissiveIntensity: 0.25 });
       })(),
-      reef: lambert(tex.reefRoadTexture()),
-      paving: lambert(tex.pavingTexture()),
-      flagstone: lambert(tex.flagstoneTexture()),
+      reef: bumpy(tex.reefRoadTexture(), 0.1),
+      paving: bumpy(tex.pavingTexture(), 0.12),
+      flagstone: bumpy(tex.flagstoneTexture(), 0.12),
       cloud: (() => {
         const map = tex.cloudRoadTexture();
         return lambert(map, { emissive: 0xffffff, emissiveMap: map, emissiveIntensity: 0.2 });
@@ -118,7 +122,7 @@ function materials(theme: Theme): Materials {
         const map = tex.chromeTileTexture();
         return new THREE.MeshPhongMaterial({ map, emissive: 0xffffff, emissiveMap: map, emissiveIntensity: 0.12, shininess: 90, specular: 0xa0ffd0 });
       })(),
-      scorched: lambert(tex.scorchedTexture()),
+      scorched: bumpy(tex.scorchedTexture(), 0.1),
       fret: new THREE.MeshPhongMaterial({ map: tex.fretboardTexture(), shininess: 40, specular: 0x6a5a4a }),
       cosmic: (() => {
         const map = tex.cosmicRoadTexture();
@@ -130,7 +134,7 @@ function materials(theme: Theme): Materials {
       const glow = (theme.roadGlow ?? 0) * 1.5;
       return lambert(map, glow > 0 ? { emissive: 0xffffff, emissiveMap: map, emissiveIntensity: glow } : {});
     })(),
-    strata: lambert(theme.cliff(), { side: THREE.DoubleSide }),
+    strata: bumpy(theme.cliff(), 0.25, { side: THREE.DoubleSide }),
     barrier: lambert(theme.barrier.map(), { side: THREE.DoubleSide }),
     mud: lambert(tex.mudTexture()),
     bone: new THREE.MeshPhongMaterial({ map: tex.boneTexture(), shininess: 30, specular: 0x333322 }),
@@ -266,6 +270,15 @@ export function buildTrackView(track: Track): TrackView {
 
   const skyMesh = group.children[0] as THREE.Mesh;
   const skyHue = skyMesh.userData.hue as { value: number };
+  // Sun shadows (drawn only while the renderer's shadow map is on): everything solid casts and receives,
+  // except the sky, the decals laid on the road, and anything see-through.
+  group.traverse((o) => {
+    if (!(o instanceof THREE.Mesh) || o === skyMesh) return;
+    const mats = Array.isArray(o.material) ? o.material : [o.material];
+    const decal = o.renderOrder > 0 || mats.some((mt) => mt.polygonOffset || mt.transparent || mt.depthWrite === false);
+    o.receiveShadow = !decal;
+    o.castShadow = !decal && mats.every((mt) => (mt as THREE.MeshLambertMaterial).side !== THREE.BackSide);
+  });
   const weather = theme.storm ? stormWeather(skyMesh.material as THREE.MeshBasicMaterial) : null;
   if (weather) group.add(weather.group);
   return {
@@ -1330,8 +1343,9 @@ function decor(track: Track, mats: Materials, theme: Theme, animated: ((time: nu
     ribbons.every((r) => nearestOnSpline(r.spline, x, z).distance > Math.max(...r.halfWidth) + 8) &&
     track.def.pits.every((p) => !inPit({ ...p, halfWidth: p.halfWidth + 6, halfLength: p.halfLength + 6 }, x, z));
 
-  const rockCount = { jungle: 120, city: 0, sky: 0, lagoon: 60, glacier: 140, wasteland: 150, colony: 170, plains: 60, cosmos: 0, isle: 90, airstrip: 40, grove: 90, sea: 70, peaks: 120, alienSea: 40, garden: 30, shore: 110, ruins: 160, clouds: 0, cytoplasm: 60, spectrum: 40, foundry: 60, theatre: 30, boneyard: 140, pedalboard: 20 }[theme.decor as string] ?? 220;
-  const featureCount = { jungle: 150, meadow: 110, lagoon: 120, glacier: 160, city: 90, sky: 90, wasteland: 110, colony: 110, plains: 140, cosmos: 110, isle: 140, airstrip: 110, grove: 170, sea: 120, peaks: 140, alienSea: 150, garden: 170, shore: 140, ruins: 120, clouds: 110, cytoplasm: 160, spectrum: 150, foundry: 150, theatre: 150, boneyard: 160, pedalboard: 160 }[theme.decor as string] ?? 70;
+  const scale = densityScale();
+  const rockCount = Math.round(scale * ({ jungle: 120, city: 0, sky: 0, lagoon: 60, glacier: 140, wasteland: 150, colony: 170, plains: 60, cosmos: 0, isle: 90, airstrip: 40, grove: 90, sea: 70, peaks: 120, alienSea: 40, garden: 30, shore: 110, ruins: 160, clouds: 0, cytoplasm: 60, spectrum: 40, foundry: 60, theatre: 30, boneyard: 140, pedalboard: 20 }[theme.decor as string] ?? 220));
+  const featureCount = Math.round(scale * ({ jungle: 150, meadow: 110, lagoon: 120, glacier: 160, city: 90, sky: 90, wasteland: 110, colony: 110, plains: 140, cosmos: 110, isle: 140, airstrip: 110, grove: 170, sea: 120, peaks: 140, alienSea: 150, garden: 170, shore: 140, ruins: 120, clouds: 110, cytoplasm: 160, spectrum: 150, foundry: 150, theatre: 150, boneyard: 160, pedalboard: 160 }[theme.decor as string] ?? 70));
   // Sky and void scenery floats at all heights; city towers need room off the road.
   const floating = theme.decor === 'sky' || theme.decor === 'cosmos' || theme.decor === 'clouds';
   const rocks = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 1), mats.rock, rockCount);

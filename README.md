@@ -33,12 +33,14 @@ No install and no account. It will always be free.
 - **Leaderboards** for the fastest full race on every track (the daily included) and the best result in every cup, beside the picker, as well as Time Trial's
 - **A soundtrack** of video-game remixes of the band's songs, one per track, with a faster cut on the final lap
 - **A VHS look** after the Rattlesnake video: tape wobble and a duotone in each world's colours. You can turn it down or off.
+- **High detail** (Settings > Detail, on by default except on phones): sun shadows from every kart, post, tree and stand, roads with grain that catches the light, and half again as much scenery
 
 ## Modes
 
 - **Grand Prix:** four races, points after each, rivals from the second race on, a podium at the end and a trophy to keep
 - **Single Race:** any track, any class (50cc, 100cc, 150cc, and 200cc once it's unlocked), Mirror once that is
 - **Time Trial:** one lap alone. Online leaderboards, you race against your best run as a ghost, and the gap to it at every checkpoint.
+- **Posting online:** the first time you have a run, a race time or a cup result worth posting, the results screen asks for a name. Until then the leaderboards just show.
 - **Online:** make a room, share the four-letter code or link with friends, and race live. CPUs fill the empty grid slots.
 
 ## How to play
