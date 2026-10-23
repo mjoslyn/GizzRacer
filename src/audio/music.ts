@@ -76,6 +76,8 @@ export interface LiveRecording {
   seconds: number;
   /** Seconds in that the music starts, past the band talking (audio/talk.ts); 0 or absent from the top. */
   start?: number;
+  /** The gain (dB) that brings it to the remixes' loudness (audio/talk.ts `gainFor`); absent when not measured. */
+  gain?: number;
 }
 
 /** Where a live recording streams from. */
@@ -88,6 +90,26 @@ export interface LiveOptions {
   onEnded?: () => void;
   /** Where to start (s), past the talk; the recording's own `start` when absent. A loop comes back round to it. */
   start?: number;
+  /** The gain (dB) that brings it to the remixes' loudness; the recording's own `gain` when absent, else DEFAULT_LIVE_GAIN. */
+  gain?: number;
+}
+
+/** The gain (dB) for a recording not measured yet: what a taped show typically falls short of the remixes by (audio/talk.ts). */
+export const DEFAULT_LIVE_GAIN = 5;
+
+/**
+ * A brick-wall limiter for the live recordings: a quiet tape turned up to
+ * the remixes' loudness still peaks near full scale (the drums), and this
+ * holds those peaks just under it instead of letting them clip.
+ */
+function liveLimiter(ctx: BaseAudioContext): DynamicsCompressorNode {
+  const c = ctx.createDynamicsCompressor();
+  c.threshold.value = -2;
+  c.knee.value = 0;
+  c.ratio.value = 20;
+  c.attack.value = 0.002;
+  c.release.value = 0.15;
+  return c;
 }
 
 /** A stream that hasn't started playing in this long has failed: the fallback plays instead. */
@@ -317,9 +339,12 @@ export class MusicPlayer {
     // A media fragment starts it there, before a byte of the talk plays.
     audio.src = from > 0 ? `${liveUrl(rec)}#t=${from}` : liveUrl(rec);
     const node = ctx.createMediaElementSource(audio);
+    // Brought to the remixes' loudness, its peaks held under full scale, then the fade.
+    const level = ctx.createGain();
+    level.gain.value = 10 ** ((opts.gain ?? rec.gain ?? DEFAULT_LIVE_GAIN) / 20);
     const gain = ctx.createGain();
     gain.gain.value = 0;
-    node.connect(gain);
+    node.connect(level).connect(liveLimiter(ctx)).connect(gain);
     let started = false;
     const giveUp = () => {
       if (started) return;

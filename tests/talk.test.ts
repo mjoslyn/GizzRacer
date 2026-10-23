@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { musicStart, talkTrack } from '../src/audio/talk';
+import { TARGET_LOUDNESS, gainFor, loudness, musicStart, readOpening, talkTrack } from '../src/audio/talk';
 
 const RATE = 8000;
 
@@ -66,5 +66,22 @@ describe('skipping the band talk', () => {
   it('tells a talk track by its name', () => {
     for (const t of ['Banter', 'Stage Banter', 'Tuning', 'Crowd', 'Encore Break', 'Soundcheck']) expect(talkTrack(t), t).toBe(true);
     for (const t of ['Rattlesnake', 'Gamma Knife', 'The Dripping Tap', 'Crumbling Castle', 'Organ Farmer']) expect(talkTrack(t), t).toBe(false);
+  });
+
+  it('measures loudness past the gaps, and evens a quiet tape up to the remixes, within limits', () => {
+    const loud = band(30, 0.5);
+    const quiet = band(30, 0.1);
+    // A fifth of the level is 14 dB down.
+    expect(loudness(loud, RATE) - loudness(quiet, RATE)).toBeCloseTo(20 * Math.log10(5), 0);
+    // Gaps don't pull it down.
+    expect(loudness(join(loud, new Float32Array(RATE * 20)), RATE)).toBeCloseTo(loudness(loud, RATE), 0);
+    expect(gainFor(TARGET_LOUDNESS - 5)).toBe(5);
+    expect(gainFor(TARGET_LOUDNESS + 2)).toBe(-2);
+    expect(gainFor(-80)).toBe(14);
+    expect(gainFor(-Infinity)).toBe(0);
+    // Read from where the music starts: the talk doesn't count.
+    const opening = readOpening(join(talk(20, 0.05), quiet), RATE);
+    expect(opening.start).toBeGreaterThan(15);
+    expect(opening.gain).toBe(gainFor(loudness(quiet, RATE)));
   });
 });

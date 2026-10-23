@@ -1,14 +1,16 @@
 /**
- * Works out where the music starts in each recording of
- * public/music/bootlegs.json, past the band talking (src/audio/talk.ts), and
- * writes it back as each recording's `start`, so a race's song starts on the
- * band without the game reading the file first. Run after tools/bootlegs.mjs:
+ * Reads the opening of each recording of public/music/bootlegs.json
+ * (src/audio/talk.ts): where its music starts, past the band talking, and
+ * the gain that brings it to the remixes' loudness. Written back as each
+ * recording's `start` and `gain`, so a race's song starts on the band at an
+ * even level without the game reading the file first. Run after
+ * tools/bootlegs.mjs:
  *
  *   NODE_PATH=$(npm root -g) NODE_USE_ENV_PROXY=1 node tools/bootleg-starts.mjs
  *
  * It reads the opening of each file (about a minute and a half) and decodes
  * it in headless Chromium (Playwright, installed globally), as the game does
- * in the browser. Recordings that already have a `start` are skipped, so it
+ * in the browser. Recordings that already have both are skipped, so it
  * picks up where it left off; --all redoes them.
  */
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -25,7 +27,7 @@ const all = process.argv.includes('--all');
 const talk = buildSync({ entryPoints: [new URL('../src/audio/talk.ts', import.meta.url).pathname], bundle: true, format: 'iife', globalName: 'Talk', write: false }).outputFiles[0].text;
 const catalogue = JSON.parse(readFileSync(FILE, 'utf8'));
 const url = (r) => `https://archive.org/download/${encodeURIComponent(r.id)}/${r.file.split('/').map(encodeURIComponent).join('/')}`;
-const todo = Object.entries(catalogue).flatMap(([song, recs]) => recs.filter((r) => all || r.start === undefined).map((r) => ({ song, r })));
+const todo = Object.entries(catalogue).flatMap(([song, recs]) => recs.filter((r) => all || r.start === undefined || r.gain === undefined).map((r) => ({ song, r })));
 console.log(`${todo.length} recordings to read`);
 
 async function opening(r) {
@@ -51,7 +53,7 @@ await Promise.all(
     while (todo.length) {
       const { song, r } = todo.shift();
       const bytes = await opening(r);
-      const start = bytes
+      const read = bytes
         ? await page.evaluate(async (b64) => {
             const data = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
             try {
@@ -61,16 +63,16 @@ await Promise.all(
                 const right = buf.getChannelData(1);
                 for (let i = 0; i < ch.length; i++) ch[i] = (ch[i] + right[i]) / 2;
               }
-              return Talk.musicStart(ch, buf.sampleRate);
+              return Talk.readOpening(ch, buf.sampleRate);
             } catch {
               return null;
             }
           }, bytes.toString('base64'))
         : null;
-      // Unreadable: left without one, so the game works it out itself (or plays from the top).
-      if (start !== null) r.start = start;
+      // Unreadable: left without, so the game plays it from the top at the usual boost.
+      if (read) Object.assign(r, read);
       done++;
-      if (start) console.log(`${song} ${r.date}: music at ${start}s`);
+      if (read) console.log(`${song} ${r.date}: music at ${read.start}s, ${read.gain > 0 ? '+' : ''}${read.gain} dB`);
       if (done % 20 === 0) save();
     }
   }),
@@ -78,4 +80,5 @@ await Promise.all(
 await browser.close();
 save();
 const recs = Object.values(catalogue).flat();
-console.log(`${recs.filter((r) => r.start > 0).length} of ${recs.length} start past talk; ${recs.filter((r) => r.start === undefined).length} unread`);
+const gains = recs.filter((r) => r.gain !== undefined).map((r) => r.gain).sort((a, b) => a - b);
+console.log(`${recs.filter((r) => r.start > 0).length} of ${recs.length} start past talk; gains ${gains[0]} to ${gains[gains.length - 1]} dB, median ${gains[Math.floor(gains.length / 2)]}; ${recs.length - gains.length} unread`);

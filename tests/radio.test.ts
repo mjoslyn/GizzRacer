@@ -71,8 +71,8 @@ describe('live soundtrack', () => {
   it('play a set: the set in order from where the music starts, kept across races, then another show at its end', async () => {
     stubFetch({ 'shows.json': [SHOW], '/files': { result: FILES } });
     const { music, last } = fakeMusic();
-    // Magma opens with the band talking.
-    const radio = new LiveRadio(music, () => 0, async (r) => (r.file.includes('t02') ? 12.5 : 0));
+    // Magma opens with the band talking, and was taped quiet.
+    const radio = new LiveRadio(music, () => 0, async (r) => (r.file.includes('t02') ? { start: 12.5, gain: 7 } : { start: 0, gain: 0 }));
     await radio.ensureShow(['remix']);
     expect(radio.playing!.set!.index).toBe(0);
     expect(radio.playing!.title).toBe('Track 1');
@@ -81,6 +81,7 @@ describe('live soundtrack', () => {
     last().opts!.onEnded!();
     expect(radio.playing!.title).toBe('Magma');
     await vi.waitFor(() => expect(last().opts?.start).toBe(12.5));
+    expect(last().opts?.gain).toBe(7);
     // The next race keeps the show going.
     const before = radio.playing;
     await radio.ensureShow(['other-remix']);
@@ -96,7 +97,7 @@ describe('live soundtrack', () => {
     const magma: LiveRecording = { id: SHOW.id, file: 'kglw2024-01-01t02.mp3', date: SHOW.date, venue: SHOW.venue, seconds: 600 };
     stubFetch({ 'bootlegs.json': { Magma: [magma] }, '/files': { result: FILES }, 'shows.json': [SHOW] });
     const { music, last } = fakeMusic();
-    const radio = new LiveRadio(music, () => 0, async () => 0);
+    const radio = new LiveRadio(music, () => 0, async () => ({ start: 0, gain: 0 }));
     await radio.ensureKeep('Magma', ['remix']);
     expect(radio.playing!.mode).toBe('keep');
     expect(last().live).toBe(magma);

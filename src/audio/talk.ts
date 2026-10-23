@@ -80,3 +80,52 @@ export function musicStart(samples: Float32Array, rate: number): number {
 export function talkTrack(title: string): boolean {
   return /\b(banter|tuning|tune ?up|crowd|talk|chat|soundcheck|encore break|silence|intro tape|walk ?on|applause|stage announcement)\b/i.test(title);
 }
+
+/** Loudness windows (s), and the gate under the mean (dB) that leaves out the quiet bits (a pause, the talk). */
+const LOUD_WINDOW = 0.4;
+const LOUD_GATE = 10;
+
+/**
+ * How loud `samples` (mono, at `rate`) are from `from` seconds on, in dB of
+ * full scale: the mean power of its 0.4 s windows, leaving out any more than
+ * 10 dB under the mean, so the gaps and the talk don't pull it down (a
+ * gated loudness, in the manner of broadcast loudness meters). -Infinity
+ * for silence.
+ */
+export function loudness(samples: Float32Array, rate: number, from = 0): number {
+  const per = Math.max(1, Math.round(rate * LOUD_WINDOW));
+  const powers: number[] = [];
+  for (let s = Math.floor(from * rate); s + per <= samples.length; s += per) {
+    let e = 0;
+    for (let i = s; i < s + per; i++) e += samples[i] * samples[i];
+    powers.push(e / per);
+  }
+  if (!powers.length) return -Infinity;
+  const mean = powers.reduce((a, b) => a + b, 0) / powers.length;
+  if (mean <= 0) return -Infinity;
+  const gate = mean * 10 ** (-LOUD_GATE / 10);
+  const kept = powers.filter((p) => p >= gate);
+  return 10 * Math.log10(kept.reduce((a, b) => a + b, 0) / kept.length);
+}
+
+/**
+ * The loudness (dB, as `loudness` measures it) a live recording is brought
+ * to: the game's own remixes, measured at -16 to -12 with a median of
+ * -14.4. Taped shows come in from about -13 to -25, mostly near -19.
+ */
+export const TARGET_LOUDNESS = -14.5;
+/** The most a recording is turned up or down (dB): a near-silent one isn't blown up into hiss. */
+const GAIN_MIN = -6;
+const GAIN_MAX = 14;
+
+/** The gain (dB) that brings a recording of `measured` loudness to TARGET_LOUDNESS, to the half dB. */
+export function gainFor(measured: number): number {
+  if (!Number.isFinite(measured)) return 0;
+  return Math.round(Math.min(GAIN_MAX, Math.max(GAIN_MIN, TARGET_LOUDNESS - measured)) * 2) / 2;
+}
+
+/** A live recording's opening, read: where its music starts (s) and the gain (dB) that evens it with the rest of the music. */
+export function readOpening(samples: Float32Array, rate: number): { start: number; gain: number } {
+  const start = musicStart(samples, rate);
+  return { start, gain: gainFor(loudness(samples, rate, start)) };
+}

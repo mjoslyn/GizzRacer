@@ -1,5 +1,5 @@
 import { liveUrl, type LiveRecording, type MusicCue, type MusicPlayer } from './music';
-import { musicStart, talkTrack } from './talk';
+import { readOpening, talkTrack } from './talk';
 
 /**
  * The live soundtrack (Settings > Soundtrack, and the picker's Sound row),
@@ -54,16 +54,16 @@ export class LiveRadio {
   private history: LiveRecording[] = [];
   private fallback: readonly MusicCue[] = [];
   private readonly listeners = new Set<() => void>();
-  /** Where each song's music starts, worked out once. */
-  private readonly starts = new Map<string, Promise<number>>();
+  /** Where each song's music starts and how loud it is, worked out once. */
+  private readonly openings = new Map<string, Promise<Opening | null>>();
   /** Bumped by every new request, so an answer that comes back late is dropped. */
   private ticket = 0;
 
   constructor(
     private readonly music: MusicPlayer,
     private readonly rand: () => number = Math.random,
-    /** Where a recording's music starts (s); reads the opening of the file by default. */
-    private readonly findStart: (rec: LiveRecording) => Promise<number> = detectStart,
+    /** Where a recording's music starts (s) and the gain (dB) that evens its level; reads the opening of the file by default. */
+    private readonly read: (rec: LiveRecording) => Promise<Opening> = readRecording,
   ) {}
 
   /** What's playing (or about to), for the mini player and the HUD. */
@@ -170,31 +170,32 @@ export class LiveRadio {
     this.changed();
   }
 
-  /** Plays a set's song (shown at once), starting where its music does if that's known within START_WAIT. */
+  /** Plays a set's song (shown at once), starting where its music does, at an even level, if that's known within START_WAIT. */
   private async playSet(set: NonNullable<Playing['set']>, mode: LiveMode): Promise<void> {
     const t = ++this.ticket;
     const rec = set.songs[set.index];
     this.now = { rec, title: set.titles[set.index], mode, set };
     this.changed();
-    const start = await Promise.race([this.startOf(rec), new Promise<number>((res) => setTimeout(() => res(0), START_WAIT))]);
+    const opening = await Promise.race([this.openingOf(rec), new Promise<null>((res) => setTimeout(() => res(null), START_WAIT))]);
     if (t !== this.ticket) return;
-    this.music.playLive(rec, this.fallback, { start, onEnded: () => this.next() });
+    this.music.playLive(rec, this.fallback, { start: opening?.start ?? 0, gain: opening?.gain, onEnded: () => this.next() });
     this.prefetch(set, set.index);
   }
 
-  /** Works out where the next song's music starts while this one plays, so it's ready. */
+  /** Reads the next song's opening while this one plays, so it's ready. */
   private prefetch(set: NonNullable<Playing['set']>, from: number): void {
     const i = playable(set, from + 1, 1);
-    if (i < set.songs.length) void this.startOf(set.songs[i]);
+    if (i < set.songs.length) void this.openingOf(set.songs[i]);
   }
 
-  private startOf(rec: LiveRecording): Promise<number> {
-    if (rec.start !== undefined) return Promise.resolve(rec.start);
+  /** Where a song's music starts and its gain: the catalogue's, else read from its file (once); null when it can't be read. */
+  private openingOf(rec: LiveRecording): Promise<Opening | null> {
+    if (rec.start !== undefined && rec.gain !== undefined) return Promise.resolve({ start: rec.start, gain: rec.gain });
     const key = `${rec.id}/${rec.file}`;
-    let p = this.starts.get(key);
+    let p = this.openings.get(key);
     if (!p) {
-      p = this.findStart(rec).catch(() => 0);
-      this.starts.set(key, p);
+      p = this.read(rec).catch(() => null);
+      this.openings.set(key, p);
     }
     return p;
   }
@@ -261,17 +262,23 @@ export function playable(set: { songs: readonly LiveRecording[]; titles: readonl
   return i;
 }
 
-/** Where a recording's music starts: the opening of the file, decoded, past any talk (audio/talk.ts). 0 when it can't be read. */
-async function detectStart(rec: LiveRecording): Promise<number> {
+/** Where a recording's music starts (s, past any talk) and the gain (dB) that evens its level. */
+export interface Opening {
+  start: number;
+  gain: number;
+}
+
+/** A recording's opening, read from the first OPENING_BYTES of its file (audio/talk.ts); throws when it can't be. */
+async function readRecording(rec: LiveRecording): Promise<Opening> {
   const r = await fetch(liveUrl(rec), { headers: { Range: `bytes=0-${OPENING_BYTES - 1}` } });
-  if (!r.ok) return 0;
+  if (!r.ok) throw new Error(`${r.status}`);
   const buffer = await new OfflineAudioContext(1, 1, 44100).decodeAudioData(await r.arrayBuffer());
   const ch = buffer.getChannelData(0);
   if (buffer.numberOfChannels > 1) {
     const right = buffer.getChannelData(1);
     for (let i = 0; i < ch.length; i++) ch[i] = (ch[i] + right[i]) / 2;
   }
-  return musicStart(ch, buffer.sampleRate);
+  return readOpening(ch, buffer.sampleRate);
 }
 
 async function fetchJson<T>(url: string): Promise<T> {

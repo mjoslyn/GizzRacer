@@ -24,6 +24,11 @@ describe('live bootlegs', () => {
         expect(r.file, song).toMatch(/\.mp3$/i);
         expect(r.date, song).toMatch(/^\d{4}-\d{2}-\d{2}$/);
         // Where the music starts, past the talk: inside the recording, and inside the opening that was read.
+        // The gain that evens it with the remixes: within the limits.
+        if (r.gain !== undefined) {
+          expect(r.gain, song).toBeGreaterThanOrEqual(-6);
+          expect(r.gain, song).toBeLessThanOrEqual(14);
+        }
         if (r.start !== undefined) {
           expect(r.start, song).toBeGreaterThanOrEqual(0);
           expect(r.start, song).toBeLessThan(Math.min(100, r.seconds || 100));
