@@ -267,16 +267,16 @@
   },
   "rattlesnake-run-remix": {
     "title": "rattlesnake (remix)",
-    "bpm": 148,
-    "bars": 20,
-    "loopSamples": 1430270,
+    "bpm": 108,
+    "bars": 32,
+    "loopSamples": 3136000,
     "sampleRate": 44100
   },
   "rattlesnake-run-remix-final-lap": {
     "title": "rattlesnake (remix, final lap)",
-    "bpm": 156,
-    "bars": 20,
-    "loopSamples": 1356923,
+    "bpm": 116,
+    "bars": 32,
+    "loopSamples": 2919724,
     "sampleRate": 44100
   },
   "volcano-fortress-remix": {
