@@ -4,7 +4,7 @@ import type { KartState } from '../physics/kart';
  * Kart state on the wire (docs/MULTIPLAYER.md 7.3): a flat array of the
  * fields others need to show a kart and to run items against it.
  */
-const FIELDS = ['x', 'y', 'z', 'heading', 'speed', 'vy', 'slip', 'steer', 'driftDir', 'driftCharge', 'boostTime', 'spinTime', 'spinAngle', 'wobbleTime', 'slowTime', 'groundY', 'cannonTime', 'ramTime'] as const;
+const FIELDS = ['x', 'y', 'z', 'heading', 'speed', 'vy', 'slip', 'steer', 'driftDir', 'driftCharge', 'boostTime', 'spinTime', 'spinAngle', 'wobbleTime', 'slowTime', 'groundY', 'cannonTime', 'ramTime', 'glideTime'] as const;
 
 /** Rounded to keep messages small: centimetres and milliradians are plenty. */
 export function packKart(s: KartState): number[] {

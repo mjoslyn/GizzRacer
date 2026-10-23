@@ -3,7 +3,7 @@ import { clamp, damp } from '../core/math';
 import type { KartState } from '../physics/kart';
 import { driftTier } from '../physics/kart';
 import type { RacerDef } from '../physics/racers';
-import { buildKartModel, buildWooCannon, type WooCannonModel } from './racerModels';
+import { buildGlider, buildKartModel, buildWooCannon, type GliderModel, type WooCannonModel } from './racerModels';
 import { NonagonGate } from './nonagonGate';
 import { blobShadowTexture, glowTexture } from './textures';
 
@@ -106,6 +106,9 @@ export class KartView {
   /** The Woo Cannon shell, built the first time it's needed. */
   private cannon: WooCannonModel | null = null;
   private wasCannon = false;
+  /** The glider a launcher opens, built the first time it's needed, and how far open it is (0..1). */
+  private glider: GliderModel | null = null;
+  private gliderOpen = 0;
   private readonly racer: RacerDef;
   private readonly wheels: { mesh: THREE.Object3D; radius: number }[] = [];
   private readonly spinners: THREE.Object3D[];
@@ -301,6 +304,7 @@ export class KartView {
     this.body.scale.setScalar(s.slowTime > 0 ? 0.8 : 1);
     this.updatePresence(fell, frameDt, time);
     this.animateCannon(s, frameDt, time);
+    this.animateGlider(s, frameDt, time);
 
     const speedRatio = clamp(Math.abs(s.speed) / topSpeed, 0, 1.5);
     const accel = frameDt > 0 ? (s.speed - this.lastSpeed) / frameDt : 0;
@@ -396,6 +400,25 @@ export class KartView {
     const k = 0.85 + Math.random() * 0.4;
     c.flame.scale.set(k, k, k * 1.3);
     if (Math.random() < dt * 30) this.emitStar(0.4);
+  }
+
+  /** Off a launcher: the glider snaps open over the kart, banks with the steering and flutters, and folds away on landing. */
+  private animateGlider(s: KartState, dt: number, time: number): void {
+    const open = s.glideTime > 0 && s.cannonTime === 0;
+    if (open && !this.glider) {
+      this.glider = buildGlider(this.racer);
+      this.root.add(this.glider.group);
+    }
+    if (!this.glider) return;
+    if (open && this.gliderOpen === 0) for (let i = 0; i < 10; i++) this.emitStar(0.6);
+    this.gliderOpen = open ? Math.min(1, this.gliderOpen + dt * 5) : Math.max(0, this.gliderOpen - dt * 6);
+    const g = this.glider;
+    g.group.visible = this.gliderOpen > 0;
+    if (!g.group.visible) return;
+    // Unfurls sideways and up out of the seat.
+    const u = this.gliderOpen * this.gliderOpen * (3 - 2 * this.gliderOpen);
+    g.group.scale.set(0.15 + 0.85 * u, u, 0.6 + 0.4 * u);
+    g.wing.rotation.set(Math.sin(time * 3.3 + this.phase) * 0.04, 0, -s.steer * 0.3 + Math.sin(time * 2.1 + this.phase) * 0.05);
   }
 
   /** Over the edge: shrink away in a puff of stars. Through the gate: grow back, with a little overshoot. */

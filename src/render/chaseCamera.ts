@@ -14,6 +14,10 @@ export interface CameraPlacement {
 // Close over the driver's shoulder and a little above, wide: the kart big in the lower middle of the screen.
 export const DEFAULT_PLACEMENT: CameraPlacement = { distance: 2.75, height: 3.2, lookAhead: 6, lookHeight: -0.5, fov: 78 };
 
+/** How far further back and up (m) the camera draws while the kart glides. */
+const GLIDE_BACK = 4;
+const GLIDE_UP = 1.8;
+
 /** Third-person camera that trails the kart's travel direction (not its drift yaw). */
 export class ChaseCamera {
   private yaw = 0;
@@ -23,6 +27,8 @@ export class ChaseCamera {
   private shake = 0;
   /** Extra field of view (degrees) from a boost kicking in, easing back out. */
   private punch = 0;
+  /** 0..1, eased: how far the camera has drawn back and up to see past an open glider. */
+  private glide = 0;
 
   placement: CameraPlacement = { ...DEFAULT_PLACEMENT };
 
@@ -52,9 +58,11 @@ export class ChaseCamera {
     const fz = Math.cos(yaw);
     const speedRatio = clamp(Math.abs(s.speed) / topSpeed, 0, 1.5);
     const pl = this.placement;
-    const dist = pl.distance + speedRatio * 0.3;
+    // With the glider open, back and up over the canopy, looking down past it at the kart.
+    this.glide += ((s.glideTime > 0 ? 1 : 0) - this.glide) * damp(3, dt);
+    const dist = pl.distance + speedRatio * 0.3 + GLIDE_BACK * this.glide;
 
-    const desired = new THREE.Vector3(s.x - fx * dist, s.y + pl.height, s.z - fz * dist);
+    const desired = new THREE.Vector3(s.x - fx * dist, s.y + pl.height + GLIDE_UP * this.glide, s.z - fz * dist);
     if (!this.initialized) {
       this.pos.copy(desired);
       this.initialized = true;

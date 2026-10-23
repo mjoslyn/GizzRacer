@@ -121,6 +121,13 @@ export class Sfx {
     if (tier >= 4) [1760, 2217, 2637].forEach((f, i) => this.tone(f, 0.3, 'sine', 0.05, f * 1.5, i * 0.05));
   }
 
+  /** Off a launcher: a rush of air up the ramp and the glider snapping open, a rising whistle over it. */
+  glide(): void {
+    this.whoosh(0.6, 400, 2400, 0.22);
+    this.whoosh(0.12, 3000, 1200, 0.18);
+    this.tone(523, 0.35, 'sine', 0.06, 1047, 0.05);
+  }
+
   /** A trick landed; each one in a streak climbs a step higher. */
   trick(streak = 1): void {
     const up = 2 ** ((Math.max(1, streak) - 1) * 2 / 12);

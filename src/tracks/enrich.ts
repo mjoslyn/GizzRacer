@@ -1,4 +1,4 @@
-import { Ribbon, type BoostPad, type TrackDef } from './track';
+import { Ribbon, type BoostPad, type Launcher, type TrackDef } from './track';
 
 /**
  * Layout extras laid over every hand-built track from its geometry, so each
@@ -12,9 +12,13 @@ import { Ribbon, type BoostPad, type TrackDef } from './track';
  * - A slalom on the longest straight of a track too hilly for a hump:
  *   three pads staggered left, right, left, so the straight is a line to
  *   thread rather than a rest.
+ * - Launchers: a ramp across the whole road on the lip of each jump, so
+ *   the leap is a glide, and on a track with no jump one on its longest
+ *   clear straight, with room past it to come down.
  *
- * Nothing goes near a junction, a jump, a bridge, a kicker, an item row, a
- * pad, a hazard or the grid. Pure, so the tests pin where things land.
+ * Nothing goes near a junction, a jump (a launcher aside), a bridge (a
+ * launcher may), a kicker, an item row, a pad, a hazard or the grid. Pure,
+ * so the tests pin where things land.
  */
 export const HUMP_RAMP = 20;
 export const HUMP_HEIGHT = 1.5;
@@ -38,14 +42,30 @@ export const PAD_HALF_WIDTH = 1.7;
 export const SLALOM_STEP = 15;
 const SLALOM_RUN = 60;
 const SLALOM_SIDE = 0.42;
+/** A launcher: this long, ending this far short of a jump's gap, across the road but this far in from its edges. */
+export const LAUNCHER_LENGTH = 6;
+const LAUNCHER_LIP = 0.5;
+const LAUNCHER_EDGE = 0.5;
+const LAUNCHERS_MAX = 2;
+/**
+ * On a track with no jump: a launcher on level road this far into a
+ * straight, with this much straight past it to climb out over and this much
+ * clear road past it to come down on, bends and all (the glider steers).
+ */
+const LAUNCH_LEAD = 15;
+const LAUNCH_CLIMB = 25;
+const LAUNCH_RUN = 95;
+/** Over this much road before it, the approach may fall no steeper than this grade, or a kart flies over the launcher. */
+const LAUNCH_APPROACH = 30;
+const LAUNCH_FALL = 0.06;
 
 interface Span {
   from: number;
   to: number;
 }
 
-/** Builder-unit ranges nothing may be placed over. */
-function blocked(def: TrackDef): Span[] {
+/** Builder-unit ranges nothing may be placed over; a launcher (`decks` false) may go on a deck or into low gravity. */
+function blocked(def: TrackDef, decks = true): Span[] {
   const spans: Span[] = [];
   const at = (s: number, r = CLEAR) => spans.push({ from: s - r, to: s + r });
   for (const b of def.branches) {
@@ -63,7 +83,7 @@ function blocked(def: TrackDef): Span[] {
     if (hz.s !== undefined) at(hz.s);
   }
   // Bridges and low gravity keep their own character; kickers and dives are height keys and are found by flatness.
-  for (const sec of def.main.sections) if (sec.bridge || (sec.gravity !== undefined && sec.gravity < 1)) spans.push({ from: sec.from - 10, to: sec.to + 10 });
+  if (decks) for (const sec of def.main.sections) if (sec.bridge || (sec.gravity !== undefined && sec.gravity < 1)) spans.push({ from: sec.from - 10, to: sec.to + 10 });
   spans.push({ from: -Infinity, to: START_CLEAR });
   spans.push({ from: def.main.length - FINISH_CLEAR, to: Infinity });
   return spans;
@@ -86,6 +106,12 @@ function even(ribbon: Ribbon, from: number, to: number, tol = 0.5, grade = 1.2):
     if (Math.abs(ribbon.heightAtBuilder(s) - want) > tol) return false;
   }
   return true;
+}
+
+/** The road drops away somewhere along [from, to] steeply enough to throw a kart off it: steeper than LAUNCH_FALL. */
+function falls(ribbon: Ribbon, from: number, to: number): boolean {
+  for (let s = from; s + 2 <= to; s += 2) if (ribbon.heightAtBuilder(s) - ribbon.heightAtBuilder(s + 2) > 2 * LAUNCH_FALL) return true;
+  return false;
 }
 
 /** Straight stretches of the main road, in builder units. */
@@ -148,8 +174,8 @@ export function humpKeys(a: number, base: (s: number) => number): [number, numbe
   return keys;
 }
 
-/** The humps and pads this track gets, without changing it. */
-export function planEnrichment(def: TrackDef): { humps: number[]; pads: BoostPad[]; slalom: number | null } {
+/** The humps, pads and launchers this track gets, without changing it. */
+export function planEnrichment(def: TrackDef): { humps: number[]; pads: BoostPad[]; slalom: number | null; launchers: Launcher[] } {
   const ribbon = new Ribbon(def.main);
   const spans = blocked(def);
   const humps: number[] = [];
@@ -210,7 +236,33 @@ export function planEnrichment(def: TrackDef): { humps: number[]; pads: BoostPad
       break;
     }
   }
-  return { humps, pads, slalom };
+  // The launcher keeps clear of everything above but decks, and of the humps and pads just placed.
+  const launchSpans = [...blocked(def, false), ...humps.map((a) => ({ from: a - 8 - CLEAR, to: a + 2 * HUMP_RAMP + 8 + CLEAR })), ...pads.map((p) => ({ from: p.s - CLEAR, to: p.s + p.length + CLEAR }))];
+  return { humps, pads, slalom, launchers: planLaunchers(def, ribbon, launchSpans) };
+}
+
+/** The launchers a track gets (the generator's, which lays no other extras). */
+export function launchersFor(def: TrackDef): Launcher[] {
+  return planLaunchers(def, new Ribbon(def.main), blocked(def, false));
+}
+
+/** A launcher on the lip of each jump on the main road; with none, one on the longest clear straight. */
+function planLaunchers(def: TrackDef, ribbon: Ribbon, spans: Span[]): Launcher[] {
+  const across = (s: number): Launcher => {
+    const hw = ribbon.halfWidth[nearestIndex(ribbon, s + LAUNCHER_LENGTH / 2)];
+    return { s, length: LAUNCHER_LENGTH, lateral: 0, halfWidth: hw - LAUNCHER_EDGE };
+  };
+  const launchers = def.main.gaps.slice(0, LAUNCHERS_MAX).map(([from]) => across(from - LAUNCHER_LIP - LAUNCHER_LENGTH));
+  if (launchers.length) return launchers;
+  for (const r of straights(ribbon).sort((a, b) => b.to - b.from - (a.to - a.from))) {
+    // As early in the straight as it's clear, for the most room to come down.
+    for (let a = r.from + LAUNCH_LEAD; a + LAUNCHER_LENGTH + LAUNCH_CLIMB <= r.to; a += 5) {
+      // The road past it may roll (the glide clears it); the launcher sits on level road, with no drop before it to fly over it from.
+      if (!free(spans, a - 10, a + LAUNCH_RUN) || !even(ribbon, a - 6, a + LAUNCHER_LENGTH + 6, 0.3, 1) || falls(ribbon, a - LAUNCH_APPROACH, a + LAUNCHER_LENGTH)) continue;
+      return [across(a)];
+    }
+  }
+  return [];
 }
 
 function nearestIndex(ribbon: Ribbon, builderS: number): number {
@@ -228,8 +280,8 @@ function nearestIndex(ribbon: Ribbon, builderS: number): number {
 
 /** The track with its extras laid in. */
 export function enrichTrack(def: TrackDef): TrackDef {
-  const { humps, pads } = planEnrichment(def);
-  if (!humps.length && !pads.length) return def;
+  const { humps, pads, launchers } = planEnrichment(def);
+  if (!humps.length && !pads.length && !launchers.length) return def;
   let elevation = def.main.elevation.slice();
   const ribbon = new Ribbon(def.main);
   for (const a of humps) {
@@ -238,5 +290,5 @@ export function enrichTrack(def: TrackDef): TrackDef {
     elevation.push(...humpKeys(a, (s) => ribbon.heightAtBuilder(s)));
   }
   elevation.sort((p, q) => p[0] - q[0]);
-  return { ...def, main: { ...def.main, elevation }, boostPads: [...def.boostPads, ...pads] };
+  return { ...def, main: { ...def.main, elevation }, boostPads: [...def.boostPads, ...pads], launchers: [...(def.launchers ?? []), ...launchers] };
 }

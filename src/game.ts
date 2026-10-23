@@ -714,6 +714,10 @@ function step(dt: number): void {
     chase.kick(3 + ev.boostTier * 3);
     st?.add(driftMove(ev.boostTier));
   }
+  if (ev.glided) {
+    chase.bump(0.5);
+    chase.kick(5);
+  }
   if (ev.trick) {
     chase.bump(0.6);
     chase.kick(4 + ev.trickStreak * 2);
@@ -1096,6 +1100,7 @@ function playerSounds(p: RaceKart, ev: StepEvents): void {
   if (heard.rolling && !rolling && p.item) sfx.itemReady();
   heard.rolling = rolling;
   if (ev.hopped) sfx.hop();
+  if (ev.glided) sfx.glide();
   if (ev.landed > 2) sfx.land(ev.landed);
   if (ev.wallHit > 0.2) sfx.wall(ev.wallHit);
   if (ev.boostTier > 0) sfx.boost(ev.boostTier);

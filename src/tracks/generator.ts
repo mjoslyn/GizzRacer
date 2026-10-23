@@ -1,4 +1,5 @@
 import { clamp, seededRandom } from '../core/math';
+import { launchersFor } from './enrich';
 import { TrackBuilder, dubins, offsetPose, type Pose, type RoadSurface, type SectionProps, ROAD_WIDTH_SCALE } from './builder';
 import { nearestOnSpline } from './spline';
 import { Track, inPit, type BranchDef, type HazardDef, type ItemBoxRow, type Landmark, type TrackDef } from './track';
@@ -952,7 +953,7 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
   let extent = 0;
   for (const ribbon of [main, ...branches]) for (const [x, z] of ribbon.points) extent = Math.max(extent, Math.abs(x), Math.abs(z));
   const uniqueMarks = [...new Set(marks)];
-  return {
+  const def: TrackDef = {
     id: trackId(p),
     name: trackName(p),
     main,
@@ -969,6 +970,9 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
     abyss: abyss || undefined,
     music: pal.music,
   };
+  // A launcher on the lip of the jump, or on a straight when there's none.
+  def.launchers = launchersFor(def);
+  return def;
 
   /**
    * A straight chord across a sweep, narrow and rail-less, with a jump over a

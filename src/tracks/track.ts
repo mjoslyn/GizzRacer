@@ -10,6 +10,18 @@ export interface BoostPad {
   halfWidth: number;
 }
 
+/**
+ * A launcher: a ramp across the road, laid like a boost pad, that throws a
+ * kart up into the air with its glider open (physics/kart.ts). Most sit on
+ * the lip of a track's big jump, so the leap becomes a glide.
+ */
+export interface Launcher {
+  s: number; // main-ribbon arc length of its leading edge (builder units)
+  length: number;
+  lateral: number;
+  halfWidth: number;
+}
+
 /** An alternate route that leaves and rejoins the main ribbon. */
 export interface BranchDef extends RibbonDef {
   name: string;
@@ -67,6 +79,8 @@ export interface TrackDef {
   branches: BranchDef[];
   pits: PitDef[];
   boostPads: BoostPad[];
+  /** Launchers on the main road; none when absent. */
+  launchers?: Launcher[];
   /** Checkpoints as fractions of a lap, ascending, excluding the start line. */
   checkpoints: number[];
   laps: number;
@@ -489,7 +503,9 @@ export class Track implements DriveEnv {
       const def = this.def.branches[sup.branch];
       const f = sup.hit.s / sup.ribbon.spline.length;
       progress = this.mainS(def.mainFrom + (def.mainTo - def.mainFrom) * f);
-    } else if (this.onBoostPad(sup.hit)) {
+    } else if (this.onPad(sup.hit, this.def.launchers ?? [])) {
+      surface = 'launch';
+    } else if (this.onPad(sup.hit, this.def.boostPads)) {
       surface = 'boost';
     }
     const road = sup.ribbon.surfaceAt(sup.hit.index);
@@ -568,10 +584,12 @@ export class Track implements DriveEnv {
     return nearestOnSpline(sp, x, z);
   }
 
-  private onBoostPad(hit: SplineHit): boolean {
+  /** Whether a main-road point is on one of `pads` (boost pads or launchers). */
+  private onPad(hit: SplineHit, pads: readonly BoostPad[]): boolean {
+    if (!pads.length) return false;
     const s = this.main.toBuilder(hit.s);
     const L = this.def.main.length || this.length;
-    for (const pad of this.def.boostPads) {
+    for (const pad of pads) {
       const ds = (s - pad.s + L) % L;
       if (ds <= pad.length && Math.abs(hit.lateral - pad.lateral) <= pad.halfWidth) return true;
     }

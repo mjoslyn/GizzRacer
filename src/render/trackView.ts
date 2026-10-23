@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { seededRandom } from '../core/math';
 import { nearestOnSpline, pointAt } from '../tracks/spline';
 import type { PitDef, RoadSurface } from '../tracks/builder';
-import { BANK, branchOpen, inPit, type BranchDef, type LapContext, type Ribbon, type Track } from '../tracks/track';
+import { BANK, branchOpen, inPit, type BranchDef, type LapContext, type Launcher, type Ribbon, type Track } from '../tracks/track';
 import * as tex from './textures';
 import { trackLife } from './trackLife';
 import { DETAIL_SPEC, densityScale, graphicsDetail } from './detail';
@@ -196,6 +196,8 @@ export function buildTrackView(track: Track): TrackView {
     mesh.renderOrder = 1;
     group.add(mesh);
   }
+
+  for (const l of track.def.launchers ?? []) group.add(launcher(track, l, animated));
 
   group.add(startLine(track));
   for (const lm of track.def.landmarks) {
@@ -558,6 +560,97 @@ function pitMesh(p: PitDef, mats: Materials): THREE.Group {
   wallGeo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
   wallGeo.computeVertexNormals();
   g.add(new THREE.Mesh(wallGeo, mats.strata));
+  return g;
+}
+
+/** How high a launcher's deck stands at its lip; the physics is the surface, so this is only the look of it. */
+const LAUNCHER_LIFT = 0.7;
+
+/**
+ * A launcher (physics/kart.ts): a wedge across the road, rising along its
+ * length to a lip, its deck of climbing chevrons scrolling up it, with a
+ * glowing post at either end of the lip.
+ */
+function launcher(track: Track, l: Launcher, animated: ((time: number) => void)[]): THREE.Group {
+  const g = new THREE.Group();
+  const n = 6;
+  const pos: number[] = [];
+  const uv: number[] = [];
+  const side: number[] = [];
+  const edge = (k: number) => {
+    const s = track.mainS(l.s + (l.length * k) / n);
+    const p = pointAt(track.spline, s);
+    const y = track.main.heightAt(s) + ROAD_LIFT;
+    const lift = 0.05 + (LAUNCHER_LIFT * k) / n;
+    const at = (lat: number) => [p.x - p.tz * lat, p.z + p.tx * lat] as const;
+    return { left: at(l.lateral - l.halfWidth), right: at(l.lateral + l.halfWidth), y, lift };
+  };
+  const rows = Array.from({ length: n + 1 }, (_, k) => edge(k));
+  for (let k = 0; k < n; k++) {
+    const a = rows[k];
+    const b = rows[k + 1];
+    // The deck.
+    const quad = [
+      [a.left[0], a.y + a.lift, a.left[1], 0, k / n],
+      [a.right[0], a.y + a.lift, a.right[1], 1, k / n],
+      [b.right[0], b.y + b.lift, b.right[1], 1, (k + 1) / n],
+      [b.left[0], b.y + b.lift, b.left[1], 0, (k + 1) / n],
+    ];
+    for (const i of [0, 1, 2, 0, 2, 3]) {
+      pos.push(quad[i][0], quad[i][1], quad[i][2]);
+      uv.push(quad[i][3], quad[i][4]);
+    }
+    // Its two sides, down to the road.
+    for (const e of ['left', 'right'] as const) {
+      const v = [
+        [a[e][0], a.y, a[e][1]],
+        [b[e][0], b.y, b[e][1]],
+        [b[e][0], b.y + b.lift, b[e][1]],
+        [a[e][0], a.y + a.lift, a[e][1]],
+      ];
+      for (const i of [0, 1, 2, 0, 2, 3]) side.push(...v[i]);
+    }
+  }
+  // The lip's face.
+  const z = rows[n];
+  const face = [
+    [z.left[0], z.y, z.left[1]],
+    [z.right[0], z.y, z.right[1]],
+    [z.right[0], z.y + z.lift, z.right[1]],
+    [z.left[0], z.y + z.lift, z.left[1]],
+  ];
+  for (const i of [0, 1, 2, 0, 2, 3]) side.push(...face[i]);
+
+  const deckGeo = new THREE.BufferGeometry();
+  deckGeo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  deckGeo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  const map = tex.launcherTexture();
+  map.repeat.set(1, 2);
+  g.add(new THREE.Mesh(deckGeo, new THREE.MeshBasicMaterial({ map, side: THREE.DoubleSide })));
+  const sideGeo = new THREE.BufferGeometry();
+  sideGeo.setAttribute('position', new THREE.Float32BufferAttribute(side, 3));
+  sideGeo.computeVertexNormals();
+  g.add(new THREE.Mesh(sideGeo, new THREE.MeshLambertMaterial({ color: 0x2a1a5a, side: THREE.DoubleSide })));
+
+  // A post at each end of the lip, its lamp pulsing.
+  const lamps: THREE.MeshBasicMaterial[] = [];
+  for (const e of [z.left, z.right]) {
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 2.4, 8), new THREE.MeshLambertMaterial({ color: 0xe8e8f4 }));
+    post.position.set(e[0], z.y + 1.2, e[1]);
+    g.add(post);
+    const lampMat = new THREE.MeshBasicMaterial({ color: 0x6ae0ff });
+    lamps.push(lampMat);
+    const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 8), lampMat);
+    lamp.position.set(e[0], z.y + 2.55, e[1]);
+    g.add(lamp);
+  }
+  const cool = new THREE.Color(0x6ae0ff);
+  const warm = new THREE.Color(0xc86aff);
+  animated.push((time) => {
+    map.offset.y = -time * 1.5;
+    const k = 0.5 + 0.5 * Math.sin(time * 6);
+    for (const m of lamps) m.color.copy(cool).lerp(warm, k);
+  });
   return g;
 }
 

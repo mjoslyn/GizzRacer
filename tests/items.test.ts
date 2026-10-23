@@ -185,8 +185,8 @@ describe('Woo Cannon', () => {
         for (let s = 0; s < 1.5; s += PHYSICS_DT) {
           race.step(PHYSICS_DT, []);
           fell ||= k.fallTime > 0 || k.respawned;
-          // On the road at some point (it may take a ramp straight after).
-          landed ||= k.state.grounded;
+          // On the road at some point (it may take a ramp straight after, or a launcher, and glide on).
+          landed ||= k.state.grounded || k.state.glideTime > 0;
         }
         expect(fell, `${entry.name} at ${f}`).toBe(false);
         expect(landed, `${entry.name} at ${f}`).toBe(true);

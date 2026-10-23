@@ -139,7 +139,7 @@ JSON over the room WebSocket, with compact arrays for kart states.
 
 | Message | Rate | Content |
 |---|---|---|
-| `kart` | 15 Hz | race time, x, y, z, heading, speed, vy, slip, steer, driftDir, drift tier, boostTime, spinTime, wobbleTime, slowTime, cannonTime, lap, progress, flags (about 120 bytes) |
+| `kart` | 15 Hz | race time, x, y, z, heading, speed, vy, slip, steer, driftDir, drift tier, boostTime, spinTime, wobbleTime, slowTime, cannonTime, glideTime, lap, progress, flags (about 120 bytes) |
 | `use-item` | on press | item slot only; the room checks the player really holds it |
 | `hazard-hit` | on hit | which hazard, so the room knows (for its kart copy and the HUD of others) |
 | `ping` | 0.5 Hz | timestamp |

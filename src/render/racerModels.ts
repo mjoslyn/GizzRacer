@@ -2469,3 +2469,43 @@ export function buildWooCannon(r: RacerDef): WooCannonModel {
   group.visible = false;
   return { group, fins, flame };
 }
+
+export interface GliderModel {
+  group: THREE.Group;
+  /** The canopy, which flutters and banks with the steering. */
+  wing: THREE.Group;
+}
+
+/**
+ * The glider a launcher opens (physics/kart.ts): a paraglider canopy over
+ * the kart in the racer's colours, striped cell by cell, with its lines
+ * down to the seat. Built hidden, about the kart's own origin.
+ */
+const GLIDER_HEIGHT = 2.5;
+
+export function buildGlider(r: RacerDef): GliderModel {
+  const group = new THREE.Group();
+  const wing = new THREE.Group();
+  wing.position.y = GLIDER_HEIGHT;
+  group.add(wing);
+  const cells = 9;
+  const spread = (95 * Math.PI) / 180;
+  const radius = 2;
+  const colours = [gloss(r.color, { side: THREE.DoubleSide }), gloss(r.accent, { side: THREE.DoubleSide })];
+  const tips: [number, number, number][] = [];
+  for (let k = 0; k < cells; k++) {
+    // Cells round an arch, the middle one on top.
+    const a = -spread / 2 + (spread * (k + 0.5)) / cells;
+    const x = Math.sin(a) * radius;
+    const y = Math.cos(a) * radius - radius;
+    put(wing, box((spread * radius) / cells + 0.02, 0.14, 1.2), colours[k % 2], [x, y, 0], [0.12, 0, -a]);
+    if (k === 0 || k === cells - 1 || k === (cells - 1) / 2) tips.push([x, y + GLIDER_HEIGHT - 0.1, 0]);
+  }
+  // A darker leading edge, with the cell mouths.
+  put(wing, box(0.5, 0.18, 0.08), matte(0x1a1a24), [0, 0, 0.62], [0.12, 0, 0]);
+  // The lines: from the canopy's tips and middle down to either side of the seat.
+  const line = matte(0xf2f2f2);
+  for (const t of tips) for (const side of [-1, 1]) rod(group, t, [side * 0.45, 1.1, 0.1], 0.015, line);
+  group.visible = false;
+  return { group, wing };
+}

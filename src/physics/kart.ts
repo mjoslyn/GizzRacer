@@ -2,7 +2,7 @@ import { NEUTRAL_INPUT, type InputFrame } from '../core/inputFrame';
 import { clamp, moveToward, wrapAngle } from '../core/math';
 import type { KartParams } from './racers';
 
-export type SurfaceType = 'road' | 'offroad' | 'boost' | 'ice' | 'oil';
+export type SurfaceType = 'road' | 'offroad' | 'boost' | 'ice' | 'oil' | 'launch';
 
 export interface WallHit {
   nx: number; // push-out normal
@@ -56,6 +56,7 @@ export interface KartState {
   slowTime: number; // seconds of reduced top speed left (Horology)
   invulnTime: number; // seconds of immunity left after being hit
   cannonTime: number; // seconds of Woo Cannon flight left: the race flies the kart, not stepKart
+  glideTime: number; // seconds the glider has been open (off a launcher), 0 when it's folded
   ramTime: number; // seconds of Road Train left: immune, a little faster, spins out whoever it touches
   trickStreak: number; // tricks landed back to back
   trickChain: number; // seconds left to land the next trick and keep the streak
@@ -74,6 +75,7 @@ export interface StepEvents {
   boostTier: number; // 0 none, 1..3 drift tier released this tick
   wallHit: number; // 0..1 severity
   launched: boolean; // left a ledge or ramp lip
+  glided: boolean; // thrown up off a launcher, glider open
   trick: boolean; // landed a trick
   trickStreak: number; // its place in a streak of back-to-back tricks, 1 for a lone one
 }
@@ -82,7 +84,7 @@ export interface StepEvents {
  * Bump whenever kart physics, racer stats or a track layout change lap
  * times: online leaderboards and ghosts are kept per version.
  */
-export const PHYSICS_VERSION = 19;
+export const PHYSICS_VERSION = 20;
 export const KART_RADIUS = 1;
 export const GRAVITY = 30;
 export const HOP_VELOCITY = 4.5;
@@ -110,6 +112,25 @@ export const TRICK_BOOST = 0.7;
 export const TRICK_CHAIN = 3;
 export const TRICK_STREAK_BONUS = 0.4;
 export const TRICK_STREAK_MAX = 4;
+/**
+ * Launchers and gliders: a launcher throws a kart up at LAUNCH_VY with at
+ * least LAUNCH_SPEED of its top speed, and its glider opens. Past the top
+ * of the climb the glider holds the fall to GLIDE_SINK (gravity a share
+ * GLIDE_GRAVITY of the usual on the way to it), and the kart steers in the
+ * air at GLIDE_STEER of its grip on the road where a plain jump has
+ * AIR_STEER. Braking dives, sinking at up to GLIDE_DIVE, to come down
+ * sooner for a corner. The glider folds on landing, or after GLIDE_TIME,
+ * so even a launch off a cliff comes down within reach of the road.
+ */
+export const LAUNCH_VY = 13;
+export const LAUNCH_SPEED = 1.15;
+export const GLIDE_GRAVITY = 0.3;
+export const GLIDE_SINK = 3;
+export const GLIDE_DIVE = 10;
+export const GLIDE_STEER = 1;
+export const GLIDE_TIME = 2.2;
+/** A launcher blows an updraft: a kart skimming this close over it (off a crest just before it) is caught all the same. */
+const LAUNCH_REACH = 2.5;
 /** Top speed multiplier while in a Road Train. */
 export const RAM_SPEED_MUL = 1.1;
 
@@ -160,7 +181,7 @@ const EXT_DAMPING_ALONG = 8;
  * yaw * slide / EXT_DAMPING_SIDE of the speed, sideways: full lock on the
  * road travels about 12 degrees outside the nose.
  */
-const SLIDE: Record<SurfaceType, number> = { road: 0.45, boost: 0.45, offroad: 0.55, ice: 0.8, oil: 0.75 };
+const SLIDE: Record<SurfaceType, number> = { road: 0.45, boost: 0.45, launch: 0.45, offroad: 0.55, ice: 0.8, oil: 0.75 };
 /**
  * Drifting, more of the momentum keeps going the old way than when the
  * tires grip: the kart slides out wide of its nose (about 25 degrees in a
@@ -234,6 +255,7 @@ export function createKartState(x = 0, z = 0, heading = 0): KartState {
     slowTime: 0,
     invulnTime: 0,
     cannonTime: 0,
+    glideTime: 0,
     ramTime: 0,
     trickStreak: 0,
     trickChain: 0,
@@ -271,7 +293,7 @@ function approachSteer(current: number, target: number, dt: number): number {
 
 /** Advances one kart by dt, mutating `s`. */
 export function stepKart(s: KartState, input: InputFrame, p: KartParams, env: DriveEnv, dt: number): StepEvents {
-  const ev: StepEvents = { hopped: false, landed: 0, driftStarted: false, boostTier: 0, wallHit: 0, launched: false, trick: false, trickStreak: 0 };
+  const ev: StepEvents = { hopped: false, landed: 0, driftStarted: false, boostTier: 0, wallHit: 0, launched: false, glided: false, trick: false, trickStreak: 0 };
   // A zero-length step moves nothing; the slopes below divide by dt.
   if (dt <= 0) return ev;
   s.invulnTime = Math.max(0, s.invulnTime - dt);
@@ -303,6 +325,17 @@ export function stepKart(s: KartState, input: InputFrame, p: KartParams, env: Dr
   // Hop, tricks and drift.
   s.hopAge += dt;
   s.trickWindow = Math.max(0, s.trickWindow - dt);
+  if (s.surface === 'launch' && s.glideTime === 0 && (s.grounded || s.y - s.groundY < LAUNCH_REACH)) {
+    // Off a launcher: up into the air with the glider open. A hop just before it, or just after, is a trick.
+    s.vy = Math.max(s.vy, LAUNCH_VY);
+    s.grounded = false;
+    s.speed = Math.max(s.speed, p.topSpeed * LAUNCH_SPEED);
+    s.glideTime = dt;
+    ev.launched = true;
+    ev.glided = true;
+    if (s.hopAge < TRICK_WINDOW) s.trick = true;
+    else s.trickWindow = TRICK_WINDOW;
+  }
   if (input.driftPressed && s.grounded) {
     s.vy = Math.max(s.vy, 0) + HOP_VELOCITY;
     s.grounded = false;
@@ -373,7 +406,7 @@ export function stepKart(s: KartState, input: InputFrame, p: KartParams, env: Dr
     const highSpeedDamp = 1 - 0.25 * clamp(Math.abs(s.speed) / p.topSpeed, 0, 1);
     yawRate = steer * p.turnRate * lowSpeed * highSpeedDamp * (s.speed < 0 ? -1 : 1);
   }
-  if (!s.grounded) yawRate *= AIR_STEER;
+  if (!s.grounded) yawRate *= s.glideTime > 0 ? GLIDE_STEER : AIR_STEER;
   const turned = yawRate * dt;
   s.heading = wrapAngle(s.heading - turned);
   s.slip = moveToward(s.slip, s.driftDir * DRIFT_SLIP_ANGLE, SLIP_RESPONSE * dt);
@@ -436,8 +469,19 @@ export function stepKart(s: KartState, input: InputFrame, p: KartParams, env: Dr
     if (s.hopAge < TRICK_WINDOW) s.trick = true;
     else s.trickWindow = TRICK_WINDOW;
   }
+  if (s.glideTime > 0) {
+    s.glideTime += dt;
+    if (s.grounded || s.glideTime > GLIDE_TIME) s.glideTime = 0;
+  }
   if (!s.grounded) {
-    s.vy -= gravity * dt;
+    if (s.glideTime > 0 && s.vy < 0) {
+      // The glider holds the fall; braking dives, and letting go of the brake it catches the air again.
+      const dive = input.brake > 0.5;
+      const sink = dive ? GLIDE_DIVE : GLIDE_SINK;
+      s.vy = s.vy < -sink ? moveToward(s.vy, -sink, gravity * dt) : Math.max(s.vy - gravity * (dive ? 1 : GLIDE_GRAVITY) * dt, -sink);
+    } else {
+      s.vy -= gravity * dt;
+    }
     s.y += s.vy * dt;
     if (s.y <= ground.height) {
       ev.landed = Math.max(0.01, -s.vy);
@@ -447,6 +491,7 @@ export function stepKart(s: KartState, input: InputFrame, p: KartParams, env: Dr
       s.vy = Math.abs(drop) < 2 && dt > 0 ? clamp(-drop / dt, -MAX_GROUND_VY, 0) : 0;
       s.grounded = true;
       s.trickWindow = 0;
+      s.glideTime = 0;
       if (s.trick) {
         s.trick = false;
         // Back-to-back tricks boost longer and longer.

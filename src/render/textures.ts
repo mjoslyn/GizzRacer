@@ -470,6 +470,29 @@ export function chevronTexture(): THREE.CanvasTexture {
   return tex;
 }
 
+/** A launcher's deck: twin chevrons climbing it, sky blue into violet, for the glider ramp. */
+export function launcherTexture(): THREE.CanvasTexture {
+  const [c, ctx] = canvas(128, 128);
+  const g = ctx.createLinearGradient(0, 0, 0, 128);
+  g.addColorStop(0, '#7a3aff');
+  g.addColorStop(1, '#2ac8ff');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 128, 128);
+  ctx.strokeStyle = '#eafcff';
+  ctx.lineWidth = 12;
+  ctx.lineJoin = 'miter';
+  for (const y of [52, 100]) {
+    ctx.beginPath();
+    ctx.moveTo(14, y);
+    ctx.lineTo(64, y - 34);
+    ctx.lineTo(114, y);
+    ctx.stroke();
+  }
+  const tex = finish(c);
+  tex.repeat.set(1, 2);
+  return tex;
+}
+
 export function checkerTexture(): THREE.CanvasTexture {
   const [c, ctx] = canvas(256, 32);
   for (let x = 0; x < 16; x++) {
