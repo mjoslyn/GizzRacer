@@ -67,6 +67,13 @@ export interface KartModel {
   legs?: THREE.Object3D[];
   sway?: THREE.Object3D;
   tail?: THREE.Object3D;
+  /**
+   * Slitherers: body segments a wave runs down from head to tail, side to
+   * side, quicker with speed; `userData.z` is how far back the segment sits
+   * (m), `userData.amp` how far it swings. `rattle` shakes. Built unrotated.
+   */
+  segments?: THREE.Object3D[];
+  rattle?: THREE.Object3D;
 }
 
 let env: THREE.CubeTexture | null = null;
@@ -945,6 +952,92 @@ function lordOfLightning(r: RacerDef): KartModel {
     shadow: [2.0, 3.4],
     hover: { bob: 0.09, pads },
     head,
+  };
+}
+
+// ---- Rattlesnake: off Flying Microtonal Banana, slithering down the road ----------
+// A long diamondback in segments that a wave runs down from the head, its
+// neck held up and the head cocked to strike, a forked tongue out, and a
+// rattle at the tail shaking all the while.
+
+function rattlesnake(r: RacerDef): KartModel {
+  const body = new THREE.Group();
+  const scales = matte(r.color, { shininess: 45, specular: 0x554422 });
+  const diamond = matte(0x3a2410, { shininess: 45, specular: 0x332211 });
+  const pale = matte(0xe8d4a0, { shininess: 30 });
+  const belly = matte(0xd8c08a, { shininess: 20 });
+  const horn = matte(0xc8b080, { shininess: 50, specular: 0x665533 });
+
+  // The body: segments from the neck back, each a slice of the snake that the wave swings side to side.
+  const segments: THREE.Object3D[] = [];
+  const N = 26;
+  const STEP = 0.16;
+  for (let k = 0; k < N; k++) {
+    const t = k / (N - 1);
+    // Thickest a third of the way back, tapering to the tail.
+    const rad = Math.max(0.085, 0.17 * Math.sin(Math.PI * Math.min(1, 0.25 + t * 0.95)) + 0.04);
+    const seg = new THREE.Group();
+    const z = 0.55 - k * STEP;
+    seg.position.set(0, rad * 0.75, z);
+    seg.userData = { z: k * STEP, amp: 0.05 + t * 0.32 };
+    put(seg, ball(rad, 12, 8), scales, [0, 0, 0], [0, 0, 0], [1.15, 0.75, 1.25]);
+    put(seg, ball(rad * 0.9, 10, 6), belly, [0, -rad * 0.25, 0], [0, 0, 0], [1.1, 0.5, 1.2]);
+    // The diamonds down the back: dark, edged pale, one every other segment; banded black and white near the rattle.
+    if (t > 0.85) put(seg, ball(rad * 1.02, 10, 6), k % 2 ? pale : diamond, [0, 0, 0], [0, 0, 0], [1.15, 0.76, 0.7]);
+    else if (k % 2 === 0) {
+      put(seg, box(rad * 1.3, 0.02, rad * 1.3), pale, [0, rad * 0.74, 0], [0, Math.PI / 4, 0]);
+      put(seg, box(rad * 1.05, 0.03, rad * 1.05), diamond, [0, rad * 0.75, 0], [0, Math.PI / 4, 0]);
+    }
+    body.add(seg);
+    segments.push(seg);
+  }
+  // The rattle: a stack of horn beads off the tip, shaking.
+  const tip = segments[N - 1];
+  const rattle = new THREE.Group();
+  rattle.position.set(0, 0.06, -0.06);
+  for (let k = 0; k < 6; k++) put(rattle, ball(0.055 - k * 0.004, 10, 6), horn, [0, k * 0.02, -k * 0.065], [0, 0, 0], [1.2, 0.8, 0.9]);
+  tip.add(rattle);
+
+  // The neck rises from the first segment, S-curved, the head held up and forward to strike.
+  const neck = new THREE.Group();
+  neck.position.set(0, 0.12, 0.62);
+  body.add(neck);
+  const neckPts: [number, number, number][] = [[0, 0, 0], [0, 0.18, 0.08], [0, 0.34, 0.06], [0, 0.42, 0.16]];
+  for (const [k, at] of neckPts.entries()) put(neck, ball(0.14 - k * 0.012, 12, 8), k % 2 ? scales : diamond, at, [0, 0, 0], [1.1, 1, 1]);
+
+  // The head: a broad flat wedge, heat pits and slit eyes, fangs, a forked tongue flicking out.
+  const head = new THREE.Group();
+  head.position.set(0, 0.6, 0.86);
+  put(head, ball(0.17, 16, 10), scales, [0, 0, 0], [0, 0, 0], [1.3, 0.6, 1.35]);
+  put(head, ball(0.12, 12, 8), diamond, [0, 0.04, -0.04], [0, 0, 0], [1.2, 0.4, 1.1]);
+  put(head, ball(0.1, 12, 8), scales, [0, -0.02, 0.17], [0, 0, 0], [1.1, 0.55, 1.1]);
+  eyes(head, 0.06, 0.12, 0.11, 0.045, 0xd8b020, true);
+  for (const side of [-1, 1]) {
+    put(head, ball(0.06, 8, 6), diamond, [side * 0.11, 0.08, 0.08], [0, 0, side * 0.4], [1.4, 0.35, 1.1]);
+    put(head, cone(0.012, 0.07, 4), pale, [side * 0.05, -0.08, 0.22], [Math.PI, 0, 0]);
+  }
+  const tongue = new THREE.Group();
+  tongue.position.set(0, -0.04, 0.26);
+  rod(tongue, [0, 0, 0], [0, 0, 0.14], 0.01, matte(0xc8203a), 0.008);
+  for (const side of [-1, 1]) rod(tongue, [0, 0, 0.14], [side * 0.03, 0.01, 0.2], 0.008, matte(0xc8203a), 0.005);
+  head.add(tongue);
+  tongue.userData.phase = 0;
+  body.add(head);
+
+  return {
+    body,
+    wheels: [],
+    // Dust kicked off the tail under boost.
+    exhausts: [new THREE.Vector3(0, 0.1, 0.55 - N * STEP)],
+    rearTrack: 0.25,
+    rearZ: -2.5,
+    spinners: [],
+    shadow: [1.4, 4.6],
+    head,
+    segments,
+    rattle,
+    // The tongue flicks in and out.
+    sweepers: [tongue],
   };
 }
 
@@ -2823,6 +2916,7 @@ const BUILDERS: Record<string, (r: RacerDef) => KartModel> = {
   'flying-pig': flyingPig,
   'skeleton-dragon': skeletonDragon,
   'lord-of-lightning': lordOfLightning,
+  rattlesnake,
 };
 
 export function buildKartModel(racer: RacerDef): KartModel {
