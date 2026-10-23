@@ -638,6 +638,178 @@ function gilaRider(r: RacerDef): KartModel {
   };
 }
 
+// ---- Skeleton Dragon: the dragon picked clean, flying on its bones ------------
+// After the PetroDragonic Apocalypse art: a horned skull with burning sockets
+// and an open fanged jaw, a ribcage with a fire in it, a spiked spine running
+// into a long whip of a tail, and wings of bare finger bones with rags of
+// membrane between them.
+
+function skeletonDragon(r: RacerDef): KartModel {
+  const body = new THREE.Group();
+  const bone = matte(r.color, { shininess: 30, specular: 0x554a3a, emissive: 0x1a140c });
+  const dark = matte(0x14100c);
+  const fire = glow(r.accent);
+  const hot = glow(0xffd060);
+  const rag = new THREE.MeshPhongMaterial({ color: 0x2a1410, emissive: 0x3a0e04, transparent: true, opacity: 0.45, side: THREE.DoubleSide, depthWrite: false });
+  // A bone along a curve through `pts`, thinner at the far end.
+  const curved = (parent: THREE.Object3D, pts: [number, number, number][], radius: number) => {
+    const curve = new THREE.CatmullRomCurve3(pts.map((p) => new THREE.Vector3(...p)));
+    return put(parent, new THREE.TubeGeometry(curve, 16, radius, 6, false), bone, [0, 0, 0]);
+  };
+  // It flies: everything rides a metre off the road.
+  const dragon = new THREE.Group();
+  dragon.position.y = 1.0;
+  body.add(dragon);
+
+  // The spine: vertebrae from the neck down the back into the tail, each with a spike, the tail whipping off to a point.
+  const spinePts: [number, number, number][] = [];
+  for (let k = 0; k < 26; k++) {
+    const z = 0.55 - k * 0.12;
+    const y = k < 6 ? 0.18 - k * 0.02 : 0.06 - (k - 6) * 0.018 + Math.sin(k * 0.5) * 0.04;
+    const x = k < 8 ? 0 : Math.sin((k - 8) * 0.45) * 0.05 * (k - 8) * 0.12;
+    spinePts.push([x, y, z]);
+    const size = k < 8 ? 0.07 : Math.max(0.025, 0.07 - (k - 8) * 0.0028);
+    put(dragon, cyl(size, size, 0.07, 8), bone, [x, y, z], [Math.PI / 2, 0, 0]);
+    put(dragon, cone(size * 0.45, size * 2.4, 5), bone, [x, y + size * 1.6, z - 0.02], [-0.5, 0, 0]);
+  }
+  curved(dragon, spinePts, 0.025);
+
+  // The ribcage: curved ribs hanging from the back, a keel of breastbone under them, and a fire burning inside.
+  for (let k = 0; k < 7; k++) {
+    const z = 0.38 - k * 0.12;
+    const w = 0.34 - Math.abs(k - 2.5) * 0.04;
+    const h = 0.4 - Math.abs(k - 2.5) * 0.035;
+    const top = spinePts[Math.min(spinePts.length - 1, 2 + k)][1];
+    for (const side of [-1, 1]) {
+      curved(dragon, [[0, top, z], [side * w * 0.8, top - h * 0.15, z - 0.02], [side * w, top - h * 0.6, z - 0.05], [side * w * 0.45, top - h, z - 0.04], [0, top - h * 1.05, z - 0.02]], 0.018);
+    }
+  }
+  curved(dragon, [[0, -0.2, 0.42], [0, -0.3, 0.1], [0, -0.28, -0.3]], 0.03);
+  put(dragon, ball(0.16, 14, 10), fire, [0, -0.06, 0.05], [0, 0, 0], [1, 0.9, 1.3]);
+  put(dragon, ball(0.08, 10, 8), hot, [0, -0.06, 0.08]);
+  const pads = [glowSprite(dragon, [0, -0.06, 0.05], 1.1, r.accent), glowSprite(dragon, [0, -0.6, 0], 0.9, r.accent)];
+
+  // The pelvis and the legs, folded under in flight: thigh, shin, a fan of toe bones with claws.
+  put(dragon, ball(0.13, 10, 8), bone, [0, -0.02, -0.62], [0, 0, 0], [1.6, 0.6, 1]);
+  for (const side of [-1, 1]) {
+    const hip: [number, number, number] = [side * 0.18, -0.05, -0.62];
+    const knee: [number, number, number] = [side * 0.32, -0.3, -0.42];
+    const ankle: [number, number, number] = [side * 0.3, -0.45, -0.78];
+    rod(dragon, hip, knee, 0.045, bone, 0.035);
+    put(dragon, ball(0.05, 8, 6), bone, knee);
+    rod(dragon, knee, ankle, 0.035, bone, 0.025);
+    for (let t = -1; t <= 1; t++) {
+      const toe: [number, number, number] = [ankle[0] + t * 0.07, ankle[1] - 0.12, ankle[2] - 0.12];
+      rod(dragon, ankle, toe, 0.016, bone, 0.01);
+      put(dragon, cone(0.015, 0.07, 4), dark, [toe[0], toe[1] - 0.03, toe[2] - 0.02], [-2.4, 0, 0]);
+    }
+    // Little forearms under the chest, claws curled.
+    const shoulder: [number, number, number] = [side * 0.16, -0.12, 0.4];
+    const elbow: [number, number, number] = [side * 0.26, -0.32, 0.5];
+    const hand: [number, number, number] = [side * 0.2, -0.36, 0.7];
+    rod(dragon, shoulder, elbow, 0.03, bone, 0.025);
+    rod(dragon, elbow, hand, 0.025, bone, 0.02);
+    for (let t = -1; t <= 1; t++) put(dragon, cone(0.012, 0.08, 4), dark, [hand[0] + t * 0.03, hand[1] - 0.02, hand[2] + 0.04], [2.2, 0, 0]);
+  }
+
+  // The wings: an arm bone to the wrist, then long finger bones fanning back, rags of membrane between them, spurs on the joints.
+  const flappers: THREE.Object3D[] = [];
+  for (const side of [-1, 1]) {
+    const wing = new THREE.Group();
+    wing.position.set(side * 0.2, 0.18, 0.32);
+    wing.userData.side = side;
+    const elbow: [number, number, number] = [side * 0.55, 0.22, 0.05];
+    const wrist: [number, number, number] = [side * 1.05, 0.28, 0.3];
+    rod(wing, [0, 0, 0], elbow, 0.05, bone, 0.04);
+    put(wing, ball(0.06, 8, 6), bone, elbow);
+    rod(wing, elbow, wrist, 0.04, bone, 0.03);
+    put(wing, ball(0.05, 8, 6), bone, wrist);
+    put(wing, cone(0.025, 0.16, 5), bone, [wrist[0] + side * 0.04, wrist[1] + 0.06, wrist[2] + 0.06], [0.6, 0, -side * 0.5]);
+    const tips: [number, number, number][] = [
+      [side * 1.75, 0.2, -0.1],
+      [side * 1.55, 0.08, -0.6],
+      [side * 1.15, 0.0, -0.95],
+      [side * 0.6, -0.02, -0.9],
+    ];
+    for (const tip of tips) {
+      const mid: [number, number, number] = [(wrist[0] + tip[0]) / 2, (wrist[1] + tip[1]) / 2 + 0.06, (wrist[2] + tip[2]) / 2];
+      curved(wing, [wrist, mid, tip], 0.018);
+      put(wing, cone(0.016, 0.1, 4), bone, tip, [0, 0, 0]);
+    }
+    // Torn membrane: the panels between the fingers, ragged at the trailing edge.
+    const anchor = [[0, 0, 0] as [number, number, number], elbow, wrist];
+    const panel = (a: [number, number, number], b: [number, number, number], c: [number, number, number]) => {
+      const g = new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute([...a, ...b, ...c], 3));
+      g.computeVertexNormals();
+      put(wing, g, rag, [0, 0, 0]);
+    };
+    const ragged = (p: [number, number, number], q: [number, number, number], k: number): [number, number, number] => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2, (p[2] + q[2]) / 2 + (k % 2 ? 0.18 : 0.05)];
+    for (let k = 0; k < tips.length - 1; k++) panel(wrist, tips[k], ragged(tips[k], tips[k + 1], k));
+    panel(wrist, tips[tips.length - 1], anchor[1]);
+    panel(anchor[1], tips[tips.length - 1], [side * 0.3, 0, -0.55]);
+    dragon.add(wing);
+    flappers.push(wing);
+  }
+
+  // The skull: long and narrow, horns curling back, burning sockets, the jaw dropped open on rows of fangs.
+  const head = new THREE.Group();
+  head.position.set(0, 0.24, 0.72);
+  head.scale.setScalar(1.15);
+  put(head, ball(0.2, 16, 12), bone, [0, 0.04, 0], [0, 0, 0], [1, 0.8, 1.1]);
+  put(head, cyl(0.075, 0.15, 0.62, 10), bone, [0, 0.0, 0.36], [Math.PI / 2, 0, 0], [1, 0.6, 1]);
+  put(head, ball(0.08, 10, 8), bone, [0, -0.005, 0.62], [0, 0, 0], [1, 0.55, 1.2]);
+  // Nostril slits and the dark gaps of the cheekbones.
+  for (const side of [-1, 1]) {
+    put(head, ball(0.022, 6, 4), dark, [side * 0.035, 0.035, 0.68], [0, 0, 0], [0.6, 0.6, 1.6]);
+    put(head, ball(0.06, 8, 6), dark, [side * 0.1, -0.03, 0.26], [0, 0, 0], [0.5, 0.7, 1.8]);
+  }
+  // Eye sockets: black hollows with a coal burning in each, and a brow ridge over.
+  for (const side of [-1, 1]) {
+    put(head, ball(0.075, 10, 8), dark, [side * 0.12, 0.08, 0.1], [0, 0, 0], [0.8, 0.9, 1]);
+    put(head, ball(0.032, 8, 6), fire, [side * 0.14, 0.08, 0.14]);
+    glowSprite(head, [side * 0.15, 0.08, 0.16], 0.35, r.accent);
+    put(head, ball(0.08, 8, 6), bone, [side * 0.12, 0.15, 0.1], [0, 0, side * 0.3], [1.1, 0.35, 1.1]);
+  }
+  // Horns: two great ones sweeping back and curling, two small ones under them.
+  for (const side of [-1, 1]) {
+    curved(head, [[side * 0.12, 0.16, -0.02], [side * 0.22, 0.3, -0.2], [side * 0.26, 0.32, -0.45], [side * 0.2, 0.22, -0.6]], 0.04);
+    put(head, cone(0.035, 0.12, 6), bone, [side * 0.19, 0.2, -0.66], [-2.2, 0, 0]);
+    curved(head, [[side * 0.15, 0.05, -0.08], [side * 0.26, 0.08, -0.22], [side * 0.3, 0.02, -0.34]], 0.022);
+    // A frill of little spikes down the back of the skull.
+    for (let k = 0; k < 3; k++) put(head, cone(0.02, 0.1, 4), bone, [side * (0.06 + k * 0.03), 0.18 - k * 0.03, -0.12 - k * 0.04], [-1.2, 0, side * 0.4]);
+  }
+  // Upper fangs along the snout.
+  for (let k = 0; k < 6; k++) for (const side of [-1, 1]) put(head, cone(0.014, k === 1 ? 0.11 : 0.06, 4), bone, [side * (0.09 - k * 0.008), -0.08, 0.5 - k * 0.07], [Math.PI, 0, 0]);
+  // The jaw, hinged at the back of the skull and dropped open, its own teeth pointing up, the fire showing in the throat.
+  const jaw = new THREE.Group();
+  jaw.position.set(0, -0.08, -0.02);
+  jaw.rotation.x = 0.42;
+  for (const side of [-1, 1]) {
+    rod(jaw, [side * 0.1, 0, 0], [side * 0.04, -0.02, 0.66], 0.025, bone, 0.018);
+    for (let k = 0; k < 5; k++) put(jaw, cone(0.012, 0.06, 4), bone, [side * (0.09 - k * 0.009), 0.02, 0.18 + k * 0.08]);
+  }
+  put(jaw, ball(0.03, 6, 4), bone, [0, -0.02, 0.66]);
+  head.add(jaw);
+  put(head, ball(0.06, 8, 6), fire, [0, -0.08, 0.12]);
+  glowSprite(head, [0, -0.1, 0.35], 0.4, r.accent);
+  dragon.add(head);
+
+  const tipAt = spinePts[spinePts.length - 1];
+  return {
+    body,
+    wheels: [],
+    // Fire out of the tail tip under boost.
+    exhausts: [new THREE.Vector3(tipAt[0], tipAt[1] + 1.0, tipAt[2] - 0.1)],
+    rearTrack: 0.5,
+    rearZ: -0.8,
+    spinners: [],
+    shadow: [3.6, 3.6],
+    hover: { bob: 0.14, pads },
+    head,
+    flappers,
+  };
+}
+
 // ---- Swamp Witch: witch in a fan-driven swamp hovercraft ------------------------
 
 function swampWitch(r: RacerDef): KartModel {
@@ -2511,6 +2683,7 @@ const BUILDERS: Record<string, (r: RacerDef) => KartModel> = {
   'jason-galea': jasonGalea,
   'arlo': arlo,
   'flying-pig': flyingPig,
+  'skeleton-dragon': skeletonDragon,
 };
 
 export function buildKartModel(racer: RacerDef): KartModel {
