@@ -355,7 +355,8 @@ export class Menu {
     let title = STEP_TITLES[at];
     let body: string;
     if (at === 'mode') {
-      body = this.optionList(MODES.map((m) => ({ pick: `mode:${m}`, name: MODE_NAMES[m], blurb: MODE_BLURBS[m], on: m === c.mode })));
+      // An arrow switcher, as the racer is: the mode, what it is, and where it is in the list.
+      body = line('mode', 'Mode', MODE_NAMES[c.mode], `<div class="menu-bio">${esc(MODE_BLURBS[c.mode])}</div><div class="menu-cup-tracks">${MODES.indexOf(c.mode) + 1} of ${MODES.length}</div>`);
     } else if (at === 'track') {
       if (c.mode === 'grandPrix') {
         title = 'PICK A CUP';
@@ -403,7 +404,7 @@ export class Menu {
           <button class="menu-back" data-back${this.step === 0 ? ' disabled' : ''}>&lsaquo; back</button>
           ${last ? `<button class="menu-start hud-big" data-start>${c.mode === 'online' ? 'ROOMS' : c.mode === 'infinite' && c.watch ? 'WATCH!' : 'RACE!'}</button>` : `<button class="menu-start menu-next hud-big" data-next>next &rsaquo;</button>`}
         </div>
-        <div class="menu-hint">${at === 'mode' || (at === 'engine' && rows.length === 1) ? '&uarr;&darr; choose' : '&larr;&rarr; change'} &middot; Enter ${last ? (c.mode === 'online' ? 'rooms' : 'race') : 'next'} &middot; Backspace back</div>
+        <div class="menu-hint">${at === 'engine' && rows.length === 1 ? '&uarr;&darr; choose' : '&larr;&rarr; change'} &middot; Enter ${last ? (c.mode === 'online' ? 'rooms' : 'race') : 'next'} &middot; Backspace back</div>
       </div>`;
   }
 
