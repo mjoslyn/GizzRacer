@@ -2,14 +2,16 @@ import { seededRandom } from './math';
 import type { ItemKind } from '../items/items';
 import { RACERS, type KartParams, type RacerDef } from '../physics/racers';
 import { GEN_COMPLEXITY_MAX, type GenParams, type GenTheme } from '../tracks/generator';
+import { SKILL_KINDS, type SkillKind } from './skills';
 
 /**
  * Story mode: Murder of the Universe (2017) as a roguelike run. Its three
- * chapters are the acts, each two races on new generated tracks and a
- * boss race on a hand-built one. Clear a race to pick a boon; miss and a
- * life goes, and the race is run again on a fresh track. Lives let a run
- * last long enough to build up its boons. Nonagon Infinity never ends, so
- * a lost run is the loop starting over.
+ * chapters are the acts, each two races on new generated tracks, a skill
+ * game (core/skills.ts) and a one-on-one duel with the chapter's boss on a
+ * hand-built track. Clear a stage to pick a boon. There is one life: a
+ * miss ends the run, unless Planet B has given another, which is spent to
+ * restart the stage as it was. Nonagon Infinity never ends, so a lost run
+ * is the loop starting over.
  */
 
 export interface StoryBoss {
@@ -30,6 +32,8 @@ export interface StoryAct {
   intro: string;
   /** Worlds its generated tracks are drawn from. */
   themes: readonly GenTheme[];
+  /** Hand-built tracks in its worlds for the Deadstick Landing (each has a launcher to fly from). */
+  launchTracks: readonly string[];
   boss: StoryBoss;
 }
 
@@ -39,6 +43,7 @@ export const ACTS: readonly StoryAct[] = [
     title: 'The Tale of the Altered Beast',
     intro: 'Nonagon Infinity opens the door. Past it, in the wilds, a voice promises you everything if you will only let it in. It is the Altered Beast, and it wants to wear you.',
     themes: ['jungle', 'carrion', 'goblin'],
+    launchTracks: ['goblin-garden', 'people-vultures'],
     boss: { trackId: 'inner-cell', racerId: 'gator-drummer', altRacerId: 'fuzz-golem', name: 'The Altered Beast', taunt: 'Alter me, it says. Down here, in the cell, it alters you.' },
   },
   {
@@ -46,22 +51,27 @@ export const ACTS: readonly StoryAct[] = [
     title: 'The Lord of Lightning vs Balrog',
     intro: 'Two powers at war over a burning world. The Lord of Lightning splits the sky, the Balrog answers from the fire below, and you are racing across the battlefield.',
     themes: ['storm', 'volcano', 'mars'],
-    boss: { trackId: 'supercell', racerId: 'fuzz-golem', altRacerId: 'gator-drummer', name: 'The Balrog', taunt: 'The Lord of Lightning strikes the storm. The Balrog outruns it. Can you?' },
+    launchTracks: ['petrodragonic-apocalypse', 'crumbling-castle'],
+    boss: { trackId: 'supercell', racerId: 'fuzz-golem', altRacerId: 'gator-drummer', name: 'The Balrog', taunt: 'The Lord of Lightning strikes the storm. The Balrog outruns it. Can you, one on one?' },
   },
   {
     chapter: 'Chapter III',
     title: 'Han-Tyumi and the Murder of the Universe',
     intro: 'Han-Tyumi, the confused cyborg, wants the two things no cyborg can have: to die, and to vomit. He has made a way to get both, and it is eating everything there is.',
     themes: ['neon', 'factory', 'void'],
+    launchTracks: ['robot-stop', 'gamma-knife', 'tetrachromacy'],
     boss: { trackId: 'murder-of-the-universe', racerId: 'cyborg-gourmand', altRacerId: 'octo-organist', name: 'Han-Tyumi', taunt: 'I am Han-Tyumi. Beat me to the line, or be the last thing the universe sees.' },
   },
 ];
 
-/** Races in each act: the last is the boss. */
-export const RACES_PER_ACT = 3;
-/** A race is cleared by finishing this high or better; a boss race by beating the boss as well. */
+/** Stages in each act: two races, a skill game, the boss. */
+export const STAGES_PER_ACT = 4;
+/** Which stage of an act is the skill game. */
+export const SKILL_STAGE = 2;
+/** A race is cleared by finishing this high or better; a boss duel by beating the boss. */
 export const CLEAR_PLACE = 4;
-export const START_LIVES = 3;
+/** One life; Planet B adds more. */
+export const START_LIVES = 1;
 export const BOON_CHOICES = 3;
 /** The CPUs' pace by act, over the difficulty setting's. */
 const ACT_PACE = [1, 1.015, 1.03];
@@ -89,13 +99,18 @@ export const BOON_IDS = Object.keys(BOONS) as BoonId[];
 /** What the item boons do to item boxes, the latest taken winning. */
 const FAVOURS: Partial<Record<BoonId, ItemKind>> = { figWasps: 'riffMissile', gammaKnife: 'keytarLaser' };
 
-export interface StoryRace {
+export interface StoryStage {
   act: number;
-  /** 0-based within the act; RACES_PER_ACT - 1 is the boss. */
+  /** 0-based within the act: two races, the skill game, the boss. */
   index: number;
+  kind: 'race' | 'skill' | 'boss';
   boss: boolean;
-  /** A generated track's dials, or null for the boss's hand-built track. */
+  /** The race's generated track, or null. */
   gen: GenParams | null;
+  /** The skill game, or null. */
+  skill: SkillKind | null;
+  /** Seeds the skill game: the same on a retry. */
+  seed: number;
 }
 
 export type StoryOutcome = 'cleared' | 'failed' | 'over' | 'won';
@@ -103,32 +118,44 @@ export type StoryOutcome = 'cleared' | 'failed' | 'over' | 'won';
 export class StoryRun {
   lives = START_LIVES;
   readonly boons: BoonId[] = [];
-  /** Races cleared so far: the next race is this one. */
+  /** Stages cleared so far: the next stage is this one. */
   cleared = 0;
-  /** Tries at the current race, so a retry gets a new track. */
+  /** Tries at the current stage (a retry skips the chapter's card). */
   tries = 0;
   /** Boons to pick from after a clear, until one is taken. */
   offer: BoonId[] = [];
+  /** Each chapter's skill game: a different one each, drawn for the run. */
+  readonly skills: SkillKind[];
   private readonly rand: () => number;
 
   constructor(readonly seed: number) {
     this.rand = seededRandom(seed);
+    const draw = seededRandom(seed * 31 + 17);
+    const pool = [...SKILL_KINDS];
+    this.skills = ACTS.map(() => pool.splice(Math.floor(draw() * pool.length), 1)[0]);
   }
 
   get total(): number {
-    return ACTS.length * RACES_PER_ACT;
+    return ACTS.length * STAGES_PER_ACT;
   }
 
   get finished(): boolean {
     return this.cleared >= this.total || this.lives <= 0;
   }
 
-  get race(): StoryRace {
+  get race(): StoryStage {
     const n = Math.min(this.cleared, this.total - 1);
-    const act = Math.floor(n / RACES_PER_ACT);
-    const index = n % RACES_PER_ACT;
-    const boss = index === RACES_PER_ACT - 1;
-    return { act, index, boss, gen: boss ? null : this.genParams(act, index) };
+    const act = Math.floor(n / STAGES_PER_ACT);
+    const index = n % STAGES_PER_ACT;
+    const kind = index === STAGES_PER_ACT - 1 ? 'boss' : index === SKILL_STAGE ? 'skill' : 'race';
+    const seed = (this.seed + n * 7919) % 2147483647;
+    return { act, index, kind, boss: kind === 'boss', gen: kind === 'race' ? this.genParams(act, index) : null, skill: kind === 'skill' ? this.skills[act] : null, seed };
+  }
+
+  /** The Deadstick Landing's track: one of the chapter's, drawn for the run. */
+  get launchTrack(): string {
+    const list = this.actDef.launchTracks;
+    return list[Math.floor(this.seed / 7) % list.length];
   }
 
   get actDef(): StoryAct {
@@ -152,14 +179,14 @@ export class StoryRun {
     return { ...base, name: b.name };
   }
 
-  /** Whether a finish clears the race: placed high enough, and ahead of the boss on a boss race. */
+  /** Whether a finish clears a race: placed high enough, or on a boss duel, ahead of the boss. */
   passes(place: number, bossPlace: number | null): boolean {
-    return place <= CLEAR_PLACE && (bossPlace === null || place < bossPlace);
+    return bossPlace === null ? place <= CLEAR_PLACE : place < bossPlace;
   }
 
-  /** Scores the race just run and moves the run on. */
-  record(place: number, bossPlace: number | null): StoryOutcome {
-    if (!this.passes(place, bossPlace)) {
+  /** Scores the stage just played and moves the run on. */
+  record(passed: boolean): StoryOutcome {
+    if (!passed) {
       this.lives--;
       this.tries++;
       return this.lives <= 0 ? 'over' : 'failed';
@@ -217,9 +244,9 @@ export class StoryRun {
     return out;
   }
 
-  /** A short track in one of the act's worlds, twistier as the run goes on and new on every try. */
+  /** A short track in one of the act's worlds, twistier as the run goes on. */
   private genParams(act: number, index: number): GenParams {
-    const r = seededRandom(this.seed + act * 7919 + index * 104729 + this.tries * 15485863);
+    const r = seededRandom(this.seed + act * 7919 + index * 104729);
     const themes = ACTS[act].themes;
     return {
       seed: Math.floor(r() * 1e9),

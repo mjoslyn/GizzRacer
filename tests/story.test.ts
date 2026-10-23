@@ -1,42 +1,49 @@
 import { describe, expect, it } from 'vitest';
-import { ACTS, BOON_CHOICES, CLEAR_PLACE, RACES_PER_ACT, START_LIVES, StoryRun } from '../src/core/story';
+import { ACTS, BOON_CHOICES, CLEAR_PLACE, SKILL_STAGE, STAGES_PER_ACT, START_LIVES, StoryRun } from '../src/core/story';
 import { kartParams, RACERS } from '../src/physics/racers';
 import { TRACK_LIST } from '../src/tracks/index';
 import { generateTrack } from '../src/tracks/generator';
 
+/** Clears every stage, taking the first boon offered. */
+function clearAll(run: StoryRun, each: (run: StoryRun) => void = () => {}): string {
+  let out = '';
+  while (!run.finished) {
+    each(run);
+    out = run.record(true);
+    if (run.offer.length) run.take(run.offer[0]);
+  }
+  return out;
+}
+
 describe('story run', () => {
-  it('runs every chapter: two generated races, then the boss on its own track', () => {
+  it('runs every chapter: two races, the skill game, then the boss', () => {
     const run = new StoryRun(7);
-    const seen: { act: number; boss: boolean; gen: boolean }[] = [];
-    while (!run.finished) {
-      const r = run.race;
-      seen.push({ act: r.act, boss: r.boss, gen: r.gen !== null });
-      run.record(1, r.boss ? 2 : null);
-      if (run.offer.length) run.take(run.offer[0]);
-    }
-    expect(seen).toHaveLength(ACTS.length * RACES_PER_ACT);
-    for (const [i, s] of seen.entries()) {
-      expect(s.act).toBe(Math.floor(i / RACES_PER_ACT));
-      expect(s.boss).toBe(i % RACES_PER_ACT === RACES_PER_ACT - 1);
-      expect(s.gen).toBe(!s.boss);
-    }
+    const seen: string[] = [];
+    clearAll(run, (r) => seen.push(`${r.race.act}:${r.race.kind}`));
+    expect(seen).toHaveLength(ACTS.length * STAGES_PER_ACT);
+    for (let a = 0; a < ACTS.length; a++) expect(seen.slice(a * STAGES_PER_ACT, (a + 1) * STAGES_PER_ACT)).toEqual([`${a}:race`, `${a}:race`, `${a}:skill`, `${a}:boss`]);
+    expect(SKILL_STAGE).toBe(2);
   });
 
   it('wins after the last boss', () => {
-    const run = new StoryRun(1);
-    let out = '';
-    while (!run.finished) {
-      out = run.record(1, run.race.boss ? 3 : null);
-      if (run.offer.length) run.take(run.offer[0]);
+    expect(clearAll(new StoryRun(1))).toBe('won');
+  });
+
+  it('plays a different skill game in each chapter', () => {
+    for (let seed = 1; seed < 40; seed++) {
+      const run = new StoryRun(seed);
+      expect(new Set(run.skills).size).toBe(ACTS.length);
     }
-    expect(out).toBe('won');
   });
 
-  it('every boss track is a real track', () => {
-    for (const a of ACTS) expect(TRACK_LIST.some((t) => t.id === a.boss.trackId)).toBe(true);
+  it('every boss and launch track is a real track', () => {
+    for (const a of ACTS) {
+      expect(TRACK_LIST.some((t) => t.id === a.boss.trackId)).toBe(true);
+      for (const id of a.launchTracks) expect(TRACK_LIST.some((t) => t.id === id)).toBe(true);
+    }
   });
 
-  it('clears a race in the top places, and a boss race only ahead of the boss', () => {
+  it('clears a race in the top places, and a boss duel only ahead of the boss', () => {
     const run = new StoryRun(3);
     expect(run.passes(CLEAR_PLACE, null)).toBe(true);
     expect(run.passes(CLEAR_PLACE + 1, null)).toBe(false);
@@ -44,37 +51,38 @@ describe('story run', () => {
     expect(run.passes(1, 2)).toBe(true);
   });
 
-  it('a miss costs a life and runs the race again on a new track, and the last life ends the run', () => {
+  it('starts with one life: a miss ends the run', () => {
     const run = new StoryRun(5);
-    const first = run.race.gen!;
-    expect(run.record(CLEAR_PLACE + 1, null)).toBe('failed');
-    expect(run.lives).toBe(START_LIVES - 1);
-    expect(run.cleared).toBe(0);
-    expect(run.race.gen!.seed).not.toBe(first.seed);
-    expect(run.record(12, null)).toBe('failed');
-    expect(run.record(12, null)).toBe('over');
+    expect(START_LIVES).toBe(1);
+    expect(run.record(false)).toBe('over');
     expect(run.finished).toBe(true);
   });
 
-  it('a retried chapter opener skips its card', () => {
-    const run = new StoryRun(6);
-    expect(run.actStart).toBe(true);
-    run.record(12, null);
-    expect(run.actStart).toBe(false);
-  });
-
-  it('Planet B gives a life instead of a boon', () => {
+  it('a spare life from Planet B restarts the same stage, the same track and game', () => {
     const run = new StoryRun(8);
-    run.record(1, null);
+    run.record(true);
     run.offer = ['planetB'];
     run.take('planetB');
     expect(run.lives).toBe(START_LIVES + 1);
     expect(run.boons).toEqual([]);
+    const before = run.race;
+    expect(run.record(false)).toBe('failed');
+    expect(run.lives).toBe(START_LIVES);
+    expect(run.race).toEqual(before);
+    expect(run.record(false)).toBe('over');
+  });
+
+  it('a restarted chapter opener skips its card', () => {
+    const run = new StoryRun(6);
+    run.lives = 2;
+    expect(run.actStart).toBe(true);
+    run.record(false);
+    expect(run.actStart).toBe(false);
   });
 
   it('offers three different boons after a clear, and takes only one of them', () => {
     const run = new StoryRun(11);
-    expect(run.record(1, null)).toBe('cleared');
+    expect(run.record(true)).toBe('cleared');
     expect(run.offer).toHaveLength(BOON_CHOICES);
     expect(new Set(run.offer).size).toBe(BOON_CHOICES);
     const pick = run.offer.find((b) => b !== 'planetB')!;
@@ -105,7 +113,7 @@ describe('story run', () => {
   it('never races the player against their own racer as the boss', () => {
     const run = new StoryRun(4);
     for (let act = 0; act < ACTS.length; act++) {
-      run.cleared = act * RACES_PER_ACT + RACES_PER_ACT - 1;
+      run.cleared = act * STAGES_PER_ACT + STAGES_PER_ACT - 1;
       const own = RACERS.find((r) => r.id === ACTS[act].boss.racerId)!;
       expect(run.bossRacer(own).id).not.toBe(own.id);
       expect(run.bossRacer(own).name).toBe(ACTS[act].boss.name);
@@ -113,12 +121,9 @@ describe('story run', () => {
   });
 
   it('builds every generated story track', () => {
-    const run = new StoryRun(9);
-    while (!run.finished) {
-      const g = run.race.gen;
+    clearAll(new StoryRun(9), (r) => {
+      const g = r.race.gen;
       if (g) expect(generateTrack(g).name).toBeTruthy();
-      run.record(1, run.race.boss ? 2 : null);
-      if (run.offer.length) run.take(run.offer[0]);
-    }
+    });
   });
 });

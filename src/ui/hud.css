@@ -708,6 +708,24 @@ body.touch-mode .hud-help {
   opacity: 0.85;
 }
 
+/* Story mode's skill games: a canvas over the whole game. */
+.skill {
+  position: fixed;
+  inset: 0;
+  display: none;
+  touch-action: none;
+}
+
+.skill.show {
+  display: block;
+}
+
+.skill canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
 /* Short screens: the bio and the key hint go before anything scrolls. */
 @media (max-height: 560px) {
   .menu-bio,

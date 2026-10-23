@@ -1,3 +1,4 @@
+import { SKILLS } from '../core/skills';
 import { BOONS, CLEAR_PLACE, type StoryRun } from '../core/story';
 import type { RacerDef } from '../physics/racers';
 
@@ -84,15 +85,15 @@ function esc(s: string): string {
   return s.replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`);
 }
 
-export type StoryPhase = 'chapter' | 'boss' | 'boon' | 'failed' | 'over' | 'won';
+export type StoryPhase = 'chapter' | 'skill' | 'boss' | 'boon' | 'failed' | 'over' | 'won';
 
 /** Lives as hearts, for the cards and the race intro. */
 export function hearts(lives: number): string {
   return '\u2665'.repeat(Math.max(0, lives));
 }
 
-/** The card for where a run is: what it says and what can be picked. */
-export function storyCard(run: StoryRun, phase: StoryPhase, player: RacerDef): StoryCard {
+/** The card for where a run is: what it says and what can be picked. `note` is how the last stage went. */
+export function storyCard(run: StoryRun, phase: StoryPhase, player: RacerDef, note = ''): StoryCard {
   const act = run.actDef;
   const race = run.race;
   const kicker = `${act.chapter} · ${hearts(run.lives)}`;
@@ -102,18 +103,23 @@ export function storyCard(run: StoryRun, phase: StoryPhase, player: RacerDef): S
     { id: 'again', name: 'Loop again', blurb: 'A new run from Chapter I, with the same racer' },
     { id: 'menu', name: 'Back to the picker', blurb: 'Leave the loop for now' },
   ];
+  const lead = (text: string) => (note ? `${note}. ${text}` : text);
   switch (phase) {
     case 'chapter':
-      return { kicker, title: act.title, body: act.intro, opts: go('Begin', `Two races, then the boss. Finish in the top ${CLEAR_PLACE} to go on; a miss costs a life.`), footer };
+      return { kicker, title: act.title, body: act.intro, opts: go('Begin', `Two races, a skill game, then the boss one on one. Finish each race in the top ${CLEAR_PLACE}.`), footer };
+    case 'skill': {
+      const k = SKILLS[race.skill!];
+      return { kicker: `${act.chapter} · Skill game · ${hearts(run.lives)}`, title: k.name, body: k.intro, opts: go('Play', k.howTo), footer };
+    }
     case 'boss': {
       const boss = run.bossRacer(player);
-      return { kicker: `${act.chapter} · Boss · ${hearts(run.lives)}`, title: boss.name, body: act.boss.taunt, opts: go('Race', `Beat ${boss.name} to the line, in the top ${CLEAR_PLACE}`), footer };
+      return { kicker: `${act.chapter} · Boss · ${hearts(run.lives)}`, title: boss.name, body: act.boss.taunt, opts: go('Race', `One on one: beat ${boss.name} to the line`), footer };
     }
     case 'boon':
       return {
         kicker: `Cleared! · ${hearts(run.lives)}`,
         title: 'Take a boon',
-        body: race.index === 0 ? `${act.chapter} begins: ${act.title}. Something to carry in.` : 'The loop gives something back. Take one with you.',
+        body: lead(race.index === 0 ? `${act.chapter} begins: ${act.title}. Something to carry in.` : 'The loop gives something back. Take one with you.'),
         opts: run.offer.map((b) => ({ id: b, name: BOONS[b].name, blurb: BOONS[b].text })),
         footer,
       };
@@ -121,15 +127,15 @@ export function storyCard(run: StoryRun, phase: StoryPhase, player: RacerDef): S
       return {
         kicker,
         title: 'The loop bends back',
-        body: `A life gone. ${race.boss ? `${run.bossRacer(player).name} waits at the line again.` : 'The road shifts under you and the race runs again somewhere new.'}`,
+        body: lead(`Planet B takes the hit. ${race.boss ? `${run.bossRacer(player).name} waits at the line again.` : race.skill ? 'Have another go.' : 'Back to the line: the race starts over.'}`),
         opts: go('Try again', `${run.lives} ${run.lives === 1 ? 'life' : 'lives'} left`),
         footer,
       };
     case 'over':
       return {
-        kicker: `${act.chapter} · ${race.boss ? 'Boss' : `Race ${race.index + 1}`}`,
+        kicker: `${act.chapter} · ${race.boss ? 'Boss' : race.skill ? SKILLS[race.skill].name : `Race ${race.index + 1}`}`,
         title: 'The loop begins again',
-        body: `Out of lives in ${act.title}, ${run.cleared} ${run.cleared === 1 ? 'race' : 'races'} into the loop. Nonagon Infinity never ends: the door opens once more, and you are back at the start.`,
+        body: lead(`Out of lives in ${act.title}, ${run.cleared} ${run.cleared === 1 ? 'stage' : 'stages'} into the loop. Nonagon Infinity never ends: the door opens once more, and you are back at the start.`),
         opts: ends,
         footer,
       };
