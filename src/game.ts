@@ -30,7 +30,7 @@ import type { Effect, RoomStart } from './net/protocol';
 import type { RoomClient } from './net/room';
 import { GrandPrix } from './core/grandPrix';
 import { CLEAR_PLACE, RACES_PER_ACT, StoryRun, type BoonId } from './core/story';
-import { StoryScreen, storyCard, type StoryPhase } from './ui/storyScreen';
+import { StoryScreen, hearts, storyCard, type StoryPhase } from './ui/storyScreen';
 import { Race, TOUCH_CPU_PACE, ordinal, type RaceKart } from './core/race';
 import { ASSIST_NORMAL, ASSIST_TOUCH } from './physics/steerAssist';
 import { DRIFT_TIERS, PHYSICS_VERSION, copyKartState, createKartState, driftTier, respawnKart, type KartState, type StepEvents } from './physics/kart';
@@ -1021,15 +1021,15 @@ function finishRace(p: RaceKart): void {
  */
 function finishStoryRace(p: RaceKart): void {
   const boss = storyBoss;
-  const parts = [story!.passes(p.position, boss?.position ?? null) ? 'CLEARED!' : boss && boss.position < p.position ? `${boss.racer.name} beat you: the loop ends` : `Top ${CLEAR_PLACE} needed: the loop ends`];
+  const parts = [story!.passes(p.position, boss?.position ?? null) ? 'CLEARED!' : boss && boss.position < p.position ? `${boss.racer.name} beat you: a life lost` : `Top ${CLEAR_PLACE} needed: a life lost`];
   if (style) parts.push(style.summary());
   trialNote = parts.join(' · ');
 }
 
-/** The race intro's line in story mode: the chapter, and the race or the boss. */
+/** The race intro's line in story mode: the chapter, the race or the boss, the lives. */
 function storyIntro(run: StoryRun): string {
   const r = run.race;
-  return `${run.actDef.chapter} · ${r.boss ? `Boss: ${run.bossRacer(choice.racer).name}` : `Race ${r.index + 1} of ${RACES_PER_ACT}`}`;
+  return `${run.actDef.chapter} · ${r.boss ? `Boss: ${run.bossRacer(choice.racer).name}` : `Race ${r.index + 1} of ${RACES_PER_ACT}`} · ${hearts(run.lives)}`;
 }
 
 /** A story race's track: a new one in the chapter's worlds, or the boss's own. */
@@ -1738,7 +1738,7 @@ hud.onPauseAction = (action) => {
   } else if (action === 'restart') {
     // An online race runs on the room's clock: no restarts. Offline, ask first: R is next to nothing mid-race.
     if (online || hud.confirmingRestart) return;
-    // A story race is run once: a miss ends the run, so no restarts.
+    // A story race is run once: a miss costs a life, not a restart.
     if (story) return hud.flash('NO RESTARTS IN THE LOOP');
     restartFromPause = loop.paused;
     setPaused(true);

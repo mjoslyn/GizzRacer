@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ACTS, BOON_CHOICES, CLEAR_PLACE, RACES_PER_ACT, StoryRun } from '../src/core/story';
+import { ACTS, BOON_CHOICES, CLEAR_PLACE, RACES_PER_ACT, START_LIVES, StoryRun } from '../src/core/story';
 import { kartParams, RACERS } from '../src/physics/racers';
 import { TRACK_LIST } from '../src/tracks/index';
 import { generateTrack } from '../src/tracks/generator';
@@ -44,13 +44,32 @@ describe('story run', () => {
     expect(run.passes(1, 2)).toBe(true);
   });
 
-  it('one miss ends the run', () => {
+  it('a miss costs a life and runs the race again on a new track, and the last life ends the run', () => {
     const run = new StoryRun(5);
-    expect(run.record(1, null)).toBe('cleared');
-    run.take(run.offer[0]);
-    expect(run.record(CLEAR_PLACE + 1, null)).toBe('over');
+    const first = run.race.gen!;
+    expect(run.record(CLEAR_PLACE + 1, null)).toBe('failed');
+    expect(run.lives).toBe(START_LIVES - 1);
+    expect(run.cleared).toBe(0);
+    expect(run.race.gen!.seed).not.toBe(first.seed);
+    expect(run.record(12, null)).toBe('failed');
+    expect(run.record(12, null)).toBe('over');
     expect(run.finished).toBe(true);
-    expect(run.cleared).toBe(1);
+  });
+
+  it('a retried chapter opener skips its card', () => {
+    const run = new StoryRun(6);
+    expect(run.actStart).toBe(true);
+    run.record(12, null);
+    expect(run.actStart).toBe(false);
+  });
+
+  it('Planet B gives a life instead of a boon', () => {
+    const run = new StoryRun(8);
+    run.record(1, null);
+    run.offer = ['planetB'];
+    run.take('planetB');
+    expect(run.lives).toBe(START_LIVES + 1);
+    expect(run.boons).toEqual([]);
   });
 
   it('offers three different boons after a clear, and takes only one of them', () => {
@@ -58,7 +77,7 @@ describe('story run', () => {
     expect(run.record(1, null)).toBe('cleared');
     expect(run.offer).toHaveLength(BOON_CHOICES);
     expect(new Set(run.offer).size).toBe(BOON_CHOICES);
-    const pick = run.offer[1];
+    const pick = run.offer.find((b) => b !== 'planetB')!;
     run.take(pick);
     expect(run.boons).toEqual([pick]);
     expect(run.offer).toEqual([]);

@@ -6,9 +6,10 @@ import { GEN_COMPLEXITY_MAX, type GenParams, type GenTheme } from '../tracks/gen
 /**
  * Story mode: Murder of the Universe (2017) as a roguelike run. Its three
  * chapters are the acts, each two races on new generated tracks and a
- * boss race on a hand-built one. Clear a race to pick a boon; miss one
- * and the run is over, no second tries. Nonagon Infinity never ends, so a
- * lost run is the loop starting over.
+ * boss race on a hand-built one. Clear a race to pick a boon; miss and a
+ * life goes, and the race is run again on a fresh track. Lives let a run
+ * last long enough to build up its boons. Nonagon Infinity never ends, so
+ * a lost run is the loop starting over.
  */
 
 export interface StoryBoss {
@@ -60,11 +61,12 @@ export const ACTS: readonly StoryAct[] = [
 export const RACES_PER_ACT = 3;
 /** A race is cleared by finishing this high or better; a boss race by beating the boss as well. */
 export const CLEAR_PLACE = 4;
+export const START_LIVES = 3;
 export const BOON_CHOICES = 3;
 /** The CPUs' pace by act, over the difficulty setting's. */
 const ACT_PACE = [1, 1.015, 1.03];
 
-export type BoonId = 'mindFuzz' | 'rattlesnake' | 'gilaHide' | 'sleepDrifter' | 'microtonal' | 'nuclearFusion' | 'figWasps' | 'gammaKnife';
+export type BoonId = 'mindFuzz' | 'rattlesnake' | 'gilaHide' | 'sleepDrifter' | 'microtonal' | 'planetB' | 'nuclearFusion' | 'figWasps' | 'gammaKnife';
 
 export interface Boon {
   name: string;
@@ -77,6 +79,7 @@ export const BOONS: Record<BoonId, Boon> = {
   gilaHide: { name: "Gila Monster's Hide", text: 'Tough as the Gila: +15% weight, so bumps go your way' },
   sleepDrifter: { name: 'Sleep Drifter', text: 'Drift like you are dreaming it: drift sparks charge 20% faster' },
   microtonal: { name: 'Microtonal Tuning', text: 'Tuned a quarter tone sharper: +8% turning, less skid' },
+  planetB: { name: 'Planet B', text: 'There is no Planet B. Here is one anyway: +1 life' },
   nuclearFusion: { name: 'Nuclear Fusion', text: 'Start every race with a Nuclear Fusion in hand' },
   figWasps: { name: 'Big Fig Wasp Nest', text: 'Item boxes lean toward Big Fig Wasps' },
   gammaKnife: { name: 'The Gamma Knife', text: 'Item boxes lean toward the Gamma Knife' },
@@ -95,14 +98,15 @@ export interface StoryRace {
   gen: GenParams | null;
 }
 
-export type StoryOutcome = 'cleared' | 'over' | 'won';
+export type StoryOutcome = 'cleared' | 'failed' | 'over' | 'won';
 
 export class StoryRun {
+  lives = START_LIVES;
   readonly boons: BoonId[] = [];
   /** Races cleared so far: the next race is this one. */
   cleared = 0;
-  /** The run ended on a missed race. */
-  lost = false;
+  /** Tries at the current race, so a retry gets a new track. */
+  tries = 0;
   /** Boons to pick from after a clear, until one is taken. */
   offer: BoonId[] = [];
   private readonly rand: () => number;
@@ -116,7 +120,7 @@ export class StoryRun {
   }
 
   get finished(): boolean {
-    return this.cleared >= this.total || this.lost;
+    return this.cleared >= this.total || this.lives <= 0;
   }
 
   get race(): StoryRace {
@@ -133,7 +137,7 @@ export class StoryRun {
 
   /** The next race opens a chapter (its card shows first). */
   get actStart(): boolean {
-    return this.race.index === 0;
+    return this.race.index === 0 && this.tries === 0;
   }
 
   get pace(): number {
@@ -156,10 +160,12 @@ export class StoryRun {
   /** Scores the race just run and moves the run on. */
   record(place: number, bossPlace: number | null): StoryOutcome {
     if (!this.passes(place, bossPlace)) {
-      this.lost = true;
-      return 'over';
+      this.lives--;
+      this.tries++;
+      return this.lives <= 0 ? 'over' : 'failed';
     }
     this.cleared++;
+    this.tries = 0;
     if (this.cleared >= this.total) return 'won';
     this.offer = this.drawOffer();
     return 'cleared';
@@ -168,7 +174,8 @@ export class StoryRun {
   take(id: BoonId): void {
     if (!this.offer.includes(id)) return;
     this.offer = [];
-    this.boons.push(id);
+    if (id === 'planetB') this.lives++;
+    else this.boons.push(id);
   }
 
   /** How many of a boon the run holds. */
@@ -210,9 +217,9 @@ export class StoryRun {
     return out;
   }
 
-  /** A short track in one of the act's worlds, twistier as the run goes on. */
+  /** A short track in one of the act's worlds, twistier as the run goes on and new on every try. */
   private genParams(act: number, index: number): GenParams {
-    const r = seededRandom(this.seed + act * 7919 + index * 104729);
+    const r = seededRandom(this.seed + act * 7919 + index * 104729 + this.tries * 15485863);
     const themes = ACTS[act].themes;
     return {
       seed: Math.floor(r() * 1e9),
