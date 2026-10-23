@@ -142,21 +142,21 @@ export type HazardDef =
   | { kind: 'dragonFire'; at: number[]; period: number }
   /** Petrodragonic: burning oil dropped from above, left smouldering on the road. */
   | { kind: 'oilBombs'; at: number[]; period: number }
-  /** Hell on Mars: meteors streaking down and smouldering in their craters. */
+  /** Mars for the Rich: meteors streaking down and smouldering in their craters. */
   | { kind: 'meteors'; at: number[]; period: number }
   /** Supercell: hailstones the size of boulders. */
   | { kind: 'hail'; at: number[]; period: number }
-  /** Supercell and Murder of the Universe: a ring of warning, then a bolt where it stood. */
+  /** Supercell and The Lord of Lightning: a ring of warning, then a bolt where it stood. */
   | { kind: 'lightning'; at: number[]; period: number }
   /** Supercell: tornadoes wandering the road, flinging karts round and out. */
   | { kind: 'tornadoes'; from: number; to: number; count: number }
-  /** Murder of the Universe: black holes drifting across the road, dragging karts round and in. */
+  /** The Lord of Lightning: black holes drifting across the road, dragging karts round and in. */
   | { kind: 'blackHoles'; from: number; to: number; count: number }
   /** Phantom Island: ghost lights drifting over the road, buffeting karts round. */
   | { kind: 'wisps'; from: number; to: number; count: number }
-  /** Deadstick Drop: planes with their propellers stopped, gliding in to crash-land on the road. */
+  /** Deadstick: planes with their propellers stopped, gliding in to crash-land on the road. */
   | { kind: 'gliders'; at: number[]; period: number }
-  /** Panpsych Grove: standing stones, awake, shuffling across the road and back. */
+  /** Panpsych: standing stones, awake, shuffling across the road and back. */
   | { kind: 'stones'; from: number; to: number; count: number; period: number }
   /** Sea of Doubt: waves breaking right across the causeway, on a rhythm. */
   | { kind: 'waves'; at: number[]; period: number }

@@ -15,7 +15,7 @@ const CANOPY = 14;
 const HOLLOW_DEPTH = 6;
 
 /**
- * Panpsych Grove (the Phantom Island Cup's third): a forest older than
+ * Panpsych (the Phantom Island Cup's third): a forest older than
  * anyone where everything is awake, after the song that says so. A dirt
  * path through the Heartwood, standing stones shuffling across the road
  * at Humming Stones (two kickers among them), the Root Knot: three
@@ -87,7 +87,7 @@ export function buildPanpsychGrove(): TrackDef {
   const at = (mark: string, d: number) => b.marks[mark].s + d * K;
   return {
     id: 'panpsych-grove',
-    name: 'Panpsych Grove',
+    name: 'Panpsych',
     main,
     branches: [log.branch],
     pits: [...b.pits, ...log.pits],

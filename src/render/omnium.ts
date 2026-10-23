@@ -6,7 +6,7 @@ import * as tex from './textures';
 /**
  * Scenery and landmarks for the Omnium Gatherum Cup's worlds: the glowing
  * mountain (Magenta Mountain), the ocean planet (Kepler-22b), the garden
- * seen from a goblin's height (Goblin Garden) and the primeval coast where
+ * seen from a goblin's height (The Garden Goblin) and the primeval coast where
  * the pliosaur hunts (Predator X).
  */
 
@@ -436,7 +436,7 @@ export function keplerArch(ribbon: Ribbon, s: number, animated: Animated): THREE
   return g;
 }
 
-/** The Goblin Garden's gate: a rose-covered trellis arch, a giant goblin peering round the side of it. */
+/** The Garden Goblin's gate: a rose-covered trellis arch, a giant goblin peering round the side of it. */
 export function goblinGate(ribbon: Ribbon, s: number, animated: Animated): THREE.Group {
   const g = new THREE.Group();
   const f = frameAt(ribbon, s);

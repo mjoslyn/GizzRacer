@@ -9,11 +9,11 @@ No install and no account. It will always be free.
 ## What's in it
 
 - **28 tracks in 7 cups**, plus a Random Cup of four drawn from them, each built around an album or a song
-  - **Nonagon Cup:** Infinite Loop Speedway, Rattlesnake Run, Volcano Fortress, Polygondwanaland Jungle
-  - **Microtonal Cup:** Fishies Lagoon, Ice V Glacier, Cyboogie City, Butterfly 3000 Skyway
-  - **Apocalypse Cup:** Hell on Mars, Supercell, Murder of the Universe, Petrodragonic Apocalypse
-  - **Phantom Island Cup:** Phantom Island, Deadstick Drop, Panpsych Grove, Sea of Doubt
-  - **Omnium Gatherum Cup:** Magenta Mountain, Kepler-22b, Goblin Garden, Predator X
+  - **Nonagon Cup:** Infinite Loop Speedway, Rattlesnake, Magma, Polygondwanaland
+  - **Microtonal Cup:** Fishing for Fishies, Ice V, Cyboogie, Catching Smoke
+  - **Apocalypse Cup:** Mars for the Rich, Supercell, The Lord of Lightning, Dragon
+  - **Phantom Island Cup:** Phantom Island, Deadstick, Panpsych, Sea of Doubt
+  - **Omnium Gatherum Cup:** Magenta Mountain, Kepler-22b, The Garden Goblin, Predator X
   - **Polygondwanaland Cup:** Crumbling Castle (on the N64 castle's layout), The Castle in the Air, Inner Cell, Tetrachromacy
   - **Nonagon Infinity Cup:** Robot Stop, Gamma Knife, People-Vultures, Wah Wah
 - **Roller-coaster tracks:** climbs onto pillared decks, plunges you fly off, canyons sunk into the ground, and a causeway that dives under the lagoon
@@ -78,7 +78,7 @@ On phones, turn the phone sideways. On iPhone, use Share, then Add to Home Scree
 ## Credits
 
 - GizzRacer is an unofficial fan game, made with love for King Gizzard & the Lizard Wizard and their fans
-- The music is written and remixed in [seqbaby](https://playseqbaby.com). The Polygondwanaland Cup, Polygondwanaland Jungle, Omnium Gatherum Cup, Phantom Island Cup, Nonagon Infinity Cup and title remixes are transcribed from the band's own recordings (Polygondwanaland and their live bootlegs), which King Gizzard & the Lizard Wizard released for anyone to use
+- The music is written and remixed in [seqbaby](https://playseqbaby.com). The Polygondwanaland Cup, Polygondwanaland, Omnium Gatherum Cup, Phantom Island Cup, Nonagon Infinity Cup and title remixes are transcribed from the band's own recordings (Polygondwanaland and their live bootlegs), which King Gizzard & the Lizard Wizard released for anyone to use
 - Lettering in Metal Mania by Open Window (SIL Open Font License, `public/fonts/OFL.txt`)
 - Built with [Three.js](https://threejs.org). Online play runs on [PartyKit](https://www.partykit.io) and Cloudflare.
 

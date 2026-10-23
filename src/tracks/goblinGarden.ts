@@ -17,7 +17,7 @@ const TUNNEL_DEPTH = 6;
 const HEDGE = 5;
 
 /**
- * Goblin Garden (the Omnium Gatherum Cup's third): a garden at goblin
+ * The Garden Goblin (the Omnium Gatherum Cup's third): a garden at goblin
  * size, after The Garden Goblin. Paving through the Garden Gate, goblins
  * scurrying across the Rose Beds (two kickers among them), the Trellis:
  * three quarters of a turn up a rose trellis and over the path you came in
@@ -84,7 +84,7 @@ export function buildGoblinGarden(): TrackDef {
   const at = (mark: string, d: number) => b.marks[mark].s + d * K;
   return {
     id: 'goblin-garden',
-    name: 'Goblin Garden',
+    name: 'The Garden Goblin',
     main,
     branches: [hole.branch],
     pits: [...b.pits, ...hole.pits],

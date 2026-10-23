@@ -16,7 +16,7 @@ const COIL_Y = 14;
 const VALLEY_Y = -6;
 
 /**
- * Rattlesnake Run greybox (spec section 7). Seen from above the course is a
+ * Rattlesnake greybox (spec section 7). Seen from above the course is a
  * coiled snake: a straight tail, serpentine S-bends, a narrow canyon, a
  * double-spiral coil, the long Sleep Drifter straight, round Billabong
  * Valley, then a leap over a dry riverbed back to the line.
@@ -66,7 +66,7 @@ export function buildRattlesnakeRun(): TrackDef {
 
   return {
     id: 'rattlesnake-run',
-    name: 'Rattlesnake Run',
+    name: 'Rattlesnake',
     main,
     branches: [shortcut.branch],
     pits: [...b.pits, ...shortcut.pits],

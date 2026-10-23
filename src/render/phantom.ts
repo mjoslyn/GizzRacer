@@ -5,8 +5,8 @@ import * as tex from './textures';
 
 /**
  * Scenery and landmarks for the Phantom Island Cup's worlds: the island in
- * the mist (Phantom Island), the cliff-top airfield (Deadstick Drop), the
- * forest that is awake (Panpsych Grove) and the black sea at night (Sea of
+ * the mist (Phantom Island), the cliff-top airfield (Deadstick), the
+ * forest that is awake (Panpsych) and the black sea at night (Sea of
  * Doubt).
  */
 
@@ -235,7 +235,7 @@ function plane(body: THREE.Material, wing: THREE.Material, prop: THREE.Material,
   return { group: g, propeller };
 }
 
-/** Deadstick Drop: hangars, planes parked and planes on floats, windsocks, a control tower, fuel tanks, and a cardboard plane that didn't make it. */
+/** Deadstick: hangars, planes parked and planes on floats, windsocks, a control tower, fuel tanks, and a cardboard plane that didn't make it. */
 export function airstripFeature(animated: Animated): Feature {
   const tin = new THREE.MeshLambertMaterial({ map: tex.corrugatedTexture(), side: THREE.DoubleSide });
   const white = lambert(0xf4f4f0);
@@ -331,7 +331,7 @@ export function airstripFeature(animated: Animated): Feature {
   return (x, z, rand) => pick(rand, [[0.8, hangar], [2.2, parked], [1.4, windsock], [0.5, tower], [0.8, tanks], [0.9, crashed]])(x, z, rand);
 }
 
-/** Panpsych Grove: great trees with faces, humming stones that glow, mushrooms that light up, ferns and drifting pollen. Everything is watching. */
+/** Panpsych: great trees with faces, humming stones that glow, mushrooms that light up, ferns and drifting pollen. Everything is watching. */
 export function groveFeature(animated: Animated): Feature {
   const bark = new THREE.MeshLambertMaterial({ map: tex.woodTexture(), color: 0x7a5a3a });
   const leafs = [0x2e6a2a, 0x4a8a30, 0x6a9a2a, 0x8a7a20].map((c) => lambert(c, { flatShading: true }));
@@ -561,7 +561,7 @@ export function phantomArch(ribbon: Ribbon, s: number, animated: Animated): THRE
   return g;
 }
 
-/** Deadstick Drop's gate: two control towers and a plane hung between them, its propeller winding down to a stop, then coughing back to life. */
+/** Deadstick's gate: two control towers and a plane hung between them, its propeller winding down to a stop, then coughing back to life. */
 export function runwayGate(ribbon: Ribbon, s: number, animated: Animated): THREE.Group {
   const g = new THREE.Group();
   const f = frameAt(ribbon, s);
@@ -600,7 +600,7 @@ export function runwayGate(ribbon: Ribbon, s: number, animated: Animated): THREE
   return g;
 }
 
-/** Panpsych Grove's gate: two great trees leaning in over the road until their crowns meet, a face in each trunk watching you through. */
+/** Panpsych's gate: two great trees leaning in over the road until their crowns meet, a face in each trunk watching you through. */
 export function treeGate(ribbon: Ribbon, s: number, animated: Animated): THREE.Group {
   const g = new THREE.Group();
   const f = frameAt(ribbon, s);
@@ -673,7 +673,7 @@ export function wreckGate(ribbon: Ribbon, s: number, animated: Animated): THREE.
 }
 
 /**
- * The World Tree, in the middle of Panpsych Grove's Root Knot: a trunk as
+ * The World Tree, in the middle of Panpsych's Root Knot: a trunk as
  * wide as a house with the road wound round it, roots spreading out over
  * the ground, a crown over the whole knot, and a face in the bark with eyes
  * that follow the karts round.

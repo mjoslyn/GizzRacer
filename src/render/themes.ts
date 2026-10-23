@@ -168,7 +168,7 @@ export const THEMES: Record<ThemeId, Theme> = {
     dust: 0xffffff,
     barrier: { map: tex.rainbowTexture, crawl: true },
   },
-  // Petrodragonic Apocalypse: a black sky choked with smoke over a burning oil field, a blood-red sun low on the horizon.
+  // Dragon: a black sky choked with smoke over a burning oil field, a blood-red sun low on the horizon.
   petro: {
     sky: { zenith: '#030102', high: '#140405', low: '#3a0a06', horizon: '#c8341a', below: '#1a0604', ground: '#080303', cloud: '40,22,20', clouds: 48 },
     fog: { color: 0x3a120c, near: 110, far: 520 },
@@ -186,7 +186,7 @@ export const THEMES: Record<ThemeId, Theme> = {
     barrier: { map: tex.rustTexture, crawl: false },
     roadGlow: 0.35,
   },
-  // Hell on Mars: a red planet gone wrong, the sky the colour of rust and blood, the colony burning.
+  // Mars for the Rich: a red planet gone wrong, the sky the colour of rust and blood, the colony burning.
   mars: {
     sky: { zenith: '#2a0806', high: '#6a1e10', low: '#b8502c', horizon: '#f0a06a', below: '#8a3a20', ground: '#5a2414', cloud: '200,110,80', clouds: 14 },
     fog: { color: 0xb0583a, near: 120, far: 640 },
@@ -221,7 +221,7 @@ export const THEMES: Record<ThemeId, Theme> = {
     barrier: { map: () => tex.stoneTexture([90, 96, 92], [160, 168, 160]), crawl: false },
     storm: true,
   },
-  // Murder of the Universe: a road of starlight over nothing, planets hanging dead, the cyborg's eye watching.
+  // The Lord of Lightning: a road of starlight over nothing, planets hanging dead, the cyborg's eye watching.
   void: {
     sky: { zenith: '#000003', high: '#05021a', low: '#180640', horizon: '#7a1aa8', below: '#05020e', ground: '#020108', cloud: '90,40,150', clouds: 8 },
     fog: { color: 0x0c0420, near: 160, far: 900 },
@@ -255,7 +255,7 @@ export const THEMES: Record<ThemeId, Theme> = {
     dust: 0xc8d0e8,
     barrier: { map: () => tex.stoneTexture([80, 84, 100], [150, 156, 178]), crawl: false },
   },
-  // Deadstick Drop: a cliff-top airfield on a bright windy day, the sea far below, seaplanes and a stopped propeller.
+  // Deadstick: a cliff-top airfield on a bright windy day, the sea far below, seaplanes and a stopped propeller.
   airfield: {
     sky: { zenith: '#1a5ad0', high: '#3c86ec', low: '#9ccaf8', horizon: '#f4f8ff', below: '#7aa8c8', ground: '#4a7a3a', cloud: '255,255,255', clouds: 40 },
     fog: { color: 0xd8eaff, near: 200, far: 1000 },
@@ -272,7 +272,7 @@ export const THEMES: Record<ThemeId, Theme> = {
     dust: 0xe0dcc8,
     barrier: { map: tex.curbTexture, crawl: false },
   },
-  // Panpsych Grove: a forest older than anyone, every tree and stone in it awake, light coming through it like amber.
+  // Panpsych: a forest older than anyone, every tree and stone in it awake, light coming through it like amber.
   grove: {
     sky: { zenith: '#2a5a4a', high: '#5a8a5a', low: '#c8c070', horizon: '#ffe0a0', below: '#4a6a3a', ground: '#2a3a1a', cloud: '255,240,200', clouds: 22 },
     fog: { color: 0x9aa868, near: 70, far: 480 },

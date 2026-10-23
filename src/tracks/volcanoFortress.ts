@@ -13,7 +13,7 @@ const CUTTING_Y = -6;
 const ITCH_Y = 11;
 
 /**
- * Volcano Fortress (spec section 7, hard): lava switchbacks, a walled
+ * Magma (spec section 7, hard): lava switchbacks, a walled
  * basalt fortress, a rail-less bridge across a lava lake, then the rim of
  * the caldera, with a narrower causeway straight across its lava.
  */
@@ -72,7 +72,7 @@ export function buildVolcanoFortress(): TrackDef {
   const itch = buildHellsItch(b.marks.rimStart, b.marks.rimEnd);
   return {
     id: 'volcano-fortress',
-    name: 'Volcano Fortress',
+    name: 'Magma',
     main,
     branches: [itch.branch],
     pits: [...b.pits, ...itch.pits],

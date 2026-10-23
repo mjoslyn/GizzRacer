@@ -16,7 +16,7 @@ const LANDING = 8;
 const CUTTING_DEPTH = 6;
 
 /**
- * Deadstick Drop (the Phantom Island Cup's second): a cliff-top airfield
+ * Deadstick (the Phantom Island Cup's second): a cliff-top airfield
  * on a bright windy day, after the song where the propeller stops in the
  * air. Down the main runway, out along the Prop Wash with planes coming in
  * on a glide to crash-land on it (two kickers), round the Holding Pattern,
@@ -95,7 +95,7 @@ export function buildDeadstickDrop(): TrackDef {
   const at = (mark: string, d: number) => b.marks[mark].s + d * K;
   return {
     id: 'deadstick-drop',
-    name: 'Deadstick Drop',
+    name: 'Deadstick',
     main,
     branches: [tail.branch],
     pits: [...b.pits, ...tail.pits],

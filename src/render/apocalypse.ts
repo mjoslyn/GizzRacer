@@ -5,8 +5,8 @@ import * as tex from './textures';
 
 /**
  * Scenery and landmarks for the Apocalypse Cup's newer worlds: the burning
- * Mars colony (Hell on Mars), the storm plains (Supercell) and the void
- * (Murder of the Universe), plus the storm's rain and lightning.
+ * Mars colony (Mars for the Rich), the storm plains (Supercell) and the void
+ * (The Lord of Lightning), plus the storm's rain and lightning.
  */
 
 export type Feature = (x: number, z: number, rand: () => number) => THREE.Object3D;
@@ -42,7 +42,7 @@ function fire(parent: THREE.Object3D, animated: Animated, map: THREE.Texture, y:
   return s;
 }
 
-/** Hell on Mars: the colony, overrun and burning. Domes, habs, a crashed rocket, wrecked rovers, dishes, solar arrays, hoodoos, craters. */
+/** Mars for the Rich: the colony, overrun and burning. Domes, habs, a crashed rocket, wrecked rovers, dishes, solar arrays, hoodoos, craters. */
 export function colonyFeature(rockMat: THREE.Material, animated: Animated): Feature {
   const steel = new THREE.MeshLambertMaterial({ map: tex.corrugatedTexture() });
   const white = lambert(0xe8e4e0);
@@ -375,7 +375,7 @@ export function plainsFeature(animated: Animated): Feature {
   return (x, z, rand) => pick(rand, [[1, house], [0.8, grainSilo], [1.2, windpump], [1.2, poles], [1.6, bales], [3, tree], [1.2, roofing]])(x, z, rand);
 }
 
-/** Murder of the Universe: things floating in the void. Asteroids, ringed planets, crystals, cyborg heads, watching eyes. */
+/** The Lord of Lightning: things floating in the void. Asteroids, ringed planets, crystals, cyborg heads, watching eyes. */
 export function cosmosFeature(rockMat: THREE.Material, animated: Animated): Feature {
   const chrome = new THREE.MeshPhongMaterial({ color: 0xb8bcc8, shininess: 140, specular: 0xffffff });
   const eyeRed = new THREE.MeshBasicMaterial({ color: 0xff2a3a });

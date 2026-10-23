@@ -12,7 +12,7 @@ const BUMP_R = 18;
 const BUMP_DEG = 80;
 
 /**
- * Cyboogie City (circuit 2, medium): Han-Tyumi's neon downtown at night.
+ * Cyboogie (circuit 2, medium): Han-Tyumi's neon downtown at night.
  * A walled boulevard, a tight alley chicane, an elevated freeway that
  * climbs into a coaster skyway between the towers and plunges back to the
  * street, and laser gates that fire on the beat in a sunken underpass.
@@ -72,7 +72,7 @@ export function buildCyboogieCity(): TrackDef {
   const munt = buildMuntMachine(b.marks.robotStop, b.marks.robotStopEnd);
   return {
     id: 'cyboogie-city',
-    name: 'Cyboogie City',
+    name: 'Cyboogie',
     main,
     branches: [munt.branch],
     pits: [...b.pits, ...munt.pits],

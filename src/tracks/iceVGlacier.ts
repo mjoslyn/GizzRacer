@@ -7,7 +7,7 @@ const START: Pose = { x: -35 * K, z: 155 * K, h: Math.PI / 2 };
 const FINISH = 60;
 
 /**
- * Ice V Glacier (circuit 2, medium): a sheet-ice shelf that slides karts
+ * Ice V (circuit 2, medium): a sheet-ice shelf that slides karts
  * wide as it climbs the glacier, a plunge off its snout, a crevasse jump,
  * icy hairpins down in a canyon, and a frozen lake where blocks of ice
  * skate across the road.
@@ -71,7 +71,7 @@ export function buildIceVGlacier(): TrackDef {
   const mycelium = buildMycelium(b.marks.chicane, b.marks.chicaneEnd);
   return {
     id: 'ice-v-glacier',
-    name: 'Ice V Glacier',
+    name: 'Ice V',
     main,
     branches: [mycelium.branch],
     pits: [...b.pits, ...mycelium.pits],
