@@ -63,7 +63,7 @@ export type MenuStep = 'mode' | 'track' | 'racer' | 'engine';
 const STEP_TITLES: Record<MenuStep, string> = { mode: 'CHOOSE A MODE', track: 'PICK A TRACK', racer: 'PICK A RACER', engine: 'PICK A SPEED' };
 const MODE_BLURBS: Record<RaceMode, string> = {
   grandPrix: 'Four races for the cup, points across them, rivals who want it too',
-  story: 'Murder of the Universe in three chapters: three lives, a boon for every race won, a boss at each chapter\'s end',
+  story: 'Murder of the Universe in three chapters: a boon for every race won, a boss at each chapter\'s end, and one miss ends the run',
   single: 'One track, a full field, items on',
   timeTrial: 'Alone against the clock, the ghosts and the leaderboard',
   generator: 'A track made on the spot: the daily, your saved ones, or a new roll',
