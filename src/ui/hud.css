@@ -612,8 +612,8 @@ body.touch-mode .hud-help {
   flex-direction: column;
   gap: clamp(2px, 0.8vh, 6px);
   padding: 2px 0 2px 4px;
-  flex-shrink: 1;
-  min-height: 0;
+  /* Never squeezed: squeezed, its options spill over the rows under it. The panel scrolls instead. */
+  flex-shrink: 0;
 }
 
 .menu-opts.on {
@@ -2722,8 +2722,12 @@ body[data-mode='menu'] .menu-panel {
 }
 
 .settings-show .settings-select {
-  grid-column: 2 / span 3;
+  grid-column: 2 / span 2;
   width: 100%;
+}
+
+.settings-show .menu-dice {
+  justify-self: center;
 }
 
 /* Watching the CPUs (Infinite, Watch): the race alone, no HUD but the pause menu, and a caption naming who the camera's on. */
@@ -2791,4 +2795,61 @@ body.touch-mode .touch-pad {
 
 body.touch-mode .hud-turn {
   top: 8px;
+}
+
+/* Menu values (the picker's mode, track, racer and dials, its speed list, Settings and the lobby): big solid gold
+   with a heavy outline. The gradient title lettering goes to mud at these sizes under the tape look. */
+.menu-value.hud-big,
+.menu-opt-name.hud-big,
+.lobby-value.hud-big,
+.lobby-title.hud-big,
+.menu-row.small .menu-value.hud-big {
+  background: none;
+  color: #ffe14d;
+  -webkit-text-fill-color: #ffe14d;
+  -webkit-text-stroke: 0;
+  filter: none;
+  text-shadow:
+    2px 0 0 #2a0636, -2px 0 0 #2a0636, 0 2px 0 #2a0636, 0 -2px 0 #2a0636,
+    2px 2px 0 #2a0636, -2px -2px 0 #2a0636, 2px -2px 0 #2a0636, -2px 2px 0 #2a0636,
+    4px 4px 0 rgba(20, 0, 30, 0.85);
+}
+
+.menu-value {
+  font-size: clamp(22px, min(5.4vh, 6.6vw), 34px);
+}
+
+.menu-row.small .menu-value {
+  font-size: clamp(19px, min(4.4vh, 5.4vw), 24px);
+}
+
+.menu-opt-name {
+  font-size: clamp(20px, min(4.4vh, 5.8vw), 30px);
+}
+
+.lobby-value {
+  font-size: 21px;
+}
+
+@media (max-width: 700px), (max-height: 460px) {
+  .settings .lobby-value {
+    font-size: 17px;
+  }
+}
+
+/* The mode's line, kept on short screens where the racer's bio goes. */
+.menu-mode-blurb {
+  font-size: 14px;
+  color: #fff6d0;
+}
+
+/* Settings' Live set dice: a small square at the row's end, not one of Settings' big buttons. */
+.settings .settings-show .menu-dice {
+  width: 40px;
+  height: 36px;
+  min-width: 0;
+  padding: 0 !important;
+  margin: 0;
+  font-size: 18px;
+  line-height: 36px;
 }

@@ -245,7 +245,7 @@ export class SettingsScreen {
     const show = chosenShow(all, settings().liveShow);
     if (!show) return '<div class="lobby-row"><span class="lobby-label">Live set</span><span></span><div class="lobby-value">Loading shows&hellip;</div><span></span></div>';
     return `
-            <div class="lobby-row settings-show"><span class="lobby-label">Live set <button class="menu-dice" data-act="show-random" title="A show at random">&#9860;</button></span>${showSelect(all, show.id, 'settings-select')}</div>`;
+            <div class="lobby-row settings-show"><span class="lobby-label">Live set</span>${showSelect(all, show.id, 'settings-select')}<button class="menu-dice" data-act="show-random" title="A show at random" aria-label="A show at random">&#9860;</button></div>`;
   }
 
   private renderCredits(): void {

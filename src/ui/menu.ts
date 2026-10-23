@@ -356,7 +356,7 @@ export class Menu {
     let body: string;
     if (at === 'mode') {
       // An arrow switcher, as the racer is: the mode, what it is, and where it is in the list.
-      body = line('mode', 'Mode', MODE_NAMES[c.mode], `<div class="menu-bio">${esc(MODE_BLURBS[c.mode])}</div><div class="menu-cup-tracks">${MODES.indexOf(c.mode) + 1} of ${MODES.length}</div>`);
+      body = line('mode', 'Mode', MODE_NAMES[c.mode], `<div class="menu-cup-tracks menu-mode-blurb">${esc(MODE_BLURBS[c.mode])}</div><div class="menu-cup-tracks">${MODES.indexOf(c.mode) + 1} of ${MODES.length}</div>`);
     } else if (at === 'track') {
       if (c.mode === 'grandPrix') {
         title = 'PICK A CUP';
