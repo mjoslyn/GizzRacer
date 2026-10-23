@@ -810,6 +810,142 @@ function skeletonDragon(r: RacerDef): KartModel {
   };
 }
 
+// ---- Lord of Lightning: the beast off Murder of the Universe, surfing his own bolt ----
+// A hunched green thing, slick and lumpy, with a spiral eye, a gaping maw of
+// fangs, drips and spikes hanging off it and long arms reaching ahead on
+// clawed hands; riding a zigzag of lightning that hovers over the road,
+// crackling.
+
+function lordOfLightning(r: RacerDef): KartModel {
+  const body = new THREE.Group();
+  const slime = matte(r.color, { shininess: 70, specular: 0x667744, emissive: 0x0c1404 });
+  const deep = matte(0x3a4a1a, { shininess: 50, specular: 0x334422 });
+  const ochre = matte(0xc8a040, { shininess: 40, specular: 0x554422 });
+  const dark = matte(0x0c0e08);
+  const fang = matte(0xe8e0b8);
+  const bolt = glow(r.accent);
+  const white = glow(0xffffff);
+
+  // The bolt: a flat zigzag, its point forward, glowing, hovering under him.
+  const ride = new THREE.Group();
+  ride.position.y = 0.42;
+  body.add(ride);
+  const zig = new THREE.Shape();
+  const pts: [number, number][] = [[0, 1.5], [0.42, 0.35], [0.12, 0.42], [0.5, -0.6], [0.2, -0.52], [0.36, -1.5], [-0.42, -0.2], [-0.1, -0.28], [-0.48, 0.55], [-0.16, 0.5]];
+  zig.moveTo(...pts[0]);
+  for (const p of pts.slice(1)) zig.lineTo(...p);
+  zig.closePath();
+  // Flat on the road, the shape's y forward.
+  const zigGeo = new THREE.ExtrudeGeometry(zig, { depth: 0.1, bevelEnabled: true, bevelThickness: 0.03, bevelSize: 0.03, bevelSegments: 1 }).rotateX(Math.PI / 2).translate(0, 0.05, 0);
+  put(ride, zigGeo, bolt, [0, 0, 0]);
+  put(ride, zigGeo, white, [0, 0.02, 0], [0, 0, 0], [0.55, 1.3, 0.75]);
+  // Arcs crackling round it: jagged rings that spin flat and fast.
+  const rotors: THREE.Object3D[] = [];
+  for (const [rad, y, n] of [[0.95, -0.02, 13], [0.7, 0.12, 9]] as const) {
+    const arc = new THREE.Group();
+    arc.position.y = y;
+    const ring = Array.from({ length: n * 2 + 1 }, (_, k) => {
+      const a = (k / (n * 2)) * Math.PI * 2;
+      const rr = rad * (k % 2 ? 0.82 : 1.08);
+      return new THREE.Vector3(Math.cos(a) * rr, (k % 3) * 0.04 - 0.04, Math.sin(a) * rr * 1.35);
+    });
+    put(arc, new THREE.TubeGeometry(new THREE.CatmullRomCurve3(ring, true, 'catmullrom', 0), n * 4, 0.012, 4, true), white, [0, 0, 0]);
+    ride.add(arc);
+    rotors.push(arc);
+  }
+  const pads = [glowSprite(ride, [0, 0, 0.6], 1.2, r.accent), glowSprite(ride, [0, 0, -0.6], 1.2, r.accent), glowSprite(ride, [0, -0.2, 0], 1.6, 0xfffbd0)];
+
+  // Him: standing on it, hunched forward. Gnarled legs braced wide.
+  const lord = new THREE.Group();
+  lord.position.y = 0.55;
+  body.add(lord);
+  for (const side of [-1, 1]) {
+    const hip: [number, number, number] = [side * 0.22, 0.55, -0.15];
+    const knee: [number, number, number] = [side * 0.34, 0.25, 0.12];
+    const foot: [number, number, number] = [side * 0.3, 0.0, -0.1];
+    rod(lord, hip, knee, 0.12, slime, 0.09);
+    put(lord, ball(0.11, 10, 8), deep, knee);
+    rod(lord, knee, foot, 0.09, slime, 0.07);
+    put(lord, ball(0.13, 10, 8), deep, foot, [0, 0, 0], [1, 0.45, 1.5]);
+    for (let k = -1; k <= 1; k++) put(lord, cone(0.025, 0.1, 4), dark, [foot[0] + k * 0.06, foot[1], foot[2] + 0.18], [Math.PI / 2, 0, 0]);
+  }
+  // A lumpy, slick torso of swollen growths, leaning into the ride.
+  const torso = new THREE.Group();
+  torso.position.set(0, 0.72, 0);
+  torso.rotation.x = 0.45;
+  lord.add(torso);
+  const lumps: [number, [number, number, number], THREE.Material][] = [
+    [0.36, [0, 0.2, 0], slime], [0.26, [0.18, 0.42, 0.06], slime], [0.24, [-0.2, 0.4, 0.02], deep], [0.2, [0, 0.0, 0.1], ochre],
+    [0.18, [0.26, 0.12, -0.08], deep], [0.17, [-0.25, 0.14, -0.06], slime], [0.15, [0.05, 0.5, -0.18], ochre],
+  ];
+  for (const [rad, at, m] of lumps) put(torso, ball(rad, 14, 10), m, at, [0, 0, 0], [1, 0.9, 0.85]);
+  // Drips and stalactite spikes hanging off it, and a ridge of spikes up the back.
+  for (let k = 0; k < 9; k++) {
+    const a = (k / 9) * Math.PI * 2;
+    put(torso, cone(0.04, 0.22 + (k % 3) * 0.08, 5), k % 2 ? slime : deep, [Math.cos(a) * 0.3, -0.12, Math.sin(a) * 0.22], [Math.PI, 0, 0]);
+  }
+  for (let k = 0; k < 5; k++) put(torso, cone(0.05, 0.2, 5), deep, [0, 0.55 - k * 0.12, -0.3 + k * 0.02], [-0.9, 0, 0]);
+
+  // Long arms reaching ahead, elbows out, big hands with long dark claws.
+  for (const side of [-1, 1]) {
+    const shoulder: [number, number, number] = [side * 0.36, 0.4, 0.05];
+    const elbow: [number, number, number] = [side * 0.62, 0.15, 0.32];
+    const wrist: [number, number, number] = [side * 0.45, 0.1, 0.78];
+    rod(torso, shoulder, elbow, 0.09, slime, 0.07);
+    put(torso, ball(0.085, 10, 8), deep, elbow);
+    rod(torso, elbow, wrist, 0.07, slime, 0.055);
+    put(torso, ball(0.12, 12, 8), slime, wrist, [0, 0, 0], [1.1, 0.6, 1.2]);
+    for (let k = 0; k < 4; k++) {
+      const a = (k - 1.5) * 0.35;
+      const tip: [number, number, number] = [wrist[0] + Math.sin(a) * 0.22 + side * 0.04, wrist[1] - 0.08, wrist[2] + Math.cos(a) * 0.24];
+      rod(torso, wrist, tip, 0.028, slime, 0.02);
+      put(torso, cone(0.022, 0.14, 5), dark, [tip[0], tip[1] - 0.04, tip[2] + 0.05], [Math.PI / 2 + 0.6, 0, 0]);
+    }
+  }
+
+  // The head: a heavy brow over a spiral eye and a smaller one, a gaping maw of fangs, a crown of drips.
+  const head = new THREE.Group();
+  head.position.set(0, 1.42, 0.38);
+  put(head, ball(0.34, 18, 14), slime, [0, 0.05, 0], [0, 0, 0], [1.15, 0.95, 1]);
+  put(head, ball(0.24, 14, 10), deep, [0, 0.22, 0.12], [0, 0, 0], [1.4, 0.5, 1]);
+  // The spiral eye: rings within rings, glowing at the middle.
+  const eye = new THREE.Group();
+  eye.position.set(-0.14, 0.12, 0.28);
+  eye.rotation.y = -0.3;
+  for (let k = 0; k < 4; k++) put(eye, ring(0.04 + k * 0.035, 0.012), k % 2 ? ochre : deep, [0, 0, k * -0.005]);
+  put(eye, ball(0.04, 10, 8), glow(0xf8ff6a), [0, 0, 0.01]);
+  glowSprite(eye, [0, 0, 0.04], 0.3, r.accent);
+  head.add(eye);
+  put(head, ball(0.06, 10, 8), glow(0xf8ff6a), [0.17, 0.14, 0.26]);
+  put(head, ball(0.025, 6, 4), dark, [0.17, 0.14, 0.32]);
+  // The maw: a dark hollow ringed with fangs top and bottom.
+  put(head, ball(0.2, 14, 10), dark, [0, -0.13, 0.22], [0, 0, 0], [1.2, 0.7, 0.6]);
+  for (let k = 0; k < 8; k++) {
+    const x = -0.21 + k * 0.06;
+    put(head, cone(0.025, 0.12, 4), fang, [x, -0.03, 0.3], [Math.PI, 0, 0]);
+    put(head, cone(0.022, 0.1, 4), fang, [x + 0.03, -0.25, 0.28]);
+  }
+  for (let k = 0; k < 7; k++) {
+    const a = (k / 6) * Math.PI;
+    put(head, cone(0.035, 0.18 + (k % 2) * 0.1, 5), k % 2 ? ochre : deep, [Math.cos(a) * 0.3, 0.32 + Math.sin(a) * 0.08, -0.05 - Math.sin(a) * 0.1], [-0.4, 0, (Math.PI / 2 - a) * 0.6]);
+  }
+  lord.add(head);
+
+  return {
+    body,
+    wheels: [],
+    // Sparks off the bolt's tail under boost.
+    exhausts: [new THREE.Vector3(0.36, 0.45, -1.55)],
+    rearTrack: 0.45,
+    rearZ: -1.3,
+    spinners: [],
+    rotors,
+    shadow: [2.0, 3.4],
+    hover: { bob: 0.09, pads },
+    head,
+  };
+}
+
 // ---- Swamp Witch: witch in a fan-driven swamp hovercraft ------------------------
 
 function swampWitch(r: RacerDef): KartModel {
@@ -2684,6 +2820,7 @@ const BUILDERS: Record<string, (r: RacerDef) => KartModel> = {
   'arlo': arlo,
   'flying-pig': flyingPig,
   'skeleton-dragon': skeletonDragon,
+  'lord-of-lightning': lordOfLightning,
 };
 
 export function buildKartModel(racer: RacerDef): KartModel {

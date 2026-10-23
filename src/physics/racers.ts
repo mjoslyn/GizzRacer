@@ -34,6 +34,7 @@ export const RACERS: readonly RacerDef[] = [
   { id: 'arlo', name: 'Arlo', stats: { speed: 3, accel: 4, weight: 2, handling: 4, drift: 3 }, color: 0xd09a62, accent: 0x3a4250, bio: 'An apricot standard poodle, booked on Flight b741 for when pigs fly' },
   { id: 'flying-pig', name: 'Flying Pig', stats: { speed: 3, accel: 4, weight: 3, handling: 3, drift: 3 }, color: 0xf49ab0, accent: 0x2a6ad0, bio: 'Captain of Flight b741, goggles up, scarf out: the day pigs fly is today, and every hog for miles answers the call' },
   { id: 'skeleton-dragon', name: 'Skeleton Dragon', stats: { speed: 4, accel: 3, weight: 2, handling: 3, drift: 4 }, color: 0xece2c8, accent: 0xff6a1a, bio: 'The dragon of the PetroDragonic Apocalypse, picked clean and flying on regardless: horns, bones and a furnace for a heart' },
+  { id: 'lord-of-lightning', name: 'Lord of Lightning', stats: { speed: 5, accel: 2, weight: 3, handling: 2, drift: 4 }, color: 0x8aa83a, accent: 0xfff27a, bio: 'The beast off Murder of the Universe, who sways the storm and rides it: down the road on a bolt of his own lightning' },
   { id: 'octo-organist', name: 'Kraken', stats: { speed: 4, accel: 2, weight: 3, handling: 2, drift: 3 }, color: 0xff7aa8, accent: 0x2ad8b0, bio: 'Up from Open Water at the keys of a steam pipe-organ, dragging sailors under' },
   // The band.
   { id: 'ambrose-kenny-smith', name: 'Amby', stats: { speed: 3, accel: 5, weight: 2, handling: 3, drift: 3 }, color: 0x2a8ad8, accent: 0xff5a3a, bio: 'Harmonica raised, boogie in the blood: Boogieman Sam\'s own' },

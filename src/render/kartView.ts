@@ -60,6 +60,8 @@ const TRICKS: Record<string, TrickMove> = {
   'flying-pig': (u, d) => [-u * TAU, 0, d * Math.sin(u * TAU * 2) * 0.3, Math.sin(u * Math.PI) * 1.3],
   // A wing-over: it banks up, turns right round in the air and drops back down out of it.
   'skeleton-dragon': (u, d) => [-Math.sin(u * Math.PI) * 0.5, d * u * TAU, d * Math.sin(u * TAU) * 0.7, Math.sin(u * Math.PI) * 1.4],
+  // A strike: up, three quick turns on the bolt, and down like the lightning.
+  'lord-of-lightning': (u, d) => [0, d * u * TAU * 3, Math.sin(u * TAU * 3) * 0.15, Math.sin(u * Math.PI) * 1.2],
   // The band. A stage dive, all the way round.
   'stu-mackenzie': (u, d) => [-u * TAU, d * u * TAU, 0, Math.sin(u * Math.PI) * 1.1],
   // A harmonica blast that spins him like a top.
