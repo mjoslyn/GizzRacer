@@ -28,7 +28,7 @@ function controls(touch: boolean): string[] {
       'Drag on the left half of the screen to steer (or turn on tilt in Settings)',
       'Tap anywhere to hop; hold DRIFT through a corner to drift',
       'ITEM fires what you hold; BRAKE slows you, and reverses when stopped',
-      'Gliding? Drag up on the steering pad to climb, down to dive',
+      'Gliding? Drag up on the steering pad to climb, down to dive; steering by tilt, tip the phone back to climb, forward to dive',
     ];
   }
   return [
