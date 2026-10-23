@@ -40,6 +40,28 @@ export const CPU_SKILL: Record<EngineClass, CpuSkill> = {
  * A Grand Prix rival (core/grandPrix.ts): the same class's driver, a
  * touch sharper. Never past the limits a 200cc CPU drives at.
  */
+/** The CPU difficulty setting (Settings > CPUs). */
+export type CpuDifficulty = 'easy' | 'normal' | 'hard';
+export const CPU_DIFFICULTIES: readonly CpuDifficulty[] = ['easy', 'normal', 'hard'];
+
+/**
+ * The CPU difficulty setting, applied over a class's driver: Easy drifts
+ * less and shallower, wanders more and is careless with items; Hard is
+ * sharper on all of it. Pace (Race.cpuPace) is the other half.
+ */
+export function withDifficulty(base: CpuSkill, d: CpuDifficulty): CpuSkill {
+  if (d === 'easy') {
+    return { speedCap: base.speedCap * 0.97, driftChance: base.driftChance * 0.5, maxTier: Math.max(1, base.maxTier - 1), wander: Math.min(1, base.wander * 1.5), itemIq: base.itemIq * 0.5 };
+  }
+  if (d === 'hard') {
+    return { speedCap: 1, driftChance: Math.min(1, base.driftChance + 0.2), maxTier: Math.min(4, base.maxTier + 1), wander: base.wander * 0.6, itemIq: Math.min(1, base.itemIq + 0.2) };
+  }
+  return base;
+}
+
+/** The CPUs' top speed, as a share of their own, by difficulty (Race.cpuPace). */
+export const DIFFICULTY_PACE: Record<CpuDifficulty, number> = { easy: 0.92, normal: 1, hard: 1.03 };
+
 export function rivalSkill(base: CpuSkill): CpuSkill {
   return {
     speedCap: Math.min(1, base.speedCap + 0.025),

@@ -1,3 +1,5 @@
+import type { CpuDifficulty } from '../ai/cpuDriver';
+
 /** Player settings, kept in this browser (Settings screen: ui/settings.ts). */
 export interface Settings {
   /** 0..1 */
@@ -18,6 +20,10 @@ export interface Settings {
   videoLookChosen: boolean;
   /** Smart steering (physics/steerAssist.ts): steers back in from edges and straightens up out of turns. */
   smartSteering: boolean;
+  /** The HUD's next-turn indicator: which way the next bend goes, how sharp, and how far off. */
+  turnIndicator: boolean;
+  /** How hard the CPUs race, offline (ai/cpuDriver.ts `withDifficulty`). */
+  cpuDifficulty: CpuDifficulty;
   /** Graphics detail (render/detail.ts): sun shadows, bump-mapped roads, denser scenery and full resolution, or the flat look at fewer pixels. */
   detail: 'high' | 'medium' | 'low';
   /** The player picked a detail level themselves; until then phones get Low and everything else High. */
@@ -27,7 +33,7 @@ export interface Settings {
 export type VideoLook = 'full' | 'light' | 'off';
 export const VIDEO_LOOKS: readonly VideoLook[] = ['full', 'light', 'off'];
 
-export const DEFAULT_SETTINGS: Settings = { music: 0.6, sfx: 1, tilt: false, tiltRange: 24, tiltInvert: false, autoAccelerate: true, steeringChosen: false, videoLook: 'light', videoLookChosen: false, smartSteering: true, detail: 'high', detailChosen: false };
+export const DEFAULT_SETTINGS: Settings = { music: 0.6, sfx: 1, tilt: false, tiltRange: 24, tiltInvert: false, autoAccelerate: true, steeringChosen: false, videoLook: 'light', videoLookChosen: false, smartSteering: true, turnIndicator: true, cpuDifficulty: 'normal', detail: 'high', detailChosen: false };
 
 /** A phone or tablet: Low detail unless the player says otherwise. */
 function coarseDevice(): boolean {

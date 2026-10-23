@@ -1,3 +1,4 @@
+import { CPU_DIFFICULTIES } from '../ai/cpuDriver';
 import { TILT_RANGES, VIDEO_LOOKS, settings, updateSettings, type Settings } from '../core/settings';
 import { DETAILS, DETAIL_NAMES } from '../render/detail';
 import { creditsHtml } from './credits';
@@ -124,6 +125,17 @@ export class SettingsScreen {
       case 'smart':
         updateSettings({ smartSteering: !s.smartSteering });
         break;
+      case 'cpus': {
+        const i = CPU_DIFFICULTIES.indexOf(s.cpuDifficulty);
+        const next = CPU_DIFFICULTIES[(Math.max(0, i) + dir + CPU_DIFFICULTIES.length) % CPU_DIFFICULTIES.length];
+        updateSettings({ cpuDifficulty: next });
+        this.status = { easy: 'Easy: the CPUs are slower, drift less and are careless with items (from the next race)', normal: 'Normal: the CPUs race as the class says', hard: 'Hard: the CPUs are quicker, drift deeper and save their items for you (from the next race)' }[next];
+        break;
+      }
+      case 'turns':
+        updateSettings({ turnIndicator: !s.turnIndicator });
+        this.status = s.turnIndicator ? 'Turn hints off' : 'Turn hints on: the next bend, which way, how sharp and how far, at the top of the screen';
+        break;
       case 'detail': {
         const i = DETAILS.indexOf(s.detail);
         const next = DETAILS[(Math.max(0, i) + dir + DETAILS.length) % DETAILS.length];
@@ -182,6 +194,8 @@ export class SettingsScreen {
             <div class="lobby-row"><span class="lobby-label">VHS</span>${arrows('look', { full: 'Full', light: 'Light', off: 'Off' }[s.videoLook])}</div>
             <div class="lobby-row"><span class="lobby-label">Throttle</span>${toggle('auto', s.autoAccelerate, s.autoAccelerate ? 'Automatic' : 'Manual')}</div>
             <div class="lobby-row"><span class="lobby-label">Steering</span>${toggle('smart', s.smartSteering, s.smartSteering ? 'Smart' : 'Manual')}</div>
+            <div class="lobby-row"><span class="lobby-label">CPUs</span>${arrows('cpus', { easy: 'Easy', normal: 'Normal', hard: 'Hard' }[s.cpuDifficulty])}</div>
+            <div class="lobby-row"><span class="lobby-label">Turn hints</span>${toggle('turns', s.turnIndicator)}</div>
             <div class="lobby-row"><span class="lobby-label">Detail</span>${arrows('detail', DETAIL_NAMES[s.detail])}</div>
           </div>
           ${

@@ -1,6 +1,6 @@
 import { AUTOPILOT_SKILL, CpuDriver, type CpuSkill, type Obstacle } from '../ai/cpuDriver';
 import { HazardSystem } from '../items/hazards';
-import { assistSteer } from '../physics/steerAssist';
+import { ASSIST_NORMAL, assistSteer, type AssistLevel } from '../physics/steerAssist';
 import { CANNON_FAR, CANNON_FAR_BOOST, CANNON_FAR_FROM, CANNON_MIN_TIME, CANNON_PAST_MAX, CANNON_PAST_MIN, CANNON_SPEED_MUL, CANNON_SPIN, CANNON_TIME, ItemSystem, SIGNATURE_ITEMS, type ItemEvent, type ItemHolder, type ItemKind } from '../items/items';
 import { NEUTRAL_INPUT, type InputFrame } from './inputFrame';
 import { seededRandom } from './math';
@@ -31,6 +31,8 @@ const RUBBER_BAND_RANGE = 250;
  * room runs the race for everyone and has no player to lean toward.
  */
 export const DRAG_MAX = 0.04;
+/** The CPUs' pace against a player on touch controls: a little slower, since a thumb on glass steers less finely than a stick. */
+export const TOUCH_CPU_PACE = 0.93;
 const DRAG_RANGE = 150;
 const FALL_DEPTH = -2;
 const BUMP_RESTITUTION = 0.4;
@@ -123,6 +125,8 @@ export class RaceKart implements ItemHolder {
   remote = false;
   /** A player with smart steering on (physics/steerAssist.ts). */
   assist = false;
+  /** How firmly smart steering helps (physics/steerAssist.ts): firmer on touch. */
+  assistLevel: AssistLevel = ASSIST_NORMAL;
   /** A Grand Prix rival: named on the HUD, a touch sharper to drive against. */
   rival = false;
   /** The branch (shortcut) it's on, -1 for the main road; and the last branch it was on, for noticing a new one. */
@@ -219,6 +223,11 @@ export class Race {
   remoteItems = false;
   /** The player's kart, for the CPUs ahead to hold back from (rubberBand); null in attract mode and online. */
   focus: RaceKart | null = null;
+  /**
+   * The CPUs' top speed as a share of their own, while racing the focus:
+   * below 1 for a player on touch, where steering is harder (TOUCH_CPU_PACE).
+   */
+  cpuPace = 1;
   private readonly obstacles: Obstacle[] = [];
   /** Karts knocked aside by a Woo Cannon this step, reported with the item events. */
   private readonly cannonHits: ItemEvent[] = [];
@@ -283,7 +292,7 @@ export class Race {
       }
       const d = kart.driver;
       let input = (d ? d.drive(kart.state, kart.params, kart.progressS, this.track, states, this.obstacles, dt) : humanInputs[i]) ?? NEUTRAL_INPUT;
-      if (!d && kart.assist) input = assistSteer(input, kart.state, this.track);
+      if (!d && kart.assist) input = assistSteer(input, kart.state, this.track, kart.assistLevel);
       if (d && kart.trickPlan && kart.state.trickWindow > 0) input = { ...input, driftPressed: true };
       kart.trickPlan = false;
       if (d) input = this.items.dodge(kart, input, d);
@@ -435,7 +444,8 @@ export class Race {
       const cpu = k.isCpu && k.finishTime === null;
       const behind = cpu ? Math.min(1, Math.max(0, (lead - k.distance) / RUBBER_BAND_RANGE)) : 0;
       const ahead = cpu && focus && k !== focus ? Math.min(1, Math.max(0, (k.distance - focus.distance) / DRAG_RANGE)) : 0;
-      k.params.topSpeed = k.baseParams.topSpeed * (1 + RUBBER_BAND_MAX * behind - DRAG_MAX * ahead);
+      const pace = cpu && focus ? this.cpuPace : 1;
+      k.params.topSpeed = k.baseParams.topSpeed * pace * (1 + RUBBER_BAND_MAX * behind - DRAG_MAX * ahead);
     }
   }
 

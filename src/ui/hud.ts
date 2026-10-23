@@ -95,6 +95,45 @@ export interface HudData {
   style: { score: number; chain: number } | null;
   /** Time Trial: the gap to the ghost at each checkpoint passed this run. */
   splits: { label: string; gap: number }[];
+  /** The next bend (tracks/turns.ts), as the player sees it (mirrored in Mirror mode); null when there's none to call or the hints are off. */
+  turn: { dir: -1 | 1; angle: number; severity: 1 | 2 | 3 | 4; distance: number } | null;
+}
+
+const TURN_WORDS = ['', 'EASY', 'MEDIUM', 'SHARP', 'HAIRPIN'] as const;
+const TURN_COLORS = ['', '#7dffb0', '#ffe14d', '#ff9a2a', '#ff3a5a'] as const;
+
+/**
+ * A pace note's arrow, as SVG path data in a 100 x 100 box: a short stem up,
+ * then curling `dir` by `angle` degrees (capped at 180), the arrowhead along
+ * the way it ends up pointing. Centred in the box.
+ */
+export function turnArrowPath(dir: -1 | 1, angle: number): { line: string; head: string } {
+  const pts: [number, number][] = [[0, 0]];
+  let x = 0;
+  let y = 0;
+  let h = 0;
+  // The stem.
+  for (let k = 0; k < 4; k++) pts.push([x, (y -= 6)]);
+  const turn = (Math.min(180, angle) * Math.PI) / 180;
+  const steps = 18;
+  const ds = 46 / steps;
+  for (let k = 0; k < steps; k++) {
+    h += (dir * turn) / steps;
+    x += Math.sin(h) * ds;
+    y -= Math.cos(h) * ds;
+    pts.push([x, y]);
+  }
+  const fx = Math.sin(h);
+  const fy = -Math.cos(h);
+  const tip: [number, number] = [x + fx * 12, y + fy * 12];
+  const wing = (side: number): [number, number] => [x - fy * side * 11, y + fx * side * 11];
+  const all = [...pts, tip, wing(1), wing(-1)];
+  const xs = all.map((p) => p[0]);
+  const ys = all.map((p) => p[1]);
+  const ox = 50 - (Math.min(...xs) + Math.max(...xs)) / 2;
+  const oy = 50 - (Math.min(...ys) + Math.max(...ys)) / 2;
+  const f = (p: [number, number]) => `${(p[0] + ox).toFixed(1)} ${(p[1] + oy).toFixed(1)}`;
+  return { line: `M${pts.map(f).join(' L')}`, head: `M${f(wing(1))} L${f(tip)} L${f(wing(-1))} Z` };
 }
 
 /** Who hit whom with what, for the callout feed. */
@@ -141,6 +180,8 @@ export class Hud {
   private readonly styleEl: HTMLElement;
   private readonly splitsEl: HTMLElement;
   private lastSplits = '';
+  /** The turn last drawn, so the arrow is only redrawn when it changes. */
+  private lastTurn = '';
   private readonly itemImg: HTMLImageElement;
   private readonly itemName: HTMLElement;
   private readonly flashEl: HTMLElement;
@@ -170,6 +211,7 @@ export class Hud {
         <div class="hud-callouts"></div>
       </div>
       <div class="hud-tr"><div class="hud-racer"></div></div>
+      <div class="hud-turn"><svg viewBox="0 0 100 100"><path class="hud-turn-line" /><path class="hud-turn-head" /></svg><div class="hud-turn-word"></div><div class="hud-turn-dist"></div></div>
       <div class="hud-item"><img alt="" /><div class="hud-item-name"></div><div class="hud-spare"><img alt="" /></div></div>
       <div class="hud-warn"><div class="hud-warn-text hud-big">NONAGON INFINITY!</div><div class="hud-warn-bar"><i></i></div><div class="hud-warn-hop hud-big">HOP!</div></div>
       <div class="hud-flash hud-big"></div>
@@ -327,6 +369,7 @@ export class Hud {
       this.splitsEl.innerHTML = splits;
     }
     this.updateStyle(d);
+    this.updateTurn(d);
     this.speed.innerHTML = `${Math.round(Math.abs(k.speed) * 3.6)}<small>km/h</small>`;
     this.surface.innerHTML = k.boostTime > 0 ? '<span class="hud-boost">BOOST!</span>' : k.surface;
     this.racer.innerHTML = `${d.trackName}<br />${d.racerName} &middot; ${d.engineClass}${d.autoAccelerate ? '' : ' &middot; manual'}${d.muted ? ' &middot; music off' : ''}${d.sfxMuted ? ' &middot; sfx off' : ''}`;
@@ -385,6 +428,32 @@ export class Hud {
   }
 
   /** The running style score under the laps: the score and the chain, nothing popping. */
+  /** The next-turn card: the arrow curled the way the bend goes, how sharp in words and colour, and how far off. */
+  private updateTurn(d: HudData): void {
+    const el = this.el.querySelector<HTMLElement>('.hud-turn')!;
+    const t = d.turn;
+    el.classList.toggle('show', !!t);
+    if (!t) return;
+    // Distance in tens of metres, NOW once it's on you.
+    const dist = t.distance < 15 ? 'NOW' : `${Math.round(t.distance / 10) * 10}m`;
+    const key = `${t.dir}:${t.angle}:${t.severity}:${dist}`;
+    if (key === this.lastTurn) return;
+    const arrowChanged = !this.lastTurn.startsWith(`${t.dir}:${t.angle}:${t.severity}:`);
+    this.lastTurn = key;
+    if (arrowChanged) {
+      const { line, head } = turnArrowPath(t.dir, t.angle);
+      el.querySelector('.hud-turn-line')!.setAttribute('d', line);
+      el.querySelector('.hud-turn-head')!.setAttribute('d', head);
+      el.style.setProperty('--turn', TURN_COLORS[t.severity]);
+      el.querySelector('.hud-turn-word')!.textContent = `${TURN_WORDS[t.severity]} ${t.dir < 0 ? 'LEFT' : 'RIGHT'}`;
+      el.classList.remove('pop');
+      void el.offsetWidth;
+      el.classList.add('pop');
+    }
+    el.querySelector('.hud-turn-dist')!.textContent = dist;
+    el.classList.toggle('now', dist === 'NOW');
+  }
+
   private updateStyle(d: HudData): void {
     const st = d.style;
     this.styleEl.classList.toggle('show', !!st && st.score > 0);

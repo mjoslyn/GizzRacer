@@ -65,7 +65,11 @@ No install and no account. It will always be free.
 - **Nonagon Infinity:** hop as it reaches you to ride over it. The warning's bar fills as it closes, and says HOP when it's time.
 - **Random racer:** press R on the picker, or the dice beside the racer. In Single Race, T (or the dice beside the track) picks a random track. The picker is one choice to a screen: mode, track or cup, racer, speed; Enter goes on, Backspace back, and the crumbs along the top jump anywhere.
 
-Smart Steering is on by default. It steers you back from edges and straightens you up out of turns, and you can always steer through it. Turn it off under Settings > Steering.
+Smart Steering is on by default. It steers you back from edges and straightens you up out of turns, and you can always steer through it. On touch it holds on firmer, and the CPUs race a little slower. Turn it off under Settings > Steering.
+
+**Turn hints** (on by default, Settings > Turn hints): a card at the top of the screen calls the next bend, an arrow curled the way it goes, how sharp (EASY, MEDIUM, SHARP, HAIRPIN) and how far off.
+
+**CPU difficulty** (Settings > CPUs): Easy, Normal or Hard. Easy CPUs are slower, drift less and are careless with items; Hard ones are quicker and sharper. It applies offline, from the next race.
 
 On phones, turn the phone sideways. On iPhone, use Share, then Add to Home Screen to play full screen.
 

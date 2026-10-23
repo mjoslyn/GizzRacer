@@ -2297,3 +2297,109 @@ button.hud-big {
   font-size: 16px;
   cursor: pointer;
 }
+
+/* The next turn (Settings > Turn hints): an arrow curled the way the bend goes, coloured by how sharp, with how far off.
+   Just right of the item slot, which has the top centre; on touch the slot moves left and this takes the middle. */
+.hud-turn {
+  position: absolute;
+  top: 20px;
+  left: calc(50% + 60px);
+  display: grid;
+  grid-template-columns: 56px auto;
+  grid-template-rows: auto auto;
+  column-gap: 8px;
+  align-items: center;
+  padding: 6px 14px 6px 8px;
+  border-radius: 14px;
+  background: rgba(30, 6, 40, 0.55);
+  box-shadow: 0 0 0 2px var(--turn, #ffe14d);
+  opacity: 0;
+  transition: opacity 0.25s;
+  pointer-events: none;
+}
+
+.hud-turn.show {
+  opacity: 1;
+}
+
+.hud-turn.pop {
+  animation: hud-turn-pop 0.3s ease-out;
+}
+
+.hud-turn svg {
+  grid-row: 1 / span 2;
+  width: 56px;
+  height: 56px;
+}
+
+.hud-turn-line {
+  fill: none;
+  stroke: var(--turn, #ffe14d);
+  stroke-width: 9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(2px 2px 0 #3a0f45);
+}
+
+.hud-turn-head {
+  fill: var(--turn, #ffe14d);
+  stroke: var(--turn, #ffe14d);
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+
+.hud-turn-word {
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  color: var(--turn, #ffe14d);
+  text-shadow: 2px 2px 0 #3a0f45;
+}
+
+.hud-turn-dist {
+  font-size: 20px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  color: #fff6d0;
+  text-shadow: 2px 2px 0 #3a0f45;
+}
+
+.hud-turn.now .hud-turn-dist {
+  color: var(--turn, #ffe14d);
+}
+
+@keyframes hud-turn-pop {
+  from { scale: 1.15; }
+}
+
+body:not([data-mode='race']) .hud-turn,
+body.intro .hud-turn {
+  display: none;
+}
+
+body.touch-mode .hud-turn {
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+@media (max-width: 700px), (max-height: 460px) {
+  .hud-turn {
+    top: 8px;
+    grid-template-columns: 40px auto;
+    padding: 4px 10px 4px 6px;
+  }
+
+  .hud-turn svg {
+    width: 40px;
+    height: 40px;
+  }
+
+  .hud-turn-word {
+    font-size: 12px;
+  }
+
+  .hud-turn-dist {
+    font-size: 15px;
+  }
+}
