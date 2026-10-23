@@ -3,7 +3,7 @@ import { CPU_SKILL } from '../src/ai/cpuDriver';
 import { NEUTRAL_INPUT, type InputFrame } from '../src/core/input';
 import { PHYSICS_DT } from '../src/core/loop';
 import { Race } from '../src/core/race';
-import { GLIDE_SINK, GLIDE_TIME, LAUNCH_SPEED, LAUNCH_VY, TRICK_BOOST, createKartState, stepKart, type DriveEnv, type KartState, type StepEvents } from '../src/physics/kart';
+import { GLIDE_CLIMB, GLIDE_DIVE_TOP, GLIDE_SINK, GLIDE_STALL, GLIDE_TIME, LAUNCH_SPEED, LAUNCH_VY, TRICK_BOOST, createKartState, stepKart, type DriveEnv, type KartState, type StepEvents } from '../src/physics/kart';
 import { RACERS, kartParams } from '../src/physics/racers';
 import { LAUNCHER_LENGTH, launchersFor, planEnrichment } from '../src/tracks/enrich';
 import { generateTrack } from '../src/tracks/generator';
@@ -114,6 +114,43 @@ describe('launchers and gliders', () => {
     const dive = fly(true, tricking((s) => ({ brake: s.glideTime > 0 && s.vy < 0 ? 1 : 0 })));
     expect(dive.maxSink).toBeGreaterThan(GLIDE_SINK * 2);
     expect(dive.landedAt).toBeLessThan(glide.landedAt - 10);
+  });
+
+  it('up climbs, trading speed for height until it stalls; down dives and picks speed up', () => {
+    // Height and speed a second and a half into the glide, by pitch.
+    const at = (pitch: number) => {
+      const s = createKartState(0, -20, 0);
+      s.speed = params.topSpeed;
+      const inp = tricking((k) => ({ pitch: k.glideTime > 0.3 ? pitch : 0 }));
+      // High over the road, so nothing lands it.
+      const env: DriveEnv = { probe: (k) => ({ height: k.z < 6 ? 0 : -50, surface: k.z >= 0 && k.z < 6 ? 'launch' : 'road' }), collide: () => null };
+      let maxVy = -Infinity;
+      for (let t = 0; t < 1.8; t += PHYSICS_DT) {
+        stepKart(s, inp(s), params, env, PHYSICS_DT);
+        if (s.glideTime > 0.6) maxVy = Math.max(maxVy, s.vy);
+      }
+      return { y: s.y, speed: s.speed, maxVy, gliding: s.glideTime > 0 };
+    };
+    const level = at(0);
+    const up = at(1);
+    const down = at(-1);
+    expect(level.gliding && up.gliding && down.gliding).toBe(true);
+    expect(up.y).toBeGreaterThan(level.y + 1.5);
+    expect(up.maxVy).toBeLessThanOrEqual(GLIDE_CLIMB + 1e-6);
+    expect(up.speed).toBeLessThan(level.speed);
+    expect(up.speed).toBeGreaterThanOrEqual(params.topSpeed * GLIDE_STALL - 1e-6);
+    expect(down.y).toBeLessThan(level.y - 3);
+    expect(down.speed).toBeGreaterThan(level.speed);
+    expect(down.speed).toBeLessThanOrEqual(params.topSpeed * GLIDE_DIVE_TOP + 1e-6);
+  });
+
+  it('a stalled glider climbs no more', () => {
+    const s = createKartState(0, 0, 0);
+    Object.assign(s, { grounded: false, y: 20, groundY: -50, vy: -1, glideTime: 0.5, launcher: true, speed: params.topSpeed * GLIDE_STALL });
+    const env: DriveEnv = { probe: () => ({ height: -50, surface: 'road' }), collide: () => null };
+    for (let t = 0; t < 0.5; t += PHYSICS_DT) stepKart(s, { ...GAS, pitch: 1 }, params, env, PHYSICS_DT);
+    expect(s.vy).toBeLessThan(0);
+    expect(s.speed).toBeCloseTo(params.topSpeed * GLIDE_STALL, 5);
   });
 
   it('the glider folds after GLIDE_TIME, high or not', () => {

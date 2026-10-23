@@ -2,6 +2,8 @@ import type { InputManager } from '../core/input';
 
 /** Pixels of horizontal drag for full steering lock. */
 const STEER_RANGE = 70;
+/** Share of a full drag up or down the pad that pitches nothing. */
+const PITCH_SLOP = 0.4;
 /** A touch on the steering side that lets go this quickly, without dragging, is a tap: a hop. */
 const TAP_TIME = 220;
 const TAP_SLOP = 14;
@@ -59,7 +61,8 @@ export class TouchControls {
     });
     zone.addEventListener('pointermove', (e) => {
       if (e.pointerId !== this.steerId) return;
-      this.setSteer((e.clientX - this.steerOrigin) / STEER_RANGE);
+      // Up and down the pad pitch the glider: up climbs, down dives.
+      this.setSteer((e.clientX - this.steerOrigin) / STEER_RANGE, (this.steerStart.y - e.clientY) / STEER_RANGE);
       if (Math.hypot(e.clientX - this.steerStart.x, e.clientY - this.steerStart.y) > TAP_SLOP) this.steerStart.moved = true;
     });
     const release = (e: PointerEvent) => {
@@ -115,14 +118,17 @@ export class TouchControls {
   setVisible(visible: boolean): void {
     this.el.classList.toggle('show', visible && this.enabled);
     if (!visible) {
-      this.input.touch.steer = 0;
+      this.input.touch.steer = this.input.touch.pitch = 0;
       this.input.touch.drift = this.input.touch.brake = this.input.touch.item = false;
     }
   }
 
-  private setSteer(v: number): void {
+  private setSteer(v: number, up = 0): void {
     const steer = Math.max(-1, Math.min(1, v));
+    // A drag meant for steering wanders up and down: only a deliberate one pitches.
+    const pitch = Math.abs(up) < PITCH_SLOP ? 0 : Math.max(-1, Math.min(1, Math.sign(up) * (Math.abs(up) - PITCH_SLOP) / (1 - PITCH_SLOP)));
     this.input.touch.steer = steer;
-    this.knob.style.transform = `translateX(${steer * 40}px)`;
+    this.input.touch.pitch = pitch;
+    this.knob.style.transform = `translate(${steer * 40}px, ${-pitch * 40}px)`;
   }
 }
