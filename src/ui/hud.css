@@ -2397,9 +2397,9 @@ body.intro .hud-turn {
   display: none;
 }
 
-/* Touch: the place and speed have the top centre and the drift meter sits under them, so the card goes under both. */
+/* Touch: the turn card has the top centre (the place and speed are in the lower left). */
 body.touch-mode .hud-turn {
-  top: 84px;
+  top: 8px;
   left: 50%;
   transform: translateX(-50%);
 }
@@ -2763,4 +2763,32 @@ body.watching .hud > :not(.hud-pause):not(.hud-confirm):not(.hud-intro) {
   margin-top: 2px;
   font-size: 11px;
   opacity: 0.75;
+}
+
+/* Touch: the place and speed, and the drift meter over them, in the lower left corner (the steering pad lifted
+   above them); the turn card takes the top centre on its own. Last in the file, so it wins over the touch
+   rules above at every screen size. */
+body.touch-mode .hud-br {
+  left: 14px;
+  right: auto;
+  top: auto;
+  bottom: 6px;
+  transform: none;
+  text-align: left;
+}
+
+body.touch-mode .hud-drift {
+  left: 18px;
+  top: auto;
+  bottom: 46px;
+  width: min(200px, 30vw);
+  transform: skewX(-12deg);
+}
+
+body.touch-mode .touch-pad {
+  bottom: 78px;
+}
+
+body.touch-mode .hud-turn {
+  top: 8px;
 }
