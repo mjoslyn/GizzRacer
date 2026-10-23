@@ -58,6 +58,15 @@ export interface KartModel {
   flappers?: THREE.Object3D[];
   /** Moving-head lights that sweep side to side about their y axis. Built unrotated. */
   sweepers?: THREE.Object3D[];
+  /**
+   * Runners: legs pivoting at the hip, swung forward and back about their y
+   * axis in a gait that quickens with speed; `userData.side` is -1 or 1,
+   * `userData.phase` the leg's place in the stride. `sway` turns with the
+   * stride (a lizard's body snaking), `tail` against it. Built unrotated.
+   */
+  legs?: THREE.Object3D[];
+  sway?: THREE.Object3D;
+  tail?: THREE.Object3D;
 }
 
 let env: THREE.CubeTexture | null = null;
@@ -502,7 +511,7 @@ function cyborgGourmand(r: RacerDef): KartModel {
   };
 }
 
-// ---- Gila Rider: a beaded dragon-gila flying on its own leathery wings ---------
+// ---- Gila Rider: a beaded dragon-gila running on its four sprawled legs ---------
 
 function gilaRider(r: RacerDef): KartModel {
   const body = new THREE.Group();
@@ -511,21 +520,23 @@ function gilaRider(r: RacerDef): KartModel {
   const char = matte(0x1a1718, { shininess: 40, specular: 0x332222 });
   const ember = glow(0xff6a1a);
   const claw = matte(0xd8c8a8);
-  // Leather lit from below by its own fire.
-  const membrane = matte(0x3a1c18, { side: THREE.DoubleSide, emissive: 0x3a0e04, shininess: 20, specular: 0x221010 });
-  // It flies: everything rides a metre off the road.
+  // It runs: low to the road, belly just clear, the legs reaching down to it.
   const gila = new THREE.Group();
-  gila.position.y = 0.95;
+  gila.position.y = 0.46;
   body.add(gila);
 
   // A long, heavy body: chest, belly, haunches, then a fat tail tapering to a blunt tip.
   put(gila, ball(0.42, 20, 14), hide, [0, 0, 0.05], [0, 0, 0], [1.05, 0.7, 1.75]);
   put(gila, ball(0.32, 16, 12), hide, [0, 0.03, 0.68], [0, 0, 0], [1, 0.78, 1.05]);
   put(gila, ball(0.34, 16, 12), hide, [0, -0.01, -0.58], [0, 0, 0], [1.08, 0.78, 1.1]);
+  // The tail hangs off the haunches on its own pivot, so it can lash against the body's sway.
+  const tailRoot = new THREE.Group();
+  tailRoot.position.set(0, 0, -0.8);
+  gila.add(tailRoot);
   const tail: [number, number, number][] = [];
   for (let k = 0; k < 8; k++) {
-    const at: [number, number, number] = [Math.sin(k * 0.55) * 0.07, 0.02 - k * 0.012, -0.88 - k * 0.16];
-    put(gila, ball(0.27 - k * 0.024, 14, 10), hide, at, [0, 0, 0], [1, 0.85, 1.3]);
+    const at: [number, number, number] = [Math.sin(k * 0.55) * 0.07, 0.02 - k * 0.012, -0.08 - k * 0.16];
+    put(tailRoot, ball(0.27 - k * 0.024, 14, 10), hide, at, [0, 0, 0], [1, 0.85, 1.3]);
     tail.push(at);
   }
   // A scalloped ridge of rounded spines down the neck, back and tail: dark plates with a warm rim.
@@ -534,67 +545,35 @@ function gilaRider(r: RacerDef): KartModel {
     put(parent, cyl(size * 1.12, size * 1.12, 0.02, 12), matte(r.color, { emissive: 0x501404 }), [at[0], at[1] - size * 0.08, at[2]], [0, 0, Math.PI / 2], [1, 1, 0.7]);
   };
   for (let k = 0; k < 7; k++) spine(gila, [0, 0.27 - Math.abs(k - 2) * 0.012, 0.6 - k * 0.2], 0.1 - k * 0.004);
-  for (const [k, at] of tail.entries()) if (k % 2 === 0) spine(gila, [at[0], at[1] + 0.2 - k * 0.02, at[2]], 0.075 - k * 0.006);
+  for (const [k, at] of tail.entries()) if (k % 2 === 0) spine(tailRoot, [at[0], at[1] + 0.2 - k * 0.02, at[2]], 0.075 - k * 0.006);
 
-  // Four stubby legs splayed out and tucked back in flight, pale hooked claws.
-  const leg = (hip: [number, number, number], knee: [number, number, number], foot: [number, number, number]) => {
-    rod(gila, hip, knee, 0.1, hide, 0.08);
-    put(gila, ball(0.085, 10, 8), hide, knee);
-    rod(gila, knee, foot, 0.075, hide, 0.065);
-    put(gila, ball(0.09, 10, 8), hide, foot, [0, 0, 0], [1.25, 0.55, 1.3]);
-    const dir = new THREE.Vector3(...foot).sub(new THREE.Vector3(...knee)).setY(0).normalize();
+  // Four stubby legs sprawled out to the sides, elbows high, feet planted on the road with pale hooked claws.
+  // Each hangs from a pivot at its hip so it can swing forward and back.
+  const legs: THREE.Object3D[] = [];
+  const leg = (side: number, hipZ: number, phase: number) => {
+    const pivot = new THREE.Group();
+    pivot.position.set(side * 0.3, -0.06, hipZ);
+    pivot.userData = { side, phase };
+    const knee: [number, number, number] = [side * 0.34, 0.06, 0];
+    const foot: [number, number, number] = [side * 0.42, -0.38, 0.06];
+    rod(pivot, [0, 0, 0], knee, 0.1, hide, 0.08);
+    put(pivot, ball(0.09, 10, 8), hide, knee);
+    rod(pivot, knee, foot, 0.075, hide, 0.065);
+    put(pivot, ball(0.1, 10, 8), hide, foot, [0, 0, 0], [1.25, 0.5, 1.4]);
     for (let k = -2; k <= 2; k++) {
-      const c = put(gila, cone(0.018, 0.09, 5), claw, [foot[0], foot[1] - 0.02, foot[2]]);
-      const d = dir.clone().applyAxisAngle(UP, k * 0.35).setY(-0.25).normalize();
+      const c = put(pivot, cone(0.018, 0.09, 5), claw, [foot[0], foot[1] - 0.02, foot[2]]);
+      const d = new THREE.Vector3(side * 0.3, 0, 1).normalize().applyAxisAngle(UP, k * 0.35).setY(-0.25).normalize();
       c.quaternion.setFromUnitVectors(UP, d);
       c.position.addScaledVector(d, 0.1);
     }
+    gila.add(pivot);
+    legs.push(pivot);
   };
+  // A lizard's trot: the diagonal pairs move together.
   for (const side of [-1, 1]) {
-    leg([side * 0.3, -0.08, 0.6], [side * 0.58, -0.2, 0.55], [side * 0.6, -0.3, 0.22]);
-    leg([side * 0.32, -0.08, -0.55], [side * 0.62, -0.16, -0.62], [side * 0.5, -0.24, -1.02]);
+    leg(side, 0.55, side < 0 ? 0 : Math.PI);
+    leg(side, -0.52, side < 0 ? Math.PI : 0);
   }
-
-  // Great leathery wings from the shoulders: an arm to the wrist, finger bones fanning back,
-  // a scalloped membrane between. Each beats in two hinged halves, the outer riding the inner, so the tips whip.
-  const SPAN = 0.85;
-  const innerShape = new THREE.Shape();
-  innerShape.moveTo(0, 0.2);
-  innerShape.lineTo(SPAN, 0.34);
-  innerShape.lineTo(SPAN, -0.85);
-  innerShape.quadraticCurveTo(SPAN * 0.5, -0.5, 0, -0.62);
-  innerShape.closePath();
-  const outerShape = new THREE.Shape();
-  outerShape.moveTo(0, 0.34);
-  outerShape.lineTo(0.9, -0.2);
-  outerShape.quadraticCurveTo(0.5, -0.3, 0.5, -0.78);
-  outerShape.quadraticCurveTo(0.22, -0.62, 0, -0.85);
-  outerShape.closePath();
-  // Flat in the wing's plane: the shape's y becomes z, forward.
-  const innerGeo = new THREE.ShapeGeometry(innerShape, 8).rotateX(Math.PI / 2);
-  const outerGeo = new THREE.ShapeGeometry(outerShape, 8).rotateX(Math.PI / 2);
-  const flappers: THREE.Object3D[] = [];
-  for (const side of [-1, 1]) {
-    const wing = new THREE.Group();
-    wing.position.set(side * 0.26, 0.2, 0.38);
-    wing.userData.side = side;
-    put(wing, innerGeo, membrane, [0, 0, 0], [0, 0, 0], [side, 1, 1]);
-    rod(wing, [0, 0, 0.12], [side * SPAN, 0, 0.34], 0.06, hide, 0.045);
-    rod(wing, [side * SPAN, 0, 0.34], [side * SPAN, 0, -0.85], 0.025, char, 0.012);
-    put(wing, ball(0.06, 10, 8), hide, [side * SPAN, 0, 0.34]);
-    put(wing, cone(0.03, 0.14, 6), claw, [side * (SPAN + 0.02), 0.02, 0.45], [Math.PI / 2, 0, 0]);
-    const tip = new THREE.Group();
-    tip.position.set(side * SPAN, 0, 0);
-    tip.userData.side = side;
-    put(tip, outerGeo, membrane, [0, 0, 0], [0, 0, 0], [side, 1, 1]);
-    rod(tip, [0, 0, 0.34], [side * 0.9, 0, -0.2], 0.025, char, 0.01);
-    rod(tip, [0, 0, 0.34], [side * 0.5, 0, -0.78], 0.022, char, 0.01);
-    wing.add(tip);
-    gila.add(wing);
-    flappers.push(wing, tip);
-  }
-  // Furnace glow under the belly and wings, kicking up the road.
-  const pads = [glowSprite(gila, [0, -0.45, 0], 0.85, 0xff5a10), ...[-1, 1].map((side) => glowSprite(gila, [side * 0.95, -0.45, -0.1], 0.6, 0xff7a20))];
 
   // The head: broad, heavy and blunt, the jaw hanging open on a furnace, huge glowing slit eyes.
   const head = new THREE.Group();
@@ -647,14 +626,15 @@ function gilaRider(r: RacerDef): KartModel {
     body,
     wheels: [],
     // Fire out of the tail tip under boost.
-    exhausts: [new THREE.Vector3(tipAt[0], tipAt[1] + 0.95, tipAt[2] - 0.15)],
+    exhausts: [new THREE.Vector3(tipAt[0], tipAt[1] + 0.46, tipAt[2] - 0.95)],
     rearTrack: 0.55,
     rearZ: -0.9,
     spinners: [],
-    shadow: [3.0, 3.4],
-    hover: { bob: 0.12, pads },
+    shadow: [2.4, 3.4],
     head,
-    flappers,
+    legs,
+    sway: gila,
+    tail: tailRoot,
   };
 }
 

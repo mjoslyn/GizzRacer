@@ -119,6 +119,12 @@ export class KartView {
   private readonly head: THREE.Object3D | null;
   private readonly treads: { map: THREE.Texture; perMeter: number }[];
   private readonly flappers: THREE.Object3D[];
+  /** Runners: legs swung about their hips, the body snaking with the stride and the tail against it. */
+  private readonly legs: THREE.Object3D[];
+  private readonly sway: THREE.Object3D | null;
+  private readonly tail: THREE.Object3D | null;
+  /** Where in its stride a runner is (radians). */
+  private gait = 0;
   private readonly sweepers: THREE.Object3D[];
   private readonly sparks: Spark[] = [];
   private readonly dust: Spark[] = [];
@@ -182,6 +188,9 @@ export class KartView {
     this.head = model.head ?? null;
     this.treads = model.treads ?? [];
     this.flappers = model.flappers ?? [];
+    this.legs = model.legs ?? [];
+    this.sway = model.sway ?? null;
+    this.tail = model.tail ?? null;
     this.sweepers = model.sweepers ?? [];
     this.rearTrack = model.rearTrack;
     this.rearZ = model.rearZ;
@@ -297,6 +306,27 @@ export class KartView {
     this.vanished = false;
   }
 
+  /**
+   * A runner's stride: the legs swing forward and back in diagonal pairs, the
+   * one swinging forward lifted clear, at a pace that quickens with speed and
+   * stops when it does; the body snakes with the stride and the tail lashes
+   * against it. In the air the legs splay and paddle slowly.
+   */
+  private animateRun(s: KartState, frameDt: number): void {
+    const speed = Math.abs(s.speed);
+    const reach = s.grounded ? Math.min(1, speed / 4) : 0.4;
+    this.gait += frameDt * (s.grounded ? 2 + Math.min(speed, 30) * 0.45 : 3) * Math.sign(s.speed || 1);
+    for (const leg of this.legs) {
+      const side = leg.userData.side as number;
+      const p = this.gait + (leg.userData.phase as number);
+      leg.rotation.y = -side * Math.sin(p) * 0.55 * reach;
+      // Lifted while it swings forward, planted while it pushes back.
+      leg.rotation.z = side * Math.max(0, Math.cos(p)) * 0.35 * reach;
+    }
+    if (this.sway) this.sway.rotation.y = Math.sin(this.gait) * 0.1 * reach;
+    if (this.tail) this.tail.rotation.y = -Math.sin(this.gait - 0.6) * 0.28 * reach;
+  }
+
   /** `s` is an interpolated render snapshot; `frameDt` is real time since the last frame; `fell` is the race's call that it's gone over an edge. */
   update(s: KartState, topSpeed: number, frameDt: number, time: number, fell = false): void {
     this.root.position.set(s.x, s.y, s.z);
@@ -348,6 +378,7 @@ export class KartView {
     // Wings beat lazily at rest and hard under boost.
     const beat = Math.sin(time * (s.boostTime > 0 ? 22 : 7 + speedRatio * 6) + this.phase);
     for (const f of this.flappers) f.rotation.z = (f.userData.side as number) * (0.12 + beat * 0.3);
+    if (this.legs.length) this.animateRun(s, frameDt);
     // Moving heads sweep their beams, faster under boost.
     for (const w of this.sweepers) w.rotation.y = Math.sin(time * (s.boostTime > 0 ? 4 : 1.4) + (w.userData.phase as number)) * 0.9;
     if (this.head) {
