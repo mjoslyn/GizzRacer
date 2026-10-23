@@ -29,6 +29,8 @@ import { OnlineRace } from './net/onlineRace';
 import type { Effect, RoomStart } from './net/protocol';
 import type { RoomClient } from './net/room';
 import { GrandPrix } from './core/grandPrix';
+import { CLEAR_PLACE, RACES_PER_ACT, StoryRun, type BoonId } from './core/story';
+import { StoryScreen, storyCard, type StoryPhase } from './ui/storyScreen';
 import { Race, TOUCH_CPU_PACE, ordinal, type RaceKart } from './core/race';
 import { ASSIST_NORMAL, ASSIST_TOUCH } from './physics/steerAssist';
 import { DRIFT_TIERS, PHYSICS_VERSION, copyKartState, createKartState, driftTier, respawnKart, type KartState, type StepEvents } from './physics/kart';
@@ -122,9 +124,10 @@ const INTRO_TIME = 4.5;
 /**
  * title -> menu -> race -> results -> menu. A Grand Prix goes
  * results -> standings -> next race, and after the last one -> podium.
+ * Story goes results -> story (a card: a boon, a retry, the next chapter) -> next race.
  * Behind the title and the menu, CPUs race the chosen track as an attract mode.
  */
-type Mode = 'title' | 'menu' | 'race' | 'results' | 'standings' | 'podium' | 'lobby';
+type Mode = 'title' | 'menu' | 'race' | 'results' | 'standings' | 'podium' | 'lobby' | 'story';
 let mode: Mode = 'title';
 
 let choice: MenuChoice = {
@@ -139,6 +142,10 @@ let choice: MenuChoice = {
 };
 /** The cup in progress, if racing a Grand Prix. */
 let gp: GrandPrix | null = null;
+/** The story run in progress, its card showing between races, and the boss's kart on a boss race. */
+let story: StoryRun | null = null;
+let storyPhase: StoryPhase = 'chapter';
+let storyBoss: RaceKart | null = null;
 let podium: Podium | null = null;
 /** The results screen's line under the title: a Time Trial's record, a race's style and best time. */
 let trialNote = '';
@@ -267,10 +274,12 @@ const menu = new Menu(
     if (c.mode === 'online') return setMode('lobby');
     fieldSeed = Math.floor(Math.random() * 2 ** 31);
     gp = c.mode === 'grandPrix' ? new GrandPrix(defaultGrid(c.racer, fieldSeed), chosenCup(c).tracks) : null;
+    story = c.mode === 'story' ? new StoryRun(fieldSeed) : null;
     gpTimes = [];
     gpPlaces = [];
     cupNote = '';
-    startRace(true);
+    if (story) showStory('chapter');
+    else startRace(true);
   },
   savedTracks,
   (t) => deleteSaved(t),
@@ -290,6 +299,7 @@ let netTicks = 0;
 /** When I last asked the room to use my item (its answer takes a round trip). */
 let itemSentAt = -Infinity;
 const lobby = new LobbyScreen(document.body, () => choice.racer);
+const storyScreen = new StoryScreen(document.body);
 lobby.onBack = () => setMode('menu');
 lobby.onSettings = (s) => {
   // The attract race behind the lobby shows the room's track.
@@ -300,6 +310,7 @@ lobby.onStart = (start, client) => {
   client.onSnap = (snap) => online?.client === client && online.net?.receive(snap, performance.now() / 1000);
   client.onFx = (fx) => online?.client === client && onEffects(fx);
   gp = null;
+  story = null;
   choice = { ...choice, engine: start.settings.engine };
   if (track.def.id !== TRACK_LIST[start.settings.track].id) loadTrack(TRACK_LIST[start.settings.track]);
   startRace(true);
@@ -369,7 +380,7 @@ function updateBoard(refresh = false): void {
   const picking = mode === 'menu' && menu.showsBoard;
   const on = picking && choice.mode === 'timeTrial';
   board.show(on);
-  const rec = picking && !on && choice.mode !== 'online';
+  const rec = picking && !on && choice.mode !== 'online' && choice.mode !== 'story';
   records.show(rec);
   document.body.classList.toggle('board-open', on || rec);
   if (on) board.load(TRACK_LIST[choice.track].id, TRACK_LIST[choice.track].name, choice.engine, refresh);
@@ -404,6 +415,7 @@ function setMode(next: Mode): void {
   hud.showTitle(next === 'title');
   menu.show(next === 'menu');
   lobby.show(next === 'lobby');
+  if (next !== 'story') storyScreen.show(null);
   // A generated track can be kept once it's been raced.
   const generated = next === 'results' && choice.mode === 'generator' && !online;
   savePanel.show(generated ? track.def.name : null, generated && !!findSaved(choice.gen.params));
@@ -451,6 +463,7 @@ function menuTrack(): TrackEntry {
 /** The track the next race with the player runs on. */
 function raceTrack(): TrackEntry {
   if (gp) return TRACK_LIST[gp.trackIndex];
+  if (story) return storyTrack();
   return choice.mode === 'generator' ? generatedTrack() : TRACK_LIST[choice.track];
 }
 
@@ -511,15 +524,21 @@ function startRace(withPlayer: boolean): void {
     netTicks = 0;
     itemSentAt = -Infinity;
   } else {
-    const grid = !withPlayer ? defaultGrid(null, raceSeed) : trial ? [choice.racer] : gp ? gp.grid() : defaultGrid(choice.racer, fieldSeed);
+    const boss = withPlayer && story?.race.boss ? story.bossRacer(choice.racer) : null;
+    const grid = !withPlayer ? defaultGrid(null, raceSeed) : trial ? [choice.racer] : gp ? gp.grid() : story ? storyGrid(boss) : defaultGrid(choice.racer, fieldSeed);
+    storyBoss = null;
     for (const r of grid) {
-      if (withPlayer && r === choice.racer) player = race.addKart(r, choice.engine, null);
-      else {
-        // A Grand Prix rival drives a touch sharper, and wears the name.
-        const rival = withPlayer && !!gp && gp.rivals.includes(r);
+      if (withPlayer && r === choice.racer) {
+        player = race.addKart(r, choice.engine, null);
+        if (story) storyBoons(player, story);
+      } else {
+        // A Grand Prix rival, or a story boss, drives a touch sharper and wears the name.
+        const rival = withPlayer && ((!!gp && gp.rivals.includes(r)) || r === boss);
         // The difficulty setting shapes how every CPU drives, offline (online the room decides).
         const skill = withDifficulty(CPU_SKILL[choice.engine], settings().cpuDifficulty);
-        race.addKart(r, choice.engine, rival ? rivalSkill(skill) : skill).rival = rival;
+        const k = race.addKart(r, choice.engine, rival ? rivalSkill(skill) : skill);
+        k.rival = rival;
+        if (r === boss) storyBoss = k;
       }
     }
     // The CPUs ahead hold back a little for the player (Race.rubberBand), never for a ghost or the attract mode.
@@ -715,7 +734,7 @@ function step(dt: number): void {
     player.assist = settings().smartSteering;
     // On touch (a phone or tablet): a firmer hand on the wheel, and the CPUs a little slower. The difficulty sets their pace too.
     player.assistLevel = touch.enabled ? ASSIST_TOUCH : ASSIST_NORMAL;
-    race.cpuPace = DIFFICULTY_PACE[settings().cpuDifficulty] * (touch.enabled ? TOUCH_CPU_PACE : 1);
+    race.cpuPace = DIFFICULTY_PACE[settings().cpuDifficulty] * (touch.enabled ? TOUCH_CPU_PACE : 1) * (story ? story.pace : 1);
   }
   const inputs = race.karts.map((k) => (k === player ? lastInput : undefined));
   const events = race.step(dt, inputs);
@@ -827,7 +846,8 @@ function step(dt: number): void {
   surgeWarning(player, dt);
   if (player.finishTime !== null && !raceRecorded) {
     raceRecorded = true;
-    if (!online && choice.mode !== 'timeTrial') finishRace(player);
+    if (story) finishStoryRace(player);
+    else if (!online && choice.mode !== 'timeTrial') finishRace(player);
   }
   if (mode === 'race' && player.finishTime !== null && race.time - player.finishTime > RESULTS_DELAY) {
     if (choice.mode === 'timeTrial') {
@@ -994,6 +1014,77 @@ function finishRace(p: RaceKart): void {
       .catch((err: Error) => (trialNote = `${before} · not posted: ${err.message}`));
   });
 }
+
+/**
+ * A story race's verdict for the results. Nothing is recorded or posted:
+ * boons change the kart, so its times aren't comparable.
+ */
+function finishStoryRace(p: RaceKart): void {
+  const boss = storyBoss;
+  const parts = [story!.passes(p.position, boss?.position ?? null) ? 'CLEARED!' : boss && boss.position < p.position ? `${boss.racer.name} beat you: the loop ends` : `Top ${CLEAR_PLACE} needed: the loop ends`];
+  if (style) parts.push(style.summary());
+  trialNote = parts.join(' · ');
+}
+
+/** The race intro's line in story mode: the chapter, and the race or the boss. */
+function storyIntro(run: StoryRun): string {
+  const r = run.race;
+  return `${run.actDef.chapter} · ${r.boss ? `Boss: ${run.bossRacer(choice.racer).name}` : `Race ${r.index + 1} of ${RACES_PER_ACT}`}`;
+}
+
+/** A story race's track: a new one in the chapter's worlds, or the boss's own. */
+function storyTrack(): TrackEntry {
+  const r = story!.race;
+  if (r.gen) {
+    const params = r.gen;
+    return { id: trackId(params), build: () => generateTrack(params) };
+  }
+  const id = story!.actDef.boss.trackId;
+  return TRACK_LIST.find((t) => t.id === id) ?? TRACK_LIST[0];
+}
+
+/** The field for a story race: the run's CPUs, with the boss on pole for a boss race. */
+function storyGrid(boss: RacerDef | null): RacerDef[] {
+  const grid = defaultGrid(choice.racer, fieldSeed);
+  if (!boss) return grid;
+  const field = grid.filter((r) => r.id !== boss.id);
+  if (field.length === grid.length) field.splice(field.length - 1, 1);
+  return [boss, ...field];
+}
+
+/** The player's kart as the run's boons have made it. */
+function storyBoons(k: RaceKart, run: StoryRun): void {
+  run.applyBoons(k.baseParams);
+  k.params = { ...k.baseParams };
+  k.favour = run.favour;
+  if (run.startItem) k.item = run.startItem;
+}
+
+/** Shows a story card between races. */
+function showStory(phase: StoryPhase): void {
+  storyPhase = phase;
+  setMode('story');
+  storyScreen.show(storyCard(story!, phase, choice.racer));
+}
+
+/** On to the run's next race, by way of the boss's or the chapter's card when one is due. */
+function storyNext(): void {
+  const run = story!;
+  if (run.race.boss && storyPhase !== 'boss') return showStory('boss');
+  if (run.actStart && storyPhase !== 'chapter') return showStory('chapter');
+  startRace(true);
+}
+
+storyScreen.onPick = (id) => {
+  if (!story) return;
+  if (id === 'menu') return toMenu();
+  if (id === 'again') {
+    story = new StoryRun(Math.floor(Math.random() * 2 ** 31));
+    return showStory('chapter');
+  }
+  if (storyPhase === 'boon') story.take(id as BoonId);
+  storyNext();
+};
 
 /** A finished cup: its trophy, what it unlocked, and the online cup board. Returns the podium's line. */
 function finishCup(): string {
@@ -1374,7 +1465,7 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
       position: f.position,
       karts: race.karts.length,
       countdown: intro > 0 ? -1 : -race.time,
-      intro: intro > 0 ? { name: track.def.name, sub: gp ? `Race ${gp.round + 1} of ${gp.tracks.length}${gp.rivals.length ? ` · your rivals: ${gp.rivals.map((r) => r.name).join(' and ')}` : ''}${mirrored() ? ' · Mirror' : ''}` : choice.mode === 'timeTrial' ? 'Time Trial' : `${choice.engine}${mirrored() ? ' · Mirror' : ''}` } : null,
+      intro: intro > 0 ? { name: track.def.name, sub: story ? storyIntro(story) : gp ? `Race ${gp.round + 1} of ${gp.tracks.length}${gp.rivals.length ? ` · your rivals: ${gp.rivals.map((r) => r.name).join(' and ')}` : ''}${mirrored() ? ' · Mirror' : ''}` : choice.mode === 'timeTrial' ? 'Time Trial' : `${choice.engine}${mirrored() ? ' · Mirror' : ''}` } : null,
       table: table(),
       muted: musicMuted,
       sfxMuted,
@@ -1441,7 +1532,7 @@ function table(): Table | null {
         player: e.racer === choice.racer,
       }));
   if (mode === 'results') {
-    const title = online ? `ROOM ${online.client.code} RESULTS` : gp ? `RACE ${gp.round + 1}/${gp.tracks.length} RESULTS` : choice.mode === 'timeTrial' ? 'TIME TRIAL' : 'RESULTS';
+    const title = online ? `ROOM ${online.client.code} RESULTS` : story ? `${story.actDef.chapter.toUpperCase()} · ${story.race.boss ? 'BOSS' : `RACE ${story.race.index + 1}/${RACES_PER_ACT}`}` : gp ? `RACE ${gp.round + 1}/${gp.tracks.length} RESULTS` : choice.mode === 'timeTrial' ? 'TIME TRIAL' : 'RESULTS';
     const rows = online ? onlineRows(kartRow) : finishOrder().map(kartRow);
     return { kind: 'results', title, note: trialNote || undefined, rows };
   }
@@ -1523,6 +1614,7 @@ function postTrial(p: RaceKart): void {
 /** Back to the picker, with the attract race on the picker's track. */
 function toMenu(): void {
   gp = null;
+  story = null;
   endPodium();
   setMode('menu');
   if (track.def.id !== menuTrack().id) loadTrack(menuTrack());
@@ -1564,6 +1656,11 @@ function advance(): boolean {
   }
   if (mode === 'results' && online) {
     backToLobby();
+    return true;
+  }
+  if (mode === 'results' && story && player) {
+    const out = story.record(player.position, storyBoss?.position ?? null);
+    showStory(out === 'cleared' ? 'boon' : out);
     return true;
   }
   if (mode === 'results') {
@@ -1641,6 +1738,8 @@ hud.onPauseAction = (action) => {
   } else if (action === 'restart') {
     // An online race runs on the room's clock: no restarts. Offline, ask first: R is next to nothing mid-race.
     if (online || hud.confirmingRestart) return;
+    // A story race is run once: a miss ends the run, so no restarts.
+    if (story) return hud.flash('NO RESTARTS IN THE LOOP');
     restartFromPause = loop.paused;
     setPaused(true);
     hud.confirmRestart(true);
@@ -1688,6 +1787,10 @@ window.addEventListener('keydown', (e) => {
   }
   if (advance()) return;
   if (!e.repeat && skipIntro()) return;
+  if (mode === 'story') {
+    if (!e.repeat) storyScreen.key(e.code);
+    return;
+  }
   if (menu.key(e.code)) return;
   if (e.repeat || mode !== 'race') return;
   if (hud.confirmingRestart) {

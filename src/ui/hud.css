@@ -684,6 +684,30 @@ body.touch-mode .hud-help {
   margin-top: 0;
 }
 
+/* Story mode's cards between races: the picker's panel with a chapter's text. */
+.story-kicker {
+  font-size: 13px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #ffd23a;
+  text-shadow: 1px 1px 0 #3a0f45;
+}
+
+.story-body,
+.story-footer {
+  font-family: Verdana, sans-serif;
+  font-style: normal;
+  font-size: 15px;
+  line-height: 1.45;
+  color: #fff6d0;
+  text-shadow: 1px 1px 0 #3a0f45;
+}
+
+.story-footer {
+  font-size: 12px;
+  opacity: 0.85;
+}
+
 /* Short screens: the bio and the key hint go before anything scrolls. */
 @media (max-height: 560px) {
   .menu-bio,

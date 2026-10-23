@@ -7,10 +7,11 @@ import { ENGINE_CLASSES, RACERS, type EngineClass, type RacerDef } from '../phys
 import { GEN_COMPLEXITY_MAX, GEN_LENGTHS, GEN_THEMES, GEN_THEME_NAMES, trackName, type GenParams } from '../tracks/generator';
 import { CUPS, RANDOM_CUP_ID, RANDOM_CUP_NAME, TRACK_LIST, randomCupTracks } from '../tracks/index';
 
-export type RaceMode = 'grandPrix' | 'single' | 'timeTrial' | 'generator' | 'online';
+export type RaceMode = 'grandPrix' | 'story' | 'single' | 'timeTrial' | 'generator' | 'online';
 
 export const MODE_NAMES: Record<RaceMode, string> = {
   grandPrix: 'Grand Prix',
+  story: 'Story',
   single: 'Single Race',
   timeTrial: 'Time Trial',
   generator: 'Track Generator',
@@ -62,6 +63,7 @@ export type MenuStep = 'mode' | 'track' | 'racer' | 'engine';
 const STEP_TITLES: Record<MenuStep, string> = { mode: 'CHOOSE A MODE', track: 'PICK A TRACK', racer: 'PICK A RACER', engine: 'PICK A SPEED' };
 const MODE_BLURBS: Record<RaceMode, string> = {
   grandPrix: 'Four races for the cup, points across them, rivals who want it too',
+  story: 'Murder of the Universe in three chapters: three lives, a boon for every race won, a boss at each chapter\'s end',
   single: 'One track, a full field, items on',
   timeTrial: 'Alone against the clock, the ghosts and the leaderboard',
   generator: 'A track made on the spot: the daily, your saved ones, or a new roll',
@@ -160,9 +162,10 @@ export class Menu {
     return true;
   }
 
-  /** The screens this mode has: Online picks its track in the room. */
+  /** The screens this mode has: Online picks its track in the room, Story's are the story's. */
   private steps(): MenuStep[] {
-    return this.choice.mode === 'online' ? ['mode', 'racer', 'engine'] : ['mode', 'track', 'racer', 'engine'];
+    const m = this.choice.mode;
+    return m === 'online' || m === 'story' ? ['mode', 'racer', 'engine'] : ['mode', 'track', 'racer', 'engine'];
   }
 
   /** The rows on the screen showing: the generator's dials share the track screen, Mirror the speed's once it's unlocked. */
