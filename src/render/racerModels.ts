@@ -980,13 +980,16 @@ function rattlesnake(r: RacerDef): KartModel {
     const z = 0.55 - k * STEP;
     seg.position.set(0, rad * 0.75, z);
     seg.userData = { z: k * STEP, amp: 0.05 + t * 0.32 };
-    put(seg, ball(rad, 12, 8), scales, [0, 0, 0], [0, 0, 0], [1.15, 0.75, 1.25]);
-    put(seg, ball(rad * 0.9, 10, 6), belly, [0, -rad * 0.25, 0], [0, 0, 0], [1.1, 0.5, 1.2]);
+    // A long capsule along the body, overlapping the next, flattened like a snake's: one smooth body, not beads.
+    const len = STEP * 1.5;
+    put(seg, new THREE.CapsuleGeometry(rad, len, 4, 12), scales, [0, 0, 0], [Math.PI / 2, 0, 0], [1.2, 1, 0.75]);
+    put(seg, new THREE.CapsuleGeometry(rad * 0.9, len, 4, 10), belly, [0, -rad * 0.22, 0], [Math.PI / 2, 0, 0], [1.15, 1, 0.5]);
     // The diamonds down the back: dark, edged pale, one every other segment; banded black and white near the rattle.
-    if (t > 0.85) put(seg, ball(rad * 1.02, 10, 6), k % 2 ? pale : diamond, [0, 0, 0], [0, 0, 0], [1.15, 0.76, 0.7]);
+    if (t > 0.85) put(seg, new THREE.CapsuleGeometry(rad * 1.02, len * 0.35, 4, 10), k % 2 ? pale : diamond, [0, 0, 0], [Math.PI / 2, 0, 0], [1.2, 1, 0.76]);
     else if (k % 2 === 0) {
-      put(seg, box(rad * 1.3, 0.02, rad * 1.3), pale, [0, rad * 0.74, 0], [0, Math.PI / 4, 0]);
-      put(seg, box(rad * 1.05, 0.03, rad * 1.05), diamond, [0, rad * 0.75, 0], [0, Math.PI / 4, 0]);
+      // Four-sided domes sunk into the back: a diamond from above, hugging the curve.
+      put(seg, new THREE.SphereGeometry(rad * 0.82, 4, 6), pale, [0, rad * 0.42, 0], [0, 0, 0], [1.05, 0.55, 1.35]);
+      put(seg, new THREE.SphereGeometry(rad * 0.68, 4, 6), diamond, [0, rad * 0.5, 0], [0, 0, 0], [1.05, 0.55, 1.35]);
     }
     body.add(seg);
     segments.push(seg);
@@ -1003,15 +1006,25 @@ function rattlesnake(r: RacerDef): KartModel {
   neck.position.set(0, 0.12, 0.62);
   body.add(neck);
   const neckPts: [number, number, number][] = [[0, 0, 0], [0, 0.18, 0.08], [0, 0.34, 0.06], [0, 0.42, 0.16]];
-  for (const [k, at] of neckPts.entries()) put(neck, ball(0.14 - k * 0.012, 12, 8), k % 2 ? scales : diamond, at, [0, 0, 0], [1.1, 1, 1]);
+  for (let k = 0; k < neckPts.length - 1; k++) rod(neck, neckPts[k], neckPts[k + 1], 0.13 - k * 0.012, scales, 0.12 - k * 0.012);
+  for (const at of neckPts.slice(1, -1)) put(neck, ball(0.125, 12, 8), scales, at, [0, 0, 0], [1.1, 1, 1]);
 
   // The head: a broad flat wedge, heat pits and slit eyes, fangs, a forked tongue flicking out.
   const head = new THREE.Group();
   head.position.set(0, 0.6, 0.86);
-  put(head, ball(0.17, 16, 10), scales, [0, 0, 0], [0, 0, 0], [1.3, 0.6, 1.35]);
-  put(head, ball(0.12, 12, 8), diamond, [0, 0.04, -0.04], [0, 0, 0], [1.2, 0.4, 1.1]);
-  put(head, ball(0.1, 12, 8), scales, [0, -0.02, 0.17], [0, 0, 0], [1.1, 0.55, 1.1]);
-  eyes(head, 0.06, 0.12, 0.11, 0.045, 0xd8b020, true);
+  // A broad, flat, arrow-shaped wedge: wide at the jaw hinges, narrowing to a blunt snout.
+  const wedge = new THREE.Shape();
+  wedge.moveTo(-0.2, -0.08);
+  wedge.quadraticCurveTo(-0.24, 0.08, -0.12, 0.2);
+  wedge.lineTo(-0.05, 0.33);
+  wedge.quadraticCurveTo(0, 0.37, 0.05, 0.33);
+  wedge.lineTo(0.12, 0.2);
+  wedge.quadraticCurveTo(0.24, 0.08, 0.2, -0.08);
+  wedge.quadraticCurveTo(0, -0.16, -0.2, -0.08);
+  const wedgeGeo = new THREE.ExtrudeGeometry(wedge, { depth: 0.09, bevelEnabled: true, bevelThickness: 0.035, bevelSize: 0.03, bevelSegments: 3, curveSegments: 6 }).rotateX(-Math.PI / 2).translate(0, -0.06, 0);
+  put(head, wedgeGeo, scales, [0, 0, -0.06]);
+  put(head, new THREE.SphereGeometry(0.09, 4, 6), diamond, [0, 0.04, 0.02], [0, 0, 0], [1.1, 0.4, 1.4]);
+  eyes(head, 0.06, 0.1, 0.12, 0.04, 0xd8b020, true);
   for (const side of [-1, 1]) {
     put(head, ball(0.06, 8, 6), diamond, [side * 0.11, 0.08, 0.08], [0, 0, side * 0.4], [1.4, 0.35, 1.1]);
     put(head, cone(0.012, 0.07, 4), pale, [side * 0.05, -0.08, 0.22], [Math.PI, 0, 0]);
