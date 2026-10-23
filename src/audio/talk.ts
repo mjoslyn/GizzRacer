@@ -105,13 +105,15 @@ export function loudness(samples: Float32Array, rate: number, from = 0): number 
 
 /**
  * The loudness (dB, as `loudness` measures it) a live recording is brought
- * to: the game's own remixes, measured at -16 to -12 with a median of
- * -14.4. Taped shows come in from about -13 to -25, mostly near -19.
+ * to: 3 dB over the game's own remixes (measured at -16 to -12 with a
+ * median of -14.4), since a tape at the remixes' level still sounds smaller
+ * than a mastered track. Taped shows come in from about -13 to -25, mostly
+ * near -19.
  */
-export const TARGET_LOUDNESS = -14.5;
+export const TARGET_LOUDNESS = -11.5;
 /** The most a recording is turned up or down (dB): a near-silent one isn't blown up into hiss. */
 const GAIN_MIN = -6;
-const GAIN_MAX = 14;
+const GAIN_MAX = 17;
 
 /** The gain (dB) that brings a recording of `measured` loudness to TARGET_LOUDNESS, to the half dB. */
 export function gainFor(measured: number): number {

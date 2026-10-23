@@ -95,7 +95,7 @@ export interface LiveOptions {
 }
 
 /** The gain (dB) for a recording not measured yet: what a taped show typically falls short of the remixes by (audio/talk.ts). */
-export const DEFAULT_LIVE_GAIN = 5;
+export const DEFAULT_LIVE_GAIN = 8;
 
 /**
  * A brick-wall limiter for the live recordings: a quiet tape turned up to
