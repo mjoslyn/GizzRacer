@@ -50,6 +50,7 @@ export const TRACK_SONGS: Record<string, TrackSong> = {
 export const TRANSCRIBED: Record<string, { recording: string; release: string }> = {
   title: { recording: 'Ice V', release: "Live At Red Rocks '22" },
   'polygondwanaland-jungle': { recording: 'Polygondwanaland', release: 'Polygondwanaland (2017), the album master' },
+  'rattlesnake-run': { recording: 'Rattlesnake', release: "Live At Red Rocks '22" },
   'crumbling-castle': { recording: 'Crumbling Castle', release: 'Polygondwanaland (2017), the album master' },
   'castle-in-the-air': { recording: 'The Castle in the Air', release: 'Polygondwanaland (2017), the album master' },
   'inner-cell': { recording: 'Inner Cell', release: 'Polygondwanaland (2017), the album master' },
