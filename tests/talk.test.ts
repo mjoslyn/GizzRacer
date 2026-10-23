@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { TARGET_LOUDNESS, gainFor, loudness, musicStart, readOpening, talkTrack } from '../src/audio/talk';
+import { TARGET_LOUDNESS, gainFor, loudness, musicStart, readOpening } from '../src/audio/talk';
 
 const RATE = 8000;
 
@@ -61,11 +61,6 @@ describe('skipping the band talk', () => {
     // The count-in's hits at 20 s, not the band at 22.5.
     expect(start).toBeLessThan(20);
     expect(start).toBeGreaterThan(17);
-  });
-
-  it('tells a talk track by its name', () => {
-    for (const t of ['Banter', 'Stage Banter', 'Tuning', 'Crowd', 'Encore Break', 'Soundcheck']) expect(talkTrack(t), t).toBe(true);
-    for (const t of ['Rattlesnake', 'Gamma Knife', 'The Dripping Tap', 'Crumbling Castle', 'Organ Farmer']) expect(talkTrack(t), t).toBe(false);
   });
 
   it('measures loudness past the gaps, and evens a quiet tape up to the remixes, within limits', () => {

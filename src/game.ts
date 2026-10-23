@@ -102,7 +102,7 @@ const postFx = new PostFx(renderer);
 const input = new InputManager();
 const hud = new Hud(document.body);
 const music = new MusicPlayer();
-/** The live soundtrack (Settings > Soundtrack): a race's song live, or a whole show kept playing. */
+/** The live soundtrack (Settings > Soundtrack): a race's song live. */
 const radio = new LiveRadio(music);
 new MiniPlayer(document.body, radio, music);
 /** Controls, items and tips scrolling along the bottom of the picker and the flyover before a race. */
@@ -322,7 +322,7 @@ const records = new RecordsPanel(document.body);
 /** Asks for a name on the results screen the first time there's something to post. */
 const namePrompt = new NamePrompt(document.body);
 const tilt = new TiltSteering(input);
-const settingsScreen = new SettingsScreen(document.body, tilt, radio);
+const settingsScreen = new SettingsScreen(document.body, tilt);
 /** The mix that sits right: music under the effects (see the audio commit). */
 const MUSIC_LEVEL = 0.63;
 onSettings((s) => {
@@ -1198,24 +1198,13 @@ let liveRace = false;
 
 /**
  * The race's music, by Settings > Soundtrack: the game's remix of the
- * track's song; a live recording of the song, at random (a song never
- * played live, or a generated track with no song, gets the remix); or the
- * show that's playing, kept going.
+ * track's song, or a live recording of the song, at random (a song never
+ * played live, or a generated track with no song, gets the remix).
  */
 function startRaceMusic(): void {
   const cues = remixCues(track.def.music.lap);
   const mode = settings().soundtrack;
   const song = TRACK_SONGS[track.def.id]?.title;
-  if (mode === 'show') {
-    liveRace = true;
-    void radio.ensureShow(cues);
-    return;
-  }
-  if (mode === 'keep') {
-    liveRace = true;
-    void radio.ensureKeep(song ?? null, cues);
-    return;
-  }
   if (mode === 'song' && song) {
     liveRace = true;
     const forRace = race;
@@ -1231,15 +1220,8 @@ function startRaceMusic(): void {
   music.play(cues);
 }
 
-/** Whether the live soundtrack plays on through menus and the podium (Keep playing, Play a set). */
-function playsThrough(): boolean {
-  const s = settings().soundtrack;
-  return (s === 'show' || s === 'keep') && !!radio.playing;
-}
-
-/** The menus' music: the title remix, unless a show is playing through. */
+/** The menus' music: the title remix. */
 function menuMusic(): void {
-  if (playsThrough()) return;
   if (radio.playing) radio.stop();
   music.play(remixCues('title'));
 }
@@ -1254,10 +1236,7 @@ function nowPlaying(): string | null {
 
 function updateMusic(p: RaceKart): void {
   const { lap, finalLap } = track.def.music;
-  const keepShow = liveRace && playsThrough();
-  if (p.finishTime !== null) {
-    if (!keepShow) music.play('podium');
-  }
+  if (p.finishTime !== null) music.play('podium');
   // A live recording plays the whole race through: no final-lap cut.
   else if (liveRace) return;
   else if (race.laps > 1 && p.laps.lap === race.laps - 1) music.play(remixCues(finalLap ?? `${lap}-final-lap`).filter((c) => finalLap || c !== `${lap}-final-lap`));
@@ -1536,7 +1515,7 @@ function startPodium(): void {
   for (const v of views) v.root.visible = v.fx.visible = false;
   itemsView!.group.visible = hazardsView!.group.visible = false;
   setMode('podium');
-  if (!playsThrough()) music.play('podium');
+  music.play('podium');
 }
 
 function endPodium(): void {

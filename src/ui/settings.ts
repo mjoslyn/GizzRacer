@@ -1,7 +1,6 @@
 import { CPU_DIFFICULTIES } from '../ai/cpuDriver';
 import { SOUNDTRACKS, SOUNDTRACK_BLURBS, SOUNDTRACK_NAMES, TILT_RANGES, VIDEO_LOOKS, settings, updateSettings, type Settings } from '../core/settings';
 import { DETAILS, DETAIL_NAMES } from '../render/detail';
-import type { LiveRadio } from '../audio/radio';
 import { creditsHtml } from './credits';
 import type { TiltSteering } from './tilt';
 
@@ -27,14 +26,9 @@ export class SettingsScreen {
   constructor(
     parent: HTMLElement,
     private readonly tilt: TiltSteering,
-    /** The live soundtrack, whose controls are here too: on a phone there's no mini player. */
-    private readonly radio: LiveRadio | null = null,
   ) {
     this.el.className = 'settings';
     parent.appendChild(this.el);
-    radio?.onChange(() => {
-      if (this.visible && !this.asking && !this.credits) this.render();
-    });
     this.el.addEventListener('click', (e) => void this.click(e.target as HTMLElement));
     // Keys pressed here mustn't reach the game.
     this.el.addEventListener('keydown', (e) => {
@@ -163,18 +157,6 @@ export class SettingsScreen {
       case 'credits':
         this.credits = true;
         break;
-      case 'radio-prev':
-        this.radio?.prev();
-        break;
-      case 'radio-pause':
-        this.radio?.togglePause();
-        break;
-      case 'radio-next':
-        this.radio?.next();
-        break;
-      case 'radio-new':
-        void this.radio?.newShow();
-        break;
       case 'back':
         if (this.creditsOnly) {
           this.close();
@@ -217,7 +199,6 @@ export class SettingsScreen {
             <div class="settings-group">Sound and driving</div>
             <div class="lobby-row"><span class="lobby-label">Music</span>${arrows('music', pct(s.music))}</div>
             <div class="lobby-row"><span class="lobby-label">Soundtrack</span>${arrows('soundtrack', SOUNDTRACK_NAMES[s.soundtrack])}</div>
-            ${this.playerHtml()}
             <div class="lobby-row"><span class="lobby-label">Effects</span>${arrows('sfx', pct(s.sfx))}</div>
             <div class="lobby-row"><span class="lobby-label">VHS</span>${arrows('look', { full: 'Full', light: 'Light', off: 'Off' }[s.videoLook])}</div>
             <div class="lobby-row"><span class="lobby-label">Throttle</span>${toggle('auto', s.autoAccelerate, s.autoAccelerate ? 'Automatic' : 'Manual')}</div>
@@ -243,26 +224,6 @@ export class SettingsScreen {
         <button class="lobby-big hud-big" data-act="done">DONE</button>
       </div>`;
     this.show(html);
-  }
-
-  /** What the live soundtrack is playing, with its controls; nothing when it isn't. */
-  private playerHtml(): string {
-    const p = this.radio?.playing;
-    if (!p) return '';
-    const esc = (t: string) => t.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
-    const where = [p.rec.venue, p.rec.date].filter(Boolean).join(', ');
-    const sub = p.set ? `${where} · ${p.set.index + 1}/${p.set.songs.length}` : `live, ${where}`;
-    return `
-            <div class="settings-player">
-              <div class="settings-player-info"><b>&#9835; ${esc(p.title)}</b><small>${esc(sub)}</small></div>
-              <div class="mp-buttons">
-                <button data-act="radio-prev" aria-label="Previous">&#9198;</button>
-                <button data-act="radio-pause" aria-label="${this.radio!.paused ? 'Play' : 'Pause'}">${this.radio!.paused ? '&#9654;' : '&#9208;'}</button>
-                <button data-act="radio-next" aria-label="Next">&#9197;</button>
-                ${p.mode !== 'song' ? '<button data-act="radio-new" aria-label="Another show">&#128256;</button>' : ''}
-                <a href="https://archive.org/details/${encodeURIComponent(p.rec.id)}" target="_blank" rel="noopener" aria-label="This show on the Internet Archive">&#8599;</a>
-              </div>
-            </div>`;
   }
 
   private renderCredits(): void {

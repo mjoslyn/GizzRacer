@@ -1,8 +1,5 @@
 /**
- * Builds public/music/bootlegs.json (live recordings of each track's song)
- * and public/music/shows.json (every show with MP3s, one a date, for the
- * full-show soundtrack, whose set list is read from archive.org when it
- * plays). bootlegs.json: live recordings of each track's song
+ * Builds public/music/bootlegs.json: live recordings of each track's song
  * (src/audio/songs.ts), from King Gizzard & the Lizard Wizard's collection
  * on the Internet Archive's Live Music Archive. The band are taper-friendly
  * and let anyone use their live recordings; the game streams these straight
@@ -28,7 +25,6 @@ try {
 } catch {
   // First run.
 }
-const SHOWS_OUT = new URL('../public/music/shows.json', import.meta.url);
 
 // The songs, read from songs.ts so the two can't drift apart.
 const songsSrc = readFileSync(new URL('../src/audio/songs.ts', import.meta.url), 'utf8');
@@ -82,8 +78,6 @@ console.log(`${shows.length} shows; looking for ${SONGS.length} songs`);
 
 /** song title -> date -> recording */
 const found = new Map(SONGS.map((t) => [t, new Map()]));
-/** date -> show with MP3s, the first (best) one per date. */
-const playable = new Map();
 let done = 0;
 async function scan(show) {
   const meta = await json(`https://archive.org/metadata/${show.identifier}`).catch(() => null);
@@ -91,9 +85,6 @@ async function scan(show) {
   if (!meta?.files) return;
   const date = String(show.date ?? meta.metadata?.date ?? '').slice(0, 10);
   const venue = String(meta.metadata?.venue ?? meta.metadata?.coverage ?? show.venue ?? '').trim();
-  const mp3s = meta.files.filter((f) => f.format === 'VBR MP3');
-  // A show worth playing whole: a real set, not a one-song snippet.
-  if (mp3s.length >= 4 && date && !playable.has(date)) playable.set(date, { id: show.identifier, date, venue });
   for (const f of meta.files) {
     if (f.format !== 'VBR MP3') continue;
     const title = f.title ?? f.name.replace(/\.mp3$/i, '').replace(/^[\dds]+[-_. ]+/i, '');
@@ -126,7 +117,4 @@ for (const [song, byDate] of found) {
   console.log(`${song}: ${all.length} recorded, ${pick.length} kept`);
 }
 writeFileSync(OUT, `${JSON.stringify(out, null, 1)}\n`);
-const showList = [...playable.values()].sort((a, b) => a.date.localeCompare(b.date));
-writeFileSync(SHOWS_OUT, `${JSON.stringify(showList, null, 1)}\n`);
-console.log(`${showList.length} shows to play whole`);
 console.log(`wrote ${OUT.pathname}`);

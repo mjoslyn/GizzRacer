@@ -2410,12 +2410,18 @@ body.touch-mode .hud-turn {
   opacity: 0.85;
 }
 
-/* The live soundtrack's mini player (ui/miniPlayer.ts), on desktop: bottom left, over the help line while racing. On touch its controls are in Settings. */
+/* The live soundtrack's mini player (ui/miniPlayer.ts). On desktop: bottom left, over the help line while racing. On touch: a ♫ button that opens it as a modal. */
 .mini-player {
   position: fixed;
   left: 16px;
   bottom: 16px;
   z-index: 40;
+  display: none;
+  pointer-events: auto;
+}
+
+.mp-card {
+  position: relative;
   width: 250px;
   padding: 8px 10px 10px;
   border-radius: 12px;
@@ -2423,8 +2429,6 @@ body.touch-mode .hud-turn {
   box-shadow: 0 0 0 2px rgba(255, 210, 120, 0.7);
   color: #fff6d0;
   font-family: Verdana, sans-serif;
-  display: none;
-  pointer-events: auto;
 }
 
 .mini-player.show {
@@ -2435,9 +2439,101 @@ body[data-mode='race'] .mini-player {
   bottom: 62px;
 }
 
-body.touch-mode .mini-player,
-body.intro .mini-player {
+body.intro .mini-player,
+body.intro .mp-fab {
+  display: none !important;
+}
+
+.mp-close,
+.mp-fab {
   display: none;
+}
+
+/* Touch: the ♫ button beside the pause button, and the player as a modal over a dimmed screen. */
+body.touch-mode .mini-player {
+  display: none;
+}
+
+body.touch-mode .mini-player.show.open {
+  display: flex;
+  inset: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 90;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 0, 16, 0.55);
+}
+
+body.touch-mode .mp-card {
+  width: min(340px, 86vw);
+  padding: 14px 16px 16px;
+  background: rgba(30, 6, 40, 0.94);
+}
+
+body.touch-mode .mp-close {
+  display: block;
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  background: none;
+  color: #fff6d0;
+  font-size: 26px;
+  line-height: 36px;
+  cursor: pointer;
+}
+
+body.touch-mode .mp-title {
+  font-size: 16px;
+  padding-right: 34px;
+}
+
+body.touch-mode .mp-show {
+  font-size: 12px;
+}
+
+body.touch-mode .mp-buttons {
+  gap: 8px;
+  margin-top: 12px;
+}
+
+body.touch-mode .mp-buttons button,
+body.touch-mode .mp-buttons a {
+  height: 44px;
+  line-height: 44px;
+  font-size: 18px;
+}
+
+body.touch-mode .mp-bar {
+  height: 4px;
+  margin-top: 12px;
+}
+
+body.touch-mode .mp-fab.show {
+  display: block;
+  position: fixed;
+  top: 12px;
+  left: calc(50% + 44px);
+  z-index: 45;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(30, 6, 40, 0.72);
+  box-shadow: 0 0 0 2px rgba(255, 210, 120, 0.7);
+  color: #ffd23a;
+  font-size: 20px;
+  line-height: 40px;
+  text-align: center;
+  pointer-events: auto;
+}
+
+body.touch-mode .mp-fab.paused {
+  color: rgba(255, 246, 208, 0.5);
 }
 
 .mp-title {
@@ -2511,36 +2607,6 @@ body.intro .mini-player {
 /* With the mini player on screen the HUD's own credit line isn't needed. */
 body:not(.touch-mode) .hud-live {
   display: none;
-}
-
-/* The live soundtrack's controls in Settings (the mini player's, for phones). */
-.settings-player {
-  margin: 4px 0 10px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  background: rgba(30, 6, 40, 0.45);
-  color: #fff6d0;
-  font-family: Verdana, sans-serif;
-  font-style: normal;
-}
-
-.settings-player-info b,
-.settings-player-info small {
-  display: block;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.settings-player-info small {
-  opacity: 0.8;
-}
-
-.settings-player .mp-buttons button,
-.settings-player .mp-buttons a {
-  height: 34px;
-  line-height: 34px;
-  font-size: 16px;
 }
 
 /* Hints along the bottom of the picker and the flyover before a race (ui/hints.ts): controls, items, tips. */

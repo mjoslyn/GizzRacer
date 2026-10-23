@@ -76,11 +76,6 @@ export function musicStart(samples: Float32Array, rate: number): number {
   return t < SKIP_MIN ? 0 : Math.round(t * 10) / 10;
 }
 
-/** Whether a track of a show is all talk, by its name: band chat, tuning, the crowd, the break before the encore. */
-export function talkTrack(title: string): boolean {
-  return /\b(banter|tuning|tune ?up|crowd|talk|chat|soundcheck|encore break|silence|intro tape|walk ?on|applause|stage announcement)\b/i.test(title);
-}
-
 /** Loudness windows (s), and the gate under the mean (dB) that leaves out the quiet bits (a pause, the talk). */
 const LOUD_WINDOW = 0.4;
 const LOUD_GATE = 10;

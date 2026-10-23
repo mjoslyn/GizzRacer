@@ -33,15 +33,13 @@ export interface Settings {
 }
 
 export type VideoLook = 'full' | 'light' | 'off';
-export type Soundtrack = 'remix' | 'song' | 'keep' | 'show';
-export const SOUNDTRACKS: readonly Soundtrack[] = ['remix', 'song', 'keep', 'show'];
+export type Soundtrack = 'remix' | 'song';
+export const SOUNDTRACKS: readonly Soundtrack[] = ['remix', 'song'];
 /** What each is called and what it does, for Settings and the picker. The live ones stream the band's shows from the Internet Archive. */
-export const SOUNDTRACK_NAMES: Record<Soundtrack, string> = { remix: 'Game sound', song: 'Track song', keep: 'Keep playing', show: 'Play a set' };
+export const SOUNDTRACK_NAMES: Record<Soundtrack, string> = { remix: 'Game sound', song: 'Track song' };
 export const SOUNDTRACK_BLURBS: Record<Soundtrack, string> = {
   remix: "The game's remix of each track's song",
   song: "A live recording of each track's song, a new one every race",
-  keep: 'Starts with the track\'s song live, then that show plays on, song after song, across races',
-  show: 'A whole live show from the top, song after song, across races',
 };
 export const VIDEO_LOOKS: readonly VideoLook[] = ['full', 'light', 'off'];
 
@@ -67,6 +65,9 @@ function load(): Settings {
     // Saved before the player chose one (with an older default): the current default.
     if (!s.videoLookChosen) s.videoLook = DEFAULT_SETTINGS.videoLook;
     if (!s.detailChosen) s.detail = coarseDevice() ? 'low' : 'high';
+    // Keep playing and Play a set are gone: those who chose either still get the band live.
+    const was = s.soundtrack as string;
+    if (was === 'keep' || was === 'show') s.soundtrack = 'song';
     if (!SOUNDTRACKS.includes(s.soundtrack)) s.soundtrack = 'remix';
     return s;
   } catch {
