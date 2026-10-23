@@ -85,7 +85,7 @@ export interface StepEvents {
  * Bump whenever kart physics, racer stats or a track layout change lap
  * times: online leaderboards and ghosts are kept per version.
  */
-export const PHYSICS_VERSION = 21;
+export const PHYSICS_VERSION = 22;
 export const KART_RADIUS = 1;
 export const GRAVITY = 30;
 export const HOP_VELOCITY = 4.5;
@@ -121,8 +121,8 @@ export const TRICK_STREAK_MAX = 4;
  * of the climb the glider holds the fall to GLIDE_SINK (gravity a share
  * GLIDE_GRAVITY of the usual on the way to it), and the kart steers in the
  * air at GLIDE_STEER of its grip on the road where a plain jump has
- * AIR_STEER. Braking dives, sinking at up to GLIDE_DIVE, to come down
- * sooner for a corner. The glider folds on landing, or GLIDE_TIME after it opened,
+ * AIR_STEER. Up climbs and down (or the brake) dives (see `glide`), to
+ * clear something or come down sooner for a corner. The glider folds on landing, or GLIDE_TIME after it opened,
  * so even a launch off a cliff comes down within reach of the road.
  */
 export const LAUNCH_VY = 13;
@@ -132,6 +132,12 @@ export const GLIDE_SINK = 3;
 export const GLIDE_DIVE = 10;
 export const GLIDE_STEER = 1;
 export const GLIDE_TIME = 2.2;
+export const GLIDE_CLIMB = 3;
+const GLIDE_PULL = 14;
+export const GLIDE_CLIMB_DRAG = 7;
+export const GLIDE_STALL = 0.6;
+const GLIDE_DIVE_GAIN = 6;
+export const GLIDE_DIVE_TOP = 1.25;
 /** A launcher blows an updraft: a kart skimming this close over it (off a crest just before it) is caught all the same. */
 const LAUNCH_REACH = 2.5;
 /** Top speed multiplier while in a Road Train. */
@@ -486,14 +492,8 @@ export function stepKart(s: KartState, input: InputFrame, p: KartParams, env: Dr
     if (s.grounded || s.glideTime > GLIDE_TIME) s.glideTime = 0;
   }
   if (!s.grounded) {
-    if (s.glideTime > 0 && s.vy < 0) {
-      // The glider holds the fall; braking dives, and letting go of the brake it catches the air again.
-      const dive = input.brake > 0.5;
-      const sink = dive ? GLIDE_DIVE : GLIDE_SINK;
-      s.vy = s.vy < -sink ? moveToward(s.vy, -sink, gravity * dt) : Math.max(s.vy - gravity * (dive ? 1 : GLIDE_GRAVITY) * dt, -sink);
-    } else {
-      s.vy -= gravity * dt;
-    }
+    if (s.glideTime > 0) glide(s, input, p, gravity, dt);
+    else s.vy -= gravity * dt;
     s.y += s.vy * dt;
     if (s.y <= ground.height) {
       ev.landed = Math.max(0.01, -s.vy);
@@ -576,6 +576,31 @@ export function stepKart(s: KartState, input: InputFrame, p: KartParams, env: Dr
   }
 
   return ev;
+}
+
+/**
+ * One tick of the glider's vertical, and the speed it trades for it. Up
+ * climbs at up to GLIDE_CLIMB, bleeding speed, until it stalls at
+ * GLIDE_STALL of top speed and can only glide on down. Down (or the brake)
+ * dives at up to GLIDE_DIVE and picks speed up, to GLIDE_DIVE_TOP of top.
+ * With neither, the fall is held to GLIDE_SINK; letting go of a dive, it
+ * catches the air again.
+ */
+function glide(s: KartState, input: InputFrame, p: KartParams, gravity: number, dt: number): void {
+  const dive = clamp(Math.max(-input.pitch, input.brake > 0.5 ? 1 : 0), 0, 1);
+  const climb = dive > 0 ? 0 : clamp(input.pitch, 0, 1);
+  const stall = p.topSpeed * GLIDE_STALL;
+  if (climb > 0 && s.speed > stall) {
+    const target = GLIDE_CLIMB * climb;
+    s.vy = s.vy > target ? Math.max(target, s.vy - gravity * dt) : Math.min(target, s.vy + GLIDE_PULL * dt);
+    s.speed = Math.max(stall, s.speed - GLIDE_CLIMB_DRAG * climb * dt);
+  } else if (s.vy < 0 || dive > 0) {
+    const sink = GLIDE_SINK + (GLIDE_DIVE - GLIDE_SINK) * dive;
+    s.vy = s.vy < -sink ? moveToward(s.vy, -sink, gravity * dt) : Math.max(s.vy - gravity * (dive > 0 ? 1 : GLIDE_GRAVITY) * dt, -sink);
+    if (dive > 0) s.speed = Math.min(s.speed + GLIDE_DIVE_GAIN * dive * dt, Math.max(s.speed, p.topSpeed * GLIDE_DIVE_TOP));
+  } else {
+    s.vy -= gravity * dt;
+  }
 }
 
 /** A trick off a launcher: the glider opens. */

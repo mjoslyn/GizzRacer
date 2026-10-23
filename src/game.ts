@@ -3,10 +3,13 @@ import { Lensflare, LensflareElement } from 'three/addons/objects/Lensflare.js';
 import { InputManager, NEUTRAL_INPUT, type InputFrame } from './core/input';
 import { FixedLoop, PHYSICS_DT } from './core/loop';
 import { clamp, damp, lerp, lerpAngle } from './core/math';
-import { CPU_SKILL, CpuDriver, rivalSkill } from './ai/cpuDriver';
+import { CPU_SKILL, CpuDriver, DIFFICULTY_PACE, rivalSkill, withDifficulty } from './ai/cpuDriver';
 import { MusicPlayer } from './audio/music';
+import { LiveRadio } from './audio/radio';
+import { MiniPlayer } from './ui/miniPlayer';
+import { HintsTicker } from './ui/hints';
 import { Sfx } from './audio/sfx';
-import { remixCues } from './audio/songs';
+import { TRACK_SONGS, remixCues } from './audio/songs';
 import { GHOST_HZ, GHOST_OVERRUN, GhostRecorder, decodeGhost, encodeGhost, ghostPose, type GhostRun } from './core/ghost';
 import { identity } from './net/identity';
 import { TRIAL_LAPS, recordId } from './net/runCheck';
@@ -26,7 +29,8 @@ import { OnlineRace } from './net/onlineRace';
 import type { Effect, RoomStart } from './net/protocol';
 import type { RoomClient } from './net/room';
 import { GrandPrix } from './core/grandPrix';
-import { Race, ordinal, type RaceKart } from './core/race';
+import { Race, TOUCH_CPU_PACE, ordinal, type RaceKart } from './core/race';
+import { ASSIST_NORMAL, ASSIST_TOUCH } from './physics/steerAssist';
 import { DRIFT_TIERS, PHYSICS_VERSION, copyKartState, createKartState, driftTier, respawnKart, type KartState, type StepEvents } from './physics/kart';
 import { FIELD_SIZE, RACERS, pickRivals, type RacerDef } from './physics/racers';
 import type { HazardKind } from './items/hazards';
@@ -40,10 +44,11 @@ import { RacerGallery } from './render/gallery';
 import { flareRingTexture, glowTexture, setTextureAnisotropy } from './render/textures';
 import { WATER_LEVEL, buildTrackView, type TrackView } from './render/trackView';
 import { TRACK_LIST, randomCupTracks } from './tracks/index';
+import { findBends, nextBend, type Bend } from './tracks/turns';
 import { pointAt } from './tracks/spline';
 import { generateTrack, trackId } from './tracks/generator';
 import { Track, inPit, type TrackDef } from './tracks/track';
-import { Hud, formatTime, type Table, type TableRow } from './ui/hud';
+import { Hud, formatTime, type HudData, type Table, type TableRow } from './ui/hud';
 import { deleteSaved, findSaved, saveTrack, savedTracks } from './core/savedTracks';
 import { DAILY_SLOT, Menu, chosenCup, newSeed, type MenuChoice } from './ui/menu';
 import { SaveTrackPanel } from './ui/saveTrack';
@@ -97,6 +102,11 @@ const postFx = new PostFx(renderer);
 const input = new InputManager();
 const hud = new Hud(document.body);
 const music = new MusicPlayer();
+/** The live soundtrack (Settings > Soundtrack): a race's song live, or a whole show kept playing. */
+const radio = new LiveRadio(music);
+new MiniPlayer(document.body, radio, music);
+/** Controls, items and tips scrolling along the bottom of the picker and the flyover before a race. */
+const hints = new HintsTicker(document.body);
 const sfx = new Sfx(
   () => music.context,
   (level, hold) => music.duck(level, hold),
@@ -159,6 +169,8 @@ interface Ghost {
 }
 let ghosts: Ghost[] = [];
 let track: Track;
+/** The main road's bends, for the next-turn indicator. */
+let bends: Bend[] = [];
 let trackView: TrackView | null = null;
 let race: Race;
 /** The human's kart, or null in attract mode. */
@@ -310,10 +322,16 @@ const records = new RecordsPanel(document.body);
 /** Asks for a name on the results screen the first time there's something to post. */
 const namePrompt = new NamePrompt(document.body);
 const tilt = new TiltSteering(input);
-const settingsScreen = new SettingsScreen(document.body, tilt);
+const settingsScreen = new SettingsScreen(document.body, tilt, radio);
 /** The mix that sits right: music under the effects (see the audio commit). */
 const MUSIC_LEVEL = 0.63;
 onSettings((s) => {
+  // Back to the game's remixes: the live soundtrack lets go at once.
+  if (s.soundtrack === 'remix' && radio.playing) {
+    radio.stop();
+    liveRace = false;
+    music.play(mode === 'race' ? remixCues(track.def.music.lap) : remixCues('title'));
+  }
   // Detail (render/detail.ts): shadows and the resolution switch at once; the road grain and the scenery arrive with the next track built.
   const spec = DETAIL_SPEC[s.detail];
   setGraphicsDetail(s.detail);
@@ -391,7 +409,7 @@ function setMode(next: Mode): void {
   savePanel.show(generated ? track.def.name : null, generated && !!findSaved(choice.gen.params));
   touch.setVisible(next === 'race');
   loop.paused = false;
-  if (next === 'title' || next === 'menu' || next === 'lobby') music.play(remixCues('title'));
+  if (next === 'title' || next === 'menu' || next === 'lobby') menuMusic();
   // Back at the picker: fetch the board again, it may include the run just posted.
   updateBoard(true);
 }
@@ -451,6 +469,7 @@ function loadTrack(entry: TrackEntry): void {
     });
   }
   track = new Track(entry.build());
+  bends = findBends(track.main);
   trackView = buildTrackView(track);
   scene.add(trackView.group);
   const t = trackView.theme;
@@ -498,7 +517,9 @@ function startRace(withPlayer: boolean): void {
       else {
         // A Grand Prix rival drives a touch sharper, and wears the name.
         const rival = withPlayer && !!gp && gp.rivals.includes(r);
-        race.addKart(r, choice.engine, rival ? rivalSkill(CPU_SKILL[choice.engine]) : CPU_SKILL[choice.engine]).rival = rival;
+        // The difficulty setting shapes how every CPU drives, offline (online the room decides).
+        const skill = withDifficulty(CPU_SKILL[choice.engine], settings().cpuDifficulty);
+        race.addKart(r, choice.engine, rival ? rivalSkill(skill) : skill).rival = rival;
       }
     }
     // The CPUs ahead hold back a little for the player (Race.rubberBand), never for a ghost or the attract mode.
@@ -529,9 +550,10 @@ function startRace(withPlayer: boolean): void {
   intro = withPlayer && !net ? INTRO_TIME : 0;
   // Online, everyone's GO is the room's: count down to it on the room clock.
   if (net) race.time = Math.max(-10, -(net.start.at - net.client.serverNow()) / 1000);
+  liveRace = false;
   if (withPlayer) {
     setMode('race');
-    music.play(remixCues(track.def.music.lap));
+    startRaceMusic();
   }
 }
 
@@ -689,7 +711,12 @@ function step(dt: number): void {
   if (online && race.time < 0) race.time = Math.min(0, -(online.start.at - online.client.serverNow()) / 1000) - dt;
   const net = player && online?.net;
   if (net) netStep(net, player!);
-  if (player) player.assist = settings().smartSteering;
+  if (player) {
+    player.assist = settings().smartSteering;
+    // On touch (a phone or tablet): a firmer hand on the wheel, and the CPUs a little slower. The difficulty sets their pace too.
+    player.assistLevel = touch.enabled ? ASSIST_TOUCH : ASSIST_NORMAL;
+    race.cpuPace = DIFFICULTY_PACE[settings().cpuDifficulty] * (touch.enabled ? TOUCH_CPU_PACE : 1);
+  }
   const inputs = race.karts.map((k) => (k === player ? lastInput : undefined));
   const events = race.step(dt, inputs);
   events.forEach((ev, i) => {
@@ -904,6 +931,18 @@ function surgeCloseness(p: RaceKart): { near: number; eta: number } | null {
 function surgeWarning(p: RaceKart, dt: number): void {
   const near = surgeCloseness(p);
   sfx.surgeAlarm(dt, near?.near ?? null);
+}
+
+/**
+ * The next bend for the HUD: only racing, on the main road (a shortcut has
+ * bends of its own), with the hints on. Mirrored, left is right.
+ */
+function turnHint(): HudData['turn'] {
+  if (!player || !settings().turnIndicator || !race.started || player.finishTime !== null || player.branch >= 0) return null;
+  const next = nextBend(bends, track.length, player.progressS);
+  if (!next) return null;
+  const { bend, distance } = next;
+  return { dir: mirrored() ? (-bend.dir as -1 | 1) : bend.dir, angle: bend.angle, severity: bend.severity, distance };
 }
 
 /** A shortcut the player has just driven onto: style points, and noted in their progress. Quietly: no pop-up, no sting. */
@@ -1154,9 +1193,62 @@ function updateSounds(dt: number): void {
   sfx.hazards(dt, near('snakes'), near('dustDevils') ?? near('tornadoes') ?? near('blackHoles') ?? near('butterflies') ?? near('wisps'));
 }
 
+/** The live soundtrack has this race's music (it falls back to the game's own by itself if a stream won't play). */
+let liveRace = false;
+
+/**
+ * The race's music, by Settings > Soundtrack: the game's remix of the
+ * track's song; a live recording of the song, at random (a song never
+ * played live, or a generated track with no song, gets the remix); or the
+ * show that's playing, kept going.
+ */
+function startRaceMusic(): void {
+  const cues = remixCues(track.def.music.lap);
+  const mode = settings().soundtrack;
+  const song = TRACK_SONGS[track.def.id]?.title;
+  if (mode === 'show') {
+    liveRace = true;
+    void radio.ensureShow(cues);
+    return;
+  }
+  if (mode === 'song' && song) {
+    liveRace = true;
+    const forRace = race;
+    void radio.playSong(song, cues).then((ok) => {
+      if (ok || race !== forRace) return;
+      liveRace = false;
+      music.play(cues);
+    });
+    return;
+  }
+  liveRace = false;
+  if (radio.playing) radio.stop();
+  music.play(cues);
+}
+
+/** The menus' music: the title remix, unless a show is playing through. */
+function menuMusic(): void {
+  if (settings().soundtrack === 'show' && radio.playing) return;
+  if (radio.playing) radio.stop();
+  music.play(remixCues('title'));
+}
+
+/** The credit for the live recording playing, for the HUD (on touch, where there's no mini player). */
+function nowPlaying(): string | null {
+  const rec = music.live;
+  const p = radio.playing;
+  if (!rec || !p) return null;
+  return `${p.title}, live${rec.venue ? ` at ${rec.venue}` : ''}, ${rec.date}`;
+}
+
 function updateMusic(p: RaceKart): void {
   const { lap, finalLap } = track.def.music;
-  if (p.finishTime !== null) music.play('podium');
+  const keepShow = liveRace && settings().soundtrack === 'show';
+  if (p.finishTime !== null) {
+    if (!keepShow) music.play('podium');
+  }
+  // A live recording plays the whole race through: no final-lap cut.
+  else if (liveRace) return;
   else if (race.laps > 1 && p.laps.lap === race.laps - 1) music.play(remixCues(finalLap ?? `${lap}-final-lap`).filter((c) => finalLap || c !== `${lap}-final-lap`));
   else music.play(remixCues(lap));
 }
@@ -1247,6 +1339,7 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
   updateSounds(dt);
 
   const finished = f.finishTime !== null;
+  hints.show(mode === 'menu' || (mode === 'race' && intro > 0 && !!player));
   hud.update(
     {
       kart: s,
@@ -1255,7 +1348,7 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
       raceTime: f.finishTime ?? Math.max(0, race.time),
       lapTimes: f.lapTimes,
       racerName: f.racer.name,
-      engineClass: choice.engine,
+      engineClass: `${choice.engine}${!online && choice.mode !== 'timeTrial' && settings().cpuDifficulty !== 'normal' ? ` · ${settings().cpuDifficulty} CPUs` : ''}`,
       trackName: gp && !gp.finished ? `${track.def.name} · race ${gp.round + 1}/${gp.tracks.length}${gp.rivals.length ? ` · vs ${gp.rivals.map((r) => r.name).join(' & ')}` : ''}` : ghosts.length ? `${track.def.name} · ${ghosts.map((g) => `${g.label} ${formatTime(g.run.total)}`).join(' · ')}` : `${track.def.name}${mirrored() ? ' · Mirror' : ''}`,
       autoAccelerate: input.autoAccelerate,
       finished,
@@ -1280,6 +1373,8 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
       surge: player ? surgeCloseness(player) : null,
       style: style && player ? { score: style.score, chain: style.chainLeft > 0 ? style.chain : 0 } : null,
       splits,
+      turn: turnHint(),
+      nowPlaying: nowPlaying(),
     },
     elapsed,
   );
@@ -1430,7 +1525,7 @@ function startPodium(): void {
   for (const v of views) v.root.visible = v.fx.visible = false;
   itemsView!.group.visible = hazardsView!.group.visible = false;
   setMode('podium');
-  music.play('podium');
+  if (!(settings().soundtrack === 'show' && radio.playing)) music.play('podium');
 }
 
 function endPodium(): void {
@@ -1692,3 +1787,4 @@ Object.assign(window, {
 loadTrack(TRACK_LIST[choice.track]);
 setMode('title');
 loop.start();
+

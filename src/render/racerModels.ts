@@ -2366,6 +2366,149 @@ function arlo(r: RacerDef): KartModel {
   };
 }
 
+// Flying Pig: Flight b741's captain, for the day pigs fly. A pink pig on feathered wings, in a leather
+// flying cap with goggles up, a white scarf streaming, a b741 luggage tag on the collar, curly tail going.
+function flyingPig(r: RacerDef): KartModel {
+  const body = new THREE.Group();
+  const skin = matte(r.color, { shininess: 22, specular: 0x332222 });
+  const blush = matte(0xf7b8c6, { shininess: 18 });
+  const dark = matte(0x3a1a1e, { shininess: 40 });
+  const leather = matte(0x6a3a1a, { shininess: 50, specular: 0x332211 });
+  const feather = matte(0xfdfaf2, { shininess: 14, side: THREE.DoubleSide });
+  const scarfMat = matte(0xf8f6f0, { side: THREE.DoubleSide });
+  // It flies: everything rides a metre off the road.
+  const pig = new THREE.Group();
+  pig.position.y = 0.95;
+  body.add(pig);
+
+  // A round barrel of a body, a paler belly, a plump rump.
+  put(pig, ball(0.5, 22, 16), skin, [0, 0, 0], [0, 0, 0], [1, 0.86, 1.35]);
+  put(pig, ball(0.42, 18, 12), blush, [0, -0.14, 0.05], [0, 0, 0], [0.95, 0.7, 1.2]);
+  // Four trotters tucked up under it in flight, dark little hooves.
+  for (const side of [-1, 1]) {
+    for (const z of [0.38, -0.38]) {
+      const hip: [number, number, number] = [side * 0.27, -0.25, z];
+      const foot: [number, number, number] = [side * 0.3, -0.5, z - 0.12];
+      rod(pig, hip, foot, 0.09, skin, 0.075);
+      put(pig, cyl(0.07, 0.08, 0.08, 10), dark, [foot[0], foot[1] - 0.04, foot[2]]);
+    }
+  }
+
+  // The curly tail, wagging. Tipped back a quarter turn, the sweeper's turn is a wag (Arlo's trick).
+  const tail = new THREE.Group();
+  tail.position.set(0, 0.12, -0.66);
+  tail.rotation.x = -Math.PI / 2;
+  tail.userData.phase = 1.3;
+  const curl = new THREE.Group();
+  curl.rotation.x = Math.PI / 2;
+  const spiral = Array.from({ length: 24 }, (_, k) => {
+    const t = k / 23;
+    const a = t * Math.PI * 4;
+    return new THREE.Vector3(Math.sin(a) * 0.07 * (1 - t * 0.4), Math.cos(a) * 0.07 * (1 - t * 0.4) + t * 0.12, -t * 0.26);
+  });
+  put(curl, new THREE.TubeGeometry(new THREE.CatmullRomCurve3(spiral), 48, 0.025, 8, false), skin, [0, 0, 0]);
+  tail.add(curl);
+  pig.add(tail);
+
+  // Feathered wings from the shoulders: a fan of long white flight feathers, the longest at the tip, swept back.
+  const flappers: THREE.Object3D[] = [];
+  for (const side of [-1, 1]) {
+    const wing = new THREE.Group();
+    wing.position.set(side * 0.38, 0.22, 0.2);
+    wing.userData.side = side;
+    put(wing, ball(0.16, 12, 10), feather, [side * 0.12, 0, 0], [0, 0, 0], [1.4, 0.45, 1.1]);
+    for (let k = 0; k < 6; k++) {
+      const len = 0.45 + k * 0.09;
+      const f = put(wing, ball(0.5, 10, 6), feather, [0, 0, 0], [0, 0, 0], [len, 0.035, 0.11]);
+      // Each feather fans further back than the one before.
+      const a = 0.15 + k * 0.17;
+      f.rotation.y = side * a;
+      f.position.set(side * (0.12 + Math.cos(a) * len * 0.5), 0.01 * k, 0.05 - Math.sin(a) * len * 0.5);
+    }
+    pig.add(wing);
+    flappers.push(wing);
+  }
+  // A soft glow of cloud under it, kicking up the road.
+  const pads = [glowSprite(pig, [0, -0.6, 0], 0.9, 0xffe6ee), ...[-1, 1].map((side) => glowSprite(pig, [side * 0.9, -0.45, -0.1], 0.55, 0xfff4f8))];
+
+  // The head: round, a flat pink snout with two nostrils, floppy ears, the flying cap and goggles.
+  const head = new THREE.Group();
+  head.position.set(0, 0.24, 0.72);
+  head.scale.setScalar(1.12);
+  put(head, ball(0.34, 20, 16), skin, [0, 0, 0], [0, 0, 0], [1, 0.95, 1]);
+  for (const side of [-1, 1]) put(head, ball(0.08, 10, 8), blush, [side * 0.2, -0.1, 0.22], [0, 0, 0], [1, 0.7, 0.5]);
+  put(head, cyl(0.15, 0.16, 0.14, 20), blush, [0, -0.06, 0.33], [Math.PI / 2, 0, 0]);
+  for (const side of [-1, 1]) put(head, ball(0.035, 10, 8), dark, [side * 0.055, -0.06, 0.4], [0, 0, 0], [0.8, 1.2, 0.5]);
+  eyes(head, 0.1, 0.26, 0.13, 0.06, 0x3a2a1a);
+  // A grin under the snout.
+  put(head, new THREE.TorusGeometry(0.09, 0.012, 6, 16, Math.PI), dark, [0, -0.17, 0.3], [0, 0, Math.PI]);
+  const capTop = new THREE.SphereGeometry(0.36, 24, 12, 0, Math.PI * 2, 0, Math.PI * 0.42);
+  put(head, capTop, leather, [0, 0.04, -0.02]);
+  // The cap's earflaps hang down either side, the pig's own ears poking out under them, flopping.
+  for (const side of [-1, 1]) {
+    put(head, ball(0.12, 12, 10), leather, [side * 0.31, -0.06, -0.02], [0, 0, side * 0.15], [0.35, 1, 0.8]);
+    const ear = new THREE.Group();
+    ear.position.set(side * 0.24, 0.24, 0.02);
+    ear.userData.side = side;
+    put(ear, cone(0.1, 0.22, 4), skin, [side * 0.06, 0.04, 0.06], [0.9, 0, -side * 0.5], [1, 1, 0.35]);
+    head.add(ear);
+    flappers.push(ear);
+  }
+  // Goggles pushed up on the cap, brass rims, sky in the lenses.
+  for (const side of [-1, 1]) {
+    put(head, ring(0.075, 0.018), brass(), [side * 0.09, 0.26, 0.24], [-0.7, 0, 0]);
+    put(head, new THREE.CircleGeometry(0.07, 18), glow(0x9ad8ff), [side * 0.09, 0.262, 0.243], [-0.7, 0, 0]);
+  }
+  pig.add(head);
+
+  // The scarf round the neck, its two ends streaming back over the shoulder.
+  put(pig, ring(0.34, 0.07), scarfMat, [0, 0.14, 0.6], [Math.PI / 2 - 0.25, 0, 0], [1, 1, 0.8]);
+  put(pig, box(0.18, 0.03, 0.62), scarfMat, [0.2, 0.46, 0.18], [-0.12, 0.3, -0.15]);
+  put(pig, box(0.15, 0.03, 0.46), scarfMat, [0.1, 0.44, 0.24], [-0.08, 0.12, 0.1]);
+  // A luggage tag on the collar: FLIGHT b741.
+  const label = tex('b741-tag', () => {
+    const c = document.createElement('canvas');
+    c.width = 128;
+    c.height = 64;
+    const g = c.getContext('2d')!;
+    g.fillStyle = '#f2e6c8';
+    g.fillRect(0, 0, 128, 64);
+    g.fillStyle = `#${r.accent.toString(16).padStart(6, '0')}`;
+    g.fillRect(0, 0, 128, 14);
+    g.fillStyle = '#1a1a24';
+    g.font = 'bold 12px sans-serif';
+    g.textAlign = 'center';
+    g.fillText('FLIGHT', 64, 30);
+    g.font = '900 26px Impact, "Arial Black", sans-serif';
+    g.fillText('b741', 64, 58);
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  });
+  const tag = new THREE.Group();
+  // Hung from the scarf under the chin, turned out a little.
+  tag.position.set(-0.17, -0.18, 0.92);
+  tag.rotation.set(0.1, -0.3, 0.12);
+  put(tag, new THREE.PlaneGeometry(0.26, 0.13), new THREE.MeshBasicMaterial({ map: label, side: THREE.DoubleSide }), [0, 0, 0]);
+  rod(pig, [-0.12, -0.02, 0.86], [-0.16, -0.11, 0.91], 0.006, matte(0x8a6a3a));
+  pig.add(tag);
+
+  return {
+    body,
+    wheels: [],
+    // Boost fire out of the back, under the tail: a pig with a jet in it.
+    exhausts: [new THREE.Vector3(0, 0.95, -0.72)],
+    rearTrack: 0.5,
+    rearZ: -0.7,
+    spinners: [],
+    shadow: [2.6, 3.0],
+    hover: { bob: 0.13, pads },
+    head,
+    flappers,
+    sweepers: [tail],
+  };
+}
+
 const BUILDERS: Record<string, (r: RacerDef) => KartModel> = {
   'lizard-warlock': lizardWarlock,
   'cyborg-gourmand': cyborgGourmand,
@@ -2387,6 +2530,7 @@ const BUILDERS: Record<string, (r: RacerDef) => KartModel> = {
   'michael-cavanagh': michaelCavanagh,
   'jason-galea': jasonGalea,
   'arlo': arlo,
+  'flying-pig': flyingPig,
 };
 
 export function buildKartModel(racer: RacerDef): KartModel {

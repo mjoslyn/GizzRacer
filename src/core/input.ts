@@ -15,8 +15,10 @@ const KEYS = {
 } as const;
 
 // Standard gamepad mapping indices.
-const PAD = { a: 0, b: 1, y: 3, l1: 4, r1: 5, l2: 6, r2: 7, start: 9, dLeft: 14, dRight: 15 } as const;
+const PAD = { a: 0, b: 1, y: 3, l1: 4, r1: 5, l2: 6, r2: 7, start: 9, dUp: 12, dDown: 13, dLeft: 14, dRight: 15 } as const;
 const STICK_DEADZONE = 0.15;
+/** The stick's up and down only pitch the glider when meant: steering wanders off the horizontal. */
+const PITCH_DEADZONE = 0.45;
 
 const PREVENT_DEFAULT = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space']);
 
@@ -27,7 +29,7 @@ const PREVENT_DEFAULT = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRigh
 export class InputManager {
   autoAccelerate = true;
   /** Written by the on-screen touch controls. */
-  readonly touch = { steer: 0, tilt: 0, drift: false, brake: false, item: false };
+  readonly touch = { steer: 0, tilt: 0, pitch: 0, drift: false, brake: false, item: false };
   private readonly down = new Set<string>();
   /** Keys pressed since the last sample, so sub-tick taps aren't lost. */
   private readonly latched = new Set<string>();
@@ -54,6 +56,9 @@ export class InputManager {
     let throttle = key(KEYS.throttle) ? 1 : 0;
     let brake = key(KEYS.brake) ? 1 : 0;
     let steer = (key(KEYS.right) ? 1 : 0) - (key(KEYS.left) ? 1 : 0);
+    // Up and down: the throttle and brake keys, which with the glider open climb and dive. Accelerating by hand, up is held
+    // down as the throttle, so it only dives.
+    let pitch = (this.autoAccelerate && key(KEYS.throttle) ? 1 : 0) - (key(KEYS.brake) ? 1 : 0) + this.touch.pitch;
     let drift = key(KEYS.drift);
     let item = key(KEYS.item);
     let lookBack = key(KEYS.lookBack);
@@ -74,6 +79,10 @@ export class InputManager {
         steer += Math.sign(x) * ((Math.abs(x) - STICK_DEADZONE) / (1 - STICK_DEADZONE));
       }
       steer += (btn(PAD.dRight) ? 1 : 0) - (btn(PAD.dLeft) ? 1 : 0);
+      // The stick's up is negative.
+      const y = pad.axes[1] ?? 0;
+      if (Math.abs(y) > PITCH_DEADZONE) pitch -= Math.sign(y) * ((Math.abs(y) - PITCH_DEADZONE) / (1 - PITCH_DEADZONE));
+      pitch += (btn(PAD.dUp) ? 1 : 0) - (btn(PAD.dDown) ? 1 : 0);
       drift ||= btn(PAD.r1);
       item ||= btn(PAD.l1);
       lookBack ||= btn(PAD.y);
@@ -85,6 +94,7 @@ export class InputManager {
       throttle: clamp(throttle, 0, 1),
       brake: clamp(brake, 0, 1),
       steer: clamp(steer, -1, 1),
+      pitch: clamp(pitch, -1, 1),
       drift,
       driftPressed: drift && !this.prevDrift,
       item,

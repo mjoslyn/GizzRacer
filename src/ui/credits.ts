@@ -32,6 +32,7 @@ export function creditsHtml(): string {
       <ul class="credits-list">${samples}</ul>
       <div class="settings-group">Music</div>
       <p class="credits-note">Written and remixed in seqbaby (playseqbaby.com)</p>
+      <p class="credits-note">With Settings &gt; Soundtrack on Live, the music streams the band's live recordings (a race's song, or a whole show) from their shows on the Internet Archive's Live Music Archive (archive.org/details/KingGizzardAndTheLizardWizard), recorded by the fans who taped them. King Gizzard &amp; the Lizard Wizard let their shows be taped and shared</p>
       <div class="settings-group">Made with</div>
       <ul class="credits-list">
         <li><span class="credits-track">Lettering</span><span class="credits-song">Metal Mania by Open Window <small>SIL Open Font License</small></span></li>

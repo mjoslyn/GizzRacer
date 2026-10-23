@@ -14,19 +14,27 @@ import { STEER_EXPO, type KartState } from './kart';
  * at full lock, so a track without a wall can still be left on purpose.
  */
 
-/** Seconds ahead it looks for the edge. */
-const LOOK_AHEAD = 0.45;
-/** Metres in from the edge it starts to steer back. */
-const EDGE_MARGIN = 1.5;
-/** Metres past that margin for its full correction. */
+/** How hard the hand on the wheel is: a level for a keyboard or a stick, and a firmer one for touch, where steering is a thumb on glass. */
+export interface AssistLevel {
+  /** Seconds ahead it looks for the edge. */
+  lookAhead: number;
+  /** Metres in from the edge it starts to steer back. */
+  edgeMargin: number;
+  /** Its strongest correction at an open edge, and at a wall. */
+  openPush: number;
+  wallPush: number;
+  /** Straightening: how far out of line (rad) it helps with, how hard, and how much at most (as turning, after the stick's response curve). */
+  alignRange: number;
+  alignGain: number;
+  alignMax: number;
+}
+
+export const ASSIST_NORMAL: AssistLevel = { lookAhead: 0.45, edgeMargin: 1.5, openPush: 0.8, wallPush: 0.35, alignRange: 0.35, alignGain: 1.5, alignMax: 0.3 };
+/** On touch: it looks further ahead, steers back sooner and harder, and straightens up more. */
+export const ASSIST_TOUCH: AssistLevel = { lookAhead: 0.65, edgeMargin: 2.5, openPush: 1, wallPush: 0.6, alignRange: 0.5, alignGain: 2.2, alignMax: 0.45 };
+
+/** Metres past the margin for its full correction. */
 const EDGE_RAMP = 2.5;
-/** Its strongest correction at an open edge, and at a wall. */
-const OPEN_PUSH = 0.8;
-const WALL_PUSH = 0.35;
-/** Straightening: how far out of line (rad) it helps with, how hard, and how much at most (as turning, after the stick's response curve). */
-const ALIGN_RANGE = 0.35;
-const ALIGN_GAIN = 1.5;
-const ALIGN_MAX = 0.3;
 /** Straightening fades out on bends this tight (rad/m) and beyond: there the turn is the player's. */
 const ALIGN_BEND = 0.02;
 /** A stick this far off centre is the player steering. */
@@ -41,7 +49,7 @@ export interface AssistEnv {
   locate(x: number, z: number, y: number, hint?: number): { onRoad: boolean };
 }
 
-export function assistSteer(input: InputFrame, s: KartState, env: AssistEnv): InputFrame {
+export function assistSteer(input: InputFrame, s: KartState, env: AssistEnv, level: AssistLevel = ASSIST_NORMAL): InputFrame {
   if (!s.grounded || s.spinTime > 0 || s.cannonTime > 0 || s.speed < MIN_SPEED) return input;
   const road = env.roadFrame(s);
   if (!road) return input;
@@ -57,22 +65,22 @@ export function assistSteer(input: InputFrame, s: KartState, env: AssistEnv): In
   let steer = input.steer;
 
   // Heading for the edge: steer back in.
-  const ahead = road.lateral + sideways * LOOK_AHEAD;
-  const over = Math.abs(ahead) - (road.halfWidth - EDGE_MARGIN);
-  if (over > 0 && Math.sign(sideways) === Math.sign(road.lateral || ahead) && !roadBeyond(s, vx, vz, tx, tz, ahead, road, env)) {
+  const ahead = road.lateral + sideways * level.lookAhead;
+  const over = Math.abs(ahead) - (road.halfWidth - level.edgeMargin);
+  if (over > 0 && Math.sign(sideways) === Math.sign(road.lateral || ahead) && !roadBeyond(s, vx, vz, tx, tz, ahead, road, env, level.lookAhead)) {
     // A stick held toward the edge is the player meaning to leave the road (a cut across the grass, a leap off a
     // ledge): the hand on the wheel lets go by as much as the stick says, and at full lock not at all.
     const intent = clamp(Math.sign(ahead) * input.steer, 0, 1);
-    steer -= Math.sign(ahead) * clamp(over / EDGE_RAMP, 0, 1) * (road.walled ? WALL_PUSH : OPEN_PUSH) * (1 - intent);
+    steer -= Math.sign(ahead) * clamp(over / EDGE_RAMP, 0, 1) * (road.walled ? level.wallPush : level.openPush) * (1 - intent);
   }
 
   // Stick let go, not drifting: ease the nose back in line with the road.
   if (Math.abs(input.steer) < STEER_DEADZONE && s.driftDir === 0) {
     const err = wrapAngle(s.heading - Math.atan2(tx, tz));
-    if (Math.abs(err) < ALIGN_RANGE) {
+    if (Math.abs(err) < level.alignRange) {
       const straight = 1 - clamp(Math.abs(road.curvature) / ALIGN_BEND, 0, 1);
       // Undo the stick's response curve (stepKart), so small corrections still turn.
-      const turn = clamp(err * ALIGN_GAIN, -ALIGN_MAX, ALIGN_MAX) * straight;
+      const turn = clamp(err * level.alignGain, -level.alignMax, level.alignMax) * straight;
       steer += Math.sign(turn) * Math.abs(turn) ** (1 / STEER_EXPO);
     }
   }
@@ -81,10 +89,10 @@ export function assistSteer(input: InputFrame, s: KartState, env: AssistEnv): In
 }
 
 /** Is there more road just past this one's edge where the kart's heading: a branch to take, not an edge to save it from? */
-function roadBeyond(s: KartState, vx: number, vz: number, tx: number, tz: number, ahead: number, road: RoadFrame, env: AssistEnv): boolean {
+function roadBeyond(s: KartState, vx: number, vz: number, tx: number, tz: number, ahead: number, road: RoadFrame, env: AssistEnv, lookAhead: number): boolean {
   const side = Math.sign(ahead);
   const out = side * (road.halfWidth + BEYOND) - ahead;
-  const x = s.x + vx * LOOK_AHEAD - tz * out;
-  const z = s.z + vz * LOOK_AHEAD + tx * out;
+  const x = s.x + vx * lookAhead - tz * out;
+  const z = s.z + vz * lookAhead + tx * out;
   return env.locate(x, z, s.y, s.trackHint).onRoad;
 }
