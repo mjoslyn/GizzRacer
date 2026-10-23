@@ -2212,6 +2212,21 @@ button.hud-big {
   font-size: 18px;
 }
 
+/* The small rows' values (Sound, Mirror, the generator's dials): too small for the gradient lettering, which the
+   tape look turns to mud, so a solid gold with a hard shadow. */
+.menu-row.small .menu-value.hud-big {
+  background: none;
+  color: #ffe58a;
+  -webkit-text-fill-color: #ffe58a;
+  -webkit-text-stroke: 0;
+  filter: none;
+  text-shadow: 2px 2px 0 #3a0f45, -1px -1px 0 #3a0f45;
+}
+
+.menu-row.small {
+  opacity: 0.9;
+}
+
 .menu-new {
   font-size: 11px;
   letter-spacing: 1px;
