@@ -380,7 +380,7 @@ export class Race {
     s.heading = Math.atan2(p1.tx, p1.tz);
     // The lookup only searches near its hint, so carry the hint along with the flight.
     s.trackHint = Math.min(sp.count - 1, Math.floor((s1 / L) * sp.count));
-    Object.assign(s, { speed, vy: 0, extX: 0, extZ: 0, grounded: false, glideTime: 0, steer: 0, slip: 0, driftDir: 0, driftArmed: false, driftCharge: 0, boostTime: 0, spinTime: 0, spinAngle: 0, wobbleTime: 0, slowTime: 0 });
+    Object.assign(s, { speed, vy: 0, extX: 0, extZ: 0, grounded: false, glideTime: 0, launcher: false, steer: 0, slip: 0, driftDir: 0, driftArmed: false, driftCharge: 0, boostTime: 0, spinTime: 0, spinAngle: 0, wobbleTime: 0, slowTime: 0 });
     s.cannonTime = Math.max(0, s.cannonTime - dt);
     // Caught the pack and gone far enough past it: let go.
     if (goal && CANNON_TIME - s.cannonTime >= CANNON_MIN_TIME && kart.distance >= goal.target.distance + goal.past) s.cannonTime = 0;

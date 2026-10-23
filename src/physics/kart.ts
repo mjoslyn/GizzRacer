@@ -57,6 +57,7 @@ export interface KartState {
   invulnTime: number; // seconds of immunity left after being hit
   cannonTime: number; // seconds of Woo Cannon flight left: the race flies the kart, not stepKart
   glideTime: number; // seconds the glider has been open (off a launcher), 0 when it's folded
+  launcher: boolean; // thrown up off a launcher and not down yet: a trick now opens the glider
   ramTime: number; // seconds of Road Train left: immune, a little faster, spins out whoever it touches
   trickStreak: number; // tricks landed back to back
   trickChain: number; // seconds left to land the next trick and keep the streak
@@ -75,7 +76,7 @@ export interface StepEvents {
   boostTier: number; // 0 none, 1..3 drift tier released this tick
   wallHit: number; // 0..1 severity
   launched: boolean; // left a ledge or ramp lip
-  glided: boolean; // thrown up off a launcher, glider open
+  glided: boolean; // the glider opened: a trick off a launcher
   trick: boolean; // landed a trick
   trickStreak: number; // its place in a streak of back-to-back tricks, 1 for a lone one
 }
@@ -84,7 +85,7 @@ export interface StepEvents {
  * Bump whenever kart physics, racer stats or a track layout change lap
  * times: online leaderboards and ghosts are kept per version.
  */
-export const PHYSICS_VERSION = 20;
+export const PHYSICS_VERSION = 21;
 export const KART_RADIUS = 1;
 export const GRAVITY = 30;
 export const HOP_VELOCITY = 4.5;
@@ -114,12 +115,14 @@ export const TRICK_STREAK_BONUS = 0.4;
 export const TRICK_STREAK_MAX = 4;
 /**
  * Launchers and gliders: a launcher throws a kart up at LAUNCH_VY with at
- * least LAUNCH_SPEED of its top speed, and its glider opens. Past the top
+ * least LAUNCH_SPEED of its top speed. A trick off it (a hop in the trick
+ * window, as off any ramp) opens the glider; without one it's a plain jump,
+ * if a big one. With the glider open, past the top
  * of the climb the glider holds the fall to GLIDE_SINK (gravity a share
  * GLIDE_GRAVITY of the usual on the way to it), and the kart steers in the
  * air at GLIDE_STEER of its grip on the road where a plain jump has
  * AIR_STEER. Braking dives, sinking at up to GLIDE_DIVE, to come down
- * sooner for a corner. The glider folds on landing, or after GLIDE_TIME,
+ * sooner for a corner. The glider folds on landing, or GLIDE_TIME after it opened,
  * so even a launch off a cliff comes down within reach of the road.
  */
 export const LAUNCH_VY = 13;
@@ -256,6 +259,7 @@ export function createKartState(x = 0, z = 0, heading = 0): KartState {
     invulnTime: 0,
     cannonTime: 0,
     glideTime: 0,
+    launcher: false,
     ramTime: 0,
     trickStreak: 0,
     trickChain: 0,
@@ -325,16 +329,19 @@ export function stepKart(s: KartState, input: InputFrame, p: KartParams, env: Dr
   // Hop, tricks and drift.
   s.hopAge += dt;
   s.trickWindow = Math.max(0, s.trickWindow - dt);
-  if (s.surface === 'launch' && s.glideTime === 0 && (s.grounded || s.y - s.groundY < LAUNCH_REACH)) {
-    // Off a launcher: up into the air with the glider open. A hop just before it, or just after, is a trick.
+  if (s.surface === 'launch' && !s.launcher && (s.grounded || s.y - s.groundY < LAUNCH_REACH)) {
+    // Off a launcher: up into the air. A trick (a hop just before it, or just after) opens the glider; without one it's a plain jump.
     s.vy = Math.max(s.vy, LAUNCH_VY);
     s.grounded = false;
     s.speed = Math.max(s.speed, p.topSpeed * LAUNCH_SPEED);
-    s.glideTime = dt;
+    s.launcher = true;
     ev.launched = true;
-    ev.glided = true;
-    if (s.hopAge < TRICK_WINDOW) s.trick = true;
-    else s.trickWindow = TRICK_WINDOW;
+    if (s.hopAge < TRICK_WINDOW) {
+      s.trick = true;
+      openGlider(s, ev, dt);
+    } else {
+      s.trickWindow = TRICK_WINDOW;
+    }
   }
   if (input.driftPressed && s.grounded) {
     s.vy = Math.max(s.vy, 0) + HOP_VELOCITY;
@@ -345,6 +352,7 @@ export function stepKart(s: KartState, input: InputFrame, p: KartParams, env: Dr
   } else if (input.driftPressed && s.trickWindow > 0) {
     s.trick = true;
     s.trickWindow = 0;
+    if (s.launcher) openGlider(s, ev, dt);
   }
   if (!input.drift) {
     if (s.driftDir !== 0) ev.boostTier = releaseDrift(s);
@@ -466,8 +474,12 @@ export function stepKart(s: KartState, input: InputFrame, p: KartParams, env: Dr
   if (!s.grounded && (drop > 1 || crest)) {
     // Ground fell away beneath us: a lip. A hop just before it counts as a trick.
     ev.launched = true;
-    if (s.hopAge < TRICK_WINDOW) s.trick = true;
-    else s.trickWindow = TRICK_WINDOW;
+    if (s.hopAge < TRICK_WINDOW) {
+      s.trick = true;
+      if (s.launcher) openGlider(s, ev, dt);
+    } else {
+      s.trickWindow = TRICK_WINDOW;
+    }
   }
   if (s.glideTime > 0) {
     s.glideTime += dt;
@@ -492,6 +504,7 @@ export function stepKart(s: KartState, input: InputFrame, p: KartParams, env: Dr
       s.grounded = true;
       s.trickWindow = 0;
       s.glideTime = 0;
+      s.launcher = false;
       if (s.trick) {
         s.trick = false;
         // Back-to-back tricks boost longer and longer.
@@ -563,6 +576,13 @@ export function stepKart(s: KartState, input: InputFrame, p: KartParams, env: Dr
   }
 
   return ev;
+}
+
+/** A trick off a launcher: the glider opens. */
+function openGlider(s: KartState, ev: StepEvents, dt: number): void {
+  if (s.glideTime > 0) return;
+  s.glideTime = dt;
+  ev.glided = true;
 }
 
 function releaseDrift(s: KartState): number {

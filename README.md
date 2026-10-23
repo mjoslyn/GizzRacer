@@ -17,7 +17,7 @@ No install and no account. It will always be free.
   - **Polygondwanaland Cup:** Crumbling Castle (on the N64 castle's layout), The Castle in the Air, Inner Cell, Tetrachromacy
   - **Nonagon Infinity Cup:** Robot Stop, Gamma Knife, People-Vultures, Wah Wah
 - **Roller-coaster tracks:** climbs onto pillared decks, plunges you fly off, canyons sunk into the ground, and a causeway that dives under the lagoon
-- **Launchers and gliders:** a glowing ramp on the lip of every track's big jump (and on a long straight where there's no jump) throws you up with a glider open, so the leap is a glide you can steer. Brake to dive down sooner for the corner after it
+- **Launchers and gliders:** a glowing ramp on the lip of every track's big jump (and on a long straight where there's no jump) throws you high, and a trick off it opens your glider, so the leap is a glide you can steer. Brake to dive down sooner for the corner after it
 - **Rhythm humps, apex pads and slaloms:** a sharp crest on the long straights to fly off, a boost pad on the inside of the big hairpins for the tight line, and a slalom of three pads across the straights of the hillier tracks
 - **Living tracksides:** every section's name on a board as you reach it, the grid painted on the road, stands of spectators at the sharpest bends, flocks of each world's creatures that scatter as you pass (vultures, gulls, bats, moths, drones, ghost lights), dust, pollen, snow, embers and spores in the air, and every light on the track pulsing on the final lap
 - **Shortcuts on every track** that come and go by lap: a phantom causeway that only appears on lap 2, a snake that shuts its jaws, a tide that floods the boardwalk, a wall of fire that only drops on the final lap. Trick kickers on the straights and double item boxes on the risky lines
@@ -59,7 +59,7 @@ No install and no account. It will always be free.
 - **Drift:** hold hop while turning. Sparks charge from blue to orange to purple, and letting go gives a boost. The longer you hold, the bigger it is. Hold a purple on through the corner for **rainbow** sparks, the longest boost there is.
 - **Handling:** every kart skids a little wide through a turn, and wider in a drift. How wide is the racer's handling stat: a Fuzz Golem runs out toward the edge where Beowulf's Witch holds the line.
 - **Tricks:** tap hop just as you leave a ramp, a crest or a launcher for a boost when you land. Chain them for bigger ones.
-- **Gliding:** off a launcher your glider opens. Steer as on the road; brake to dive. It folds when you land, or after a couple of seconds.
+- **Gliding:** trick off a launcher (tap hop as you leave it) and your glider opens; without the trick it's just a big jump. Steer as on the road; brake to dive. It folds when you land, or after a couple of seconds.
 - **Rocket start:** hop just as the countdown's 1 goes out.
 - **Slipstream:** tuck in behind another kart to charge a boost.
 - **Nonagon Infinity:** hop as it reaches you to ride over it. The warning's bar fills as it closes, and says HOP when it's time.
