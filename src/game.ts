@@ -6,6 +6,7 @@ import { clamp, damp, lerp, lerpAngle } from './core/math';
 import { CPU_SKILL, CpuDriver, DIFFICULTY_PACE, rivalSkill, withDifficulty } from './ai/cpuDriver';
 import { MusicPlayer } from './audio/music';
 import { LiveRadio } from './audio/radio';
+import { chosenShow, setShows, shows } from './audio/shows';
 import { MiniPlayer } from './ui/miniPlayer';
 import { HintsTicker } from './ui/hints';
 import { Sfx } from './audio/sfx';
@@ -104,6 +105,8 @@ const hud = new Hud(document.body);
 const music = new MusicPlayer();
 /** The live soundtrack (Settings > Soundtrack): a race's song live. */
 const radio = new LiveRadio(music);
+// The shows a Live set can play, for the picker and Settings.
+void radio.shows().then(setShows);
 new MiniPlayer(document.body, radio, music);
 /** Controls, items and tips scrolling along the bottom of the picker and the flyover before a race. */
 const hints = new HintsTicker(document.body);
@@ -327,10 +330,22 @@ const settingsScreen = new SettingsScreen(document.body, tilt);
 const MUSIC_LEVEL = 0.63;
 onSettings((s) => {
   // Back to the game's remixes: the live soundtrack lets go at once.
+  const set = radio.playing?.mode === 'show';
   if (s.soundtrack === 'remix' && radio.playing) {
     radio.stop();
     liveRace = false;
     music.play(mode === 'race' ? remixCues(track.def.music.lap) : remixCues('title'));
+  } else if (s.soundtrack === 'show' && (set || mode === 'race')) {
+    // A Live set picked, or another show: it plays at once.
+    const show = chosenShow(shows(), s.liveShow);
+    if (show && radio.playing?.set?.show.id !== show.id) {
+      liveRace = mode === 'race';
+      void radio.ensureShow(show, remixCues(mode === 'race' ? track.def.music.lap : 'title'));
+    }
+  } else if (s.soundtrack === 'song' && set) {
+    radio.stop();
+    if (mode === 'race') startRaceMusic();
+    else menuMusic();
   }
   // Detail (render/detail.ts): shadows and the resolution switch at once; the road grain and the scenery arrive with the next track built.
   const spec = DETAIL_SPEC[s.detail];
@@ -1196,15 +1211,33 @@ function updateSounds(dt: number): void {
 /** The live soundtrack has this race's music (it falls back to the game's own by itself if a stream won't play). */
 let liveRace = false;
 
+/** A Live set is playing: it carries on through races, menus and the podium. */
+function setPlaying(): boolean {
+  return settings().soundtrack === 'show' && radio.playing?.mode === 'show';
+}
+
 /**
  * The race's music, by Settings > Soundtrack: the game's remix of the
- * track's song, or a live recording of the song, at random (a song never
- * played live, or a generated track with no song, gets the remix).
+ * track's song; a live recording of the song, at random (a song never
+ * played live, or a generated track with no song, gets the remix); or the
+ * Live set, the picked show, kept going if it's already playing.
  */
 function startRaceMusic(): void {
   const cues = remixCues(track.def.music.lap);
   const mode = settings().soundtrack;
   const song = TRACK_SONGS[track.def.id]?.title;
+  if (mode === 'show') {
+    liveRace = true;
+    const forRace = race;
+    void radio.shows().then((all) => {
+      const show = chosenShow(all, settings().liveShow);
+      if (show) return radio.ensureShow(show, cues);
+      if (race !== forRace) return;
+      liveRace = false;
+      music.play(cues);
+    });
+    return;
+  }
   if (mode === 'song' && song) {
     liveRace = true;
     const forRace = race;
@@ -1220,8 +1253,9 @@ function startRaceMusic(): void {
   music.play(cues);
 }
 
-/** The menus' music: the title remix. */
+/** The menus' music: the title remix, unless a Live set is playing on. */
 function menuMusic(): void {
+  if (setPlaying()) return;
   if (radio.playing) radio.stop();
   music.play(remixCues('title'));
 }
@@ -1236,7 +1270,9 @@ function nowPlaying(): string | null {
 
 function updateMusic(p: RaceKart): void {
   const { lap, finalLap } = track.def.music;
-  if (p.finishTime !== null) music.play('podium');
+  if (p.finishTime !== null) {
+    if (!setPlaying()) music.play('podium');
+  }
   // A live recording plays the whole race through: no final-lap cut.
   else if (liveRace) return;
   else if (race.laps > 1 && p.laps.lap === race.laps - 1) music.play(remixCues(finalLap ?? `${lap}-final-lap`).filter((c) => finalLap || c !== `${lap}-final-lap`));
@@ -1515,7 +1551,7 @@ function startPodium(): void {
   for (const v of views) v.root.visible = v.fx.visible = false;
   itemsView!.group.visible = hazardsView!.group.visible = false;
   setMode('podium');
-  music.play('podium');
+  if (!setPlaying()) music.play('podium');
 }
 
 function endPodium(): void {

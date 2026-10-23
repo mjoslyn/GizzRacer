@@ -2,6 +2,7 @@ import { dailyLabel, dailyParams } from '../core/daily';
 import { cupTrophies, progress, raceKey, unlocks, type Unlocks } from '../core/progress';
 import { SOUNDTRACKS, SOUNDTRACK_BLURBS, SOUNDTRACK_NAMES, settings, updateSettings } from '../core/settings';
 import type { SavedTrack } from '../core/savedTracks';
+import { chosenShow, onShows, randomShow, showLabel, shows, stepShow, stepYear } from '../audio/shows';
 import { formatTime } from './hud';
 import { ENGINE_CLASSES, RACERS, type EngineClass, type RacerDef } from '../physics/racers';
 import { GEN_COMPLEXITY_MAX, GEN_LENGTHS, GEN_THEMES, GEN_THEME_NAMES, trackName, type GenParams } from '../tracks/generator';
@@ -40,7 +41,7 @@ export interface MenuChoice {
   mirror: boolean;
 }
 
-export type MenuRow = 'mode' | 'track' | 'gen' | 'theme' | 'complexity' | 'length' | 'racer' | 'engine' | 'mirror' | 'sound';
+export type MenuRow = 'mode' | 'track' | 'gen' | 'theme' | 'complexity' | 'length' | 'racer' | 'engine' | 'mirror' | 'sound' | 'show' | 'year';
 const TROPHY_GLYPH = { gold: '&#9733;', silver: '&#9733;', bronze: '&#9733;' } as const;
 const STAT_NAMES = ['speed', 'accel', 'weight', 'handling'] as const;
 const LENGTH_NAMES = { short: 'Short', medium: 'Medium', long: 'Long' };
@@ -100,7 +101,7 @@ export class Menu {
     this.el.className = 'menu';
     parent.appendChild(this.el);
     this.el.addEventListener('click', (e) => {
-      const t = (e.target as HTMLElement).closest<HTMLElement>('[data-row], [data-start], [data-next], [data-back], [data-step], [data-pick], [data-delete], [data-random], [data-random-track]');
+      const t = (e.target as HTMLElement).closest<HTMLElement>('[data-row], [data-start], [data-next], [data-back], [data-step], [data-pick], [data-delete], [data-random], [data-random-track], [data-random-show]');
       if (!t) return;
       if (t.dataset.start !== undefined) return this.onStart(this.choice);
       if (t.dataset.next !== undefined) return this.next();
@@ -110,11 +111,17 @@ export class Menu {
       if (t.dataset.delete !== undefined) return this.deleteSaved();
       if (t.dataset.random !== undefined) return this.randomRacer();
       if (t.dataset.randomTrack !== undefined) return this.randomTrack();
+      if (t.dataset.randomShow !== undefined) {
+        updateSettings({ liveShow: randomShow(shows(), settings().liveShow) });
+        return this.render();
+      }
       this.row = this.rows().indexOf(t.dataset.row as MenuRow);
       if (t.dataset.dir) this.change(Number(t.dataset.dir));
       else this.render();
     });
     this.render();
+    // The show list arrives after startup: the Live set rows fill in.
+    onShows(() => this.visible && this.render());
   }
 
   /** The row being used: the game shows the racer gallery while it's 'racer'. */
@@ -175,9 +182,11 @@ export class Menu {
         return m === 'generator' ? ['gen', 'theme', 'complexity', 'length'] : ['track'];
       case 'racer':
         return ['racer'];
-      default:
-        // The sound to race to, last: the same choice as Settings > Soundtrack.
-        return unlocks(progress()).mirror && (m === 'grandPrix' || m === 'single') ? ['engine', 'mirror', 'sound'] : ['engine', 'sound'];
+      default: {
+        // The sound to race to, last: the same choice as Settings > Soundtrack, and for a Live set, which show.
+        const sound: MenuRow[] = settings().soundtrack === 'show' ? ['sound', 'show', 'year'] : ['sound'];
+        return unlocks(progress()).mirror && (m === 'grandPrix' || m === 'single') ? ['engine', 'mirror', ...sound] : ['engine', ...sound];
+      }
     }
   }
 
@@ -288,6 +297,8 @@ export class Menu {
       }
     } else if (row === 'mirror') c.mirror = !c.mirror;
     else if (row === 'sound') updateSettings({ soundtrack: step(SOUNDTRACKS, settings().soundtrack) });
+    else if (row === 'show') updateSettings({ liveShow: stepShow(shows(), settings().liveShow, dir) });
+    else if (row === 'year') updateSettings({ liveShow: stepYear(shows(), settings().liveShow, dir) });
     else if (row === 'theme') dial(() => (g.params = { ...g.params, theme: step(GEN_THEMES, g.params.theme) }));
     else if (row === 'complexity') dial(() => (g.params = { ...g.params, complexity: Math.min(GEN_COMPLEXITY_MAX, Math.max(1, g.params.complexity + dir)) }));
     else if (row === 'length') dial(() => (g.params = { ...g.params, length: step(GEN_LENGTHS, g.params.length) }));
@@ -338,6 +349,7 @@ export class Menu {
         ) +
         (rows.includes('mirror') ? line('mirror', 'Mirror', c.mirror ? 'ON' : 'OFF', '<div class="menu-cup-tracks">Every track flipped left for right</div>', true) : '') +
         line('sound', 'Sound', esc(SOUNDTRACK_NAMES[settings().soundtrack]), `<div class="menu-cup-tracks">${esc(SOUNDTRACK_BLURBS[settings().soundtrack])}</div>`, true) +
+        (rows.includes('show') ? this.showRows(line) : '') +
         this.unlockLine();
     }
     const last = this.step === steps.length - 1;
@@ -371,6 +383,17 @@ export class Menu {
     return `<div class="menu-opts${focused ? ' on' : ''}" data-row="${opts[0].pick.split(':')[0]}">${opts
       .map((o) => `<button class="menu-opt${o.on ? ' on' : ''}${o.locked ? ' locked' : ''}" data-pick="${o.pick}"${o.locked ? ' disabled' : ''}><span class="menu-opt-name hud-big">${esc(o.name)}</span><span class="menu-opt-blurb">${esc(o.blurb)}</span></button>`)
       .join('')}</div>`;
+  }
+
+  /** Live set: which show, with a dice, and a jump by year. */
+  private showRows(line: (row: MenuRow, label: string, value: string, extra?: string, small?: boolean) => string): string {
+    const show = chosenShow(shows(), settings().liveShow);
+    if (!show) return line('show', 'Show', 'Loading&hellip;', '', true);
+    const all = shows();
+    return (
+      line('show', 'Show', `<small class="menu-show">${esc(showLabel(show))}</small>${DICE('data-random-show', 'A show at random')}`, `<div class="menu-cup-tracks">Played whole from the top, ${all.indexOf(show) + 1} of ${all.length}</div>`, true) +
+      line('year', 'Year', show.date.slice(0, 4), '', true)
+    );
   }
 
   /** The trophies won on the chosen cup, by class, or what's left to win. */

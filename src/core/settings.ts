@@ -26,6 +26,8 @@ export interface Settings {
   cpuDifficulty: CpuDifficulty;
   /** The music (audio/radio.ts): see SOUNDTRACK_BLURBS. */
   soundtrack: Soundtrack;
+  /** Live set: the show it plays (an id from public/music/shows.json); null for the newest. */
+  liveShow: string | null;
   /** Graphics detail (render/detail.ts): sun shadows, bump-mapped roads, denser scenery and full resolution, or the flat look at fewer pixels. */
   detail: 'high' | 'medium' | 'low';
   /** The player picked a detail level themselves; until then phones get Low and everything else High. */
@@ -33,17 +35,18 @@ export interface Settings {
 }
 
 export type VideoLook = 'full' | 'light' | 'off';
-export type Soundtrack = 'remix' | 'song';
-export const SOUNDTRACKS: readonly Soundtrack[] = ['remix', 'song'];
+export type Soundtrack = 'remix' | 'song' | 'show';
+export const SOUNDTRACKS: readonly Soundtrack[] = ['remix', 'song', 'show'];
 /** What each is called and what it does, for Settings and the picker. The live ones stream the band's shows from the Internet Archive. */
-export const SOUNDTRACK_NAMES: Record<Soundtrack, string> = { remix: 'Game sound', song: 'Track song' };
+export const SOUNDTRACK_NAMES: Record<Soundtrack, string> = { remix: 'Game sound', song: 'Track song', show: 'Live set' };
 export const SOUNDTRACK_BLURBS: Record<Soundtrack, string> = {
   remix: "The game's remix of each track's song",
   song: "A live recording of each track's song, a new one every race",
+  show: 'A whole show you pick, from the top, song after song, across races and menus',
 };
 export const VIDEO_LOOKS: readonly VideoLook[] = ['full', 'light', 'off'];
 
-export const DEFAULT_SETTINGS: Settings = { music: 0.6, sfx: 1, tilt: false, tiltRange: 24, tiltInvert: false, autoAccelerate: true, steeringChosen: false, videoLook: 'light', videoLookChosen: false, smartSteering: true, turnIndicator: true, cpuDifficulty: 'normal', soundtrack: 'remix', detail: 'high', detailChosen: false };
+export const DEFAULT_SETTINGS: Settings = { music: 0.6, sfx: 1, tilt: false, tiltRange: 24, tiltInvert: false, autoAccelerate: true, steeringChosen: false, videoLook: 'light', videoLookChosen: false, smartSteering: true, turnIndicator: true, cpuDifficulty: 'normal', soundtrack: 'remix', liveShow: null, detail: 'high', detailChosen: false };
 
 /** A phone or tablet: Low detail unless the player says otherwise. */
 function coarseDevice(): boolean {
@@ -65,9 +68,8 @@ function load(): Settings {
     // Saved before the player chose one (with an older default): the current default.
     if (!s.videoLookChosen) s.videoLook = DEFAULT_SETTINGS.videoLook;
     if (!s.detailChosen) s.detail = coarseDevice() ? 'low' : 'high';
-    // Keep playing and Play a set are gone: those who chose either still get the band live.
-    const was = s.soundtrack as string;
-    if (was === 'keep' || was === 'show') s.soundtrack = 'song';
+    // Keep playing is gone: those who chose it still get the band live.
+    if ((s.soundtrack as string) === 'keep') s.soundtrack = 'song';
     if (!SOUNDTRACKS.includes(s.soundtrack)) s.soundtrack = 'remix';
     return s;
   } catch {

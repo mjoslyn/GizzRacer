@@ -2685,3 +2685,15 @@ body[data-mode='menu'] .menu {
 body[data-mode='menu'] .menu-panel {
   max-height: calc(100dvh - 54px);
 }
+
+/* A Live set's show (the picker's Show row): plain lettering, a venue and date are read, not shouted. */
+.menu-value .menu-show {
+  font: bold 14px Verdana, sans-serif;
+  font-style: normal;
+  color: #fff6d0;
+  -webkit-text-fill-color: #fff6d0;
+  -webkit-text-stroke: 0;
+  background: none;
+  filter: none;
+  letter-spacing: 0;
+}

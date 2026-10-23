@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { LiveOptions, LiveRecording, MusicCue, MusicPlayer } from '../src/audio/music';
-import { LiveRadio } from '../src/audio/radio';
+import { LiveRadio, cleanTitle, playable, setFromFiles, type Show } from '../src/audio/radio';
+import shows from '../public/music/shows.json';
 
 const rec = (id: string, file: string): LiveRecording => ({ id, file, date: '2024-01-01', venue: 'Somewhere', seconds: 300 });
 
@@ -26,7 +27,77 @@ function stubFetch(routes: Record<string, unknown>) {
 
 afterEach(() => vi.unstubAllGlobals());
 
+const SHOW: Show = { id: 'kglw2024-01-01.sbd', date: '2024-01-01', venue: 'Somewhere' };
+const NEXT: Show = { id: 'kglw2024-02-02.sbd', date: '2024-02-02', venue: 'Elsewhere' };
+const FILES = [
+  { name: 'kglw2024-01-01t10.mp3', format: 'VBR MP3', title: 'Robot Stop ->' },
+  { name: 'kglw2024-01-01t02.mp3', format: 'VBR MP3', title: 'Magma' },
+  { name: 'kglw2024-01-01t02.flac', format: 'Flac', title: 'Magma' },
+  { name: 'kglw2024-01-01t01.mp3', format: 'VBR MP3' },
+];
+
 describe('live soundtrack', () => {
+  it("reads a show's set in order from its MP3s, titled from their tags or names", () => {
+    const set = setFromFiles(SHOW, FILES);
+    expect(set.songs.map((s) => s.file)).toEqual(['kglw2024-01-01t01.mp3', 'kglw2024-01-01t02.mp3', 'kglw2024-01-01t10.mp3']);
+    expect(set.titles).toEqual(['Track 1', 'Magma', 'Robot Stop']);
+    expect(cleanTitle('03-Sapience.mp3')).toBe('Sapience');
+    expect(cleanTitle('d1t04 Gamma Knife.mp3')).toBe('Gamma Knife');
+    expect(cleanTitle('People-Vultures >')).toBe('People-Vultures');
+  });
+
+  it('a live set: the picked show in order from where the music starts, kept across races, then the next show at its end', async () => {
+    stubFetch({ 'shows.json': [SHOW, NEXT], '/files': { result: FILES } });
+    const { music, last } = fakeMusic();
+    // Magma opens with the band talking, and was taped quiet.
+    const radio = new LiveRadio(music, () => 0, async (r) => (r.file.includes('t02') ? { start: 12.5, gain: 7 } : { start: 0, gain: 0 }));
+    await radio.ensureShow(SHOW, ['remix']);
+    expect(radio.playing!.mode).toBe('show');
+    expect(radio.playing!.set!.index).toBe(0);
+    expect(radio.playing!.title).toBe('Track 1');
+    await vi.waitFor(() => expect(last().live?.file).toBe('kglw2024-01-01t01.mp3'));
+    // Song after song: the end of one plays the next, past its talk.
+    last().opts!.onEnded!();
+    expect(radio.playing!.title).toBe('Magma');
+    await vi.waitFor(() => expect(last().opts?.start).toBe(12.5));
+    expect(last().opts?.gain).toBe(7);
+    // The next race keeps the show going.
+    const before = radio.playing;
+    await radio.ensureShow(SHOW, ['other-remix']);
+    expect(radio.playing).toBe(before);
+    radio.next();
+    expect(radio.playing!.title).toBe('Robot Stop');
+    radio.prev();
+    expect(radio.playing!.title).toBe('Magma');
+    radio.next();
+    // Past the last song: the next show on the list, from its first.
+    radio.next();
+    await vi.waitFor(() => expect(radio.playing!.set!.show.id).toBe(NEXT.id));
+    expect(radio.playing!.set!.index).toBe(0);
+  });
+
+  it("skips a set's talk tracks and snippets, either way", () => {
+    const song = (file: string, seconds = 300) => ({ id: 'x', file, date: '', venue: '', seconds });
+    const set = {
+      songs: [song('1'), song('2'), song('3', 20), song('4'), song('5')],
+      titles: ['Crowd', 'Rattlesnake', 'Tuning', 'Stage Banter', 'Gamma Knife'],
+    };
+    expect(playable(set, 0, 1)).toBe(1);
+    expect(playable(set, 2, 1)).toBe(4);
+    expect(playable(set, 3, -1)).toBe(1);
+    expect(playable({ songs: [song('1')], titles: ['Banter'] }, 0, 1)).toBe(1);
+  });
+
+  it('a show list of real shows, one a date', () => {
+    const list = shows as Show[];
+    expect(list.length).toBeGreaterThan(100);
+    expect(new Set(list.map((s) => s.date)).size).toBe(list.length);
+    for (const s of list) {
+      expect(s.id).toMatch(/^[\w.-]+$/);
+      expect(s.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    }
+  });
+
   it('track song: a recording of the song, a different one on next, the one before on back', async () => {
     stubFetch({ 'bootlegs.json': { Magma: [rec('a', 'a.mp3'), rec('b', 'b.mp3'), rec('c', 'c.mp3')] } });
     const { music, last } = fakeMusic();
