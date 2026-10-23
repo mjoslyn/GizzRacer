@@ -49,9 +49,9 @@ import { findBends, nextBend, type Bend } from './tracks/turns';
 import { pointAt } from './tracks/spline';
 import { generateTrack, trackId } from './tracks/generator';
 import { Track, inPit, type TrackDef } from './tracks/track';
-import { Hud, formatTime, type HudData, type Table, type TableRow } from './ui/hud';
+import { Hud, escapeHtml, formatTime, type HudData, type Table, type TableRow } from './ui/hud';
 import { deleteSaved, findSaved, saveTrack, savedTracks } from './core/savedTracks';
-import { DAILY_SLOT, Menu, chosenCup, newSeed, type MenuChoice } from './ui/menu';
+import { DAILY_SLOT, Menu, TOUR_LAPS, chosenCup, newSeed, type MenuChoice } from './ui/menu';
 import { SaveTrackPanel } from './ui/saveTrack';
 import { Podium } from './render/podium';
 import { ScreenFit } from './ui/screen';
@@ -110,6 +110,10 @@ void radio.shows().then(setShows);
 new MiniPlayer(document.body, radio, music);
 /** Controls, items and tips scrolling along the bottom of the picker and the flyover before a race. */
 const hints = new HintsTicker(document.body);
+/** Watching: who the camera is on, for a few seconds after it moves, and how to pick another. */
+const watchCaption = document.createElement('div');
+watchCaption.className = 'watch-caption';
+document.body.appendChild(watchCaption);
 const sfx = new Sfx(
   () => music.context,
   (level, hold) => music.duck(level, hold),
@@ -139,7 +143,25 @@ let choice: MenuChoice = {
   racer: RACERS[0],
   engine: '100cc',
   mirror: false,
+  tour: false,
+  watch: false,
 };
+/** Infinite mode: a race of laps without end. */
+const INFINITE_LAPS = 1_000_000;
+/** Infinite with a Live set: the tour moves on with each song, or after this many laps of a long one. */
+const TOUR_SET_LAPS = 8;
+/** Watching: how long (s) the camera stays on one racer before moving on. */
+const WATCH_HOLD = 25;
+/** Watching the CPUs race (Infinite, Watch): no kart of mine, the camera on `watchIndex`'s. */
+let watching = false;
+let watchIndex = 0;
+let watchTimer = 0;
+/** Which way the steering was held last tick, so a press switches once. */
+let watchSteer = 0;
+/** When the camera last moved to another racer (elapsed s), for the caption. */
+let watchSwitchedAt = -Infinity;
+/** The Live set song the tour last moved on at. */
+let tourSong: string | null = null;
 /** The cup in progress, if racing a Grand Prix. */
 let gp: GrandPrix | null = null;
 let podium: Podium | null = null;
@@ -384,7 +406,7 @@ function updateBoard(refresh = false): void {
   const picking = mode === 'menu' && menu.showsBoard;
   const on = picking && choice.mode === 'timeTrial';
   board.show(on);
-  const rec = picking && !on && choice.mode !== 'online';
+  const rec = picking && !on && choice.mode !== 'online' && choice.mode !== 'infinite';
   records.show(rec);
   document.body.classList.toggle('board-open', on || rec);
   if (on) board.load(TRACK_LIST[choice.track].id, TRACK_LIST[choice.track].name, choice.engine, refresh);
@@ -422,7 +444,11 @@ function setMode(next: Mode): void {
   // A generated track can be kept once it's been raced.
   const generated = next === 'results' && choice.mode === 'generator' && !online;
   savePanel.show(generated ? track.def.name : null, generated && !!findSaved(choice.gen.params));
-  touch.setVisible(next === 'race');
+  touch.setVisible(next === 'race' && !watching);
+  if (next !== 'race') {
+    watching = false;
+    document.body.classList.remove('watching');
+  }
   loop.paused = false;
   if (next === 'title' || next === 'menu' || next === 'lobby') menuMusic();
   // Back at the picker: fetch the board again, it may include the run just posted.
@@ -509,7 +535,10 @@ function startRace(withPlayer: boolean): void {
   const net = withPlayer ? online : null;
   if (withPlayer && !net && track.def.id !== raceTrack().id) loadTrack(raceTrack());
   const trial = withPlayer && !net && choice.mode === 'timeTrial';
-  race = new Race(track, net ? net.start.seed : raceSeed++, !trial, trial ? TRIAL_LAPS : track.def.laps);
+  const infinite = withPlayer && !net && choice.mode === 'infinite';
+  watching = infinite && choice.watch;
+  document.body.classList.toggle('watching', watching);
+  race = new Race(track, net ? net.start.seed : raceSeed++, !trial, trial ? TRIAL_LAPS : infinite ? INFINITE_LAPS : track.def.laps);
   setupGhost(trial);
   player = null;
   trialNote = '';
@@ -526,9 +555,9 @@ function startRace(withPlayer: boolean): void {
     netTicks = 0;
     itemSentAt = -Infinity;
   } else {
-    const grid = !withPlayer ? defaultGrid(null, raceSeed) : trial ? [choice.racer] : gp ? gp.grid() : defaultGrid(choice.racer, fieldSeed);
+    const grid = !withPlayer ? defaultGrid(null, raceSeed) : watching ? defaultGrid(null, fieldSeed) : trial ? [choice.racer] : gp ? gp.grid() : defaultGrid(choice.racer, fieldSeed);
     for (const r of grid) {
-      if (withPlayer && r === choice.racer) player = race.addKart(r, choice.engine, null);
+      if (withPlayer && !watching && r === choice.racer) player = race.addKart(r, choice.engine, null);
       else {
         // A Grand Prix rival drives a touch sharper, and wears the name.
         const rival = withPlayer && !!gp && gp.rivals.includes(r);
@@ -540,7 +569,12 @@ function startRace(withPlayer: boolean): void {
     // The CPUs ahead hold back a little for the player (Race.rubberBand), never for a ghost or the attract mode.
     race.focus = withPlayer && !trial ? player : null;
   }
-  style = withPlayer && !net && !trial ? new StyleMeter() : null;
+  style = withPlayer && !net && !trial && !watching ? new StyleMeter() : null;
+  if (watching) {
+    watchIndex = Math.floor(Math.random() * race.karts.length);
+    watchTimer = 0;
+    watchSwitchedAt = elapsed;
+  }
   splits = [];
   lastCheckpoint = -1;
   lastBranch = -1;
@@ -565,6 +599,8 @@ function startRace(withPlayer: boolean): void {
   intro = withPlayer && !net ? INTRO_TIME : 0;
   // Online, everyone's GO is the room's: count down to it on the room clock.
   if (net) race.time = Math.max(-10, -(net.start.at - net.client.serverNow()) / 1000);
+  // Watching, the field goes as the flyover ends: no countdown to sit through.
+  if (watching) race.time = 0;
   liveRace = false;
   if (withPlayer) {
     setMode('race');
@@ -709,8 +745,59 @@ function skipIntro(): boolean {
 
 /** The kart the camera follows: the player, or the leader in attract mode. */
 function focus(): RaceKart {
-  return player ?? race.karts.find((k) => k.position === 1)!;
+  if (player) return player;
+  if (watching && race.karts[watchIndex]) return race.karts[watchIndex];
+  return race.karts.find((k) => k.position === 1)!;
 }
+
+/** Watching: the camera to the racer `dir` places behind (1) or ahead (-1) of the one it's on. */
+function switchWatch(dir: number): void {
+  const order = [...race.karts].sort((a, b) => a.position - b.position);
+  const at = order.indexOf(race.karts[watchIndex]);
+  watchIndex = race.karts.indexOf(order[(at + dir + order.length) % order.length]);
+  watchTimer = 0;
+  watchSwitchedAt = elapsed;
+  chase.snap();
+}
+
+/** Watching: ←/→ pick another racer; and every WATCH_HOLD seconds the camera moves on by itself, often to the leader. */
+function watchStep(dt: number): void {
+  const steer = Math.sign(Math.round(lastInput.steer));
+  if (steer !== 0 && steer !== watchSteer) switchWatch(steer);
+  watchSteer = steer;
+  watchTimer += dt;
+  if (watchTimer < WATCH_HOLD) return;
+  const leader = race.karts.findIndex((k) => k.position === 1);
+  if (Math.random() < 0.4 && leader !== watchIndex) {
+    watchIndex = leader;
+    watchTimer = 0;
+    watchSwitchedAt = elapsed;
+    chase.snap();
+  } else switchWatch(1 + Math.floor(Math.random() * (race.karts.length - 1)));
+}
+
+/** Infinite's tour: on to the next track once the leader (or I) has done its laps; a Live set moves it on with each song instead. */
+function tourStep(): boolean {
+  if (!choice.tour || intro > 0) return false;
+  const k = player ?? race.karts.find((x) => x.position === 1)!;
+  if (k.laps.lap < (setPlaying() ? TOUR_SET_LAPS : TOUR_LAPS)) return false;
+  nextTour();
+  return true;
+}
+
+function nextTour(): void {
+  choice.track = menu.choice.track = (choice.track + 1) % TRACK_LIST.length;
+  startRace(true);
+}
+
+// A Live set's next song moves the tour on.
+radio.onChange(() => {
+  const set = radio.playing?.set;
+  const key = set ? `${set.show.id}#${set.index}` : null;
+  const moved = key !== null && tourSong !== null && key !== tourSong;
+  if (key) tourSong = key;
+  if (moved && mode === 'race' && choice.mode === 'infinite' && choice.tour && intro === 0 && !loop.paused) nextTour();
+});
 
 function step(dt: number): void {
   lastInput = input.sample();
@@ -742,9 +829,12 @@ function step(dt: number): void {
     // Back from a fall: through the Nonagon gate.
     if (k.respawned) views[i].restore(k.state);
   });
+  // A new track mid-step: this step's events were the old race's.
+  if (mode === 'race' && choice.mode === 'infinite' && !online && tourStep()) return;
   if (!player) {
+    if (watching) watchStep(dt);
     // Attract mode: once someone wins, start another heat.
-    if (race.results.length > 0) startRace(false);
+    else if (race.results.length > 0) startRace(false);
     return;
   }
   const ev = events[race.karts.indexOf(player)];
@@ -1355,7 +1445,10 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
   document.body.classList.toggle('intro', intro > 0);
   const theme = trackView!.theme;
   const L = track.length;
-  trackView!.update(elapsed, camWorld, theme.skyCycle ? Math.PI * 2 * clamp(f.distance / (L * race.laps), 0, 1) : 0, f.state);
+  // The sky turns over the race; laps without end turn it every few laps, round and round.
+  const skyLaps = race.laps >= INFINITE_LAPS ? TOUR_LAPS : race.laps;
+  const skyTurn = race.laps >= INFINITE_LAPS ? (f.distance / (L * skyLaps)) % 1 : clamp(f.distance / (L * race.laps), 0, 1);
+  trackView!.update(elapsed, camWorld, theme.skyCycle ? Math.PI * 2 * skyTurn : 0, f.state);
   itemsView!.update(elapsed, race.karts.map((k, i) => ({ state: snaps[i], holder: k })));
   hazardsView!.update(elapsed);
   sunAnchor.position.copy(camera.position).addScaledVector(SUN_DIR, 1400);
@@ -1370,7 +1463,7 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
     {
       kart: s,
       lap: f.laps.lap,
-      totalLaps: race.laps,
+      totalLaps: race.laps >= INFINITE_LAPS ? Infinity : race.laps,
       raceTime: f.finishTime ?? Math.max(0, race.time),
       lapTimes: f.lapTimes,
       racerName: f.racer.name,
@@ -1389,7 +1482,7 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
       position: f.position,
       karts: race.karts.length,
       countdown: intro > 0 ? -1 : -race.time,
-      intro: intro > 0 ? { name: track.def.name, sub: gp ? `Race ${gp.round + 1} of ${gp.tracks.length}${gp.rivals.length ? ` · your rivals: ${gp.rivals.map((r) => r.name).join(' and ')}` : ''}${mirrored() ? ' · Mirror' : ''}` : choice.mode === 'timeTrial' ? 'Time Trial' : `${choice.engine}${mirrored() ? ' · Mirror' : ''}` } : null,
+      intro: intro > 0 ? { name: track.def.name, sub: gp ? `Race ${gp.round + 1} of ${gp.tracks.length}${gp.rivals.length ? ` · your rivals: ${gp.rivals.map((r) => r.name).join(' and ')}` : ''}${mirrored() ? ' · Mirror' : ''}` : choice.mode === 'timeTrial' ? 'Time Trial' : choice.mode === 'infinite' ? `${watching ? 'Watching the CPUs' : 'Infinite'}${choice.tour ? ' · Tour' : ''} · ${choice.engine}` : `${choice.engine}${mirrored() ? ' · Mirror' : ''}` } : null,
       table: table(),
       muted: musicMuted,
       sfxMuted,
@@ -1404,6 +1497,15 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
     },
     elapsed,
   );
+  // Watching: who's on screen, for a few seconds after the camera moves to them.
+  const captioned = watching && mode === 'race' && intro === 0 && !loop.paused && elapsed - watchSwitchedAt < 5;
+  watchCaption.classList.toggle('show', captioned);
+  if (captioned) {
+    const line = `<b>${escapeHtml(f.racer.name)}</b> · ${ordinal(f.position)} · ${escapeHtml(track.def.name)}`;
+    const how = touch.enabled ? 'tap for another racer' : '&larr; &rarr; another racer · Esc menu';
+    const html = `${line}<small>${how}</small>`;
+    if (watchCaption.innerHTML !== html) watchCaption.innerHTML = html;
+  }
   hud.minimap.draw(race.karts.map((k, i) => ({ x: snaps[i].x, z: snaps[i].z, color: hex(k.racer.color), player: k === player, rival: k.rival })));
   // Heat haze shimmers hardest on the straights; the kaleidoscope runs on the player's final lap.
   const straight = 1 - clamp(track.main.maxCurvature(f.progressS, f.progressS + 80) * 25, 0, 1);
@@ -1413,7 +1515,7 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
   fx.kaleido += ((finalLap ? 1 : 0) - fx.kaleido) * damp(1.5, frameDt);
   // The Rattlesnake video's look: full for the flyover and behind the title and menus, on tape through the race, a bite when hit.
   const look = VHS_LEVELS[settings().videoLook];
-  const attract = !player && mode !== 'podium';
+  const attract = !player && mode !== 'podium' && !watching;
   const flyover = intro > 0;
   const moment = flyover ? 'flyover' : attract ? 'attract' : finalLap ? 'finalLap' : mode === 'race' ? 'race' : 'other';
   fx.bite = Math.max(0, fx.bite - frameDt * 1.6);
@@ -1688,7 +1790,9 @@ window.addEventListener('pointerup', (e) => {
   if (settingsScreen.visible) return;
   if ((e.target as HTMLElement).closest('.settings, .hud-title-settings, .lobby, .board, .savetrack, .nameprompt')) return music.unlock();
   if (skipIntro()) return;
-  if ((e.target as HTMLElement).closest('.menu, .touch, .hud-pause')) return music.unlock();
+  if ((e.target as HTMLElement).closest('.menu, .touch, .hud-pause, .mini-player, .mp-fab')) return music.unlock();
+  // Watching: a tap anywhere on the race picks another racer to follow.
+  if (watching && mode === 'race' && !loop.paused) return switchWatch(1);
   advance();
 });
 

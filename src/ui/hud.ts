@@ -102,7 +102,7 @@ export interface HudData {
 }
 
 /** Text from outside (a venue's name off the Internet Archive) made safe to put in HTML. */
-function escapeHtml(s: string): string {
+export function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
 
@@ -356,7 +356,7 @@ export class Hud {
 
   update(d: HudData, now: number): void {
     const k = d.kart;
-    this.lap.textContent = d.finished ? 'FINISH' : `LAP ${d.lap + 1}/${d.totalLaps}`;
+    this.lap.textContent = d.finished ? 'FINISH' : `LAP ${d.lap + 1}/${Number.isFinite(d.totalLaps) ? d.totalLaps : '∞'}`;
     this.time.textContent = formatTime(d.raceTime);
     const gapEl = this.el.querySelector<HTMLElement>('.hud-ghost-gap')!;
     if (d.ghostGap) {

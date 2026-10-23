@@ -2725,3 +2725,42 @@ body[data-mode='menu'] .menu-panel {
   grid-column: 2 / span 3;
   width: 100%;
 }
+
+/* Watching the CPUs (Infinite, Watch): the race alone, no HUD but the pause menu, and a caption naming who the camera's on. */
+body.watching .hud > :not(.hud-pause):not(.hud-confirm):not(.hud-intro) {
+  display: none !important;
+}
+
+.watch-caption {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  z-index: 30;
+  padding: 8px 18px;
+  border-radius: 12px;
+  background: rgba(30, 6, 40, 0.6);
+  box-shadow: 0 0 0 2px rgba(255, 210, 120, 0.6);
+  color: #fff6d0;
+  font: 15px Verdana, sans-serif;
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.6s;
+}
+
+.watch-caption.show {
+  opacity: 1;
+}
+
+.watch-caption b {
+  color: #ffd23a;
+}
+
+.watch-caption small {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  opacity: 0.75;
+}

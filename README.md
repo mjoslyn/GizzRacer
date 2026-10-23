@@ -42,6 +42,7 @@ No install and no account. It will always be free.
 - **Single Race:** any track, any class (50cc, 100cc, 150cc, and 200cc once it's unlocked), Mirror once that is
 - **Time Trial:** one lap alone. Online leaderboards, one ghost to chase each race (the next one up the board from you, or one you pick; beat it and the next is next), and the gap to it at every checkpoint.
 - **Posting online:** the first time you have a run, a race time or a cup result worth posting, the results screen asks for a name. Until then the leaderboards just show.
+- **Infinite:** laps without end on one track, or a **Tour** of every track in turn (the next every three laps, or with each song of a Live set). Race the CPUs, or **Watch**: they race and you sit back, a visualizer for the music. The camera follows one racer and moves on now and then; left and right, or a tap, picks another
 - **Online:** make a room, share the four-letter code or link with friends, and race live. CPUs fill the empty grid slots.
 
 ## How to play

@@ -8,13 +8,14 @@ import { ENGINE_CLASSES, RACERS, type EngineClass, type RacerDef } from '../phys
 import { GEN_COMPLEXITY_MAX, GEN_LENGTHS, GEN_THEMES, GEN_THEME_NAMES, trackName, type GenParams } from '../tracks/generator';
 import { CUPS, RANDOM_CUP_ID, RANDOM_CUP_NAME, TRACK_LIST, randomCupTracks } from '../tracks/index';
 
-export type RaceMode = 'grandPrix' | 'single' | 'timeTrial' | 'generator' | 'online';
+export type RaceMode = 'grandPrix' | 'single' | 'timeTrial' | 'generator' | 'infinite' | 'online';
 
 export const MODE_NAMES: Record<RaceMode, string> = {
   grandPrix: 'Grand Prix',
   single: 'Single Race',
   timeTrial: 'Time Trial',
   generator: 'Track Generator',
+  infinite: 'Infinite',
   online: 'Online',
 };
 const MODES = Object.keys(MODE_NAMES) as RaceMode[];
@@ -39,9 +40,16 @@ export interface MenuChoice {
   engine: EngineClass;
   /** Mirror mode: the track flipped left for right (unlocked by gold in every cup). */
   mirror: boolean;
+  /** Infinite: every track in turn rather than the one picked (from it). */
+  tour: boolean;
+  /** Infinite: the CPUs race and you watch, a visualizer for the music. */
+  watch: boolean;
 }
 
-export type MenuRow = 'mode' | 'track' | 'gen' | 'theme' | 'complexity' | 'length' | 'racer' | 'engine' | 'mirror' | 'sound' | 'show';
+/** Infinite's tour moves on after this many laps of the leader (or a song of a Live set). */
+export const TOUR_LAPS = 3;
+
+export type MenuRow = 'mode' | 'track' | 'gen' | 'theme' | 'complexity' | 'length' | 'racer' | 'engine' | 'mirror' | 'sound' | 'show' | 'watch';
 const TROPHY_GLYPH = { gold: '&#9733;', silver: '&#9733;', bronze: '&#9733;' } as const;
 const STAT_NAMES = ['speed', 'accel', 'weight', 'handling'] as const;
 const LENGTH_NAMES = { short: 'Short', medium: 'Medium', long: 'Long' };
@@ -66,6 +74,7 @@ const MODE_BLURBS: Record<RaceMode, string> = {
   single: 'One track, a full field, items on',
   timeTrial: 'Alone against the clock, the ghosts and the leaderboard',
   generator: 'A track made on the spot: the daily, your saved ones, or a new roll',
+  infinite: 'Laps without end, or a tour of every track: race, or sit back and watch the CPUs to the music',
   online: 'Race friends with a room code',
 };
 const CLASS_BLURBS: Record<EngineClass, string> = {
@@ -172,7 +181,7 @@ export class Menu {
     else if (code === 'Enter' || code === 'Space') return this.next(), true;
     else if (code === 'Backspace' || code === 'Escape') return this.back(), true;
     else if (code === 'KeyR' && this.choice.mode !== 'online') return this.randomRacer(), true;
-    else if (code === 'KeyT' && this.choice.mode === 'single') return this.randomTrack(), true;
+    else if (code === 'KeyT' && (this.choice.mode === 'single' || this.choice.mode === 'infinite')) return this.randomTrack(), true;
     else return false;
     this.render();
     return true;
@@ -192,7 +201,8 @@ export class Menu {
       case 'track':
         return m === 'generator' ? ['gen', 'theme', 'complexity', 'length'] : ['track'];
       case 'racer':
-        return ['racer'];
+        // Watching, there's no racer to pick.
+        return m === 'infinite' ? (this.choice.watch ? ['watch'] : ['racer', 'watch']) : ['racer'];
       default: {
         // The sound to race to, last: the same choice as Settings > Soundtrack, and for a Live set, which show.
         const sound: MenuRow[] = settings().soundtrack === 'show' ? ['sound', 'show'] : ['sound'];
@@ -294,6 +304,16 @@ export class Menu {
       const n = CUPS.length + (unlocks(progress()).randomCup ? 1 : 0);
       c.cup = (c.cup + dir + n) % n;
       if (c.cup === CUPS.length) c.randomTracks = randomCupTracks();
+    } else if (row === 'track' && c.mode === 'infinite') {
+      // Every track, then the Tour.
+      const n = TRACK_LIST.length + 1;
+      const at = ((c.tour ? TRACK_LIST.length : c.track) + dir + n) % n;
+      c.tour = at === TRACK_LIST.length;
+      if (!c.tour) c.track = at;
+    } else if (row === 'watch') {
+      c.watch = !c.watch;
+      // The racer row comes and goes with it: stay on this one.
+      this.row = this.rows().indexOf('watch');
     } else if (row === 'gen') {
       // The daily, New, then each saved track; landing on New rolls a fresh one.
       const saved = this.saved();
@@ -343,13 +363,21 @@ export class Menu {
       } else if (c.mode === 'generator') {
         title = 'BUILD A TRACK';
         body = this.generatorRows(line);
+      } else if (c.mode === 'infinite') {
+        body = c.tour
+          ? line('track', 'Track', 'Tour', `<div class="menu-cup-tracks">Every track in turn from ${esc(TRACK_LIST[c.track].name)}: the next one every ${TOUR_LAPS} laps, or with each song of a Live set</div>`)
+          : line('track', 'Track', `${TRACK_LIST[c.track].name}${DICE('data-random-track', 'Random track (T)')}`, `<div class="menu-cup-tracks">Laps without end. ${c.track + 1} of ${TRACK_LIST.length}; past the last, the Tour</div>`);
       } else {
         body = line('track', 'Track', `${TRACK_LIST[c.track].name}${c.mode === 'single' ? DICE('data-random-track', 'Random track (T)') : ''}`, `${this.bestLine(TRACK_LIST[c.track].id)}<div class="menu-cup-tracks">${c.track + 1} of ${TRACK_LIST.length}</div>`);
       }
     } else if (at === 'racer') {
       const color = `#${c.racer.color.toString(16).padStart(6, '0')}`;
       const stats = STAT_NAMES.map((k) => `<div class="menu-stat"><span>${k}</span><i style="width:${c.racer.stats[k] * 20}%;background:${color}"></i></div>`).join('');
-      body = line('racer', 'Racer', `${c.racer.name}${c.mode === 'online' ? '' : DICE('data-random', 'Random racer (R)')}`, `<div class="menu-stats">${stats}</div><div class="menu-bio">${c.racer.bio}</div>`);
+      body =
+        (c.mode === 'infinite' && c.watch ? '' : line('racer', 'Racer', `${c.racer.name}${c.mode === 'online' ? '' : DICE('data-random', 'Random racer (R)')}`, `<div class="menu-stats">${stats}</div><div class="menu-bio">${c.racer.bio}</div>`)) +
+        (c.mode === 'infinite'
+          ? line('watch', 'Drive', c.watch ? 'Watch' : 'Race', `<div class="menu-cup-tracks">${c.watch ? 'The CPUs race, you watch: the camera follows one and moves on now and then; &larr;&rarr; or a tap picks another' : 'You race the CPUs, lap after lap. Or Watch: the CPUs race to the music'}</div>`, true)
+          : '');
     } else {
       const classes = availableClasses();
       body =
@@ -373,7 +401,7 @@ export class Menu {
         ${body}
         <div class="menu-nav">
           <button class="menu-back" data-back${this.step === 0 ? ' disabled' : ''}>&lsaquo; back</button>
-          ${last ? `<button class="menu-start hud-big" data-start>${c.mode === 'online' ? 'ROOMS' : 'RACE!'}</button>` : `<button class="menu-start menu-next hud-big" data-next>next &rsaquo;</button>`}
+          ${last ? `<button class="menu-start hud-big" data-start>${c.mode === 'online' ? 'ROOMS' : c.mode === 'infinite' && c.watch ? 'WATCH!' : 'RACE!'}</button>` : `<button class="menu-start menu-next hud-big" data-next>next &rsaquo;</button>`}
         </div>
         <div class="menu-hint">${at === 'mode' || (at === 'engine' && rows.length === 1) ? '&uarr;&darr; choose' : '&larr;&rarr; change'} &middot; Enter ${last ? (c.mode === 'online' ? 'rooms' : 'race') : 'next'} &middot; Backspace back</div>
       </div>`;
@@ -383,6 +411,8 @@ export class Menu {
   private crumb(s: MenuStep): string {
     const c = this.choice;
     if (s === 'mode') return MODE_NAMES[c.mode];
+    if (s === 'track' && c.mode === 'infinite' && c.tour) return 'Tour';
+    if (s === 'racer' && c.mode === 'infinite' && c.watch) return 'Watching';
     if (s === 'track') return c.mode === 'grandPrix' ? chosenCup(c).name : c.mode === 'generator' ? (this.saved()[c.gen.slot]?.name ?? (c.gen.slot === DAILY_SLOT ? 'Daily' : 'New track')) : TRACK_LIST[c.track].name;
     if (s === 'racer') return c.racer.name;
     return `${c.engine}${c.mirror && (c.mode === 'grandPrix' || c.mode === 'single') ? ' Mirror' : ''}`;
