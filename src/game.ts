@@ -1211,6 +1211,11 @@ function startRaceMusic(): void {
     void radio.ensureShow(cues);
     return;
   }
+  if (mode === 'keep') {
+    liveRace = true;
+    void radio.ensureKeep(song ?? null, cues);
+    return;
+  }
   if (mode === 'song' && song) {
     liveRace = true;
     const forRace = race;
@@ -1226,9 +1231,15 @@ function startRaceMusic(): void {
   music.play(cues);
 }
 
+/** Whether the live soundtrack plays on through menus and the podium (Keep playing, Play a set). */
+function playsThrough(): boolean {
+  const s = settings().soundtrack;
+  return (s === 'show' || s === 'keep') && !!radio.playing;
+}
+
 /** The menus' music: the title remix, unless a show is playing through. */
 function menuMusic(): void {
-  if (settings().soundtrack === 'show' && radio.playing) return;
+  if (playsThrough()) return;
   if (radio.playing) radio.stop();
   music.play(remixCues('title'));
 }
@@ -1243,7 +1254,7 @@ function nowPlaying(): string | null {
 
 function updateMusic(p: RaceKart): void {
   const { lap, finalLap } = track.def.music;
-  const keepShow = liveRace && settings().soundtrack === 'show';
+  const keepShow = liveRace && playsThrough();
   if (p.finishTime !== null) {
     if (!keepShow) music.play('podium');
   }
@@ -1525,7 +1536,7 @@ function startPodium(): void {
   for (const v of views) v.root.visible = v.fx.visible = false;
   itemsView!.group.visible = hazardsView!.group.visible = false;
   setMode('podium');
-  if (!(settings().soundtrack === 'show' && radio.playing)) music.play('podium');
+  if (!playsThrough()) music.play('podium');
 }
 
 function endPodium(): void {

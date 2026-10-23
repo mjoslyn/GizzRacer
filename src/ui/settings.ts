@@ -1,11 +1,10 @@
 import { CPU_DIFFICULTIES } from '../ai/cpuDriver';
-import { SOUNDTRACKS, TILT_RANGES, VIDEO_LOOKS, settings, updateSettings, type Settings } from '../core/settings';
+import { SOUNDTRACKS, SOUNDTRACK_BLURBS, SOUNDTRACK_NAMES, TILT_RANGES, VIDEO_LOOKS, settings, updateSettings, type Settings } from '../core/settings';
 import { DETAILS, DETAIL_NAMES } from '../render/detail';
 import type { LiveRadio } from '../audio/radio';
 import { creditsHtml } from './credits';
 import type { TiltSteering } from './tilt';
 
-const SOUNDTRACK_NAMES = { remix: 'Game remix', song: 'Live: matching song', show: 'Live: full show' } as const;
 
 const SENSITIVITY = ['High', 'Medium', 'Low'];
 
@@ -144,11 +143,7 @@ export class SettingsScreen {
         const i = SOUNDTRACKS.indexOf(s.soundtrack);
         const next = SOUNDTRACKS[(Math.max(0, i) + dir + SOUNDTRACKS.length) % SOUNDTRACKS.length];
         updateSettings({ soundtrack: next });
-        this.status = {
-          remix: "Game remix: each race plays the game's remix of its track's song",
-          song: "Live, matching song: each race plays a live recording of its track's song, picked at random from the band's shows on the Internet Archive (needs a connection; from the next race)",
-          show: 'Live, full show: a whole show from the Internet Archive plays through, song after song, and keeps going across races (needs a connection; from the next race)',
-        }[next];
+        this.status = `${SOUNDTRACK_NAMES[next]}: ${SOUNDTRACK_BLURBS[next]}${next === 'remix' ? '' : ". From the band's shows on the Internet Archive; needs a connection; from the next race"}`;
         break;
       }
       case 'turns':
@@ -264,7 +259,7 @@ export class SettingsScreen {
                 <button data-act="radio-prev" aria-label="Previous">&#9198;</button>
                 <button data-act="radio-pause" aria-label="${this.radio!.paused ? 'Play' : 'Pause'}">${this.radio!.paused ? '&#9654;' : '&#9208;'}</button>
                 <button data-act="radio-next" aria-label="Next">&#9197;</button>
-                ${p.mode === 'show' ? '<button data-act="radio-new" aria-label="Another show">&#128256;</button>' : ''}
+                ${p.mode !== 'song' ? '<button data-act="radio-new" aria-label="Another show">&#128256;</button>' : ''}
                 <a href="https://archive.org/details/${encodeURIComponent(p.rec.id)}" target="_blank" rel="noopener" aria-label="This show on the Internet Archive">&#8599;</a>
               </div>
             </div>`;

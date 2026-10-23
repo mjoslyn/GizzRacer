@@ -4,7 +4,7 @@ import type { LiveRadio } from '../audio/radio';
 /**
  * The mini player for the live soundtrack (Settings > Soundtrack), on
  * desktop: the song, the show it's from, a progress line, and back,
- * pause, next, another show (full show only) and a link to the show on the
+ * pause, next, another show (when shows play through) and a link to the show on the
  * Internet Archive. On touch it stays hidden and the same controls are in
  * Settings (ui/settings.ts).
  */
@@ -66,7 +66,7 @@ export class MiniPlayer {
     this.title.textContent = p.title;
     const where = [p.rec.venue, p.rec.date].filter(Boolean).join(', ');
     this.show.textContent = p.set ? `${where} · ${p.set.index + 1}/${p.set.songs.length}` : `live, ${where}`;
-    this.shuffle.hidden = p.mode !== 'show';
+    this.shuffle.hidden = p.mode === 'song';
     this.link.href = `https://archive.org/details/${encodeURIComponent(p.rec.id)}`;
     this.tick();
   }

@@ -1,5 +1,6 @@
 import { dailyLabel, dailyParams } from '../core/daily';
 import { cupTrophies, progress, raceKey, unlocks, type Unlocks } from '../core/progress';
+import { SOUNDTRACKS, SOUNDTRACK_BLURBS, SOUNDTRACK_NAMES, settings, updateSettings } from '../core/settings';
 import type { SavedTrack } from '../core/savedTracks';
 import { formatTime } from './hud';
 import { ENGINE_CLASSES, RACERS, type EngineClass, type RacerDef } from '../physics/racers';
@@ -39,7 +40,7 @@ export interface MenuChoice {
   mirror: boolean;
 }
 
-export type MenuRow = 'mode' | 'track' | 'gen' | 'theme' | 'complexity' | 'length' | 'racer' | 'engine' | 'mirror';
+export type MenuRow = 'mode' | 'track' | 'gen' | 'theme' | 'complexity' | 'length' | 'racer' | 'engine' | 'mirror' | 'sound';
 const TROPHY_GLYPH = { gold: '&#9733;', silver: '&#9733;', bronze: '&#9733;' } as const;
 const STAT_NAMES = ['speed', 'accel', 'weight', 'handling'] as const;
 const LENGTH_NAMES = { short: 'Short', medium: 'Medium', long: 'Long' };
@@ -175,7 +176,8 @@ export class Menu {
       case 'racer':
         return ['racer'];
       default:
-        return unlocks(progress()).mirror && (m === 'grandPrix' || m === 'single') ? ['engine', 'mirror'] : ['engine'];
+        // The sound to race to, last: the same choice as Settings > Soundtrack.
+        return unlocks(progress()).mirror && (m === 'grandPrix' || m === 'single') ? ['engine', 'mirror', 'sound'] : ['engine', 'sound'];
     }
   }
 
@@ -284,7 +286,9 @@ export class Menu {
         const t = saved[g.slot];
         g.params = { seed: t.seed, theme: t.theme, complexity: t.complexity, length: t.length };
       }
-    } else if (row === 'mirror') c.mirror = !c.mirror; else if (row === 'theme') dial(() => (g.params = { ...g.params, theme: step(GEN_THEMES, g.params.theme) }));
+    } else if (row === 'mirror') c.mirror = !c.mirror;
+    else if (row === 'sound') updateSettings({ soundtrack: step(SOUNDTRACKS, settings().soundtrack) });
+    else if (row === 'theme') dial(() => (g.params = { ...g.params, theme: step(GEN_THEMES, g.params.theme) }));
     else if (row === 'complexity') dial(() => (g.params = { ...g.params, complexity: Math.min(GEN_COMPLEXITY_MAX, Math.max(1, g.params.complexity + dir)) }));
     else if (row === 'length') dial(() => (g.params = { ...g.params, length: step(GEN_LENGTHS, g.params.length) }));
     else if (row === 'track') c.track = (c.track + dir + TRACK_LIST.length) % TRACK_LIST.length;
@@ -333,6 +337,7 @@ export class Menu {
           rows[this.row] === 'engine',
         ) +
         (rows.includes('mirror') ? line('mirror', 'Mirror', c.mirror ? 'ON' : 'OFF', '<div class="menu-cup-tracks">Every track flipped left for right</div>', true) : '') +
+        line('sound', 'Sound', esc(SOUNDTRACK_NAMES[settings().soundtrack]), `<div class="menu-cup-tracks">${esc(SOUNDTRACK_BLURBS[settings().soundtrack])}</div>`, true) +
         this.unlockLine();
     }
     const last = this.step === steps.length - 1;

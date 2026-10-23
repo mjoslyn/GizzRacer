@@ -11,7 +11,8 @@
  *
  *   NODE_USE_ENV_PROXY=1 node tools/bootlegs.mjs
  *
- * Re-run now and then to pick up new shows. Up to PER_SONG recordings a
+ * Re-run now and then to pick up new shows, then tools/bootleg-starts.mjs
+ * for the new recordings' start points (the ones already found are kept). Up to PER_SONG recordings a
  * song, spread across the years, one a show date.
  */
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -20,6 +21,13 @@ const COLLECTION = 'KingGizzardAndTheLizardWizard';
 const PER_SONG = 12;
 const CONCURRENCY = 8;
 const OUT = new URL('../public/music/bootlegs.json', import.meta.url);
+/** Start points already found (tools/bootleg-starts.mjs), kept across a re-run. */
+const known = new Map();
+try {
+  for (const recs of Object.values(JSON.parse(readFileSync(OUT, 'utf8')))) for (const r of recs) if (r.start !== undefined) known.set(`${r.id}/${r.file}`, r.start);
+} catch {
+  // First run.
+}
 const SHOWS_OUT = new URL('../public/music/shows.json', import.meta.url);
 
 // The songs, read from songs.ts so the two can't drift apart.
@@ -92,7 +100,10 @@ async function scan(show) {
     for (const song of songsIn(title)) {
       const byDate = found.get(song);
       if (byDate.has(date)) continue;
-      byDate.set(date, { id: show.identifier, file: f.name, date, venue, seconds: seconds(f.length) });
+      const rec = { id: show.identifier, file: f.name, date, venue, seconds: seconds(f.length) };
+      // Where its music starts, if tools/bootleg-starts.mjs already worked it out.
+      const start = known.get(`${rec.id}/${rec.file}`);
+      byDate.set(date, start === undefined ? rec : { ...rec, start });
     }
   }
 }
