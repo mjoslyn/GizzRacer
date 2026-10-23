@@ -810,19 +810,22 @@ function skeletonDragon(r: RacerDef): KartModel {
   };
 }
 
-// ---- Lord of Lightning: the beast off Murder of the Universe, surfing his own bolt ----
-// A hunched green thing, slick and lumpy, with a spiral eye, a gaping maw of
-// fangs, drips and spikes hanging off it and long arms reaching ahead on
-// clawed hands; riding a zigzag of lightning that hovers over the road,
-// crackling.
+// ---- Lord of Lightning: a medieval storm wizard surfing his own bolt -----------
+// After Murder of the Universe: a robed wizard in a tall crooked hat with a
+// storm round its brim, a long grey beard streaming, eyes lit with the
+// charge, a staff up with lightning caught in its head and the other hand
+// raised to call more; riding a zigzag of lightning that hovers over the
+// road, crackling.
 
 function lordOfLightning(r: RacerDef): KartModel {
   const body = new THREE.Group();
-  const slime = matte(r.color, { shininess: 70, specular: 0x667744, emissive: 0x0c1404 });
-  const deep = matte(0x3a4a1a, { shininess: 50, specular: 0x334422 });
-  const ochre = matte(0xc8a040, { shininess: 40, specular: 0x554422 });
-  const dark = matte(0x0c0e08);
-  const fang = matte(0xe8e0b8);
+  const robe = matte(r.color, { shininess: 25, specular: 0x333355 });
+  const lining = matte(0x1a1640, { side: THREE.DoubleSide });
+  const gold = brass();
+  const skin = matte(0xd8b090);
+  const beard = matte(0xd8d8d0, { shininess: 8 });
+  const wood = matte(0x4a3018);
+  const cloud = matte(0x6a6a7a, { shininess: 5, emissive: 0x101018 });
   const bolt = glow(r.accent);
   const white = glow(0xffffff);
 
@@ -855,81 +858,80 @@ function lordOfLightning(r: RacerDef): KartModel {
   }
   const pads = [glowSprite(ride, [0, 0, 0.6], 1.2, r.accent), glowSprite(ride, [0, 0, -0.6], 1.2, r.accent), glowSprite(ride, [0, -0.2, 0], 1.6, 0xfffbd0)];
 
-  // Him: standing on it, hunched forward. Gnarled legs braced wide.
-  const lord = new THREE.Group();
-  lord.position.y = 0.55;
-  body.add(lord);
-  for (const side of [-1, 1]) {
-    const hip: [number, number, number] = [side * 0.22, 0.55, -0.15];
-    const knee: [number, number, number] = [side * 0.34, 0.25, 0.12];
-    const foot: [number, number, number] = [side * 0.3, 0.0, -0.1];
-    rod(lord, hip, knee, 0.12, slime, 0.09);
-    put(lord, ball(0.11, 10, 8), deep, knee);
-    rod(lord, knee, foot, 0.09, slime, 0.07);
-    put(lord, ball(0.13, 10, 8), deep, foot, [0, 0, 0], [1, 0.45, 1.5]);
-    for (let k = -1; k <= 1; k++) put(lord, cone(0.025, 0.1, 4), dark, [foot[0] + k * 0.06, foot[1], foot[2] + 0.18], [Math.PI / 2, 0, 0]);
+  // Him: standing on it sideways-on like a surfer, robe flaring, leaning into the ride.
+  const wiz = new THREE.Group();
+  wiz.position.y = 0.55;
+  wiz.rotation.x = 0.12;
+  body.add(wiz);
+  // Boots planted on the bolt.
+  for (const z of [0.35, -0.3]) put(wiz, ball(0.11, 10, 8), matte(0x2a1a10), [0, 0.04, z], [0, 0, 0], [0.9, 0.55, 1.5]);
+  // The robe: a long flared cone to the boots, a cloak hanging off the shoulders behind, gold at the hem and down the front.
+  put(wiz, cyl(0.2, 0.44, 1.25, 20), robe, [0, 0.68, 0], [0, 0, 0], [1, 1, 1.2]);
+  put(wiz, cyl(0.45, 0.45, 0.05, 20), gold, [0, 0.08, 0], [0, 0, 0], [1, 1, 1.2]);
+  put(wiz, box(0.06, 1.05, 0.02), gold, [0, 0.6, 0.27], [-0.32, 0, 0]);
+  const cloak = new THREE.CylinderGeometry(0.28, 0.5, 1.15, 16, 1, true, Math.PI * 0.55, Math.PI * 0.9);
+  put(wiz, cloak, lining, [0, 0.72, -0.06], [-0.12, 0, 0], [1, 1, 1.25]);
+  // Lightning sigils stitched on the robe.
+  for (const [x, y, z, k] of [[0.2, 0.45, 0.24, 1], [-0.22, 0.75, 0.18, -1], [0.16, 0.95, 0.15, -1]] as const) {
+    const g = new THREE.Group();
+    g.position.set(x, y, z);
+    g.rotation.set(-0.3, k * 0.3, 0);
+    put(g, box(0.03, 0.12, 0.01), bolt, [0, 0.05, 0], [0, 0, 0.5]);
+    put(g, box(0.03, 0.12, 0.01), bolt, [0.02, -0.05, 0], [0, 0, 0.5]);
+    wiz.add(g);
   }
-  // A lumpy, slick torso of swollen growths, leaning into the ride.
-  const torso = new THREE.Group();
-  torso.position.set(0, 0.72, 0);
-  torso.rotation.x = 0.45;
-  lord.add(torso);
-  const lumps: [number, [number, number, number], THREE.Material][] = [
-    [0.36, [0, 0.2, 0], slime], [0.26, [0.18, 0.42, 0.06], slime], [0.24, [-0.2, 0.4, 0.02], deep], [0.2, [0, 0.0, 0.1], ochre],
-    [0.18, [0.26, 0.12, -0.08], deep], [0.17, [-0.25, 0.14, -0.06], slime], [0.15, [0.05, 0.5, -0.18], ochre],
-  ];
-  for (const [rad, at, m] of lumps) put(torso, ball(rad, 14, 10), m, at, [0, 0, 0], [1, 0.9, 0.85]);
-  // Drips and stalactite spikes hanging off it, and a ridge of spikes up the back.
+  put(wiz, ring(0.2, 0.03), gold, [0, 0.92, 0], [Math.PI / 2, 0, 0], [1, 1.2, 1]);
+  // Shoulders and arms in wide sleeves: the left raised high to call the storm, the right on the staff.
+  put(wiz, ball(0.26, 14, 10), robe, [0, 1.28, 0], [0, 0, 0], [1.3, 0.75, 1]);
+  const sleeve = (shoulder: [number, number, number], hand: [number, number, number]) => {
+    rod(wiz, shoulder, hand, 0.08, robe, 0.13);
+    put(wiz, ball(0.065, 10, 8), skin, hand);
+  };
+  sleeve([0.28, 1.3, 0], [0.55, 1.75, 0.12]);
+  for (let k = 0; k < 4; k++) put(wiz, cone(0.015, 0.09, 4), skin, [0.55 + (k - 1.5) * 0.03, 1.82, 0.12], [0, 0, (k - 1.5) * 0.2]);
+  glowSprite(wiz, [0.56, 1.88, 0.12], 0.45, r.accent);
+  sleeve([-0.28, 1.28, 0.04], [-0.42, 1.05, 0.38]);
+  // The staff: gnarled wood, a claw of gold at the head holding a crackling orb.
+  const staff = new THREE.Group();
+  staff.position.set(-0.42, 1.05, 0.38);
+  staff.rotation.set(0.35, 0, 0.12);
+  rod(staff, [0, -0.85, 0], [0, 0.85, 0], 0.03, wood, 0.025);
+  for (let k = 0; k < 3; k++) put(staff, ball(0.04, 6, 4), wood, [0, -0.5 + k * 0.5, 0]);
+  for (let k = 0; k < 4; k++) {
+    const a = (k / 4) * Math.PI * 2;
+    put(staff, cone(0.02, 0.18, 4), gold, [Math.cos(a) * 0.07, 0.92, Math.sin(a) * 0.07], [Math.sin(a) * 0.4, 0, -Math.cos(a) * 0.4]);
+  }
+  put(staff, ball(0.1, 12, 10), white, [0, 1.0, 0]);
+  put(staff, ball(0.14, 12, 10), new THREE.MeshBasicMaterial({ color: r.accent, transparent: true, opacity: 0.4 }), [0, 1.0, 0]);
+  glowSprite(staff, [0, 1.0, 0], 0.9, r.accent);
+  wiz.add(staff);
+
+  // The head: an old face, eyes lit with the charge, a great grey beard streaming back, the tall crooked hat.
+  const head = new THREE.Group();
+  head.position.set(0, 1.5, 0.04);
+  put(head, ball(0.17, 16, 12), skin, [0, 0.02, 0], [0, 0, 0], [0.9, 1.05, 0.95]);
+  put(head, ball(0.05, 8, 6), skin, [0, -0.01, 0.17], [0, 0, 0], [0.8, 1, 1.2]);
+  for (const side of [-1, 1]) {
+    put(head, ball(0.03, 8, 6), glow(0xfffbd0), [side * 0.065, 0.05, 0.14]);
+    glowSprite(head, [side * 0.065, 0.05, 0.16], 0.18, r.accent);
+    put(head, ball(0.05, 8, 6), beard, [side * 0.07, 0.11, 0.13], [0, 0, side * 0.3], [1.3, 0.4, 0.6]);
+  }
+  // The beard and moustache, long, swept back a little by the wind.
+  put(head, cone(0.17, 0.62, 12), beard, [0, -0.36, 0.06], [Math.PI - 0.35, 0, 0], [1, 1, 0.6]);
+  put(head, ball(0.09, 10, 8), beard, [0, -0.07, 0.14], [0, 0, 0], [1.6, 0.5, 0.7]);
+  // The hat: a wide brim and a tall cone crooked at the tip, stars and a bolt on it, a storm cloud wrapped round the brim.
+  put(head, cyl(0.38, 0.38, 0.03, 20), robe, [0, 0.16, 0]);
+  put(head, cone(0.2, 0.5, 16), robe, [0, 0.42, -0.02], [-0.12, 0, 0]);
+  put(head, cone(0.1, 0.3, 12), robe, [0, 0.76, -0.12], [-0.7, 0, 0]);
+  put(head, ring(0.2, 0.025), gold, [0, 0.2, 0], [Math.PI / 2, 0, 0]);
+  put(head, box(0.04, 0.14, 0.01), bolt, [0.03, 0.4, 0.17], [-0.12, 0, 0.5]);
+  put(head, box(0.04, 0.14, 0.01), bolt, [0.05, 0.3, 0.18], [-0.12, 0, 0.5]);
+  for (const [x, y, z] of [[-0.1, 0.48, 0.12], [0.11, 0.56, 0.06]] as const) put(head, ball(0.02, 6, 4), glow(0xfff6c0), [x, y, z]);
   for (let k = 0; k < 9; k++) {
     const a = (k / 9) * Math.PI * 2;
-    put(torso, cone(0.04, 0.22 + (k % 3) * 0.08, 5), k % 2 ? slime : deep, [Math.cos(a) * 0.3, -0.12, Math.sin(a) * 0.22], [Math.PI, 0, 0]);
+    put(head, ball(0.09 + (k % 3) * 0.02, 8, 6), cloud, [Math.cos(a) * 0.36, 0.17 + (k % 2) * 0.03, Math.sin(a) * 0.36], [0, 0, 0], [1.3, 0.7, 1.1]);
   }
-  for (let k = 0; k < 5; k++) put(torso, cone(0.05, 0.2, 5), deep, [0, 0.55 - k * 0.12, -0.3 + k * 0.02], [-0.9, 0, 0]);
-
-  // Long arms reaching ahead, elbows out, big hands with long dark claws.
-  for (const side of [-1, 1]) {
-    const shoulder: [number, number, number] = [side * 0.36, 0.4, 0.05];
-    const elbow: [number, number, number] = [side * 0.62, 0.15, 0.32];
-    const wrist: [number, number, number] = [side * 0.45, 0.1, 0.78];
-    rod(torso, shoulder, elbow, 0.09, slime, 0.07);
-    put(torso, ball(0.085, 10, 8), deep, elbow);
-    rod(torso, elbow, wrist, 0.07, slime, 0.055);
-    put(torso, ball(0.12, 12, 8), slime, wrist, [0, 0, 0], [1.1, 0.6, 1.2]);
-    for (let k = 0; k < 4; k++) {
-      const a = (k - 1.5) * 0.35;
-      const tip: [number, number, number] = [wrist[0] + Math.sin(a) * 0.22 + side * 0.04, wrist[1] - 0.08, wrist[2] + Math.cos(a) * 0.24];
-      rod(torso, wrist, tip, 0.028, slime, 0.02);
-      put(torso, cone(0.022, 0.14, 5), dark, [tip[0], tip[1] - 0.04, tip[2] + 0.05], [Math.PI / 2 + 0.6, 0, 0]);
-    }
-  }
-
-  // The head: a heavy brow over a spiral eye and a smaller one, a gaping maw of fangs, a crown of drips.
-  const head = new THREE.Group();
-  head.position.set(0, 1.42, 0.38);
-  put(head, ball(0.34, 18, 14), slime, [0, 0.05, 0], [0, 0, 0], [1.15, 0.95, 1]);
-  put(head, ball(0.24, 14, 10), deep, [0, 0.22, 0.12], [0, 0, 0], [1.4, 0.5, 1]);
-  // The spiral eye: rings within rings, glowing at the middle.
-  const eye = new THREE.Group();
-  eye.position.set(-0.14, 0.12, 0.28);
-  eye.rotation.y = -0.3;
-  for (let k = 0; k < 4; k++) put(eye, ring(0.04 + k * 0.035, 0.012), k % 2 ? ochre : deep, [0, 0, k * -0.005]);
-  put(eye, ball(0.04, 10, 8), glow(0xf8ff6a), [0, 0, 0.01]);
-  glowSprite(eye, [0, 0, 0.04], 0.3, r.accent);
-  head.add(eye);
-  put(head, ball(0.06, 10, 8), glow(0xf8ff6a), [0.17, 0.14, 0.26]);
-  put(head, ball(0.025, 6, 4), dark, [0.17, 0.14, 0.32]);
-  // The maw: a dark hollow ringed with fangs top and bottom.
-  put(head, ball(0.2, 14, 10), dark, [0, -0.13, 0.22], [0, 0, 0], [1.2, 0.7, 0.6]);
-  for (let k = 0; k < 8; k++) {
-    const x = -0.21 + k * 0.06;
-    put(head, cone(0.025, 0.12, 4), fang, [x, -0.03, 0.3], [Math.PI, 0, 0]);
-    put(head, cone(0.022, 0.1, 4), fang, [x + 0.03, -0.25, 0.28]);
-  }
-  for (let k = 0; k < 7; k++) {
-    const a = (k / 6) * Math.PI;
-    put(head, cone(0.035, 0.18 + (k % 2) * 0.1, 5), k % 2 ? ochre : deep, [Math.cos(a) * 0.3, 0.32 + Math.sin(a) * 0.08, -0.05 - Math.sin(a) * 0.1], [-0.4, 0, (Math.PI / 2 - a) * 0.6]);
-  }
-  lord.add(head);
+  wiz.add(head);
 
   return {
     body,
