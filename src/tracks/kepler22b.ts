@@ -145,7 +145,6 @@ function buildMembrane(from: { s: number; pose: Pose }, to: { s: number; pose: P
   const b = new TrackBuilder(from.pose, 'Membrane', { halfWidth: 6, surface: 'reef' });
   b.straight(30);
   b.section('Membrane Causeway', { halfWidth: 4, surface: 'boards' });
-  const bar = b.s + 10;
   b.elevate(0).straight(12).elevate(1);
   const lagoon = chord - 2 * b.s;
   const boxes = b.s + lagoon / 2;
@@ -153,10 +152,8 @@ function buildMembrane(from: { s: number; pose: Pose }, to: { s: number; pose: P
   b.elevate(1).straight(12).elevate(0);
   b.section('Membrane', { halfWidth: 6, surface: 'reef' });
   b.straight(chord - b.s);
-  // Sealed by a glowing membrane on the first lap; it opens from the second.
   const branch: BranchDef = {
     name: 'Membrane', mainFrom: from.s, mainTo: to.s, ...b.finish(false),
-    openOn: [2, 'final'], shut: { kind: 'barrier', at: bar, look: { style: 'wall', color: 0x7affe0, glow: true } },
   };
   return { branch, pits: b.pits, boxes };
 }

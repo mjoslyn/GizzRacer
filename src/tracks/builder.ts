@@ -33,6 +33,14 @@ export type RoadSurface =
   /** Wah Wah's fretboard: dark wood with frets across it. */
   | 'fret';
 
+/**
+ * Every road is built this much wider than its section says: the layouts
+ * were drawn at a width that read as narrow once the karts skidded, so the
+ * builder widens them all at once (a pit under a jump is never narrower
+ * than the road over it).
+ */
+export const ROAD_WIDTH_SCALE = 1.5;
+
 export interface SectionProps {
   halfWidth: number;
   /** Barrier height on both edges; 0 = open edges. */
@@ -100,13 +108,13 @@ export class TrackBuilder {
   ) {
     this.pose = { ...start };
     this.points.push([start.x, start.z]);
-    this.current = { name, from: 0, to: 0, ...props };
+    this.current = { name, from: 0, to: 0, ...props, halfWidth: props.halfWidth * ROAD_WIDTH_SCALE };
   }
 
   /** Ends the current section and starts a new one here. */
   section(name: string, props: SectionProps): this {
     this.closeSection();
-    this.current = { name, from: this.s, to: this.s, ...props };
+    this.current = { name, from: this.s, to: this.s, ...props, halfWidth: props.halfWidth * ROAD_WIDTH_SCALE };
     return this;
   }
 
@@ -256,7 +264,8 @@ export class TrackBuilder {
       z: this.pose.z + Math.cos(h) * (len / 2),
       heading: h,
       halfLength: len / 2 + overhang,
-      halfWidth,
+      // A pit is at least as wide as the (widened) road over it, and otherwise as drawn.
+      halfWidth: Math.max(halfWidth, this.current.halfWidth),
       depth,
       liquid,
     });

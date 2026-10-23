@@ -164,7 +164,6 @@ function buildBreach(from: { s: number; pose: Pose }, to: { s: number; pose: Pos
   b.elevate(UPPER);
   b.straight(30);
   b.section('Rubble Plank', { halfWidth: 4, surface: 'boards' });
-  const wall = b.s + 10;
   b.elevate(UPPER).straight(12).elevate(UPPER + 1);
   const moat = chord - 2 * b.s;
   const boxes = b.s + moat / 2;
@@ -175,7 +174,6 @@ function buildBreach(from: { s: number; pose: Pose }, to: { s: number; pose: Pos
   b.elevate(UPPER);
   const branch: BranchDef = {
     name: 'The Breach', mainFrom: from.s, mainTo: to.s, ...b.finish(false),
-    openOn: [2, 'final'], shut: { kind: 'barrier', at: wall, look: { style: 'wall', color: 0x6a645c } },
   };
   return { branch, pits: b.pits, boxes };
 }

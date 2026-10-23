@@ -8,7 +8,7 @@ const FINISH = 45;
 const RIM_R = 34;
 const RIM_TURN = 70;
 /** The Endoplasmic Loop's radius, and how high it climbs. */
-const LOOP_R = 26;
+const LOOP_R = 21;
 const LOOP_TOP = 13;
 /** How deep the Lysosome Sink runs. */
 const SINK_DEPTH = 6;
@@ -23,8 +23,7 @@ const GOLGI_WALL = 4;
  * three quarters of a turn and over the road it came in on. Hairpins
  * through the stacked membranes of the Golgi, the Lysosome Sink 6 m down,
  * a jump over a pool of cytoplasm, and the Nuclear Rim winding round the
- * nucleus, which the Nuclear Pore cuts straight through, until it closes
- * on the final lap.
+ * nucleus, which the Nuclear Pore cuts straight through.
  */
 export function buildInnerCell(): TrackDef {
   const b = new TrackBuilder(START, 'Membrane Pass', { halfWidth: 11, surface: 'membrane' });
@@ -133,15 +132,13 @@ function plunge(b: TrackBuilder, s0: number, y0: number, s1: number, y1: number)
 
 /**
  * The Nuclear Pore: straight through the nucleus the rim winds round, over
- * the nucleoplasm on a strand of membrane. No rails. On the final lap the
- * pore closes.
+ * the nucleoplasm on a strand of membrane. No rails.
  */
 function buildNuclearPore(from: { s: number; pose: Pose }, to: { s: number; pose: Pose }) {
   const chord = Math.hypot(to.pose.x - from.pose.x, to.pose.z - from.pose.z);
   const b = new TrackBuilder(from.pose, 'Nuclear Pore', { halfWidth: 6, surface: 'membrane' });
   b.straight(30);
   b.section('Nucleoplasm Strand', { halfWidth: 4, surface: 'membrane' });
-  const pore = b.s + 10;
   b.elevate(0).straight(12).elevate(1);
   const pool = chord - 2 * b.s;
   const boxes = b.s + pool / 2;
@@ -151,7 +148,6 @@ function buildNuclearPore(from: { s: number; pose: Pose }, to: { s: number; pose
   b.straight(chord - b.s);
   const branch: BranchDef = {
     name: 'Nuclear Pore', mainFrom: from.s, mainTo: to.s, ...b.finish(false),
-    openOn: [1, 2], shut: { kind: 'barrier', at: pore, look: { style: 'wall', color: 0xd85aa0, glow: true } },
   };
   return { branch, pits: b.pits, boxes };
 }

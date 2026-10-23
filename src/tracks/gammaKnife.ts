@@ -8,7 +8,7 @@ const FINISH = 45;
 const BEND_R = 34;
 const BEND_TURN = 70;
 /** The Collimator Spiral's radius, and the top of it. */
-const SPIRAL_R = 24;
+const SPIRAL_R = 19;
 const SPIRAL_TOP = 15;
 /** How deep the Lesion Trench is sunk. */
 const TRENCH_DEPTH = 6;
@@ -46,7 +46,8 @@ export function buildGammaKnife(): TrackDef {
   b.mark('spiralTop');
   b.section('Synapse Drop', { halfWidth: 10, surface: 'chrome' });
   b.mark('drop');
-  b.straight(120);
+  // A shade away from the spiral it just climbed, so the two roads keep clear of each other.
+  b.arc(90, -10).straight(110);
 
   b.section('Scalpel Alley', { halfWidth: 9, wallHeight: WALL, surface: 'chrome' });
   b.mark('alley');

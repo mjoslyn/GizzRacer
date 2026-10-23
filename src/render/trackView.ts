@@ -178,9 +178,7 @@ export function buildTrackView(track: Track): TrackView {
     const def = i > 0 ? track.def.branches[i - 1] : null;
     if (def?.openOn) {
       g.add(roadPaint(ribbon, theme.decor));
-      const road = lapRoad(def, ribbon, g);
-      if (road.barrier) group.add(road.barrier);
-      lapRoads.push(road);
+      lapRoads.push(lapRoad(def, ribbon, g));
     }
   });
 
@@ -566,7 +564,6 @@ function pitMesh(p: PitDef, mats: Materials): THREE.Group {
 /** Builds road, curbs, walls, ramp skirts and lip faces for one ribbon. */
 /** `floating`: every stretch is a deck with an underside (the sky track), with no pillars. */
 interface LapRoad {
-  barrier: THREE.Group | null;
   update(time: number, lap?: LapContext): void;
 }
 
@@ -576,59 +573,15 @@ const FLOOD_DEPTH = 4.5;
 /**
  * A road that's only there on some laps (BranchDef.openOn), shown for the
  * lap of the kart being watched. A phantom flickers into being and out
- * again; a flooded road sinks under the tide; a barred one drops a striped
- * boom across it at the bar.
+ * again; a flooded road sinks under the tide.
  */
 function lapRoad(def: BranchDef, ribbon: Ribbon, g: THREE.Group): LapRoad {
   let shown = 1;
   let last = 0;
-  let barrier: THREE.Group | null = null;
-  let boom: THREE.Object3D | null = null;
-  let wall: THREE.Object3D | null = null;
   // A flooded road sinks its own height and then some, so even an arched bridge goes under.
   let floodDepth = FLOOD_DEPTH;
   for (let s = 0; s < ribbon.spline.length; s += 4) floodDepth = Math.max(floodDepth, FLOOD_DEPTH + ribbon.heightAt(s));
-  if (def.shut?.kind === 'barrier' && def.shut.look?.style === 'wall') {
-    // A wall right across the road that sinks into the ground when it opens.
-    const { color = 0x8a8a90, glow = false } = def.shut.look;
-    barrier = new THREE.Group();
-    const s = def.shut.at * ribbon.scale;
-    const p = pointAt(ribbon.spline, s);
-    const hw = ribbon.halfWidthAtS(s) + 1.5;
-    const mat = glow
-      ? new THREE.MeshLambertMaterial({ color, emissive: color, emissiveIntensity: 0.6, transparent: true, opacity: 0.92 })
-      : new THREE.MeshLambertMaterial({ color, flatShading: true });
-    wall = new THREE.Mesh(new THREE.BoxGeometry(hw * 2, 3.4, 0.9), mat);
-    barrier.add(wall);
-    barrier.position.set(p.x, ribbon.heightAt(s), p.z);
-    barrier.rotation.y = Math.atan2(p.tx, p.tz);
-  } else if (def.shut?.kind === 'barrier') {
-    barrier = new THREE.Group();
-    const s = def.shut.at * ribbon.scale;
-    const p = pointAt(ribbon.spline, s);
-    const hw = ribbon.halfWidthAtS(s) + 1;
-    const white = new THREE.MeshLambertMaterial({ color: 0xf4f4f0 });
-    const red = new THREE.MeshLambertMaterial({ color: 0xd8302a });
-    for (const side of [-1, 1]) {
-      const post = new THREE.Mesh(new THREE.BoxGeometry(0.5, 1.6, 0.5), side < 0 ? red : white);
-      post.position.set(side * (hw + 0.3), 0.8, 0);
-      barrier.add(post);
-    }
-    // The boom hinges on the left post and swings up out of the way when it opens.
-    const pivot = new THREE.Group();
-    pivot.position.set(-hw - 0.3, 1.3, 0);
-    for (let k = 0; k < 8; k++) {
-      const seg = new THREE.Mesh(new THREE.BoxGeometry((hw * 2 + 0.6) / 8, 0.35, 0.25), k % 2 ? white : red);
-      seg.position.x = ((k + 0.5) * (hw * 2 + 0.6)) / 8;
-      pivot.add(seg);
-    }
-    barrier.add(pivot);
-    boom = pivot;
-    barrier.position.set(p.x, ribbon.heightAt(s), p.z);
-    barrier.rotation.y = Math.atan2(p.tx, p.tz);
-  }
   return {
-    barrier,
     update(time, lap) {
       const target = branchOpen(def, lap) ? 1 : 0;
       const dt = Math.min(0.1, Math.max(0, time - last));
@@ -642,13 +595,6 @@ function lapRoad(def: BranchDef, ribbon: Ribbon, g: THREE.Group): LapRoad {
         case 'flood':
           g.position.y = -floodDepth * (1 - shown);
           g.visible = shown > 0;
-          break;
-        case 'barrier':
-          if (boom) boom.rotation.z = shown * Math.PI * 0.45;
-          if (wall) {
-            wall.position.y = 1.7 - 3.6 * shown;
-            wall.visible = shown < 1;
-          }
           break;
       }
     },

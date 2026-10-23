@@ -177,8 +177,6 @@ function buildShortcut(from: { s: number; pose: Pose }, to: { s: number; pose: P
   b.straight(chord - b.s - 35);
   b.section("Snake's Mouth", { halfWidth: 7 });
   b.straight(chord - b.s);
-  // The snake shuts its jaws on the second lap.
-  const jaws = { style: 'wall', color: 0xe8dcc0 } as const;
-  const branch: BranchDef = { name: "Snake's Mouth Shortcut", mainFrom: from.s, mainTo: to.s, ...b.finish(false), openOn: [1, 'final'], shut: { kind: 'barrier', at: 50, look: jaws } };
+  const branch: BranchDef = { name: "Snake's Mouth Shortcut", mainFrom: from.s, mainTo: to.s, ...b.finish(false) };
   return { branch, pits: b.pits, caveStart };
 }

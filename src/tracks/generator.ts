@@ -1,5 +1,5 @@
 import { clamp, seededRandom } from '../core/math';
-import { TrackBuilder, dubins, offsetPose, type Pose, type RoadSurface, type SectionProps } from './builder';
+import { TrackBuilder, dubins, offsetPose, type Pose, type RoadSurface, type SectionProps, ROAD_WIDTH_SCALE } from './builder';
 import { nearestOnSpline } from './spline';
 import { Track, inPit, type BranchDef, type HazardDef, type ItemBoxRow, type Landmark, type TrackDef } from './track';
 
@@ -64,8 +64,8 @@ const KICKER_LANDING = 45;
 /** Shortcut jump: ramp length and lip height; the gap grows with twists. */
 const SHORTCUT_RAMP = 12;
 const SHORTCUT_LIP = 2.5;
-/** How far from either end a shortcut may still share road with the sweep it cuts across. */
-export const SHORTCUT_JUNCTION = 65;
+/** How far from either end a shortcut may still share road with the sweep it cuts across (longer the wider the roads: it peels off at the same angle). */
+export const SHORTCUT_JUNCTION = 65 * ROAD_WIDTH_SCALE;
 /**
  * Elevation. Rolling hills bend no sharper than this (1/m), so karts stay
  * planted over their tops; humps on straights are sharp-topped, for airtime.

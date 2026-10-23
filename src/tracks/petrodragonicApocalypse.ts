@@ -167,8 +167,6 @@ function buildFlamethrower(from: { s: number; pose: Pose }, to: { s: number; pos
   b.straight(10);
   const boxes = b.s;
   b.straight(chord - b.s);
-  // A wall of fire bars it until the final lap.
-  const fire = { style: 'wall', color: 0xff5a10, glow: true } as const;
-  const branch: BranchDef = { name: 'Flamethrower', mainFrom: from.s, mainTo: to.s, ...b.finish(false), openOn: ['final'], shut: { kind: 'barrier', at: 41, look: fire } };
+  const branch: BranchDef = { name: 'Flamethrower', mainFrom: from.s, mainTo: to.s, ...b.finish(false) };
   return { branch, pits: b.pits, boxes };
 }

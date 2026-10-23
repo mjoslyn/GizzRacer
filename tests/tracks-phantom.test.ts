@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { ROAD_WIDTH_SCALE } from '../src/tracks/builder';
 import { NEUTRAL_INPUT } from '../src/core/input';
 import { PHYSICS_DT } from '../src/core/loop';
 import { clamp, wrapAngle } from '../src/core/math';
@@ -90,7 +91,7 @@ describe.each(CASES.map((c) => [c.name, c] as const))('%s shortcut and kickers',
     const sp = branch.spline;
     for (let i = 0; i < sp.count; i++) {
       expect(Math.max(Math.abs(sp.px[i]), Math.abs(sp.pz[i]))).toBeLessThan(def.bounds - 20);
-      if (sp.dist[i] < c.junction || sp.dist[i] > sp.length - c.junction) continue;
+      if (sp.dist[i] < c.junction * ROAD_WIDTH_SCALE || sp.dist[i] > sp.length - c.junction * ROAD_WIDTH_SCALE) continue;
       const hit = nearestOnSpline(track.spline, sp.px[i], sp.pz[i]);
       expect(hit.distance - track.main.halfWidthAt(hit) - branch.halfWidth[i], `branch s ${sp.dist[i].toFixed(0)}`).toBeGreaterThan(4);
     }
@@ -183,10 +184,9 @@ describe('Deadstick Drop: off the end of the runway with no engine', () => {
 });
 
 /** The shortcuts that are only there on some laps, and what they are on the others. */
-const LAP_ROADS: { name: string; build: () => TrackDef; branch: string; open: LapContext; shut: LapContext; shutIs: 'fall' | 'barred' }[] = [
+const LAP_ROADS: { name: string; build: () => TrackDef; branch: string; open: LapContext; shut: LapContext; shutIs: 'fall' }[] = [
   { name: 'Phantom Island', build: buildPhantomIsland, branch: 'Eternal Return', open: { lap: 2, lastLap: false }, shut: { lap: 1, lastLap: false }, shutIs: 'fall' },
   { name: 'Phantom Island (final lap)', build: buildPhantomIsland, branch: 'Eternal Return', open: { lap: 2, lastLap: false }, shut: { lap: 3, lastLap: true }, shutIs: 'fall' },
-  { name: 'Deadstick Drop', build: buildDeadstickDrop, branch: 'Tailwind', open: { lap: 3, lastLap: true }, shut: { lap: 2, lastLap: false }, shutIs: 'barred' },
   { name: 'Sea of Doubt', build: buildSeaOfDoubt, branch: 'Riptide', open: { lap: 2, lastLap: false }, shut: { lap: 3, lastLap: true }, shutIs: 'fall' },
 ];
 

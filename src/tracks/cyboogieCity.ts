@@ -21,13 +21,13 @@ export function buildCyboogieCity(): TrackDef {
   const b = new TrackBuilder(START, 'Neon Boulevard', { halfWidth: 11, wallHeight: 1.2, surface: 'neon' });
   b.scale = K;
   // Robot Stop: the boulevard swings out round the Munt Machine factory. Open edges where its shortcut forks off and back.
-  b.section('Robot Stop', { halfWidth: 11, surface: 'neon' });
+  b.section('Robot Stop', { halfWidth: 10, surface: 'neon' });
   b.straight(3);
   b.mark('robotStop');
   b.arc(BUMP_R, -BUMP_DEG).arc(BUMP_R, 20);
-  b.section('Robot Stop', { halfWidth: 11, wallHeight: 1.2, surface: 'neon' });
+  b.section('Robot Stop', { halfWidth: 10, wallHeight: 1.2, surface: 'neon' });
   b.arc(BUMP_R, 2 * BUMP_DEG - 40);
-  b.section('Robot Stop', { halfWidth: 11, surface: 'neon' });
+  b.section('Robot Stop', { halfWidth: 10, surface: 'neon' });
   b.arc(BUMP_R, 20).arc(BUMP_R, -BUMP_DEG);
   b.mark('robotStopEnd');
   b.straight(3);
@@ -109,16 +109,16 @@ export function buildCyboogieCity(): TrackDef {
 function buildMuntMachine(from: { s: number; pose: Pose }, to: { s: number; pose: Pose }) {
   const chord = Math.hypot(to.pose.x - from.pose.x, to.pose.z - from.pose.z);
   const b = new TrackBuilder(from.pose, 'Soy-Protein Munt Machine', { halfWidth: 5.5, surface: 'neon' });
-  b.straight(30);
-  b.section('Munt Vat Leap', { halfWidth: 5.5, surface: 'neon' });
+  // The leap sits a shade earlier than the chord's middle, so its vat stays clear of the street it cuts across.
+  b.straight(27);
+  // A narrower lip over the vat, so its pit stays clear of the street the shortcut cuts across.
+  b.section('Munt Vat Leap', { halfWidth: 4.6, surface: 'neon' });
   b.elevate(0).rise(16, 2.2);
   b.gap(24, 7, undefined, 12, 1);
   b.elevate(0);
   b.section('Soy-Protein Munt Machine', { halfWidth: 5.5, surface: 'neon' });
   b.straight(chord - b.s);
-  // The machine's shutter is only up on the second lap.
-  const shutter = { style: 'wall', color: 0xff3ad8, glow: true } as const;
-  const branch: BranchDef = { name: 'Soy-Protein Munt Machine', mainFrom: from.s, mainTo: to.s, ...b.finish(false), openOn: [2], shut: { kind: 'barrier', at: 38, look: shutter } };
+  const branch: BranchDef = { name: 'Soy-Protein Munt Machine', mainFrom: from.s, mainTo: to.s, ...b.finish(false) };
   return { branch, pits: b.pits, boxes: 26 };
 }
 

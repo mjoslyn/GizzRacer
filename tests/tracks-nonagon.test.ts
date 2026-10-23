@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { ROAD_WIDTH_SCALE } from '../src/tracks/builder';
 import { NEUTRAL_INPUT } from '../src/core/input';
 import { PHYSICS_DT } from '../src/core/loop';
 import { clamp, wrapAngle } from '../src/core/math';
@@ -125,7 +126,7 @@ describe.each(CUP)('$name', ({ build, near, high, low }) => {
     const sp = ribbon.spline;
     let gap = Infinity;
     for (let i = 0; i < sp.count; i++) {
-      if (sp.dist[i] < near || sp.dist[i] > sp.length - near) continue;
+      if (sp.dist[i] < near * ROAD_WIDTH_SCALE || sp.dist[i] > sp.length - near * ROAD_WIDTH_SCALE) continue;
       const hit = nearestOnSpline(track.spline, sp.px[i], sp.pz[i]);
       gap = Math.min(gap, hit.distance - track.main.halfWidthAt(hit) - ribbon.halfWidth[i]);
     }

@@ -22,18 +22,10 @@ export interface BranchDef extends RibbonDef {
   openOn?: (number | 'final')[];
   /**
    * What it is on the other laps: gone ('vanish': drive on and you're in
-   * the water), drowned by the tide ('flood'), or barred from this far along
-   * it, in builder units ('barrier': karts bounce off the bar).
+   * the water) or drowned by the tide ('flood'). There are no bars: a
+   * shortcut is either there or it isn't.
    */
-  shut?: { kind: 'vanish' } | { kind: 'flood' } | { kind: 'barrier'; at: number; look?: BarrierLook };
-}
-
-/** How a bar across a road looks: a striped boom that swings up, or a wall (of ice, fire, bone, steel) that sinks away. */
-export interface BarrierLook {
-  style: 'boom' | 'wall';
-  color?: number;
-  /** Lit from within (fire, neon). */
-  glow?: boolean;
+  shut?: { kind: 'vanish' } | { kind: 'flood' };
 }
 
 /** Which lap a kart is on, for the roads that are only there on some (BranchDef.openOn). */
@@ -431,14 +423,9 @@ export class Track implements DriveEnv {
     return builderS * this.main.scale;
   }
 
-  /**
-   * How far along branch `k` (spline metres) it can be driven on this lap:
-   * all of it when it's open, none when it's gone, up to the bar when it's barred.
-   */
+  /** How far along branch `k` (spline metres) it can be driven on this lap: all of it when it's there, none when it's gone. */
   private branchReach(k: number, ctx?: LapContext): number {
-    const def = this.def.branches[k];
-    if (branchOpen(def, ctx)) return Infinity;
-    return def.shut?.kind === 'barrier' ? def.shut.at * this.branches[k].scale : -Infinity;
+    return branchOpen(this.def.branches[k], ctx) ? Infinity : -Infinity;
   }
 
   /** The road under a point (the highest one within a step up), and the main ribbon's nearest point. */
@@ -542,10 +529,6 @@ export class Track implements DriveEnv {
       if (reach === -Infinity) return;
       const hit = nearestOnSpline(r.spline, s.x, s.z);
       if (hit.s <= reach) keep(this.ribbonWalls(r, hit, s.y, radius));
-      // Barred: a bar across the road there, from the side the kart comes from.
-      if (reach !== Infinity && !pastEnd(r, hit) && Math.abs(hit.lateral) < r.halfWidthAt(hit) + 1 && hit.s > reach - radius && hit.s < reach + 2 && Math.abs(s.y - r.heightAt(hit.s)) < 3) {
-        keep({ nx: -hit.tx, nz: -hit.tz, depth: hit.s - (reach - radius), bar: true });
-      }
     });
 
     const b = this.def.bounds - radius;

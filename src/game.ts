@@ -902,19 +902,14 @@ function surgeWarning(p: RaceKart, dt: number): void {
   sfx.surgeAlarm(dt, near?.near ?? null);
 }
 
-/** A shortcut the player has just driven onto: style points, and a sting the first time it's found on this track. */
+/** A shortcut the player has just driven onto: style points, and noted in their progress. Quietly: no pop-up, no sting. */
 function checkShortcut(p: RaceKart): void {
   const b = p.branch;
   if (b === lastBranch) return;
   lastBranch = b;
   if (b < 0 || !race.started || p.finishTime !== null) return;
-  const name = track.def.branches[b]?.name ?? 'shortcut';
   style?.add('shortcut');
-  if (foundShortcut(track.def.id, name)) {
-    hud.flash(`SHORTCUT FOUND: ${name.toUpperCase()}`);
-    sfx.discover();
-    chase.kick(5);
-  }
+  foundShortcut(track.def.id, track.def.branches[b]?.name ?? 'shortcut');
 }
 
 /** Time Trial: at each checkpoint, the gap to the ghost being chased as a split. */

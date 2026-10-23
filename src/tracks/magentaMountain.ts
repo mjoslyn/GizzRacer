@@ -138,8 +138,6 @@ function buildSnowBridge(from: { s: number; pose: Pose }, to: { s: number; pose:
   const b = new TrackBuilder(from.pose, 'Snow Bridge', { halfWidth: 6, surface: 'crystal' });
   b.straight(30);
   b.section('Snow Bridge Span', { halfWidth: 4, surface: 'boards' });
-  // The avalanche comes down where the span is clear of the bend.
-  const bar = b.s + 10;
   b.elevate(0).straight(12).elevate(1);
   const tarn = chord - 2 * b.s;
   const boxes = b.s + tarn / 2;
@@ -147,10 +145,8 @@ function buildSnowBridge(from: { s: number; pose: Pose }, to: { s: number; pose:
   b.elevate(1).straight(12).elevate(0);
   b.section('Snow Bridge', { halfWidth: 6, surface: 'crystal' });
   b.straight(chord - b.s);
-  // Open on the first lap; the avalanche buries it on the second, and it's dug out for the last.
   const branch: BranchDef = {
     name: 'Snow Bridge', mainFrom: from.s, mainTo: to.s, ...b.finish(false),
-    openOn: [1, 'final'], shut: { kind: 'barrier', at: bar, look: { style: 'wall', color: 0xffb8e8 } },
   };
   return { branch, pits: b.pits, boxes };
 }

@@ -24,8 +24,7 @@ const WALL = 6;
  * march across the road and stop dead in the middle of it, the Smelter
  * Trench sunk 6 m with more of them, the Scrapyard Leap over molten metal,
  * and the Nonagon Door swinging round a scrap pit. The Open Door cuts
- * straight across it, until the line stops on the final lap and a steel
- * shutter comes down.
+ * straight across it.
  */
 export function buildRobotStop(): TrackDef {
   const b = new TrackBuilder(START, 'Assembly Line', { halfWidth: 11, surface: 'steel' });
@@ -132,16 +131,13 @@ function plunge(b: TrackBuilder, s0: number, y0: number, s1: number, y1: number)
 
 /**
  * The Open Door: a service road straight across the scrap pit the Nonagon
- * Door swings round, over a plank of steel. Nonagon Infinity opens the door
- * on laps 1 and 2; on the final lap the line stops and a shutter comes
- * down across it.
+ * Door swings round, over a plank of steel.
  */
 function buildOpenDoor(from: { s: number; pose: Pose }, to: { s: number; pose: Pose }) {
   const chord = Math.hypot(to.pose.x - from.pose.x, to.pose.z - from.pose.z);
   const b = new TrackBuilder(from.pose, 'The Open Door', { halfWidth: 6, surface: 'asphalt' });
   b.straight(30);
   b.section('Scrap Plank', { halfWidth: 4.5, surface: 'steel' });
-  const shutter = b.s + 10;
   b.elevate(0).straight(12).elevate(1);
   const pit = chord - 2 * b.s;
   const boxes = b.s + pit / 2;
@@ -151,7 +147,6 @@ function buildOpenDoor(from: { s: number; pose: Pose }, to: { s: number; pose: P
   b.straight(chord - b.s);
   const branch: BranchDef = {
     name: 'The Open Door', mainFrom: from.s, mainTo: to.s, ...b.finish(false),
-    openOn: [1, 2], shut: { kind: 'barrier', at: shutter, look: { style: 'wall', color: 0x4a4e56 } },
   };
   return { branch, pits: b.pits, boxes };
 }

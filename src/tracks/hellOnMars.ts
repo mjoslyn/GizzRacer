@@ -141,8 +141,6 @@ function buildTollLane(from: { s: number; pose: Pose }, to: { s: number; pose: P
   // The toll: a pair of double boxes for those who made it over.
   const boxes = b.s;
   b.straight(chord - b.s);
-  // The rich let you through once: from the second lap the gate is shut.
-  const gate = { style: 'wall', color: 0xffc020 } as const;
-  const branch: BranchDef = { name: 'Mars for the Rich', mainFrom: from.s, mainTo: to.s, ...b.finish(false), openOn: [1], shut: { kind: 'barrier', at: 50, look: gate } };
+  const branch: BranchDef = { name: 'Mars for the Rich', mainFrom: from.s, mainTo: to.s, ...b.finish(false) };
   return { branch, pits: b.pits, boxes };
 }

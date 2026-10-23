@@ -36,7 +36,7 @@ export function buildSeaOfDoubt(): TrackDef {
   // A trestle out round the sea stacks, climbing, then the plunge.
   b.section('Sea Stack Trestle', { halfWidth: 9, wallHeight: 1.2, surface: 'boards', bridge: true });
   b.mark('trestle');
-  b.arc(30, -90).straight(20).spiral(44, 26, 200).mark('stacks').spiral(26, 44, -200).mark('trestleTop').straight(50);
+  b.arc(30, -90).straight(20).spiral(44, 24, 200).mark('stacks').spiral(24, 44, -200).mark('trestleTop').straight(50);
   b.section('Spacesick Swells', { halfWidth: 9.5, surface: 'wet' });
   b.mark('swells');
   b.arc(40, -90).straight(10).arc(32, -60).arc(32, 60);

@@ -24,8 +24,7 @@ const STACKS = 5;
  * top. Right angles through Feedback Alley between speaker stacks 5 m tall
  * and the Filter Trench sunk 6 m, giant wah pedals rocking up and stamping
  * down across both; the Octave Leap over a pit, and the Toe Down Bend round
- * another, which the Open Pedal cuts straight across: barred by a lit boom
- * until the final lap, when the pedal opens.
+ * another, which the Open Pedal cuts straight across.
  */
 export function buildWahWah(): TrackDef {
   const b = new TrackBuilder(START, 'Pedalboard Straight', { halfWidth: 11, surface: 'fret' });
@@ -132,15 +131,13 @@ function plunge(b: TrackBuilder, s0: number, y0: number, s1: number, y1: number)
 
 /**
  * The Open Pedal: a patch cable of a road straight across the pit the Toe
- * Down Bend swings round. Barred by a lit boom on laps 1 and 2; on the
- * final lap the pedal opens and the boom swings up.
+ * Down Bend swings round.
  */
 function buildOpenPedal(from: { s: number; pose: Pose }, to: { s: number; pose: Pose }) {
   const chord = Math.hypot(to.pose.x - from.pose.x, to.pose.z - from.pose.z);
   const b = new TrackBuilder(from.pose, 'Open Pedal', { halfWidth: 6, surface: 'neon' });
   b.straight(30);
   b.section('Patch Cable', { halfWidth: 4.5, surface: 'neon' });
-  const boom = b.s + 10;
   b.elevate(0).straight(12).elevate(1);
   const pit = chord - 2 * b.s;
   const boxes = b.s + pit / 2;
@@ -150,7 +147,6 @@ function buildOpenPedal(from: { s: number; pose: Pose }, to: { s: number; pose: 
   b.straight(chord - b.s);
   const branch: BranchDef = {
     name: 'Open Pedal', mainFrom: from.s, mainTo: to.s, ...b.finish(false),
-    openOn: ['final'], shut: { kind: 'barrier', at: boom, look: { style: 'boom', color: 0xd83a7a, glow: true } },
   };
   return { branch, pits: b.pits, boxes };
 }

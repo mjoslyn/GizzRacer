@@ -136,7 +136,6 @@ function buildGoblinHole(from: { s: number; pose: Pose }, to: { s: number; pose:
   const b = new TrackBuilder(from.pose, 'Goblin Hole', { halfWidth: 6, surface: 'paving' });
   b.straight(30);
   b.section('Goblin Plank', { halfWidth: 4, surface: 'boards' });
-  const bar = b.s + 10;
   b.elevate(0).straight(12).elevate(1);
   const pond = chord - 2 * b.s;
   const boxes = b.s + pond / 2;
@@ -144,10 +143,8 @@ function buildGoblinHole(from: { s: number; pose: Pose }, to: { s: number; pose:
   b.elevate(1).straight(12).elevate(0);
   b.section('Goblin Hole', { halfWidth: 6, surface: 'paving' });
   b.straight(chord - b.s);
-  // The goblins hedge it up on the second lap.
   const branch: BranchDef = {
     name: 'Goblin Hole', mainFrom: from.s, mainTo: to.s, ...b.finish(false),
-    openOn: [1, 'final'], shut: { kind: 'barrier', at: bar, look: { style: 'wall', color: 0x2a6a2a } },
   };
   return { branch, pits: b.pits, boxes };
 }

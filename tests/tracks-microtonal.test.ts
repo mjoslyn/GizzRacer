@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { ROAD_WIDTH_SCALE } from '../src/tracks/builder';
 import { NEUTRAL_INPUT } from '../src/core/input';
 import { PHYSICS_DT } from '../src/core/loop';
 import { Race } from '../src/core/race';
@@ -32,7 +33,8 @@ const CASES: { name: string; build: () => TrackDef; jump?: JumpSpec; boostAt?: n
 ];
 
 /** How far from a junction (m) the branch may still run beside the main road. */
-const JUNCTION = 50;
+/** Metres from a junction within which the shortcut may still share road with the main line (longer the wider the roads). */
+const JUNCTION = 50 * ROAD_WIDTH_SCALE;
 
 const MID = kartParams(RACERS[0].stats, '100cc');
 const FAST = kartParams(RACERS[0].stats, '150cc');

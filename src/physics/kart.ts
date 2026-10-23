@@ -8,8 +8,6 @@ export interface WallHit {
   nx: number; // push-out normal
   nz: number;
   depth: number;
-  /** A bar across a shut shortcut: it stops a kart dead rather than turning it along itself (there's a road past its end). */
-  bar?: boolean;
 }
 
 export interface GroundInfo {
@@ -84,7 +82,7 @@ export interface StepEvents {
  * Bump whenever kart physics, racer stats or a track layout change lap
  * times: online leaderboards and ghosts are kept per version.
  */
-export const PHYSICS_VERSION = 18;
+export const PHYSICS_VERSION = 19;
 export const KART_RADIUS = 1;
 export const GRAVITY = 30;
 export const HOP_VELOCITY = 4.5;
@@ -500,14 +498,12 @@ export function stepKart(s: KartState, input: InputFrame, p: KartParams, env: Dr
       }
       s.wallTime = WALL_RECOVER;
       ev.wallHit = into;
-      if (!hit.bar) {
-        // Which way along the wall to turn: the way the nose already leans, the steering deciding a dead-square hit.
-        const lean = fx * -hit.nz + fz * hit.nx;
-        const side = Math.abs(lean) > 0.05 ? Math.sign(lean) : steerIn !== 0 ? -Math.sign(steerIn) : 1;
-        s.wallTx = -hit.nz * side;
-        s.wallTz = hit.nx * side;
-        s.wallAlign = WALL_ALIGN_TIME * into;
-      }
+      // Which way along the wall to turn: the way the nose already leans, the steering deciding a dead-square hit.
+      const lean = fx * -hit.nz + fz * hit.nx;
+      const side = Math.abs(lean) > 0.05 ? Math.sign(lean) : steerIn !== 0 ? -Math.sign(steerIn) : 1;
+      s.wallTx = -hit.nz * side;
+      s.wallTz = hit.nx * side;
+      s.wallAlign = WALL_ALIGN_TIME * into;
     } else if (into > 0) {
       s.speed *= 1 - WALL_SCRAPE * into * dt;
     }

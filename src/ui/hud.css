@@ -443,11 +443,17 @@ body.touch-mode .hud-help {
   display: flex;
   flex-direction: column;
   gap: clamp(2px, 1.4vh, 12px);
-  width: min(560px, calc(100vw - 32px));
+  box-sizing: border-box;
+  width: min(600px, calc(100vw - 24px));
   max-height: calc(100dvh - 16px);
+  padding: clamp(8px, 1.6vh, 16px) clamp(10px, 2vw, 18px);
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: none;
+  background: linear-gradient(180deg, rgba(48, 10, 64, 0.9), rgba(22, 4, 36, 0.93));
+  box-shadow: 0 0 0 3px #ffd23a, 0 0 0 6px #3a0f45, 0 10px 40px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
 .menu-panel::-webkit-scrollbar {
@@ -455,7 +461,7 @@ body.touch-mode .hud-help {
 }
 
 .menu-title {
-  font-size: clamp(22px, min(6vh, 9vw), 44px);
+  font-size: clamp(24px, min(6vh, 9vw), 44px);
   margin-bottom: clamp(0px, 1vh, 8px);
   flex-shrink: 0;
 }
@@ -478,7 +484,7 @@ body.touch-mode .hud-help {
 }
 
 .menu-label {
-  font-size: 12px;
+  font-size: 13px;
   letter-spacing: 2px;
   text-transform: uppercase;
   text-shadow: 2px 2px 0 #3a0f45;
@@ -520,10 +526,10 @@ body.touch-mode .hud-help {
 .menu-bio {
   grid-column: 2 / 5;
   margin-top: 2px;
-  font-size: 12px;
+  font-size: 13px;
   font-style: italic;
   text-align: center;
-  opacity: 0.85;
+  opacity: 0.95;
 }
 
 .menu-stat {
@@ -553,8 +559,8 @@ body.touch-mode .hud-help {
 .menu-hint {
   font-family: Verdana, sans-serif;
   font-style: normal;
-  font-size: 11px;
-  opacity: 0.8;
+  font-size: 12px;
+  opacity: 0.85;
   text-shadow: 1px 1px 0 #3a0f45;
   flex-shrink: 0;
 }
@@ -570,7 +576,7 @@ body.touch-mode .hud-help {
 
 .menu .menu-crumb {
   padding: 2px 8px;
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 1px;
   text-transform: uppercase;
   background: rgba(60, 10, 30, 0.75);
@@ -616,14 +622,14 @@ body.touch-mode .hud-help {
 
 .menu .menu-opt {
   display: grid;
-  grid-template-columns: minmax(130px, auto) 1fr;
+  grid-template-columns: minmax(150px, auto) 1fr;
   align-items: center;
   gap: 4px 14px;
   width: 100%;
   padding: clamp(3px, 1vh, 8px) 12px;
   text-align: left;
-  opacity: 0.7;
-  background: rgba(60, 10, 30, 0.55);
+  opacity: 0.8;
+  background: rgba(60, 10, 30, 0.7);
   box-shadow: 0 0 0 2px #3a0f45;
 }
 
@@ -639,16 +645,18 @@ body.touch-mode .hud-help {
 }
 
 .menu-opt-name {
-  font-size: clamp(16px, min(3.6vh, 5vw), 24px);
+  font-size: clamp(17px, min(3.8vh, 5vw), 25px);
   white-space: nowrap;
+  /* The button's own dark text-shadow would show through the gradient lettering's transparent fill. */
+  text-shadow: none;
 }
 
 .menu-opt-blurb {
   font-family: Verdana, sans-serif;
   font-style: normal;
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.3;
-  opacity: 0.85;
+  color: #fff6d0;
   text-shadow: 1px 1px 0 #3a0f45;
 }
 
@@ -1285,11 +1293,11 @@ body.ios-browser .hud-title-ios {
 .menu-cup-tracks {
   grid-column: 2 / 5;
   margin-top: 1px;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.3;
   letter-spacing: 0.5px;
   text-align: center;
-  opacity: 0.75;
+  opacity: 0.9;
 }
 
 .menu-cup .menu-value {
@@ -2073,6 +2081,8 @@ button.hud-big {
 /* Smaller gradient lettering (picker and lobby values): a thin outline keeps
    the gold fill showing. */
 .menu-value.hud-big,
+.menu-opt-name.hud-big,
+.menu-title.hud-big,
 .lobby-value.hud-big,
 .hud-intro-sub.hud-big,
 .steer-choice b.hud-big {
