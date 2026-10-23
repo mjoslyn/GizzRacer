@@ -18,10 +18,10 @@ const COLLECTION = 'KingGizzardAndTheLizardWizard';
 const PER_SONG = 12;
 const CONCURRENCY = 8;
 const OUT = new URL('../public/music/bootlegs.json', import.meta.url);
-/** Start points already found (tools/bootleg-starts.mjs), kept across a re-run. */
+/** Start points and gains already found (tools/bootleg-starts.mjs), kept across a re-run. */
 const known = new Map();
 try {
-  for (const recs of Object.values(JSON.parse(readFileSync(OUT, 'utf8')))) for (const r of recs) if (r.start !== undefined) known.set(`${r.id}/${r.file}`, r.start);
+  for (const recs of Object.values(JSON.parse(readFileSync(OUT, 'utf8')))) for (const r of recs) if (r.start !== undefined) known.set(`${r.id}/${r.file}`, { start: r.start, gain: r.gain });
 } catch {
   // First run.
 }
@@ -92,9 +92,9 @@ async function scan(show) {
       const byDate = found.get(song);
       if (byDate.has(date)) continue;
       const rec = { id: show.identifier, file: f.name, date, venue, seconds: seconds(f.length) };
-      // Where its music starts, if tools/bootleg-starts.mjs already worked it out.
-      const start = known.get(`${rec.id}/${rec.file}`);
-      byDate.set(date, start === undefined ? rec : { ...rec, start });
+      // Where its music starts and its gain, if tools/bootleg-starts.mjs already worked them out.
+      const read = known.get(`${rec.id}/${rec.file}`);
+      byDate.set(date, read ? { ...rec, ...read } : rec);
     }
   }
 }

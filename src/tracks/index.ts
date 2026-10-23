@@ -32,7 +32,7 @@ import { buildWahWah } from './wahWah';
 /** Every track the picker offers, in cup order, each with its layout extras laid in (enrich.ts). */
 /** The tracks as drawn, before enrich.ts (tests and tools). */
 export const RAW_TRACK_LIST: { id: string; name: string; build: () => TrackDef }[] = [
-  { id: 'infinite-loop-speedway', name: 'Infinite Loop Speedway', build: buildInfiniteLoopSpeedway },
+  { id: 'infinite-loop-speedway', name: 'Mr. Beat', build: buildInfiniteLoopSpeedway },
   { id: 'rattlesnake-run', name: 'Rattlesnake', build: buildRattlesnakeRun },
   { id: 'volcano-fortress', name: 'Magma', build: buildVolcanoFortress },
   { id: 'polygondwanaland-jungle', name: 'Polygondwanaland', build: buildPolygondwanalandJungle },

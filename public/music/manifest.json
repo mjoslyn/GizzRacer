@@ -252,17 +252,17 @@
     "sampleRate": 44100
   },
   "infinite-loop-speedway-remix": {
-    "title": "robot stop (remix)",
-    "bpm": 172,
-    "bars": 22,
-    "loopSamples": 1353767,
+    "title": "mr. beat (remix)",
+    "bpm": 132,
+    "bars": 32,
+    "loopSamples": 2565818,
     "sampleRate": 44100
   },
   "infinite-loop-speedway-remix-final-lap": {
-    "title": "robot stop (remix, final lap)",
-    "bpm": 180,
-    "bars": 22,
-    "loopSamples": 1293600,
+    "title": "mr. beat (remix, final lap)",
+    "bpm": 140,
+    "bars": 32,
+    "loopSamples": 2419200,
     "sampleRate": 44100
   },
   "rattlesnake-run-remix": {

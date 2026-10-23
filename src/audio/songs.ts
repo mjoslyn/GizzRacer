@@ -10,7 +10,7 @@ export interface TrackSong {
 }
 
 export const TRACK_SONGS: Record<string, TrackSong> = {
-  'infinite-loop-speedway': { title: 'Robot Stop', album: 'Nonagon Infinity', year: 2016 },
+  'infinite-loop-speedway': { title: 'Mr. Beat', album: 'Nonagon Infinity', year: 2016 },
   'rattlesnake-run': { title: 'Rattlesnake', album: 'Flying Microtonal Banana', year: 2017 },
   'volcano-fortress': { title: 'Magma', album: 'Ice, Death, Planets, Lungs, Mushrooms and Lava', year: 2022 },
   'polygondwanaland-jungle': { title: 'Polygondwanaland', album: 'Polygondwanaland', year: 2017 },
@@ -50,6 +50,7 @@ export const TRACK_SONGS: Record<string, TrackSong> = {
 export const TRANSCRIBED: Record<string, { recording: string; release: string }> = {
   title: { recording: 'Ice V', release: "Live At Red Rocks '22" },
   'polygondwanaland-jungle': { recording: 'Polygondwanaland', release: 'Polygondwanaland (2017), the album master' },
+  'infinite-loop-speedway': { recording: 'Mr. Beat', release: "Live In London '19" },
   'rattlesnake-run': { recording: 'Rattlesnake', release: "Live At Red Rocks '22" },
   'crumbling-castle': { recording: 'Crumbling Castle', release: 'Polygondwanaland (2017), the album master' },
   'castle-in-the-air': { recording: 'The Castle in the Air', release: 'Polygondwanaland (2017), the album master' },

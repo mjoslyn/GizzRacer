@@ -24,7 +24,7 @@ const FACE_R = 35;
 const FACE_OPEN = 75;
 
 /**
- * Infinite Loop Speedway (spec section 7, easy): a figure-8 on green
+ * Mr. Beat, once Infinite Loop Speedway (spec section 7, easy): a figure-8 on green
  * hills. Two wide loops joined by long straights that cross in the middle,
  * one flying over the other on an overpass. Seen from above it is an
  * infinity sign. Sections are named for Nonagon Infinity in album order,
@@ -98,7 +98,7 @@ export function buildInfiniteLoopSpeedway(): TrackDef {
   const face = buildInvisibleFace(b.marks.faceFrom, b.marks.faceTo);
   return {
     id: 'infinite-loop-speedway',
-    name: 'Infinite Loop Speedway',
+    name: 'Mr. Beat',
     main,
     branches: [face],
     pits: [],

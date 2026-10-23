@@ -9,7 +9,7 @@ No install and no account. It will always be free.
 ## What's in it
 
 - **28 tracks in 7 cups**, plus a Random Cup of four drawn from them, each built around an album or a song
-  - **Nonagon Cup:** Infinite Loop Speedway, Rattlesnake, Magma, Polygondwanaland
+  - **Nonagon Cup:** Mr. Beat, Rattlesnake, Magma, Polygondwanaland
   - **Microtonal Cup:** Fishing for Fishies, Ice V, Cyboogie, Catching Smoke
   - **Apocalypse Cup:** Mars for the Rich, Supercell, The Lord of Lightning, Dragon
   - **Phantom Island Cup:** Phantom Island, Deadstick, Panpsych, Sea of Doubt

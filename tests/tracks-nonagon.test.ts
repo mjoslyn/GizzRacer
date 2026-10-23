@@ -19,7 +19,7 @@ import { buildVolcanoFortress } from '../src/tracks/volcanoFortress';
  * deck), `low` how deep its cut sinks.
  */
 const CUP: { name: string; build: () => TrackDef; near: number; high: number; low: number }[] = [
-  { name: 'Infinite Loop Speedway', build: buildInfiniteLoopSpeedway, near: 60, high: 16, low: -3 },
+  { name: 'Mr. Beat', build: buildInfiniteLoopSpeedway, near: 60, high: 16, low: -3 },
   { name: 'Rattlesnake', build: buildRattlesnakeRun, near: 55, high: 12, low: -7 },
   { name: 'Magma', build: buildVolcanoFortress, near: 50, high: 18, low: -5 },
   { name: 'Polygondwanaland', build: buildPolygondwanalandJungle, near: 55, high: 12, low: -5 },
