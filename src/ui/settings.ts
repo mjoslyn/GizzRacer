@@ -1,7 +1,7 @@
 import { CPU_DIFFICULTIES } from '../ai/cpuDriver';
 import { SOUNDTRACKS, SOUNDTRACK_BLURBS, SOUNDTRACK_NAMES, TILT_RANGES, VIDEO_LOOKS, settings, updateSettings, type Settings } from '../core/settings';
 import { DETAILS, DETAIL_NAMES } from '../render/detail';
-import { chosenShow, onShows, randomShow, showLabel, shows, stepShow, stepYear } from '../audio/shows';
+import { chosenShow, onShows, randomShow, showSelect, shows } from '../audio/shows';
 import { creditsHtml } from './credits';
 import type { TiltSteering } from './tilt';
 
@@ -31,6 +31,12 @@ export class SettingsScreen {
     this.el.className = 'settings';
     parent.appendChild(this.el);
     this.el.addEventListener('click', (e) => void this.click(e.target as HTMLElement));
+    this.el.addEventListener('change', (e) => {
+      const sel = e.target as HTMLSelectElement;
+      if (!sel.matches('.settings-select')) return;
+      updateSettings({ liveShow: sel.value });
+      this.render();
+    });
     // The show list arrives after startup: the Live set row fills in.
     onShows(() => this.visible && !this.asking && !this.credits && this.render());
     // Keys pressed here mustn't reach the game.
@@ -143,12 +149,6 @@ export class SettingsScreen {
         this.status = `${SOUNDTRACK_NAMES[next]}: ${SOUNDTRACK_BLURBS[next]}${next === 'remix' ? '' : ". From the band's shows on the Internet Archive; needs a connection"}${next === 'song' ? '; from the next race' : ''}`;
         break;
       }
-      case 'show':
-        updateSettings({ liveShow: stepShow(shows(), s.liveShow, dir) });
-        break;
-      case 'show-year':
-        updateSettings({ liveShow: stepYear(shows(), s.liveShow, dir) });
-        break;
       case 'show-random':
         updateSettings({ liveShow: randomShow(shows(), s.liveShow) });
         break;
@@ -211,7 +211,7 @@ export class SettingsScreen {
             <div class="settings-group">Sound and driving</div>
             <div class="lobby-row"><span class="lobby-label">Music</span>${arrows('music', pct(s.music))}</div>
             <div class="lobby-row"><span class="lobby-label">Soundtrack</span>${arrows('soundtrack', SOUNDTRACK_NAMES[s.soundtrack])}</div>
-            ${s.soundtrack === 'show' ? this.showRows(arrows) : ''}
+            ${s.soundtrack === 'show' ? this.showRows() : ''}
             <div class="lobby-row"><span class="lobby-label">Effects</span>${arrows('sfx', pct(s.sfx))}</div>
             <div class="lobby-row"><span class="lobby-label">VHS</span>${arrows('look', { full: 'Full', light: 'Light', off: 'Off' }[s.videoLook])}</div>
             <div class="lobby-row"><span class="lobby-label">Throttle</span>${toggle('auto', s.autoAccelerate, s.autoAccelerate ? 'Automatic' : 'Manual')}</div>
@@ -239,15 +239,13 @@ export class SettingsScreen {
     this.show(html);
   }
 
-  /** Live set: the show (with a dice) and a jump by year. */
-  private showRows(arrows: (act: string, value: string) => string): string {
+  /** Live set: which show, from a dropdown by year, or the dice. */
+  private showRows(): string {
     const all = shows();
     const show = chosenShow(all, settings().liveShow);
     if (!show) return '<div class="lobby-row"><span class="lobby-label">Live set</span><span></span><div class="lobby-value">Loading shows&hellip;</div><span></span></div>';
-    const esc = (t: string) => t.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
     return `
-            <div class="lobby-row settings-show"><span class="lobby-label">Live set <button class="menu-dice" data-act="show-random" title="A show at random">&#9860;</button></span>${arrows('show', `<small>${esc(showLabel(show))}</small>`)}</div>
-            <div class="lobby-row"><span class="lobby-label">Year</span>${arrows('show-year', show.date.slice(0, 4))}</div>`;
+            <div class="lobby-row settings-show"><span class="lobby-label">Live set <button class="menu-dice" data-act="show-random" title="A show at random">&#9860;</button></span>${showSelect(all, show.id, 'settings-select')}</div>`;
   }
 
   private renderCredits(): void {

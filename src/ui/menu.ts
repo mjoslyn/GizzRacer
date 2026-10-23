@@ -2,7 +2,7 @@ import { dailyLabel, dailyParams } from '../core/daily';
 import { cupTrophies, progress, raceKey, unlocks, type Unlocks } from '../core/progress';
 import { SOUNDTRACKS, SOUNDTRACK_BLURBS, SOUNDTRACK_NAMES, settings, updateSettings } from '../core/settings';
 import type { SavedTrack } from '../core/savedTracks';
-import { chosenShow, onShows, randomShow, showLabel, shows, stepShow, stepYear } from '../audio/shows';
+import { chosenShow, onShows, randomShow, showSelect, shows, stepShow } from '../audio/shows';
 import { formatTime } from './hud';
 import { ENGINE_CLASSES, RACERS, type EngineClass, type RacerDef } from '../physics/racers';
 import { GEN_COMPLEXITY_MAX, GEN_LENGTHS, GEN_THEMES, GEN_THEME_NAMES, trackName, type GenParams } from '../tracks/generator';
@@ -41,7 +41,7 @@ export interface MenuChoice {
   mirror: boolean;
 }
 
-export type MenuRow = 'mode' | 'track' | 'gen' | 'theme' | 'complexity' | 'length' | 'racer' | 'engine' | 'mirror' | 'sound' | 'show' | 'year';
+export type MenuRow = 'mode' | 'track' | 'gen' | 'theme' | 'complexity' | 'length' | 'racer' | 'engine' | 'mirror' | 'sound' | 'show';
 const TROPHY_GLYPH = { gold: '&#9733;', silver: '&#9733;', bronze: '&#9733;' } as const;
 const STAT_NAMES = ['speed', 'accel', 'weight', 'handling'] as const;
 const LENGTH_NAMES = { short: 'Short', medium: 'Medium', long: 'Long' };
@@ -100,7 +100,18 @@ export class Menu {
     this.choice = { ...initial };
     this.el.className = 'menu';
     parent.appendChild(this.el);
+    // The show dropdown works on its own: keys in it are the dropdown's, and a pick is the Live set's show.
+    this.el.addEventListener('keydown', (e) => (e.target as HTMLElement).matches('select') && e.stopPropagation());
+    this.el.addEventListener('change', (e) => {
+      const sel = e.target as HTMLSelectElement;
+      if (!sel.matches('.menu-show')) return;
+      updateSettings({ liveShow: sel.value });
+      sel.blur();
+      this.render();
+    });
     this.el.addEventListener('click', (e) => {
+      // A click opening the dropdown mustn't redraw it shut.
+      if ((e.target as HTMLElement).matches('select, option')) return;
       const t = (e.target as HTMLElement).closest<HTMLElement>('[data-row], [data-start], [data-next], [data-back], [data-step], [data-pick], [data-delete], [data-random], [data-random-track], [data-random-show]');
       if (!t) return;
       if (t.dataset.start !== undefined) return this.onStart(this.choice);
@@ -184,7 +195,7 @@ export class Menu {
         return ['racer'];
       default: {
         // The sound to race to, last: the same choice as Settings > Soundtrack, and for a Live set, which show.
-        const sound: MenuRow[] = settings().soundtrack === 'show' ? ['sound', 'show', 'year'] : ['sound'];
+        const sound: MenuRow[] = settings().soundtrack === 'show' ? ['sound', 'show'] : ['sound'];
         return unlocks(progress()).mirror && (m === 'grandPrix' || m === 'single') ? ['engine', 'mirror', ...sound] : ['engine', ...sound];
       }
     }
@@ -298,7 +309,6 @@ export class Menu {
     } else if (row === 'mirror') c.mirror = !c.mirror;
     else if (row === 'sound') updateSettings({ soundtrack: step(SOUNDTRACKS, settings().soundtrack) });
     else if (row === 'show') updateSettings({ liveShow: stepShow(shows(), settings().liveShow, dir) });
-    else if (row === 'year') updateSettings({ liveShow: stepYear(shows(), settings().liveShow, dir) });
     else if (row === 'theme') dial(() => (g.params = { ...g.params, theme: step(GEN_THEMES, g.params.theme) }));
     else if (row === 'complexity') dial(() => (g.params = { ...g.params, complexity: Math.min(GEN_COMPLEXITY_MAX, Math.max(1, g.params.complexity + dir)) }));
     else if (row === 'length') dial(() => (g.params = { ...g.params, length: step(GEN_LENGTHS, g.params.length) }));
@@ -385,15 +395,12 @@ export class Menu {
       .join('')}</div>`;
   }
 
-  /** Live set: which show, with a dice, and a jump by year. */
+  /** Live set: which show, from a dropdown by year, or the dice. */
   private showRows(line: (row: MenuRow, label: string, value: string, extra?: string, small?: boolean) => string): string {
     const show = chosenShow(shows(), settings().liveShow);
     if (!show) return line('show', 'Show', 'Loading&hellip;', '', true);
     const all = shows();
-    return (
-      line('show', 'Show', `<small class="menu-show">${esc(showLabel(show))}</small>${DICE('data-random-show', 'A show at random')}`, `<div class="menu-cup-tracks">Played whole from the top, ${all.indexOf(show) + 1} of ${all.length}</div>`, true) +
-      line('year', 'Year', show.date.slice(0, 4), '', true)
-    );
+    return line('show', 'Show', `${showSelect(all, show.id, 'menu-show')}${DICE('data-random-show', 'A show at random')}`, `<div class="menu-cup-tracks">Played whole from the top: ${all.length} shows to pick from</div>`, true);
   }
 
   /** The trophies won on the chosen cup, by class, or what's left to win. */

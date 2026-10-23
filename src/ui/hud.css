@@ -2686,14 +2686,27 @@ body[data-mode='menu'] .menu-panel {
   max-height: calc(100dvh - 54px);
 }
 
-/* A Live set's show (the picker's Show row): plain lettering, a venue and date are read, not shouted. */
-.menu-value .menu-show {
-  font: bold 14px Verdana, sans-serif;
-  font-style: normal;
+/* A Live set's show: a dropdown by year (the picker's Show row and Settings). */
+.menu-show,
+.settings-select {
+  max-width: 100%;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 2px solid #ffd23a;
+  border-radius: 8px;
+  background: #2a0a36;
   color: #fff6d0;
+  font: bold 13px Verdana, sans-serif;
+  font-style: normal;
+  cursor: pointer;
+}
+
+.menu-value .menu-show {
+  width: calc(100% - 44px);
   -webkit-text-fill-color: #fff6d0;
-  -webkit-text-stroke: 0;
-  background: none;
-  filter: none;
-  letter-spacing: 0;
+}
+
+.settings-show .settings-select {
+  grid-column: 2 / span 3;
+  width: 100%;
 }

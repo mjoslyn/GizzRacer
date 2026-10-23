@@ -41,15 +41,6 @@ export function stepShow(all: readonly Show[], id: string | null, dir: number): 
   return all[(i + dir + all.length) % all.length].id;
 }
 
-/** The first show of the year `dir` years on from `id`'s (the years there are shows from), round the ends. */
-export function stepYear(all: readonly Show[], id: string | null, dir: number): string | null {
-  if (!all.length) return id;
-  const years = [...new Set(all.map((s) => s.date.slice(0, 4)))];
-  const at = years.indexOf(all[showIndex(all, id)].date.slice(0, 4));
-  const year = years[(at + dir + years.length) % years.length];
-  return all.find((s) => s.date.startsWith(year))!.id;
-}
-
 /** A show at random, not `id`. */
 export function randomShow(all: readonly Show[], id: string | null, rand = Math.random): string | null {
   if (all.length < 2) return all[0]?.id ?? id;
@@ -61,4 +52,22 @@ export function randomShow(all: readonly Show[], id: string | null, rand = Math.
 /** How a show reads in a list: where, then when. */
 export function showLabel(s: Show): string {
   return `${s.venue || 'Somewhere'}, ${s.date}`;
+}
+
+const escape = (t: string) => t.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+
+/** A dropdown of every show, newest year first, each year's shows in date order, `id`'s selected. */
+export function showSelect(all: readonly Show[], id: string | null, cls: string): string {
+  const at = chosenShow(all, id);
+  const years = new Map<string, Show[]>();
+  for (const s of all) {
+    const y = s.date.slice(0, 4);
+    if (!years.has(y)) years.set(y, []);
+    years.get(y)!.push(s);
+  }
+  const groups = [...years.entries()]
+    .reverse()
+    .map(([y, list]) => `<optgroup label="${y}">${list.map((s) => `<option value="${escape(s.id)}"${s === at ? ' selected' : ''}>${escape(showLabel(s))}</option>`).join('')}</optgroup>`)
+    .join('');
+  return `<select class="${cls}" aria-label="Live set: which show">${groups}</select>`;
 }
