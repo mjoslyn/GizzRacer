@@ -1165,6 +1165,11 @@ body.touch-mode .hud-callouts {
   left: 74px;
 }
 
+/* The item slot sits under the time on touch: the ghost gap, splits and style go under the slot. */
+body.touch-mode .hud-ghost-gap {
+  margin-top: 96px;
+}
+
 body.touch-mode .hud-item {
   top: 96px;
   left: 18px;
@@ -2377,8 +2382,9 @@ body.intro .hud-turn {
   display: none;
 }
 
+/* Touch: the place and speed have the top centre and the drift meter sits under them, so the card goes under both. */
 body.touch-mode .hud-turn {
-  top: 8px;
+  top: 84px;
   left: 50%;
   transform: translateX(-50%);
 }
