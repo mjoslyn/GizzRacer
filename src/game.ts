@@ -7,6 +7,7 @@ import { CPU_SKILL, CpuDriver, DIFFICULTY_PACE, rivalSkill, withDifficulty } fro
 import { MusicPlayer } from './audio/music';
 import { LiveRadio } from './audio/radio';
 import { MiniPlayer } from './ui/miniPlayer';
+import { HintsTicker } from './ui/hints';
 import { Sfx } from './audio/sfx';
 import { TRACK_SONGS, remixCues } from './audio/songs';
 import { GHOST_HZ, GHOST_OVERRUN, GhostRecorder, decodeGhost, encodeGhost, ghostPose, type GhostRun } from './core/ghost';
@@ -104,6 +105,8 @@ const music = new MusicPlayer();
 /** The live soundtrack (Settings > Soundtrack): a race's song live, or a whole show kept playing. */
 const radio = new LiveRadio(music);
 new MiniPlayer(document.body, radio, music);
+/** Controls, items and tips scrolling along the bottom of the picker and the flyover before a race. */
+const hints = new HintsTicker(document.body);
 const sfx = new Sfx(
   () => music.context,
   (level, hold) => music.duck(level, hold),
@@ -1336,6 +1339,7 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
   updateSounds(dt);
 
   const finished = f.finishTime !== null;
+  hints.show(mode === 'menu' || (mode === 'race' && intro > 0 && !!player));
   hud.update(
     {
       kart: s,

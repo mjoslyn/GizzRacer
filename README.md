@@ -67,6 +67,8 @@ No install and no account. It will always be free.
 
 Smart Steering is on by default. It steers you back from edges and straightens you up out of turns, and you can always steer through it. On touch it holds on firmer, and the CPUs race a little slower. Turn it off under Settings > Steering.
 
+**Hints ticker:** on the picker and over the flyover before a race, a line along the bottom scrolls through the controls (for keys or touch, whichever you're using), what every item does, and tips. Hover it to stop it.
+
 **Turn hints** (on by default, Settings > Turn hints): a card at the top of the screen calls the next bend, an arrow curled the way it goes, how sharp (EASY, MEDIUM, SHARP, HAIRPIN) and how far off.
 
 **CPU difficulty** (Settings > CPUs): Easy, Normal or Hard. Easy CPUs are slower, drift less and are careless with items; Hard ones are quicker and sharper. It applies offline, from the next race.
