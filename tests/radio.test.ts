@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { LiveOptions, LiveRecording, MusicCue, MusicPlayer } from '../src/audio/music';
-import { LiveRadio, cleanTitle, setFromFiles, type Show } from '../src/audio/radio';
+import { LiveRadio, cleanTitle, playable, setFromFiles, type Show } from '../src/audio/radio';
 import shows from '../public/music/shows.json';
 
 const rec = (id: string, file: string): LiveRecording => ({ id, file, date: '2024-01-01', venue: 'Somewhere', seconds: 300 });
@@ -68,16 +68,19 @@ describe('live soundtrack', () => {
     expect(radio.playing).toBe(null);
   });
 
-  it('full show: plays the set through in order, keeps it across races, and moves to another show at its end', async () => {
+  it('play a set: the set in order from where the music starts, kept across races, then another show at its end', async () => {
     stubFetch({ 'shows.json': [SHOW], '/files': { result: FILES } });
     const { music, last } = fakeMusic();
-    const radio = new LiveRadio(music, () => 0);
+    // Magma opens with the band talking.
+    const radio = new LiveRadio(music, () => 0, async (r) => (r.file.includes('t02') ? 12.5 : 0));
     await radio.ensureShow(['remix']);
     expect(radio.playing!.set!.index).toBe(0);
     expect(radio.playing!.title).toBe('Track 1');
-    // Song after song: the end of one plays the next.
+    await vi.waitFor(() => expect(last().live?.file).toBe('kglw2024-01-01t01.mp3'));
+    // Song after song: the end of one plays the next, past its talk.
     last().opts!.onEnded!();
     expect(radio.playing!.title).toBe('Magma');
+    await vi.waitFor(() => expect(last().opts?.start).toBe(12.5));
     // The next race keeps the show going.
     const before = radio.playing;
     await radio.ensureShow(['other-remix']);
@@ -87,6 +90,40 @@ describe('live soundtrack', () => {
     // Past the last song: another show from its first.
     radio.next();
     await vi.waitFor(() => expect(radio.playing!.set!.index).toBe(0));
+  });
+
+  it("keep playing: the track's song live, then its show plays on from it, and stays put the next race", async () => {
+    const magma: LiveRecording = { id: SHOW.id, file: 'kglw2024-01-01t02.mp3', date: SHOW.date, venue: SHOW.venue, seconds: 600 };
+    stubFetch({ 'bootlegs.json': { Magma: [magma] }, '/files': { result: FILES }, 'shows.json': [SHOW] });
+    const { music, last } = fakeMusic();
+    const radio = new LiveRadio(music, () => 0, async () => 0);
+    await radio.ensureKeep('Magma', ['remix']);
+    expect(radio.playing!.mode).toBe('keep');
+    expect(last().live).toBe(magma);
+    // Once its set list is in, it knows where it is in the show.
+    await vi.waitFor(() => expect(radio.playing!.set?.index).toBe(1));
+    last().opts!.onEnded!();
+    expect(radio.playing!.title).toBe('Robot Stop');
+    // A new race on another track doesn't cut away.
+    await radio.ensureKeep('Rattlesnake', ['x']);
+    expect(radio.playing!.title).toBe('Robot Stop');
+    // A song never played live: a show from the top instead.
+    radio.stop();
+    await radio.ensureKeep('Catching Smoke', ['x']);
+    await vi.waitFor(() => expect(radio.playing?.mode).toBe('keep'));
+    expect(radio.playing!.set!.index).toBe(0);
+  });
+
+  it("skips a set's talk tracks and snippets, either way", () => {
+    const song = (file: string, seconds = 300) => ({ id: 'x', file, date: '', venue: '', seconds });
+    const set = {
+      songs: [song('1'), song('2'), song('3', 20), song('4'), song('5')],
+      titles: ['Crowd', 'Rattlesnake', 'Tuning', 'Stage Banter', 'Gamma Knife'],
+    };
+    expect(playable(set, 0, 1)).toBe(1);
+    expect(playable(set, 2, 1)).toBe(4);
+    expect(playable(set, 3, -1)).toBe(1);
+    expect(playable({ songs: [song('1')], titles: ['Banter'] }, 0, 1)).toBe(1);
   });
 
   it('a show list of real shows, one a date', () => {

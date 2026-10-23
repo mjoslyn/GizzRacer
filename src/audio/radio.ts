@@ -1,22 +1,27 @@
-import type { LiveRecording, MusicCue, MusicPlayer } from './music';
+import { liveUrl, type LiveRecording, type MusicCue, type MusicPlayer } from './music';
+import { musicStart, talkTrack } from './talk';
 
 /**
- * The live soundtrack (Settings > Soundtrack), from the band's shows on the
- * Internet Archive's Live Music Archive:
+ * The live soundtrack (Settings > Soundtrack, and the picker's Sound row),
+ * from the band's shows on the Internet Archive's Live Music Archive:
  *
- * - matching song: each race plays a live recording of its track's song,
- *   picked at random (public/music/bootlegs.json), looping;
- * - full show: a whole show plays through in order, song after song, and
- *   keeps playing across races and menus; when it ends another starts
- *   (public/music/shows.json, its set list read from archive.org when it's
- *   picked).
+ * - Track song: each race a live recording of its track's song, picked at
+ *   random (public/music/bootlegs.json), looping;
+ * - Keep playing: the track's song live, then that show plays on from it,
+ *   song after song, across races and menus;
+ * - Play a set: a whole show from the top, song after song, across races
+ *   and menus (public/music/shows.json, its set list read from archive.org
+ *   when it's picked).
  *
- * Both written by tools/bootlegs.mjs. Nothing is rehosted: the audio
- * streams from archive.org, and anything that won't plays the game's own
- * music instead. The mini player (ui/miniPlayer.ts) and the settings screen
- * drive it.
+ * Every song starts where the band does, past any talk (audio/talk.ts): the
+ * catalogue's own `start`, or for a set's songs worked out from the opening
+ * of the file, while the song before plays. Tracks that are all talk
+ * (banter, tuning, the encore break, a snippet under SHORT seconds) are
+ * skipped. Nothing is rehosted: the audio streams from archive.org, and
+ * anything that won't plays the game's own music instead. Driven by the
+ * mini player (ui/miniPlayer.ts) and the settings screen.
  */
-export type LiveMode = 'song' | 'show';
+export type LiveMode = 'song' | 'keep' | 'show';
 
 export interface Show {
   id: string;
@@ -29,26 +34,36 @@ export interface Playing {
   /** The song's title. */
   title: string;
   mode: LiveMode;
-  /** Full show: the set and where in it. */
+  /** Playing a show through: the set and where in it. */
   set?: { show: Show; songs: LiveRecording[]; titles: string[]; index: number };
 }
 
 const BASE = 'music/';
+/** A set's track this short (s) is talk or a snippet, not a song. */
+const SHORT = 45;
+/** How long (ms) a song waits to know where its music starts before it plays from the top. */
+const START_WAIT = 3000;
+/** Bytes of a file's opening read to find where the music starts: about a minute and a half. */
+const OPENING_BYTES = 2_500_000;
 
 export class LiveRadio {
   private bootlegs: Promise<Record<string, LiveRecording[]>> | null = null;
   private shows: Promise<Show[]> | null = null;
   private now: Playing | null = null;
-  /** Matching song: the recordings played, to step back through. */
+  /** Track song: the recordings played, to step back through. */
   private history: LiveRecording[] = [];
   private fallback: readonly MusicCue[] = [];
   private readonly listeners = new Set<() => void>();
+  /** Where each song's music starts, worked out once. */
+  private readonly starts = new Map<string, Promise<number>>();
   /** Bumped by every new request, so an answer that comes back late is dropped. */
   private ticket = 0;
 
   constructor(
     private readonly music: MusicPlayer,
     private readonly rand: () => number = Math.random,
+    /** Where a recording's music starts (s); reads the opening of the file by default. */
+    private readonly findStart: (rec: LiveRecording) => Promise<number> = detectStart,
   ) {}
 
   /** What's playing (or about to), for the mini player and the HUD. */
@@ -74,11 +89,12 @@ export class LiveRadio {
   }
 
   /**
-   * Matching song: a live recording of `song`, at random, looping for the
-   * race; `fallback` plays when there's none or it won't stream. Resolves
-   * to false when there was none to play.
+   * A live recording of `song`, at random: looping for the race (Track
+   * song), or with `keep`, its show playing on from it (Keep playing).
+   * `fallback` plays when it won't stream. Resolves to false when the song
+   * was never recorded live.
    */
-  async playSong(song: string, fallback: readonly MusicCue[]): Promise<boolean> {
+  async playSong(song: string, fallback: readonly MusicCue[], keep = false): Promise<boolean> {
     const t = ++this.ticket;
     this.fallback = fallback;
     const all = await this.loadBootlegs();
@@ -89,32 +105,53 @@ export class LiveRadio {
       this.changed();
       return false;
     }
-    const last = this.now?.mode === 'song' && this.now.title === song ? this.now.rec : null;
+    const last = this.now && this.now.title === song ? this.now.rec : null;
     // Not the one just played, when there's a choice.
     const pool = list.length > 1 && last ? list.filter((r) => r.file !== last.file || r.id !== last.id) : list;
-    this.startSong(song, pool[Math.floor(this.rand() * pool.length)]);
+    this.startSong(song, pool[Math.floor(this.rand() * pool.length)], keep);
     return true;
   }
 
-  private startSong(title: string, rec: LiveRecording): void {
+  private startSong(title: string, rec: LiveRecording, keep: boolean): void {
     if (this.now?.mode === 'song') this.history.push(this.now.rec);
-    this.now = { rec, title, mode: 'song' };
-    this.music.playLive(rec, this.fallback);
+    this.now = { rec, title, mode: keep ? 'keep' : 'song' };
+    this.music.playLive(rec, this.fallback, keep ? { onEnded: () => this.next() } : {});
     this.changed();
+    if (!keep) return;
+    // Keep playing: the rest of its show, read while the song plays.
+    const show: Show = { id: rec.id, date: rec.date, venue: rec.venue };
+    void setList(show)
+      .then((set) => {
+        const index = set.songs.findIndex((r) => r.file === rec.file);
+        if (this.now?.rec !== rec || index < 0) return;
+        this.now = { ...this.now, set: { show, ...set, index } };
+        this.prefetch(this.now.set!, index);
+        this.changed();
+      })
+      .catch(() => undefined);
   }
 
   /**
-   * Full show: keeps the show playing if one is (across races and menus),
-   * else starts one at random from its first song.
+   * Keep playing: carries on with whatever is playing (across races and
+   * menus), else starts with `song` live; with no song, or one never played
+   * live, a show at random from the top.
    */
+  async ensureKeep(song: string | null, fallback: readonly MusicCue[]): Promise<void> {
+    this.fallback = fallback;
+    if (this.now?.mode === 'keep') return;
+    if (song && (await this.playSong(song, fallback, true))) return;
+    await this.newShow('keep');
+  }
+
+  /** Play a set: keeps the show playing if one is (across races and menus), else starts one at random from the top. */
   async ensureShow(fallback: readonly MusicCue[]): Promise<void> {
     this.fallback = fallback;
     if (this.now?.mode === 'show') return;
-    await this.newShow();
+    await this.newShow('show');
   }
 
-  /** Full show: another show, picked at random, from its first song. */
-  async newShow(): Promise<void> {
+  /** Another show, picked at random, from its first song (past any talk); played as `mode`, by default as what's playing. */
+  async newShow(mode: LiveMode = this.now?.mode === 'keep' ? 'keep' : 'show'): Promise<void> {
     const t = ++this.ticket;
     const shows = await this.loadShows();
     for (let tries = 0; tries < 4 && shows.length; tries++) {
@@ -122,7 +159,9 @@ export class LiveRadio {
       const set = await setList(show).catch(() => null);
       if (t !== this.ticket) return;
       if (!set?.songs.length) continue;
-      this.playSet({ show, ...set, index: 0 });
+      const first = playable(set, 0, 1);
+      if (first >= set.songs.length) continue;
+      void this.playSet({ show, ...set, index: first }, mode);
       return;
     }
     // Nothing to stream: the game's music.
@@ -131,11 +170,33 @@ export class LiveRadio {
     this.changed();
   }
 
-  private playSet(set: NonNullable<Playing['set']>): void {
+  /** Plays a set's song (shown at once), starting where its music does if that's known within START_WAIT. */
+  private async playSet(set: NonNullable<Playing['set']>, mode: LiveMode): Promise<void> {
+    const t = ++this.ticket;
     const rec = set.songs[set.index];
-    this.now = { rec, title: set.titles[set.index], mode: 'show', set };
-    this.music.playLive(rec, this.fallback, { onEnded: () => this.next() });
+    this.now = { rec, title: set.titles[set.index], mode, set };
     this.changed();
+    const start = await Promise.race([this.startOf(rec), new Promise<number>((res) => setTimeout(() => res(0), START_WAIT))]);
+    if (t !== this.ticket) return;
+    this.music.playLive(rec, this.fallback, { start, onEnded: () => this.next() });
+    this.prefetch(set, set.index);
+  }
+
+  /** Works out where the next song's music starts while this one plays, so it's ready. */
+  private prefetch(set: NonNullable<Playing['set']>, from: number): void {
+    const i = playable(set, from + 1, 1);
+    if (i < set.songs.length) void this.startOf(set.songs[i]);
+  }
+
+  private startOf(rec: LiveRecording): Promise<number> {
+    if (rec.start !== undefined) return Promise.resolve(rec.start);
+    const key = `${rec.id}/${rec.file}`;
+    let p = this.starts.get(key);
+    if (!p) {
+      p = this.findStart(rec).catch(() => 0);
+      this.starts.set(key, p);
+    }
+    return p;
   }
 
   /** The next song: on in the set (another show after its last), or another recording of the song. */
@@ -143,10 +204,11 @@ export class LiveRadio {
     const now = this.now;
     if (!now) return;
     if (now.set) {
-      if (now.set.index + 1 < now.set.songs.length) this.playSet({ ...now.set, index: now.set.index + 1 });
+      const i = playable(now.set, now.set.index + 1, 1);
+      if (i < now.set.songs.length) void this.playSet({ ...now.set, index: i }, now.mode);
       else void this.newShow();
     } else {
-      void this.playSong(now.title, this.fallback);
+      void this.playSong(now.title, this.fallback, now.mode === 'keep');
     }
   }
 
@@ -155,13 +217,14 @@ export class LiveRadio {
     const now = this.now;
     if (!now) return;
     if (now.set) {
-      this.playSet({ ...now.set, index: Math.max(0, now.set.index - 1) });
+      const i = playable(now.set, now.set.index - 1, -1);
+      void this.playSet({ ...now.set, index: i >= 0 ? i : now.set.index }, now.mode);
       return;
     }
     const before = this.history.pop();
     if (!before) return;
     this.ticket++;
-    this.now = { rec: before, title: now.title, mode: 'song' };
+    this.now = { rec: before, title: now.title, mode: now.mode };
     this.music.playLive(before, this.fallback);
     this.changed();
   }
@@ -189,6 +252,26 @@ export class LiveRadio {
     });
     return this.shows;
   }
+}
+
+/** The first song of a set from `from` stepping by `dir` that isn't all talk; past either end when there's none. */
+export function playable(set: { songs: readonly LiveRecording[]; titles: readonly string[] }, from: number, dir: 1 | -1): number {
+  let i = from;
+  while (i >= 0 && i < set.songs.length && (talkTrack(set.titles[i]) || (set.songs[i].seconds > 0 && set.songs[i].seconds < SHORT))) i += dir;
+  return i;
+}
+
+/** Where a recording's music starts: the opening of the file, decoded, past any talk (audio/talk.ts). 0 when it can't be read. */
+async function detectStart(rec: LiveRecording): Promise<number> {
+  const r = await fetch(liveUrl(rec), { headers: { Range: `bytes=0-${OPENING_BYTES - 1}` } });
+  if (!r.ok) return 0;
+  const buffer = await new OfflineAudioContext(1, 1, 44100).decodeAudioData(await r.arrayBuffer());
+  const ch = buffer.getChannelData(0);
+  if (buffer.numberOfChannels > 1) {
+    const right = buffer.getChannelData(1);
+    for (let i = 0; i < ch.length; i++) ch[i] = (ch[i] + right[i]) / 2;
+  }
+  return musicStart(ch, buffer.sampleRate);
 }
 
 async function fetchJson<T>(url: string): Promise<T> {

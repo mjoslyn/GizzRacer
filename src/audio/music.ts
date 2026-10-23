@@ -74,6 +74,8 @@ export interface LiveRecording {
   date: string;
   venue: string;
   seconds: number;
+  /** Seconds in that the music starts, past the band talking (audio/talk.ts); 0 or absent from the top. */
+  start?: number;
 }
 
 /** Where a live recording streams from. */
@@ -84,6 +86,8 @@ export function liveUrl(rec: LiveRecording): string {
 /** How a live recording plays: looping (a race's song), or once through and then `onEnded` (a show's set, song after song). */
 export interface LiveOptions {
   onEnded?: () => void;
+  /** Where to start (s), past the talk; the recording's own `start` when absent. A loop comes back round to it. */
+  start?: number;
 }
 
 /** A stream that hasn't started playing in this long has failed: the fallback plays instead. */
@@ -300,9 +304,18 @@ export class MusicPlayer {
     const key = `live:${rec.id}/${rec.file}`;
     const audio = new Audio();
     audio.crossOrigin = 'anonymous';
-    audio.loop = !opts.onEnded;
+    const from = opts.start ?? rec.start ?? 0;
+    // Looping without the talk: round to where the music starts, not the top.
+    audio.loop = !opts.onEnded && from === 0;
+    if (!opts.onEnded && from > 0) {
+      audio.addEventListener('ended', () => {
+        audio.currentTime = from;
+        void audio.play().catch(() => undefined);
+      });
+    }
     audio.preload = 'auto';
-    audio.src = liveUrl(rec);
+    // A media fragment starts it there, before a byte of the talk plays.
+    audio.src = from > 0 ? `${liveUrl(rec)}#t=${from}` : liveUrl(rec);
     const node = ctx.createMediaElementSource(audio);
     const gain = ctx.createGain();
     gain.gain.value = 0;
