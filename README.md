@@ -32,7 +32,7 @@ No install and no account. It will always be free.
   - the Nonagon Infinity, a nine-sided ring that rolls down the road to the leader
 - **Track Generator:** a new track from a seed, with your choice of world, twists and length. Save the ones you like. A **daily track** the same for everyone, with its own leaderboard
 - **Leaderboards** for the fastest full race on every track (the daily included) and the best result in every cup, beside the picker, as well as Time Trial's
-- **A soundtrack** of video-game remixes of the band's songs, one per track, with a faster cut on the final lap
+- **A soundtrack** of video-game remixes of the band's songs, one per track, with a faster cut on the final lap. Or, under Settings > Soundtrack, the band live: a live recording of each track's song picked at random from their shows on the Internet Archive's Live Music Archive, or a whole show playing through, song after song, kept going across races. A mini player (bottom left on desktop, in Settings on a phone) shows the song and the show, with back, pause, next, another show and a link to it
 - **A VHS look** after the Rattlesnake video: tape wobble and a duotone in each world's colours. You can turn it down or off.
 - **Detail levels** (Settings > Detail; High by default, Low on phones): High has sun shadows from every kart, post, tree and stand, roads with grain that catches the light, and half again as much scenery; Medium keeps the resolution, the grain and nearby shadows with the usual scenery; Low draws fewer pixels with no shadows
 

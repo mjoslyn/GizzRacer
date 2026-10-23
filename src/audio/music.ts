@@ -66,10 +66,38 @@ interface Loop {
   end: number;
 }
 
+/** A live recording on the Internet Archive (public/music/bootlegs.json, written by tools/bootlegs.mjs). */
+export interface LiveRecording {
+  /** The show's item, and the file in it. */
+  id: string;
+  file: string;
+  date: string;
+  venue: string;
+  seconds: number;
+}
+
+/** Where a live recording streams from. */
+export function liveUrl(rec: LiveRecording): string {
+  return `https://archive.org/download/${encodeURIComponent(rec.id)}/${rec.file.split('/').map(encodeURIComponent).join('/')}`;
+}
+
+/** How a live recording plays: looping (a race's song), or once through and then `onEnded` (a show's set, song after song). */
+export interface LiveOptions {
+  onEnded?: () => void;
+}
+
+/** A stream that hasn't started playing in this long has failed: the fallback plays instead. */
+const LIVE_TIMEOUT = 10000;
+
 interface Playing {
-  cue: MusicCue;
+  cue: MusicCue | null;
+  /** 0 for a live recording: no beat to pulse to. */
   bpm: number;
-  source: AudioBufferSourceNode;
+  /** Stops the sound at a context time (after its fade). */
+  stop: (at: number) => void;
+  /** The live recording it is, if it's one, and the element streaming it. */
+  rec?: LiveRecording;
+  el?: HTMLAudioElement;
   gain: GainNode;
   /** Context time the loop's first beat played, and the loop length. */
   startedAt: number;
@@ -88,6 +116,8 @@ export class MusicPlayer {
   private readonly loops = new Map<MusicCue, Promise<Loop>>();
   private current: Playing | null = null;
   private wanted: MusicCue | null = null;
+  /** A live recording asked for (playLive), the cues to fall back to if it won't stream, and how it plays. */
+  private wantedLive: { rec: LiveRecording; fallback: readonly MusicCue[]; opts: LiveOptions } | null = null;
   /** What was last asked for (a cue, or a list of them joined), so asking again is a no-op. */
   private wantedKey: string | null = null;
   private muted = false;
@@ -120,6 +150,7 @@ export class MusicPlayer {
     this.muffle.frequency.value = 20000;
     this.master.connect(this.duckGain).connect(this.muffle).connect(this.ctx.destination);
     if (this.wanted) void this.start(this.wanted);
+    else if (this.wantedLive) this.startLive(this.wantedLive.rec, this.wantedLive.opts);
   }
 
   /** iOS only opens the audio route once a sound starts inside the gesture: a one-sample silent buffer does it. */
@@ -137,7 +168,7 @@ export class MusicPlayer {
    */
   beatPhase(): number {
     const c = this.current;
-    if (!c || !this.ctx) return -1;
+    if (!c || !this.ctx || !c.bpm) return -1;
     const pos = (((this.ctx.currentTime - c.startedAt) % c.length) + c.length) % c.length;
     const beats = (pos * c.bpm) / 60;
     return beats - Math.floor(beats);
@@ -163,6 +194,11 @@ export class MusicPlayer {
     if (!this.muffle || !this.ctx || Math.abs(amount - this.muffled) < 0.02) return;
     this.muffled = amount;
     this.muffle.frequency.setTargetAtTime(20000 * Math.pow(500 / 20000, amount), this.ctx.currentTime, 0.08);
+  }
+
+  /** The live recording playing now, if one is (not while one buffers, nor once it's fallen back to a cue). */
+  get live(): LiveRecording | null {
+    return this.current?.rec ?? null;
   }
 
   /** The shared AudioContext once unlocked; sound effects play on it too. */
@@ -194,6 +230,7 @@ export class MusicPlayer {
     const key = typeof cue === 'string' ? cue : cue.join('|');
     if (this.wantedKey === key) return;
     this.wantedKey = key;
+    this.wantedLive = null;
     const list = typeof cue === 'string' ? [cue] : cue;
     void this.available(list).then((found) => {
       if (this.wantedKey !== key || !found) return;
@@ -221,8 +258,125 @@ export class MusicPlayer {
     return cue in (await this.entries());
   }
 
+  /**
+   * Streams a live recording from the Internet Archive, crossfaded in like a
+   * cue and looping; if it won't play (no connection, a missing file), the
+   * first of `fallback` that exists plays instead. A no-op if it's already
+   * the one asked for.
+   */
+  playLive(rec: LiveRecording, fallback: readonly MusicCue[], opts: LiveOptions = {}): void {
+    const key = `live:${rec.id}/${rec.file}`;
+    if (this.wantedKey === key) return;
+    this.wantedKey = key;
+    this.wanted = null;
+    this.wantedLive = { rec, fallback, opts };
+    if (this.ctx) this.startLive(rec, opts);
+  }
+
+  /** Whether the live recording is paused (the mini player's pause). */
+  get livePaused(): boolean {
+    return !!this.current?.el?.paused;
+  }
+
+  /** Pauses or resumes the live recording playing; false if none is. */
+  toggleLivePause(): boolean {
+    const el = this.current?.el;
+    if (!el) return false;
+    if (el.paused) void el.play().catch(() => undefined);
+    else el.pause();
+    return true;
+  }
+
+  /** How far through the live recording it is, in seconds; null when none is playing. */
+  liveProgress(): { at: number; length: number } | null {
+    const el = this.current?.el;
+    if (!el) return null;
+    return { at: el.currentTime, length: Number.isFinite(el.duration) ? el.duration : this.current?.rec?.seconds ?? 0 };
+  }
+
+  private startLive(rec: LiveRecording, opts: LiveOptions, attempt = 0): void {
+    const ctx = this.ctx;
+    if (!ctx || !this.master) return;
+    const key = `live:${rec.id}/${rec.file}`;
+    const audio = new Audio();
+    audio.crossOrigin = 'anonymous';
+    audio.loop = !opts.onEnded;
+    audio.preload = 'auto';
+    audio.src = liveUrl(rec);
+    const node = ctx.createMediaElementSource(audio);
+    const gain = ctx.createGain();
+    gain.gain.value = 0;
+    node.connect(gain);
+    let started = false;
+    const giveUp = () => {
+      if (started) return;
+      started = true;
+      clearTimeout(timer);
+      audio.pause();
+      audio.removeAttribute('src');
+      node.disconnect();
+      if (this.wantedKey !== key || !this.wantedLive) return;
+      // The Archive's file servers fail now and then and answer on a second try.
+      if (attempt === 0) {
+        this.startLive(rec, opts, 1);
+        return;
+      }
+      // Still the one wanted: play the game's own music instead.
+      const { fallback } = this.wantedLive;
+      this.wantedKey = null;
+      this.play(fallback);
+    };
+    const timer = setTimeout(giveUp, LIVE_TIMEOUT);
+    audio.addEventListener('error', giveUp, { once: true });
+    audio.addEventListener(
+      'playing',
+      () => {
+        if (started) return;
+        started = true;
+        clearTimeout(timer);
+        // Asked for something else while it buffered.
+        if (this.wantedKey !== key || !this.master) {
+          audio.pause();
+          node.disconnect();
+          return;
+        }
+        this.fadeOut();
+        const t = ctx.currentTime;
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(1, t + FADE);
+        gain.connect(this.master);
+        if (opts.onEnded) {
+          const ended = opts.onEnded;
+          audio.addEventListener('ended', () => {
+            if (this.current?.el === audio) ended();
+          });
+        }
+        this.current = {
+          cue: null,
+          bpm: 0,
+          gain,
+          stop: (at) => {
+            setTimeout(() => {
+              audio.pause();
+              audio.removeAttribute('src');
+              node.disconnect();
+              gain.disconnect();
+            }, Math.max(0, (at - ctx.currentTime) * 1000));
+          },
+          startedAt: t,
+          length: rec.seconds || 1,
+          rec,
+          el: audio,
+        };
+      },
+      { once: true },
+    );
+    audio.play().catch(giveUp);
+  }
+
   stop(): void {
     this.wanted = null;
+    this.wantedLive = null;
     this.wantedKey = null;
     this.fadeOut();
   }
@@ -254,17 +408,17 @@ export class MusicPlayer {
     gain.gain.linearRampToValueAtTime(1, ctx.currentTime + FADE);
     source.connect(gain).connect(this.master);
     source.start(ctx.currentTime, loop.start);
-    this.current = { cue, bpm: loop.bpm, source, gain, startedAt: ctx.currentTime, length: loop.end - loop.start };
+    this.current = { cue, bpm: loop.bpm, stop: (at) => source.stop(at), gain, startedAt: ctx.currentTime, length: loop.end - loop.start };
   }
 
   private fadeOut(): void {
     if (!this.current || !this.ctx) return;
-    const { source, gain } = this.current;
+    const { stop, gain } = this.current;
     const t = this.ctx.currentTime;
     gain.gain.cancelScheduledValues(t);
     gain.gain.setValueAtTime(gain.gain.value, t);
     gain.gain.linearRampToValueAtTime(0, t + FADE);
-    source.stop(t + FADE + 0.05);
+    stop(t + FADE + 0.05);
     this.current = null;
   }
 

@@ -95,8 +95,15 @@ export interface HudData {
   style: { score: number; chain: number } | null;
   /** Time Trial: the gap to the ghost at each checkpoint passed this run. */
   splits: { label: string; gap: number }[];
+  /** The live recording playing (Settings > Soundtrack), credited under the racer line; null for the game's own music. */
+  nowPlaying: string | null;
   /** The next bend (tracks/turns.ts), as the player sees it (mirrored in Mirror mode); null when there's none to call or the hints are off. */
   turn: { dir: -1 | 1; angle: number; severity: 1 | 2 | 3 | 4; distance: number } | null;
+}
+
+/** Text from outside (a venue's name off the Internet Archive) made safe to put in HTML. */
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
 
 const TURN_WORDS = ['', 'EASY', 'MEDIUM', 'SHARP', 'HAIRPIN'] as const;
@@ -372,7 +379,7 @@ export class Hud {
     this.updateTurn(d);
     this.speed.innerHTML = `${Math.round(Math.abs(k.speed) * 3.6)}<small>km/h</small>`;
     this.surface.innerHTML = k.boostTime > 0 ? '<span class="hud-boost">BOOST!</span>' : k.surface;
-    this.racer.innerHTML = `${d.trackName}<br />${d.racerName} &middot; ${d.engineClass}${d.autoAccelerate ? '' : ' &middot; manual'}${d.muted ? ' &middot; music off' : ''}${d.sfxMuted ? ' &middot; sfx off' : ''}`;
+    this.racer.innerHTML = `${d.trackName}<br />${d.racerName} &middot; ${d.engineClass}${d.autoAccelerate ? '' : ' &middot; manual'}${d.muted ? ' &middot; music off' : ''}${d.sfxMuted ? ' &middot; sfx off' : ''}${d.nowPlaying && !d.muted ? `<br /><span class="hud-live">&#9835; ${escapeHtml(d.nowPlaying)}</span>` : ''}`;
     this.position.innerHTML = `${ordinal(d.position)}<small>/${d.karts}</small>`;
     if (d.position !== this.lastPosition) {
       // Pop on every change, green when gaining a place, red when losing one.

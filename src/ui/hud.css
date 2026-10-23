@@ -2403,3 +2403,142 @@ body.touch-mode .hud-turn {
     font-size: 15px;
   }
 }
+
+/* The live recording playing (Settings > Soundtrack), credited under the racer. */
+.hud-live {
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+/* The live soundtrack's mini player (ui/miniPlayer.ts), on desktop: bottom left, over the help line while racing. On touch its controls are in Settings. */
+.mini-player {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 40;
+  width: 250px;
+  padding: 8px 10px 10px;
+  border-radius: 12px;
+  background: rgba(30, 6, 40, 0.72);
+  box-shadow: 0 0 0 2px rgba(255, 210, 120, 0.7);
+  color: #fff6d0;
+  font-family: Verdana, sans-serif;
+  display: none;
+  pointer-events: auto;
+}
+
+.mini-player.show {
+  display: block;
+}
+
+body[data-mode='race'] .mini-player {
+  bottom: 62px;
+}
+
+body.touch-mode .mini-player,
+body.intro .mini-player {
+  display: none;
+}
+
+.mp-title {
+  font-size: 13px;
+  font-weight: bold;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mp-show {
+  font-size: 10px;
+  opacity: 0.8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mini-player.loading .mp-title::after {
+  content: ' (tuning in)';
+  font-weight: normal;
+  opacity: 0.7;
+}
+
+.mp-buttons {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.mp-buttons button,
+.mp-buttons a {
+  flex: 1;
+  height: 26px;
+  border: 0;
+  border-radius: 7px;
+  background: rgba(255, 210, 120, 0.18);
+  color: #fff6d0;
+  font-size: 13px;
+  line-height: 26px;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.mp-buttons button:hover,
+.mp-buttons a:hover {
+  background: rgba(255, 210, 120, 0.35);
+}
+
+.mp-buttons button[hidden] {
+  display: none;
+}
+
+.mp-bar {
+  height: 3px;
+  margin-top: 7px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+}
+
+.mp-bar i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: #ffd23a;
+  transition: width 0.5s linear;
+}
+
+/* With the mini player on screen the HUD's own credit line isn't needed. */
+body:not(.touch-mode) .hud-live {
+  display: none;
+}
+
+/* The live soundtrack's controls in Settings (the mini player's, for phones). */
+.settings-player {
+  margin: 4px 0 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(30, 6, 40, 0.45);
+  color: #fff6d0;
+  font-family: Verdana, sans-serif;
+  font-style: normal;
+}
+
+.settings-player-info b,
+.settings-player-info small {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.settings-player-info small {
+  opacity: 0.8;
+}
+
+.settings-player .mp-buttons button,
+.settings-player .mp-buttons a {
+  height: 34px;
+  line-height: 34px;
+  font-size: 16px;
+}

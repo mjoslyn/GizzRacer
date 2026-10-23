@@ -5,8 +5,10 @@ import { FixedLoop, PHYSICS_DT } from './core/loop';
 import { clamp, damp, lerp, lerpAngle } from './core/math';
 import { CPU_SKILL, CpuDriver, DIFFICULTY_PACE, rivalSkill, withDifficulty } from './ai/cpuDriver';
 import { MusicPlayer } from './audio/music';
+import { LiveRadio } from './audio/radio';
+import { MiniPlayer } from './ui/miniPlayer';
 import { Sfx } from './audio/sfx';
-import { remixCues } from './audio/songs';
+import { TRACK_SONGS, remixCues } from './audio/songs';
 import { GHOST_HZ, GHOST_OVERRUN, GhostRecorder, decodeGhost, encodeGhost, ghostPose, type GhostRun } from './core/ghost';
 import { identity } from './net/identity';
 import { TRIAL_LAPS, recordId } from './net/runCheck';
@@ -99,6 +101,9 @@ const postFx = new PostFx(renderer);
 const input = new InputManager();
 const hud = new Hud(document.body);
 const music = new MusicPlayer();
+/** The live soundtrack (Settings > Soundtrack): a race's song live, or a whole show kept playing. */
+const radio = new LiveRadio(music);
+new MiniPlayer(document.body, radio, music);
 const sfx = new Sfx(
   () => music.context,
   (level, hold) => music.duck(level, hold),
@@ -314,10 +319,16 @@ const records = new RecordsPanel(document.body);
 /** Asks for a name on the results screen the first time there's something to post. */
 const namePrompt = new NamePrompt(document.body);
 const tilt = new TiltSteering(input);
-const settingsScreen = new SettingsScreen(document.body, tilt);
+const settingsScreen = new SettingsScreen(document.body, tilt, radio);
 /** The mix that sits right: music under the effects (see the audio commit). */
 const MUSIC_LEVEL = 0.63;
 onSettings((s) => {
+  // Back to the game's remixes: the live soundtrack lets go at once.
+  if (s.soundtrack === 'remix' && radio.playing) {
+    radio.stop();
+    liveRace = false;
+    music.play(mode === 'race' ? remixCues(track.def.music.lap) : remixCues('title'));
+  }
   // Detail (render/detail.ts): shadows and the resolution switch at once; the road grain and the scenery arrive with the next track built.
   const spec = DETAIL_SPEC[s.detail];
   setGraphicsDetail(s.detail);
@@ -395,7 +406,7 @@ function setMode(next: Mode): void {
   savePanel.show(generated ? track.def.name : null, generated && !!findSaved(choice.gen.params));
   touch.setVisible(next === 'race');
   loop.paused = false;
-  if (next === 'title' || next === 'menu' || next === 'lobby') music.play(remixCues('title'));
+  if (next === 'title' || next === 'menu' || next === 'lobby') menuMusic();
   // Back at the picker: fetch the board again, it may include the run just posted.
   updateBoard(true);
 }
@@ -536,9 +547,10 @@ function startRace(withPlayer: boolean): void {
   intro = withPlayer && !net ? INTRO_TIME : 0;
   // Online, everyone's GO is the room's: count down to it on the room clock.
   if (net) race.time = Math.max(-10, -(net.start.at - net.client.serverNow()) / 1000);
+  liveRace = false;
   if (withPlayer) {
     setMode('race');
-    music.play(remixCues(track.def.music.lap));
+    startRaceMusic();
   }
 }
 
@@ -1178,9 +1190,62 @@ function updateSounds(dt: number): void {
   sfx.hazards(dt, near('snakes'), near('dustDevils') ?? near('tornadoes') ?? near('blackHoles') ?? near('butterflies') ?? near('wisps'));
 }
 
+/** The live soundtrack has this race's music (it falls back to the game's own by itself if a stream won't play). */
+let liveRace = false;
+
+/**
+ * The race's music, by Settings > Soundtrack: the game's remix of the
+ * track's song; a live recording of the song, at random (a song never
+ * played live, or a generated track with no song, gets the remix); or the
+ * show that's playing, kept going.
+ */
+function startRaceMusic(): void {
+  const cues = remixCues(track.def.music.lap);
+  const mode = settings().soundtrack;
+  const song = TRACK_SONGS[track.def.id]?.title;
+  if (mode === 'show') {
+    liveRace = true;
+    void radio.ensureShow(cues);
+    return;
+  }
+  if (mode === 'song' && song) {
+    liveRace = true;
+    const forRace = race;
+    void radio.playSong(song, cues).then((ok) => {
+      if (ok || race !== forRace) return;
+      liveRace = false;
+      music.play(cues);
+    });
+    return;
+  }
+  liveRace = false;
+  if (radio.playing) radio.stop();
+  music.play(cues);
+}
+
+/** The menus' music: the title remix, unless a show is playing through. */
+function menuMusic(): void {
+  if (settings().soundtrack === 'show' && radio.playing) return;
+  if (radio.playing) radio.stop();
+  music.play(remixCues('title'));
+}
+
+/** The credit for the live recording playing, for the HUD (on touch, where there's no mini player). */
+function nowPlaying(): string | null {
+  const rec = music.live;
+  const p = radio.playing;
+  if (!rec || !p) return null;
+  return `${p.title}, live${rec.venue ? ` at ${rec.venue}` : ''}, ${rec.date}`;
+}
+
 function updateMusic(p: RaceKart): void {
   const { lap, finalLap } = track.def.music;
-  if (p.finishTime !== null) music.play('podium');
+  const keepShow = liveRace && settings().soundtrack === 'show';
+  if (p.finishTime !== null) {
+    if (!keepShow) music.play('podium');
+  }
+  // A live recording plays the whole race through: no final-lap cut.
+  else if (liveRace) return;
   else if (race.laps > 1 && p.laps.lap === race.laps - 1) music.play(remixCues(finalLap ?? `${lap}-final-lap`).filter((c) => finalLap || c !== `${lap}-final-lap`));
   else music.play(remixCues(lap));
 }
@@ -1305,6 +1370,7 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
       style: style && player ? { score: style.score, chain: style.chainLeft > 0 ? style.chain : 0 } : null,
       splits,
       turn: turnHint(),
+      nowPlaying: nowPlaying(),
     },
     elapsed,
   );
@@ -1455,7 +1521,7 @@ function startPodium(): void {
   for (const v of views) v.root.visible = v.fx.visible = false;
   itemsView!.group.visible = hazardsView!.group.visible = false;
   setMode('podium');
-  music.play('podium');
+  if (!(settings().soundtrack === 'show' && radio.playing)) music.play('podium');
 }
 
 function endPodium(): void {
