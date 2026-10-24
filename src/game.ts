@@ -45,6 +45,7 @@ import { HazardsView, ItemsView } from './render/itemViews';
 import { KartView, setDustColor } from './render/kartView';
 import { DETAIL_SPEC, setGraphicsDetail } from './render/detail';
 import { PostFx } from './render/postfx';
+import { DynamicResolution } from './render/resolution';
 import { RacerGallery } from './render/gallery';
 import { flareRingTexture, glowTexture, setTextureAnisotropy } from './render/textures';
 import { WATER_LEVEL, buildTrackView, type TrackView } from './render/trackView';
@@ -104,6 +105,9 @@ sunAnchor.add(flare);
 scene.add(sunAnchor);
 
 const postFx = new PostFx(renderer);
+/** Drops the resolution while frames run long, and brings it back once they don't. */
+const resolution = new DynamicResolution();
+let resolutionDetail = settings().detail;
 const input = new InputManager();
 const hud = new Hud(document.body);
 const music = new MusicPlayer();
@@ -437,12 +441,12 @@ onSettings((s) => {
     sun.shadow.camera.right = sun.shadow.camera.top = spec.shadowReach;
     sun.shadow.camera.updateProjectionMatrix();
   }
-  // Low draws at fewer pixels: on a phone that is most of the saving.
-  const ratio = Math.min(window.devicePixelRatio, spec.pixelRatio);
-  if (renderer.getPixelRatio() !== ratio) {
-    renderer.setPixelRatio(ratio);
-    fitRenderer();
+  // Low draws at fewer pixels: on a phone that is most of the saving. A new level starts back at full resolution.
+  if (s.detail !== resolutionDetail) {
+    resolutionDetail = s.detail;
+    resolution.reset();
   }
+  applyPixelRatio();
   music.setVolume(s.music * MUSIC_LEVEL);
   sfx.setVolume(s.sfx);
   touch.setTiltMode(s.tilt);
@@ -473,6 +477,14 @@ function updateBoard(refresh = false): void {
     const name = choice.mode === 'generator' ? (choice.gen.slot === DAILY_SLOT ? `Daily: ${track.def.name}` : track.def.name) : TRACK_LIST[choice.track].name;
     records.load(raceBoard(t.id, choice.engine, mirror), `${name} · ${tag}`, refresh);
   }
+}
+
+/** The Detail level's pixel ratio, scaled down by dynamic resolution while frames are dropping. */
+function applyPixelRatio(): void {
+  const ratio = Math.min(window.devicePixelRatio, DETAIL_SPEC[settings().detail].pixelRatio) * resolution.scale;
+  if (renderer.getPixelRatio() === ratio) return;
+  renderer.setPixelRatio(ratio);
+  fitRenderer();
 }
 
 /** Matches the drawing buffer and camera to the viewport. */
@@ -1819,6 +1831,7 @@ function drawGallery(dt: number): boolean {
 }
 
 const loop = new FixedLoop(step, (alpha, frameDt) => {
+  if (resolution.sample(frameDt)) applyPixelRatio();
   if (input.consumePause() && mode === 'race') {
     if (hud.confirmingRestart) hud.onPauseAction?.('keepRacing');
     else requestPause(!loop.paused);
