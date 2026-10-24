@@ -1,13 +1,15 @@
 import * as THREE from 'three';
+import { ARROW_DEPTH, ARROW_LANES, ARROW_STAGES, EYE_DEPTH, EYE_HEIGHT, EYE_STAGES, FUZZ_RADIUS, SHEET_HALF, SHEET_STAGES, fuzzLevel } from '../items/hazards';
 import { AIRLOCK_DEPTH, AIRLOCK_STAGES, BOULDER_STAGES, CRUSHER_STAGES, FLARE_CLEAR, FLARE_STAGES, RAT_LENGTH, RAT_STAGES, SMOG_RADIUS, SMOG_STAGES, flareHeight, GAMMA_EDGE, GAMMA_STAGES, GEYSER_ERUPT, GUST_STAGES, HOLE_CORE, JAWS_LUNGE, JET_STAGES, LIGHTNING_STRIKE, ROBOT_STAGES, VULTURE_STAGES, WAH_LIFT, WAH_STAGES, prismColour, type HazardPose } from '../items/hazards';
 import { goblinFigure } from './omnium';
 import { robotFigure, vultureFigure, wahPedalFigure } from './nonagon';
 import { ratFigure } from './infest';
+import { arrowGeometry, eyeFigure } from './mindfuzz';
 import { BOX_RESPAWN, SHIELD_ITEMS, WAVE_RANGE, type ItemHolder, type ItemSystem } from '../items/items';
 import type { KartState } from '../physics/kart';
 import type { HazardSystem } from '../items/hazards';
 import { CUT_RIM } from '../tracks/track';
-import { TETRA_COLOURS, basaltTexture, castleWallTexture, dustTexture, wingTexture, flameTexture, furTexture, glowTexture, itemBoxTexture, scaleTexture, stoneTexture, warningTexture, woodTexture } from './textures';
+import { CELLOPHANE_COLOURS, TETRA_COLOURS, basaltTexture, fuzzRoadTexture, meterTexture, castleWallTexture, dustTexture, wingTexture, flameTexture, furTexture, glowTexture, itemBoxTexture, scaleTexture, stoneTexture, warningTexture, woodTexture } from './textures';
 
 const MINE_POOL = 12;
 const MISSILE_POOL = 8;
@@ -568,6 +570,22 @@ export class HazardsView {
     const ratFur = new THREE.MeshLambertMaterial({ map: furTexture(), color: 0xd8c8b8, emissive: 0x2a1a14 });
     const ratEye = new THREE.MeshBasicMaterial({ color: 0xff2010 });
     const eyeGlow = glowTexture('rgba(255,60,30,1)', 'rgba(255,0,0,0)');
+    const goldMat = new THREE.MeshBasicMaterial({ color: 0xffd040, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+    const mindGlow = glowTexture('rgba(255,200,255,1)', 'rgba(255,60,200,0)');
+    const arrowGeo = arrowGeometry(2.6, 2, 0.3);
+    const stripGeo = new THREE.PlaneGeometry(1, ARROW_DEPTH * 2);
+    stripGeo.rotateX(-Math.PI / 2);
+    const sheetGeo = new THREE.PlaneGeometry(SHEET_HALF * 2, 4.5);
+    sheetGeo.translate(0, 2.25, 0);
+    const sheetEdges = new THREE.EdgesGeometry(sheetGeo);
+    const sheetEdgeMat = new THREE.LineBasicMaterial({ color: 0xffffff });
+    const rollGeo = new THREE.CylinderGeometry(0.35, 0.35, 4.6, 10);
+    rollGeo.translate(0, 2.3, 0);
+    const fuzzMap = fuzzRoadTexture();
+    const fuzzDiscGeo = new THREE.CircleGeometry(FUZZ_RADIUS, 28);
+    fuzzDiscGeo.rotateX(-Math.PI / 2);
+    const tuftGeo = new THREE.IcosahedronGeometry(0.45, 0);
+    const meterMap = meterTexture();
 
     for (const pose of hazards.poses) {
       const obj = new THREE.Group();
@@ -1032,6 +1050,100 @@ export class HazardsView {
           this.group.add(eyes);
           obj.add(swarm);
           parts.push(swarm, eyes);
+          break;
+        }
+        case 'eyes': {
+          // An eye floating over the middle of the road, an arrow in front of it, the blast over one half and the gold over the other.
+          const eye = eyeFigure(2.2);
+          eye.group.position.y = EYE_HEIGHT;
+          // Looking back down the road at the karts coming.
+          eye.group.rotation.y = Math.PI;
+          const halo = sprite(mindGlow, 0xff80e0, 9);
+          halo.position.y = EYE_HEIGHT;
+          const arrow = new THREE.Mesh(arrowGeo, new THREE.MeshBasicMaterial({ color: 0xffd040 }));
+          arrow.position.set(0, EYE_HEIGHT, -3);
+          arrow.scale.setScalar(1.4);
+          // The blast: a curtain of light standing over its half of the road, and a burn on the road under it.
+          const half = new THREE.PlaneGeometry(pose.radius, EYE_DEPTH * 2);
+          half.rotateX(-Math.PI / 2);
+          const curtainGeo = new THREE.PlaneGeometry(pose.radius, 3.6);
+          curtainGeo.translate(0, 1.8, 0);
+          // Deep violet, so it reads against the pink of the mind.
+          const blastMat = new THREE.MeshBasicMaterial({ color: 0x6a10ff, transparent: true, opacity: 0.6, depthWrite: false, side: THREE.DoubleSide });
+          const blast = new THREE.Group();
+          blast.add(new THREE.Mesh(half, blastMat), new THREE.Mesh(curtainGeo, blastMat));
+          blast.position.y = 0.15;
+          const gold = new THREE.Mesh(half, goldMat);
+          gold.position.y = 0.12;
+          obj.add(eye.group, halo, arrow, blast, gold);
+          eye.group.userData.open = eye.open;
+          parts.push(eye.group, halo, arrow, blast, gold);
+          break;
+        }
+        case 'arrows': {
+          // Four arrows standing across the road, left, down, up and right, and a strip on the road under each.
+          const w = (2 * pose.radius) / ARROW_LANES;
+          for (let k = 0; k < ARROW_LANES; k++) {
+            const a = new THREE.Mesh(arrowGeo, new THREE.MeshBasicMaterial({ color: 0x404044 }));
+            a.rotation.z = [Math.PI / 2, Math.PI, 0, -Math.PI / 2][k];
+            // Local +x is to the left: lane 0 (leftmost) sits at x = radius - w / 2.
+            a.position.set(pose.radius - w * (k + 0.5), 2.4, 0);
+            a.scale.setScalar(Math.min(1.6, w / 2.2));
+            const strip = new THREE.Mesh(stripGeo, new THREE.MeshBasicMaterial({ color: 0xff2a6a, transparent: true, opacity: 0.7, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 }));
+            strip.scale.x = w * 0.94;
+            strip.position.set(a.position.x, 0.12, 0);
+            obj.add(a, strip);
+            parts.push(a, strip);
+          }
+          break;
+        }
+        case 'sheets': {
+          // Two sheets of cellophane standing across the road, in two colours, rolled up at the edges until they slide; a glow where they line up.
+          const k = this.views.length;
+          const colours = [CELLOPHANE_COLOURS[k % 5], CELLOPHANE_COLOURS[(k + 2) % 5]];
+          // Unlit, so the colours stay bright in the sun, with a white edge so each sheet reads as a sheet.
+          const sheets = colours.map((c) => {
+            const m = new THREE.Mesh(sheetGeo, new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: 0.62, side: THREE.DoubleSide, depthWrite: false }));
+            m.add(new THREE.LineSegments(sheetEdges, sheetEdgeMat));
+            obj.add(m);
+            return m;
+          });
+          const rolls = colours.map((c) => {
+            const r = new THREE.Mesh(rollGeo, new THREE.MeshPhongMaterial({ color: c, shininess: 120, specular: 0xffffff }));
+            obj.add(r);
+            return r;
+          });
+          const glow = sprite(mindGlow, 0xffffff, 6);
+          glow.position.y = 2.2;
+          obj.add(glow);
+          parts.push(sheets[0], sheets[1], rolls[0], rolls[1], glow);
+          break;
+        }
+        case 'fuzz': {
+          // A patch of fuzz on the road, tufts bristling round it, and a little meter over it showing where its needle is.
+          const disc = new THREE.Mesh(fuzzDiscGeo, new THREE.MeshBasicMaterial({ color: 0x80ff90, transparent: true, opacity: 0.6, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 }));
+          disc.position.y = 0.06;
+          const tuftMat = new THREE.MeshLambertMaterial({ map: fuzzMap, color: 0xffffff, emissive: 0x80ff90, emissiveIntensity: 0.7, flatShading: true });
+          const tufts = new THREE.Group();
+          for (let i = 0; i < 14; i++) {
+            const t = new THREE.Mesh(tuftGeo, tuftMat);
+            const a = (i / 14) * Math.PI * 2;
+            t.position.set(Math.cos(a) * FUZZ_RADIUS, 0.3, Math.sin(a) * FUZZ_RADIUS);
+            tufts.add(t);
+          }
+          const meter = new THREE.Group();
+          const face = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 2), new THREE.MeshBasicMaterial({ map: meterMap, side: THREE.DoubleSide }));
+          // Facing the karts coming.
+          face.rotation.y = Math.PI;
+          const needle = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.5, 0.05), new THREE.MeshBasicMaterial({ color: 0x101010 }));
+          needle.geometry.translate(0, 0.75, 0);
+          const pivot = new THREE.Group();
+          pivot.position.set(0, -0.9, -0.05);
+          pivot.add(needle);
+          meter.add(face, pivot);
+          meter.position.y = 4.2;
+          obj.add(disc, tufts, meter);
+          parts.push(disc, tufts, meter, pivot);
           break;
         }
         case 'geysers': {
@@ -1631,6 +1743,91 @@ export class HazardsView {
               ((e as THREE.Sprite).material as THREE.SpriteMaterial).opacity = Math.sin(elapsed * 3 + pair * 2) > -0.3 ? 1 : 0;
             });
           }
+          break;
+        }
+        case 'eyes': {
+          const [eye, halo, arrow, blast, gold] = parts;
+          obj.rotation.y = p.heading;
+          const u = p.phase;
+          const E = EYE_STAGES;
+          // Shut, opening, wide open while it shows the arrow and reads, then shutting again.
+          const open = u < E.open ? 0 : u < E.show ? (u - E.open) / (E.show - E.open) : u < E.done ? 1 : Math.max(0, 1 - (u - E.done) / 0.08);
+          (eye.userData.open as (k: number) => void)(open);
+          eye.position.y = EYE_HEIGHT + Math.sin(elapsed * 1.6) * 0.3;
+          halo.position.y = eye.position.y;
+          halo.visible = open > 0.05;
+          halo.scale.setScalar(p.active ? 14 + Math.sin(elapsed * 30) * 2 : 9);
+          // The arrow, pointing to the safe half (local +x is to the left: a lateral to the right is local -x).
+          arrow.visible = u >= E.show && u < E.done && (p.active || Math.sin(elapsed * 14) > -0.2);
+          arrow.rotation.z = p.side > 0 ? Math.PI / 2 : -Math.PI / 2;
+          arrow.position.x = -p.side * 1.5;
+          blast.visible = p.active;
+          blast.position.x = (p.side * p.radius) / 2;
+          const blastMat = (blast.children[0] as THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>).material;
+          blastMat.opacity = 0.5 + 0.3 * Math.abs(Math.sin(elapsed * 20));
+          blastMat.color.setHex(Math.sin(elapsed * 31) > 0.6 ? 0xffffff : 0x6a10ff);
+          gold.visible = u >= E.show && u < E.done;
+          gold.position.x = (-p.side * p.radius) / 2;
+          break;
+        }
+        case 'arrows': {
+          obj.rotation.y = p.heading;
+          const u = p.phase;
+          const A = ARROW_STAGES;
+          const showing = u >= A.show && u < A.lit;
+          for (let k = 0; k < ARROW_LANES; k++) {
+            const a = parts[k * 2] as THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
+            const strip = parts[k * 2 + 1] as THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
+            const missing = k === p.lane && u >= A.show && u < A.off;
+            // The one that isn't there: gone, and the road under it glowing white while the others are lit.
+            a.visible = !missing;
+            if (p.active) a.material.color.setHex(Math.sin(elapsed * 24 + k) > 0 ? 0xff2a6a : 0xffffff);
+            else if (showing) a.material.color.setHex(Math.sin(elapsed * 16 + k * 2) > 0 ? 0xff2a6a : 0x404044);
+            else a.material.color.setHex(0x404044);
+            strip.visible = p.active || (missing && showing);
+            // The way through glows green; the lit lanes red.
+            strip.material.color.setHex(missing ? 0x30ff80 : 0xff2a6a);
+            strip.material.opacity = missing ? 0.55 + 0.25 * Math.sin(elapsed * 10) : 0.7;
+          }
+          break;
+        }
+        case 'sheets': {
+          const [sheetA, sheetB, rollA, rollB, glow] = parts;
+          obj.rotation.y = p.heading;
+          const u = p.phase;
+          const S = SHEET_STAGES;
+          // The first sheet is at lateral -gap from the pose (local x = +gap), the second at +gap (local x = -gap).
+          sheetA.visible = sheetB.visible = p.active;
+          sheetA.position.x = p.gap;
+          sheetB.position.x = -p.gap;
+          const ripple = Math.sin(elapsed * 6) * 0.08;
+          sheetA.rotation.y = ripple;
+          sheetB.rotation.y = -ripple;
+          // Rolled at the edges before they slide, and again once they're gone.
+          const rolled = u < S.slide || u >= S.gone;
+          rollA.visible = rollB.visible = rolled;
+          const edge = Math.abs(p.gap) + SHEET_HALF;
+          rollA.position.x = u < S.slide ? edge : -edge;
+          rollB.position.x = -rollA.position.x;
+          const g = Math.abs(p.gap);
+          glow.visible = p.active && g < SHEET_HALF;
+          glow.scale.setScalar(4 + 6 * (1 - g / SHEET_HALF));
+          break;
+        }
+        case 'fuzz': {
+          const [disc, tufts, meter, pivot] = parts;
+          const level = fuzzLevel(p.phase);
+          const red = level > 0.8;
+          const goldBand = level >= 0.55 && !red;
+          const colour = red ? (Math.sin(elapsed * 30) > 0 ? 0xff2a20 : 0xff8040) : goldBand ? 0xffd040 : 0x80ff90;
+          (disc as THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>).material.color.setHex(colour);
+          const tuftMat = (tufts.children[0] as THREE.Mesh<THREE.BufferGeometry, THREE.MeshLambertMaterial>).material;
+          tuftMat.emissive.setHex(colour);
+          tufts.rotation.y = elapsed * (0.5 + level * 3);
+          tufts.children.forEach((t, i) => t.scale.setScalar(0.6 + level * 1.6 + (red ? Math.abs(Math.sin(elapsed * 25 + i)) * 0.8 : 0)));
+          // The meter faces the karts coming (its back to +z), so to them the needle sweeps left to right as it turns the other way.
+          meter.rotation.y = p.heading;
+          pivot.rotation.z = ((100 * level - 50) * Math.PI) / 180;
           break;
         }
         case 'geysers': {

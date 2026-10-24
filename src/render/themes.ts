@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import * as tex from './textures';
 import { DESERT_SKY, type SkyColors } from './textures';
 
-export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism' | 'factory' | 'gamma' | 'carrion' | 'wah' | 'smog' | 'dome' | 'solar' | 'inferno';
-export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit';
+export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism' | 'factory' | 'gamma' | 'carrion' | 'wah' | 'smog' | 'dome' | 'solar' | 'inferno' | 'mind' | 'notmind' | 'cellophane' | 'mindfuzz';
+export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static';
 
 /** Everything that makes a track's world look like itself. */
 export interface Theme {
@@ -605,5 +605,80 @@ export const THEMES: Record<ThemeId, Theme> = {
     barrier: { map: tex.hellWallTexture, crawl: false },
     roadGlow: 0.3,
     edgeLine: 0xffe070,
+  },
+  // I'm in Your Mind: inside a mind, pink folds of brain under a violet sky, nerves firing, eyes everywhere.
+  mind: {
+    sky: { zenith: '#2a0a4a', high: '#6a1a8a', low: '#c050b0', horizon: '#ffb0d0', below: '#a04080', ground: '#6a1a50', cloud: '255,180,230', clouds: 30 },
+    fog: { color: 0xc060a8, near: 140, far: 760 },
+    hemi: { sky: 0xffb0e0, ground: 0x6a1a50, intensity: 1.5 },
+    sun: { color: 0xffe0f0, intensity: 2.1 },
+    ground: tex.mindGroundTexture,
+    groundTile: 26,
+    // Walls are folds of brain.
+    cliff: tex.brainWallTexture,
+    decor: 'neurons',
+    distant: { shape: 'hill', color: 0x8a2a70 },
+    haze: 0.6,
+    duotone: [0x10001a, 0xd02a90, 0xffe0f8],
+    skyCycle: true,
+    dust: 0xffa0d0,
+    barrier: { map: tex.brainWallTexture, crawl: false },
+    roadGlow: 0.12,
+  },
+  // I'm Not in Your Mind: out of the mind into nothing, black and white op-art under a blank white sky, arrows where there should be things.
+  notmind: {
+    sky: { zenith: '#101014', high: '#3a3a40', low: '#a0a0a8', horizon: '#f4f4f0', below: '#c8c8c4', ground: '#202024', cloud: '255,255,255', clouds: 0 },
+    fog: { color: 0xd8d8d4, near: 160, far: 820 },
+    hemi: { sky: 0xffffff, ground: 0x303034, intensity: 1.7 },
+    sun: { color: 0xffffff, intensity: 2.2 },
+    ground: tex.notMindGroundTexture,
+    groundTile: 30,
+    cliff: tex.opartWallTexture,
+    decor: 'opart',
+    distant: { shape: 'mountain', color: 0x18181c },
+    haze: 0.4,
+    duotone: [0x000000, 0x6a6a70, 0xffffff],
+    skyCycle: false,
+    dust: 0xe8e8e4,
+    barrier: { map: tex.opartWallTexture, crawl: true },
+    // Checks on rings: a bright line down each edge keeps the road readable.
+    edgeLine: 0xff2a6a,
+  },
+  // Cellophane: a world wrapped in coloured cellophane, sheets hung on frames, the light through them red, green, blue and gold.
+  cellophane: {
+    sky: { zenith: '#1a3a8a', high: '#3a7ad8', low: '#a0d8ff', horizon: '#fff0c0', below: '#c0e0f0', ground: '#8aa0c0', cloud: '255,220,240', clouds: 26 },
+    fog: { color: 0xc8e0f4, near: 190, far: 920 },
+    hemi: { sky: 0xe0f0ff, ground: 0x8aa0c0, intensity: 1.6 },
+    sun: { color: 0xfff8e0, intensity: 2.5 },
+    ground: tex.cellophaneGroundTexture,
+    groundTile: 28,
+    // Walls are panes of cellophane in black frames.
+    cliff: tex.paneTexture,
+    decor: 'panes',
+    distant: { shape: 'cloud', color: 0xa0b8e0 },
+    haze: 0.5,
+    duotone: [0x00081a, 0x2a8af0, 0xfff040],
+    skyCycle: true,
+    dust: 0xf0f4ff,
+    barrier: { map: tex.paneTexture, crawl: false },
+  },
+  // I'm in Your Mind Fuzz: a world gone to static, purple and green, fuzz growing on everything, the album's swirl turning in the sky.
+  mindfuzz: {
+    sky: { zenith: '#0a0414', high: '#3a0a5a', low: '#7a2a7a', horizon: '#40d080', below: '#2a4a2a', ground: '#1a2a14', cloud: '160,255,160', clouds: 44 },
+    fog: { color: 0x3a2a4a, near: 110, far: 640 },
+    hemi: { sky: 0xd090ff, ground: 0x1a3a1a, intensity: 1.5 },
+    sun: { color: 0xe0ffd0, intensity: 1.9 },
+    ground: tex.fuzzGroundTexture,
+    groundTile: 22,
+    // Walls are amp stacks.
+    cliff: tex.ampTexture,
+    decor: 'static',
+    distant: { shape: 'anvil', color: 0x1a0a2a },
+    haze: 0.9,
+    duotone: [0x04000a, 0x8a20c0, 0x80ff90],
+    skyCycle: true,
+    dust: 0x9a70c0,
+    barrier: { map: tex.ampTexture, crawl: false },
+    roadGlow: 0.22,
   },
 };

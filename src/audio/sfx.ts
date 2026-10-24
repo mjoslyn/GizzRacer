@@ -421,6 +421,14 @@ export class Sfx {
     }
     if (by === 'flares') this.tone(60, 0.8, 'sawtooth', 0.12, 120, 0, true);
     if (by === 'rats') this.tone(2400, 0.35, 'square', 0.05, 3600);
+    // An eye's blast is a psychic zap; an arrow a buzz; cellophane a crinkle; fuzz a burst of distorted noise.
+    if (by === 'eyes') this.tone(900, 0.5, 'sine', 0.1, 200);
+    if (by === 'arrows') this.tone(180, 0.3, 'square', 0.08, 120);
+    if (by === 'sheets') this.whoosh(0.35, 5000, 2500, 0.18);
+    if (by === 'fuzz') {
+      this.whoosh(0.4, 1400, 600, 0.25);
+      this.tone(110, 0.4, 'sawtooth', 0.1, 90, 0, true);
+    }
     // A wave breaking over you: a crash of white noise; a glider comes in with a whistle of wind.
     if (by === 'waves') this.whoosh(0.8, 2400, 300, 0.35);
     if (by === 'gliders') this.whoosh(0.5, 1800, 500, 0.2);

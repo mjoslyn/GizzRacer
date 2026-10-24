@@ -39,7 +39,15 @@ export type RoadSurface =
   /** Perihelion's road: the ship's heat shield tiles, glowing at the seams. */
   | 'heatshield'
   /** Hell's road: black brimstone, lava glowing in the cracks. */
-  | 'brimstone';
+  | 'brimstone'
+  /** I'm in Your Mind's road: pink folds of brain, nerves glowing through them. */
+  | 'neural'
+  /** I'm Not in Your Mind's road: black and white op-art checks, warping. */
+  | 'opart'
+  /** Cellophane's road: sheets of coloured cellophane, crinkled and shining. */
+  | 'film'
+  /** I'm in Your Mind Fuzz's road: a carpet of fuzz, purple and green static in it. */
+  | 'fuzz';
 
 /**
  * Every road is built this much wider than its section says: the layouts

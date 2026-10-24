@@ -32,6 +32,10 @@ import { buildPlanetB } from './planetB';
 import { buildMarsForTheRich } from './marsForTheRich';
 import { buildPerihelion } from './perihelion';
 import { buildHell } from './hell';
+import { buildImInYourMind } from './imInYourMind';
+import { buildImNotInYourMind } from './imNotInYourMind';
+import { buildCellophane } from './cellophane';
+import { buildImInYourMindFuzz } from './imInYourMindFuzz';
 
 /** Every track the picker offers, in cup order, each with its layout extras laid in (enrich.ts). */
 /** The tracks as drawn, before enrich.ts (tests and tools). */
@@ -68,6 +72,10 @@ export const RAW_TRACK_LIST: { id: string; name: string; build: () => TrackDef }
   { id: 'mars-for-the-rich', name: 'Mars for the Rich', build: buildMarsForTheRich },
   { id: 'perihelion', name: 'Perihelion', build: buildPerihelion },
   { id: 'hell', name: 'Hell', build: buildHell },
+  { id: 'im-in-your-mind', name: "I'm in Your Mind", build: buildImInYourMind },
+  { id: 'im-not-in-your-mind', name: "I'm Not in Your Mind", build: buildImNotInYourMind },
+  { id: 'cellophane', name: 'Cellophane', build: buildCellophane },
+  { id: 'im-in-your-mind-fuzz', name: "I'm in Your Mind Fuzz", build: buildImInYourMindFuzz },
 ];
 
 export const TRACK_LIST: { id: string; name: string; build: () => TrackDef }[] = RAW_TRACK_LIST.map((t) => ({ ...t, build: () => enrichTrack(t.build()) }));
@@ -88,6 +96,8 @@ export const CUPS: { id: string; name: string; tracks: number[] }[] = [
   { id: 'nonagon-infinity', name: 'Nonagon Infinity Cup', tracks: [24, 25, 26, 27] },
   // Infest the Rats' Nest (2019), in album order: the burning Earth, the rich's colony on Mars, the ship falling at the sun, and down into Hell.
   { id: 'infest-the-rats-nest', name: "Infest the Rats' Nest Cup", tracks: [28, 29, 30, 31] },
+  // I'm in Your Mind Fuzz (2014): the suite the album opens with, four songs run into one, in order. Into the mind, out of it, the cellophane, and the fuzz.
+  { id: 'mind-fuzz', name: 'Mind Fuzz Cup', tracks: [32, 33, 34, 35] },
 ];
 
 /** The Random Cup, after the others in the picker: four of the premade tracks drawn at random. */

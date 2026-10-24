@@ -42,6 +42,10 @@ export const TRACK_SONGS: Record<string, TrackSong> = {
   'mars-for-the-rich': { title: 'Mars for the Rich', album: "Infest the Rats' Nest", year: 2019 },
   perihelion: { title: 'Perihelion', album: "Infest the Rats' Nest", year: 2019 },
   hell: { title: 'Hell', album: "Infest the Rats' Nest", year: 2019 },
+  'im-in-your-mind': { title: "I'm in Your Mind", album: "I'm in Your Mind Fuzz", year: 2014 },
+  'im-not-in-your-mind': { title: "I'm Not in Your Mind", album: "I'm in Your Mind Fuzz", year: 2014 },
+  cellophane: { title: 'Cellophane', album: "I'm in Your Mind Fuzz", year: 2014 },
+  'im-in-your-mind-fuzz': { title: "I'm in Your Mind Fuzz", album: "I'm in Your Mind Fuzz", year: 2014 },
 };
 
 /**

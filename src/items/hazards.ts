@@ -25,8 +25,14 @@ export interface HazardPose {
   active: boolean;
   /** Which way across the road it goes, 1 (to the right) or -1: a gust's direction. 0 when it doesn't matter. */
   side: number;
-  /** An airlock's opening: half the width between its two doors, centred on the pose. 0 for the rest. */
+  /**
+   * An airlock's opening: half the width between its two doors, centred on
+   * the pose. Cellophane: how far each sheet is from the pose, signed (the
+   * first sheet is at -gap, the second at +gap). 0 for the rest.
+   */
   gap: number;
+  /** A row of arrows: the lane with no arrow in it, 0 (leftmost) to 3. -1 for the rest. */
+  lane: number;
   /**
    * Kind-specific: boulder cycle stage (0..1), tumbleweed bounce height,
    * snake slither phase, dust devil spin.
@@ -110,6 +116,10 @@ export const WAVE_SPIN = 1.0;
  * - an airlock's slit, slipped through while the doors are shut to it, is a boost
  * - drive under a solar flare while it arches high over the road and its wind is a boost
  * - hopped, a swarm of rats is cleared for a boost; rammed on a boost they scatter and the boost runs on
+ * - the half of the road an eye's arrow points to, as it reads your mind, is a boost
+ * - the lane of a row of arrows that has no arrow in it, while the rest are lit, is a boost
+ * - where two sheets of cellophane line up as they slide past each other, a boost
+ * - a patch of fuzz driven through while its needle is in the gold is a boost
  */
 /** A reward can't pay out again to the same kart for this long. */
 export const REWARD_COOLDOWN = 1.5;
@@ -250,6 +260,53 @@ export const RAT_STAGES = { pour: 0.4, gone: 0.8 } as const;
 export const RAT_LENGTH = 7;
 export const RAT_RADIUS = 1.1;
 export const RAT_SPIN = 1.0;
+/**
+ * Eye cycle: shut, opening over the road, an arrow flashing in it (the
+ * warning: it points to the half of the road that's safe), then it reads
+ * your mind and blasts the other half.
+ */
+export const EYE_STAGES = { open: 0.22, show: 0.34, read: 0.62, done: 0.76 } as const;
+/** How far along the road the blast reaches either side of the eye, and how high the eye floats. */
+export const EYE_DEPTH = 1.6;
+export const EYE_HEIGHT = 4.6;
+/** On the half the arrow points to as it reads: a boost this long. On the other half: spun out. */
+export const EYE_BOOST = 0.8;
+export const EYE_SPIN = 1.0;
+/** Arrow row cycle: dark, three of the four arrows flickering on (the warning), lit (they zap), dark again. */
+export const ARROW_STAGES = { show: 0.3, lit: 0.48, off: 0.76 } as const;
+/** The row has four lanes across the road; it's this thick along it. */
+export const ARROW_LANES = 4;
+export const ARROW_DEPTH = 1;
+/** Through the lane with no arrow while the rest are lit: a boost this long. Zapped: spun out, this much of your speed kept. */
+export const ARROW_BOOST = 0.8;
+export const ARROW_SPIN = 1.0;
+export const ARROW_SLOW = 0.7;
+/** Cellophane cycle: rolled at both edges (the warning), the two sheets sliding past each other right across the road, gone. */
+export const SHEET_STAGES = { slide: 0.2, gone: 0.85 } as const;
+/** Each sheet is this wide across the road (half of it), this thick along it. */
+export const SHEET_HALF = 3;
+export const SHEET_DEPTH = 0.7;
+/** Wrapped in one sheet: this much of your speed kept. Through where they overlap: a boost this long. */
+export const SHEET_SLOW = 0.5;
+export const SHEET_BOOST = 0.9;
+/**
+ * Fuzz patch cycle: the needle rising (harmless), in the gold (a boost to
+ * drive through), into the red (it clips: you're spun out), dying away.
+ */
+export const FUZZ_STAGES = { gold: 0.34, red: 0.54, fade: 0.74 } as const;
+export const FUZZ_RADIUS = 3.2;
+export const FUZZ_GOLD_BOOST = 0.9;
+export const FUZZ_SPIN = 1.1;
+export const FUZZ_SLOW = 0.7;
+
+/** Where a patch of fuzz's needle stands at cycle stage `u`: 0 at rest, the gold band from 0.55 to 0.8, the red above. */
+export function fuzzLevel(u: number): number {
+  const F = FUZZ_STAGES;
+  if (u < F.gold) return 0.55 * (u / F.gold);
+  if (u < F.red) return 0.55 + (0.25 * (u - F.gold)) / (F.red - F.gold);
+  if (u < F.fade) return 0.8 + 0.2 * Math.sin((Math.PI * (u - F.red)) / (F.fade - F.red));
+  return 0.8 * (1 - (u - F.fade) / (1 - F.fade));
+}
 
 /** How high a solar flare's arch stands over the road at cycle stage `u`. */
 export function flareHeight(u: number): number {
@@ -306,6 +363,10 @@ const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds' | 'butterfli
   airlocks: AIRLOCK_SPIN,
   flares: FLARE_SPIN,
   rats: RAT_SPIN,
+  eyes: EYE_SPIN,
+  arrows: ARROW_SPIN,
+  sheets: 0,
+  fuzz: FUZZ_SPIN,
 };
 
 /** Kinds that fill the whole road across, on a rhythm: nothing to steer round, only to time. */
@@ -352,7 +413,7 @@ export class HazardSystem {
       const n = 'at' in def ? def.at.length : def.count;
       for (let i = 0; i < n; i++) {
         this.slots.push({ def, index: i });
-        this.poses.push({ kind: def.kind, x: 0, y: 0, z: 0, heading: 0, radius: 0, ground: 0, ax: 0, az: 0, vx: 0, vz: 0, active: false, phase: 0, side: 0, gap: 0 });
+        this.poses.push({ kind: def.kind, x: 0, y: 0, z: 0, heading: 0, radius: 0, ground: 0, ax: 0, az: 0, vx: 0, vz: 0, active: false, phase: 0, side: 0, gap: 0, lane: -1 });
       }
     }
     this.update(0);
@@ -622,6 +683,65 @@ export class HazardSystem {
           p.phase = u;
           break;
         }
+        case 'eyes': {
+          // An eye opening over the road, an arrow in it pointing to one half; then it reads your mind and blasts the other half.
+          const at = def.at[i];
+          const tt = t + 10 + (i * def.period) / def.at.length;
+          const cycle = Math.floor(tt / def.period);
+          const u = tt / def.period - cycle;
+          this.place(p, at, 0, 0);
+          p.radius = this.halfWidth(at) + 1;
+          // Which half is safe changes from one reading to the next, but not so you can learn it.
+          p.side = Math.sin(cycle * 2.71 + i * 1.3) >= 0 ? 1 : -1;
+          p.active = u >= EYE_STAGES.read && u < EYE_STAGES.done;
+          p.phase = u;
+          break;
+        }
+        case 'arrows': {
+          // Four arrows across the road: three flicker on and blaze, one isn't there, a different one each time.
+          const at = def.at[i];
+          const tt = t + 10 + (i * def.period) / def.at.length;
+          const cycle = Math.floor(tt / def.period);
+          const u = tt / def.period - cycle;
+          this.place(p, at, 0, 0);
+          p.radius = this.halfWidth(at);
+          p.lane = Math.floor((Math.sin(cycle * 12.9898 + i * 78.233) * 43758.5453 % 1 + 1) % 1 * ARROW_LANES);
+          p.active = u >= ARROW_STAGES.lit && u < ARROW_STAGES.off;
+          p.phase = u;
+          break;
+        }
+        case 'sheets': {
+          // Two sheets of cellophane sliding in from opposite edges, past each other, and off; where they cross moves each time.
+          const at = def.at[i];
+          const tt = t + 10 + (i * def.period) / def.at.length;
+          const cycle = Math.floor(tt / def.period);
+          const u = tt / def.period - cycle;
+          const hw = this.halfWidth(at);
+          const c = hw * 0.4 * Math.sin(cycle * 1.93 + i * 2.3);
+          const S = SHEET_STAGES;
+          const k = u < S.slide ? 0 : u < S.gone ? (u - S.slide) / (S.gone - S.slide) : 1;
+          // Rolled up just past both edges, and off past them again.
+          const full = hw + SHEET_HALF + 1 + Math.abs(c);
+          this.place(p, at, c, 0);
+          p.gap = full * (1 - 2 * k);
+          p.radius = hw + 1;
+          p.active = u >= S.slide && u < S.gone;
+          p.phase = u;
+          break;
+        }
+        case 'fuzz': {
+          // A patch of fuzz on the road, alternating sides, its needle rising into the gold and on into the red.
+          const at = def.at[i];
+          const tt = t + 10 + (i * def.period) / def.at.length;
+          const cycle = Math.floor(tt / def.period);
+          const u = tt / def.period - cycle;
+          const lat = this.halfWidth(at) * 0.4 * ((cycle + i) % 2 === 0 ? 1 : -1);
+          this.place(p, at, lat, 0);
+          p.radius = FUZZ_RADIUS;
+          p.active = u >= FUZZ_STAGES.red && u < FUZZ_STAGES.fade;
+          p.phase = u;
+          break;
+        }
         case 'dustDevils':
         case 'butterflies':
         case 'tornadoes':
@@ -749,6 +869,23 @@ export class HazardSystem {
           this.airlock(hit, p, s);
           continue;
         }
+        if (p.kind === 'eyes') {
+          this.eye(hit, p, s);
+          continue;
+        }
+        if (p.kind === 'arrows') {
+          this.arrowRow(hit, p, s);
+          continue;
+        }
+        if (p.kind === 'sheets') {
+          this.cellophane(hit, p, s);
+          continue;
+        }
+        if (p.kind === 'fuzz' && p.phase >= FUZZ_STAGES.gold && p.phase < FUZZ_STAGES.red) {
+          // The needle in the gold: ride the fuzz, a boost.
+          if (this.distance(p, s) <= p.radius + KART_RADIUS) this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, FUZZ_GOLD_BOOST)));
+          continue;
+        }
         if (p.kind === 'gammaRays' && !p.active) {
           // The crosshair nearly closed: slip through it and the knife misses, a boost.
           if (p.phase >= GAMMA_EDGE && p.phase < GAMMA_STAGES.fire && this.distance(p, s) <= p.radius + KART_RADIUS) this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, GAMMA_BOOST)));
@@ -815,6 +952,16 @@ export class HazardSystem {
           this.cooldown.set(s, HIT_COOLDOWN);
           s.speed *= SMOG_SLOW;
           hit.push({ kart: s, by: p.kind });
+          continue;
+        }
+        if (p.kind === 'fuzz') {
+          // Into the red: it clips, and you're spun out.
+          if (this.cooldown.has(s)) continue;
+          this.cooldown.set(s, HIT_COOLDOWN);
+          if (spinOut(s, FUZZ_SPIN)) {
+            s.speed *= FUZZ_SLOW;
+            hit.push({ kart: s, by: p.kind });
+          }
           continue;
         }
         if (isSwirl(p.kind)) {
@@ -918,7 +1065,7 @@ export class HazardSystem {
 
   /** Circles for CPU avoidance, including boulders about to land. */
   obstacles(out: { x: number; z: number; r: number; vx: number; vz: number }[]): void {
-    for (const p of this.poses) {
+    for (const [k, p] of this.poses.entries()) {
       if (isSheet(p.kind)) continue; // the whole road: nothing to steer around
       if (p.kind === 'airlocks') {
         // From just before they close until they open: the doors where they will be when shut, so the slit is lined up early.
@@ -928,6 +1075,45 @@ export class HazardSystem {
         const c = (p.x - p.ax) * -fz + (p.z - p.az) * fx;
         for (const side of [-1, 1]) {
           for (let l = c + side * (AIRLOCK_SLIT + 1.2); Math.abs(l) < p.radius + 1; l += side * 2.4) out.push({ x: p.ax - fz * l, z: p.az + fx * l, r: 1.5, vx: 0, vz: 0 });
+        }
+        continue;
+      }
+      if (p.kind === 'eyes') {
+        // From the arrow on, the half it doesn't point to.
+        if (p.phase < EYE_STAGES.show || p.phase >= EYE_STAGES.done) continue;
+        const fx = Math.sin(p.heading);
+        const fz = Math.cos(p.heading);
+        for (let l = 1.2; l < p.radius; l += 2.4) {
+          const lat = -p.side * l;
+          out.push({ x: p.ax - fz * lat, z: p.az + fx * lat, r: 1.5, vx: 0, vz: 0 });
+        }
+        continue;
+      }
+      if (p.kind === 'arrows') {
+        // From when they flicker on: the three lanes with arrows in them.
+        if (p.phase < ARROW_STAGES.show || p.phase >= ARROW_STAGES.off) continue;
+        const fx = Math.sin(p.heading);
+        const fz = Math.cos(p.heading);
+        const w = (2 * p.radius) / ARROW_LANES;
+        for (let k = 0; k < ARROW_LANES; k++) {
+          if (k === p.lane) continue;
+          const lat = -p.radius + w * (k + 0.5);
+          out.push({ x: p.ax - fz * lat, z: p.az + fx * lat, r: w / 2, vx: 0, vz: 0 });
+        }
+        continue;
+      }
+      if (p.kind === 'sheets') {
+        // Each sheet where it is, moving across the road.
+        if (!p.active) continue;
+        const fx = Math.sin(p.heading);
+        const fz = Math.cos(p.heading);
+        const { def } = this.slots[k];
+        const speed = (2 * (p.radius + SHEET_HALF)) / ((SHEET_STAGES.gone - SHEET_STAGES.slide) * ('period' in def ? def.period : 5));
+        for (const side of [-1, 1]) {
+          const x = p.x - fz * side * p.gap;
+          const z = p.z + fx * side * p.gap;
+          // The first sheet runs to the right, the second to the left.
+          out.push({ x, z, r: SHEET_HALF, vx: -fz * -side * speed, vz: fx * -side * speed });
         }
         continue;
       }
@@ -1006,6 +1192,73 @@ export class HazardSystem {
       s.speed *= AIRLOCK_SLOW;
       hit.push({ kart: s, by: p.kind });
     }
+  }
+
+  /**
+   * An eye reading your mind: on the half of the road its arrow points to,
+   * a boost; on the other half, it blasts you.
+   */
+  private eye(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+    if (!p.active) return;
+    const fx = Math.sin(p.heading);
+    const fz = Math.cos(p.heading);
+    if (Math.abs((s.x - p.x) * fx + (s.z - p.z) * fz) > EYE_DEPTH + KART_RADIUS) return;
+    const lat = (s.x - p.x) * -fz + (s.z - p.z) * fx;
+    if (Math.abs(lat) > p.radius + KART_RADIUS) return;
+    if (lat * p.side > 0) {
+      this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, EYE_BOOST)));
+      return;
+    }
+    if (this.cooldown.has(s)) return;
+    this.cooldown.set(s, HIT_COOLDOWN);
+    if (spinOut(s, EYE_SPIN)) hit.push({ kart: s, by: p.kind });
+  }
+
+  /**
+   * A row of four arrows across the road: while they're lit, the three
+   * arrows zap you; the lane with no arrow in it is a boost.
+   */
+  private arrowRow(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+    if (!p.active) return;
+    const fx = Math.sin(p.heading);
+    const fz = Math.cos(p.heading);
+    if (Math.abs((s.x - p.x) * fx + (s.z - p.z) * fz) > ARROW_DEPTH + KART_RADIUS) return;
+    const lat = (s.x - p.x) * -fz + (s.z - p.z) * fx;
+    if (Math.abs(lat) > p.radius + KART_RADIUS) return;
+    const w = (2 * p.radius) / ARROW_LANES;
+    const lane = Math.max(0, Math.min(ARROW_LANES - 1, Math.floor((lat + p.radius) / w)));
+    if (lane === p.lane) {
+      this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, ARROW_BOOST)));
+      return;
+    }
+    if (this.cooldown.has(s)) return;
+    this.cooldown.set(s, HIT_COOLDOWN);
+    if (spinOut(s, ARROW_SPIN)) {
+      s.speed *= ARROW_SLOW;
+      hit.push({ kart: s, by: p.kind });
+    }
+  }
+
+  /**
+   * Two sheets of cellophane: caught in one you're wrapped up and slowed;
+   * through where they overlap, lined up, a boost.
+   */
+  private cellophane(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+    if (!p.active) return;
+    const fx = Math.sin(p.heading);
+    const fz = Math.cos(p.heading);
+    if (Math.abs((s.x - p.x) * fx + (s.z - p.z) * fz) > SHEET_DEPTH + KART_RADIUS) return;
+    const x = (s.x - p.x) * -fz + (s.z - p.z) * fx;
+    const g = Math.abs(p.gap);
+    if (g < SHEET_HALF && Math.abs(x) <= SHEET_HALF - g) {
+      this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, SHEET_BOOST)));
+      return;
+    }
+    if (Math.abs(x - g) > SHEET_HALF + KART_RADIUS && Math.abs(x + g) > SHEET_HALF + KART_RADIUS) return;
+    if (this.cooldown.has(s)) return;
+    this.cooldown.set(s, HIT_COOLDOWN);
+    s.speed *= SHEET_SLOW;
+    hit.push({ kart: s, by: p.kind });
   }
 
   /** Pays a kart for using a hazard well, once in a while. */

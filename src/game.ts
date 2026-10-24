@@ -1516,6 +1516,10 @@ const HIT_TEXT: Record<ItemKind | HazardKind, string> = {
   airlocks: 'LOCKED OUT!',
   flares: 'SCORCHED!',
   rats: 'INFESTED!',
+  eyes: 'MIND READ!',
+  arrows: 'ZAPPED!',
+  sheets: 'WRAPPED!',
+  fuzz: 'CLIPPED!',
 };
 
 /** What a hazard used well says: the ones that can help. */
@@ -1559,6 +1563,10 @@ const BONUS_TEXT: Record<HazardKind, string> = {
   airlocks: 'SLIPPED THROUGH!',
   flares: 'SOLAR WIND!',
   rats: 'RAT RACE!',
+  eyes: 'ONE STEP AHEAD!',
+  arrows: 'NOT THERE!',
+  sheets: 'LINED UP!',
+  fuzz: 'RIDE THE FUZZ!',
 };
 
 /** Takes a group out of the scene and frees what it built. */

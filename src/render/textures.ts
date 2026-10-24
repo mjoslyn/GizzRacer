@@ -2243,3 +2243,347 @@ export function furTexture(): THREE.CanvasTexture {
   paint(ctx, S, S, (x, _y, i) => shade(mix([46, 38, 34], [96, 82, 70], n[i]), 0.8 + 0.2 * Math.abs(Math.sin(x * 0.9 + n[i] * 9))));
   return finish(c);
 }
+
+/**
+ * Folds of brain, tileable: the ridges of a field of noise drawn as gyri,
+ * the furrows between them dark. `n` is noise in 0..1; returns 0 in a
+ * furrow and 1 on a ridge.
+ */
+function gyri(n: number): number {
+  const w = Math.abs(Math.sin(n * Math.PI * 9));
+  return Math.min(1, w * 1.6);
+}
+
+/** I'm in Your Mind's road: violet folds of brain, the furrows deep plum, nerves glowing pink and cyan through them. */
+export function neuralTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 4, 1201);
+  const fine = fbm(S, 8, 3, 1202);
+  paint(ctx, S, S, (_x, _y, i) => {
+    const g = gyri(n[i]);
+    // Violet, a shade apart from the pink ground, so the road reads.
+    return shade(mix([56, 16, 84], [176, 96, 200], g), 0.85 + fine[i] * 0.25);
+  });
+  // Nerves: thin glowing threads wandering over the folds, a spark where they meet.
+  const rand = seededRandom(1203);
+  for (let k = 0; k < 14; k++) {
+    const pts: [number, number][] = [];
+    let x = rand() * S;
+    let y = rand() * S;
+    let a = rand() * Math.PI * 2;
+    for (let j = 0; j < 12; j++) {
+      pts.push([x, y]);
+      a += (rand() - 0.5) * 0.9;
+      x += Math.cos(a) * 10;
+      y += Math.sin(a) * 10;
+    }
+    const colour = k % 3 ? 'rgba(255,140,220,0.75)' : 'rgba(110,240,255,0.8)';
+    wrapStroke(ctx, S, () => {
+      ctx.strokeStyle = colour;
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      pts.forEach(([px, py], j) => (j ? ctx.lineTo(px, py) : ctx.moveTo(px, py)));
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.beginPath();
+      ctx.arc(pts[11][0], pts[11][1], 2, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+  return finish(c);
+}
+
+/** The ground inside the mind: a sea of brain folds, rose and plum, with violet light pooling in the furrows. */
+export function mindGroundTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 5, 1211);
+  const tint = fbm(S, 2, 3, 1212);
+  paint(ctx, S, S, (_x, _y, i) => {
+    const g = gyri(n[i]);
+    const furrow = mix([60, 16, 70], [120, 40, 150], tint[i]);
+    return mix(furrow, mix([200, 100, 140], [250, 170, 190], tint[i]), g);
+  });
+  return finish(c);
+}
+
+/** The Cortex Folds' walls: brain, tall and wet-looking, with nerves running up it. */
+export function brainWallTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 3, 4, 1221);
+  paint(ctx, S, S, (x, y, i) => {
+    const g = gyri(n[i] + y / S * 0.15);
+    const sheen = Math.max(0, Math.sin((x + y) * 0.05 + n[i] * 6)) * 0.25;
+    return mix(mix([90, 26, 60], [222, 128, 156], g), [255, 230, 240], sheen * g);
+  });
+  ctx.strokeStyle = 'rgba(150,230,255,0.6)';
+  ctx.lineWidth = 1.5;
+  const rand = seededRandom(1222);
+  for (let k = 0; k < 6; k++) {
+    let x = rand() * S;
+    ctx.beginPath();
+    ctx.moveTo(x, S);
+    for (let y = S; y > 0; y -= 12) {
+      x += (rand() - 0.5) * 12;
+      ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+  return finish(c);
+}
+
+/** I'm Not in Your Mind's road: black and white checks, warped as if seen through a fever. */
+export function opartTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 2, 2, 1231);
+  paint(ctx, S, S, (x, y, i) => {
+    // The warp is tileable: whole periods of sine across the tile, plus tileable noise.
+    const wx = x + Math.sin((y / S) * Math.PI * 2) * 10 + (n[i] - 0.5) * 18;
+    const wy = y + Math.sin((x / S) * Math.PI * 4) * 8;
+    const check = (Math.floor(wx / 32) + Math.floor(wy / 32)) % 2 === 0;
+    return check ? [236, 234, 228] : [16, 14, 18];
+  });
+  return finish(c);
+}
+
+/** The ground round I'm Not in Your Mind: rings of black and white rippling out, a spiral that won't keep still. */
+export function notMindGroundTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 3, 3, 1241);
+  paint(ctx, S, S, (x, y, i) => {
+    // Distance to the nearest of four tiled centres, so the rings wrap.
+    const dx = Math.min(x % 256, 256 - (x % 256));
+    const dy = Math.min(y % 256, 256 - (y % 256));
+    const d = Math.hypot(dx - 128, dy - 128);
+    const ring = Math.sin(d * 0.22 + n[i] * 5) > 0;
+    return ring ? mix([210, 208, 204], [250, 248, 244], n[i]) : mix([10, 8, 14], [40, 36, 44], n[i]);
+  });
+  return finish(c);
+}
+
+/** The Hall of Mirrors' walls: zigzags of black and white that seem to move as you pass. */
+export function opartWallTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  paint(ctx, S, S, (x, y) => {
+    const zig = Math.abs(((x / 16) % 2) - 1) * 16;
+    return Math.floor((y + zig) / 16) % 2 === 0 ? [240, 238, 232] : [12, 10, 16];
+  });
+  return finish(c);
+}
+
+/** The colours cellophane comes in. */
+export const CELLOPHANE_COLOURS = ['#ff3a6a', '#ffd020', '#30e080', '#30a0ff', '#b060ff'];
+
+/** Cellophane's road: overlapping sheets of coloured cellophane, crinkled, light catching in the creases. */
+export function filmTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 6, 4, 1251);
+  paint(ctx, S, S, (_x, _y, i) => mix([200, 200, 220], [250, 250, 255], n[i]));
+  const rand = seededRandom(1252);
+  ctx.globalCompositeOperation = 'multiply';
+  for (let k = 0; k < 14; k++) {
+    const x = rand() * S;
+    const y = rand() * S;
+    const w = 50 + rand() * 90;
+    const h = 40 + rand() * 80;
+    const a = rand() * Math.PI;
+    ctx.fillStyle = CELLOPHANE_COLOURS[k % CELLOPHANE_COLOURS.length];
+    ctx.globalAlpha = 0.45;
+    wrapStroke(ctx, S, () => {
+      ctx.translate(x, y);
+      ctx.rotate(a);
+      ctx.fillRect(-w / 2, -h / 2, w, h);
+    });
+  }
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+  // Creases: thin bright lines where the light catches.
+  cracks(ctx, S, 26, 'rgba(255,255,255,0.7)', 1, 1253);
+  return finish(c);
+}
+
+/** The ground round Cellophane: pale and glossy, pools of coloured light thrown through the sheets. */
+export function cellophaneGroundTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 4, 1261);
+  paint(ctx, S, S, (_x, _y, i) => mix([170, 180, 200], [230, 236, 248], n[i]));
+  const rand = seededRandom(1262);
+  ctx.globalCompositeOperation = 'multiply';
+  for (let k = 0; k < 30; k++) {
+    const x = rand() * S;
+    const y = rand() * S;
+    const r = 30 + rand() * 70;
+    ctx.fillStyle = CELLOPHANE_COLOURS[k % CELLOPHANE_COLOURS.length];
+    ctx.globalAlpha = 0.35;
+    wrapStroke(ctx, S, () => {
+      ctx.beginPath();
+      ctx.ellipse(x, y, r, r * (0.4 + rand() * 0.5), rand() * Math.PI, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+  return finish(c);
+}
+
+/** Stained Glass Alley's walls: panes of coloured cellophane in black frames, lit from behind. */
+export function paneTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 3, 1271);
+  const rand = seededRandom(1272);
+  const cells: RGB[] = Array.from({ length: 16 }, () => {
+    const hex = CELLOPHANE_COLOURS[Math.floor(rand() * CELLOPHANE_COLOURS.length)];
+    return [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
+  });
+  paint(ctx, S, S, (x, y, i) => {
+    if (x % 64 < 4 || y % 64 < 4) return [16, 14, 20];
+    const cell = cells[Math.floor(y / 64) * 4 + Math.floor(x / 64)];
+    return mix(shade(cell, 0.7), cell, n[i]);
+  });
+  return finish(c);
+}
+
+/** I'm in Your Mind Fuzz's road: a carpet of fuzz, deep purple, flecked with green and magenta static. */
+export function fuzzRoadTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 4, 1281);
+  const rand = seededRandom(1282);
+  paint(ctx, S, S, (_x, _y, i) => {
+    const r = rand();
+    const fleck: RGB = r > 0.97 ? [120, 255, 120] : r > 0.94 ? [255, 90, 220] : [0, 0, 0];
+    const base = mix([40, 16, 60], [96, 46, 120], n[i]);
+    return r > 0.94 ? mix(base, fleck, 0.7) : shade(base, 0.8 + rand() * 0.4);
+  });
+  return finish(c);
+}
+
+/** The ground round I'm in Your Mind Fuzz: TV static in purple and green, fuzz growing up through it. */
+export function fuzzGroundTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 3, 5, 1291);
+  const rand = seededRandom(1292);
+  paint(ctx, S, S, (_x, _y, i) => {
+    const s = rand();
+    const base = mix([30, 60, 30], [90, 40, 120], n[i]);
+    return mix(base, [s * 200, s * 255, s * 200], 0.25);
+  });
+  return finish(c);
+}
+
+/** Amp Alley's walls: amp stacks, black tolex round grille cloth, a gold logo plate on every cab. */
+export function ampTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 8, 3, 1301);
+  paint(ctx, S, S, (x, y, i) => {
+    const lx = x % 128;
+    const ly = y % 128;
+    if (lx < 10 || lx > 118 || ly < 10 || ly > 118) return shade([30, 28, 32], 0.8 + n[i] * 0.4);
+    const weave = (x + y) % 4 < 2 ? 1 : 0.85;
+    return shade(mix([70, 60, 50], [110, 96, 80], n[i]), weave);
+  });
+  ctx.fillStyle = '#e0b040';
+  for (const [x, y] of [[44, 16], [172, 16], [44, 144], [172, 144]]) ctx.fillRect(x, y, 40, 8);
+  return finish(c);
+}
+
+/** The album's swirl: bands of purple, orange, green and pink turning in on a point, for the sky over the fuzz. */
+export function swirlTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const bands: RGB[] = [[120, 40, 160], [255, 140, 40], [80, 220, 120], [255, 80, 180], [40, 20, 80]];
+  paint(ctx, S, S, (x, y) => {
+    const dx = x - S / 2;
+    const dy = y - S / 2;
+    const r = Math.hypot(dx, dy) / (S / 2);
+    const a = Math.atan2(dy, dx);
+    const t = ((a / (Math.PI * 2) + r * 3) % 1 + 1) % 1;
+    const k = Math.floor(t * bands.length);
+    return mix(bands[k], bands[(k + 1) % bands.length], (t * bands.length) % 1);
+  });
+  return finish(c, false);
+}
+
+/**
+ * An eye's iris, for a cap of the ball round its pupil: the top row is the
+ * middle of the eye and the bottom row the rim, so the rings go across:
+ * the pupil, then gold, violet and green, streaked, and a dark ring round it.
+ */
+export function irisTexture(): THREE.CanvasTexture {
+  const W = 128;
+  const H = 64;
+  const [c, ctx] = canvas(W, H);
+  const n = fbm(W, 8, 3, 1311);
+  paint(ctx, W, H, (x, y, i) => {
+    const d = y / H;
+    if (d < 0.3) return [8, 4, 12];
+    if (d > 0.92) return [24, 12, 34];
+    const streak = 0.72 + 0.28 * Math.sin((x / W) * Math.PI * 2 * 24 + n[i] * 8);
+    const ring: RGB = d < 0.48 ? [240, 190, 60] : d < 0.72 ? [150, 70, 220] : [60, 200, 140];
+    return shade(ring, streak);
+  });
+  return finish(c, false);
+}
+
+/** A black and white spiral, for the op-art discs that turn round I'm Not in Your Mind. */
+export function opSpiralTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  paint(ctx, S, S, (x, y) => {
+    const dx = x - S / 2;
+    const dy = y - S / 2;
+    const r = Math.hypot(dx, dy) / (S / 2);
+    if (r > 1) return [16, 14, 18];
+    const a = Math.atan2(dy, dx);
+    return Math.sin(a * 3 + r * 22) > 0 ? [240, 238, 232] : [16, 14, 18];
+  });
+  return finish(c, false);
+}
+
+/** The face of a VU meter: cream card, a scale arcing over it, green into gold into red, and FUZZ across the bottom. */
+export function meterTexture(): THREE.CanvasTexture {
+  const W = 512;
+  const H = 320;
+  const [c, ctx] = canvas(W, H);
+  ctx.fillStyle = '#f0e6c8';
+  ctx.fillRect(0, 0, W, H);
+  const cx = W / 2;
+  const cy = H * 0.95;
+  const R = H * 0.78;
+  // Needle travel: from -50 to +50 degrees off straight up; level 0..1 along it.
+  const angle = (u: number) => -Math.PI / 2 + (-50 + 100 * u) * (Math.PI / 180);
+  const band = (u0: number, u1: number, colour: string) => {
+    ctx.strokeStyle = colour;
+    ctx.lineWidth = 26;
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, angle(u0), angle(u1));
+    ctx.stroke();
+  };
+  band(0, 0.55, '#40b050');
+  band(0.55, 0.8, '#e8b020');
+  band(0.8, 1, '#e02a20');
+  ctx.strokeStyle = '#1a1414';
+  ctx.lineWidth = 4;
+  for (let k = 0; k <= 10; k++) {
+    const a = angle(k / 10);
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(a) * (R - 24), cy + Math.sin(a) * (R - 24));
+    ctx.lineTo(cx + Math.cos(a) * (R - 46), cy + Math.sin(a) * (R - 46));
+    ctx.stroke();
+  }
+  ctx.fillStyle = '#1a1414';
+  ctx.font = 'bold 54px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('FUZZ', cx, H * 0.62);
+  return finish(c, false);
+}
