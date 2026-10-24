@@ -19,6 +19,6 @@ export const MODE_BLURBS: Record<RaceMode, string> = {
   single: 'One track, a full field, items on',
   timeTrial: 'Alone against the clock, the ghosts and the leaderboard',
   generator: 'A track made on the spot: the daily, your saved ones, or a new roll',
-  infinite: 'Laps without end, or a tour of every track: race, or sit back and watch the CPUs to the music',
+  infinite: 'Laps without end, one track or a new one every few laps, generated if you like: race, or sit back and watch the CPUs to the music',
   online: 'Race friends with a room code',
 };

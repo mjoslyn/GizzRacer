@@ -11,7 +11,6 @@ import {
   sparkleTexture,
   spotsTexture,
   stoneTexture,
-  treadTexture,
   woodTexture,
   yikesTexture,
 } from './textures';
@@ -1617,103 +1616,101 @@ function mantisShredder(r: RacerDef): KartModel {
   };
 }
 
-// ---- Gator Drummer: alligator drumming on a tracked kick-drum tank -------------
+// ---- Gator Drummer: an alligator running on its four legs, headphones on ------
 
 function gatorDrummer(r: RacerDef): KartModel {
   const body = new THREE.Group();
-  const wrap = matte(0xffffff, { map: tex('drum-wrap', () => sparkleTexture([184, 32, 42])), shininess: 80, specular: 0x888888 });
-  const head = matte(r.accent);
-  const steel = chrome();
-  const hide = matte(0xffffff, { map: tex('gator', () => scaleTexture('#6a9a3a', '#22401a')) });
-  const brassMat = brass();
+  const hide = matte(0xffffff, { map: tex('gator', () => scaleTexture('#6a9a3a', '#22401a')), shininess: 26, specular: 0x223318 });
+  const belly = matte(0xe8e0a8);
+  const scute = matte(0x2a4a1c, { shininess: 30 });
+  const tooth = matte(0xf8f4e0);
+  const claw = matte(0x2a2418);
+  // It runs as the Gila does: low to the road, belly just clear, legs sprawled out to the sides.
+  const gator = new THREE.Group();
+  gator.position.y = 0.42;
+  body.add(gator);
 
-  // The hull is a kick drum on its side, its head facing forward.
-  put(body, cyl(0.62, 0.62, 1.7, 24), wrap, [0, 0.82, 0], [Math.PI / 2, 0, 0]);
-  for (const z of [0.86, -0.86]) {
-    put(body, cyl(0.6, 0.6, 0.02, 24), head, [0, 0.82, z], [Math.PI / 2, 0, 0]);
-    put(body, ring(0.62, 0.05), steel, [0, 0.82, z], [0, 0, 0]);
-    for (let k = 0; k < 10; k++) {
-      const a = (k / 10) * Math.PI * 2;
-      put(body, box(0.04, 0.04, 0.12), steel, [Math.cos(a) * 0.66, 0.82 + Math.sin(a) * 0.66, z - Math.sign(z) * 0.08]);
+  // A long, flat, armoured body: shoulders, back, hips, a pale belly under it all.
+  put(gator, ball(0.4, 20, 14), hide, [0, 0, 0.05], [0, 0, 0], [1.1, 0.6, 2]);
+  put(gator, ball(0.3, 16, 12), hide, [0, 0.0, 0.7], [0, 0, 0], [1.05, 0.66, 1.1]);
+  put(gator, ball(0.33, 16, 12), hide, [0, -0.02, -0.6], [0, 0, 0], [1.1, 0.66, 1.15]);
+  put(gator, ball(0.36, 16, 12), belly, [0, -0.1, 0.05], [0, 0, 0], [1.02, 0.42, 2]);
+  // Rows of bony scutes down the back.
+  for (let k = 0; k < 8; k++) for (const x of [-0.16, 0, 0.16]) put(gator, cone(0.05, 0.1, 4), scute, [x, 0.22 - Math.abs(x) * 0.25 - Math.abs(k - 3) * 0.008, 0.72 - k * 0.2]);
+  // The long tail on its own pivot, flattened side to side, a double crest of scutes along it, lashing against the stride.
+  const tailRoot = new THREE.Group();
+  tailRoot.position.set(0, -0.02, -0.82);
+  gator.add(tailRoot);
+  const tail: [number, number, number][] = [];
+  for (let k = 0; k < 10; k++) {
+    const at: [number, number, number] = [Math.sin(k * 0.5) * 0.05, -k * 0.012, -0.06 - k * 0.17];
+    put(tailRoot, ball(0.25 - k * 0.021, 14, 10), hide, at, [0, 0, 0], [0.8, 0.85, 1.35]);
+    for (const x of [-0.06, 0.06]) put(tailRoot, cone(0.04 - k * 0.002, 0.11 - k * 0.004, 4), scute, [at[0] + x * (1 - k / 12), at[1] + 0.2 - k * 0.018, at[2]]);
+    tail.push(at);
+  }
+
+  // Four legs on pivots at the hips and shoulders, elbows out, webbed feet with dark claws.
+  const legs: THREE.Object3D[] = [];
+  const leg = (side: number, hipZ: number, phase: number) => {
+    const pivot = new THREE.Group();
+    pivot.position.set(side * 0.32, -0.05, hipZ);
+    pivot.userData = { side, phase };
+    const knee: [number, number, number] = [side * 0.32, 0.04, 0];
+    const foot: [number, number, number] = [side * 0.4, -0.34, 0.07];
+    rod(pivot, [0, 0, 0], knee, 0.1, hide, 0.08);
+    put(pivot, ball(0.09, 10, 8), hide, knee);
+    rod(pivot, knee, foot, 0.075, hide, 0.06);
+    put(pivot, ball(0.1, 10, 8), hide, foot, [0, 0, 0], [1.3, 0.45, 1.45]);
+    for (let k = -2; k <= 2; k++) {
+      const c = put(pivot, cone(0.016, 0.08, 5), claw, [foot[0], foot[1] - 0.02, foot[2]]);
+      const d = new THREE.Vector3(side * 0.3, 0, 1).normalize().applyAxisAngle(UP, k * 0.32).setY(-0.25).normalize();
+      c.quaternion.setFromUnitVectors(UP, d);
+      c.position.addScaledVector(d, 0.1);
     }
-  }
-  // A logo on the front head: a circle and a zigzag.
-  put(body, new THREE.CircleGeometry(0.3, 24), gloss(r.color), [0, 0.82, 0.875]);
-  put(body, box(0.4, 0.05, 0.01), glow(0xffe14d), [0, 0.82, 0.88], [0, 0, 0.4]);
-  // Two tracks on wheel bogies.
-  const treadMap = tex('tread', treadTexture).clone();
-  treadMap.needsUpdate = true;
-  treadMap.repeat.set(1, 6);
-  const tread = matte(0xffffff, { map: treadMap });
-  const rubber = rubberMat();
-  // Tread on the running faces, plain rubber on the flanks and ends.
-  const band = [rubber, rubber, tread, tread, rubber, rubber];
+    gator.add(pivot);
+    legs.push(pivot);
+  };
+  // The diagonal pairs together: a crocodile's high walk, sped up to a trot.
   for (const side of [-1, 1]) {
-    put(body, box(0.4, 0.12, 2.3), band, [side * 0.95, 0.06, 0]);
-    put(body, box(0.4, 0.12, 2.3), band, [side * 0.95, 0.66, 0]);
-    for (const z of [1.15, -1.15]) put(body, cyl(0.36, 0.36, 0.4, 16), rubber, [side * 0.95, 0.36, z], [0, 0, Math.PI / 2]);
-    put(body, box(0.42, 0.04, 2.6), gloss(r.color), [side * 0.95, 0.75, 0]);
-    put(body, box(0.5, 0.18, 0.3), steel, [side * 0.6, 0.62, 0]);
+    leg(side, 0.55, side < 0 ? 0 : Math.PI);
+    leg(side, -0.5, side < 0 ? Math.PI : 0);
   }
-  // A stand of toms, a crash, a ride and a hi-hat on top of the drum.
-  const shell = matte(0xffffff, { map: tex('drum-wrap', () => sparkleTexture([184, 32, 42])) });
-  for (const [x, z, rr] of [[-0.3, 0.45, 0.18], [0.3, 0.45, 0.18], [0.55, -0.1, 0.24]] as const) {
-    put(body, cyl(rr, rr, 0.22, 18), shell, [x, 1.6, z], [0.4, 0, -x * 0.3]);
-    put(body, cyl(rr - 0.01, rr - 0.01, 0.01, 18), head, [x, 1.72, z + 0.04], [0.4, 0, -x * 0.3]);
-    rod(body, [x, 1.5, z], [x * 0.5, 1.4, z], 0.015, steel);
-  }
-  for (const [x, z, y, rr] of [[-0.65, 0.3, 2.05, 0.32], [0.7, 0.4, 2.0, 0.36], [-0.55, -0.35, 1.75, 0.22]] as const) {
-    rod(body, [x, 1.4, z], [x, y, z], 0.015, steel);
-    put(body, cyl(0.02, rr, 0.04, 24), brassMat, [x, y, z], [0.2, 0, x * 0.2]);
-  }
-  put(body, cyl(0.22, 0.02, 0.03, 24), brassMat, [-0.55, 1.79, -0.35]);
 
-  // The gator sits at the back behind the kit.
-  const d = new THREE.Group();
-  d.position.set(0, 1.2, -0.55);
-  put(d, ball(0.38), hide, [0, 0.35, 0], [0, 0, 0], [1, 1.1, 0.9]);
-  put(d, ball(0.28), matte(0xe8e0a8), [0, 0.3, 0.12], [0, 0, 0], [0.9, 1, 0.7]);
-  // A tail hanging down the back, ridged.
-  for (let k = 0; k < 6; k++) {
-    put(d, ball(0.2 - k * 0.025, 10, 8), hide, [0, 0.0 - k * 0.12, -0.3 - k * 0.12]);
-    put(d, cone(0.05, 0.1, 4), hide, [0, 0.16 - k * 0.14, -0.3 - k * 0.12]);
+  // The head: a long flat snout, a row of teeth showing down the jaw line, eyes and nostrils up top, headphones on.
+  const head = new THREE.Group();
+  head.position.set(0, 0.06, 0.95);
+  put(head, ball(0.25, 18, 12), hide, [0, 0.02, 0.05], [0, 0, 0], [1.1, 0.68, 1]);
+  put(head, box(0.34, 0.11, 0.62), hide, [0, 0.0, 0.48], [0, 0, 0]);
+  put(head, ball(0.17, 14, 10), hide, [0, 0.0, 0.79], [0, 0, 0], [1, 0.38, 0.6]);
+  put(head, box(0.3, 0.07, 0.6), belly, [0, -0.09, 0.45], [0.06, 0, 0]);
+  for (let k = 0; k < 7; k++) for (const side of [-1, 1]) {
+    put(head, cone(0.016, 0.05, 4), tooth, [side * 0.155, -0.065, 0.22 + k * 0.08], [Math.PI, 0, 0]);
+    put(head, cone(0.014, 0.04, 4), tooth, [side * 0.14, -0.04, 0.26 + k * 0.08]);
   }
-  // Sticks up mid-fill.
   for (const side of [-1, 1]) {
-    const grip: [number, number, number] = [side * 0.42, 0.72, 0.55];
-    arm(d, [side * 0.32, 0.55, 0.05], grip, 0.08, hide, hide);
-    rod(d, grip, [side * 0.3, 0.95 + side * 0.08, 1.0], 0.015, matte(0xe8c890));
+    put(head, ball(0.075, 10, 8), hide, [side * 0.11, 0.13, 0.12]);
+    put(head, ball(0.055, 10, 8), glow(0xffd23a), [side * 0.11, 0.16, 0.16]);
+    put(head, box(0.012, 0.06, 0.01), matte(0x050505), [side * 0.11, 0.16, 0.21]);
+    put(head, ball(0.025, 6, 4), matte(0x1a2a10), [side * 0.05, 0.07, 0.82]);
   }
-  const gHead = new THREE.Group();
-  gHead.position.set(0, 0.82, 0.05);
-  put(gHead, ball(0.24), hide, [0, 0, 0], [0, 0, 0], [1.1, 0.8, 1]);
-  // Long jaws with a row of teeth, eyes and nostrils on top.
-  put(gHead, box(0.32, 0.1, 0.5), hide, [0, 0.0, 0.38]);
-  put(gHead, box(0.3, 0.07, 0.48), hide, [0, -0.11, 0.36], [0.12, 0, 0]);
-  for (let k = 0; k < 6; k++) for (const side of [-1, 1]) put(gHead, cone(0.018, 0.05, 4), matte(0xf8f4e0), [side * 0.14, -0.06, 0.2 + k * 0.07], [Math.PI, 0, 0]);
-  for (const side of [-1, 1]) {
-    put(gHead, ball(0.07, 10, 8), hide, [side * 0.1, 0.12, 0.1]);
-    put(gHead, ball(0.05, 10, 8), glow(0xffd23a), [side * 0.1, 0.15, 0.14]);
-    put(gHead, box(0.012, 0.06, 0.01), matte(0x050505), [side * 0.1, 0.15, 0.19]);
-    put(gHead, ball(0.025, 6, 4), matte(0x1a2a10), [side * 0.05, 0.06, 0.62]);
-  }
-  // Headphones over the top.
-  put(gHead, ring(0.27, 0.025, Math.PI), matte(0x1a1a1a), [0, 0.03, -0.02], [0, Math.PI / 2, 0]);
-  for (const side of [-1, 1]) put(gHead, cyl(0.09, 0.09, 0.06, 14), gloss(r.color), [side * 0.27, 0.03, -0.02], [0, 0, Math.PI / 2]);
-  d.add(gHead);
-  body.add(d);
+  put(head, ring(0.25, 0.022, Math.PI), matte(0x1a1a1a), [0, 0.05, 0.02], [0, Math.PI / 2, 0]);
+  for (const side of [-1, 1]) put(head, cyl(0.08, 0.08, 0.06, 14), gloss(r.color), [side * 0.25, 0.05, 0.02], [0, 0, Math.PI / 2]);
+  gator.add(head);
 
-  const hub = matte(0x2a2a2a);
+  const tipAt = tail[tail.length - 1];
   return {
     body,
-    wheels: [-1, 1].flatMap((side) => [-0.75, -0.25, 0.25, 0.75].map((z) => ({ x: side * 1.17, z, radius: 0.3, width: 0.06, front: false, material: hub }))),
-    exhausts: [-0.35, 0.35].map((x) => new THREE.Vector3(x, 0.55, -1.0)),
-    rearTrack: 0.95,
-    rearZ: -1.1,
+    wheels: [],
+    // Fire out of the tail tip under boost.
+    exhausts: [new THREE.Vector3(tipAt[0], tipAt[1] + 0.4, tipAt[2] - 0.9)],
+    rearTrack: 0.55,
+    rearZ: -0.9,
     spinners: [],
-    shadow: [2.8, 3.4],
-    head: gHead,
-    treads: [{ map: treadMap, perMeter: 6 / 2.3 }],
+    shadow: [2.3, 3.6],
+    head,
+    legs,
+    sway: gator,
+    tail: tailRoot,
   };
 }
 

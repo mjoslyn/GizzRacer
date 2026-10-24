@@ -17,6 +17,8 @@ export class MiniPlayer {
   private readonly bar: HTMLElement;
   private readonly pause: HTMLButtonElement;
   private readonly link: HTMLAnchorElement;
+  /** The modal (touch) opening or closing: the game pauses for it. */
+  onOpen: ((open: boolean) => void) | null = null;
 
   constructor(
     parent: HTMLElement,
@@ -74,7 +76,10 @@ export class MiniPlayer {
 
   /** The modal, on touch. */
   private setOpen(open: boolean): void {
-    this.el.classList.toggle('open', open && !!this.radio.playing);
+    const was = this.el.classList.contains('open');
+    const now = open && !!this.radio.playing;
+    this.el.classList.toggle('open', now);
+    if (was !== now) this.onOpen?.(now);
   }
 
   private render(): void {

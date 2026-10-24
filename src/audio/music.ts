@@ -146,6 +146,8 @@ export class MusicPlayer {
   private wantedLive: { rec: LiveRecording; fallback: readonly MusicCue[]; opts: LiveOptions } | null = null;
   /** What was last asked for (a cue, or a list of them joined), so asking again is a no-op. */
   private wantedKey: string | null = null;
+  /** Where a looping live recording goes when it ends, instead of round again (setLiveEnd). */
+  private liveEnd: (() => void) | null = null;
   private muted = false;
   /** Kept well under the sound effects so they cut through. */
   volume = 0.38;
@@ -304,6 +306,18 @@ export class MusicPlayer {
     if (this.ctx) this.startLive(rec, opts);
   }
 
+  /**
+   * What a looping live recording does when it ends: `fn` instead of going
+   * round again (a race's song held into the next race goes on through its
+   * show), or null to loop. Holds for the recording playing and those after.
+   */
+  setLiveEnd(fn: (() => void) | null): void {
+    this.liveEnd = fn;
+    const el = this.current?.el;
+    // Native looping never ends; the 'ended' handler loops by hand meanwhile.
+    if (el && fn) el.loop = false;
+  }
+
   /** Whether the live recording is paused (the mini player's pause). */
   get livePaused(): boolean {
     return !!this.current?.el?.paused;
@@ -332,10 +346,11 @@ export class MusicPlayer {
     const audio = new Audio();
     audio.crossOrigin = 'anonymous';
     const from = opts.start ?? rec.start ?? 0;
-    // Looping without the talk: round to where the music starts, not the top.
-    audio.loop = !opts.onEnded && from === 0;
-    if (!opts.onEnded && from > 0) {
+    // Looping without the talk: round to where the music starts, not the top; or on to whatever setLiveEnd asks.
+    audio.loop = !opts.onEnded && from === 0 && !this.liveEnd;
+    if (!opts.onEnded) {
       audio.addEventListener('ended', () => {
+        if (this.current?.el === audio && this.liveEnd) return this.liveEnd();
         audio.currentTime = from;
         void audio.play().catch(() => undefined);
       });

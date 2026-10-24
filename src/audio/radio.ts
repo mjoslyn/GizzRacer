@@ -218,6 +218,25 @@ export class LiveRadio {
     }
   }
 
+  /**
+   * On from the recording playing into the rest of its show: the song after
+   * it in that night's set, and on through the set as a Full set goes. A
+   * recording already in a set just goes to its next; one whose set won't
+   * load, or that was the show's last, gets another recording (next()).
+   */
+  async playOnInShow(): Promise<void> {
+    const now = this.now;
+    if (!now || now.set) return this.next();
+    const show: Show = { id: now.rec.id, date: now.rec.date, venue: now.rec.venue ?? '' };
+    const t = ++this.ticket;
+    const set = await setList(show).catch(() => null);
+    if (t !== this.ticket || this.now !== now) return;
+    const at = set ? set.songs.findIndex((s) => s.file === now.rec.file) : -1;
+    const i = set && at >= 0 ? playable(set, at + 1, 1) : -1;
+    if (!set || i < 0 || i >= set.songs.length) return this.next();
+    void this.playSet({ show, ...set, index: i });
+  }
+
   /** The song before: back in the set, or the recording played before this one. */
   prev(): void {
     const now = this.now;

@@ -1,6 +1,6 @@
 import { dailyLabel, dailyParams } from '../core/daily';
 import { cupTrophies, progress, raceKey, unlocks, type Unlocks } from '../core/progress';
-import { SOUNDTRACKS, SOUNDTRACK_BLURBS, SOUNDTRACK_NAMES, settings, updateSettings } from '../core/settings';
+import { SOUNDTRACKS, SOUNDTRACK_BLURBS, SOUNDTRACK_NAMES, VIDEO_LOOKS, settings, updateSettings } from '../core/settings';
 import type { SavedTrack } from '../core/savedTracks';
 import { CPU_DIFFICULTIES } from '../ai/cpuDriver';
 import { MODE_BLURBS, MODE_NAMES, type RaceMode } from './modes';
@@ -34,8 +34,10 @@ export interface MenuChoice {
   engine: EngineClass;
   /** Mirror mode: the track flipped left for right (unlocked by gold in every cup). */
   mirror: boolean;
-  /** Infinite: every track in turn rather than the one picked (from it). */
-  tour: boolean;
+  /** Infinite: when to move on to the next track (every track in turn from the one picked), or never. */
+  switchEvery: TrackSwitch;
+  /** Infinite: the game's tracks, freshly generated ones (as the Track Generator makes), or a mix of both. */
+  generative: Generative;
   /** Infinite: the CPUs race and you watch, a visualizer for the music. */
   watch: boolean;
   /** Skill Games: which game, and how hard (0..2, as story mode's chapters). */
@@ -47,10 +49,25 @@ export interface MenuChoice {
 export const SKILL_LEVELS = ['Easy', 'Normal', 'Hard'] as const;
 const SKILL_LEVEL_BLURBS = ["As Chapter I plays it: room to learn the game", 'As Chapter II plays it', 'As Chapter III plays it: tight and quick'];
 
-/** Infinite's tour moves on after this many laps of the leader (or a song of a Full set). */
-export const TOUR_LAPS = 3;
+/** Infinite's track switch: never, after so many laps of the leader (or mine), or with each song of a Full set. */
+export const TRACK_SWITCHES = ['never', 1, 5, 10, 20, 'song'] as const;
+export type TrackSwitch = (typeof TRACK_SWITCHES)[number];
+/** Infinite's generative tracks: off (the game's own), on (a new one generated each time), or a mix. */
+export const GENERATIVES = ['off', 'on', 'mix'] as const;
+export type Generative = (typeof GENERATIVES)[number];
+const GENERATIVE_BLURBS: Record<Generative, string> = {
+  off: "The game's own tracks",
+  on: 'A new track generated each time, as the Track Generator makes them: any world, any shape',
+  mix: "The game's own tracks and new generated ones, at random",
+};
 
-export type MenuRow = 'mode' | 'track' | 'gen' | 'theme' | 'complexity' | 'length' | 'racer' | 'engine' | 'mirror' | 'sound' | 'show' | 'watch' | 'cpus' | 'skill' | 'level';
+const VHS_NAMES = { full: 'Full', light: 'Light', off: 'Off' } as const;
+
+/** Each song, without a Full set to say when a song ends: every this many laps. */
+export const SONG_SWITCH_LAPS = 5;
+const SWITCH_NAMES: Record<string, string> = { never: 'Never', 1: 'Every lap', 5: 'Every 5 laps', 10: 'Every 10 laps', 20: 'Every 20 laps', song: 'Each song' };
+
+export type MenuRow = 'mode' | 'track' | 'gen' | 'theme' | 'complexity' | 'length' | 'racer' | 'engine' | 'mirror' | 'sound' | 'show' | 'watch' | 'cpus' | 'vhs' | 'switch' | 'generative' | 'skill' | 'level';
 const TROPHY_GLYPH = { gold: '&#9733;', silver: '&#9733;', bronze: '&#9733;' } as const;
 const STAT_NAMES = ['speed', 'accel', 'weight', 'handling'] as const;
 const LENGTH_NAMES = { short: 'Short', medium: 'Medium', long: 'Long' };
@@ -188,7 +205,7 @@ export class Menu {
       case 'mode':
         return ['mode'];
       case 'track':
-        return m === 'generator' ? ['gen', 'theme', 'complexity', 'length'] : m === 'skills' ? ['skill'] : ['track'];
+        return m === 'generator' ? ['gen', 'theme', 'complexity', 'length'] : m === 'skills' ? ['skill'] : m === 'infinite' ? (this.choice.generative === 'on' ? ['generative', 'switch'] : ['track', 'generative', 'switch']) : ['track'];
       case 'racer':
         // Watching, there's no racer to pick.
         return m === 'infinite' ? (this.choice.watch ? ['watch'] : ['racer', 'watch']) : ['racer'];
@@ -200,7 +217,8 @@ export class Menu {
         // How hard the CPUs race, wherever there are CPUs here to race (not Time Trial; online the room decides).
         const cpus: MenuRow[] = m === 'timeTrial' || m === 'online' ? [] : ['cpus'];
         const mirror: MenuRow[] = unlocks(progress()).mirror && (m === 'grandPrix' || m === 'single') ? ['mirror'] : [];
-        return ['engine', ...cpus, ...mirror, ...sound];
+        // The VHS look (Settings > VHS) under the CPUs.
+        return ['engine', ...cpus, 'vhs', ...mirror, ...sound];
       }
     }
   }
@@ -286,12 +304,12 @@ export class Menu {
       const n = CUPS.length + (unlocks(progress()).randomCup ? 1 : 0);
       c.cup = (c.cup + dir + n) % n;
       if (c.cup === CUPS.length) c.randomTracks = randomCupTracks();
-    } else if (row === 'track' && c.mode === 'infinite') {
-      // Every track, then the Tour.
-      const n = TRACK_LIST.length + 1;
-      const at = ((c.tour ? TRACK_LIST.length : c.track) + dir + n) % n;
-      c.tour = at === TRACK_LIST.length;
-      if (!c.tour) c.track = at;
+    } else if (row === 'switch') {
+      c.switchEvery = step(TRACK_SWITCHES, c.switchEvery);
+    } else if (row === 'generative') {
+      c.generative = step(GENERATIVES, c.generative);
+      // The track row comes and goes with it: stay on this one.
+      this.row = this.rows().indexOf('generative');
     } else if (row === 'skill') {
       c.skill = step(SKILL_KINDS, c.skill);
     } else if (row === 'level') {
@@ -315,6 +333,7 @@ export class Menu {
     } else if (row === 'mirror') c.mirror = !c.mirror;
     else if (row === 'sound') updateSettings({ soundtrack: step(SOUNDTRACKS, settings().soundtrack) });
     else if (row === 'cpus') updateSettings({ cpuDifficulty: step(CPU_DIFFICULTIES, settings().cpuDifficulty) });
+    else if (row === 'vhs') updateSettings({ videoLook: step(VIDEO_LOOKS, settings().videoLook), videoLookChosen: true });
     else if (row === 'show') updateSettings({ liveShow: stepShow(shows(), settings().liveShow, dir) });
     else if (row === 'theme') dial(() => (g.params = { ...g.params, theme: step(GEN_THEMES, g.params.theme) }));
     else if (row === 'complexity') dial(() => (g.params = { ...g.params, complexity: Math.min(GEN_COMPLEXITY_MAX, Math.max(1, g.params.complexity + dir)) }));
@@ -355,9 +374,18 @@ export class Menu {
         title = 'PICK A GAME';
         body = line('skill', 'Game', esc(SKILLS[c.skill].name), `<div class="menu-cup-tracks menu-mode-blurb">${esc(SKILLS[c.skill].intro)}</div><div class="menu-cup-tracks">${SKILL_KINDS.indexOf(c.skill) + 1} of ${SKILL_KINDS.length}</div>`);
       } else if (c.mode === 'infinite') {
-        body = c.tour
-          ? line('track', 'Track', 'Tour', `<div class="menu-cup-tracks">Every track in turn from ${esc(TRACK_LIST[c.track].name)}: the next one every ${TOUR_LAPS} laps, or with each song of a Full set</div>`)
-          : line('track', 'Track', `${TRACK_LIST[c.track].name}${DICE('data-random-track', 'Random track (T)')}`, `<div class="menu-cup-tracks">Laps without end. ${c.track + 1} of ${TRACK_LIST.length}; past the last, the Tour</div>`);
+        const sw = c.switchEvery;
+        const how =
+          sw === 'never'
+            ? 'Laps without end on this one'
+            : sw === 'song'
+              ? `On to the next track with each song of a Full set (every ${SONG_SWITCH_LAPS} laps without one), every track in turn`
+              : `On to the next track every ${sw === 1 ? 'lap' : `${sw} laps`} of the leader, every track in turn`;
+        const gen = c.generative;
+        body =
+          (gen === 'on' ? '' : line('track', 'Track', `${TRACK_LIST[c.track].name}${DICE('data-random-track', 'Random track (T)')}`, `<div class="menu-cup-tracks">${sw === 'never' ? '' : 'From '}${c.track + 1} of ${TRACK_LIST.length}</div>`)) +
+          line('generative', 'Gen tracks', gen.toUpperCase(), `<div class="menu-cup-tracks">${GENERATIVE_BLURBS[gen]}</div>`, true) +
+          line('switch', 'Switch tracks', SWITCH_NAMES[String(sw)], `<div class="menu-cup-tracks">${how}</div>`, true);
       } else {
         body = line('track', 'Track', `${TRACK_LIST[c.track].name}${c.mode === 'single' ? DICE('data-random-track', 'Random track (T)') : ''}`, `${this.bestLine(TRACK_LIST[c.track].id)}<div class="menu-cup-tracks">${c.track + 1} of ${TRACK_LIST.length}</div>`);
       }
@@ -381,6 +409,7 @@ export class Menu {
         // An arrow switcher, as the mode and racer are, over the classes unlocked.
         line('engine', 'Speed', c.engine) +
         (rows.includes('cpus') ? line('cpus', 'CPUs', CPU_NAMES[settings().cpuDifficulty], '', true) : '') +
+        line('vhs', 'VHS', VHS_NAMES[settings().videoLook], '', true) +
         (rows.includes('mirror') ? line('mirror', 'Mirror', c.mirror ? 'ON' : 'OFF', '<div class="menu-cup-tracks">Every track flipped left for right</div>', true) : '') +
         line('sound', 'Sound', esc(SOUNDTRACK_NAMES[settings().soundtrack]), `<div class="menu-cup-tracks">${esc(SOUNDTRACK_BLURBS[settings().soundtrack])}</div>`, true) +
         (rows.includes('show') ? this.showRows(line) : '') +
@@ -407,7 +436,8 @@ export class Menu {
   private crumb(s: MenuStep): string {
     const c = this.choice;
     if (s === 'mode') return MODE_NAMES[c.mode];
-    if (s === 'track' && c.mode === 'infinite' && c.tour) return 'Tour';
+    if (s === 'track' && c.mode === 'infinite' && c.generative === 'on') return 'Generated';
+    if (s === 'track' && c.mode === 'infinite' && c.switchEvery !== 'never') return `${TRACK_LIST[c.track].name} +`;
     if (s === 'racer' && c.mode === 'infinite' && c.watch) return 'Watching';
     if (c.mode === 'skills' && s === 'track') return SKILLS[c.skill].name;
     if (c.mode === 'skills' && s === 'engine') return SKILL_LEVELS[c.skillLevel];

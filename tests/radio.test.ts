@@ -122,6 +122,24 @@ describe('live soundtrack', () => {
     expect(radio.playing).toBe(null);
   });
 
+  it('a song held into the next race goes on into the rest of its show when it ends', async () => {
+    const magma: LiveRecording = { ...rec(SHOW.id, 'kglw2024-01-01t02.mp3'), date: SHOW.date, venue: SHOW.venue };
+    stubFetch({ 'bootlegs.json': { Magma: [magma] }, '/files': { result: FILES } });
+    const { music, last } = fakeMusic();
+    const radio = new LiveRadio(music, () => 0, async () => ({ start: 0, gain: 0 }));
+    await radio.playSong('Magma', ['remix']);
+    await radio.playOnInShow();
+    // The song after it that night, playing through as a set does.
+    expect(radio.playing!.mode).toBe('show');
+    expect(radio.playing!.title).toBe('Robot Stop');
+    expect(radio.playing!.set!.show.id).toBe(SHOW.id);
+    await vi.waitFor(() => expect(last().live?.file).toBe('kglw2024-01-01t10.mp3'));
+    expect(last().opts?.onEnded).toBeDefined();
+    // Back goes to the song it came from, now as part of the set.
+    radio.prev();
+    expect(radio.playing!.title).toBe('Magma');
+  });
+
   it('random song: any song in the catalogue, another on next, back to the one before', async () => {
     stubFetch({ 'bootlegs.json': { Magma: [rec('a', 'a.mp3')], Rattlesnake: [rec('b', 'b.mp3')], 'Gamma Knife': [rec('c', 'c.mp3')], 'Catching Smoke': [] } });
     const { music, last } = fakeMusic();

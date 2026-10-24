@@ -51,11 +51,11 @@ import { WATER_LEVEL, buildTrackView, type TrackView } from './render/trackView'
 import { TRACK_LIST, randomCupTracks } from './tracks/index';
 import { findBends, nextBend, type Bend } from './tracks/turns';
 import { pointAt } from './tracks/spline';
-import { generateTrack, trackId } from './tracks/generator';
+import { GEN_COMPLEXITY_MAX, GEN_LENGTHS, GEN_THEMES, generateTrack, trackId, type GenParams } from './tracks/generator';
 import { Track, inPit, type TrackDef } from './tracks/track';
 import { Hud, formatTime, type HudData, type Table, type TableAction, type TableRow } from './ui/hud';
 import { deleteSaved, findSaved, saveTrack, savedTracks } from './core/savedTracks';
-import { DAILY_SLOT, Menu, SKILL_LEVELS, TOUR_LAPS, chosenCup, newSeed, type MenuChoice } from './ui/menu';
+import { DAILY_SLOT, Menu, SKILL_LEVELS, SONG_SWITCH_LAPS, chosenCup, newSeed, type MenuChoice } from './ui/menu';
 import { SaveTrackPanel } from './ui/saveTrack';
 import { Podium } from './render/podium';
 import { ScreenFit } from './ui/screen';
@@ -111,7 +111,21 @@ const music = new MusicPlayer();
 const radio = new LiveRadio(music);
 // The shows a Full set can play, for the picker and Settings.
 void radio.shows().then(setShows);
-new MiniPlayer(document.body, radio, music);
+const miniPlayer = new MiniPlayer(document.body, radio, music);
+/** Whether the phone's music player paused the race, so closing it resumes. */
+let playerPaused = false;
+miniPlayer.onOpen = (open) => {
+  if (open) {
+    // A race offline stops while you pick a song (online the clock is the room's).
+    if (mode === 'race' && !online && !loop.paused) {
+      playerPaused = true;
+      setPaused(true);
+    }
+  } else if (playerPaused) {
+    playerPaused = false;
+    if (mode === 'race' && loop.paused && !hud.confirmingRestart) setPaused(false);
+  }
+};
 /** Controls, items and tips scrolling along the bottom of the picker and the flyover before a race. */
 const hints = new HintsTicker(document.body);
 const sfx = new Sfx(
@@ -145,15 +159,18 @@ let choice: MenuChoice = {
   racer: RACERS[0],
   engine: '100cc',
   mirror: false,
-  tour: false,
+  switchEvery: 'never',
+  generative: 'off',
   watch: false,
   skill: 'riff',
   skillLevel: 0,
 };
 /** Infinite mode: a race of laps without end. */
 const INFINITE_LAPS = 1_000_000;
-/** Infinite with a Full set: the tour moves on with each song, or after this many laps of a long one. */
+/** Infinite with a Full set, switching with each song: or after this many laps of a long one. */
 const TOUR_SET_LAPS = 8;
+/** Laps without end turn the sky over every this many laps. */
+const SKY_LAPS = 3;
 /** Watching: how long (s) the camera stays on one racer before moving on. */
 const WATCH_HOLD = 25;
 /** Watching the CPUs race (Infinite, Watch): no kart of mine, the camera on `watchIndex`'s. */
@@ -162,6 +179,8 @@ let watchIndex = 0;
 let watchTimer = 0;
 /** Which way the steering was held last tick, so a press switches once. */
 let watchSteer = 0;
+/** Infinite's generated track (Generative on or mix), null on the game's own. */
+let infiniteGen: GenParams | null = null;
 /** The Full set song the tour last moved on at. */
 let tourSong: string | null = null;
 /** The cup in progress, if racing a Grand Prix. */
@@ -318,6 +337,9 @@ const menu = new Menu(
     gpPlaces = [];
     cupNote = '';
     practice = c.mode === 'skills' ? { kind: c.skill, level: c.skillLevel, seed: newSeed() } : null;
+    // Infinite starts on the picked track, or with Generative on (or mix, by the toss) a generated one.
+    infiniteGen = null;
+    if (c.mode === 'infinite' && c.generative !== 'off') chooseInfiniteTrack(0);
     if (story) showStory('chapter');
     else if (practice) playPractice();
     else startRace(true);
@@ -504,8 +526,8 @@ interface TrackEntry {
 }
 
 /** The generator's current track, under its saved name if it has one. */
-function generatedTrack(): TrackEntry {
-  const params = { ...choice.gen.params };
+function generatedTrack(from: GenParams = choice.gen.params): TrackEntry {
+  const params = { ...from };
   return {
     id: trackId(params),
     build: () => {
@@ -526,7 +548,23 @@ function raceTrack(): TrackEntry {
   if (gp) return TRACK_LIST[gp.trackIndex];
   if (story) return storyTrack();
   if (practice?.kind === 'deadstick') return launchTrack(practice.level, practice.seed);
+  if (choice.mode === 'infinite' && infiniteGen) return generatedTrack(infiniteGen);
   return choice.mode === 'generator' ? generatedTrack() : TRACK_LIST[choice.track];
+}
+
+
+/** A new track to generate: any world, shape and length. */
+function randomGen(): GenParams {
+  const pick = <T>(list: readonly T[]) => list[Math.floor(Math.random() * list.length)];
+  return { seed: newSeed(), theme: pick(GEN_THEMES), complexity: 1 + Math.floor(Math.random() * GEN_COMPLEXITY_MAX), length: pick(GEN_LENGTHS) };
+}
+
+/** Infinite's next track by its Generative setting: a generated one (on, or mix at a coin toss), else the game's own (`step` on from the last). */
+function chooseInfiniteTrack(step: number): void {
+  const g = choice.generative;
+  const generate = g === 'on' || (g === 'mix' && Math.random() < 0.5);
+  infiniteGen = generate ? randomGen() : null;
+  if (!generate) choice.track = menu.choice.track = (choice.track + step) % TRACK_LIST.length;
 }
 
 /** CPUs drawn from the roster by `seed` fill the field; the player starts from PLAYER_SLOT. */
@@ -570,6 +608,8 @@ function startRace(withPlayer: boolean, keepSong = false): void {
   if (withPlayer && !net && track.def.id !== raceTrack().id) loadTrack(raceTrack());
   // After the track loads: loading it starts the attract race, which isn't holding anything.
   heldSong = withPlayer && keepSong && !net;
+  // A held live song that ends mid-race goes on into the rest of its show, not round again.
+  if (withPlayer) music.setLiveEnd(heldSong ? () => void radio.playOnInShow() : null);
   const trial = withPlayer && !net && choice.mode === 'timeTrial';
   const infinite = withPlayer && !net && choice.mode === 'infinite';
   watching = infinite && choice.watch;
@@ -820,17 +860,18 @@ function watchStep(dt: number): void {
   } else switchWatch(1 + Math.floor(Math.random() * (race.karts.length - 1)));
 }
 
-/** Infinite's tour: on to the next track once the leader (or I) has done its laps; a Full set moves it on with each song instead. */
+/** Infinite's track switch: on to the next track once the leader (or I) has done its laps; Each song moves on with a Full set's songs instead. */
 function tourStep(): boolean {
-  if (!choice.tour || intro > 0) return false;
+  const every = choice.switchEvery;
+  if (every === 'never' || intro > 0) return false;
   const k = player ?? race.karts.find((x) => x.position === 1)!;
-  if (k.laps.lap < (setPlaying() ? TOUR_SET_LAPS : TOUR_LAPS)) return false;
+  if (k.laps.lap < (every !== 'song' ? every : setPlaying() ? TOUR_SET_LAPS : SONG_SWITCH_LAPS)) return false;
   nextTour();
   return true;
 }
 
 function nextTour(): void {
-  choice.track = menu.choice.track = (choice.track + 1) % TRACK_LIST.length;
+  chooseInfiniteTrack(1);
   startRace(true);
 }
 
@@ -840,7 +881,7 @@ radio.onChange(() => {
   const key = set ? `${set.show.id}#${set.index}` : null;
   const moved = key !== null && tourSong !== null && key !== tourSong;
   if (key) tourSong = key;
-  if (moved && mode === 'race' && choice.mode === 'infinite' && choice.tour && intro === 0 && !loop.paused) nextTour();
+  if (moved && mode === 'race' && choice.mode === 'infinite' && choice.switchEvery === 'song' && intro === 0 && !loop.paused) nextTour();
 });
 
 function step(dt: number): void {
@@ -1649,6 +1690,7 @@ function raceMusic(): TrackDef['music'] {
  */
 function startRaceMusic(): void {
   heldSong = false;
+  music.setLiveEnd(null);
   remixNow = null;
   // A Full set is all the music, the Deadstick Landing's too.
   if (setPlaying()) return ensureSet();
@@ -1692,6 +1734,7 @@ function startRaceMusic(): void {
 
 /** The menus' music: the title remix, unless a Full set is playing on. */
 function menuMusic(): void {
+  music.setLiveEnd(null);
   if (setPlaying()) return ensureSet();
   if (radio.playing) radio.stop();
   music.play(remixCues('title'));
@@ -1791,7 +1834,7 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
   const theme = trackView!.theme;
   const L = track.length;
   // The sky turns over the race; laps without end turn it every few laps, round and round.
-  const skyLaps = race.laps >= INFINITE_LAPS ? TOUR_LAPS : race.laps;
+  const skyLaps = race.laps >= INFINITE_LAPS ? SKY_LAPS : race.laps;
   const skyTurn = race.laps >= INFINITE_LAPS ? (f.distance / (L * skyLaps)) % 1 : clamp(f.distance / (L * race.laps), 0, 1);
   trackView!.update(elapsed, camWorld, theme.skyCycle ? Math.PI * 2 * skyTurn : 0, f.state);
   itemsView!.update(elapsed, race.karts.map((k, i) => ({ state: snaps[i], holder: k })));
@@ -1826,7 +1869,7 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
       position: f.position,
       karts: race.karts.length,
       countdown: intro > 0 ? -1 : -race.time,
-      intro: intro > 0 ? { name: track.def.name, sub: story ? storyIntro(story) : gp ? `Race ${gp.round + 1} of ${gp.tracks.length}${gp.rivals.length ? ` · your rivals: ${gp.rivals.map((r) => r.name).join(' and ')}` : ''}${mirrored() ? ' · Mirror' : ''}` : choice.mode === 'timeTrial' ? 'Time Trial' : choice.mode === 'infinite' ? `${watching ? 'Watching the CPUs' : 'Infinite'}${choice.tour ? ' · Tour' : ''} · ${choice.engine}` : `${choice.engine}${mirrored() ? ' · Mirror' : ''}` } : null,
+      intro: intro > 0 ? { name: track.def.name, sub: story ? storyIntro(story) : gp ? `Race ${gp.round + 1} of ${gp.tracks.length}${gp.rivals.length ? ` · your rivals: ${gp.rivals.map((r) => r.name).join(' and ')}` : ''}${mirrored() ? ' · Mirror' : ''}` : choice.mode === 'timeTrial' ? 'Time Trial' : choice.mode === 'infinite' ? `${watching ? 'Watching the CPUs' : 'Infinite'}${choice.switchEvery === 'never' ? '' : ` · ${choice.switchEvery === 'song' ? 'a new track each song' : `a new track every ${choice.switchEvery === 1 ? 'lap' : `${choice.switchEvery} laps`}`}`} · ${choice.engine}` : `${choice.engine}${mirrored() ? ' · Mirror' : ''}` } : null,
       table: table(),
       muted: musicMuted,
       sfxMuted,
@@ -2051,6 +2094,7 @@ function postTrial(p: RaceKart): void {
 /** Back to the picker, with the attract race on the picker's track. */
 function toMenu(): void {
   storySameSong = false;
+  infiniteGen = null;
   gp = null;
   story = null;
   practice = null;
