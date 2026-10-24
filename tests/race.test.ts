@@ -104,6 +104,17 @@ describe('race', () => {
     expect(lapTime('150cc')).toBeLessThan(lapTime('50cc'));
   });
 
+  it("ends where it stands at the song's end: everyone finishes at once, in the order they're in", () => {
+    const race = new Race(track, 1, true, 1_000_000);
+    for (const r of RACERS.slice(0, FIELD_SIZE)) race.addKart(r, '100cc', CPU_SKILL['100cc']);
+    for (let t = 0; t < COUNTDOWN + 20; t += PHYSICS_DT) race.step(PHYSICS_DT, []);
+    const order = [...race.karts].sort((a, b) => a.position - b.position);
+    race.endNow();
+    expect(race.results).toEqual(order);
+    expect(race.karts.map((k) => k.position).sort((a, b) => a - b)).toEqual(order.map((_, i) => i + 1));
+    for (const k of race.karts) expect(k.finishTime).toBe(race.time);
+  });
+
   it('formats positions', () => {
     expect([1, 2, 3, 4, 11, 12, 13, 21, 22].map(ordinal)).toEqual(['1st', '2nd', '3rd', '4th', '11th', '12th', '13th', '21st', '22nd']);
   });
