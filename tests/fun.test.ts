@@ -400,10 +400,18 @@ describe('soundtrack', () => {
     expect(remixCues('rattlesnake-run-final-lap')).toEqual(['rattlesnake-run-remix-final-lap', 'rattlesnake-run-remix', 'rattlesnake-run-final-lap']);
     const { TRACK_LIST } = await import('../src/tracks/index');
     const manifest = (await import('../public/music/manifest.json')).default as Record<string, unknown>;
+    // Tracks given a new song when the first three cups became album cups: no remix of it yet, so they race to their classic theme.
+    const AWAITING_REMIX = new Set(['fishies-lagoon', 'butterfly-skyway', 'cyboogie-city', 'polygondwanaland-jungle', 'murder-of-the-universe', 'infinite-loop-speedway', 'hell-on-mars']);
     for (const t of TRACK_LIST) {
       const { lap, finalLap } = t.build().music;
       expect(TRACK_SONGS[lap], t.id).toBeTruthy();
-      // Every track has its remix, and its final-lap remix.
+      if (AWAITING_REMIX.has(t.id)) {
+        // Not the old song's remix, and the classic theme to fall back to.
+        expect(manifest[remixCues(lap)[0]], t.id).toBeUndefined();
+        expect(manifest[lap], t.id).toBeTruthy();
+        continue;
+      }
+      // Every other track has its remix, and its final-lap remix.
       expect(manifest[remixCues(lap)[0]], t.id).toBeTruthy();
       expect(manifest[remixCues(finalLap ?? `${lap}-final-lap`)[0]], `${t.id} final lap`).toBeTruthy();
     }

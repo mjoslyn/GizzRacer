@@ -8,7 +8,7 @@ import { trackLife } from './trackLife';
 import { DETAIL_SPEC, densityScale, graphicsDetail } from './detail';
 import { THEMES, type Theme } from './themes';
 import { CURB_WIDTH, atmosphere, roadPaint, trackDetail } from './trackDetail';
-import { colonyFeature, colonyGate, cosmosFeature, plainsFeature, rodGate, stormWeather, voidEye } from './apocalypse';
+import { colonyFeature, colonyGate, cosmosFeature, plainsFeature, rodGate, starGate, stormWeather, voidEye } from './apocalypse';
 import { alienSeaFeature, crystalGate, gardenFeature, goblinGate, jawsGate, keplerArch, magentaPeak, peaksFeature, shoreFeature } from './omnium';
 import { blightFeature, burningEarth, coronaFeature, domeGate, domesFeature, hellGate, pitFeature, ratsNest, richDome, shipGate, smogGate, theSun } from './infest';
 import { carcass, carrionGate, boneyardFeature, factoryGate, foundryFeature, gammaGate, gammaRing, pedalboardFeature, robotColossus, theatreFeature, wahGate, wahPedal } from './nonagon';
@@ -52,9 +52,11 @@ interface Materials {
 function materials(theme: Theme): Materials {
   const lambert = (map: THREE.Texture, extra: THREE.MeshLambertMaterialParameters = {}) =>
     new THREE.MeshLambertMaterial({ map, ...extra });
-  const sand = tex.sandTexture();
+  // Flying Microtonal Banana's worlds lay their roads in its cobalt and banana yellow.
+  const banana = !!theme.banana;
+  const sand = banana ? tex.sandTexture(tex.BANANA.sandDark, tex.BANANA.sandLight) : tex.sandTexture();
   const rockMap: Record<Theme['decor'], () => THREE.Texture> = {
-    desert: tex.dirtTexture,
+    desert: theme.banana ? () => tex.stoneTexture([24, 40, 140], [70, 110, 220]) : tex.dirtTexture,
     meadow: () => tex.stoneTexture([96, 100, 92], [160, 164, 150]),
     volcanic: tex.basaltTexture,
     jungle: () => tex.stoneTexture([60, 80, 52], [120, 140, 100]),
@@ -87,8 +89,8 @@ function materials(theme: Theme): Materials {
     corona: () => tex.stoneTexture([40, 20, 14], [110, 60, 40]),
     pit: () => tex.stoneTexture([20, 10, 10], [70, 34, 28]),
   };
-  const neon = tex.neonRoadTexture();
-  const rainbow = tex.rainbowTexture();
+  const neon = banana ? tex.neonRoadTexture(tex.BANANA.neon) : tex.neonRoadTexture();
+  const rainbow = banana ? tex.rainbowTexture(tex.BANANA.bands) : tex.rainbowTexture();
   // High detail: the road's own texture as a bump map, so its grain catches the sun.
   const grain = DETAIL_SPEC[graphicsDetail()].grain;
   const bumpy = (map: THREE.Texture, scale: number, extra: THREE.MeshLambertMaterialParameters = {}) => lambert(map, grain ? { bumpMap: map, bumpScale: scale, ...extra } : extra);
@@ -224,12 +226,14 @@ export function buildTrackView(track: Track): TrackView {
     if (lm.kind === 'templeGate') group.add(templeGate(ribbon, s, mats));
     if (lm.kind === 'gantry') group.add(gantry(ribbon, s, track.def.name));
     if (lm.kind === 'iceArch') group.add(iceArch(ribbon, s));
-    if (lm.kind === 'neonArch') group.add(neonArch(ribbon, s));
-    if (lm.kind === 'rainbowArch') group.add(rainbowArch(ribbon, s));
+    if (lm.kind === 'neonArch') group.add(neonArch(ribbon, s, !!theme.banana));
+    if (lm.kind === 'rainbowArch') group.add(rainbowArch(ribbon, s, !!theme.banana));
+    if (lm.kind === 'mushroomArch') group.add(mushroomArch(ribbon, s, animated));
     if (lm.kind === 'dragonGate') group.add(dragonGate(ribbon, s, mats));
     if (lm.kind === 'colonyGate') group.add(colonyGate(ribbon, s, animated));
     if (lm.kind === 'rodGate') group.add(rodGate(ribbon, s, animated));
     if (lm.kind === 'voidEye') group.add(voidEye(ribbon, s, animated));
+    if (lm.kind === 'starGate') group.add(starGate(ribbon, s, animated));
     if (lm.kind === 'phantomArch') group.add(phantomArch(ribbon, s, animated));
     if (lm.kind === 'runwayGate') group.add(runwayGate(ribbon, s, animated));
     if (lm.kind === 'treeGate') group.add(treeGate(ribbon, s, animated));
@@ -271,7 +275,7 @@ export function buildTrackView(track: Track): TrackView {
       animated.push(d.update);
     }
     if (lm.kind === 'lighthouse') {
-      const l = lighthouse(ribbon, s);
+      const l = lighthouse(ribbon, s, !!theme.banana);
       group.add(l.group);
       animated.push(l.update);
     }
@@ -1091,8 +1095,8 @@ function gantry(ribbon: Ribbon, s: number, name: string): THREE.Group {
   return g;
 }
 
-/** A striped lighthouse beside the road, its lamp sweeping a beam round. */
-function lighthouse(ribbon: Ribbon, s: number): { group: THREE.Group; update: (time: number) => void } {
+/** A striped lighthouse beside the road, its lamp sweeping a beam round: red and white, or cobalt and banana yellow. */
+function lighthouse(ribbon: Ribbon, s: number, banana = false): { group: THREE.Group; update: (time: number) => void } {
   const g = new THREE.Group();
   const f = frameAt(ribbon, s);
   const tower = new THREE.Group();
@@ -1101,7 +1105,7 @@ function lighthouse(ribbon: Ribbon, s: number): { group: THREE.Group; update: (t
   const bands = 6;
   for (let k = 0; k < bands; k++) {
     const r0 = 3.4 - k * 0.3;
-    const band = new THREE.Mesh(new THREE.CylinderGeometry(r0 - 0.3, r0, 4, 16), new THREE.MeshLambertMaterial({ color: k % 2 ? 0xf4f0e8 : 0xd8302a }));
+    const band = new THREE.Mesh(new THREE.CylinderGeometry(r0 - 0.3, r0, 4, 16), new THREE.MeshLambertMaterial({ color: k % 2 ? (banana ? 0xffd21a : 0xf4f0e8) : banana ? 0x1f3fbf : 0xd8302a }));
     band.position.y = 2 + k * 4;
     tower.add(band);
   }
@@ -1155,7 +1159,8 @@ function iceArch(ribbon: Ribbon, s: number): THREE.Group {
 }
 
 /** A gantry of neon tubes over the road with the city's name in lights. */
-function neonArch(ribbon: Ribbon, s: number): THREE.Group {
+function neonArch(ribbon: Ribbon, s: number, banana = false): THREE.Group {
+  const [aGlow, b, bGlow, ink, text] = banana ? ['#ffb81a', '#7aa4ff', '#2a5aff', '#fff4c0', 'DOOM CITY'] : ['#ff3ad8', '#8af0ff', '#3adcff', '#ffd0f4', 'CYBOOGIE CITY'];
   const g = new THREE.Group();
   const f = frameAt(ribbon, s);
   const hw = ribbon.halfWidthAtS(s) + 2;
@@ -1163,7 +1168,7 @@ function neonArch(ribbon: Ribbon, s: number): THREE.Group {
   for (const side of [-1, 1]) {
     const post = new THREE.Mesh(new THREE.BoxGeometry(1, 10, 1), new THREE.MeshLambertMaterial({ color: 0x1a1428 }));
     post.position.set(side * hw, 5, 0);
-    const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.3, 10, 0.3), tube(side < 0 ? 0xff3ad8 : 0x3adcff));
+    const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.3, 10, 0.3), tube(new THREE.Color(side < 0 ? aGlow : bGlow).getHex()));
     stripe.position.set(side * hw, 5, 0.6);
     g.add(post, stripe);
   }
@@ -1171,17 +1176,17 @@ function neonArch(ribbon: Ribbon, s: number): THREE.Group {
   c.width = 1024;
   c.height = 128;
   const ctx = c.getContext('2d')!;
-  ctx.fillStyle = '#0a0614';
+  ctx.fillStyle = banana ? '#050a24' : '#0a0614';
   ctx.fillRect(0, 0, 1024, 128);
   ctx.font = '900 80px Impact, "Arial Black", sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.shadowBlur = 24;
-  ctx.shadowColor = '#ff3ad8';
-  ctx.fillStyle = '#ffd0f4';
-  ctx.fillText('CYBOOGIE CITY', 512, 68);
-  ctx.shadowColor = '#3adcff';
-  ctx.strokeStyle = '#8af0ff';
+  ctx.shadowColor = aGlow;
+  ctx.fillStyle = ink;
+  ctx.fillText(text, 512, 68);
+  ctx.shadowColor = bGlow;
+  ctx.strokeStyle = b;
   ctx.lineWidth = 6;
   ctx.strokeRect(8, 8, 1008, 112);
   const map = new THREE.CanvasTexture(c);
@@ -1195,15 +1200,61 @@ function neonArch(ribbon: Ribbon, s: number): THREE.Group {
   return g;
 }
 
-/** A rainbow bowed over the road, seven bands. */
-function rainbowArch(ribbon: Ribbon, s: number): THREE.Group {
+/** A rainbow bowed over the road, seven bands (cobalt and banana yellow in turn, in Flying Microtonal Banana's worlds). */
+function rainbowArch(ribbon: Ribbon, s: number, banana = false): THREE.Group {
   const g = new THREE.Group();
   const f = frameAt(ribbon, s);
   const r = ribbon.halfWidthAtS(s) + 4;
-  const colors = [0xff5a7a, 0xffa64a, 0xffe45a, 0x6aef7a, 0x4ad0ff, 0x7a7aff, 0xc86aff];
+  const colors = banana ? [0x1f3fbf, 0xffd21a, 0x3a6ae8, 0xffe66a, 0x16309a, 0xffc400, 0x2a4ad0] : [0xff5a7a, 0xffa64a, 0xffe45a, 0x6aef7a, 0x4ad0ff, 0x7a7aff, 0xc86aff];
   colors.forEach((color, k) => {
     const band = new THREE.Mesh(new THREE.TorusGeometry(r + k * 0.9, 0.45, 8, 40, Math.PI), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9 }));
     g.add(band);
+  });
+  g.position.set(f.x, f.y, f.z);
+  g.rotation.y = f.heading;
+  return g;
+}
+
+/** Mycelium's gate: two giant toadstools leaning in over the road till their caps touch, spores drifting down from the gills. */
+function mushroomArch(ribbon: Ribbon, s: number, animated: ((time: number) => void)[]): THREE.Group {
+  const g = new THREE.Group();
+  const f = frameAt(ribbon, s);
+  const hw = ribbon.halfWidthAtS(s) + 2;
+  const stalk = new THREE.MeshLambertMaterial({ color: 0xf4ecd8 });
+  const gills = new THREE.MeshLambertMaterial({ color: 0xe8d0a8, side: THREE.DoubleSide });
+  const caps = ['#d8302a', '#8a4ad8'].map((c) => new THREE.MeshLambertMaterial({ map: tex.spotsTexture(c, '#fff8e8', 18) }));
+  const H = 14;
+  const R = hw * 0.75;
+  for (const side of [-1, 1]) {
+    const t = new THREE.Group();
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.6, H, 14), stalk);
+    stem.position.y = H / 2;
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(R, 24, 12, 0, Math.PI * 2, 0, Math.PI * 0.45), caps[side < 0 ? 0 : 1]);
+    cap.scale.y = 0.6;
+    cap.position.y = H;
+    const under = new THREE.Mesh(new THREE.CircleGeometry(R * 0.98, 24).rotateX(Math.PI / 2), gills);
+    under.position.y = H + 0.02;
+    t.add(stem, cap, under);
+    t.position.x = side * (hw + 1.5);
+    // Leaning in over the road, so the caps meet above its middle.
+    t.rotation.z = side * 0.32;
+    g.add(t);
+  }
+  // Spores: motes of light drifting down from the caps and round again.
+  const spore = new THREE.SpriteMaterial({ map: tex.glowTexture('rgba(220,255,230,1)', 'rgba(150,255,210,0)'), blending: THREE.AdditiveBlending, depthWrite: false });
+  const motes: THREE.Sprite[] = [];
+  for (let k = 0; k < 24; k++) {
+    const m = new THREE.Sprite(spore);
+    m.scale.setScalar(0.5);
+    m.position.set((k / 24 - 0.5) * hw * 2, 0, ((k * 7) % 5) - 2);
+    g.add(m);
+    motes.push(m);
+  }
+  animated.push((time) => {
+    motes.forEach((m, k) => {
+      m.position.y = H - 1 - ((time * 0.8 + k * 0.53) % (H - 1));
+      m.position.x += Math.sin(time + k) * 0.004;
+    });
   });
   g.position.set(f.x, f.y, f.z);
   g.rotation.y = f.heading;
@@ -1517,7 +1568,7 @@ function featureBuilder(theme: Theme, mats: Materials, animated: ((time: number)
       const thatch = lambert(0xc8a050, { flatShading: true });
       const plank = lambert(0x8a6a42);
       const sail = lambert(0xfff8ec, { side: THREE.DoubleSide });
-      const stripes = [0xff5a7a, 0x3adcff, 0xffd23a].map((c) => lambert(c, { side: THREE.DoubleSide }));
+      const stripes = (theme.banana ? [0x1f3fbf, 0xffd21a, 0x3a6ae8] : [0xff5a7a, 0x3adcff, 0xffd23a]).map((c) => lambert(c, { side: THREE.DoubleSide }));
       const islet: Feature = (x, z, rand) => {
         const t = new THREE.Group();
         // A little sand islet with a palm or two leaning out over the water, sometimes a beach umbrella.
@@ -1702,9 +1753,9 @@ function featureBuilder(theme: Theme, mats: Materials, animated: ((time: number)
       return (x, z, rand) => pick(rand, [[6, pine], [3, shards], [0.8, igloo], [0.7, snowman]])(x, z, rand);
     }
     case 'city': {
-      const windows = tex.windowsTexture();
-      const roofMat = lambert(0x120c1c);
-      const trims = [0xff3ad8, 0x3adcff, 0xffd23a, 0x7aff9a].map((c) => new THREE.MeshBasicMaterial({ color: c }));
+      const windows = theme.banana ? tex.windowsTexture(tex.BANANA.windows, tex.BANANA.windowDark) : tex.windowsTexture();
+      const roofMat = lambert(theme.banana ? 0x080c22 : 0x120c1c);
+      const trims = (theme.banana ? [0xffd21a, 0x3a6aff, 0xffe66a, 0x1f3fbf] : [0xff3ad8, 0x3adcff, 0xffd23a, 0x7aff9a]).map((c) => new THREE.MeshBasicMaterial({ color: c }));
       const metal = lambert(0x3a3448);
       const beacon = new THREE.MeshBasicMaterial({ color: 0xff2a2a });
       const beacons: THREE.Mesh[] = [];
@@ -1780,11 +1831,12 @@ function featureBuilder(theme: Theme, mats: Materials, animated: ((time: number)
       };
     }
     case 'sky': {
-      const puff = lambert(0xffffff, { emissive: 0x6a5a7a, flatShading: true });
-      const crystal = [0xff9ad8, 0x9ad8ff, 0xffe89a, 0xb89aff].map((c) => new THREE.MeshPhongMaterial({ color: c, emissive: c, emissiveIntensity: 0.35, shininess: 120, flatShading: true }));
-      const grass = lambert(0x8ae07a, { flatShading: true });
-      const earth = lambert(0xb89ad8, { flatShading: true });
-      const bands = [0xff5a7a, 0xffa64a, 0xffe45a, 0x6aef7a, 0x4ad0ff, 0xc86aff].map((c) => lambert(c));
+      const banana = theme.banana;
+      const puff = lambert(banana ? 0xfff4d8 : 0xffffff, { emissive: banana ? 0x3a4a8a : 0x6a5a7a, flatShading: true });
+      const crystal = (banana ? [0xffd21a, 0x3a6aff, 0xffe66a, 0x7aa4ff] : [0xff9ad8, 0x9ad8ff, 0xffe89a, 0xb89aff]).map((c) => new THREE.MeshPhongMaterial({ color: c, emissive: c, emissiveIntensity: 0.35, shininess: 120, flatShading: true }));
+      const grass = lambert(banana ? 0xffd84a : 0x8ae07a, { flatShading: true });
+      const earth = lambert(banana ? 0x2a48c0 : 0xb89ad8, { flatShading: true });
+      const bands = (banana ? [0x1f3fbf, 0xffd21a, 0x3a6ae8, 0xffe66a, 0x16309a, 0xffc400] : [0xff5a7a, 0xffa64a, 0xffe45a, 0x6aef7a, 0x4ad0ff, 0xc86aff]).map((c) => lambert(c));
       const cloud: Feature = (x, z, rand) => {
         // A cloud: a few overlapping puffs.
         const t = new THREE.Group();
@@ -1861,7 +1913,7 @@ function featureBuilder(theme: Theme, mats: Materials, animated: ((time: number)
       return (x, z, rand) => pick(rand, [[6, cloud], [2, gem], [1.5, island], [0.8, balloon]])(x, z, rand);
     }
     case 'desert': {
-      const flower = lambert(0xff6ab0);
+      const flower = lambert(theme.banana ? 0x3a6aff : 0xff6ab0);
       const yellow = lambert(0xffd23a);
       const saguaro: Feature = (x, z, rand) => {
         const c = cactus(x, z, 3 + rand() * 4, rand() * Math.PI, trunkGeo, mats.cactus);
@@ -2207,7 +2259,65 @@ function featureBuilder(theme: Theme, mats: Materials, animated: ((time: number)
         }
         return at(t, x, z, rand);
       };
-      return (x, z, rand) => pick(rand, [[5, palm], [3.5, ferns], [1, bloom], [1.2, shrooms], [0.5, idol]])(x, z, rand);
+      // Mycelium: the forest floor is a fungus's, toadstools taller than the trees and rings of them in the clearings.
+      const capColors = [0xd8302a, 0xe8902a, 0x8a4ad8, 0xf0e0c0];
+      const caps = capColors.map((c) => lambert(0xffffff, { map: tex.spotsTexture(`#${c.toString(16).padStart(6, '0')}`, '#fff8e8', 16) }));
+      const gills = lambert(0xe8d8b8, { side: THREE.DoubleSide });
+      const stalk = lambert(0xf4ecd8);
+      const glow = new THREE.MeshLambertMaterial({ color: 0x9affd8, emissive: 0x2aa880, emissiveIntensity: 0.9 });
+      const toadstool = (h: number, r: number, cap: THREE.Material, rand: () => number): THREE.Group => {
+        const t = new THREE.Group();
+        const lean = (rand() - 0.5) * 0.25;
+        const stem = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.16, r * 0.24, h, 12), stalk);
+        stem.position.y = h / 2;
+        const ring = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.3, r * 0.2, h * 0.06, 12, 1, true), stalk);
+        ring.position.y = h * 0.78;
+        const top = new THREE.Mesh(new THREE.SphereGeometry(r, 20, 10, 0, Math.PI * 2, 0, Math.PI * 0.45), cap);
+        top.scale.y = 0.7;
+        top.position.y = h - r * 0.1;
+        const under = new THREE.Mesh(new THREE.CircleGeometry(r * 0.98, 20).rotateX(Math.PI / 2), gills);
+        under.position.y = h - r * 0.1 + 0.02;
+        t.add(stem, ring, top, under);
+        t.rotation.z = lean;
+        return t;
+      };
+      const giant: Feature = (x, z, rand) => {
+        // A toadstool the height of a house, sometimes with a smaller one leaning off its foot.
+        const t = new THREE.Group();
+        const h = 6 + rand() * 9;
+        t.add(toadstool(h, h * (0.35 + rand() * 0.15), caps[Math.floor(rand() * caps.length)], rand));
+        if (rand() < 0.5) {
+          const small = toadstool(h * 0.45, h * 0.18, caps[Math.floor(rand() * caps.length)], rand);
+          small.position.set(h * 0.3, 0, h * 0.1);
+          t.add(small);
+        }
+        return at(t, x, z, rand);
+      };
+      const fairyRing: Feature = (x, z, rand) => {
+        // A fairy ring: a circle of little toadstools on threads of glowing mycelium.
+        const t = new THREE.Group();
+        const R = 2.5 + rand() * 2.5;
+        const cap = caps[Math.floor(rand() * caps.length)];
+        const n = 9 + Math.floor(rand() * 5);
+        for (let k = 0; k < n; k++) {
+          const a = (k / n) * Math.PI * 2;
+          const m = toadstool(0.5 + rand() * 0.6, 0.35 + rand() * 0.2, cap, rand);
+          m.position.set(Math.cos(a) * R, 0, Math.sin(a) * R);
+          t.add(m);
+        }
+        const thread = new THREE.Mesh(new THREE.TorusGeometry(R, 0.06, 4, 40).rotateX(Math.PI / 2), glow);
+        thread.position.y = 0.05;
+        t.add(thread);
+        for (let k = 0; k < 4; k++) {
+          const a = rand() * Math.PI * 2;
+          const len = R * (1.5 + rand());
+          const strand = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, len, 4).rotateZ(Math.PI / 2).translate(R + len / 2, 0.05, 0), glow);
+          strand.rotation.y = a;
+          t.add(strand);
+        }
+        return at(t, x, z, rand, false);
+      };
+      return (x, z, rand) => pick(rand, [[2.5, palm], [2.5, ferns], [0.6, bloom], [2.5, shrooms], [2.8, giant], [1.1, fairyRing], [0.4, idol]])(x, z, rand);
     }
   }
 }

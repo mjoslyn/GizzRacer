@@ -7,12 +7,12 @@ const START: Pose = { x: -18 * K, z: 107 * K, h: Math.PI / 2 };
 const FINISH = 60;
 /** Top of the skyway, between the towers. */
 const SKY_Y = 20;
-/** The Robot Stop bulge: three arcs out and back. */
+/** The Downtown bulge: three arcs out and back. */
 const BUMP_R = 18;
 const BUMP_DEG = 80;
 
 /**
- * Cyboogie (circuit 2, medium): Han-Tyumi's neon downtown at night.
+ * Doom City, once Cyboogie (medium): a neon downtown at night, lit blue and yellow.
  * A walled boulevard, a tight alley chicane, an elevated freeway that
  * climbs into a coaster skyway between the towers and plunges back to the
  * street, and laser gates that fire on the beat in a sunken underpass.
@@ -20,21 +20,21 @@ const BUMP_DEG = 80;
 export function buildCyboogieCity(): TrackDef {
   const b = new TrackBuilder(START, 'Neon Boulevard', { halfWidth: 11, wallHeight: 1.2, surface: 'neon' });
   b.scale = K;
-  // Robot Stop: the boulevard swings out round the Munt Machine factory. Open edges where its shortcut forks off and back.
-  b.section('Robot Stop', { halfWidth: 10, surface: 'neon' });
+  // Downtown: the boulevard swings out round the fusion reactor. Open edges where its shortcut forks off and back.
+  b.section('Downtown', { halfWidth: 10, surface: 'neon' });
   b.straight(3);
-  b.mark('robotStop');
+  b.mark('downtown');
   b.arc(BUMP_R, -BUMP_DEG).arc(BUMP_R, 20);
-  b.section('Robot Stop', { halfWidth: 10, wallHeight: 1.2, surface: 'neon' });
+  b.section('Downtown', { halfWidth: 10, wallHeight: 1.2, surface: 'neon' });
   b.arc(BUMP_R, 2 * BUMP_DEG - 40);
-  b.section('Robot Stop', { halfWidth: 10, surface: 'neon' });
+  b.section('Downtown', { halfWidth: 10, surface: 'neon' });
   b.arc(BUMP_R, 20).arc(BUMP_R, -BUMP_DEG);
-  b.mark('robotStopEnd');
+  b.mark('downtownEnd');
   b.straight(3);
   b.section('Neon Boulevard', { halfWidth: 11, wallHeight: 1.2, surface: 'neon' });
   b.straight(80 - 6 - 4 * BUMP_R * Math.sin((BUMP_DEG * Math.PI) / 180)).arc(26, 90);
 
-  b.section('Cyboogie Alley', { halfWidth: 7.5, wallHeight: 6, surface: 'neon' });
+  b.section('Doom Alley', { halfWidth: 7.5, wallHeight: 6, surface: 'neon' });
   b.mark('alley');
   b.straight(30).arc(20, -90).straight(25).arc(20, 90).straight(25).arc(20, 90).straight(20).arc(20, -90).straight(25);
   b.section('Alley Exit', { halfWidth: 9, wallHeight: 6, surface: 'neon' });
@@ -59,7 +59,7 @@ export function buildCyboogieCity(): TrackDef {
   b.section('Laser Gates', { halfWidth: 10, wallHeight: 3, surface: 'neon' });
   b.mark('lasers');
   b.straight(60);
-  b.section('Digital Black Sweep', { halfWidth: 11, wallHeight: 1.2, surface: 'neon' });
+  b.section('Nuclear Fusion Sweep', { halfWidth: 11, wallHeight: 1.2, surface: 'neon' });
   b.mark('sweep');
   b.arc(30, 60).arc(30, -60);
   b.turnTo(offsetPose(START, -FINISH * K), 35);
@@ -69,16 +69,16 @@ export function buildCyboogieCity(): TrackDef {
   shapeCity(b);
 
   const main = b.finish(true);
-  const munt = buildMuntMachine(b.marks.robotStop, b.marks.robotStopEnd);
+  const reactor = buildFusionReactor(b.marks.downtown, b.marks.downtownEnd);
   return {
     id: 'cyboogie-city',
-    name: 'Cyboogie',
+    name: 'Doom City',
     main,
-    branches: [munt.branch],
-    pits: [...b.pits, ...munt.pits],
+    branches: [reactor.branch],
+    pits: [...b.pits, ...reactor.pits],
     boostPads: [
       // On the fork, the shortcut side: a boost to clear the vat.
-      { s: b.marks.robotStop.s + 2, length: 8, lateral: -5, halfWidth: 2.5 },
+      { s: b.marks.downtown.s + 2, length: 8, lateral: -5, halfWidth: 2.5 },
       { s: b.marks.freeway.s + 30, length: 8, lateral: 0, halfWidth: 2.5 },
     ],
     checkpoints: ['alley', 'freeway', 'lasers', 'sweep'].map((m) => b.marks[m].s / main.length),
@@ -93,7 +93,7 @@ export function buildCyboogieCity(): TrackDef {
       { s: b.marks.alley.s + 85, count: 3 },
       { s: b.marks.freeway.s + 120, count: 4 },
       { s: b.marks.sweep.s + 20, count: 4 },
-      { s: munt.boxes, count: 2, ribbon: 0, lateral: -1.5, span: 5, double: true },
+      { s: reactor.boxes, count: 2, ribbon: 0, lateral: -1.5, span: 5, double: true },
     ],
     hazards: [{ kind: 'lasers', at: [b.marks.lasers.s + 15, b.marks.lasers.s + 45, b.marks.lasers.s + 75], period: 2.6 }],
     theme: 'neon',
@@ -102,30 +102,30 @@ export function buildCyboogieCity(): TrackDef {
 }
 
 /**
- * Soy-Protein Munt Machine: a straight cut through the factory across the
- * Robot Stop bulge, with a leap over the vat: at 100cc it takes a boost
+ * Fusion Reactor: a straight cut through the reactor across the
+ * Downtown bulge, with a leap over the core: at 100cc it takes a boost
  * (the pad on the fork, or a mini-turbo), from 150cc flat out makes it.
  */
-function buildMuntMachine(from: { s: number; pose: Pose }, to: { s: number; pose: Pose }) {
+function buildFusionReactor(from: { s: number; pose: Pose }, to: { s: number; pose: Pose }) {
   const chord = Math.hypot(to.pose.x - from.pose.x, to.pose.z - from.pose.z);
-  const b = new TrackBuilder(from.pose, 'Soy-Protein Munt Machine', { halfWidth: 5.5, surface: 'neon' });
+  const b = new TrackBuilder(from.pose, 'Fusion Reactor', { halfWidth: 5.5, surface: 'neon' });
   // The leap sits a shade earlier than the chord's middle, so its vat stays clear of the street it cuts across.
   b.straight(27);
   // A narrower lip over the vat, so its pit stays clear of the street the shortcut cuts across.
-  b.section('Munt Vat Leap', { halfWidth: 4.6, surface: 'neon' });
+  b.section('Reactor Leap', { halfWidth: 4.6, surface: 'neon' });
   b.elevate(0).rise(16, 2.2);
   b.gap(24, 7, undefined, 12, 1);
   b.elevate(0);
-  b.section('Soy-Protein Munt Machine', { halfWidth: 5.5, surface: 'neon' });
+  b.section('Fusion Reactor', { halfWidth: 5.5, surface: 'neon' });
   b.straight(chord - b.s);
-  const branch: BranchDef = { name: 'Soy-Protein Munt Machine', mainFrom: from.s, mainTo: to.s, ...b.finish(false) };
+  const branch: BranchDef = { name: 'Fusion Reactor', mainFrom: from.s, mainTo: to.s, ...b.finish(false) };
   return { branch, pits: b.pits, boxes: 26 };
 }
 
 /**
  * Heights, laid over the layout: the skyway's lift, its swell between the
  * towers and the plunge off the end, the underpass through the laser
- * gates, and a rise over the sweep. Robot Stop, the alley and the finish
+ * gates, and a rise over the sweep. Downtown, the alley and the finish
  * stay at street level.
  */
 function shapeCity(b: TrackBuilder): void {

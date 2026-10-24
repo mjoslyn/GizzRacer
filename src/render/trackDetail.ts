@@ -33,13 +33,13 @@ const STYLES: Record<DecorKind, DetailStyle> = {
   desert: {
     edge: { kind: 'fence', height: 1.1, spacing: 9, color: 0x7a5232, stripe: 0xe8dcc0 },
     cover: { shape: 'tuft', colors: [0xb8a060, 0x8a7a40, 0xc8b070], count: 1400 },
-    boards: { words: ['RATTLE!', 'SSSSSS', 'MIRAGE', 'HOT ROD'], bg: ['#e0702a', '#3a6ad8', '#d8302a'], fg: '#ffd23a' },
+    boards: { words: ['RATTLE!', 'SSSSSS', 'MICROTONAL', 'MELTING'], bg: ['#1f3fbf', '#16309a', '#2a4ad0'], fg: '#ffd23a' },
     crowd: true,
   },
   meadow: {
     edge: { kind: 'pole', height: 1.2, spacing: 11, color: 0xf4f4f4, stripe: 0xd8202a },
     cover: { shape: 'tuft', colors: [0x4a9a3a, 0x6ab84a, 0x3a8a2a, 0xffe45a, 0xff8ad8, 0xffffff], count: 1800 },
-    boards: { words: ['INFINITY', 'GO GO GO', 'FUZZ OIL', 'LOOP IT'], bg: ['#3a6ad8', '#2a9a4a', '#ff5ad0'], fg: '#ffffff' },
+    boards: { words: ['MOTOR SPIRIT', 'PETROL', 'FULL TANK', 'GO GO GO'], bg: ['#1a1a1c', '#8a1a10', '#3a6ad8'], fg: '#ffffff' },
     crowd: true,
   },
   volcanic: {
@@ -53,14 +53,14 @@ const STYLES: Record<DecorKind, DetailStyle> = {
     edge: { kind: 'torch', height: 1.7, spacing: 17, color: 0x6a4a2a, stripe: 0x3a2a14 },
     light: 0xffa040,
     cover: { shape: 'tuft', colors: [0x2a7a2a, 0x3a9a3a, 0x1a5a20, 0xff5a8a], count: 1800 },
-    boards: { words: ['POLYGON', 'RUINS', 'VINES', 'CRUMBLE'], bg: ['#2a5a2a', '#7a4a1a'], fg: '#ffe45a' },
+    boards: { words: ['MYCELIUM', 'SPORES', 'FUNGI', 'GROW'], bg: ['#2a5a2a', '#7a4a1a'], fg: '#ffe45a' },
     crowd: true,
   },
   lagoon: {
     edge: { kind: 'buoy', height: 0.9, spacing: 12, color: 0xf4f0e8, stripe: 0xd8302a },
     // Off-road is wading water: nothing to scatter on it.
     cover: { shape: 'none', colors: [], count: 0 },
-    boards: { words: ['FISHIES', 'SURF', 'REEF ME', 'SPLASH'], bg: ['#0a8ad8', '#ff7a3a', '#2ab8a8'], fg: '#fff4c0' },
+    boards: { words: ['OPEN WATER', 'SET SAIL', 'BANANA', 'DEEP BLUE'], bg: ['#1f3fbf', '#16309a'], fg: '#ffd23a' },
     crowd: true,
   },
   glacier: {
@@ -73,7 +73,7 @@ const STYLES: Record<DecorKind, DetailStyle> = {
     edge: { kind: 'lamp', height: 4.2, spacing: 16, color: 0x2a2438, stripe: 0x1a1428 },
     light: 0xff6ae0,
     cover: { shape: 'none', colors: [], count: 0 },
-    boards: { words: ['BOOGIE', 'VOLTS', 'NEON 24/7', 'DATA'], bg: ['#140a30', '#2a0a3a'], fg: '#ff3ad8' },
+    boards: { words: ['DOOM CITY', 'NUCLEAR', 'FUSION', 'NO EXIT'], bg: ['#060c34', '#10226a'], fg: '#ffd21a' },
     crowd: true,
   },
   wasteland: {
@@ -87,7 +87,7 @@ const STYLES: Record<DecorKind, DetailStyle> = {
     edge: { kind: 'pole', height: 1.8, spacing: 13, color: 0xc8c8cc, stripe: 0xff3a1a },
     light: 0xff3a1a,
     cover: { shape: 'pebble', colors: [0x8a3218, 0x5a2414, 0xb8582c, 0x3a1810], count: 1300 },
-    boards: { words: ['EVACUATE', 'O2 LOW', 'HELL ON MARS', 'NO RETURN'], bg: ['#5a1a10', '#2a2a30'], fg: '#ffc020' },
+    boards: { words: ['FLAMETHROWER', 'EVACUATE', 'BURN', 'NO RETURN'], bg: ['#5a1a10', '#2a2a30'], fg: '#ffc020' },
     crowd: false,
   },
   plains: {

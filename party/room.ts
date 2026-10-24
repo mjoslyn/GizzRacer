@@ -154,7 +154,7 @@ export class Room extends Server<Env> {
       if (!msg.create) return send(conn, err('No room with that code', true));
       room = this.saved = {
         hostId: msg.playerId,
-        settings: { track: 1, engine: '100cc' },
+        settings: { track: 4, engine: '100cc' },
         phase: 'lobby',
         start: null,
         pause: null,

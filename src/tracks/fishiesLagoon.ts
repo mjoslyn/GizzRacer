@@ -5,11 +5,11 @@ import type { BranchDef, TrackDef } from './track';
 const K = 1.25;
 const START: Pose = { x: -44 * K, z: 161 * K, h: Math.PI / 2 };
 const FINISH = 60;
-/** Height of Boogieman Sam's Pier: a boardwalk high over the lagoon. */
+/** Height of Microtonal Pier: a boardwalk high over the lagoon. */
 const PIER_Y = 12;
 
 /**
- * Fishing for Fishies (circuit 2, easy): a sandy beach road over the dunes, a
+ * Open Water, once Fishing for Fishies (easy): a sandy beach road over the dunes, a
  * causeway that dives under the lagoon, fish leaping across the road, and a
  * high pier with a jump and a plunge back down to the beach.
  */
@@ -31,14 +31,14 @@ export function buildFishiesLagoon(): TrackDef {
   b.mark('leap');
   b.arc(30, -100).straight(25).arc(35, 100);
 
-  b.section('Plastic Boogie Reef', { halfWidth: 9, surface: 'sand' });
+  b.section('Anoxia Reef', { halfWidth: 9, surface: 'sand' });
   b.mark('esses');
   b.arc(28, 60).arc(28, -60);
   b.mark('reefApex');
   b.arc(28, -60).arc(28, 60);
 
   // The pier climbs out of the reef onto a boardwalk on stilts, jumps a gap and plunges back to the beach.
-  b.section("Boogieman Sam's Pier", { halfWidth: 8.5, wallHeight: 1.2, surface: 'boards', bridge: true });
+  b.section("Microtonal Pier", { halfWidth: 8.5, wallHeight: 1.2, surface: 'boards', bridge: true });
   b.mark('boardwalk');
   b.arc(38, 90);
   b.mark('pier');
@@ -66,7 +66,7 @@ export function buildFishiesLagoon(): TrackDef {
   const open = buildOpenWater(b.marks.leap, b.marks.reefApex);
   return {
     id: 'fishies-lagoon',
-    name: 'Fishing for Fishies',
+    name: 'Open Water',
     main,
     branches: [open.branch],
     pits: [...b.pits, ...open.pits],
@@ -95,24 +95,24 @@ export function buildFishiesLagoon(): TrackDef {
 }
 
 /**
- * Open Water: a rail-less plank boardwalk straight across the deep lagoon,
+ * The Shallows: a rail-less plank boardwalk straight across the deep lagoon,
  * from the Fish Leap to the apex of the reef. Off the planks is deep water.
  */
 function buildOpenWater(from: { s: number; pose: Pose }, to: { s: number; pose: Pose }) {
   const R = 32;
-  const b = new TrackBuilder(from.pose, 'Open Water', { halfWidth: 7, surface: 'sand' });
+  const b = new TrackBuilder(from.pose, 'The Shallows', { halfWidth: 7, surface: 'sand' });
   // Straight on while the Fish Leap turns away, then an S onto the planks and down to the reef.
   b.straight(45);
   const [first, straight, last] = dubins(b.pose, to.pose, R);
   const turn = (step: typeof first) => b.arc(R, ((step[0] === 'L' ? 1 : -1) * step[1] * 180) / (Math.PI * R));
   turn(first);
-  b.section('Open Water Boardwalk', { halfWidth: 4.5, surface: 'boards' });
+  b.section('Shallows Boardwalk', { halfWidth: 4.5, surface: 'boards' });
   const boardsFrom = b.s;
   b.bridge(straight[1], 12, 'water');
-  b.section('Open Water', { halfWidth: 7, surface: 'sand' });
+  b.section('The Shallows', { halfWidth: 7, surface: 'sand' });
   turn(last);
   // High tide on the first lap: the boardwalk is under water until it goes out.
-  const branch: BranchDef = { name: 'Open Water', mainFrom: from.s, mainTo: to.s, ...b.finish(false), openOn: [2, 'final'], shut: { kind: 'flood' } };
+  const branch: BranchDef = { name: 'The Shallows', mainFrom: from.s, mainTo: to.s, ...b.finish(false), openOn: [2, 'final'], shut: { kind: 'flood' } };
   return { branch, pits: b.pits, boardsFrom };
 }
 
@@ -120,21 +120,21 @@ function buildOpenWater(from: { s: number; pose: Pose }, to: { s: number; pose: 
  * The lie of the land, laid over the layout: dunes on the beach and round
  * the Fish Leap (a steep slip face for airtime), a swell over the reef,
  * the climb onto the pier and its plunge, and the headland under the
- * lighthouse. The causeway's dive and the Open Water junctions stay at sea level.
+ * lighthouse. The causeway's dive and the Shallows' junctions stay at sea level.
  */
 function shapeDunes(b: TrackBuilder): void {
   const m = (k: string) => b.marks[k].s;
   // A dune into the bend, level again well before the causeway.
   ease(b, 90, 118, 0, 3.5);
   ease(b, 118, 146, 3.5, 0);
-  // Fish Leap: level where Open Water forks off, up a dune through the first bend, off its slip face, then a swell through the second.
+  // Fish Leap: level where the Shallows fork off, up a dune through the first bend, off its slip face, then a swell through the second.
   const leap = m('leap');
   ease(b, leap + 20, leap + 80, 0, 4.5);
   line(b, leap + 80, leap + 92, 4.5, 0.5);
   ease(b, leap + 92, leap + 103, 0.5, 0);
   ease(b, leap + 110, leap + 140, 0, 2);
   ease(b, leap + 140, leap + 170, 2, 0);
-  // A swell over the reef, back at sea level where Open Water rejoins.
+  // A swell over the reef, back at sea level where the Shallows rejoin.
   ease(b, m('esses') + 12, m('esses') + 42, 0, 1.5);
   ease(b, m('esses') + 42, m('reefApex'), 1.5, 0);
   // Up a climbing bend onto the pier.

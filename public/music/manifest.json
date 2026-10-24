@@ -139,20 +139,6 @@
     "loopSamples": 926100,
     "sampleRate": 44100
   },
-  "fishies-lagoon-remix": {
-    "title": "fishing for fishies (remix)",
-    "bpm": 120,
-    "bars": 16,
-    "loopSamples": 1411200,
-    "sampleRate": 44100
-  },
-  "fishies-lagoon-remix-final-lap": {
-    "title": "fishing for fishies (remix, final lap)",
-    "bpm": 128,
-    "bars": 16,
-    "loopSamples": 1323000,
-    "sampleRate": 44100
-  },
   "ice-v-glacier-remix": {
     "title": "ice v (remix)",
     "bpm": 132,
@@ -165,48 +151,6 @@
     "bpm": 140,
     "bars": 24,
     "loopSamples": 1587600,
-    "sampleRate": 44100
-  },
-  "cyboogie-city-remix": {
-    "title": "cyboogie (remix)",
-    "bpm": 124,
-    "bars": 16,
-    "loopSamples": 1365677,
-    "sampleRate": 44100
-  },
-  "cyboogie-city-remix-final-lap": {
-    "title": "cyboogie (remix, final lap)",
-    "bpm": 132,
-    "bars": 16,
-    "loopSamples": 1282909,
-    "sampleRate": 44100
-  },
-  "butterfly-skyway-remix": {
-    "title": "catching smoke (remix)",
-    "bpm": 124,
-    "bars": 20,
-    "loopSamples": 1707097,
-    "sampleRate": 44100
-  },
-  "butterfly-skyway-remix-final-lap": {
-    "title": "catching smoke (remix, final lap)",
-    "bpm": 132,
-    "bars": 20,
-    "loopSamples": 1603636,
-    "sampleRate": 44100
-  },
-  "hell-on-mars-remix": {
-    "title": "mars for the rich (remix)",
-    "bpm": 150,
-    "bars": 24,
-    "loopSamples": 1693440,
-    "sampleRate": 44100
-  },
-  "hell-on-mars-remix-final-lap": {
-    "title": "mars for the rich (remix, final lap)",
-    "bpm": 158,
-    "bars": 24,
-    "loopSamples": 1607696,
     "sampleRate": 44100
   },
   "supercell-remix": {
@@ -223,20 +167,6 @@
     "loopSamples": 1365677,
     "sampleRate": 44100
   },
-  "murder-of-the-universe-remix": {
-    "title": "the lord of lightning (remix)",
-    "bpm": 160,
-    "bars": 24,
-    "loopSamples": 1587600,
-    "sampleRate": 44100
-  },
-  "murder-of-the-universe-remix-final-lap": {
-    "title": "the lord of lightning (remix, final lap)",
-    "bpm": 168,
-    "bars": 24,
-    "loopSamples": 1512000,
-    "sampleRate": 44100
-  },
   "petrodragonic-apocalypse-remix": {
     "title": "dragon (remix)",
     "bpm": 140,
@@ -249,20 +179,6 @@
     "bpm": 148,
     "bars": 24,
     "loopSamples": 1716324,
-    "sampleRate": 44100
-  },
-  "infinite-loop-speedway-remix": {
-    "title": "mr. beat (remix)",
-    "bpm": 132,
-    "bars": 32,
-    "loopSamples": 2565818,
-    "sampleRate": 44100
-  },
-  "infinite-loop-speedway-remix-final-lap": {
-    "title": "mr. beat (remix, final lap)",
-    "bpm": 140,
-    "bars": 32,
-    "loopSamples": 2419200,
     "sampleRate": 44100
   },
   "rattlesnake-run-remix": {
@@ -536,20 +452,6 @@
     "bpm": 115,
     "bars": 32,
     "loopSamples": 2945113,
-    "sampleRate": 44100
-  },
-  "polygondwanaland-jungle-remix": {
-    "title": "polygondwanaland (remix)",
-    "bpm": 166.7,
-    "bars": 32,
-    "loopSamples": 2539652,
-    "sampleRate": 44100
-  },
-  "polygondwanaland-jungle-remix-final-lap": {
-    "title": "polygondwanaland (remix, final lap)",
-    "bpm": 174.7,
-    "bars": 32,
-    "loopSamples": 2423354,
     "sampleRate": 44100
   },
   "castle-in-the-air-remix": {

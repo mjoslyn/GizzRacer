@@ -36,14 +36,14 @@ interface Case {
 
 const CASES: Case[] = [
   {
-    name: 'Mars for the Rich',
+    name: 'Flamethrower',
     build: buildHellOnMars,
-    branch: 'Mars for the Rich',
+    branch: 'Fire Escape',
     junction: 50,
     jump: { clears: [['150cc', 0], ['100cc', 0.5]], fails: [['100cc', 0]] },
   },
   { name: 'Supercell', build: buildSupercell, branch: 'Converge', junction: 40 },
-  { name: 'The Lord of Lightning', build: buildMurderOfTheUniverse, branch: 'Digital Black', junction: 66 },
+  { name: 'Gliese 710', build: buildMurderOfTheUniverse, branch: 'Rogue Orbit', junction: 66 },
   {
     name: 'Dragon',
     build: buildPetrodragonicApocalypse,
@@ -194,9 +194,9 @@ describe('Dragon Flamethrower pad', () => {
 
 /** How high and low each road runs: a climb to a crest and a dip below ground (none on the abyss, which has no ground). */
 const HEIGHTS: { name: string; build: () => TrackDef; top: number; bottom: number }[] = [
-  { name: 'Mars for the Rich', build: buildHellOnMars, top: 20, bottom: -6 },
+  { name: 'Flamethrower', build: buildHellOnMars, top: 20, bottom: -6 },
   { name: 'Supercell', build: buildSupercell, top: 12, bottom: -4 },
-  { name: 'The Lord of Lightning', build: buildMurderOfTheUniverse, top: 20, bottom: 0 },
+  { name: 'Gliese 710', build: buildMurderOfTheUniverse, top: 20, bottom: 0 },
   { name: 'Dragon', build: buildPetrodragonicApocalypse, top: 10, bottom: -6 },
 ];
 
