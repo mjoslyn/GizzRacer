@@ -67,14 +67,14 @@ export class StoryScreen {
       return;
     }
     const opts = c.opts
-      .map((o, i) => `<button class="menu-opt${i === this.at ? ' on' : ''}" data-pick="${esc(o.id)}"><span class="menu-opt-name hud-big">${esc(o.name)}</span><span class="menu-opt-blurb">${esc(o.blurb)}</span></button>`)
+      .map((o, i) => `<button class="story-opt${i === this.at ? ' on' : ''}" data-pick="${esc(o.id)}"><span class="story-opt-name">${esc(o.name)}</span><span class="story-opt-blurb">${esc(o.blurb)}</span></button>`)
       .join('');
     this.el.innerHTML = `
       <div class="menu-panel">
         <div class="story-kicker">${esc(c.kicker)}</div>
         <div class="menu-title hud-big">${esc(c.title)}</div>
         <div class="story-body">${esc(c.body)}</div>
-        <div class="menu-opts on">${opts}</div>
+        <div class="story-opts">${opts}</div>
         ${c.footer ? `<div class="story-footer">${esc(c.footer)}</div>` : ''}
         <div class="menu-hint">${c.opts.length > 1 ? '&uarr;&darr; choose &middot; ' : ''}Enter to go on</div>
       </div>`;

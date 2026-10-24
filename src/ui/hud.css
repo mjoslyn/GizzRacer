@@ -655,6 +655,59 @@ body.touch-mode .hud-help {
   opacity: 0.85;
 }
 
+/* A story card's choices (a boon, Begin, Try again): the name in solid gold with a heavy outline, as the
+   picker's values, and what it does in plain type beside it; under it on a narrow screen. */
+.story-opts {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px;
+}
+
+.menu .story-opt {
+  display: grid;
+  grid-template-columns: minmax(150px, 34%) 1fr;
+  align-items: center;
+  gap: 4px 16px;
+  width: 100%;
+  padding: 10px 14px;
+  text-align: left;
+  background: rgba(60, 10, 70, 0.75);
+  box-shadow: 0 0 0 2px #5a2a6a;
+  opacity: 0.85;
+}
+
+.menu .story-opt.on {
+  opacity: 1;
+  background: linear-gradient(180deg, #7a2a8a, #3a0f45);
+  box-shadow: 0 0 0 3px #ffd23a, 0 0 0 6px #3a0f45;
+}
+
+.story-opt-name {
+  font-weight: 900;
+  font-size: clamp(17px, min(3.6vh, 5vw), 24px);
+  line-height: 1.1;
+  color: #ffe14d;
+  text-shadow:
+    2px 0 0 #2a0636, -2px 0 0 #2a0636, 0 2px 0 #2a0636, 0 -2px 0 #2a0636,
+    3px 3px 0 rgba(20, 0, 30, 0.85);
+}
+
+.story-opt-blurb {
+  font-family: Verdana, sans-serif;
+  font-style: normal;
+  font-size: 14px;
+  line-height: 1.35;
+  color: #fff6d0;
+  text-shadow: 1px 1px 0 #2a0636;
+}
+
+@media (max-width: 520px) {
+  .menu .story-opt {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Story mode's skill games: a canvas over the whole game. */
 .skill {
   position: fixed;
