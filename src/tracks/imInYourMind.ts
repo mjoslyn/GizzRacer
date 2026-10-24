@@ -2,11 +2,15 @@ import { TrackBuilder, offsetPose, type Pose } from './builder';
 import type { BranchDef, TrackDef } from './track';
 
 const K = 1.12;
-const START: Pose = { x: 110 * K, z: -150 * K, h: -Math.PI / 2 };
+const START: Pose = { x: -72 * K, z: -114 * K, h: -Math.PI / 2 };
 const FINISH = 45;
-/** The Mind's Eye Bend: the road swings out round a great pupil in three arcs of this radius and turn. */
+/** The Mind's Eye Bend: the road dips round a great pupil in the fold in three arcs of this radius and turn. */
 const EYE_R = 34;
 const EYE_TURN = 70;
+/** The radius of each hemisphere's rounded crown. */
+const LOBE_R = 70;
+/** How far the road falls into the fold between the hemispheres before it turns across. */
+const FOLD_DROP = 44;
 /** The Thought Spiral's radius, and the top of it. */
 const SPIRAL_R = 20;
 const SPIRAL_TOP = 15;
@@ -18,58 +22,80 @@ const WALL = 6;
 /**
  * I'm in Your Mind (the Mind Fuzz Cup's opener), after the song the suite
  * starts with: inside a mind, pink folds of brain lit by nerves firing, and
- * eyes everywhere. Down Third Eye Straight (two kickers) under a gate with
- * an eye in it, through Synapse Bend and the Neuron Esses, a full turn up
- * the Thought Spiral round a stalk with an eye on top, over its own start,
- * and the Brainwave Drop off the top. Right angles through the Cortex Folds
- * between walls of brain 6 m tall, then down into the Subconscious, sunk
- * 7 m, eyes opening over the road in both to read your mind. The Dream Leap
- * over nothing, and the Mind's Eye Bend round a pupil, which the Open Mind
- * cuts straight across from lap 2, once it's in your mind.
+ * eyes everywhere. Seen from above the lap is a brain: two rounded
+ * hemispheres side by side along the top with the deep fold between them,
+ * and a flat run along the bottom. Down Third Eye Straight (two kickers)
+ * along the bottom under a gate with an eye in it, round Synapse Bend and
+ * up the left side, a full turn out round the Thought Spiral's stalk with
+ * an eye on top, over its own start, and the Brainwave Drop off the top.
+ * Over the crown of the left hemisphere and a right angle down into the
+ * fold through the Cortex Folds, between walls of brain 6 m tall; round
+ * the Mind's Eye Bend, which dips round a pupil at the bottom of the fold
+ * and which, from lap 2, once it's in your mind, the Open Mind cuts
+ * straight across, a nerve from one hemisphere to the other. Up and over
+ * the crown of the right hemisphere and down into the Subconscious, sunk
+ * 7 m, eyes opening over the road there and in the folds to read your
+ * mind. Round the last corner, the Dream Leap over nothing, and home along
+ * the bottom through the Neuron Esses.
  */
 export function buildImInYourMind(): TrackDef {
   const b = new TrackBuilder(START, 'Third Eye Straight', { halfWidth: 11, surface: 'neural' });
   b.scale = K;
-  b.straight(40).mark('kick1').kicker().straight(30).mark('kick2').kicker().straight(70);
+  b.straight(40).mark('kick1').kicker().straight(30).mark('kick2').kicker().straight(60);
 
   b.section('Synapse Bend', { halfWidth: 10, wallHeight: 1.2, surface: 'neural' });
   b.mark('synapse');
-  b.arc(45, 80).straight(20);
-  b.section('Neuron Esses', { halfWidth: 9.5, wallHeight: 1.2, surface: 'neural' });
-  b.mark('esses');
-  b.arc(26, -70).arc(26, 70).straight(20);
+  b.arc(40, 90).straight(10);
 
-  // A full turn up round a stalk with an eye on top, and over the road it started on.
+  // A full turn out round a stalk with an eye on top, and over the road it started on.
   b.section('Thought Spiral', { halfWidth: 9.5, wallHeight: 1.2, surface: 'neural', bridge: true });
   b.mark('spiral');
-  b.arc(SPIRAL_R, 360);
+  b.arc(SPIRAL_R, -360);
   b.mark('spiralTop');
   b.section('Brainwave Drop', { halfWidth: 10, surface: 'neural' });
   b.mark('drop');
   // A shade away from the spiral it just climbed, so the two roads keep clear of each other.
-  b.arc(90, -10).straight(110);
+  b.arc(90, 10).straight(80).arc(90, -10);
 
+  // The left hemisphere's crown, and a right angle down into the fold.
+  b.section('Left Hemisphere', { halfWidth: 10, wallHeight: 1.2, surface: 'neural' });
+  b.mark('left');
+  b.arc(LOBE_R, 180);
   b.section('Cortex Folds', { halfWidth: 9, wallHeight: WALL, surface: 'neural' });
   b.mark('folds');
-  b.arc(18, 90).straight(50).arc(18, -90).straight(30).arc(18, 90).straight(20);
-  b.section('The Subconscious', { halfWidth: 9, wallHeight: WALL, surface: 'neural' });
-  b.mark('deep');
-  b.straight(130);
-  b.mark('deepEnd');
-  b.straight(10);
+  b.straight(FOLD_DROP).arc(26, -90);
 
-  b.section('Dream Leap', { halfWidth: 9, wallHeight: 1.2, surface: 'neural' });
-  b.mark('leap');
-  b.arc(36, 90).straight(10).mark('ramp').elevate(0).rise(18, 3);
-  b.gap(13, 30);
-  b.elevate(0).straight(20);
-
+  // Down round the pupil at the bottom of the fold.
   b.section("Mind's Eye Bend", { halfWidth: 9.5, surface: 'neural' });
   b.mark('bend');
   b.straight(5);
   b.mark('mindFrom');
   b.arc(EYE_R, EYE_TURN).arc(EYE_R, -2 * EYE_TURN).arc(EYE_R, EYE_TURN);
   b.mark('mindTo');
+  b.straight(5);
+
+  // Up out of the fold, over the right hemisphere's crown and down the far side.
+  b.section('Right Hemisphere', { halfWidth: 10, wallHeight: 1.2, surface: 'neural' });
+  b.mark('right');
+  b.arc(26, -90).straight(FOLD_DROP).arc(LOBE_R, 180).straight(31);
+  b.section('The Subconscious', { halfWidth: 9, wallHeight: WALL, surface: 'neural' });
+  b.mark('deep');
+  b.straight(85);
+  b.mark('deepEnd');
+  b.straight(6.4);
+
+  b.section('Dream Leap', { halfWidth: 9, wallHeight: 1.2, surface: 'neural' });
+  b.mark('leap');
+  b.arc(36, 90).straight(10).mark('ramp').elevate(0).rise(18, 3);
+  b.gap(13, 30);
+  b.elevate(0).straight(20);
+  b.mark('landed');
+
+  // Nerves firing along the bottom of the brain.
+  b.section('Neuron Esses', { halfWidth: 9.5, wallHeight: 1.2, surface: 'neural' });
+  b.mark('esses');
+  b.arc(30, -20).arc(30, 40).arc(30, -20);
+  b.section('Third Eye Straight', { halfWidth: 11, surface: 'neural' });
   b.turnTo(offsetPose(START, -FINISH * K), 38);
   b.section('Finish Straight', { halfWidth: 11, surface: 'neural' });
   b.mark('finish');
@@ -82,8 +108,8 @@ export function buildImInYourMind(): TrackDef {
   b.profile(m('spiralTop'), m('drop', 25), () => SPIRAL_TOP, 10);
   plunge(b, m('drop', 25), SPIRAL_TOP, m('drop', 95), 0);
   ease(b, m('deep', 5), 0, m('deep', 40), -DEPTH);
-  ease(b, m('deep', 90), -DEPTH, m('deepEnd', 10), 0);
-  b.profile(m('mindTo', 40), m('finish', -10), (u) => 3 * Math.sin(Math.PI * u) ** 2);
+  ease(b, m('deep', 55), -DEPTH, m('deepEnd', 10), 0);
+  b.profile(m('esses', 50), m('finish', -5), (u) => 3 * Math.sin(Math.PI * u) ** 2);
 
   const main = b.finish(true);
   const open = buildOpenMind(b.marks.mindFrom, b.marks.mindTo);
@@ -99,13 +125,13 @@ export function buildImInYourMind(): TrackDef {
       { s: at('drop', 100), length: 8, lateral: 0, halfWidth: 2.5 },
       { s: at('leap', 70), length: 8, lateral: 0, halfWidth: 2.5 },
     ],
-    checkpoints: ['synapse', 'spiral', 'drop', 'folds', 'deep', 'leap', 'bend'].map((k) => b.marks[k].s / main.length),
+    checkpoints: ['synapse', 'spiral', 'drop', 'folds', 'bend', 'deep', 'leap'].map((k) => b.marks[k].s / main.length),
     laps: 3,
     bounds: 440,
     landmarks: [
       { kind: 'eyeGate', ribbon: -1, s: 6 },
       { kind: 'eyeGate', ribbon: -1, s: at('folds', -2) },
-      { kind: 'mindFace', ribbon: -1, s: at('drop', 60), lateral: -130 },
+      { kind: 'mindFace', ribbon: -1, s: at('drop', 30), lateral: -110 },
     ],
     itemBoxes: [
       { s: 75, count: 4 },
@@ -116,8 +142,8 @@ export function buildImInYourMind(): TrackDef {
       { s: open.boxes, count: 1, ribbon: 0, double: true },
     ],
     hazards: [
-      { kind: 'eyes', at: [at('folds', 50), at('folds', 135)], period: 4.6 },
-      { kind: 'eyes', at: [at('deep', 30), at('deep', 75), at('deep', 115)], period: 5 },
+      { kind: 'eyes', at: [at('folds', 20), at('folds', 60)], period: 4.6 },
+      { kind: 'eyes', at: [at('deep', 20), at('deep', 50), at('deep', 80)], period: 5 },
     ],
     theme: 'mind',
     music: { lap: 'im-in-your-mind', finalLap: 'im-in-your-mind-final-lap' },
