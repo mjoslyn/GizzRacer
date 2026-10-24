@@ -2,68 +2,105 @@ import { TrackBuilder, offsetPose, type Pose } from './builder';
 import type { BranchDef, TrackDef } from './track';
 
 const K = 1.12;
-const START: Pose = { x: 110 * K, z: -150 * K, h: -Math.PI / 2 };
+const DEG = Math.PI / 180;
+/** The wedge: a right triangle lying on its long side, this long and this tall (m), its middle on the origin. */
+const BASE = 620;
+const RISE = 230;
+/** How far the sloped top falls from the horizontal (degrees): the toe's sharp angle. */
+const SLOPE = Math.atan2(RISE, BASE) / DEG;
+/** How much road a turn of `deg` degrees and radius r (unscaled) takes off each side it joins (m). */
+const trim = (r: number, deg: number) => r * K * Math.tan((deg / 2) * DEG);
+/** A straight of `m` real metres. */
+const fill = (m: number) => m / K;
+/** The heel's right angle, and the toe's hairpin, which turns back through all but the slope. */
+const HEEL_R = 30;
+const TOE_R = 18;
+const TOE_TURN = 180 - SLOPE;
 const FINISH = 45;
-/** The Toe Down Bend: the road swings out round a pit in three arcs of this radius and turn. */
+/** Pedalboard Straight, start line to the heel, kickers included (m). */
+const PEDALBOARD = 140 * K + 14;
+/** The Toe Down Bend: the road swings in round a pit in three arcs of this radius and turn. */
 const BEND_R = 34;
 const BEND_TURN = 70;
 /** The Sweep Spiral's radius, and the top of it. */
 const SPIRAL_R = 22;
 const SPIRAL_TOP = 14;
+/** The top corner turns this far; the spiral takes it as a full turn more. */
+const TOP_TURN = 90 + SLOPE;
 /** How deep the Filter Trench is sunk. */
 const TRENCH_DEPTH = 6;
 /** The speaker stacks along Feedback Alley. */
 const STACKS = 5;
+/** Along the bottom, left to right, toward the heel. */
+const START: Pose = { x: BASE / 2 - trim(HEEL_R, 90) - PEDALBOARD, z: -RISE / 2, h: Math.PI / 2 };
 
 /**
  * Wah Wah (the Nonagon Infinity Cup's finale), after the song: a
  * pedalboard the size of a city under a purple night, on a road that is a
- * fretboard. Down Pedalboard Straight (two kickers) under an arch of neon
- * that sweeps with the filter, through the Heel Down Bend and a full turn
- * up the Sweep Spiral, over its own start, and the Resonance Drop off the
- * top. Right angles through Feedback Alley between speaker stacks 5 m tall
- * and the Filter Trench sunk 6 m, giant wah pedals rocking up and stamping
- * down across both; the Octave Leap over a pit, and the Toe Down Bend round
- * another, which the Open Pedal cuts straight across.
+ * fretboard. The layout is a wah pedal seen from the side: a long right
+ * triangle lying on its long side, a 620 m base, the heel a right angle
+ * 230 m tall at the right, and the long sloped edge, the pedal's rocking
+ * top, falling from the top of the heel all the way down to a sharp toe at
+ * the left. Along the base: Pedalboard Straight (two kickers) under an arch
+ * of neon that sweeps with the filter, and the Heel Down Bend, a right angle,
+ * up the heel. The Sweep Spiral takes the top corner as a full turn more, up
+ * 14 m on the inside of it and over the road it came in on, and the
+ * Resonance Drop falls off it down the sloped top, which runs on as Feedback
+ * Alley between speaker stacks 5 m tall and the Filter Trench sunk 6 m, giant
+ * wah pedals rocking up and stamping down across both. The toe is a hairpin
+ * into the Octave Leap over a pit, back along the base, and the Toe Down Bend
+ * swings in off the base round another, which the Open Pedal cuts straight
+ * across on the base's own line.
  */
 export function buildWahWah(): TrackDef {
   const b = new TrackBuilder(START, 'Pedalboard Straight', { halfWidth: 11, surface: 'fret' });
   b.scale = K;
   b.straight(40).mark('kick1').kicker().straight(30).mark('kick2').kicker().straight(70);
 
+  // The heel: a right angle, and up it.
   b.section('Heel Down Bend', { halfWidth: 9.5, wallHeight: 1.2, surface: 'fret' });
   b.mark('heel');
-  b.arc(40, 90).straight(10).arc(28, -60).arc(28, 60).straight(20);
+  b.arc(HEEL_R, -90);
+  b.straight(fill(RISE - trim(HEEL_R, 90) - trim(SPIRAL_R, TOP_TURN)));
 
-  // A full turn up and over the road it started on: the sweep.
+  // The top corner, taken as a full turn more up and over itself: the sweep.
   b.section('Sweep Spiral', { halfWidth: 9.5, wallHeight: 1.2, surface: 'fret', bridge: true });
   b.mark('spiral');
-  b.arc(SPIRAL_R, 360);
+  b.arc(SPIRAL_R, -(360 + TOP_TURN));
   b.mark('spiralTop');
+  // Still on its deck, clear of the road below it.
+  b.straight(25);
+
+  // Down the sloped top to the toe.
+  const top = Math.hypot(BASE, RISE) - trim(SPIRAL_R, TOP_TURN) - trim(TOE_R, TOE_TURN);
+  const alley = 140 * K;
+  const trench = 150 * K;
   b.section('Resonance Drop', { halfWidth: 10, surface: 'fret' });
   b.mark('drop');
-  b.straight(130);
-
+  b.straight(fill(top - alley - trench) - 25);
   b.section('Feedback Alley', { halfWidth: 9, wallHeight: STACKS, surface: 'fret' });
   b.mark('alley');
-  b.arc(16, 90).straight(30).arc(16, -90).straight(30).arc(16, 90).straight(20);
+  b.straight(140);
   b.section('Filter Trench', { halfWidth: 9, wallHeight: STACKS, surface: 'fret' });
   b.mark('trench');
   b.straight(140);
   b.mark('trenchEnd');
   b.straight(10);
 
+  // The toe: a hairpin back onto the base, and over the pit.
   b.section('Octave Leap', { halfWidth: 9, wallHeight: 1.2, surface: 'fret' });
   b.mark('leap');
-  b.arc(36, 90).straight(10).mark('ramp').elevate(0).rise(18, 3);
-  b.gap(13, 30);
+  b.arc(TOE_R, -TOE_TURN);
+  b.straight(20).mark('ramp').elevate(0).rise(18, 3);
+  b.gap(13, 24);
   b.elevate(0).straight(20);
 
+  // In off the base round the pit, and back onto it.
   b.section('Toe Down Bend', { halfWidth: 9.5, surface: 'fret' });
   b.mark('bend');
   b.straight(5);
   b.mark('pedalFrom');
-  b.arc(BEND_R, BEND_TURN).arc(BEND_R, -2 * BEND_TURN).arc(BEND_R, BEND_TURN);
+  b.arc(BEND_R, -BEND_TURN).arc(BEND_R, 2 * BEND_TURN).arc(BEND_R, -BEND_TURN);
   b.mark('pedalTo');
   b.turnTo(offsetPose(START, -FINISH * K), 38);
   b.section('Finish Straight', { halfWidth: 11, surface: 'fret' });
@@ -92,7 +129,7 @@ export function buildWahWah(): TrackDef {
     boostPads: [
       { s: 40, length: 8, lateral: 0, halfWidth: 2.5 },
       { s: at('drop', 110), length: 8, lateral: 0, halfWidth: 2.5 },
-      { s: at('leap', 70), length: 8, lateral: 0, halfWidth: 2.5 },
+      { s: b.marks.ramp.s - 10, length: 8, lateral: 0, halfWidth: 2.5 },
     ],
     checkpoints: ['heel', 'spiral', 'drop', 'alley', 'trench', 'leap', 'bend'].map((k) => b.marks[k].s / main.length),
     laps: 3,
