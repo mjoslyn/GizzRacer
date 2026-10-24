@@ -386,12 +386,10 @@ export class Hud {
 
   update(d: HudData, now: number): void {
     const k = d.kart;
-    this.lap.textContent = d.finished
-      ? 'FINISH'
-      : d.songLeft != null
-        ? `LAP ${d.lap + 1} · ${Math.floor(d.songLeft / 60)}:${String(Math.floor(d.songLeft % 60)).padStart(2, '0')} LEFT`
-        : `LAP ${d.lap + 1}/${Number.isFinite(d.totalLaps) ? d.totalLaps : '∞'}`;
-    this.time.textContent = formatTime(d.raceTime);
+    // Racing to the song's end, the song's time left goes on the clock's line: the lap line stays short, clear of the turn indicator.
+    const song = !d.finished && d.songLeft != null;
+    this.lap.textContent = d.finished ? 'FINISH' : song ? `LAP ${d.lap + 1}` : `LAP ${d.lap + 1}/${Number.isFinite(d.totalLaps) ? d.totalLaps : '∞'}`;
+    this.time.textContent = song ? `${formatTime(d.raceTime)} · ${Math.floor(d.songLeft! / 60)}:${String(Math.floor(d.songLeft! % 60)).padStart(2, '0')} left` : formatTime(d.raceTime);
     const gapEl = this.el.querySelector<HTMLElement>('.hud-ghost-gap')!;
     if (d.ghostGap) {
       const g = d.ghostGap.gap;
