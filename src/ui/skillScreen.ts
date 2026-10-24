@@ -301,8 +301,8 @@ function panel(s: Stage): void {
 const RIFF_HZ = [164.81, 196, 220, 246.94];
 const RIFF_KEYS: Record<string, number> = { ArrowLeft: 0, KeyD: 0, ArrowDown: 1, KeyF: 1, ArrowUp: 2, KeyJ: 2, ArrowRight: 3, KeyK: 3 };
 const RIFF_ARROWS = ['←', '↓', '↑', '→'];
-/** Seconds a note takes to fall the lane: long enough to read what's coming. */
-const RIFF_FALL = 2.8;
+/** Seconds a note takes to fall the lane: slow, so there's time to read what's coming. */
+const RIFF_FALL = 3.8;
 
 class RiffGame implements MiniGame {
   result: SkillResult | null = null;
@@ -385,12 +385,20 @@ class RiffGame implements MiniGame {
       g.textAlign = 'center';
       g.fillText(RIFF_ARROWS[i], x + laneW / 2, s.y + s.size * 0.96);
     }
+    // The catch zone: a note anywhere in this band when its lane is pressed counts (RIFF_OK either side of the line).
+    const perSecond = (hitY - s.y) / RIFF_FALL;
+    const reach = RIFF_OK * perSecond;
+    g.fillStyle = 'rgba(255, 210, 58, 0.16)';
+    g.fillRect(s.x + 4, hitY - reach, s.size - 8, reach * 2);
+    g.strokeStyle = 'rgba(255, 210, 58, 0.55)';
+    g.lineWidth = 1;
+    g.strokeRect(s.x + 4, hitY - reach, s.size - 8, reach * 2);
     g.fillStyle = GOLD;
     g.fillRect(s.x + 4, hitY - 2, s.size - 8, 4);
     this.riff.notes.forEach((n, i) => {
       const state = this.hit[i];
       if (state === 'good' || state === 'ok') return;
-      const y = hitY - ((n.t - t) / RIFF_FALL) * (hitY - s.y);
+      const y = hitY - (n.t - t) * perSecond;
       if (y < s.y || y > s.y + s.size) return;
       g.globalAlpha = state === 'miss' ? 0.3 : 1;
       g.fillStyle = LANE_COLORS[n.lane];

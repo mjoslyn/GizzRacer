@@ -16,7 +16,7 @@ export const SKILLS: Record<SkillKind, { name: string; intro: string; howTo: str
   riff: {
     name: 'Play the Riff',
     intro: 'A King Gizzard song lives or dies on its riff. This one comes round four times: play it back without dropping it.',
-    howTo: 'Press each lane as its note hits the gold line: arrow keys or D F J K, or tap the lane',
+    howTo: 'Press each lane while its note is in the gold band: arrow keys or D F J K, or tap the lane',
   },
   nonagon: {
     name: 'Nonagon Infinity',
@@ -55,7 +55,7 @@ export function skillRules(kind: SkillKind, level: number): string {
   switch (kind) {
     case 'riff': {
       const r = makeRiff(1, level);
-      return `Notes fall down four lanes. As each reaches the gold line, press its lane: the arrow keys or D F J K, or tap the lane. After a one-bar count-in the riff plays four times at ${r.bpm} bpm. Hit ${Math.round(r.need * 100)}% of the notes to pass; every two presses with no note there cost one.`;
+      return `Notes fall slowly down four lanes. While a note is in the gold band at the bottom, press its lane: the arrow keys or D F J K, or tap the lane. After a one-bar count-in the riff plays four times at ${r.bpm} bpm. Hit ${Math.round(r.need * 100)}% of the notes to pass; every two presses with no note there cost one.`;
     }
     case 'nonagon': {
       const g = makeNonagon(1, level);
@@ -82,8 +82,8 @@ export function skillRules(kind: SkillKind, level: number): string {
 
 export const RIFF_LANES = 4;
 /** Hit windows either side of a note, seconds. */
-export const RIFF_GOOD = 0.09;
-export const RIFF_OK = 0.18;
+export const RIFF_GOOD = 0.13;
+export const RIFF_OK = 0.25;
 /** Bars of count-in before the first note. */
 export const RIFF_COUNT_IN = 1;
 
