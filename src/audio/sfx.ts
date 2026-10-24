@@ -413,6 +413,14 @@ export class Sfx {
       this.hit(0.4, 120, 0.6);
       this.tone(320, 0.45, 'sawtooth', 0.09, 1500);
     }
+    // Smog is a choking rush of air; an airlock door a hiss and a clunk; a flare a low roar; the rats a squeal.
+    if (by === 'smog') this.whoosh(0.7, 900, 250, 0.3);
+    if (by === 'airlocks') {
+      this.whoosh(0.3, 3000, 1200, 0.2);
+      this.hit(0.35, 140, 0.6);
+    }
+    if (by === 'flares') this.tone(60, 0.8, 'sawtooth', 0.12, 120, 0, true);
+    if (by === 'rats') this.tone(2400, 0.35, 'square', 0.05, 3600);
     // A wave breaking over you: a crash of white noise; a glider comes in with a whistle of wind.
     if (by === 'waves') this.whoosh(0.8, 2400, 300, 0.35);
     if (by === 'gliders') this.whoosh(0.5, 1800, 500, 0.2);

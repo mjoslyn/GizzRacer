@@ -25,6 +25,8 @@ export interface HazardPose {
   active: boolean;
   /** Which way across the road it goes, 1 (to the right) or -1: a gust's direction. 0 when it doesn't matter. */
   side: number;
+  /** An airlock's opening: half the width between its two doors, centred on the pose. 0 for the rest. */
+  gap: number;
   /**
    * Kind-specific: boulder cycle stage (0..1), tumbleweed bounce height,
    * snake slither phase, dust devil spin.
@@ -104,6 +106,10 @@ export const WAVE_SPIN = 1.0;
  * - the gamma knife's crosshair, slipped through as it closes, is a boost
  * - hop as a vulture swoops and it carries you: up, and on with a boost
  * - a wah pedal stamped flat is a springboard, hopped onto: up high, with a boost
+ * - hop into a bank of smog and its heat carries you up; blast through it on a boost and the boost runs on
+ * - an airlock's slit, slipped through while the doors are shut to it, is a boost
+ * - drive under a solar flare while it arches high over the road and its wind is a boost
+ * - hopped, a swarm of rats is cleared for a boost; rammed on a boost they scatter and the boost runs on
  */
 /** A reward can't pay out again to the same kart for this long. */
 export const REWARD_COOLDOWN = 1.5;
@@ -130,8 +136,8 @@ export const WING_CHARGE = 1;
 /** Boost seconds gained per second skimming a black hole's pull on a boost. */
 export const GRAVITY_ASSIST = 0.8;
 const RAMPS = new Set<HazardKind>(['gliders', 'lavaBombs', 'meteors']);
-const RAMMABLE = new Set<HazardKind>(['stones', 'rollers', 'iceBlocks', 'hail', 'oilBombs', 'boulders', 'tumbleweeds', 'crystals']);
-const HOPPABLE = new Set<HazardKind>(['waves', 'snakes', 'fish', 'goblins', 'jaws']);
+const RAMMABLE = new Set<HazardKind>(['stones', 'rollers', 'iceBlocks', 'hail', 'oilBombs', 'boulders', 'tumbleweeds', 'crystals', 'rats']);
+const HOPPABLE = new Set<HazardKind>(['waves', 'snakes', 'fish', 'goblins', 'jaws', 'rats']);
 /** A geyser erupts for this share of its cycle, after its warning. */
 export const GEYSER_ERUPT = 0.18;
 const GEYSER_RADIUS = 2.8;
@@ -209,6 +215,52 @@ export const WAH_SPIN = 1.1;
 /** Hopped onto stamped flat: a springboard, this fast up (m/s), and a boost this long. */
 export const WAH_SPRING = 12;
 export const WAH_BOOST = 0.7;
+/** Smog cycle: gathering at the stack on one edge (the warning), rolling across the road, thinning away. */
+export const SMOG_STAGES = { roll: 0.4, clear: 0.75 } as const;
+export const SMOG_RADIUS = 4;
+/** Choked in it: this much of your speed kept. */
+export const SMOG_SLOW = 0.55;
+/** Hop into it and its heat throws you up this fast (m/s), with a trick window. */
+export const SMOG_LIFT = 9;
+/** Airlock cycle: open, the doors sliding in from both edges, shut to a slit, sliding back open. */
+export const AIRLOCK_STAGES = { close: 0.35, shut: 0.55, open: 0.75 } as const;
+/** Half the width of the slit left between the doors when they are shut, and how thick the doors are along the road. */
+export const AIRLOCK_SLIT = 2.8;
+export const AIRLOCK_DEPTH = 0.8;
+/** Slipped through the slit while it's shut: a boost this long. Caught by a door: spun out, this much of your speed kept. */
+export const AIRLOCK_BOOST = 0.8;
+export const AIRLOCK_SPIN = 1.0;
+export const AIRLOCK_SLOW = 0.6;
+/**
+ * Solar flare cycle: quiet, the footpoints glowing at both edges (the
+ * warning), a low loop of plasma boiling across the road (it burns), lifting
+ * into an arch high over it (drive under for a boost), then crashing back
+ * down and splashing across the road (it burns again).
+ */
+export const FLARE_STAGES = { glow: 0.25, erupt: 0.4, lift: 0.55, arch: 0.6, fall: 0.8, land: 0.86, done: 0.92 } as const;
+/** How high the flare arches, how low it boils across the road, and the height under which it burns. */
+export const FLARE_HEIGHT = 8;
+export const FLARE_LOW = 1.5;
+export const FLARE_CLEAR = 3;
+export const FLARE_BOOST = 0.9;
+export const FLARE_SPIN = 1.1;
+/** Rat swarm cycle: eyes in the hole at one edge (the warning), the swarm pouring across, gone. */
+export const RAT_STAGES = { pour: 0.4, gone: 0.8 } as const;
+/** The swarm is a stream this long across the road, this thick along it. */
+export const RAT_LENGTH = 7;
+export const RAT_RADIUS = 1.1;
+export const RAT_SPIN = 1.0;
+
+/** How high a solar flare's arch stands over the road at cycle stage `u`. */
+export function flareHeight(u: number): number {
+  const F = FLARE_STAGES;
+  if (u < F.erupt || u >= F.done) return 0;
+  if (u < F.lift) return FLARE_LOW;
+  if (u < F.arch) return FLARE_LOW + ((FLARE_HEIGHT - FLARE_LOW) * (u - F.lift)) / (F.arch - F.lift);
+  if (u < F.fall) return FLARE_HEIGHT;
+  if (u < F.land) return FLARE_HEIGHT * (1 - ((u - F.fall) / (F.land - F.fall)) ** 2);
+  return 0;
+}
 
 /** Throws a grounded kart up at `vy` with a trick window. */
 function launch(s: KartState, vy: number): void {
@@ -250,11 +302,15 @@ const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds' | 'butterfli
   gammaRays: GAMMA_SPIN,
   vultures: VULTURE_SPIN,
   wahs: WAH_SPIN,
+  smog: 0,
+  airlocks: AIRLOCK_SPIN,
+  flares: FLARE_SPIN,
+  rats: RAT_SPIN,
 };
 
 /** Kinds that fill the whole road across, on a rhythm: nothing to steer round, only to time. */
 export function isSheet(kind: HazardKind): boolean {
-  return kind === 'flameJets' || kind === 'dragonFire' || kind === 'lasers' || kind === 'waves' || kind === 'gusts' || kind === 'prisms';
+  return kind === 'flameJets' || kind === 'dragonFire' || kind === 'lasers' || kind === 'waves' || kind === 'gusts' || kind === 'prisms' || kind === 'flares';
 }
 
 /** Which of a prism beam's four colours it is showing at cycle stage `u` (3 is the fourth colour), and whether it is lit. */
@@ -296,7 +352,7 @@ export class HazardSystem {
       const n = 'at' in def ? def.at.length : def.count;
       for (let i = 0; i < n; i++) {
         this.slots.push({ def, index: i });
-        this.poses.push({ kind: def.kind, x: 0, y: 0, z: 0, heading: 0, radius: 0, ground: 0, ax: 0, az: 0, vx: 0, vz: 0, active: false, phase: 0, side: 0 });
+        this.poses.push({ kind: def.kind, x: 0, y: 0, z: 0, heading: 0, radius: 0, ground: 0, ax: 0, az: 0, vx: 0, vz: 0, active: false, phase: 0, side: 0, gap: 0 });
       }
     }
     this.update(0);
@@ -493,6 +549,79 @@ export class HazardSystem {
           p.phase = u;
           break;
         }
+        case 'smog': {
+          // Belched out at one edge (gathering there: the warning), rolling across the road, thinning away; the next comes from the other side.
+          const at = def.at[i];
+          const tt = t + 10 + (i * def.period) / def.at.length;
+          const cycle = Math.floor(tt / def.period);
+          const u = tt / def.period - cycle;
+          const side = (cycle + i) % 2 === 0 ? 1 : -1;
+          // Just inside the edge, so it can be seen gathering between walls.
+          const hw = this.halfWidth(at) - 1;
+          const S = SMOG_STAGES;
+          const k = u < S.roll ? 0 : u < S.clear ? (u - S.roll) / (S.clear - S.roll) : 1;
+          this.place(p, at, side * hw * (1 - 2 * k), 1);
+          p.radius = SMOG_RADIUS;
+          p.active = u >= S.roll && u < S.clear;
+          p.side = side;
+          p.phase = u;
+          break;
+        }
+        case 'airlocks': {
+          // Two doors sliding in from the edges to a slit, holding it, and sliding back; where they meet moves from one closing to the next.
+          const at = def.at[i];
+          const tt = t + 10 + (i * def.period) / def.at.length;
+          const cycle = Math.floor(tt / def.period);
+          const u = tt / def.period - cycle;
+          const hw = this.halfWidth(at);
+          const A = AIRLOCK_STAGES;
+          const c = hw * 0.45 * Math.sin(cycle * 2.13 + i * 1.7);
+          let k = 0;
+          if (u >= A.close && u < A.shut) k = (u - A.close) / (A.shut - A.close);
+          else if (u >= A.shut && u < A.open) k = 1;
+          else if (u >= A.open) k = Math.max(0, 1 - ((u - A.open) / (1 - A.open)) * 1.6);
+          // Open, both doors stand back past the road's edges.
+          const full = hw + 1 + Math.abs(c);
+          this.place(p, at, c, 0);
+          p.gap = full + (AIRLOCK_SLIT - full) * k * k * (3 - 2 * k);
+          p.radius = hw + 1;
+          p.active = k > 0;
+          p.phase = u;
+          break;
+        }
+        case 'flares': {
+          // The whole road across: a loop of plasma boiling across it, lifting into an arch, crashing down.
+          const at = def.at[i];
+          this.place(p, at, 0, 0);
+          const u = (((t + 10) / def.period + i * 0.37) % 1 + 1) % 1;
+          const up = u >= FLARE_STAGES.erupt && u < FLARE_STAGES.done;
+          const h = flareHeight(u);
+          p.radius = this.halfWidth(at) + 1;
+          // Low, it burns; arched high, it's a boost to drive under (collide pays it out).
+          p.active = up && h < FLARE_CLEAR;
+          p.side = up && h >= FLARE_CLEAR ? 1 : 0;
+          p.phase = u;
+          break;
+        }
+        case 'rats': {
+          // Eyes in a hole at one edge (the warning), then the swarm pours out and streams right across and off the other side.
+          const at = def.at[i];
+          const tt = t + 10 + (i * def.period) / def.at.length;
+          const cycle = Math.floor(tt / def.period);
+          const u = tt / def.period - cycle;
+          const side = (cycle + i) % 2 === 0 ? 1 : -1;
+          const hw = this.halfWidth(at) + 2;
+          const R = RAT_STAGES;
+          const k = u < R.pour ? 0 : u < R.gone ? (u - R.pour) / (R.gone - R.pour) : 1;
+          this.place(p, at, side * (hw - k * (2 * hw + RAT_LENGTH)), 0);
+          // Heading the way the swarm runs; the stream trails behind the lead rat.
+          p.heading += (side * Math.PI) / 2;
+          p.radius = RAT_RADIUS;
+          p.active = u >= R.pour && u < R.gone;
+          p.side = side;
+          p.phase = u;
+          break;
+        }
         case 'dustDevils':
         case 'butterflies':
         case 'tornadoes':
@@ -616,9 +745,18 @@ export class HazardSystem {
           this.crush(hit, p, s);
           continue;
         }
+        if (p.kind === 'airlocks') {
+          this.airlock(hit, p, s);
+          continue;
+        }
         if (p.kind === 'gammaRays' && !p.active) {
           // The crosshair nearly closed: slip through it and the knife misses, a boost.
           if (p.phase >= GAMMA_EDGE && p.phase < GAMMA_STAGES.fire && this.distance(p, s) <= p.radius + KART_RADIUS) this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, GAMMA_BOOST)));
+          continue;
+        }
+        if (p.kind === 'flares' && p.side === 1) {
+          // Arched high overhead: under it, the solar wind is a boost.
+          if (this.distance(p, s) <= p.radius + KART_RADIUS) this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, FLARE_BOOST)));
           continue;
         }
         if (!p.active) continue;
@@ -661,6 +799,22 @@ export class HazardSystem {
             s.speed *= WAH_SLOW;
             hit.push({ kart: s, by: p.kind });
           }
+          continue;
+        }
+        if (p.kind === 'smog') {
+          // Hop into it and its heat carries you up; blast through it on a boost and the boost runs on; otherwise it chokes you.
+          if (s.hopAge < HOP_WINDOW || !s.grounded) {
+            this.reward(hit, s, p.kind, () => launch(s, SMOG_LIFT));
+            continue;
+          }
+          if (s.boostTime > 0) {
+            this.reward(hit, s, p.kind, () => (s.boostTime += RAM_BOOST));
+            continue;
+          }
+          if (this.cooldown.has(s)) continue;
+          this.cooldown.set(s, HIT_COOLDOWN);
+          s.speed *= SMOG_SLOW;
+          hit.push({ kart: s, by: p.kind });
           continue;
         }
         if (isSwirl(p.kind)) {
@@ -766,6 +920,17 @@ export class HazardSystem {
   obstacles(out: { x: number; z: number; r: number; vx: number; vz: number }[]): void {
     for (const p of this.poses) {
       if (isSheet(p.kind)) continue; // the whole road: nothing to steer around
+      if (p.kind === 'airlocks') {
+        // From just before they close until they open: the doors where they will be when shut, so the slit is lined up early.
+        if (p.phase < AIRLOCK_STAGES.close - 0.1 || p.phase > AIRLOCK_STAGES.open) continue;
+        const fx = Math.sin(p.heading);
+        const fz = Math.cos(p.heading);
+        const c = (p.x - p.ax) * -fz + (p.z - p.az) * fx;
+        for (const side of [-1, 1]) {
+          for (let l = c + side * (AIRLOCK_SLIT + 1.2); Math.abs(l) < p.radius + 1; l += side * 2.4) out.push({ x: p.ax - fz * l, z: p.az + fx * l, r: 1.5, vx: 0, vz: 0 });
+        }
+        continue;
+      }
       const falling = isFalling(p.kind);
       if (p.kind === 'lightning' || p.kind === 'geysers' || p.kind === 'jaws') {
         if (p.phase < BOULDER_STAGES.fall * 0.5 || p.phase > BOULDER_STAGES.land + LIGHTNING_STRIKE) continue;
@@ -778,11 +943,12 @@ export class HazardSystem {
         // From just before the stamp until the pedal is back up.
         if (p.phase < WAH_STAGES.stamp - 0.08 || p.phase > WAH_STAGES.rise) continue;
       } else if (falling ? p.phase > BOULDER_STAGES.crumble || p.phase < BOULDER_STAGES.fall * 0.5 : !p.active) continue;
-      if (p.kind === 'snakes') {
-        // The body trails the head: aim to miss its middle.
-        const bx = -Math.sin(p.heading) * SNAKE_LENGTH * 0.5;
-        const bz = -Math.cos(p.heading) * SNAKE_LENGTH * 0.5;
-        out.push({ x: p.x + bx, z: p.z + bz, r: SNAKE_LENGTH * 0.5 + SNAKE_RADIUS, vx: p.vx, vz: p.vz });
+      if (p.kind === 'snakes' || p.kind === 'rats') {
+        // The body (or the stream of rats) trails the head: aim to miss its middle.
+        const len = p.kind === 'rats' ? RAT_LENGTH : SNAKE_LENGTH;
+        const bx = -Math.sin(p.heading) * len * 0.5;
+        const bz = -Math.cos(p.heading) * len * 0.5;
+        out.push({ x: p.x + bx, z: p.z + bz, r: len * 0.5 + p.radius, vx: p.vx, vz: p.vz });
       } else {
         out.push({ x: p.x, z: p.z, r: p.radius, vx: p.vx, vz: p.vz });
       }
@@ -815,6 +981,30 @@ export class HazardSystem {
     const ahead = (s.x - p.x) * Math.sin(p.heading) + (s.z - p.z) * Math.cos(p.heading) > 0;
     if (p.phase >= C.landed - 0.01 && p.phase < C.landed + 0.03 && ahead && d <= p.radius + KART_RADIUS + SHOCKWAVE_REACH) {
       this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, SHOCKWAVE_BOOST)));
+    }
+  }
+
+  /**
+   * An airlock: caught by either door as it closes (or once it's shut),
+   * you're spun out; through the slit while it's shut to one, a boost.
+   */
+  private airlock(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+    if (!p.active) return;
+    const fx = Math.sin(p.heading);
+    const fz = Math.cos(p.heading);
+    if (Math.abs((s.x - p.x) * fx + (s.z - p.z) * fz) > AIRLOCK_DEPTH + KART_RADIUS) return;
+    const across = Math.abs((s.x - p.x) * -fz + (s.z - p.z) * fx);
+    if (across + KART_RADIUS <= p.gap) {
+      if (p.phase >= AIRLOCK_STAGES.shut && p.phase < AIRLOCK_STAGES.open) this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, AIRLOCK_BOOST)));
+      return;
+    }
+    // Past the frame at the road's edge there's no door.
+    if (Math.abs((s.x - p.ax) * -fz + (s.z - p.az) * fx) > p.radius + KART_RADIUS) return;
+    if (this.cooldown.has(s)) return;
+    this.cooldown.set(s, HIT_COOLDOWN);
+    if (spinOut(s, AIRLOCK_SPIN)) {
+      s.speed *= AIRLOCK_SLOW;
+      hit.push({ kart: s, by: p.kind });
     }
   }
 
@@ -857,12 +1047,12 @@ export class HazardSystem {
       // Inside the sheet counts as touching; the radius is the half-width.
       return along < JET_DEPTH + KART_RADIUS ? across - KART_RADIUS : Infinity;
     }
-    if (p.kind !== 'snakes') return Math.hypot(s.x - p.x, s.z - p.z);
+    if (p.kind !== 'snakes' && p.kind !== 'rats') return Math.hypot(s.x - p.x, s.z - p.z);
     const bx = -Math.sin(p.heading);
     const bz = -Math.cos(p.heading);
     const dx = s.x - p.x;
     const dz = s.z - p.z;
-    const along = Math.max(0, Math.min(SNAKE_LENGTH, dx * bx + dz * bz));
+    const along = Math.max(0, Math.min(p.kind === 'rats' ? RAT_LENGTH : SNAKE_LENGTH, dx * bx + dz * bz));
     return Math.hypot(dx - bx * along, dz - bz * along);
   }
 

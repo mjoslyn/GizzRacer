@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import * as tex from './textures';
 import { DESERT_SKY, type SkyColors } from './textures';
 
-export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism' | 'factory' | 'gamma' | 'carrion' | 'wah';
-export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard';
+export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism' | 'factory' | 'gamma' | 'carrion' | 'wah' | 'smog' | 'dome' | 'solar' | 'inferno';
+export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit';
 
 /** Everything that makes a track's world look like itself. */
 export interface Theme {
@@ -522,5 +522,78 @@ export const THEMES: Record<ThemeId, Theme> = {
     dust: 0xe0b0f0,
     barrier: { map: tex.grilleTexture, crawl: true },
     roadGlow: 0.18,
+  },
+  // Planet B: Earth used up and burning, a dead city under smog the colour of a bruise, the sun a sick disc in it.
+  smog: {
+    sky: { zenith: '#2a2420', high: '#4a3c30', low: '#7a6040', horizon: '#c89a50', below: '#4a4036', ground: '#2a2622', cloud: '90,80,70', clouds: 54 },
+    fog: { color: 0x6a5a44, near: 90, far: 560 },
+    hemi: { sky: 0xd8b080, ground: 0x2a2620, intensity: 1.3 },
+    sun: { color: 0xe8c080, intensity: 1.7 },
+    ground: tex.smogGroundTexture,
+    groundTile: 20,
+    // Walls are tenements, sooted black.
+    cliff: tex.tenementTexture,
+    decor: 'blight',
+    distant: { shape: 'flare', color: 0x2a2420 },
+    haze: 0.7,
+    duotone: [0x060402, 0x8a5a20, 0xe8c070],
+    skyCycle: false,
+    dust: 0x8a8070,
+    barrier: { map: tex.rustTexture, crawl: false },
+    roadGlow: 0.1,
+  },
+  // Mars for the Rich: the rich's colony under glass, gleaming white and gold on the red dust, a clean butterscotch sky.
+  dome: {
+    sky: { zenith: '#6a3a2a', high: '#b0705a', low: '#e0a888', horizon: '#f8dcc0', below: '#c07a50', ground: '#8a3a1e', cloud: '250,220,200', clouds: 10 },
+    fog: { color: 0xe0a07a, near: 180, far: 900 },
+    hemi: { sky: 0xffe0c8, ground: 0x8a3a1e, intensity: 1.6 },
+    sun: { color: 0xfff0e0, intensity: 2.4 },
+    ground: tex.domeGroundTexture,
+    groundTile: 24,
+    // Walls are the colony's glass.
+    cliff: tex.domeGlassTexture,
+    decor: 'domes',
+    distant: { shape: 'mesa', color: 0x9a3e22 },
+    haze: 0.3,
+    duotone: [0x0a0402, 0xc04a20, 0xffe0a0],
+    skyCycle: false,
+    dust: 0xd07a4a,
+    barrier: { map: tex.domeGlassTexture, crawl: false },
+  },
+  // Perihelion: a ship falling at the sun, the corona filling the sky, the surface boiling far below.
+  solar: {
+    sky: { zenith: '#1a0400', high: '#6a1400', low: '#e05a00', horizon: '#fff2b0', below: '#ff9a30', ground: '#ff7a10', cloud: '255,200,120', clouds: 22 },
+    fog: { color: 0xff8a30, near: 160, far: 860 },
+    hemi: { sky: 0xffd090, ground: 0xff6a10, intensity: 1.6 },
+    sun: { color: 0xfff0c0, intensity: 2.6 },
+    ground: tex.solarGroundTexture,
+    groundTile: 36,
+    cliff: tex.heatShieldTexture,
+    decor: 'corona',
+    distant: { shape: 'cloud', color: 0xff7a20 },
+    haze: 1,
+    duotone: [0x100000, 0xe04000, 0xfff0a0],
+    skyCycle: false,
+    dust: 0xffc070,
+    barrier: { map: tex.heatShieldTexture, crawl: true },
+  },
+  // Hell: down through the pit, black rock and rivers of fire under a sky the colour of embers.
+  inferno: {
+    sky: { zenith: '#080000', high: '#2a0404', low: '#6a0a04', horizon: '#ff4a10', below: '#3a0804', ground: '#140404', cloud: '90,20,10', clouds: 40 },
+    fog: { color: 0x3a0a06, near: 110, far: 600 },
+    hemi: { sky: 0xff5a2a, ground: 0x2a0606, intensity: 1.5 },
+    sun: { color: 0xff7a40, intensity: 2.0 },
+    ground: tex.infernoGroundTexture,
+    groundTile: 22,
+    // Walls are black rock seamed with fire.
+    cliff: tex.hellWallTexture,
+    decor: 'pit',
+    distant: { shape: 'volcano', color: 0x140606 },
+    haze: 0.9,
+    duotone: [0x000000, 0xc01008, 0xffb030],
+    skyCycle: false,
+    dust: 0x3a1a14,
+    barrier: { map: tex.hellWallTexture, crawl: false },
+    roadGlow: 0.3,
   },
 };

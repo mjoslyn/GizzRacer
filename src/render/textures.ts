@@ -1952,3 +1952,294 @@ export function wahGroundTexture(): THREE.CanvasTexture {
   });
   return finish(c);
 }
+
+/** Planet B's road: cracked asphalt gone grey with soot, tar bleeding up through the cracks, a faded line. */
+export function tarTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 5, 1001);
+  paint(ctx, S, S, (_x, _y, i) => mix([34, 32, 32], [78, 74, 72], n[i]));
+  cracks(ctx, S, 20, 'rgba(8,6,6,0.6)', 1.8, 1002);
+  const rand = seededRandom(1003);
+  for (let k = 0; k < 10; k++) {
+    const x = rand() * S;
+    const y = rand() * S;
+    const r = 4 + rand() * 10;
+    ctx.fillStyle = 'rgba(6,4,4,0.4)';
+    wrapStroke(ctx, S, () => {
+      ctx.beginPath();
+      ctx.ellipse(x, y, r, r * (0.5 + rand() * 0.5), rand() * Math.PI, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+  // Ash settling on it.
+  for (let k = 0; k < 500; k++) {
+    ctx.fillStyle = `rgba(170,160,150,${0.15 + rand() * 0.2})`;
+    ctx.fillRect(rand() * S, rand() * S, 1.5, 1.5);
+  }
+  return finish(c);
+}
+
+/** The ground round Planet B: ash and slag, dead grass, black puddles of crude, rubbish. */
+export function smogGroundTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 5, 1011);
+  const dead = fbm(S, 2, 3, 1012);
+  paint(ctx, S, S, (_x, _y, i) => mix(mix([52, 48, 44], [104, 96, 86], n[i]), [96, 84, 50], Math.max(0, dead[i] - 0.55) * 2));
+  const rand = seededRandom(1013);
+  for (let k = 0; k < 30; k++) {
+    const x = rand() * S;
+    const y = rand() * S;
+    const r = 8 + rand() * 24;
+    ctx.fillStyle = rand() < 0.7 ? 'rgba(8,6,8,0.75)' : 'rgba(200,90,30,0.35)';
+    wrapStroke(ctx, S, () => {
+      ctx.beginPath();
+      ctx.ellipse(x, y, r, r * (0.4 + rand() * 0.5), rand() * Math.PI, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+  for (let k = 0; k < 260; k++) {
+    ctx.fillStyle = ['rgba(200,190,170,0.5)', 'rgba(60,90,140,0.5)', 'rgba(180,60,40,0.5)'][k % 3];
+    ctx.fillRect(rand() * S, rand() * S, 2 + rand() * 4, 1.5 + rand() * 3);
+  }
+  cracks(ctx, S, 14, 'rgba(20,16,14,0.6)', 1.5, 1014);
+  return finish(c);
+}
+
+/** A tenement wall on Planet B: soot-black brick, boarded windows, a streak of rust under each. */
+export function tenementTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 4, 1021);
+  paint(ctx, S, S, (x, y, i) => {
+    const row = Math.floor(y / 8);
+    const mortar = y % 8 < 1 || (x + (row % 2) * 8) % 16 < 1;
+    const base = mix([60, 34, 28], [110, 64, 48], n[i]);
+    const soot = Math.min(1, 1.2 - y / S + n[i] * 0.4);
+    return shade(mortar ? [40, 36, 34] : base, 0.5 + 0.5 * (1 - soot * 0.6));
+  });
+  for (let wx = 16; wx < S; wx += 64) {
+    for (let wy = 20; wy < S; wy += 64) {
+      ctx.fillStyle = '#141010';
+      ctx.fillRect(wx, wy, 32, 28);
+      ctx.fillStyle = 'rgba(120,90,50,0.9)';
+      for (let k = 0; k < 3; k++) ctx.fillRect(wx - 2, wy + 4 + k * 9, 36, 5);
+      ctx.fillStyle = 'rgba(120,60,30,0.35)';
+      ctx.fillRect(wx + 4, wy + 28, 24, 30);
+    }
+  }
+  return finish(c);
+}
+
+/** Mars for the Rich's boulevard: white marble veined grey, gold inlay in a diamond lattice. */
+export function gildedTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 3, 5, 1031);
+  const vein = fbm(S, 2, 4, 1032);
+  paint(ctx, S, S, (x, y, i) => {
+    const d = Math.min(Math.abs(((x + y) % 128) - 64), Math.abs(((x - y + 512) % 128) - 64));
+    if (d < 2.5) return mix([200, 150, 50], [255, 220, 120], n[i]);
+    const v = Math.abs(vein[i] - 0.5) < 0.02 ? 0.75 : 1;
+    return shade(mix([214, 210, 204], [246, 244, 240], n[i]), v);
+  });
+  return finish(c);
+}
+
+/** The red dust round the colony: fine rust, rover tracks and the odd footprint where the poor walked. */
+export function domeGroundTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 5, 1041);
+  paint(ctx, S, S, (_x, _y, i) => mix([140, 56, 30], [204, 104, 62], n[i]));
+  const rand = seededRandom(1042);
+  ctx.strokeStyle = 'rgba(90,34,18,0.45)';
+  for (let k = 0; k < 6; k++) {
+    const y0 = rand() * S;
+    const tilt = (rand() - 0.5) * 0.6;
+    for (const off of [0, 14]) {
+      ctx.lineWidth = 4;
+      wrapStroke(ctx, S, () => {
+        ctx.beginPath();
+        ctx.moveTo(0, y0 + off);
+        ctx.lineTo(S, y0 + off + tilt * S);
+        ctx.stroke();
+      });
+    }
+  }
+  for (let k = 0; k < 160; k++) {
+    ctx.fillStyle = rand() < 0.5 ? 'rgba(80,28,14,0.5)' : 'rgba(240,160,110,0.35)';
+    ctx.beginPath();
+    ctx.arc(rand() * S, rand() * S, 1 + rand() * 3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  return finish(c);
+}
+
+/** The colony's glass: tall panes in gold frames, a sheen across them, the rich's towers faint behind. */
+export function domeGlassTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 2, 3, 1051);
+  paint(ctx, S, S, (x, y, i) => {
+    if (x % 64 < 4 || y % 128 < 4) return mix([170, 120, 40], [240, 200, 100], n[i]);
+    const sheen = Math.max(0, 1 - Math.abs(((x - y * 0.5 + 512) % 128) - 40) / 18);
+    return mix(mix([120, 170, 190], [180, 220, 236], n[i]), [250, 252, 255], sheen * 0.6);
+  });
+  ctx.fillStyle = 'rgba(90,110,130,0.35)';
+  const rand = seededRandom(1052);
+  for (let k = 0; k < 8; k++) {
+    const w = 10 + rand() * 18;
+    const h = 40 + rand() * 120;
+    ctx.fillRect(rand() * S, S - h, w, h);
+  }
+  return finish(c);
+}
+
+/** Perihelion's road: the ship's heat shield, black ceramic tiles glowing orange at the seams. */
+export function heatShieldTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 4, 1061);
+  paint(ctx, S, S, (x, y, i) => {
+    const row = Math.floor(y / 32);
+    const lx = (x + (row % 2) * 16) % 32;
+    const seam = lx < 2 || y % 32 < 2;
+    if (seam) return mix([255, 110, 20], [255, 210, 90], n[i]);
+    const tile = Math.floor((x + (row % 2) * 16) / 32) + row * 8;
+    return shade(mix([22, 20, 22], [60, 54, 52], n[i]), 0.85 + ((tile * 37) % 9) * 0.04);
+  });
+  // Scorch where the heat has got through.
+  const rand = seededRandom(1062);
+  for (let k = 0; k < 10; k++) {
+    const x = rand() * S;
+    const y = rand() * S;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, 14);
+    g.addColorStop(0, 'rgba(255,120,40,0.35)');
+    g.addColorStop(1, 'rgba(255,120,40,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(x - 14, y - 14, 28, 28);
+  }
+  return finish(c);
+}
+
+/** The sun's surface far below the ship: granulation, cells of yellow fire edged in orange. */
+export function solarGroundTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 6, 4, 1071);
+  const rand = seededRandom(1072);
+  const cells: [number, number][] = Array.from({ length: 40 }, () => [rand() * S, rand() * S]);
+  paint(ctx, S, S, (x, y, i) => {
+    let d1 = Infinity;
+    let d2 = Infinity;
+    for (const [cx, cy] of cells) {
+      const dx = Math.min(Math.abs(x - cx), S - Math.abs(x - cx));
+      const dy = Math.min(Math.abs(y - cy), S - Math.abs(y - cy));
+      const d = dx * dx + dy * dy;
+      if (d < d1) {
+        d2 = d1;
+        d1 = d;
+      } else if (d < d2) d2 = d;
+    }
+    const edge = Math.min(1, (Math.sqrt(d2) - Math.sqrt(d1)) / 10);
+    return mix([200, 60, 10], mix([255, 170, 40], [255, 236, 150], n[i]), edge);
+  });
+  return finish(c);
+}
+
+/** Hell's road: black brimstone, lava glowing in the cracks, sulphur crusted on it. */
+export function brimstoneTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 5, 1081);
+  paint(ctx, S, S, (_x, _y, i) => mix([20, 14, 14], [64, 44, 40], n[i]));
+  cracks(ctx, S, 16, 'rgba(255,90,20,0.95)', 2.5, 1082);
+  cracks(ctx, S, 16, 'rgba(255,200,80,0.6)', 1, 1082);
+  const rand = seededRandom(1083);
+  for (let k = 0; k < 120; k++) {
+    ctx.fillStyle = 'rgba(220,200,60,0.4)';
+    ctx.fillRect(rand() * S, rand() * S, 2, 2);
+  }
+  return finish(c);
+}
+
+/** The ground of Hell: ash, embers, rivers of lava, and bones in it. */
+export function infernoGroundTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 5, 1091);
+  const flow = fbm(S, 2, 4, 1092);
+  paint(ctx, S, S, (_x, _y, i) => {
+    const river = Math.max(0, 1 - Math.abs(flow[i] - 0.5) / 0.025);
+    return mix(mix([30, 12, 10], [80, 30, 20], n[i]), [255, 120, 20], river);
+  });
+  const rand = seededRandom(1093);
+  for (let k = 0; k < 300; k++) {
+    ctx.fillStyle = rand() < 0.6 ? 'rgba(255,120,40,0.6)' : 'rgba(230,220,200,0.5)';
+    ctx.fillRect(rand() * S, rand() * S, 1.5 + rand() * 2, 1.5);
+  }
+  return finish(c);
+}
+
+/** The walls of Hell: black rock seamed with fire, skulls set in it. */
+export function hellWallTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 4, 1101);
+  paint(ctx, S, S, (_x, y, i) => mix(mix([18, 10, 10], [66, 30, 24], n[i]), [180, 50, 10], Math.max(0, (y - S * 0.8) / (S * 0.2)) * 0.6));
+  cracks(ctx, S, 10, 'rgba(255,100,20,0.9)', 2, 1102);
+  const rand = seededRandom(1103);
+  for (let k = 0; k < 5; k++) {
+    const x = 20 + rand() * (S - 40);
+    const y = 20 + rand() * (S - 60);
+    ctx.fillStyle = 'rgba(200,190,170,0.85)';
+    ctx.beginPath();
+    ctx.ellipse(x, y, 10, 12, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(x - 6, y + 8, 12, 8);
+    ctx.fillStyle = 'rgba(20,6,6,0.95)';
+    for (const sx of [-4, 4]) {
+      ctx.beginPath();
+      ctx.arc(x + sx, y, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  return finish(c);
+}
+
+/** Planet B's Earth, wrapped round a globe: grey dead seas, scorched brown continents, fires burning across them. */
+export function burntEarthTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S * 2, S);
+  const land = fbm(S * 2, 4, 5, 1111);
+  const n = fbm(S * 2, 8, 3, 1112);
+  paint(ctx, S * 2, S, (x, y) => {
+    const i = y * S * 2 + x;
+    const v = land[i];
+    if (v < 0.5) return mix([40, 52, 62], [80, 90, 96], n[i]);
+    if (v > 0.62 && n[i] > 0.6) return mix([255, 110, 20], [255, 220, 90], n[i] - 0.6);
+    return mix([70, 46, 28], [130, 96, 56], n[i]);
+  });
+  const rand = seededRandom(1113);
+  for (let k = 0; k < 60; k++) {
+    const x = rand() * S * 2;
+    const y = S * 0.15 + rand() * S * 0.7;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, 6 + rand() * 10);
+    g.addColorStop(0, 'rgba(255,200,80,0.95)');
+    g.addColorStop(1, 'rgba(255,60,0,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(x - 16, y - 16, 32, 32);
+  }
+  return finish(c);
+}
+
+/** A rat's fur: dark grey-brown, streaked. */
+export function furTexture(): THREE.CanvasTexture {
+  const S = 128;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 8, 3, 1121);
+  paint(ctx, S, S, (x, _y, i) => shade(mix([46, 38, 34], [96, 82, 70], n[i]), 0.8 + 0.2 * Math.abs(Math.sin(x * 0.9 + n[i] * 9))));
+  return finish(c);
+}

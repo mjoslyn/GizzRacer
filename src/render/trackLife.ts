@@ -67,6 +67,10 @@ const LIFE: Record<DecorKind, LifeSpec> = {
   theatre: { motes: { color: 0x80ffb0, count: 260, size: 0.4, drift: 'float', glow: true } },
   boneyard: { flock: { kind: 'vulture', color: 0x1a0e08, count: 9, height: 28, size: 1.8 }, motes: { color: 0xe8d8b0, count: 300, size: 0.55, drift: 'blow' } },
   pedalboard: { flock: { kind: 'orb', color: 0xff80d0, count: 10, height: 18, size: 0.6, glow: true }, motes: { color: 0xffd040, count: 260, size: 0.4, drift: 'float', glow: true } },
+  blight: { flock: { kind: 'bat', color: 0x1a1614, count: 10, height: 22, size: 0.9 }, motes: { color: 0x9a9080, count: 420, size: 0.55, drift: 'fall' } },
+  domes: { motes: { color: 0xd8865a, count: 300, size: 0.5, drift: 'blow' } },
+  corona: { flock: { kind: 'orb', color: 0xffe080, count: 12, height: 20, size: 0.7, glow: true }, motes: { color: 0xffc050, count: 400, size: 0.45, drift: 'rise', glow: true } },
+  pit: { flock: { kind: 'bat', color: 0x0a0202, count: 14, height: 20, size: 1.1 }, motes: { color: 0xff6a20, count: 420, size: 0.45, drift: 'rise', glow: true } },
 };
 
 export function trackLife(track: Track, theme: Theme, animated: ((time: number) => void)[]): Life {

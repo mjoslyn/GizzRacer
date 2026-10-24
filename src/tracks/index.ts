@@ -28,6 +28,10 @@ import { buildRobotStop } from './robotStop';
 import { buildGammaKnife } from './gammaKnife';
 import { buildPeopleVultures } from './peopleVultures';
 import { buildWahWah } from './wahWah';
+import { buildPlanetB } from './planetB';
+import { buildMarsForTheRich } from './marsForTheRich';
+import { buildPerihelion } from './perihelion';
+import { buildHell } from './hell';
 
 /** Every track the picker offers, in cup order, each with its layout extras laid in (enrich.ts). */
 /** The tracks as drawn, before enrich.ts (tests and tools). */
@@ -60,6 +64,10 @@ export const RAW_TRACK_LIST: { id: string; name: string; build: () => TrackDef }
   { id: 'gamma-knife', name: 'Gamma Knife', build: buildGammaKnife },
   { id: 'people-vultures', name: 'People-Vultures', build: buildPeopleVultures },
   { id: 'wah-wah', name: 'Wah Wah', build: buildWahWah },
+  { id: 'planet-b', name: 'Planet B', build: buildPlanetB },
+  { id: 'mars-for-the-rich', name: 'Mars for the Rich', build: buildMarsForTheRich },
+  { id: 'perihelion', name: 'Perihelion', build: buildPerihelion },
+  { id: 'hell', name: 'Hell', build: buildHell },
 ];
 
 export const TRACK_LIST: { id: string; name: string; build: () => TrackDef }[] = RAW_TRACK_LIST.map((t) => ({ ...t, build: () => enrichTrack(t.build()) }));
@@ -78,6 +86,8 @@ export const CUPS: { id: string; name: string; tracks: number[] }[] = [
   { id: 'polygondwanaland', name: 'Polygondwanaland Cup', tracks: [20, 21, 22, 23] },
   // Nonagon Infinity (2016), in album order: the robot factory, the gamma knife, the vultures' dry lake and the pedalboard. The album never ends, so Wah Wah's finish is Robot Stop's start.
   { id: 'nonagon-infinity', name: 'Nonagon Infinity Cup', tracks: [24, 25, 26, 27] },
+  // Infest the Rats' Nest (2019), in album order: the burning Earth, the rich's colony on Mars, the ship falling at the sun, and down into Hell.
+  { id: 'infest-the-rats-nest', name: "Infest the Rats' Nest Cup", tracks: [28, 29, 30, 31] },
 ];
 
 /** The Random Cup, after the others in the picker: four of the premade tracks drawn at random. */
