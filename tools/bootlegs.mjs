@@ -33,7 +33,8 @@ try {
 // The songs, read from songs.ts so the two can't drift apart.
 const songsSrc = readFileSync(new URL('../src/audio/songs.ts', import.meta.url), 'utf8');
 const SONGS = [...new Set([...songsSrc.matchAll(/title: '((?:[^'\\]|\\.)*)'|title: "([^"]*)"/g)].map((m) => (m[1] ?? m[2]).replace(/\\'/g, "'")))];
-const norm = (s) => s.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]/g, '');
+/** Letters and digits only, and no leading "the" ("Lord of Lightning" is The Lord of Lightning). */
+const norm = (s) => s.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]/g, '').replace(/^the/, '');
 const WANT = new Map(SONGS.map((t) => [norm(t), t]));
 
 async function json(url, tries = 4) {
@@ -60,9 +61,26 @@ async function items() {
   }
 }
 
+/**
+ * A track's title without what tapers add around the song: "(Live in Athens
+ * '25)", "[take 1]", "(with Leah Senior)", a leading "*", and a file name's
+ * prefix ("KGLW_2018-08-22_AUD_t03_", "KingGizzard2022-10-05t12 - ", "King
+ * Gizzard & The Lizard Wizard - Live in Asheville '19 - 04 ").
+ */
+function cleanTitle(title) {
+  return title
+    .replace(/\s*[([][^)\]]*[)\]]/g, '')
+    .replace(/^\*+\s*/, '')
+    .replace(/^KGLW_.*?_t\d+_/i, '')
+    .replace(/\s+-\s*$/, '')
+    .replace(/^.*\s-\s+/, '')
+    .replace(/^\d+[-_. ]+/, '')
+    .trim();
+}
+
 /** The song titles a track is: a medley ("Robot Stop / Big Fig Wasp") is each of them. */
 function songsIn(title) {
-  return title
+  return cleanTitle(title)
     .replace(/\s*-?>+\s*$/, '')
     .split(/\s*(?:\/|->|>|\+)\s*/)
     .map((s) => WANT.get(norm(s)))

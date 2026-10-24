@@ -88,8 +88,8 @@ export function remixCues(cue: string): string[] {
  * list a chapter: what a story race plays on Track song, before its track's
  * own song. Only the ones the band play live are any use; a stage takes the
  * first of its chapter's, from its place on, with recordings. Chapter II has
- * only two the band play, so Supercell (the Lord of Lightning's storm, and
- * its boss duel's track) is its second race's, leaving The Balrog to the duel.
+ * only two the band play, so Vomit Coffin (from Chapter III) is its second
+ * race's, leaving The Balrog to the duel.
  */
 const MOTU = { album: 'Murder of the Universe', year: 2017 };
 export const STORY_SONGS: readonly (readonly TrackSong[])[] = [
@@ -104,7 +104,7 @@ export const STORY_SONGS: readonly (readonly TrackSong[])[] = [
   ],
   [
     { title: 'The Lord of Lightning', ...MOTU },
-    TRACK_SONGS.supercell,
+    { title: 'Vomit Coffin', ...MOTU },
     { title: 'The Balrog', ...MOTU },
     { title: 'The Floating Fire', ...MOTU },
     { title: 'The Acrid Corpse', ...MOTU },
