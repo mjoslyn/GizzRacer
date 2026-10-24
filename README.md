@@ -4,7 +4,7 @@
 
 **Play now: [gizzracer.com](https://www.gizzracer.com)**
 
-No install and no account. It will always be free.
+No install and no account. It will always be free. **[The manual](https://www.gizzracer.com/manual)** (also on the title screen) covers the modes, controls, moves, items, racers and tracks.
 
 ## What's in it
 
@@ -22,7 +22,7 @@ No install and no account. It will always be free.
 - **Living tracksides:** every section's name on a board as you reach it, the grid painted on the road, stands of spectators at the sharpest bends, flocks of each world's creatures that scatter as you pass (vultures, gulls, bats, moths, drones, ghost lights), dust, pollen, snow, embers and spores in the air, and every light on the track pulsing on the final lap
 - **Shortcuts on every track** that come and go by lap: a phantom causeway that only appears on lap 2, a snake that shuts its jaws, a tide that floods the boardwalk, a wall of fire that only drops on the final lap. Trick kickers on the straights and double item boxes on the risky lines
 - **Hazards** from the songs: rattlesnakes, flame jets, tornadoes, black holes, dragons breathing fire across a gullet, planes gliding in with their propellers stopped, waves breaking over a causeway, garden goblins, geysers, a pliosaur snapping over the road's edge, castle masonry slamming down, gusts over the clouds, vesicles and prism beams in four colours, robots that stop dead in the road, a gamma knife's beams closing on one point, vultures diving at the road and wah pedals stamping down on it. Use them well and they help: surf the wave, catch the fourth colour, hop onto a crashed plane for a ramp, ram a boulder on a boost, slip through a laser gate as it warms up, slip through the gamma knife's crosshair as it closes, hop as a vulture swoops and it carries you
-- **21 racers**, each with their own vehicle: the Lizard Wizard, Han-Tyumi in a fishing dinghy, a flying Gila monster, Beowulf's Witch, the Fuzz Golem, Arlo the poodle in a dog bed, the Flying Pig captaining Flight b741, and more. The band are in it too: Amby, Cavs, Cookie, Jason, Joey, Lukey and Stu
+- **24 racers**, each with their own vehicle: the Lizard Wizard, Han-Tyumi in a fishing dinghy, the Gila Rider's running Gila monster, a Skeleton Dragon, the Lord of Lightning on his bolt, a slithering Rattlesnake, Beowulf's Witch, the Fuzz Golem, Arlo the poodle in a dog bed, the Flying Pig captaining Flight b741, and more. The band are in it too: Amby, Cavs, Cookie, Jason, Joey, Lukey and Stu
 - **Trophies and unlocks:** gold, silver and bronze per cup and class, shown on the cup picker. A trophy opens the Random Cup, a gold at 150cc opens **200cc**, and gold in every cup opens **Mirror mode**
 - **Rivals:** after the first race of a cup the two racers nearest you in the standings become your rivals, named on the title card, ringed on the minimap and a touch sharper on the road
 - **Style:** drifts, tricks, slipstreams, hazards used well, items landed and dodged, and shortcuts score as you race, chained when they come quickly, with a tally on the results and a best per track

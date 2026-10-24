@@ -2,22 +2,14 @@ import { dailyLabel, dailyParams } from '../core/daily';
 import { cupTrophies, progress, raceKey, unlocks, type Unlocks } from '../core/progress';
 import { SOUNDTRACKS, SOUNDTRACK_BLURBS, SOUNDTRACK_NAMES, settings, updateSettings } from '../core/settings';
 import type { SavedTrack } from '../core/savedTracks';
+import { MODE_BLURBS, MODE_NAMES, type RaceMode } from './modes';
 import { chosenShow, onShows, randomShow, showSelect, shows, stepShow } from '../audio/shows';
 import { formatTime } from './hud';
 import { ENGINE_CLASSES, RACERS, type EngineClass, type RacerDef } from '../physics/racers';
 import { GEN_COMPLEXITY_MAX, GEN_LENGTHS, GEN_THEMES, GEN_THEME_NAMES, trackName, type GenParams } from '../tracks/generator';
 import { CUPS, RANDOM_CUP_ID, RANDOM_CUP_NAME, TRACK_LIST, randomCupTracks } from '../tracks/index';
 
-export type RaceMode = 'grandPrix' | 'single' | 'timeTrial' | 'generator' | 'infinite' | 'online';
-
-export const MODE_NAMES: Record<RaceMode, string> = {
-  grandPrix: 'Grand Prix',
-  single: 'Single Race',
-  timeTrial: 'Time Trial',
-  generator: 'Track Generator',
-  infinite: 'Infinite',
-  online: 'Online',
-};
+export { MODE_NAMES, type RaceMode } from './modes';
 const MODES = Object.keys(MODE_NAMES) as RaceMode[];
 
 /** The generator's pick: the daily track (slot DAILY_SLOT), a new track from the dials (slot -1) or a saved one. */
@@ -69,14 +61,6 @@ export function availableClasses(u: Unlocks = unlocks(progress())): EngineClass[
 /** The picker's screens, in order; a mode without a track screen (Online picks it in the room) skips it. */
 export type MenuStep = 'mode' | 'track' | 'racer' | 'engine';
 const STEP_TITLES: Record<MenuStep, string> = { mode: 'CHOOSE A MODE', track: 'PICK A TRACK', racer: 'PICK A RACER', engine: 'PICK A SPEED' };
-const MODE_BLURBS: Record<RaceMode, string> = {
-  grandPrix: 'Four races for the cup, points across them, rivals who want it too',
-  single: 'One track, a full field, items on',
-  timeTrial: 'Alone against the clock, the ghosts and the leaderboard',
-  generator: 'A track made on the spot: the daily, your saved ones, or a new roll',
-  infinite: 'Laps without end, or a tour of every track: race, or sit back and watch the CPUs to the music',
-  online: 'Race friends with a room code',
-};
 const CLASS_BLURBS: Record<EngineClass, string> = {
   '50cc': 'Easy: slow karts, forgiving corners',
   '100cc': 'The standard race',

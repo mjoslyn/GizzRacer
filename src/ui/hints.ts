@@ -42,7 +42,7 @@ function controls(touch: boolean): string[] {
 }
 
 /** How to race well. */
-const TIPS: readonly string[] = [
+export const TIPS: readonly string[] = [
   'Drift sparks go blue, orange, purple: let go for a boost, bigger the longer you held',
   'Hold a purple drift on through the corner for rainbow sparks, the longest boost there is',
   'Tap hop just as you leave a ramp or a crest: a trick, and a boost when you land',

@@ -1898,7 +1898,7 @@ body:not([data-mode='race']) .hud-item {
   font-size: 16px;
 }
 
-/* Settings and Credits side by side under the title. */
+/* Settings, Credits and the Manual side by side under the title. */
 .hud-title-buttons {
   display: flex;
   gap: 14px;
