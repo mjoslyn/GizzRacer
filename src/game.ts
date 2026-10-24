@@ -603,8 +603,11 @@ function loadTrack(entry: TrackEntry): void {
  * One kart per racer: the Grand Prix grid, the default grid for a single
  * race, the player alone in Time Trial, or all CPUs for the attract mode.
  */
-function startRace(withPlayer: boolean, keepSong = false): void {
+function startRace(withPlayer: boolean, keepSong = false, seamless = false): void {
   const net = withPlayer ? online : null;
+  // Infinite's track switch runs straight on: every kart keeps its speed, the camera its racer (taken before the new track loads).
+  const carry = seamless ? new Map(race.karts.map((k) => [k.racer.id, k.state.speed])) : null;
+  const followed = seamless && watching ? race.karts[watchIndex]?.racer.id : undefined;
   if (withPlayer && !net && track.def.id !== raceTrack().id) loadTrack(raceTrack());
   // After the track loads: loading it starts the attract race, which isn't holding anything.
   heldSong = withPlayer && keepSong && !net;
@@ -655,9 +658,16 @@ function startRace(withPlayer: boolean, keepSong = false): void {
     race.focus = withPlayer && !trial ? player : null;
   }
   style = withPlayer && !net && !trial && !watching ? new StyleMeter() : null;
+  if (carry) {
+    for (const k of race.karts) {
+      const v = carry.get(k.racer.id);
+      if (v !== undefined) k.state.speed = k.prev.speed = v;
+    }
+  }
   if (watching) {
-    watchIndex = Math.floor(Math.random() * race.karts.length);
-    watchTimer = 0;
+    const same = race.karts.findIndex((k) => k.racer.id === followed);
+    watchIndex = same >= 0 ? same : Math.floor(Math.random() * race.karts.length);
+    if (same < 0) watchTimer = 0;
   }
   splits = [];
   lastCheckpoint = -1;
@@ -680,12 +690,12 @@ function startRace(withPlayer: boolean, keepSong = false): void {
   chase.snap();
   // Straight ahead is however the phone is held as the race begins.
   if (withPlayer) tilt.recenter();
-  intro = withPlayer && !net && !solo ? INTRO_TIME : 0;
+  intro = withPlayer && !net && !solo && !seamless ? INTRO_TIME : 0;
   if (solo && player) beginDeadstick(player);
   // Online, everyone's GO is the room's: count down to it on the room clock.
   if (net) race.time = Math.max(-10, -(net.start.at - net.client.serverNow()) / 1000);
   // Watching, the field goes as the flyover ends: no countdown to sit through.
-  if (watching) race.time = 0;
+  if (watching || seamless) race.time = 0;
   liveRace = false;
   if (withPlayer) {
     setMode('race');
@@ -872,7 +882,8 @@ function tourStep(): boolean {
 
 function nextTour(): void {
   chooseInfiniteTrack(1);
-  startRace(true);
+  // No flyover, title card or countdown: the race goes straight on, on the next track. The music follows the soundtrack setting as ever.
+  startRace(true, false, true);
 }
 
 // A Full set's next song moves the tour on.
