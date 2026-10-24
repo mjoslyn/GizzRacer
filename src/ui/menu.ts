@@ -105,13 +105,12 @@ export class Menu {
     this.el.addEventListener('click', (e) => {
       // A click opening the dropdown mustn't redraw it shut.
       if ((e.target as HTMLElement).matches('select, option')) return;
-      const t = (e.target as HTMLElement).closest<HTMLElement>('[data-row], [data-start], [data-next], [data-back], [data-step], [data-pick], [data-delete], [data-random], [data-random-track], [data-random-show]');
+      const t = (e.target as HTMLElement).closest<HTMLElement>('[data-row], [data-start], [data-next], [data-back], [data-step], [data-delete], [data-random], [data-random-track], [data-random-show]');
       if (!t) return;
       if (t.dataset.start !== undefined) return this.onStart(this.choice);
       if (t.dataset.next !== undefined) return this.next();
       if (t.dataset.back !== undefined) return this.back();
       if (t.dataset.step !== undefined) return this.goTo(Number(t.dataset.step));
-      if (t.dataset.pick !== undefined) return this.pick(t.dataset.pick);
       if (t.dataset.delete !== undefined) return this.deleteSaved();
       if (t.dataset.random !== undefined) return this.randomRacer();
       if (t.dataset.randomTrack !== undefined) return this.randomTrack();
@@ -215,18 +214,6 @@ export class Menu {
     this.render();
     // The game follows the screen: the track shown behind it, the board beside it, the gallery on the racer's.
     this.onChange(this.choice, this.rows()[0]);
-  }
-
-  /** A choice from a list screen (`mode:single`, `engine:150cc`). */
-  private pick(what: string): void {
-    const [row, value] = what.split(':');
-    if (row === 'mode') {
-      this.choice.mode = value as RaceMode;
-      this.step = 0;
-    } else if (row === 'engine') this.choice.engine = value as EngineClass;
-    this.row = 0;
-    this.render();
-    this.onChange(this.choice, row as MenuRow);
   }
 
   /** Picks a track at random for a Single Race (the track row's dice, or T). */
@@ -366,10 +353,8 @@ export class Menu {
     } else {
       const classes = availableClasses();
       body =
-        this.optionList(
-          ENGINE_CLASSES.map((e) => ({ pick: `engine:${e}`, name: e, blurb: classes.includes(e) ? CLASS_BLURBS[e] : 'Locked: gold at 150cc in a cup unlocks it', on: e === c.engine, locked: !classes.includes(e) })),
-          rows[this.row] === 'engine',
-        ) +
+        // An arrow switcher, as the mode and racer are, over the classes unlocked.
+        line('engine', 'Speed', c.engine, `<div class="menu-cup-tracks menu-mode-blurb">${esc(CLASS_BLURBS[c.engine])}</div><div class="menu-cup-tracks">${classes.indexOf(c.engine) + 1} of ${classes.length}${classes.length < ENGINE_CLASSES.length ? ' &middot; 200cc unlocks with gold at 150cc' : ''}</div>`) +
         (rows.includes('mirror') ? line('mirror', 'Mirror', c.mirror ? 'ON' : 'OFF', '<div class="menu-cup-tracks">Every track flipped left for right</div>', true) : '') +
         line('sound', 'Sound', esc(SOUNDTRACK_NAMES[settings().soundtrack]), `<div class="menu-cup-tracks">${esc(SOUNDTRACK_BLURBS[settings().soundtrack])}</div>`, true) +
         (rows.includes('show') ? this.showRows(line) : '') +
@@ -388,7 +373,7 @@ export class Menu {
           <button class="menu-back" data-back${this.step === 0 ? ' disabled' : ''}>&lsaquo; back</button>
           ${last ? `<button class="menu-start hud-big" data-start>${c.mode === 'online' ? 'ROOMS' : c.mode === 'infinite' && c.watch ? 'WATCH!' : 'RACE!'}</button>` : `<button class="menu-start menu-next hud-big" data-next>next &rsaquo;</button>`}
         </div>
-        <div class="menu-hint">${at === 'engine' && rows.length === 1 ? '&uarr;&darr; choose' : '&larr;&rarr; change'} &middot; Enter ${last ? (c.mode === 'online' ? 'rooms' : 'race') : 'next'} &middot; Backspace back</div>
+        <div class="menu-hint">&larr;&rarr; change${rows.length > 1 ? ' &middot; &uarr;&darr; row' : ''} &middot; Enter ${last ? (c.mode === 'online' ? 'rooms' : 'race') : 'next'} &middot; Backspace back</div>
       </div>`;
   }
 
@@ -403,12 +388,6 @@ export class Menu {
     return `${c.engine}${c.mirror && (c.mode === 'grandPrix' || c.mode === 'single') ? ' Mirror' : ''}`;
   }
 
-  /** A screen's choices as a list, the current one lit (and the list's focus marked when the screen has other rows). */
-  private optionList(opts: { pick: string; name: string; blurb: string; on: boolean; locked?: boolean }[], focused = true): string {
-    return `<div class="menu-opts${focused ? ' on' : ''}" data-row="${opts[0].pick.split(':')[0]}">${opts
-      .map((o) => `<button class="menu-opt${o.on ? ' on' : ''}${o.locked ? ' locked' : ''}" data-pick="${o.pick}"${o.locked ? ' disabled' : ''}><span class="menu-opt-name hud-big">${esc(o.name)}</span><span class="menu-opt-blurb">${esc(o.blurb)}</span></button>`)
-      .join('')}</div>`;
-  }
 
   /** Live set: which show, from a dropdown by year, or the dice. */
   private showRows(line: (row: MenuRow, label: string, value: string, extra?: string, small?: boolean) => string): string {
