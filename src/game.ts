@@ -567,8 +567,9 @@ function loadTrack(entry: TrackEntry): void {
  */
 function startRace(withPlayer: boolean, keepSong = false): void {
   const net = withPlayer ? online : null;
-  heldSong = withPlayer && keepSong && !net;
   if (withPlayer && !net && track.def.id !== raceTrack().id) loadTrack(raceTrack());
+  // After the track loads: loading it starts the attract race, which isn't holding anything.
+  heldSong = withPlayer && keepSong && !net;
   const trial = withPlayer && !net && choice.mode === 'timeTrial';
   const infinite = withPlayer && !net && choice.mode === 'infinite';
   watching = infinite && choice.watch;
@@ -2290,6 +2291,10 @@ Object.assign(window, {
     },
     get mode() {
       return mode;
+    },
+    /** What's playing: the game's cue, or the live song's title (testing). */
+    get music() {
+      return { cue: music.cue, live: radio.playing?.title ?? null };
     },
     /** The renderer, scene and sun (testing). */
     get three() {

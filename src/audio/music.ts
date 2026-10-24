@@ -228,6 +228,11 @@ export class MusicPlayer {
   }
 
   /** The shared AudioContext once unlocked; sound effects play on it too. */
+  /** The game's music asked for (its cue list, joined), or null while a live recording is wanted (testing). */
+  get cue(): string | null {
+    return this.wantedLive ? null : this.wantedKey;
+  }
+
   get context(): AudioContext | null {
     return this.ctx;
   }
