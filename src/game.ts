@@ -1996,8 +1996,8 @@ function betweenActions(): TableAction[] | undefined {
   if (gp) {
     // A Grand Prix's buttons are on the cup standings, the second screen between races; its results just carry on to them.
     if (mode !== 'standings' || gp.finished) return undefined;
-    // Next song is what any key does here (the next race, its own song), so it leads; a Full set plays on unless skipped.
-    return set ? [{ id: 'next', label: 'NEXT RACE' }, song] : [song, { id: 'again', label: `NEXT RACE${same}`, key: 'S' }];
+    const next: TableAction = { id: 'next', label: 'NEXT RACE' };
+    return set ? [next] : [next, { id: 'again', label: `NEXT RACE${same}`, key: 'S' }];
   }
   if (mode !== 'results' || choice.mode === 'infinite') return undefined;
   const actions: TableAction[] = [
