@@ -1994,10 +1994,10 @@ function betweenActions(): TableAction[] | undefined {
     return set ? [next, song] : [next, { id: 'again', label: `CONTINUE${same}`, key: 'S' }];
   }
   if (gp) {
-    const more = mode === 'results' ? !gp.lastRound : !gp.finished;
-    if (!more) return undefined;
-    const next: TableAction = { id: 'next', label: mode === 'results' ? 'CONTINUE' : 'NEXT RACE' };
-    return set ? [next, song] : [next, { id: 'again', label: `NEXT RACE${same}`, key: 'S' }, song];
+    // A Grand Prix's buttons are on the cup standings, the second screen between races; its results just carry on to them.
+    if (mode !== 'standings' || gp.finished) return undefined;
+    // Next song is what any key does here (the next race, its own song), so it leads; a Full set plays on unless skipped.
+    return set ? [{ id: 'next', label: 'NEXT RACE' }, song] : [song, { id: 'again', label: `NEXT RACE${same}`, key: 'S' }];
   }
   if (mode !== 'results' || choice.mode === 'infinite') return undefined;
   const actions: TableAction[] = [
@@ -2025,8 +2025,6 @@ function betweenRaces(id: string): void {
     advance();
     return;
   }
-  // From a Grand Prix's results, straight to the next race: score this one first.
-  if (mode === 'results' && gp) gp.record(finishOrder().map((k) => k.racer), choice.racer);
   if (id === 'nextTrack' || (id === 'song' && choice.mode === 'single')) choice.track = menu.choice.track = (choice.track + 1) % TRACK_LIST.length;
   startRace(true, id !== 'song');
 }
