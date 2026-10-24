@@ -651,12 +651,15 @@ class BananaGame implements MiniGame {
     const shown = Math.min(beat, 9);
     const amp = Math.min(1, Math.abs(this.cents) / 200) * s.size * 0.09;
     const wob = Math.sin(t * Math.PI * 2 * shown) * amp;
-    g.strokeStyle = '#ffe14d';
+    // Warmer the closer it's tuned: red far out, through orange, to banana yellow near the drone. It settles to yellow
+    // well before the string is in tune, so it says you're close, never when to lock it in.
+    const hue = 52 * Math.max(0, 1 - Math.abs(this.cents) / 200);
+    g.strokeStyle = `hsl(${hue}, 100%, 60%)`;
     g.lineWidth = s.size * 0.05;
     g.beginPath();
     g.ellipse(cx, cy, s.size * 0.24 + wob, s.size * 0.24 - wob, 0, 0, Math.PI * 2);
     g.stroke();
-    g.fillStyle = 'rgba(255, 225, 77, 0.15)';
+    g.fillStyle = `hsla(${hue}, 100%, 60%, 0.15)`;
     g.fill();
     g.textAlign = 'center';
     g.fillStyle = CREAM;
