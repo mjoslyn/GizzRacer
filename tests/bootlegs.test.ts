@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { liveUrl, type LiveRecording } from '../src/audio/music';
-import { STORY_SONGS, TRACK_SONGS } from '../src/audio/songs';
+import { STORY_BOSS_SONGS, STORY_SONGS, TRACK_SONGS } from '../src/audio/songs';
 import { ACTS } from '../src/core/story';
 
 import bootlegs from '../public/music/bootlegs.json';
@@ -21,6 +21,12 @@ describe('live bootlegs', () => {
       const live = songs.filter((s) => catalogue[s.title]?.length);
       expect(live.length, ACTS[i].title).toBeGreaterThanOrEqual(2);
     }
+    // Each boss duel's own song is one of its chapter's, played live.
+    expect(STORY_BOSS_SONGS).toHaveLength(ACTS.length);
+    STORY_BOSS_SONGS.forEach((title, i) => {
+      expect(STORY_SONGS[i].some((s) => s.title === title), title).toBe(true);
+      expect(catalogue[title]?.length, title).toBeGreaterThan(0);
+    });
   });
 
   it('every recording names its show, file and date, one a date per song', () => {

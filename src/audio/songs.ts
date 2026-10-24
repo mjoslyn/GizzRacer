@@ -85,9 +85,9 @@ export function remixCues(cue: string): string[] {
 
 /**
  * Story mode's chapters' own songs, from Murder of the Universe (2017), one
- * list a chapter: what its generated races play on Track song (they have no
- * song of their own). Only the ones the band play live are any use; a race
- * takes the first of its chapter's, from its place on, with recordings.
+ * list a chapter: what a story race plays on Track song, before its track's
+ * own song. Only the ones the band play live are any use; a stage takes the
+ * first of its chapter's, from its place on, with recordings.
  */
 const MOTU = { album: 'Murder of the Universe', year: 2017 };
 export const STORY_SONGS: readonly (readonly TrackSong[])[] = [
@@ -114,3 +114,6 @@ export const STORY_SONGS: readonly (readonly TrackSong[])[] = [
     { title: 'Murder of the Universe', ...MOTU },
   ],
 ];
+
+/** Each chapter's boss duel plays its own song first: the Altered Beast's last, the Balrog's, and the album's end. */
+export const STORY_BOSS_SONGS: readonly string[] = ['Altered Beast IV', 'The Balrog', 'Murder of the Universe'];
