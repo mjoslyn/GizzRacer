@@ -239,8 +239,8 @@ export class Race {
     readonly track: Track,
     seed = 1,
     items = true,
-    /** Laps to the flag; Time Trial runs a single lap. */
-    readonly laps = track.def.laps,
+    /** Laps to the flag; Time Trial runs a single lap. A race to the song's end can come back to a number of laps if the song won't play. */
+    public laps = track.def.laps,
   ) {
     this.items = new ItemSystem(track, seed, items);
     this.cannonRand = seededRandom(seed * 7919 + 3);
@@ -569,6 +569,18 @@ export class Race {
         noteBump(b, j_ * Math.max(ia, ib), -nx, -nz);
       }
     }
+  }
+
+  /** Ends the race where it stands (a race to the song's end): everyone still out finishes now, in the order they're in. */
+  endNow(): void {
+    this.rank();
+    const out = this.karts.filter((k) => k.finishTime === null).sort((a, b) => a.position - b.position);
+    for (const k of out) {
+      k.finishTime = this.time;
+      this.results.push(k);
+      if (!k.remote) k.driver ??= new CpuDriver(AUTOPILOT_SKILL, 1);
+    }
+    this.rank();
   }
 
   /** Positions: finishers in finish order, then everyone else by distance. */
