@@ -18,6 +18,13 @@ import {
   planDeadstick,
   riffJudge,
   riffPasses,
+  SUITE_ARROWS,
+  SUITE_MOVES,
+  SUITE_NEED,
+  fuzzStep,
+  makeSuite,
+  sheetAt,
+  sheetOverlap,
 } from '../src/core/skills';
 import { ACTS } from '../src/core/story';
 import { respawnKart } from '../src/physics/kart';
@@ -88,6 +95,67 @@ describe('horology', () => {
     const g = makeHorology(2, 1);
     expect(g.rounds).toHaveLength(HOROLOGY_ROUNDS);
     expect(g.need).toBeLessThanOrEqual(HOROLOGY_ROUNDS);
+  });
+});
+
+describe('the mind fuzz suite', () => {
+  it('four movements in album order, pass three', () => {
+    expect(SUITE_MOVES).toEqual(['mind', 'notMind', 'cellophane', 'fuzz']);
+    expect(SUITE_NEED).toBe(3);
+  });
+
+  it('arrows on the four arrows, enough rounds to pass, and harder by chapter', () => {
+    const easy = makeSuite(3, 0);
+    const hard = makeSuite(3, 2);
+    for (const g of [easy, hard]) {
+      for (const a of [...g.mind.arrows, ...g.notMind.missing]) expect(a >= 0 && a < SUITE_ARROWS).toBe(true);
+      expect(g.mind.need).toBeLessThanOrEqual(g.mind.arrows.length);
+      expect(g.notMind.need).toBeLessThanOrEqual(g.notMind.missing.length);
+      expect(g.cellophane.need).toBeLessThanOrEqual(g.cellophane.sheets.length);
+      expect(g.fuzz.band[0]).toBeGreaterThan(0);
+      expect(g.fuzz.band[1]).toBeLessThan(1);
+    }
+    expect(hard.mind.flash).toBeLessThan(easy.mind.flash);
+    expect(hard.fuzz.band[1] - hard.fuzz.band[0]).toBeLessThan(easy.fuzz.band[1] - easy.fuzz.band[0]);
+  });
+
+  it('cellophane: sheets slide in view, and line up now and then', () => {
+    const g = makeSuite(8, 1);
+    expect(sheetOverlap(0.5, 0.5, 0.36)).toBe(1);
+    expect(sheetOverlap(0.1, 0.9, 0.36)).toBe(0);
+    for (const [a, b] of g.cellophane.sheets) {
+      let best = 0;
+      for (let t = 0; t < 8; t += 1 / 60) {
+        const x = sheetAt(a, t);
+        expect(x).toBeGreaterThanOrEqual(0.2 - 1e-9);
+        expect(x).toBeLessThanOrEqual(0.8 + 1e-9);
+        best = Math.max(best, sheetOverlap(x, sheetAt(b, t), 0.36));
+      }
+      expect(best).toBeGreaterThanOrEqual(g.cellophane.overlap);
+    }
+  });
+
+  it('the fuzz can be held in the band by tapping when it falls low, and not without tapping', () => {
+    for (let level = 0; level < 3; level++) {
+      const g = makeSuite(level + 11, level);
+      const [lo, hi] = g.fuzz.band;
+      const play = (tapping: boolean) => {
+        let st = { level: 0.2, v: 0 };
+        let held = 0;
+        let since = 1;
+        for (let t = 0; t < g.fuzz.time; t += 1 / 60) {
+          since += 1 / 60;
+          // A player's rhythm: a tap when the needle drops under the middle of the band, no faster than five a second.
+          const tap = tapping && st.level < (lo + hi) / 2 && st.v <= 0 && since > 0.2;
+          if (tap) since = 0;
+          st = fuzzStep(st.level, st.v, 1 / 60, tap);
+          if (st.level >= lo && st.level <= hi) held += 1 / 60;
+        }
+        return held;
+      };
+      expect(play(true)).toBeGreaterThanOrEqual(g.fuzz.need);
+      expect(play(false)).toBeLessThan(g.fuzz.need);
+    }
   });
 });
 
