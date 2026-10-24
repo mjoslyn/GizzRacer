@@ -2298,5 +2298,874 @@
    "start": 31.3,
    "gain": 5
   }
+ ],
+ "Altered Beast I": [
+  {
+   "id": "kglw2018-06-02.ccm4.flac16",
+   "file": "kglw2018-06-02t06.mp3",
+   "date": "2018-06-02",
+   "venue": "The Warfield",
+   "seconds": 269,
+   "start": 0,
+   "gain": 1.5
+  },
+  {
+   "id": "kglw2018-06-07.mysteryjack",
+   "file": "10 Altered Beast I.mp3",
+   "date": "2018-06-07",
+   "venue": "Monk's Bar",
+   "seconds": 128,
+   "start": 6.1,
+   "gain": 9
+  },
+  {
+   "id": "KGATLW060918",
+   "file": "06.Altered Beast I.mp3",
+   "date": "2018-06-09",
+   "venue": "The Pabst Theater",
+   "seconds": 148,
+   "start": 5.9,
+   "gain": 8
+  },
+  {
+   "id": "kglw2018-06-18.SchoepsMK41.Burns.Flac24",
+   "file": "kinggizzard2018-06-18t06_24bit.mp3",
+   "date": "2018-06-18",
+   "venue": "Union Transfer",
+   "seconds": 124,
+   "start": 6,
+   "gain": 6.5
+  },
+  {
+   "id": "kglw2018-06-20.ca14.flac1644",
+   "file": "09-Altered Beast I.mp3",
+   "date": "2018-06-20",
+   "venue": "Variety Playhouse",
+   "seconds": 185,
+   "start": 6.6,
+   "gain": 8
+  },
+  {
+   "id": "kglw2022-10-28",
+   "file": "kglw2022-10-28 16-Altered Beast I.mp3",
+   "date": "2022-10-28",
+   "venue": "Stubb's BBQ Waller Creek Amphitheater",
+   "seconds": 148,
+   "start": 7.1,
+   "gain": 7
+  },
+  {
+   "id": "kglw2025-06-04.tora.m5",
+   "file": "kglw2025-06-04.tora.m5d1t06.mp3",
+   "date": "2025-06-04",
+   "venue": "Lycabettus Theatre",
+   "seconds": 152,
+   "start": 15.8,
+   "gain": 5
+  },
+  {
+   "id": "kglw2026-08-21.birds",
+   "file": "07-Altered Beast I _.mp3",
+   "date": "2026-08-21",
+   "venue": "Forest Hills Stadium",
+   "seconds": 222,
+   "start": 0,
+   "gain": 10
+  }
+ ],
+ "Alter Me I": [
+  {
+   "id": "kglw2017-04-14.sp-cmc-8.flac1644",
+   "file": "kgatlz-2017-04-14-coachella-aud-t01-alter-me-i.mp3",
+   "date": "2017-04-14",
+   "venue": "Coachella",
+   "seconds": 94,
+   "start": 51,
+   "gain": 6.5
+  },
+  {
+   "id": "kglw2018-06-07.mysteryjack",
+   "file": "09 Alter Me I.mp3",
+   "date": "2018-06-07",
+   "venue": "Monk's Bar",
+   "seconds": 131,
+   "start": 0,
+   "gain": 11.5
+  },
+  {
+   "id": "kglw2019-09-02.ca14.flac1648",
+   "file": "07-Alter Me I.mp3",
+   "date": "2019-09-02",
+   "venue": "The Tabernacle",
+   "seconds": 116,
+   "start": 6.4,
+   "gain": 7
+  },
+  {
+   "id": "kglw2025-06-04.tora.m5",
+   "file": "kglw2025-06-04.tora.m5d1t07.mp3",
+   "date": "2025-06-04",
+   "venue": "Lycabettus Theatre",
+   "seconds": 129,
+   "start": 0,
+   "gain": 6.5
+  },
+  {
+   "id": "kglw2026-08-16.Full-Three-Shows-discocape",
+   "file": "kglw2026-08-15-4ch-discocape_17.mp3",
+   "date": "2026-08-16",
+   "venue": "Meadow Creek",
+   "seconds": 176,
+   "start": 28.8,
+   "gain": 5.5
+  },
+  {
+   "id": "kglw2026-08-21.birds",
+   "file": "08-Alter Me I _.mp3",
+   "date": "2026-08-21",
+   "venue": "Forest Hills Stadium",
+   "seconds": 182,
+   "start": 0,
+   "gain": 13
+  }
+ ],
+ "Altered Beast II": [
+  {
+   "id": "kglw2017-03-31",
+   "file": "11-Altered Beast II _.mp3",
+   "date": "2017-03-31",
+   "venue": "Webster Hall",
+   "seconds": 244
+  },
+  {
+   "id": "kglw2017-04-14.sp-cmc-8.flac1644",
+   "file": "kgatlz-2017-04-14-coachella-aud-t02-altered-beast-ii.mp3",
+   "date": "2017-04-14",
+   "venue": "Coachella",
+   "seconds": 323,
+   "start": 9,
+   "gain": 5
+  },
+  {
+   "id": "kglw2017-09-27.mysteryjack",
+   "file": "14 Altered Beast II.mp3",
+   "date": "2017-09-27",
+   "venue": "Variety Playhouse",
+   "seconds": 241,
+   "start": 9.6,
+   "gain": 7
+  },
+  {
+   "id": "kglw2017-10-07.mysteryjack",
+   "file": "14 Altered Beast II.mp3",
+   "date": "2017-10-07",
+   "venue": "Neurolux- Boise, ID",
+   "seconds": 239,
+   "start": 9,
+   "gain": 9.5
+  },
+  {
+   "id": "kglw2017-10-12.ccm4.flac1644",
+   "file": "kglw2017-10-12t14.mp3",
+   "date": "2017-10-12",
+   "venue": "The Fillmore",
+   "seconds": 232,
+   "start": 0,
+   "gain": 4
+  },
+  {
+   "id": "kglw2018-06-14",
+   "file": "kglw2018-06-14d1t06.mp3",
+   "date": "2018-06-14",
+   "venue": "Royale",
+   "seconds": 376,
+   "start": 0,
+   "gain": 4.5
+  },
+  {
+   "id": "kglw2018-06-16.sbd-ccm4u.flac1644",
+   "file": "KingGizzard2018-06-16_nyctaper_t07.mp3",
+   "date": "2018-06-16",
+   "venue": "Brooklyn Steel",
+   "seconds": 287,
+   "start": 8.7,
+   "gain": 5.5
+  },
+  {
+   "id": "kglw2019-09-02.ca14.flac1648",
+   "file": "08-Altered Beast II.mp3",
+   "date": "2019-09-02",
+   "venue": "The Tabernacle",
+   "seconds": 255,
+   "start": 9,
+   "gain": 7
+  },
+  {
+   "id": "kglw2022-10-28",
+   "file": "kglw2022-10-28 18-Altered Beast II.mp3",
+   "date": "2022-10-28",
+   "venue": "Stubb's BBQ Waller Creek Amphitheater",
+   "seconds": 294,
+   "start": 0,
+   "gain": 8
+  },
+  {
+   "id": "kglw2026-08-15",
+   "file": "19 Altered Beast II.mp3",
+   "date": "2026-08-15",
+   "venue": "Field of Vision II",
+   "seconds": 246,
+   "start": 9.1,
+   "gain": 1
+  },
+  {
+   "id": "kglw2026-08-16.Full-Three-Shows-discocape",
+   "file": "kglw2026-08-15-4ch-discocape_18.mp3",
+   "date": "2026-08-16",
+   "venue": "Meadow Creek",
+   "seconds": 420,
+   "start": 0,
+   "gain": 5.5
+  },
+  {
+   "id": "kglw2026-08-21.birds",
+   "file": "09-Altered Beast II.mp3",
+   "date": "2026-08-21",
+   "venue": "Forest Hills Stadium",
+   "seconds": 355,
+   "start": 0,
+   "gain": 10
+  }
+ ],
+ "Alter Me II": [
+  {
+   "id": "kglw2017-03-31",
+   "file": "12-Alter Me II _.mp3",
+   "date": "2017-03-31",
+   "venue": "Webster Hall",
+   "seconds": 102,
+   "start": 0,
+   "gain": 2.5
+  },
+  {
+   "id": "kglw2017-09-27.mysteryjack",
+   "file": "15 Alter Me II.mp3",
+   "date": "2017-09-27",
+   "venue": "Variety Playhouse",
+   "seconds": 92,
+   "start": 0,
+   "gain": 8
+  },
+  {
+   "id": "kglw2017-09-28.mysteryjack",
+   "file": "15 Alter Me II.mp3",
+   "date": "2017-09-28",
+   "venue": "One Eyed Jacks",
+   "seconds": 102,
+   "start": 0,
+   "gain": 6.5
+  },
+  {
+   "id": "kglw2017-10-07.mysteryjack",
+   "file": "15 Alter Me II.mp3",
+   "date": "2017-10-07",
+   "venue": "Neurolux- Boise, ID",
+   "seconds": 92,
+   "start": 0,
+   "gain": 11
+  },
+  {
+   "id": "kglw2026-08-15",
+   "file": "20 Alter Me II.mp3",
+   "date": "2026-08-15",
+   "venue": "Field of Vision II",
+   "seconds": 306,
+   "start": 4,
+   "gain": 1.5
+  },
+  {
+   "id": "kglw2026-08-16.Full-Three-Shows-discocape",
+   "file": "kglw2026-08-15-4ch-discocape_19.mp3",
+   "date": "2026-08-16",
+   "venue": "Meadow Creek",
+   "seconds": 156,
+   "start": 0,
+   "gain": 5
+  }
+ ],
+ "Altered Beast III": [
+  {
+   "id": "kglw2016-12-09.ca14.flac2448",
+   "file": "08 - Altered Beast III.mp3",
+   "date": "2016-12-09",
+   "venue": "Meredith Music Festival",
+   "seconds": 132,
+   "start": 6.1,
+   "gain": 8
+  },
+  {
+   "id": "kglw2017-03-31",
+   "file": "13-Altered Beast III.mp3",
+   "date": "2017-03-31",
+   "venue": "Webster Hall",
+   "seconds": 146,
+   "start": 0,
+   "gain": 1
+  },
+  {
+   "id": "kglw2017-04-14.sp-cmc-8.flac1644",
+   "file": "kgatlz-2017-04-14-coachella-aud-t03-altered-beast-iii.mp3",
+   "date": "2017-04-14",
+   "venue": "Coachella",
+   "seconds": 149,
+   "start": 0,
+   "gain": 7
+  },
+  {
+   "id": "kglw2017-09-27.mysteryjack",
+   "file": "16 Altered Beast III.mp3",
+   "date": "2017-09-27",
+   "venue": "Variety Playhouse",
+   "seconds": 135,
+   "start": 6.3,
+   "gain": 6.5
+  },
+  {
+   "id": "kglw2017-09-28.mysteryjack",
+   "file": "16 Altered Beast III.mp3",
+   "date": "2017-09-28",
+   "venue": "One Eyed Jacks",
+   "seconds": 149,
+   "start": 0,
+   "gain": 6
+  },
+  {
+   "id": "kglw2017-10-07.mysteryjack",
+   "file": "16 Altered Beast III.mp3",
+   "date": "2017-10-07",
+   "venue": "Neurolux- Boise, ID",
+   "seconds": 154,
+   "start": 6.1,
+   "gain": 8.5
+  },
+  {
+   "id": "kglw2017-10-12.ccm4.flac1644",
+   "file": "kglw2017-10-12t16.mp3",
+   "date": "2017-10-12",
+   "venue": "The Fillmore",
+   "seconds": 162,
+   "start": 0,
+   "gain": 4.5
+  },
+  {
+   "id": "kglw2022-10-31",
+   "file": "08 - Altered Beast III.mp3",
+   "date": "2022-10-31",
+   "venue": "The Criterion, Oklahoma",
+   "seconds": 134,
+   "start": 0,
+   "gain": 4.5
+  },
+  {
+   "id": "kglw2025-06-08.revinylize.mix.stereo",
+   "file": "11. Altered Beast III.mp3",
+   "date": "2025-06-08",
+   "venue": "Ancient Theatre",
+   "seconds": 168,
+   "start": 0,
+   "gain": 8
+  }
+ ],
+ "Alter Me III": [
+  {
+   "id": "kglw2022-10-22.ScheopsMK41.Flac24",
+   "file": "KingGizzard2022-10-22-t-12.mp3",
+   "date": "2022-10-22",
+   "venue": "Franklin Music Hall",
+   "seconds": 407
+  }
+ ],
+ "Altered Beast IV": [
+  {
+   "id": "kglw2017-09-27.mysteryjack",
+   "file": "18 Altered Beast IV.mp3",
+   "date": "2017-09-27",
+   "venue": "Variety Playhouse",
+   "seconds": 291
+  },
+  {
+   "id": "kglw2017-09-28.mysteryjack",
+   "file": "18 Altered Beast IV.mp3",
+   "date": "2017-09-28",
+   "venue": "One Eyed Jacks",
+   "seconds": 314
+  },
+  {
+   "id": "kglw2017-10-12.ccm4.flac1644",
+   "file": "kglw2017-10-12t18.mp3",
+   "date": "2017-10-12",
+   "venue": "The Fillmore",
+   "seconds": 295
+  },
+  {
+   "id": "kglw2022-10-22.ScheopsMK41.Flac24",
+   "file": "KingGizzard2022-10-22-t-13.mp3",
+   "date": "2022-10-22",
+   "venue": "Franklin Music Hall",
+   "seconds": 437
+  },
+  {
+   "id": "kglw2022-10-31",
+   "file": "10 - Altered Beast IV.mp3",
+   "date": "2022-10-31",
+   "venue": "The Criterion, Oklahoma",
+   "seconds": 386
+  },
+  {
+   "id": "kglw2025-06-08.revinylize.mix.stereo",
+   "file": "13. Altered Beast IV.mp3",
+   "date": "2025-06-08",
+   "venue": "Ancient Theatre",
+   "seconds": 360
+  },
+  {
+   "id": "kglw2025-08-02",
+   "file": "kglw2025-08-02t14.mp3",
+   "date": "2025-08-02",
+   "venue": "Forest Hills Stadium",
+   "seconds": 413
+  },
+  {
+   "id": "kglw2026-08-15",
+   "file": "21 Altered Beast IV.mp3",
+   "date": "2026-08-15",
+   "venue": "Field of Vision II",
+   "seconds": 348
+  },
+  {
+   "id": "kglw2026-08-16.Full-Three-Shows-discocape",
+   "file": "kglw2026-08-15-4ch-discocape_20.mp3",
+   "date": "2026-08-16",
+   "venue": "Meadow Creek",
+   "seconds": 208
+  }
+ ],
+ "The Balrog": [
+  {
+   "id": "kg2019-06-27",
+   "file": "15-The Balrog.mp3",
+   "date": "2019-06-27",
+   "venue": "Forum Melbourne",
+   "seconds": 231
+  },
+  {
+   "id": "kglw2019-10-16.ca-11.flac1644",
+   "file": "KG&TLW_2019-10-16_AUD_t12.mp3",
+   "date": "2019-10-16",
+   "venue": "X-TRA",
+   "seconds": 192
+  },
+  {
+   "id": "kglw2022-05-24",
+   "file": "kglw2022-05-24t09The Balrog >.mp3",
+   "date": "2022-05-24",
+   "venue": "Water Street Music Hall",
+   "seconds": 233
+  },
+  {
+   "id": "kglw2022-10-15.daank",
+   "file": "kglw2022.10.15t13.mp3",
+   "date": "2022-10-15",
+   "venue": "Radius",
+   "seconds": 341
+  },
+  {
+   "id": "kglw2023-03-20",
+   "file": "kglw202314.mp3",
+   "date": "2023-03-20",
+   "venue": "Cirque Royal/Koninklijk",
+   "seconds": 373
+  },
+  {
+   "id": "kglw2024-09-14.adk",
+   "file": "09 The Balrog.mp3",
+   "date": "2024-09-14",
+   "venue": "The Gorge Amphitheater",
+   "seconds": 272
+  },
+  {
+   "id": "kglw2024-11-01.bandcampbootlegger",
+   "file": "24 The Balrog (Live in Los Angeles '24).mp3",
+   "date": "2024-11-01",
+   "venue": "Kia Forum",
+   "seconds": 362
+  },
+  {
+   "id": "kglw2025-05-25.Spain2025N3",
+   "file": "07 - The Balrog.mp3",
+   "date": "2025-05-25",
+   "venue": "Poble Espanyol",
+   "seconds": 355
+  },
+  {
+   "id": "kglw2025-06-05",
+   "file": "kglw2025-06-05t07.mp3",
+   "date": "2025-06-05",
+   "venue": "Lycabettus Theatre",
+   "seconds": 397
+  },
+  {
+   "id": "kglw2026-08-20.Thor",
+   "file": "kglw2026-08-20t14.mp3",
+   "date": "2026-08-20",
+   "venue": "Forest Hills Stadium",
+   "seconds": 300
+  },
+  {
+   "id": "kglw2026-08-21.Bootsy",
+   "file": "0.7 The Balrog.mp3",
+   "date": "2026-08-21",
+   "venue": "Forest Hills Stadium",
+   "seconds": 288
+  }
+ ],
+ "Digital Black": [
+  {
+   "id": "kglw2017-09-27.mysteryjack",
+   "file": "04 Digital Black.mp3",
+   "date": "2017-09-27",
+   "venue": "Variety Playhouse",
+   "seconds": 171
+  },
+  {
+   "id": "kglw2017-10-07.mysteryjack",
+   "file": "05 Digital Black.mp3",
+   "date": "2017-10-07",
+   "venue": "Neurolux- Boise, ID",
+   "seconds": 169
+  },
+  {
+   "id": "kglw2018-06-01.slimreaper",
+   "file": "02. Digital Black.mp3",
+   "date": "2018-06-01",
+   "venue": "The Observatory North Park",
+   "seconds": 184
+  },
+  {
+   "id": "kglw2018-06-07.mysteryjack",
+   "file": "06 Digital Black.mp3",
+   "date": "2018-06-07",
+   "venue": "Monk's Bar",
+   "seconds": 198
+  },
+  {
+   "id": "kglw2018-06-14",
+   "file": "kglw2018-06-14d1t02.mp3",
+   "date": "2018-06-14",
+   "venue": "Royale",
+   "seconds": 201
+  },
+  {
+   "id": "kglw2018-06-18.SchoepsMK41.Burns.Flac24",
+   "file": "kinggizzard2018-06-18t01_24bit.mp3",
+   "date": "2018-06-18",
+   "venue": "Union Transfer",
+   "seconds": 174
+  },
+  {
+   "id": "kglw2018-06-22",
+   "file": "02 - Digital Black.mp3",
+   "date": "2018-06-22",
+   "venue": "Stubbs BBQ Waller Creek Amphitheater",
+   "seconds": 180
+  },
+  {
+   "id": "kglw2022-04-22",
+   "file": "kgatlw-2022-04-22-coachella-aud-16bit-t01-digital-black.mp3",
+   "date": "2022-04-22",
+   "venue": "Coachella",
+   "seconds": 213
+  },
+  {
+   "id": "kglw2024-05-23.Amsterdam24",
+   "file": "15 - Digital Black.mp3",
+   "date": "2024-05-23",
+   "venue": "AFAS Live",
+   "seconds": 170
+  },
+  {
+   "id": "kglw2024-09-01.ToraTapesMX",
+   "file": "21 - Digital Black.mp3",
+   "date": "2024-09-01",
+   "venue": "Northerly Island",
+   "seconds": 167
+  },
+  {
+   "id": "kglw2025-05-19.KGLWLisbon25N2",
+   "file": "10 - Digital Black.mp3",
+   "date": "2025-05-19",
+   "venue": "Coliseu Dos Recreios",
+   "seconds": 165
+  },
+  {
+   "id": "kglw2025-08-16.Birds",
+   "file": "13. Digital Black -.mp3",
+   "date": "2025-08-16",
+   "venue": "Field of Vision",
+   "seconds": 165
+  }
+ ],
+ "Han-Tyumi the Confused Cyborg": [
+  {
+   "id": "kglw2017-09-27.mysteryjack",
+   "file": "05 Han-Tyumi the Confused Cyborg.mp3",
+   "date": "2017-09-27",
+   "venue": "Variety Playhouse",
+   "seconds": 171
+  },
+  {
+   "id": "kglw2017-10-07.mysteryjack",
+   "file": "06 Han-Tyumi the Confused Cyborg.mp3",
+   "date": "2017-10-07",
+   "venue": "Neurolux- Boise, ID",
+   "seconds": 185
+  },
+  {
+   "id": "kglw2017-10-12.ccm4.flac1644",
+   "file": "kglw2017-10-12t05.mp3",
+   "date": "2017-10-12",
+   "venue": "The Fillmore",
+   "seconds": 207
+  },
+  {
+   "id": "kglw2020-02-21",
+   "file": "17 - Han-Tyumi The Confused Cyborg.mp3",
+   "date": "2020-02-21",
+   "venue": "The Croxton",
+   "seconds": 208
+  },
+  {
+   "id": "kglw2022-04-22",
+   "file": "kgatlw-2022-04-22-coachella-aud-16bit-t02-han-tyumi-the-confused-cyborg.mp3",
+   "date": "2022-04-22",
+   "venue": "Coachella",
+   "seconds": 148
+  },
+  {
+   "id": "kglw2022-10-26.mk41",
+   "file": "kglw2022-10-26.mk41.t14.mp3",
+   "date": "2022-10-26",
+   "venue": "The Eastern",
+   "seconds": 130
+  },
+  {
+   "id": "kglw2024-05-23.Amsterdam24",
+   "file": "16 - Han-Tyumi, The Confused Cyborg.mp3",
+   "date": "2024-05-23",
+   "venue": "AFAS Live",
+   "seconds": 134
+  },
+  {
+   "id": "kglw2024-08-17",
+   "file": "20 Han-Tyumi the Confused Cyborg.mp3",
+   "date": "2024-08-17",
+   "venue": "Forest Hills Tennis Stadium",
+   "seconds": 150
+  },
+  {
+   "id": "kglw2024-11-08",
+   "file": "kglw2024-11-08_mk21_04.mp3",
+   "date": "2024-11-08",
+   "venue": "PH Live",
+   "seconds": 175
+  },
+  {
+   "id": "kglw2025-05-19.KGLWLisbon25N2",
+   "file": "11 - Han-Tyumi, The Confused Cyborg.mp3",
+   "date": "2025-05-19",
+   "venue": "Coliseu Dos Recreios",
+   "seconds": 161
+  },
+  {
+   "id": "kglw2025-06-06",
+   "file": "kglw2025-06-06t12.mp3",
+   "date": "2025-06-06",
+   "venue": "Lycabettus Theatre",
+   "seconds": 149
+  },
+  {
+   "id": "kglw2025-12-05",
+   "file": "Han-Tyumi the Confused Cyborg.mp3",
+   "date": "2025-12-05",
+   "venue": "Enmore Theatre",
+   "seconds": 223
+  }
+ ],
+ "Soy-Protein Munt Machine": [
+  {
+   "id": "kglw2022-04-20",
+   "file": "King Gizzard & the Lizard Wizard 2022-04-20 t03.mp3",
+   "date": "2022-04-20",
+   "venue": "Rialto Theater",
+   "seconds": 462
+  }
+ ],
+ "Vomit Coffin": [
+  {
+   "id": "kglw2022-04-22",
+   "file": "kgatlw-2022-04-22-coachella-aud-16bit-t04-vomit-coffin.mp3",
+   "date": "2022-04-22",
+   "venue": "Coachella",
+   "seconds": 149
+  },
+  {
+   "id": "kglw2022-10-26.mk41",
+   "file": "kglw2022-10-26.mk41.t16.mp3",
+   "date": "2022-10-26",
+   "venue": "The Eastern",
+   "seconds": 131
+  },
+  {
+   "id": "kglw2024-05-23.Amsterdam24",
+   "file": "18 - Vomit Coffin.mp3",
+   "date": "2024-05-23",
+   "venue": "AFAS Live",
+   "seconds": 139
+  },
+  {
+   "id": "kglw2024-08-17",
+   "file": "22 Vomit Coffin.mp3",
+   "date": "2024-08-17",
+   "venue": "Forest Hills Tennis Stadium",
+   "seconds": 144
+  },
+  {
+   "id": "kglw2024-09-01.ToraTapesMX",
+   "file": "24 - Vomit Coffin.mp3",
+   "date": "2024-09-01",
+   "venue": "Northerly Island",
+   "seconds": 136
+  },
+  {
+   "id": "kglw2024-11-08",
+   "file": "kglw2024-11-08_mk21_06.mp3",
+   "date": "2024-11-08",
+   "venue": "PH Live",
+   "seconds": 144
+  },
+  {
+   "id": "kglw2025-05-19.KGLWLisbon25N2",
+   "file": "13 - Vomit Coffin.mp3",
+   "date": "2025-05-19",
+   "venue": "Coliseu Dos Recreios",
+   "seconds": 136
+  },
+  {
+   "id": "kglw2025-06-06",
+   "file": "kglw2025-06-06t14.mp3",
+   "date": "2025-06-06",
+   "venue": "Lycabettus Theatre",
+   "seconds": 134
+  },
+  {
+   "id": "kglw2025-08-16.Birds",
+   "file": "16. Vomit Coffin -.mp3",
+   "date": "2025-08-16",
+   "venue": "Field of Vision",
+   "seconds": 158
+  },
+  {
+   "id": "kglw2025-12-05",
+   "file": "Vomit Coffin.mp3",
+   "date": "2025-12-05",
+   "venue": "Enmore Theatre",
+   "seconds": 139
+  }
+ ],
+ "Murder of the Universe": [
+  {
+   "id": "KGATLW082319",
+   "file": "14.Murder of the Universe.mp3",
+   "date": "2019-08-23",
+   "venue": "The Riverside Theater",
+   "seconds": 146
+  },
+  {
+   "id": "kglw2020-02-21",
+   "file": "19 - Murder of The Universe.mp3",
+   "date": "2020-02-21",
+   "venue": "The Croxton",
+   "seconds": 263
+  },
+  {
+   "id": "kglw2022-04-22",
+   "file": "kgatlw-2022-04-22-coachella-aud-16bit-t05-murder-of-the-universe.mp3",
+   "date": "2022-04-22",
+   "venue": "Coachella",
+   "seconds": 326
+  },
+  {
+   "id": "kglw2022-09-30.aud2.flac24",
+   "file": "kgatlw-2022-09-30-desert-daze-aud2-24bit-t08-murder-of-the-universe.mp3",
+   "date": "2022-09-30",
+   "venue": "Desert Daze",
+   "seconds": 284
+  },
+  {
+   "id": "kglw2024-05-23.Amsterdam24",
+   "file": "19 - Murder of the Universe.mp3",
+   "date": "2024-05-23",
+   "venue": "AFAS Live",
+   "seconds": 283
+  },
+  {
+   "id": "kglw2024-08-17",
+   "file": "23 Murder of the Universe.mp3",
+   "date": "2024-08-17",
+   "venue": "Forest Hills Tennis Stadium",
+   "seconds": 368
+  },
+  {
+   "id": "kglw2024-09-01.ToraTapesMX",
+   "file": "25 - Murder of The Universe.mp3",
+   "date": "2024-09-01",
+   "venue": "Northerly Island",
+   "seconds": 334
+  },
+  {
+   "id": "kglw2025-05-19.KGLWLisbon25N2",
+   "file": "14 - Murder of the Universe.mp3",
+   "date": "2025-05-19",
+   "venue": "Coliseu Dos Recreios",
+   "seconds": 288
+  },
+  {
+   "id": "kglw2025-06-06",
+   "file": "kglw2025-06-06t15.mp3",
+   "date": "2025-06-06",
+   "venue": "Lycabettus Theatre",
+   "seconds": 290
+  },
+  {
+   "id": "kglw2025-08-16.Birds",
+   "file": "17. Murder of the Universe.mp3",
+   "date": "2025-08-16",
+   "venue": "Field of Vision",
+   "seconds": 309
+  },
+  {
+   "id": "kglw2025-12-05",
+   "file": "Murder of the Universe.mp3",
+   "date": "2025-12-05",
+   "venue": "Enmore Theatre",
+   "seconds": 378
+  },
+  {
+   "id": "kglw2026-08-16.dpa4015.flac24",
+   "file": "kglw2026-08-16dpa4015-t11.mp3",
+   "date": "2026-08-16",
+   "venue": "Field of Vision II - Meadow Creek",
+   "seconds": 570
+  }
  ]
 }

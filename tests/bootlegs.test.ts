@@ -1,17 +1,26 @@
 import { describe, expect, it } from 'vitest';
 import { liveUrl, type LiveRecording } from '../src/audio/music';
-import { TRACK_SONGS } from '../src/audio/songs';
+import { STORY_SONGS, TRACK_SONGS } from '../src/audio/songs';
+import { ACTS } from '../src/core/story';
 
 import bootlegs from '../public/music/bootlegs.json';
 
 const catalogue = bootlegs as Record<string, LiveRecording[]>;
 
 describe('live bootlegs', () => {
-  it("are keyed by the tracks' songs, and most songs have some", () => {
-    const songs = new Set(Object.values(TRACK_SONGS).map((s) => s.title));
+  it("are keyed by the tracks' songs (and story mode's), and most songs have some", () => {
+    const songs = new Set([...Object.values(TRACK_SONGS), ...STORY_SONGS.flat()].map((s) => s.title));
     for (const song of Object.keys(catalogue)) expect(songs.has(song), song).toBe(true);
     const tracks = Object.values(TRACK_SONGS).filter((s) => catalogue[s.title]?.length).length;
     expect(tracks).toBeGreaterThanOrEqual(24);
+  });
+
+  it("every story chapter has songs of its own played live, enough for both its races", () => {
+    expect(STORY_SONGS).toHaveLength(ACTS.length);
+    for (const [i, songs] of STORY_SONGS.entries()) {
+      const live = songs.filter((s) => catalogue[s.title]?.length);
+      expect(live.length, ACTS[i].title).toBeGreaterThanOrEqual(2);
+    }
   });
 
   it('every recording names its show, file and date, one a date per song', () => {

@@ -1,4 +1,5 @@
-import { TRACK_SONGS, TRANSCRIBED } from '../audio/songs';
+import { STORY_SONGS, TRACK_SONGS, TRANSCRIBED } from '../audio/songs';
+import { ACTS } from '../core/story';
 import { CUPS, TRACK_LIST } from '../tracks/index';
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -17,6 +18,11 @@ export function creditsHtml(): string {
       .join('');
     return `<div class="settings-group">${esc(cup.name)}</div><ul class="credits-list">${rows}</ul>`;
   }).join('');
+  // Story mode's chapters, and the songs of theirs its races play live.
+  const chapters = ACTS.map((a, i) => {
+    const songs = STORY_SONGS[i] ?? [];
+    return `<li><span class="credits-track">${esc(a.chapter)}: ${esc(a.title)}</span><span class="credits-song">${songs.map((s) => esc(s.title)).join(', ')} <small>${esc(songs[0]?.album ?? '')}, ${songs[0]?.year ?? ''}</small></span></li>`;
+  }).join('');
   const samples = Object.entries(TRANSCRIBED)
     .map(([id, s]) => {
       const t = TRACK_LIST.find((x) => x.id === id);
@@ -27,6 +33,8 @@ export function creditsHtml(): string {
     <div class="credits-body">
       <p class="credits-lead">GizzRacer is an unofficial fan game, made with love for <b>King Gizzard &amp; the Lizard Wizard</b> and their fans. Every track is themed on one of their songs.</p>
       ${cups}
+      <div class="settings-group">Story</div>
+      <ul class="credits-list">${chapters}</ul>
       <div class="settings-group">The band's own recordings</div>
       <p class="credits-note">These remixes are transcribed from the band's recordings, releases they put out for anyone to use (kinggizzardandthelizardwizard.com/bootlegger), and played in seqbaby</p>
       <ul class="credits-list">${samples}</ul>

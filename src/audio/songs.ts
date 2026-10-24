@@ -82,3 +82,35 @@ export function remixCues(cue: string): string[] {
   const base = final ? cue.slice(0, -FINAL.length) : cue;
   return final ? [`${base}-remix${FINAL}`, `${base}-remix`, cue] : [`${base}-remix`, cue];
 }
+
+/**
+ * Story mode's chapters' own songs, from Murder of the Universe (2017), one
+ * list a chapter: what its generated races play on Track song (they have no
+ * song of their own). Only the ones the band play live are any use; a race
+ * takes the first of its chapter's, from its place on, with recordings.
+ */
+const MOTU = { album: 'Murder of the Universe', year: 2017 };
+export const STORY_SONGS: readonly (readonly TrackSong[])[] = [
+  [
+    { title: 'Altered Beast I', ...MOTU },
+    { title: 'Alter Me I', ...MOTU },
+    { title: 'Altered Beast II', ...MOTU },
+    { title: 'Alter Me II', ...MOTU },
+    { title: 'Altered Beast III', ...MOTU },
+    { title: 'Alter Me III', ...MOTU },
+    { title: 'Altered Beast IV', ...MOTU },
+  ],
+  [
+    { title: 'The Lord of Lightning', ...MOTU },
+    { title: 'The Balrog', ...MOTU },
+    { title: 'The Floating Fire', ...MOTU },
+    { title: 'The Acrid Corpse', ...MOTU },
+  ],
+  [
+    { title: 'Digital Black', ...MOTU },
+    { title: 'Han-Tyumi the Confused Cyborg', ...MOTU },
+    { title: 'Soy-Protein Munt Machine', ...MOTU },
+    { title: 'Vomit Coffin', ...MOTU },
+    { title: 'Murder of the Universe', ...MOTU },
+  ],
+];

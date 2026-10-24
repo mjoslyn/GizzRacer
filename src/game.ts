@@ -10,7 +10,7 @@ import { chosenShow, setShows, shows } from './audio/shows';
 import { MiniPlayer } from './ui/miniPlayer';
 import { HintsTicker } from './ui/hints';
 import { Sfx } from './audio/sfx';
-import { TRACK_SONGS, remixCues } from './audio/songs';
+import { STORY_SONGS, TRACK_SONGS, remixCues } from './audio/songs';
 import { GHOST_HZ, GHOST_OVERRUN, GhostRecorder, decodeGhost, encodeGhost, ghostPose, type GhostRun } from './core/ghost';
 import { identity } from './net/identity';
 import { TRIAL_LAPS, recordId } from './net/runCheck';
@@ -1551,10 +1551,24 @@ function setPlaying(): boolean {
  * played live, or a generated track with no song, gets the remix); or the
  * Live set, the picked show, kept going if it's already playing.
  */
+/**
+ * The songs a race can play live, first choice first: the track's own, or
+ * on a story run's generated track (which has none), its chapter's songs
+ * from Murder of the Universe, from the race's place in the chapter on.
+ */
+function raceSongs(): string[] {
+  const own = TRACK_SONGS[track.def.id]?.title;
+  if (own) return [own];
+  const r = story?.race;
+  if (!r?.gen) return [];
+  const list = (STORY_SONGS[r.act] ?? []).map((s) => s.title);
+  return list.map((_, i) => list[(r.index + i) % list.length]);
+}
+
 function startRaceMusic(): void {
   const cues = remixCues(track.def.music.lap);
   const mode = settings().soundtrack;
-  const song = TRACK_SONGS[track.def.id]?.title;
+  const songs = raceSongs();
   if (mode === 'show') {
     liveRace = true;
     const forRace = race;
@@ -1567,14 +1581,18 @@ function startRaceMusic(): void {
     });
     return;
   }
-  if (mode === 'song' && song) {
+  if (mode === 'song' && songs.length) {
     liveRace = true;
     const forRace = race;
-    void radio.playSong(song, cues).then((ok) => {
-      if (ok || race !== forRace) return;
+    void (async () => {
+      // The first with a recording; none, and it's the remix.
+      for (const song of songs) {
+        if (race !== forRace || (await radio.playSong(song, cues))) return;
+      }
+      if (race !== forRace) return;
       liveRace = false;
       music.play(cues);
-    });
+    })();
     return;
   }
   liveRace = false;
