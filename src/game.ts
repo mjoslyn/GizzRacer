@@ -1213,9 +1213,15 @@ function storyNext(): void {
   if (run.actStart && storyPhase !== 'chapter') return showStory('chapter');
   if (r.skill && storyPhase !== 'skill') return showStory('skill');
   if (r.boss && storyPhase !== 'boss') return showStory('boss');
+  // A skill game makes its own sound, and the Deadstick Landing flies to its own: no song carries into those.
+  const keep = storySameSong && !r.skill;
+  storySameSong = false;
   if (r.skill && r.skill !== 'deadstick') return startSkillScreen(r.skill, r.seed, r.act);
-  startRace(true);
+  startRace(true, keep);
 }
+
+/** Story mode's same song: picked on a race's results, the song plays on over the cards between to the next race. */
+let storySameSong = false;
 
 /** A skill game on its card over the game. */
 function startSkillScreen(kind: SkillKind, seed: number, level: number): void {
@@ -1910,14 +1916,20 @@ function table(): Table | null {
  * in a Grand Prix, on to the next race with its own song or with the one
  * playing; after a single race, a time trial or a generated track, the menu,
  * or the same track again (or the next one) with the song playing on. A
- * Full set plays on anyway, so there they don't say "same song". None
- * online, on a story run or in practice, which have their own way on.
+ * Full set plays on anyway, so there they don't say "same song". On a
+ * story run, on to the run's cards, the song kept for the next race if
+ * asked. None online or in practice, which have their own way on.
  */
 function betweenActions(): TableAction[] | undefined {
-  if (online || story || practice) return undefined;
+  if (online || practice) return undefined;
   const set = setPlaying();
   const same = set ? '' : ', SAME SONG';
   const song: TableAction = { id: 'song', label: 'NEXT SONG', key: 'N' };
+  if (story) {
+    if (mode !== 'results' || !player) return undefined;
+    const next: TableAction = { id: 'next', label: 'CONTINUE' };
+    return set ? [next, song] : [next, { id: 'again', label: `CONTINUE${same}`, key: 'S' }, song];
+  }
   if (gp) {
     const more = mode === 'results' ? !gp.lastRound : !gp.finished;
     if (!more) return undefined;
@@ -1959,7 +1971,9 @@ function nextSong(): void {
 function betweenRaces(id: string): void {
   music.unlock();
   if (id === 'song') return nextSong();
-  if (id === 'next') {
+  if (id === 'next' || story) {
+    // Story: on to the run's cards as usual, the song kept for the next race if asked.
+    storySameSong = !!story && id === 'again';
     advance();
     return;
   }
@@ -2035,6 +2049,7 @@ function postTrial(p: RaceKart): void {
 
 /** Back to the picker, with the attract race on the picker's track. */
 function toMenu(): void {
+  storySameSong = false;
   gp = null;
   story = null;
   practice = null;
