@@ -74,11 +74,13 @@ interface MiniGame {
   key(code: string, repeat: boolean): void;
   /** A key let go (for a key held down). */
   keyUp?(code: string): void;
-  /** A tap, in the stage's own 0..1 square. */
-  tap(u: number, v: number): void;
+  /** A tap, in the stage's own 0..1 square (and in pixels, for a card over the whole screen). */
+  tap(u: number, v: number, px: number, py: number): void;
   /** The finger or button lifted (for a button held down to repeat). */
   release?(): void;
   result: SkillResult | null;
+  /** A rules card is up over the whole screen: the title and the lines round the stage stay off it. */
+  readonly carded?: boolean;
   stop?(): void;
 }
 
@@ -213,7 +215,7 @@ export class SkillScreen {
     parent.appendChild(this.el);
     this.canvas.addEventListener('pointerdown', (e) => {
       const st = this.stage();
-      this.game?.tap((e.clientX - st.x) / st.size, (e.clientY - st.y) / st.size);
+      this.game?.tap((e.clientX - st.x) / st.size, (e.clientY - st.y) / st.size, e.clientX, e.clientY);
     });
     for (const type of ['pointerup', 'pointercancel', 'pointerleave'] as const) this.canvas.addEventListener(type, () => this.game?.release?.());
     window.addEventListener('keyup', (e) => this.game?.keyUp?.(e.code));
@@ -307,6 +309,7 @@ export class SkillScreen {
     g.fillRect(0, 0, w, h);
     this.game!.draw(st, this.t);
     const res = this.game!.result;
+    if (this.game!.carded && !res) return;
     g.textAlign = 'center';
     g.fillStyle = GOLD;
     // Sized to the screen's height too: a phone held sideways is short.
@@ -315,7 +318,7 @@ export class SkillScreen {
     g.fillStyle = CREAM;
     g.font = `${Math.min(15, w / 32)}px Verdana, sans-serif`;
     g.fillText(res ? res.note : this.statusText || this.howTo, w / 2, st.y - 16);
-    g.font = '12px Verdana, sans-serif';
+    g.font = `${Math.min(14, w / 34)}px Verdana, sans-serif`;
     g.globalAlpha = 0.7;
     g.fillText(this.howTo + ' · Esc gives up', w / 2, Math.min(h - 14, st.y + st.size + 28));
     g.globalAlpha = 1;
@@ -852,55 +855,70 @@ const PAD_DIRS: [number, number][] = [
   [1, 0],
 ];
 
-/** A rules card's Continue button, in the stage's 0..1 square: x, y, width, height. */
-const CARD_CONTINUE = [0.3, 0.8, 0.4, 0.1] as const;
+/** The Continue button of the rules card last drawn, in pixels: x, y, width, height. */
+let continueBox = [0, 0, 0, 0];
 
-/** Whether a tap (in the stage's 0..1 square) is on a rules card's Continue. */
-function onContinue(u: number, v: number): boolean {
-  const [x, y, w, h] = CARD_CONTINUE;
-  return u >= x && u <= x + w && v >= y && v <= y + h;
+/** Whether a tap (in pixels) is on the rules card's Continue. */
+function onContinue(px: number, py: number): boolean {
+  const [x, y, w, h] = continueBox;
+  return px >= x && px <= x + w && py >= y && py <= y + h;
 }
 
-/** A card over the stage: a small line, a heading, exactly what to do, and Continue. */
+/**
+ * A card over the whole screen, not just the stage, so a phone held
+ * sideways still gets big type: a small line, a heading, exactly what to
+ * do, and Continue.
+ */
 function rulesCard(s: Stage, kicker: string, heading: string, text: string): void {
   const g = s.g;
-  const mx = s.x + s.size * 0.06;
-  const my = s.y + s.size * 0.05;
-  const mw = s.size * 0.88;
-  const mh = s.size * 0.9;
-  g.fillStyle = 'rgba(20, 0, 30, 0.94)';
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const mw = Math.min(vw - 24, 680);
+  const mh = Math.min(vh - 24, 620);
+  const mx = (vw - mw) / 2;
+  const my = (vh - mh) / 2;
+  // The card's scale: its shorter side, as the stage's size is for a game.
+  const u = Math.min(mw, mh * 1.15);
+  g.fillStyle = 'rgba(20, 0, 30, 0.96)';
   g.fillRect(mx, my, mw, mh);
   g.strokeStyle = GOLD;
-  g.lineWidth = 2;
+  g.lineWidth = 3;
   g.strokeRect(mx, my, mw, mh);
-  const cx = s.x + s.size / 2;
+  const cx = vw / 2;
   g.textAlign = 'center';
   g.textBaseline = 'alphabetic';
   g.fillStyle = CREAM;
-  g.font = `${s.size * 0.03}px Verdana, sans-serif`;
-  g.fillText(kicker, cx, my + s.size * 0.07);
+  const kickerSize = Math.max(11, u * 0.028);
+  g.font = `${kickerSize}px Verdana, sans-serif`;
+  g.fillText(kicker, cx, my + kickerSize * 2);
+  const headSize = Math.max(18, u * 0.055);
   g.fillStyle = GOLD;
-  g.font = `italic bold ${s.size * 0.055}px Verdana, sans-serif`;
-  g.fillText(heading.toUpperCase(), cx, my + s.size * 0.14);
-  // The rules, as big as fit between the heading and Continue.
-  const top = my + s.size * 0.22;
-  const room = s.y + (CARD_CONTINUE[1] - 0.04) * s.size - top;
-  let size = s.size * 0.036;
+  g.font = `italic bold ${headSize}px Verdana, sans-serif`;
+  const headY = my + kickerSize * 2 + headSize * 1.4;
+  g.fillText(heading.toUpperCase(), cx, headY);
+  // Continue along the bottom.
+  const bh = Math.max(40, u * 0.09);
+  const bw = Math.min(mw * 0.6, Math.max(180, u * 0.4));
+  continueBox = [cx - bw / 2, my + mh - bh - Math.max(12, u * 0.035), bw, bh];
+  // The rules, as big as fit between the heading and Continue, and never small.
+  let size = Math.min(32, Math.max(u * 0.06, 20));
   let lines: string[] = [];
-  for (; size > s.size * 0.022; size *= 0.94) {
+  let top = headY;
+  for (; size > 14; size *= 0.95) {
     g.font = `${size}px Verdana, sans-serif`;
-    lines = wrap(g, text, mw - s.size * 0.08);
-    if (lines.length * size * 1.45 <= room) break;
+    lines = wrap(g, text, mw - Math.max(24, u * 0.08));
+    top = headY + size * 1.7;
+    if (top + (lines.length - 1) * size * 1.4 + size * 0.6 <= continueBox[1]) break;
   }
   g.fillStyle = CREAM;
-  lines.forEach((line, i) => g.fillText(line, cx, top + i * size * 1.45));
-  const [bx, by, bw, bh] = CARD_CONTINUE;
-  g.fillStyle = 'rgba(255, 210, 58, 0.85)';
-  g.fillRect(s.x + bx * s.size, s.y + by * s.size, bw * s.size, bh * s.size);
+  lines.forEach((line, i) => g.fillText(line, cx, top + i * size * 1.4));
+  const [bx, by] = continueBox;
+  g.fillStyle = 'rgba(255, 210, 58, 0.9)';
+  g.fillRect(bx, by, bw, bh);
   g.fillStyle = INK;
-  g.font = `bold ${s.size * 0.045}px Verdana, sans-serif`;
+  g.font = `bold ${Math.max(16, bh * 0.45)}px Verdana, sans-serif`;
   g.textBaseline = 'middle';
-  g.fillText('CONTINUE', cx, s.y + (by + bh / 2) * s.size);
+  g.fillText('CONTINUE', cx, by + bh / 2);
   g.textBaseline = 'alphabetic';
 }
 
@@ -924,6 +942,10 @@ class Briefed implements MiniGame {
 
   get result(): SkillResult | null {
     return this.inner ? this.inner.result : this.early;
+  }
+
+  get carded(): boolean {
+    return !this.inner;
   }
 
   set result(r: SkillResult | null) {
@@ -952,9 +974,9 @@ class Briefed implements MiniGame {
     this.inner?.keyUp?.(code);
   }
 
-  tap(u: number, v: number): void {
-    if (this.inner) this.inner.tap(u, v);
-    else if (onContinue(u, v)) this.go();
+  tap(u: number, v: number, px: number, py: number): void {
+    if (this.inner) this.inner.tap(u, v, px, py);
+    else if (onContinue(px, py)) this.go();
   }
 
   release(): void {
@@ -1023,6 +1045,10 @@ class SuiteGame implements MiniGame {
     this.game = makeSuite(seed, level);
   }
 
+  get carded(): boolean {
+    return this.phase === 'title';
+  }
+
   private get now(): SuiteMove {
     return SUITE_MOVES[this.move];
   }
@@ -1063,9 +1089,9 @@ class SuiteGame implements MiniGame {
     if (a !== undefined) this.press(a);
   }
 
-  tap(u: number, v: number): void {
+  tap(u: number, v: number, px: number, py: number): void {
     if (this.phase === 'title') {
-      if (onContinue(u, v)) this.begin();
+      if (onContinue(px, py)) this.begin();
       return;
     }
     if (this.phase !== 'play') return;
