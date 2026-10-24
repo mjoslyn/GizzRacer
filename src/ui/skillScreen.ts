@@ -51,6 +51,8 @@ interface MiniGame {
   key(code: string, repeat: boolean): void;
   /** A tap, in the stage's own 0..1 square. */
   tap(u: number, v: number): void;
+  /** The finger or button lifted (for a button held down to repeat). */
+  release?(): void;
   result: SkillResult | null;
   stop?(): void;
 }
@@ -165,6 +167,7 @@ export class SkillScreen {
       const st = this.stage();
       this.game?.tap((e.clientX - st.x) / st.size, (e.clientY - st.y) / st.size);
     });
+    for (const type of ['pointerup', 'pointercancel', 'pointerleave'] as const) this.canvas.addEventListener(type, () => this.game?.release?.());
   }
 
   get visible(): boolean {
@@ -535,6 +538,12 @@ class BananaGame implements MiniGame {
   private lastOff = 0;
   private drone: { set(f: number): void; stop(): void } | null = null;
   private string: { set(f: number): void; stop(): void } | null = null;
+  /** A button held down: its turn, and the time to its next repeat. */
+  private holding = 0;
+  private holdT = 0;
+  /** The button last pressed, lit for a moment. */
+  private lit = -1;
+  private litFor = 0;
 
   constructor(
     private readonly synth: Synth,
@@ -548,26 +557,46 @@ class BananaGame implements MiniGame {
   }
 
   update(_t: number, dt: number): void {
+    this.litFor -= dt;
     if (this.pause > 0) {
       if ((this.pause -= dt) <= 0) this.next();
       return;
+    }
+    // A button held down turns again and again, as a held key does.
+    if (this.holding && (this.holdT -= dt) <= 0) {
+      this.turn(this.holding);
+      this.holdT = 0.07;
     }
     if ((this.roundTime += dt) > BANANA_TIME) this.lock();
   }
 
   key(code: string): void {
     if (this.pause > 0) return;
-    const step = code === 'ArrowLeft' ? -BANANA_FINE : code === 'ArrowRight' ? BANANA_FINE : code === 'ArrowDown' ? -BANANA_COARSE : code === 'ArrowUp' ? BANANA_COARSE : 0;
-    if (step) this.turn(step);
-    else if (code === 'Enter' || code === 'Space') this.lock();
+    const b = { ArrowDown: 0, ArrowLeft: 1, ArrowRight: 3, ArrowUp: 4, Enter: 2, Space: 2 }[code];
+    if (b !== undefined) this.press(b);
   }
 
-  /** The button row along the bottom: coarse down, fine down, lock, fine up, coarse up. */
+  /** The button row along the bottom: coarse down, fine down, lock, fine up, coarse up. Holding one repeats it. */
   tap(u: number, v: number): void {
     if (this.pause > 0 || v < 0.8 || v > 1 || u < 0 || u > 1) return;
-    const b = Math.floor(u * 5);
+    const b = Math.min(4, Math.floor(u * 5));
+    this.press(b);
+    if (b !== 2) {
+      this.holding = BANANA_STEPS[b];
+      this.holdT = 0.35;
+    }
+  }
+
+  release(): void {
+    this.holding = 0;
+  }
+
+  /** A button (or its key): lit for a moment, and the string turned or locked. */
+  private press(b: number): void {
+    this.lit = b;
+    this.litFor = 0.15;
     if (b === 2) this.lock();
-    else this.turn([-BANANA_COARSE, -BANANA_FINE, 0, BANANA_FINE, BANANA_COARSE][b]);
+    else this.turn(BANANA_STEPS[b]);
   }
 
   private turn(step: number): void {
@@ -576,6 +605,7 @@ class BananaGame implements MiniGame {
   }
 
   private lock(): void {
+    this.holding = 0;
     const ok = Math.abs(this.cents) <= this.game.tolerance;
     this.lastOff = Math.round(this.cents);
     this.marks.push(ok);
@@ -607,10 +637,11 @@ class BananaGame implements MiniGame {
     const g = s.g;
     const cx = s.x + s.size / 2;
     const cy = s.y + s.size * 0.4;
-    // The wobble: the two notes beating, as fast as they're apart (too fast to follow, it just shakes).
+    // The wobble: the two notes beating, as fast as they're apart (too fast to follow, it just shakes), and as wide as
+    // the string is out of tune, so every turn shows. It never says which way.
     const beat = Math.abs(bananaHz(this.cents) - BANANA_DRONE);
     const shown = Math.min(beat, 9);
-    const amp = Math.min(1, beat / 3) * s.size * 0.06;
+    const amp = Math.min(1, Math.abs(this.cents) / 200) * s.size * 0.09;
     const wob = Math.sin(t * Math.PI * 2 * shown) * amp;
     g.strokeStyle = '#ffe14d';
     g.lineWidth = s.size * 0.05;
@@ -637,7 +668,8 @@ class BananaGame implements MiniGame {
     const bw = s.size / 5;
     labels.forEach((l, i) => {
       const x = s.x + i * bw;
-      g.fillStyle = i === 2 ? 'rgba(255, 210, 58, 0.35)' : 'rgba(255, 255, 255, 0.1)';
+      const on = this.lit === i && this.litFor > 0;
+      g.fillStyle = on ? 'rgba(255, 210, 58, 0.75)' : i === 2 ? 'rgba(255, 210, 58, 0.35)' : 'rgba(255, 255, 255, 0.1)';
       g.fillRect(x + 6, s.y + s.size * 0.82, bw - 12, s.size * 0.14);
       g.fillStyle = CREAM;
       g.font = `bold ${s.size * (i === 2 ? 0.04 : 0.07)}px Verdana, sans-serif`;
@@ -646,6 +678,9 @@ class BananaGame implements MiniGame {
     s.status(`String ${Math.min(this.round + 1, BANANA_ROUNDS)} of ${BANANA_ROUNDS} · ${Math.max(0, Math.ceil(BANANA_TIME - this.roundTime))}s`);
   }
 }
+
+/** What each of the Banana's buttons turns the string by, cents (the middle one locks it in). */
+const BANANA_STEPS = [-BANANA_COARSE, -BANANA_FINE, 0, BANANA_FINE, BANANA_COARSE];
 
 // ---- Horology ----
 
