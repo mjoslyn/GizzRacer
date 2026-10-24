@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { liveUrl, type LiveRecording } from '../src/audio/music';
-import { DEADSTICK_SONG, STORY_BOSS_SONGS, STORY_SONGS, TRACK_SONGS } from '../src/audio/songs';
+import { STORY_BOSS_SONGS, STORY_SONGS, TRACK_SONGS } from '../src/audio/songs';
 import { ACTS } from '../src/core/story';
 
 import bootlegs from '../public/music/bootlegs.json';
@@ -27,8 +27,6 @@ describe('live bootlegs', () => {
       expect(STORY_SONGS[i].some((s) => s.title === title), title).toBe(true);
       expect(catalogue[title]?.length, title).toBeGreaterThan(0);
     });
-    // The Deadstick Landing's own song, played live.
-    expect(catalogue[DEADSTICK_SONG]?.length).toBeGreaterThan(0);
   });
 
   it('every recording names its show, file and date, one a date per song', () => {

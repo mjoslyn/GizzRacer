@@ -75,8 +75,36 @@ export function betterCup(a: CupResult, b: CupResult | undefined): boolean {
   return a.timeMs < b.timeMs;
 }
 
-/** What this progress has unlocked. */
+const UNLOCK_KEY = 'gizzracer.unlockAll';
+
+/**
+ * What ?unlock in the address asks for: everything unlocked (?unlock, or
+ * ?unlock=on), locked back to the trophies (?unlock=off or =0), or nothing.
+ */
+export function unlockParam(search: string): boolean | null {
+  const v = new URLSearchParams(search).get('unlock');
+  if (v === null) return null;
+  return !['off', '0', 'false', 'no'].includes(v.toLowerCase());
+}
+
+/** Everything unlocked by ?unlock: kept in this browser until ?unlock=off. Trophies and records are left alone. */
+let unlockAll: boolean | null = null;
+function unlockedAll(): boolean {
+  if (unlockAll !== null) return unlockAll;
+  unlockAll = false;
+  try {
+    const asked = typeof location === 'undefined' ? null : unlockParam(location.search);
+    if (asked !== null) localStorage.setItem(UNLOCK_KEY, asked ? '1' : '0');
+    unlockAll = asked ?? localStorage.getItem(UNLOCK_KEY) === '1';
+  } catch {
+    // No storage (or no page, in tests): only what was earned.
+  }
+  return unlockAll;
+}
+
+/** What this progress has unlocked, or everything with ?unlock. */
 export function unlocks(p: Progress): Unlocks {
+  if (unlockedAll()) return { randomCup: true, class200: true, mirror: true };
   const albumCups = CUPS.map((c) => c.id);
   const results = Object.entries(p.cups);
   const randomCup = results.some(([, r]) => r.trophy !== null);

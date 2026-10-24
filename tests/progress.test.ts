@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { betterCup, cupKey, cupTrophies, foundShortcut, progress, raceKey, recordCup, recordRace, recordStyle, resetProgress, trophyFor, unlocks, type CupResult } from '../src/core/progress';
+import { betterCup, cupKey, cupTrophies, foundShortcut, progress, raceKey, recordCup, recordRace, recordStyle, resetProgress, trophyFor, unlockParam, unlocks, type CupResult } from '../src/core/progress';
 import { CUPS } from '../src/tracks/index';
 
 const cup = (place: number, points = 60, timeMs = 300000, sweep = false) => ({ place, points, timeMs, sweep });
@@ -73,5 +73,17 @@ describe('progress', () => {
     expect(foundShortcut('rattlesnake-run', "Snake's Mouth")).toBe(true);
     expect(foundShortcut('rattlesnake-run', "Snake's Mouth")).toBe(false);
     expect(foundShortcut('volcano-fortress', "Snake's Mouth")).toBe(true);
+  });
+});
+
+describe('the unlock link', () => {
+  it('?unlock unlocks everything, ?unlock=off locks it back, and no parameter leaves it be', () => {
+    expect(unlockParam('?unlock')).toBe(true);
+    expect(unlockParam('?unlock=on')).toBe(true);
+    expect(unlockParam('?room=ABCD&unlock=1')).toBe(true);
+    expect(unlockParam('?unlock=off')).toBe(false);
+    expect(unlockParam('?unlock=0')).toBe(false);
+    expect(unlockParam('')).toBe(null);
+    expect(unlockParam('?room=ABCD')).toBe(null);
   });
 });

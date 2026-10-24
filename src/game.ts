@@ -10,7 +10,7 @@ import { chosenShow, setShows, shows } from './audio/shows';
 import { MiniPlayer } from './ui/miniPlayer';
 import { HintsTicker } from './ui/hints';
 import { Sfx } from './audio/sfx';
-import { DEADSTICK_SONG, STORY_BOSS_SONGS, STORY_SONGS, TRACK_SONGS, remixCues } from './audio/songs';
+import { DEADSTICK_CUE, STORY_BOSS_SONGS, STORY_SONGS, TRACK_SONGS, remixCues } from './audio/songs';
 import { GHOST_HZ, GHOST_OVERRUN, GhostRecorder, decodeGhost, encodeGhost, ghostPose, type GhostRun } from './core/ghost';
 import { identity } from './net/identity';
 import { TRIAL_LAPS, recordId } from './net/runCheck';
@@ -31,7 +31,7 @@ import type { Effect, RoomStart } from './net/protocol';
 import type { RoomClient } from './net/room';
 import { GrandPrix } from './core/grandPrix';
 import { ACTS, CLEAR_PLACE, SKILL_STAGE, STAGES_PER_ACT, StoryRun, type BoonId } from './core/story';
-import { DEADSTICK_RUNUP, DEADSTICK_SHOTS, DEADSTICK_SHOT_TIME, planDeadstick, type DeadstickPlan, type SkillKind } from './core/skills';
+import { DEADSTICK_LAUNCH, DEADSTICK_RUNUP, DEADSTICK_SHOTS, DEADSTICK_SHOT_TIME, planDeadstick, type DeadstickPlan, type SkillKind } from './core/skills';
 import { SkillScreen, type SkillResult } from './ui/skillScreen';
 import { StoryScreen, hearts, practiceCard, storyCard, type StoryPhase } from './ui/storyScreen';
 import { Race, TOUCH_CPU_PACE, ordinal, type RaceKart } from './core/race';
@@ -389,8 +389,8 @@ onSettings((s) => {
   if (s.soundtrack === 'remix' && radio.playing) {
     radio.stop();
     liveRace = false;
-    music.play(mode === 'race' ? remixCues(track.def.music.lap) : remixCues('title'));
-  } else if (s.soundtrack === 'show' && (set || mode === 'race')) {
+    music.play(mode === 'race' ? remixCues(raceMusic().lap) : remixCues('title'));
+  } else if (s.soundtrack === 'show' && (set || mode === 'race') && !(mode === 'race' && deadstickMusic())) {
     // A Live set picked, or another show: it plays at once.
     const show = chosenShow(shows(), s.liveShow);
     if (show && radio.playing?.set?.show.id !== show.id) {
@@ -1317,7 +1317,12 @@ function deadstickStep(dt: number, ev: StepEvents | undefined): void {
   }
   if (!race.started) return;
   d.shotTime += dt;
-  if (ev?.launched) d.flying = true;
+  if (ev?.launched) {
+    d.flying = true;
+    // A harder throw than a race's ramp: a long flight before the landing.
+    p.state.vy *= DEADSTICK_LAUNCH.lift;
+    p.state.speed *= DEADSTICK_LAUNCH.speed;
+  }
   const next = () => {
     if (d.shots < DEADSTICK_SHOTS) d.wait = 1.4;
     else finish(false);
@@ -1592,21 +1597,36 @@ function setPlaying(): boolean {
 /**
  * The songs a race can play live, first choice first: the track's own; or
  * on a story run, its chapter's songs from Murder of the Universe (the
- * boss's own first in a duel, Deadstick first for the Deadstick Landing,
- * else from the stage's place in the chapter on), then the track's own.
+ * boss's own first in a duel, else from the stage's place in the chapter
+ * on), then the track's own.
  */
 function raceSongs(): string[] {
   const own = TRACK_SONGS[track.def.id]?.title;
   const r = story?.race;
-  if (practice?.kind === 'deadstick') return own ? [DEADSTICK_SONG, own] : [DEADSTICK_SONG];
   if (!r) return own ? [own] : [];
   const list = (STORY_SONGS[r.act] ?? []).map((s) => s.title);
-  const lead = r.boss ? [STORY_BOSS_SONGS[r.act]] : r.skill === 'deadstick' ? [DEADSTICK_SONG] : [];
+  const lead = r.boss ? [STORY_BOSS_SONGS[r.act]] : [];
   const chapter = [...lead, ...list.map((_, i) => list[(r.index + i) % list.length])];
   return [...new Set([...chapter, ...(own ? [own] : [])].filter(Boolean))];
 }
 
+/** The Deadstick Landing flies to the game's own Deadstick remix, never a live recording or a set. */
+function deadstickMusic(): boolean {
+  return skillStage()?.kind === 'deadstick';
+}
+
+/** The race's own music cues: the track's, or the Deadstick Landing's. */
+function raceMusic(): TrackDef['music'] {
+  return deadstickMusic() ? { lap: DEADSTICK_CUE } : track.def.music;
+}
+
 function startRaceMusic(): void {
+  if (deadstickMusic()) {
+    liveRace = false;
+    if (radio.playing) radio.stop();
+    music.play(remixCues(DEADSTICK_CUE));
+    return;
+  }
   const cues = remixCues(track.def.music.lap);
   const mode = settings().soundtrack;
   const songs = raceSongs();
@@ -1657,7 +1677,7 @@ function nowPlaying(): string | null {
 }
 
 function updateMusic(p: RaceKart): void {
-  const { lap, finalLap } = track.def.music;
+  const { lap, finalLap } = raceMusic();
   if (p.finishTime !== null) {
     if (!setPlaying()) music.play('podium');
   }

@@ -41,7 +41,7 @@ export const SKILLS: Record<SkillKind, { name: string; intro: string; howTo: str
   deadstick: {
     name: 'Deadstick Landing',
     intro: 'Engine dead, glider out. Hit the ramp, hop on the lip to open the wings, and put it down in the ring.',
-    howTo: 'Hop as you hit the ramp to open the glider; up climbs, down dives. Land in the ring',
+    howTo: 'Hop as you hit the ramp; hold down to dive and come down sooner, steer to line up. Land in the ring',
   },
 };
 
@@ -74,7 +74,7 @@ export function skillRules(kind: SkillKind, level: number): string {
       return `Four movements; pass ${SUITE_NEED}. One: an arrow flashes in the eye for ${g.mind.flash} seconds: press that arrow (or tap its pad), ${g.mind.need} of ${g.mind.arrows.length}. Two: three arrows show: press the missing fourth within ${g.notMind.time} seconds, ${g.notMind.need} of ${g.notMind.missing.length}. Three: two sheets slide: press Space (or tap) when they overlap, ${g.cellophane.need} of ${g.cellophane.sheets.length}. Four: tap Space (or tap) to push the needle up and hold it in the gold band for ${g.fuzz.need} seconds out of ${g.fuzz.time}.`;
     }
     case 'deadstick':
-      return `Drive at the ramp ahead and hop (Shift or Space, or DRIFT on touch) as you hit it to open the glider. In the air, Up climbs and carries you further, Down dives and brings you down sooner (on touch, drag up or down). Come down inside the gold ring, ${deadstickRadius(level)} m from its middle, within ${DEADSTICK_SHOTS} shots.`;
+      return `Drive at the ramp ahead and hop (Shift or Space, or DRIFT on touch) as you hit it: it throws you high and opens the glider for a long flight. Left alone the glider floats past the ring; hold Down (on touch, drag down) to dive and come down sooner, and steer to line up. Land inside the gold ring, ${deadstickRadius(level)} m from its middle, within ${DEADSTICK_SHOTS} shots.`;
   }
 }
 
@@ -311,6 +311,14 @@ export const DEADSTICK_SHOTS = 3;
 export const DEADSTICK_RUNUP = 70;
 /** Seconds a shot has to get off the ramp and down. */
 export const DEADSTICK_SHOT_TIME = 12;
+/**
+ * The Deadstick Landing's ramp throws harder than a race's: this much more
+ * lift and speed off it, for a long flight (about 120 m diving all the way,
+ * 160 m floating) before the ground comes up.
+ */
+export const DEADSTICK_LAUNCH = { lift: 1.4, speed: 1.15 };
+/** How far straight on from the ramp the ring sits, metres: between a full dive and a float. */
+export const DEADSTICK_RING: [number, number] = [128, 152];
 
 /** The ring's radius by chapter, metres. */
 export function deadstickRadius(level: number): number {
@@ -334,14 +342,17 @@ export function planDeadstick(track: Track, seed: number, level: number): Deadst
   if (!launcher) return null;
   const rand = seededRandom(seed);
   const launchS = track.mainS(launcher.s);
+  // Straight on from the ramp, the way the flight goes, not round the road's bends.
+  const from = pointAt(track.spline, launchS);
+  const ground = track.locate(from.x, from.z, 100).height;
   for (let i = 0; i < 40; i++) {
-    const along = 55 + rand() * 35;
-    const lateral = (rand() * 2 - 1) * 3.5;
-    const p = pointAt(track.spline, launchS + along);
-    const x = p.x - p.tz * lateral;
-    const z = p.z + p.tx * lateral;
+    const along = DEADSTICK_RING[0] + rand() * (DEADSTICK_RING[1] - DEADSTICK_RING[0]);
+    const lateral = (rand() * 2 - 1) * 4;
+    const x = from.x + from.tx * along - from.tz * lateral;
+    const z = from.z + from.tz * along + from.tx * lateral;
     const loc = track.locate(x, z, 100);
-    if (!loc.onRoad || loc.surface === 'launch') continue;
+    // Solid ground to land on, road or not: not the ramp, nor down a pit.
+    if (loc.surface === 'launch' || !Number.isFinite(loc.height) || loc.height < ground - 20) continue;
     return { launchS, target: { x, y: loc.height, z }, radius: deadstickRadius(level) };
   }
   return null;

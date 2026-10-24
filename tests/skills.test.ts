@@ -3,6 +3,7 @@ import { NEUTRAL_INPUT } from '../src/core/inputFrame';
 import { Race } from '../src/core/race';
 import {
   BANANA_ROUNDS,
+  DEADSTICK_LAUNCH,
   DEADSTICK_RUNUP,
   HOROLOGY_ROUNDS,
   NONAGON_FIRST,
@@ -192,6 +193,9 @@ describe('deadstick landing', () => {
       if (ev.launched) {
         flying = true;
         press = true;
+        // The Deadstick Landing's harder throw (game.ts).
+        k.state.vy *= DEADSTICK_LAUNCH.lift;
+        k.state.speed *= DEADSTICK_LAUNCH.speed;
       }
       if (flying && k.state.grounded) return { x: k.state.x, z: k.state.z };
     }
@@ -199,18 +203,19 @@ describe('deadstick landing', () => {
   }
 
   for (const id of new Set(ACTS.flatMap((a) => a.launchTracks))) {
-    it(`${id}: the ring is on the road, and a glide can reach it`, () => {
+    it(`${id}: the ring is a long flight out on solid ground, and a glide can reach it`, () => {
       const track = new Track(TRACK_LIST.find((t) => t.id === id)!.build());
+      const from = track.respawnPose(planDeadstick(track, 1, 0)!.launchS);
       for (let seed = 1; seed <= 6; seed++) {
         const plan = planDeadstick(track, seed, 0)!;
         expect(plan).not.toBeNull();
-        expect(track.locate(plan.target.x, plan.target.z, 100).onRoad).toBe(true);
+        expect(Math.hypot(plan.target.x - from.x, plan.target.z - from.z)).toBeGreaterThan(120);
+        expect(plan.target.y).toBeGreaterThan(from.y - 20);
       }
       const plan = planDeadstick(track, 1, 0)!;
-      // Diving comes down short of the ring and climbing past it, so it can be hit.
+      // Diving all the way comes down short of the ring and floating past it, so it can be hit.
       const short = fly(track, plan.launchS, -1)!;
-      const long = fly(track, plan.launchS, 1)!;
-      const from = track.respawnPose(plan.launchS);
+      const long = fly(track, plan.launchS, 0)!;
       const dist = (p: { x: number; z: number }) => Math.hypot(p.x - from.x, p.z - from.z);
       const ring = dist(plan.target);
       expect(dist(short)).toBeLessThan(ring);

@@ -121,5 +121,5 @@ export const STORY_SONGS: readonly (readonly TrackSong[])[] = [
 /** Each chapter's boss duel plays its own song first: the Altered Beast's last, the Balrog's, and the album's end. */
 export const STORY_BOSS_SONGS: readonly string[] = ['Altered Beast IV', 'The Balrog', 'Murder of the Universe'];
 
-/** The Deadstick Landing plays its own song first: the plane coming down with its engine off. */
-export const DEADSTICK_SONG = 'Deadstick';
+/** The Deadstick Landing plays the game's own remix of Deadstick (Deadstick Drop's), whatever the soundtrack. */
+export const DEADSTICK_CUE = 'deadstick-drop';
