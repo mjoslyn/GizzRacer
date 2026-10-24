@@ -1710,7 +1710,6 @@ function raceMusic(): TrackDef['music'] {
 function startRaceMusic(): void {
   heldSong = false;
   music.setLiveEnd(null);
-  remixNow = null;
   // A Full set is all the music, the Deadstick Landing's too.
   if (setPlaying()) return ensureSet();
   if (deadstickMusic()) {
@@ -1991,7 +1990,8 @@ function betweenActions(): TableAction[] | undefined {
   if (story) {
     if (mode !== 'results' || !player) return undefined;
     const next: TableAction = { id: 'next', label: 'CONTINUE' };
-    return set ? [next, song] : [next, { id: 'again', label: `CONTINUE${same}`, key: 'S' }, song];
+    // Continue already brings the next race's own song; only a Full set has a next song to skip to.
+    return set ? [next, song] : [next, { id: 'again', label: `CONTINUE${same}`, key: 'S' }];
   }
   if (gp) {
     const more = mode === 'results' ? !gp.lastRound : !gp.finished;
@@ -2009,31 +2009,16 @@ function betweenActions(): TableAction[] | undefined {
   return actions;
 }
 
-/** The game's remix playing after a NEXT SONG between races (another track's), else null for the race's own. */
-let remixNow: string | null = null;
-
 /**
- * NEXT SONG between races, at once: a live recording moves on to another
- * song (a Full set to its next one), the game's remixes to another track's.
- * A same-song button then carries it into the next race.
+ * A button between races: the default carries on as any key does; the same
+ * song ones start the next race with the song playing on; NEXT SONG starts
+ * the next race (the next track after a single race, the same one again
+ * after a time trial or a generated track) with its own song, or a Full
+ * set's next song.
  */
-function nextSong(): void {
-  const live = radio.playing;
-  if (live?.mode === 'show') return radio.next();
-  if (live) {
-    void radio.playRandom(remixCues(raceMusic().lap));
-    return;
-  }
-  const now = remixNow ?? raceMusic().lap;
-  const others = TRACK_LIST.map((t) => t.id).filter((id) => id !== now);
-  remixNow = others[Math.floor(Math.random() * others.length)];
-  music.play(remixCues(remixNow));
-}
-
-/** A button between races: the default carries on as any key does; the others start the next race with the song playing on. */
 function betweenRaces(id: string): void {
   music.unlock();
-  if (id === 'song') return nextSong();
+  if (id === 'song' && setPlaying()) radio.next();
   if (id === 'next' || story) {
     // Story: on to the run's cards as usual, the song kept for the next race if asked.
     storySameSong = !!story && id === 'again';
@@ -2042,8 +2027,8 @@ function betweenRaces(id: string): void {
   }
   // From a Grand Prix's results, straight to the next race: score this one first.
   if (mode === 'results' && gp) gp.record(finishOrder().map((k) => k.racer), choice.racer);
-  if (id === 'nextTrack') choice.track = menu.choice.track = (choice.track + 1) % TRACK_LIST.length;
-  startRace(true, true);
+  if (id === 'nextTrack' || (id === 'song' && choice.mode === 'single')) choice.track = menu.choice.track = (choice.track + 1) % TRACK_LIST.length;
+  startRace(true, id !== 'song');
 }
 
 hud.onTableAction = betweenRaces;
