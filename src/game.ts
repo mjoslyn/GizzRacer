@@ -10,7 +10,7 @@ import { chosenShow, setShows, shows } from './audio/shows';
 import { MiniPlayer } from './ui/miniPlayer';
 import { HintsTicker } from './ui/hints';
 import { Sfx } from './audio/sfx';
-import { STORY_BOSS_SONGS, STORY_SONGS, TRACK_SONGS, remixCues } from './audio/songs';
+import { DEADSTICK_SONG, STORY_BOSS_SONGS, STORY_SONGS, TRACK_SONGS, remixCues } from './audio/songs';
 import { GHOST_HZ, GHOST_OVERRUN, GhostRecorder, decodeGhost, encodeGhost, ghostPose, type GhostRun } from './core/ghost';
 import { identity } from './net/identity';
 import { TRIAL_LAPS, recordId } from './net/runCheck';
@@ -1545,15 +1545,16 @@ function setPlaying(): boolean {
 /**
  * The songs a race can play live, first choice first: the track's own; or
  * on a story run, its chapter's songs from Murder of the Universe (the
- * boss's own first in a duel, else from the stage's place in the chapter
- * on), then the track's own.
+ * boss's own first in a duel, Deadstick first for the Deadstick Landing,
+ * else from the stage's place in the chapter on), then the track's own.
  */
 function raceSongs(): string[] {
   const own = TRACK_SONGS[track.def.id]?.title;
   const r = story?.race;
   if (!r) return own ? [own] : [];
   const list = (STORY_SONGS[r.act] ?? []).map((s) => s.title);
-  const chapter = r.boss ? [STORY_BOSS_SONGS[r.act], ...list] : list.map((_, i) => list[(r.index + i) % list.length]);
+  const lead = r.boss ? [STORY_BOSS_SONGS[r.act]] : r.skill === 'deadstick' ? [DEADSTICK_SONG] : [];
+  const chapter = [...lead, ...list.map((_, i) => list[(r.index + i) % list.length])];
   return [...new Set([...chapter, ...(own ? [own] : [])].filter(Boolean))];
 }
 
