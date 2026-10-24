@@ -303,7 +303,7 @@ export function trackDetail(track: Track, theme: Theme, animated: ((time: number
 
   // Roads that are only there on some laps carry their own paint (render/trackView.ts) and no posts or boards.
   const fixed = ribbons.filter((_, i) => i === 0 || !track.def.branches[i - 1].openOn);
-  for (const r of fixed) g.add(roadPaint(r, theme.decor, theme.edgeLine));
+  for (const r of fixed) g.add(roadPaint(r, theme.decor, theme.edgeLine, theme.edgeWidth));
   g.add(edgeProps(fixed, style, abyss, clear, animated));
   g.add(cornerBoards(fixed, abyss, clear));
   if (!abyss) {
@@ -324,7 +324,7 @@ export function trackDetail(track: Track, theme: Theme, animated: ((time: number
  * racing line wears into any hard surface, swinging to the inside of each
  * corner.
  */
-export function roadPaint(ribbon: Ribbon, decor: DecorKind, edgeLine?: number): THREE.Group {
+export function roadPaint(ribbon: Ribbon, decor: DecorKind, edgeLine?: number, edgeWidth = 0.5): THREE.Group {
   const g = new THREE.Group();
   const sp = ribbon.spline;
   const segs = sp.closed ? sp.count : sp.count - 1;
@@ -362,7 +362,7 @@ export function roadPaint(ribbon: Ribbon, decor: DecorKind, edgeLine?: number): 
     const hwi = ribbon.halfWidth[i];
     const hwj = ribbon.halfWidth[j];
     // A dark world's edge lines go down every road, walled or not, whatever it's made of.
-    if (edgeLine !== undefined) for (const side of [-1, 1]) strip(edges, i, j, side * (hwi - 0.8), side * (hwi - 0.3), side * (hwj - 0.8), side * (hwj - 0.3));
+    if (edgeLine !== undefined) for (const side of [-1, 1]) strip(edges, i, j, side * (hwi - 0.3 - edgeWidth), side * (hwi - 0.3), side * (hwj - 0.3 - edgeWidth), side * (hwj - 0.3));
     if (paintable.has(surface)) {
       if (edgeLine === undefined) for (const side of [-1, 1]) strip(lines, i, j, side * (hwi - 0.55), side * (hwi - 0.3), side * (hwj - 0.55), side * (hwj - 0.3));
       // Dashes: 3 m on, 3 m off, on roads wide enough to have lanes.

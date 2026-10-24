@@ -39,6 +39,8 @@ export interface Theme {
   roadGlow?: number;
   /** Low-contrast worlds (a dark road on dark ground, an orange road on orange dust): a bright line down each edge of every road, unlit, in this colour. */
   edgeLine?: number;
+  /** How wide that line is, in metres (0.5 when unset). */
+  edgeWidth?: number;
   /** Flying Microtonal Banana's worlds: roads, landmarks and scenery in the cover's cobalt and banana yellow (textures.ts BANANA). */
   banana?: boolean;
 }
@@ -659,8 +661,9 @@ export const THEMES: Record<ThemeId, Theme> = {
     skyCycle: false,
     dust: 0xe8e8e4,
     barrier: { map: tex.opartWallTexture, crawl: true },
-    // Checks on rings: a bright line down each edge keeps the road readable.
+    // Checks on rings: a broad bright line down each edge keeps the road readable.
     edgeLine: 0xff2a6a,
+    edgeWidth: 1.1,
   },
   // Cellophane: a world wrapped in coloured cellophane, sheets hung on frames, the light through them red, green, blue and gold.
   cellophane: {
@@ -679,6 +682,9 @@ export const THEMES: Record<ThemeId, Theme> = {
     skyCycle: true,
     dust: 0xf0f4ff,
     barrier: { map: tex.paneTexture, crawl: false },
+    // A gold line down each edge of the dark, jewel-toned road.
+    edgeLine: 0xfff040,
+    edgeWidth: 0.8,
   },
   // I'm in Your Mind Fuzz: a world gone to static, purple and green, fuzz growing on everything, the album's swirl turning in the sky.
   mindfuzz: {
