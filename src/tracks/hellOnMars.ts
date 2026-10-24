@@ -16,7 +16,7 @@ const RIFT_LAND = 18;
 const NEST_DEPTH = 8;
 
 /**
- * Hell on Mars (hard): a colony on the red planet, overrun and burning.
+ * Mars for the Rich (hard): a colony on the red planet, overrun and burning.
  * A landing strip for a grid, a chicane between the habs, a climb up the
  * flank of Olympus and a leap over a rift of lava, the rim of a crater
  * where dust devils roam (Mars for the Rich, a toll lane, leaps straight
@@ -85,7 +85,7 @@ export function buildHellOnMars(): TrackDef {
   const at = (mark: string, d: number) => b.marks[mark].s + d * K;
   return {
     id: 'hell-on-mars',
-    name: 'Hell on Mars',
+    name: 'Mars for the Rich',
     main,
     branches: [toll.branch],
     pits: [...b.pits, ...toll.pits],

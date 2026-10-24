@@ -36,16 +36,16 @@ interface Case {
 
 const CASES: Case[] = [
   {
-    name: 'Hell on Mars',
+    name: 'Mars for the Rich',
     build: buildHellOnMars,
     branch: 'Mars for the Rich',
     junction: 50,
     jump: { clears: [['150cc', 0], ['100cc', 0.5]], fails: [['100cc', 0]] },
   },
   { name: 'Supercell', build: buildSupercell, branch: 'Converge', junction: 40 },
-  { name: 'Murder of the Universe', build: buildMurderOfTheUniverse, branch: 'Digital Black', junction: 66 },
+  { name: 'The Lord of Lightning', build: buildMurderOfTheUniverse, branch: 'Digital Black', junction: 66 },
   {
-    name: 'Petrodragonic Apocalypse',
+    name: 'Dragon',
     build: buildPetrodragonicApocalypse,
     branch: 'Flamethrower',
     junction: 45,
@@ -159,7 +159,7 @@ describe.each(CASES.map((c) => [c.name, c] as const))('%s shortcut and kickers',
   });
 });
 
-describe('Petrodragonic Apocalypse Flamethrower pad', () => {
+describe('Dragon Flamethrower pad', () => {
   const def = buildPetrodragonicApocalypse();
   const track = new Track(def);
   const k = def.branches.findIndex((b) => b.name === 'Flamethrower');
@@ -194,10 +194,10 @@ describe('Petrodragonic Apocalypse Flamethrower pad', () => {
 
 /** How high and low each road runs: a climb to a crest and a dip below ground (none on the abyss, which has no ground). */
 const HEIGHTS: { name: string; build: () => TrackDef; top: number; bottom: number }[] = [
-  { name: 'Hell on Mars', build: buildHellOnMars, top: 20, bottom: -6 },
+  { name: 'Mars for the Rich', build: buildHellOnMars, top: 20, bottom: -6 },
   { name: 'Supercell', build: buildSupercell, top: 12, bottom: -4 },
-  { name: 'Murder of the Universe', build: buildMurderOfTheUniverse, top: 20, bottom: 0 },
-  { name: 'Petrodragonic Apocalypse', build: buildPetrodragonicApocalypse, top: 10, bottom: -6 },
+  { name: 'The Lord of Lightning', build: buildMurderOfTheUniverse, top: 20, bottom: 0 },
+  { name: 'Dragon', build: buildPetrodragonicApocalypse, top: 10, bottom: -6 },
 ];
 
 describe.each(HEIGHTS.map((c) => [c.name, c] as const))('%s elevation', (_name, c) => {

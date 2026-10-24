@@ -612,8 +612,8 @@ body.touch-mode .hud-help {
   flex-direction: column;
   gap: clamp(2px, 0.8vh, 6px);
   padding: 2px 0 2px 4px;
-  flex-shrink: 1;
-  min-height: 0;
+  /* Never squeezed: squeezed, its options spill over the rows under it. The panel scrolls instead. */
+  flex-shrink: 0;
 }
 
 .menu-opts.on {
@@ -1205,6 +1205,11 @@ body.touch-mode .hud-callouts {
   position: absolute;
   top: 84px;
   left: 74px;
+}
+
+/* The item slot sits under the time on touch: the ghost gap, splits and style go under the slot. */
+body.touch-mode .hud-ghost-gap {
+  margin-top: 96px;
 }
 
 body.touch-mode .hud-item {
@@ -2249,6 +2254,21 @@ button.hud-big {
   font-size: 18px;
 }
 
+/* The small rows' values (Sound, Mirror, the generator's dials): too small for the gradient lettering, which the
+   tape look turns to mud, so a solid gold with a hard shadow. */
+.menu-row.small .menu-value.hud-big {
+  background: none;
+  color: #ffe58a;
+  -webkit-text-fill-color: #ffe58a;
+  -webkit-text-stroke: 0;
+  filter: none;
+  text-shadow: 2px 2px 0 #3a0f45, -1px -1px 0 #3a0f45;
+}
+
+.menu-row.small {
+  opacity: 0.9;
+}
+
 .menu-new {
   font-size: 11px;
   letter-spacing: 1px;
@@ -2419,6 +2439,7 @@ body.intro .hud-turn {
   display: none;
 }
 
+/* Touch: the turn card has the top centre (the place and speed are in the lower left). */
 body.touch-mode .hud-turn {
   top: 8px;
   left: 50%;
@@ -2452,12 +2473,18 @@ body.touch-mode .hud-turn {
   opacity: 0.85;
 }
 
-/* The live soundtrack's mini player (ui/miniPlayer.ts), on desktop: bottom left, over the help line while racing. On touch its controls are in Settings. */
+/* The live soundtrack's mini player (ui/miniPlayer.ts). On desktop: bottom left, over the help line while racing. On touch: a ♫ button that opens it as a modal. */
 .mini-player {
   position: fixed;
   left: 16px;
   bottom: 16px;
   z-index: 40;
+  display: none;
+  pointer-events: auto;
+}
+
+.mp-card {
+  position: relative;
   width: 250px;
   padding: 8px 10px 10px;
   border-radius: 12px;
@@ -2465,8 +2492,6 @@ body.touch-mode .hud-turn {
   box-shadow: 0 0 0 2px rgba(255, 210, 120, 0.7);
   color: #fff6d0;
   font-family: Verdana, sans-serif;
-  display: none;
-  pointer-events: auto;
 }
 
 .mini-player.show {
@@ -2477,9 +2502,101 @@ body[data-mode='race'] .mini-player {
   bottom: 62px;
 }
 
-body.touch-mode .mini-player,
-body.intro .mini-player {
+body.intro .mini-player,
+body.intro .mp-fab {
+  display: none !important;
+}
+
+.mp-close,
+.mp-fab {
   display: none;
+}
+
+/* Touch: the ♫ button beside the pause button, and the player as a modal over a dimmed screen. */
+body.touch-mode .mini-player {
+  display: none;
+}
+
+body.touch-mode .mini-player.show.open {
+  display: flex;
+  inset: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 90;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 0, 16, 0.55);
+}
+
+body.touch-mode .mp-card {
+  width: min(340px, 86vw);
+  padding: 14px 16px 16px;
+  background: rgba(30, 6, 40, 0.94);
+}
+
+body.touch-mode .mp-close {
+  display: block;
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  background: none;
+  color: #fff6d0;
+  font-size: 26px;
+  line-height: 36px;
+  cursor: pointer;
+}
+
+body.touch-mode .mp-title {
+  font-size: 16px;
+  padding-right: 34px;
+}
+
+body.touch-mode .mp-show {
+  font-size: 12px;
+}
+
+body.touch-mode .mp-buttons {
+  gap: 8px;
+  margin-top: 12px;
+}
+
+body.touch-mode .mp-buttons button,
+body.touch-mode .mp-buttons a {
+  height: 44px;
+  line-height: 44px;
+  font-size: 18px;
+}
+
+body.touch-mode .mp-bar {
+  height: 4px;
+  margin-top: 12px;
+}
+
+body.touch-mode .mp-fab.show {
+  display: block;
+  position: fixed;
+  top: 12px;
+  left: calc(50% + 44px);
+  z-index: 45;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(30, 6, 40, 0.72);
+  box-shadow: 0 0 0 2px rgba(255, 210, 120, 0.7);
+  color: #ffd23a;
+  font-size: 20px;
+  line-height: 40px;
+  text-align: center;
+  pointer-events: auto;
+}
+
+body.touch-mode .mp-fab.paused {
+  color: rgba(255, 246, 208, 0.5);
 }
 
 .mp-title {
@@ -2555,36 +2672,6 @@ body:not(.touch-mode) .hud-live {
   display: none;
 }
 
-/* The live soundtrack's controls in Settings (the mini player's, for phones). */
-.settings-player {
-  margin: 4px 0 10px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  background: rgba(30, 6, 40, 0.45);
-  color: #fff6d0;
-  font-family: Verdana, sans-serif;
-  font-style: normal;
-}
-
-.settings-player-info b,
-.settings-player-info small {
-  display: block;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.settings-player-info small {
-  opacity: 0.8;
-}
-
-.settings-player .mp-buttons button,
-.settings-player .mp-buttons a {
-  height: 34px;
-  line-height: 34px;
-  font-size: 16px;
-}
-
 /* Hints along the bottom of the picker and the flyover before a race (ui/hints.ts): controls, items, tips. */
 .hints-ticker {
   position: fixed;
@@ -2654,4 +2741,157 @@ body[data-mode='menu'] .menu {
 
 body[data-mode='menu'] .menu-panel {
   max-height: calc(100dvh - 54px);
+}
+
+/* A Live set's show: a dropdown by year (the picker's Show row and Settings). */
+.menu-show,
+.settings-select {
+  max-width: 100%;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 2px solid #ffd23a;
+  border-radius: 8px;
+  background: #2a0a36;
+  color: #fff6d0;
+  font: bold 13px Verdana, sans-serif;
+  font-style: normal;
+  cursor: pointer;
+}
+
+.menu-value .menu-show {
+  width: calc(100% - 44px);
+  -webkit-text-fill-color: #fff6d0;
+}
+
+.settings-show .settings-select {
+  grid-column: 2 / span 2;
+  width: 100%;
+}
+
+.settings-show .menu-dice {
+  justify-self: center;
+}
+
+/* Watching the CPUs (Infinite, Watch): the race alone, no HUD but the pause menu, and a caption naming who the camera's on. */
+body.watching .hud > :not(.hud-pause):not(.hud-confirm):not(.hud-intro) {
+  display: none !important;
+}
+
+.watch-caption {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  z-index: 30;
+  padding: 8px 18px;
+  border-radius: 12px;
+  background: rgba(30, 6, 40, 0.6);
+  box-shadow: 0 0 0 2px rgba(255, 210, 120, 0.6);
+  color: #fff6d0;
+  font: 15px Verdana, sans-serif;
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.6s;
+}
+
+.watch-caption.show {
+  opacity: 1;
+}
+
+.watch-caption b {
+  color: #ffd23a;
+}
+
+.watch-caption small {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  opacity: 0.75;
+}
+
+/* Touch: the place and speed, and the drift meter over them, in the lower left corner (the steering pad lifted
+   above them); the turn card takes the top centre on its own. Last in the file, so it wins over the touch
+   rules above at every screen size. */
+body.touch-mode .hud-br {
+  left: 14px;
+  right: auto;
+  top: auto;
+  bottom: 6px;
+  transform: none;
+  text-align: left;
+}
+
+body.touch-mode .hud-drift {
+  left: 18px;
+  top: auto;
+  bottom: 46px;
+  width: min(200px, 30vw);
+  transform: skewX(-12deg);
+}
+
+body.touch-mode .touch-pad {
+  bottom: 78px;
+}
+
+body.touch-mode .hud-turn {
+  top: 8px;
+}
+
+/* Menu values (the picker's mode, track, racer and dials, its speed list, Settings and the lobby): big solid gold
+   with a heavy outline. The gradient title lettering goes to mud at these sizes under the tape look. */
+.menu-value.hud-big,
+.menu-opt-name.hud-big,
+.lobby-value.hud-big,
+.lobby-title.hud-big,
+.menu-row.small .menu-value.hud-big {
+  background: none;
+  color: #ffe14d;
+  -webkit-text-fill-color: #ffe14d;
+  -webkit-text-stroke: 0;
+  filter: none;
+  text-shadow:
+    2px 0 0 #2a0636, -2px 0 0 #2a0636, 0 2px 0 #2a0636, 0 -2px 0 #2a0636,
+    2px 2px 0 #2a0636, -2px -2px 0 #2a0636, 2px -2px 0 #2a0636, -2px 2px 0 #2a0636,
+    4px 4px 0 rgba(20, 0, 30, 0.85);
+}
+
+.menu-value {
+  font-size: clamp(22px, min(5.4vh, 6.6vw), 34px);
+}
+
+.menu-row.small .menu-value {
+  font-size: clamp(19px, min(4.4vh, 5.4vw), 24px);
+}
+
+.menu-opt-name {
+  font-size: clamp(20px, min(4.4vh, 5.8vw), 30px);
+}
+
+.lobby-value {
+  font-size: 21px;
+}
+
+@media (max-width: 700px), (max-height: 460px) {
+  .settings .lobby-value {
+    font-size: 17px;
+  }
+}
+
+/* The mode's line, kept on short screens where the racer's bio goes. */
+.menu-mode-blurb {
+  font-size: 14px;
+  color: #fff6d0;
+}
+
+/* Settings' Live set dice: a small square at the row's end, not one of Settings' big buttons. */
+.settings .settings-show .menu-dice {
+  width: 40px;
+  height: 36px;
+  min-width: 0;
+  padding: 0 !important;
+  margin: 0;
+  font-size: 18px;
+  line-height: 36px;
 }

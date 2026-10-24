@@ -18,7 +18,7 @@ const TRESTLE = 12;
 const GULLET_DEPTH = 8;
 
 /**
- * Petrodragonic Apocalypse (hard): a burning oil field under a black sky.
+ * Dragon (hard): a burning oil field under a black sky.
  * Narrow roads, slicks of crude that slide like ice, a walled gullet where
  * dragons breathe fire across the whole road, a jump over a moat of
  * burning oil, a coil of hairpins on the slick, a rail-less bridge over an
@@ -102,7 +102,7 @@ export function buildPetrodragonicApocalypse(): TrackDef {
   const at = (mark: string, d: number) => b.marks[mark].s + d * K;
   return {
     id: 'petrodragonic-apocalypse',
-    name: 'Petrodragonic Apocalypse',
+    name: 'Dragon',
     main,
     branches: [flame.branch],
     pits: [...b.pits, ...flame.pits],

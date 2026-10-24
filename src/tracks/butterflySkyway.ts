@@ -14,7 +14,7 @@ const MORPHO_Y = 4;
 const MORPHO_TOP = 20;
 
 /**
- * Butterfly 3000 Skyway (circuit 2, hard): a rainbow roller coaster in the
+ * Catching Smoke (circuit 2, hard): a rainbow roller coaster in the
  * sky, the cup's finale. No ground below: leave the road and it's a long
  * drop. A climbing bend and a drop into the garden, a long lift to the
  * Star Leap, switchbacks down, a hump, a helix up through itself and a
@@ -84,7 +84,7 @@ export function buildButterflySkyway(): TrackDef {
   const smoke = buildCatchingSmoke(b.marks.smoke, b.marks.smokeEnd);
   return {
     id: 'butterfly-skyway',
-    name: 'Butterfly 3000 Skyway',
+    name: 'Catching Smoke',
     main,
     branches: [smoke.branch],
     pits: b.pits,

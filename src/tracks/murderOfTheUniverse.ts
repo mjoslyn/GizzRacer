@@ -11,7 +11,7 @@ const BALROG = 14;
 const TOP = 26;
 
 /**
- * Murder of the Universe (hard): a road of starlight over nothing. Leave
+ * The Lord of Lightning (hard): a road of starlight over nothing. Leave
  * it and you fall forever. Its sections run in the album's chapter order:
  * the Altered Beast, then the Lord of Lightning against the Balrog (a
  * leap across the void, a spiral round the acrid corpse of a dead star),
@@ -81,7 +81,7 @@ export function buildMurderOfTheUniverse(): TrackDef {
   const at = (mark: string, d: number) => b.marks[mark].s + d * K;
   return {
     id: 'murder-of-the-universe',
-    name: 'Murder of the Universe',
+    name: 'The Lord of Lightning',
     main,
     branches: [black.branch],
     pits: b.pits,

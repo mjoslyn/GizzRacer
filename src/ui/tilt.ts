@@ -2,6 +2,11 @@ import type { InputManager } from '../core/input';
 import { settings } from '../core/settings';
 
 const DEADZONE = 2.5;
+/** Tipping the phone forward or back pitches the glider: degrees ignored (a wheel turned never quite stays upright), and degrees past them for a full dive or climb. */
+const PITCH_DEADZONE = 8;
+const PITCH_RANGE = 18;
+/** A jump this big in the forward tilt is the reading flipping round upright, not a hand. */
+const PITCH_FLIP = 60;
 
 interface PermissionCapable {
   requestPermission?: () => Promise<'granted' | 'denied'>;
@@ -11,10 +16,14 @@ interface PermissionCapable {
  * Tilt steering for phones held in landscape: turning the phone like a
  * wheel shows up in the orientation's beta angle, signed by which way the
  * screen is rotated. Steering is relative to how the phone was held at the
- * last recentre (each race start, or the Settings button).
+ * last recentre (each race start, or the Settings button). Tipping the
+ * phone forward or back (the gamma angle, its sign also flipped by the
+ * rotation) pitches the glider: forward dives, back climbs.
  */
 export class TiltSteering {
   private neutral: number | null = null;
+  /** The forward tilt at the last recentre. */
+  private neutralPitch: number | null = null;
   private active = false;
   /** A real reading has arrived (desktops send none, or one with nulls). */
   private sensed = false;
@@ -63,12 +72,13 @@ export class TiltSteering {
 
   stop(): void {
     this.active = false;
-    this.input.touch.tilt = 0;
+    this.input.touch.tilt = this.input.touch.tiltPitch = 0;
   }
 
   /** The current hold becomes straight ahead. */
   recenter(): void {
     this.neutral = null;
+    this.neutralPitch = null;
   }
 
   private orientation(e: DeviceOrientationEvent): void {
@@ -77,7 +87,7 @@ export class TiltSteering {
     // Landscape only: which end of the phone is "up" flips the sign.
     const side = angle === 90 ? 1 : angle === 270 || angle === -90 ? -1 : 0;
     if (side === 0) {
-      this.input.touch.tilt = 0;
+      this.input.touch.tilt = this.input.touch.tiltPitch = 0;
       return;
     }
     if (this.neutral === null) this.neutral = e.beta;
@@ -88,5 +98,16 @@ export class TiltSteering {
     const s = settings();
     const steer = (Math.sign(d) * mag * side * (s.tiltInvert ? -1 : 1)) / s.tiltRange;
     this.input.touch.tilt = Math.max(-1, Math.min(1, steer));
+    this.input.touch.tiltPitch = e.gamma === null ? 0 : this.pitchFrom(e.gamma, side);
+  }
+
+  /** The glider's pitch from the forward tilt: the phone's top edge tipped away dives (-1), towards you climbs (1). */
+  private pitchFrom(gamma: number, side: number): number {
+    if (this.neutralPitch === null) this.neutralPitch = gamma;
+    // Upright, gamma wraps from -90 to 90; held there it's no use, so nothing pitches.
+    const forward = (gamma - this.neutralPitch) * side;
+    if (Math.abs(forward) > PITCH_FLIP) return 0;
+    const mag = Math.max(0, Math.abs(forward) - PITCH_DEADZONE);
+    return Math.max(-1, Math.min(1, (-Math.sign(forward) * mag) / PITCH_RANGE));
   }
 }

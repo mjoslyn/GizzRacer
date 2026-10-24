@@ -29,7 +29,7 @@ const PREVENT_DEFAULT = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRigh
 export class InputManager {
   autoAccelerate = true;
   /** Written by the on-screen touch controls. */
-  readonly touch = { steer: 0, tilt: 0, pitch: 0, drift: false, brake: false, item: false };
+  readonly touch = { steer: 0, tilt: 0, tiltPitch: 0, pitch: 0, drift: false, brake: false, item: false };
   private readonly down = new Set<string>();
   /** Keys pressed since the last sample, so sub-tick taps aren't lost. */
   private readonly latched = new Set<string>();
@@ -58,7 +58,7 @@ export class InputManager {
     let steer = (key(KEYS.right) ? 1 : 0) - (key(KEYS.left) ? 1 : 0);
     // Up and down: the throttle and brake keys, which with the glider open climb and dive. Accelerating by hand, up is held
     // down as the throttle, so it only dives.
-    let pitch = (this.autoAccelerate && key(KEYS.throttle) ? 1 : 0) - (key(KEYS.brake) ? 1 : 0) + this.touch.pitch;
+    let pitch = (this.autoAccelerate && key(KEYS.throttle) ? 1 : 0) - (key(KEYS.brake) ? 1 : 0) + this.touch.pitch + this.touch.tiltPitch;
     let drift = key(KEYS.drift);
     let item = key(KEYS.item);
     let lookBack = key(KEYS.lookBack);

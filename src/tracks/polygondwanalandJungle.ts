@@ -14,7 +14,7 @@ const RAVINE_Y = -6;
 const RUINS_Y = 8;
 
 /**
- * Polygondwanaland Jungle (spec section 7, hard): vine hairpins, a jump
+ * Polygondwanaland (spec section 7, hard): vine hairpins, a jump
  * over a river, and walled stone ruins with a clockwork chicane. The
  * Fourth Colour, a secret line beyond sight, cuts the river corner with a
  * longer leap off a crumbling ramp.
@@ -93,7 +93,7 @@ export function buildPolygondwanalandJungle(): TrackDef {
   const colour = buildFourthColour(b.marks.colourFrom, b.marks.colourTo, b.marks.river.pose);
   return {
     id: 'polygondwanaland-jungle',
-    name: 'Polygondwanaland Jungle',
+    name: 'Polygondwanaland',
     main,
     branches: [colour.branch],
     pits: b.pits,

@@ -40,8 +40,8 @@ interface Case {
 
 const CASES: Case[] = [
   { name: 'Phantom Island', build: buildPhantomIsland, branch: 'Eternal Return', junction: 40, lap: { lap: 2, lastLap: false } },
-  { name: 'Deadstick Drop', build: buildDeadstickDrop, branch: 'Tailwind', junction: 40, lap: { lap: 3, lastLap: true } },
-  { name: 'Panpsych Grove', build: buildPanpsychGrove, branch: 'Hollow Log', junction: 40 },
+  { name: 'Deadstick', build: buildDeadstickDrop, branch: 'Tailwind', junction: 40, lap: { lap: 3, lastLap: true } },
+  { name: 'Panpsych', build: buildPanpsychGrove, branch: 'Hollow Log', junction: 40 },
   { name: 'Sea of Doubt', build: buildSeaOfDoubt, branch: 'Riptide', junction: 40 },
 ];
 
@@ -164,7 +164,7 @@ describe.each(CASES.map((c) => [c.name, c] as const))('%s shortcut and kickers',
   });
 });
 
-describe('Deadstick Drop: off the end of the runway with no engine', () => {
+describe('Deadstick: off the end of the runway with no engine', () => {
   const def = buildDeadstickDrop();
   const track = new Track(def);
   const lip = def.main.gaps[0][0];
@@ -304,8 +304,8 @@ describe('hazards that help when you use them', () => {
 /** How high and low each road runs: a climb to a crest and a dip below ground (none on the abyss, which has no ground). */
 const HEIGHTS: { name: string; build: () => TrackDef; top: number; bottom: number }[] = [
   { name: 'Phantom Island', build: buildPhantomIsland, top: 12, bottom: -4 },
-  { name: 'Deadstick Drop', build: buildDeadstickDrop, top: 16, bottom: -4 },
-  { name: 'Panpsych Grove', build: buildPanpsychGrove, top: 12, bottom: -4 },
+  { name: 'Deadstick', build: buildDeadstickDrop, top: 16, bottom: -4 },
+  { name: 'Panpsych', build: buildPanpsychGrove, top: 12, bottom: -4 },
   { name: 'Sea of Doubt', build: buildSeaOfDoubt, top: 15, bottom: -4 },
 ];
 

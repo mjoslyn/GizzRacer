@@ -58,6 +58,22 @@ export interface KartModel {
   flappers?: THREE.Object3D[];
   /** Moving-head lights that sweep side to side about their y axis. Built unrotated. */
   sweepers?: THREE.Object3D[];
+  /**
+   * Runners: legs pivoting at the hip, swung forward and back about their y
+   * axis in a gait that quickens with speed; `userData.side` is -1 or 1,
+   * `userData.phase` the leg's place in the stride. `sway` turns with the
+   * stride (a lizard's body snaking), `tail` against it. Built unrotated.
+   */
+  legs?: THREE.Object3D[];
+  sway?: THREE.Object3D;
+  tail?: THREE.Object3D;
+  /**
+   * Slitherers: body segments a wave runs down from head to tail, side to
+   * side, quicker with speed; `userData.z` is how far back the segment sits
+   * (m), `userData.amp` how far it swings. `rattle` shakes. Built unrotated.
+   */
+  segments?: THREE.Object3D[];
+  rattle?: THREE.Object3D;
 }
 
 let env: THREE.CubeTexture | null = null;
@@ -502,7 +518,7 @@ function cyborgGourmand(r: RacerDef): KartModel {
   };
 }
 
-// ---- Gila Rider: a beaded dragon-gila flying on its own leathery wings ---------
+// ---- Gila Rider: a beaded dragon-gila running on its four sprawled legs ---------
 
 function gilaRider(r: RacerDef): KartModel {
   const body = new THREE.Group();
@@ -511,21 +527,23 @@ function gilaRider(r: RacerDef): KartModel {
   const char = matte(0x1a1718, { shininess: 40, specular: 0x332222 });
   const ember = glow(0xff6a1a);
   const claw = matte(0xd8c8a8);
-  // Leather lit from below by its own fire.
-  const membrane = matte(0x3a1c18, { side: THREE.DoubleSide, emissive: 0x3a0e04, shininess: 20, specular: 0x221010 });
-  // It flies: everything rides a metre off the road.
+  // It runs: low to the road, belly just clear, the legs reaching down to it.
   const gila = new THREE.Group();
-  gila.position.y = 0.95;
+  gila.position.y = 0.46;
   body.add(gila);
 
   // A long, heavy body: chest, belly, haunches, then a fat tail tapering to a blunt tip.
   put(gila, ball(0.42, 20, 14), hide, [0, 0, 0.05], [0, 0, 0], [1.05, 0.7, 1.75]);
   put(gila, ball(0.32, 16, 12), hide, [0, 0.03, 0.68], [0, 0, 0], [1, 0.78, 1.05]);
   put(gila, ball(0.34, 16, 12), hide, [0, -0.01, -0.58], [0, 0, 0], [1.08, 0.78, 1.1]);
+  // The tail hangs off the haunches on its own pivot, so it can lash against the body's sway.
+  const tailRoot = new THREE.Group();
+  tailRoot.position.set(0, 0, -0.8);
+  gila.add(tailRoot);
   const tail: [number, number, number][] = [];
   for (let k = 0; k < 8; k++) {
-    const at: [number, number, number] = [Math.sin(k * 0.55) * 0.07, 0.02 - k * 0.012, -0.88 - k * 0.16];
-    put(gila, ball(0.27 - k * 0.024, 14, 10), hide, at, [0, 0, 0], [1, 0.85, 1.3]);
+    const at: [number, number, number] = [Math.sin(k * 0.55) * 0.07, 0.02 - k * 0.012, -0.08 - k * 0.16];
+    put(tailRoot, ball(0.27 - k * 0.024, 14, 10), hide, at, [0, 0, 0], [1, 0.85, 1.3]);
     tail.push(at);
   }
   // A scalloped ridge of rounded spines down the neck, back and tail: dark plates with a warm rim.
@@ -534,67 +552,35 @@ function gilaRider(r: RacerDef): KartModel {
     put(parent, cyl(size * 1.12, size * 1.12, 0.02, 12), matte(r.color, { emissive: 0x501404 }), [at[0], at[1] - size * 0.08, at[2]], [0, 0, Math.PI / 2], [1, 1, 0.7]);
   };
   for (let k = 0; k < 7; k++) spine(gila, [0, 0.27 - Math.abs(k - 2) * 0.012, 0.6 - k * 0.2], 0.1 - k * 0.004);
-  for (const [k, at] of tail.entries()) if (k % 2 === 0) spine(gila, [at[0], at[1] + 0.2 - k * 0.02, at[2]], 0.075 - k * 0.006);
+  for (const [k, at] of tail.entries()) if (k % 2 === 0) spine(tailRoot, [at[0], at[1] + 0.2 - k * 0.02, at[2]], 0.075 - k * 0.006);
 
-  // Four stubby legs splayed out and tucked back in flight, pale hooked claws.
-  const leg = (hip: [number, number, number], knee: [number, number, number], foot: [number, number, number]) => {
-    rod(gila, hip, knee, 0.1, hide, 0.08);
-    put(gila, ball(0.085, 10, 8), hide, knee);
-    rod(gila, knee, foot, 0.075, hide, 0.065);
-    put(gila, ball(0.09, 10, 8), hide, foot, [0, 0, 0], [1.25, 0.55, 1.3]);
-    const dir = new THREE.Vector3(...foot).sub(new THREE.Vector3(...knee)).setY(0).normalize();
+  // Four stubby legs sprawled out to the sides, elbows high, feet planted on the road with pale hooked claws.
+  // Each hangs from a pivot at its hip so it can swing forward and back.
+  const legs: THREE.Object3D[] = [];
+  const leg = (side: number, hipZ: number, phase: number) => {
+    const pivot = new THREE.Group();
+    pivot.position.set(side * 0.3, -0.06, hipZ);
+    pivot.userData = { side, phase };
+    const knee: [number, number, number] = [side * 0.34, 0.06, 0];
+    const foot: [number, number, number] = [side * 0.42, -0.38, 0.06];
+    rod(pivot, [0, 0, 0], knee, 0.1, hide, 0.08);
+    put(pivot, ball(0.09, 10, 8), hide, knee);
+    rod(pivot, knee, foot, 0.075, hide, 0.065);
+    put(pivot, ball(0.1, 10, 8), hide, foot, [0, 0, 0], [1.25, 0.5, 1.4]);
     for (let k = -2; k <= 2; k++) {
-      const c = put(gila, cone(0.018, 0.09, 5), claw, [foot[0], foot[1] - 0.02, foot[2]]);
-      const d = dir.clone().applyAxisAngle(UP, k * 0.35).setY(-0.25).normalize();
+      const c = put(pivot, cone(0.018, 0.09, 5), claw, [foot[0], foot[1] - 0.02, foot[2]]);
+      const d = new THREE.Vector3(side * 0.3, 0, 1).normalize().applyAxisAngle(UP, k * 0.35).setY(-0.25).normalize();
       c.quaternion.setFromUnitVectors(UP, d);
       c.position.addScaledVector(d, 0.1);
     }
+    gila.add(pivot);
+    legs.push(pivot);
   };
+  // A lizard's trot: the diagonal pairs move together.
   for (const side of [-1, 1]) {
-    leg([side * 0.3, -0.08, 0.6], [side * 0.58, -0.2, 0.55], [side * 0.6, -0.3, 0.22]);
-    leg([side * 0.32, -0.08, -0.55], [side * 0.62, -0.16, -0.62], [side * 0.5, -0.24, -1.02]);
+    leg(side, 0.55, side < 0 ? 0 : Math.PI);
+    leg(side, -0.52, side < 0 ? Math.PI : 0);
   }
-
-  // Great leathery wings from the shoulders: an arm to the wrist, finger bones fanning back,
-  // a scalloped membrane between. Each beats in two hinged halves, the outer riding the inner, so the tips whip.
-  const SPAN = 0.85;
-  const innerShape = new THREE.Shape();
-  innerShape.moveTo(0, 0.2);
-  innerShape.lineTo(SPAN, 0.34);
-  innerShape.lineTo(SPAN, -0.85);
-  innerShape.quadraticCurveTo(SPAN * 0.5, -0.5, 0, -0.62);
-  innerShape.closePath();
-  const outerShape = new THREE.Shape();
-  outerShape.moveTo(0, 0.34);
-  outerShape.lineTo(0.9, -0.2);
-  outerShape.quadraticCurveTo(0.5, -0.3, 0.5, -0.78);
-  outerShape.quadraticCurveTo(0.22, -0.62, 0, -0.85);
-  outerShape.closePath();
-  // Flat in the wing's plane: the shape's y becomes z, forward.
-  const innerGeo = new THREE.ShapeGeometry(innerShape, 8).rotateX(Math.PI / 2);
-  const outerGeo = new THREE.ShapeGeometry(outerShape, 8).rotateX(Math.PI / 2);
-  const flappers: THREE.Object3D[] = [];
-  for (const side of [-1, 1]) {
-    const wing = new THREE.Group();
-    wing.position.set(side * 0.26, 0.2, 0.38);
-    wing.userData.side = side;
-    put(wing, innerGeo, membrane, [0, 0, 0], [0, 0, 0], [side, 1, 1]);
-    rod(wing, [0, 0, 0.12], [side * SPAN, 0, 0.34], 0.06, hide, 0.045);
-    rod(wing, [side * SPAN, 0, 0.34], [side * SPAN, 0, -0.85], 0.025, char, 0.012);
-    put(wing, ball(0.06, 10, 8), hide, [side * SPAN, 0, 0.34]);
-    put(wing, cone(0.03, 0.14, 6), claw, [side * (SPAN + 0.02), 0.02, 0.45], [Math.PI / 2, 0, 0]);
-    const tip = new THREE.Group();
-    tip.position.set(side * SPAN, 0, 0);
-    tip.userData.side = side;
-    put(tip, outerGeo, membrane, [0, 0, 0], [0, 0, 0], [side, 1, 1]);
-    rod(tip, [0, 0, 0.34], [side * 0.9, 0, -0.2], 0.025, char, 0.01);
-    rod(tip, [0, 0, 0.34], [side * 0.5, 0, -0.78], 0.022, char, 0.01);
-    wing.add(tip);
-    gila.add(wing);
-    flappers.push(wing, tip);
-  }
-  // Furnace glow under the belly and wings, kicking up the road.
-  const pads = [glowSprite(gila, [0, -0.45, 0], 0.85, 0xff5a10), ...[-1, 1].map((side) => glowSprite(gila, [side * 0.95, -0.45, -0.1], 0.6, 0xff7a20))];
 
   // The head: broad, heavy and blunt, the jaw hanging open on a furnace, huge glowing slit eyes.
   const head = new THREE.Group();
@@ -647,14 +633,424 @@ function gilaRider(r: RacerDef): KartModel {
     body,
     wheels: [],
     // Fire out of the tail tip under boost.
-    exhausts: [new THREE.Vector3(tipAt[0], tipAt[1] + 0.95, tipAt[2] - 0.15)],
+    exhausts: [new THREE.Vector3(tipAt[0], tipAt[1] + 0.46, tipAt[2] - 0.95)],
     rearTrack: 0.55,
     rearZ: -0.9,
     spinners: [],
-    shadow: [3.0, 3.4],
-    hover: { bob: 0.12, pads },
+    shadow: [2.4, 3.4],
+    head,
+    legs,
+    sway: gila,
+    tail: tailRoot,
+  };
+}
+
+// ---- Skeleton Dragon: the dragon picked clean, flying on its bones ------------
+// After the PetroDragonic Apocalypse art: a horned skull with burning sockets
+// and an open fanged jaw, a ribcage with a fire in it, a spiked spine running
+// into a long whip of a tail, and wings of bare finger bones with rags of
+// membrane between them.
+
+function skeletonDragon(r: RacerDef): KartModel {
+  const body = new THREE.Group();
+  const bone = matte(r.color, { shininess: 30, specular: 0x554a3a, emissive: 0x1a140c });
+  const dark = matte(0x14100c);
+  const fire = glow(r.accent);
+  const hot = glow(0xffd060);
+  const rag = new THREE.MeshPhongMaterial({ color: 0x2a1410, emissive: 0x3a0e04, transparent: true, opacity: 0.45, side: THREE.DoubleSide, depthWrite: false });
+  // A bone along a curve through `pts`, thinner at the far end.
+  const curved = (parent: THREE.Object3D, pts: [number, number, number][], radius: number) => {
+    const curve = new THREE.CatmullRomCurve3(pts.map((p) => new THREE.Vector3(...p)));
+    return put(parent, new THREE.TubeGeometry(curve, 16, radius, 6, false), bone, [0, 0, 0]);
+  };
+  // It flies: everything rides a metre off the road.
+  const dragon = new THREE.Group();
+  dragon.position.y = 1.0;
+  body.add(dragon);
+
+  // The spine: vertebrae from the neck down the back into the tail, each with a spike, the tail whipping off to a point.
+  const spinePts: [number, number, number][] = [];
+  for (let k = 0; k < 26; k++) {
+    const z = 0.55 - k * 0.12;
+    const y = k < 6 ? 0.18 - k * 0.02 : 0.06 - (k - 6) * 0.018 + Math.sin(k * 0.5) * 0.04;
+    const x = k < 8 ? 0 : Math.sin((k - 8) * 0.45) * 0.05 * (k - 8) * 0.12;
+    spinePts.push([x, y, z]);
+    const size = k < 8 ? 0.07 : Math.max(0.025, 0.07 - (k - 8) * 0.0028);
+    put(dragon, cyl(size, size, 0.07, 8), bone, [x, y, z], [Math.PI / 2, 0, 0]);
+    put(dragon, cone(size * 0.45, size * 2.4, 5), bone, [x, y + size * 1.6, z - 0.02], [-0.5, 0, 0]);
+  }
+  curved(dragon, spinePts, 0.025);
+
+  // The ribcage: curved ribs hanging from the back, a keel of breastbone under them, and a fire burning inside.
+  for (let k = 0; k < 7; k++) {
+    const z = 0.38 - k * 0.12;
+    const w = 0.34 - Math.abs(k - 2.5) * 0.04;
+    const h = 0.4 - Math.abs(k - 2.5) * 0.035;
+    const top = spinePts[Math.min(spinePts.length - 1, 2 + k)][1];
+    for (const side of [-1, 1]) {
+      curved(dragon, [[0, top, z], [side * w * 0.8, top - h * 0.15, z - 0.02], [side * w, top - h * 0.6, z - 0.05], [side * w * 0.45, top - h, z - 0.04], [0, top - h * 1.05, z - 0.02]], 0.018);
+    }
+  }
+  curved(dragon, [[0, -0.2, 0.42], [0, -0.3, 0.1], [0, -0.28, -0.3]], 0.03);
+  put(dragon, ball(0.16, 14, 10), fire, [0, -0.06, 0.05], [0, 0, 0], [1, 0.9, 1.3]);
+  put(dragon, ball(0.08, 10, 8), hot, [0, -0.06, 0.08]);
+  const pads = [glowSprite(dragon, [0, -0.06, 0.05], 1.1, r.accent), glowSprite(dragon, [0, -0.6, 0], 0.9, r.accent)];
+
+  // The pelvis and the legs, folded under in flight: thigh, shin, a fan of toe bones with claws.
+  put(dragon, ball(0.13, 10, 8), bone, [0, -0.02, -0.62], [0, 0, 0], [1.6, 0.6, 1]);
+  for (const side of [-1, 1]) {
+    const hip: [number, number, number] = [side * 0.18, -0.05, -0.62];
+    const knee: [number, number, number] = [side * 0.32, -0.3, -0.42];
+    const ankle: [number, number, number] = [side * 0.3, -0.45, -0.78];
+    rod(dragon, hip, knee, 0.045, bone, 0.035);
+    put(dragon, ball(0.05, 8, 6), bone, knee);
+    rod(dragon, knee, ankle, 0.035, bone, 0.025);
+    for (let t = -1; t <= 1; t++) {
+      const toe: [number, number, number] = [ankle[0] + t * 0.07, ankle[1] - 0.12, ankle[2] - 0.12];
+      rod(dragon, ankle, toe, 0.016, bone, 0.01);
+      put(dragon, cone(0.015, 0.07, 4), dark, [toe[0], toe[1] - 0.03, toe[2] - 0.02], [-2.4, 0, 0]);
+    }
+    // Little forearms under the chest, claws curled.
+    const shoulder: [number, number, number] = [side * 0.16, -0.12, 0.4];
+    const elbow: [number, number, number] = [side * 0.26, -0.32, 0.5];
+    const hand: [number, number, number] = [side * 0.2, -0.36, 0.7];
+    rod(dragon, shoulder, elbow, 0.03, bone, 0.025);
+    rod(dragon, elbow, hand, 0.025, bone, 0.02);
+    for (let t = -1; t <= 1; t++) put(dragon, cone(0.012, 0.08, 4), dark, [hand[0] + t * 0.03, hand[1] - 0.02, hand[2] + 0.04], [2.2, 0, 0]);
+  }
+
+  // The wings: an arm bone to the wrist, then long finger bones fanning back, rags of membrane between them, spurs on the joints.
+  const flappers: THREE.Object3D[] = [];
+  for (const side of [-1, 1]) {
+    const wing = new THREE.Group();
+    wing.position.set(side * 0.2, 0.18, 0.32);
+    wing.userData.side = side;
+    const elbow: [number, number, number] = [side * 0.55, 0.22, 0.05];
+    const wrist: [number, number, number] = [side * 1.05, 0.28, 0.3];
+    rod(wing, [0, 0, 0], elbow, 0.05, bone, 0.04);
+    put(wing, ball(0.06, 8, 6), bone, elbow);
+    rod(wing, elbow, wrist, 0.04, bone, 0.03);
+    put(wing, ball(0.05, 8, 6), bone, wrist);
+    put(wing, cone(0.025, 0.16, 5), bone, [wrist[0] + side * 0.04, wrist[1] + 0.06, wrist[2] + 0.06], [0.6, 0, -side * 0.5]);
+    const tips: [number, number, number][] = [
+      [side * 1.75, 0.2, -0.1],
+      [side * 1.55, 0.08, -0.6],
+      [side * 1.15, 0.0, -0.95],
+      [side * 0.6, -0.02, -0.9],
+    ];
+    for (const tip of tips) {
+      const mid: [number, number, number] = [(wrist[0] + tip[0]) / 2, (wrist[1] + tip[1]) / 2 + 0.06, (wrist[2] + tip[2]) / 2];
+      curved(wing, [wrist, mid, tip], 0.018);
+      put(wing, cone(0.016, 0.1, 4), bone, tip, [0, 0, 0]);
+    }
+    // Torn membrane: the panels between the fingers, ragged at the trailing edge.
+    const anchor = [[0, 0, 0] as [number, number, number], elbow, wrist];
+    const panel = (a: [number, number, number], b: [number, number, number], c: [number, number, number]) => {
+      const g = new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute([...a, ...b, ...c], 3));
+      g.computeVertexNormals();
+      put(wing, g, rag, [0, 0, 0]);
+    };
+    const ragged = (p: [number, number, number], q: [number, number, number], k: number): [number, number, number] => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2, (p[2] + q[2]) / 2 + (k % 2 ? 0.18 : 0.05)];
+    for (let k = 0; k < tips.length - 1; k++) panel(wrist, tips[k], ragged(tips[k], tips[k + 1], k));
+    panel(wrist, tips[tips.length - 1], anchor[1]);
+    panel(anchor[1], tips[tips.length - 1], [side * 0.3, 0, -0.55]);
+    dragon.add(wing);
+    flappers.push(wing);
+  }
+
+  // The skull: long and narrow, horns curling back, burning sockets, the jaw dropped open on rows of fangs.
+  const head = new THREE.Group();
+  head.position.set(0, 0.24, 0.72);
+  head.scale.setScalar(1.15);
+  put(head, ball(0.2, 16, 12), bone, [0, 0.04, 0], [0, 0, 0], [1, 0.8, 1.1]);
+  put(head, cyl(0.075, 0.15, 0.62, 10), bone, [0, 0.0, 0.36], [Math.PI / 2, 0, 0], [1, 0.6, 1]);
+  put(head, ball(0.08, 10, 8), bone, [0, -0.005, 0.62], [0, 0, 0], [1, 0.55, 1.2]);
+  // Nostril slits and the dark gaps of the cheekbones.
+  for (const side of [-1, 1]) {
+    put(head, ball(0.022, 6, 4), dark, [side * 0.035, 0.035, 0.68], [0, 0, 0], [0.6, 0.6, 1.6]);
+    put(head, ball(0.06, 8, 6), dark, [side * 0.1, -0.03, 0.26], [0, 0, 0], [0.5, 0.7, 1.8]);
+  }
+  // Eye sockets: black hollows with a coal burning in each, and a brow ridge over.
+  for (const side of [-1, 1]) {
+    put(head, ball(0.075, 10, 8), dark, [side * 0.12, 0.08, 0.1], [0, 0, 0], [0.8, 0.9, 1]);
+    put(head, ball(0.032, 8, 6), fire, [side * 0.14, 0.08, 0.14]);
+    glowSprite(head, [side * 0.15, 0.08, 0.16], 0.35, r.accent);
+    put(head, ball(0.08, 8, 6), bone, [side * 0.12, 0.15, 0.1], [0, 0, side * 0.3], [1.1, 0.35, 1.1]);
+  }
+  // Horns: two great ones sweeping back and curling, two small ones under them.
+  for (const side of [-1, 1]) {
+    curved(head, [[side * 0.12, 0.16, -0.02], [side * 0.22, 0.3, -0.2], [side * 0.26, 0.32, -0.45], [side * 0.2, 0.22, -0.6]], 0.04);
+    put(head, cone(0.035, 0.12, 6), bone, [side * 0.19, 0.2, -0.66], [-2.2, 0, 0]);
+    curved(head, [[side * 0.15, 0.05, -0.08], [side * 0.26, 0.08, -0.22], [side * 0.3, 0.02, -0.34]], 0.022);
+    // A frill of little spikes down the back of the skull.
+    for (let k = 0; k < 3; k++) put(head, cone(0.02, 0.1, 4), bone, [side * (0.06 + k * 0.03), 0.18 - k * 0.03, -0.12 - k * 0.04], [-1.2, 0, side * 0.4]);
+  }
+  // Upper fangs along the snout.
+  for (let k = 0; k < 6; k++) for (const side of [-1, 1]) put(head, cone(0.014, k === 1 ? 0.11 : 0.06, 4), bone, [side * (0.09 - k * 0.008), -0.08, 0.5 - k * 0.07], [Math.PI, 0, 0]);
+  // The jaw, hinged at the back of the skull and dropped open, its own teeth pointing up, the fire showing in the throat.
+  const jaw = new THREE.Group();
+  jaw.position.set(0, -0.08, -0.02);
+  jaw.rotation.x = 0.42;
+  for (const side of [-1, 1]) {
+    rod(jaw, [side * 0.1, 0, 0], [side * 0.04, -0.02, 0.66], 0.025, bone, 0.018);
+    for (let k = 0; k < 5; k++) put(jaw, cone(0.012, 0.06, 4), bone, [side * (0.09 - k * 0.009), 0.02, 0.18 + k * 0.08]);
+  }
+  put(jaw, ball(0.03, 6, 4), bone, [0, -0.02, 0.66]);
+  head.add(jaw);
+  put(head, ball(0.06, 8, 6), fire, [0, -0.08, 0.12]);
+  glowSprite(head, [0, -0.1, 0.35], 0.4, r.accent);
+  dragon.add(head);
+
+  const tipAt = spinePts[spinePts.length - 1];
+  return {
+    body,
+    wheels: [],
+    // Fire out of the tail tip under boost.
+    exhausts: [new THREE.Vector3(tipAt[0], tipAt[1] + 1.0, tipAt[2] - 0.1)],
+    rearTrack: 0.5,
+    rearZ: -0.8,
+    spinners: [],
+    shadow: [3.6, 3.6],
+    hover: { bob: 0.14, pads },
     head,
     flappers,
+  };
+}
+
+// ---- Lord of Lightning: a medieval storm wizard surfing his own bolt -----------
+// After Murder of the Universe: a robed wizard in a tall crooked hat with a
+// storm round its brim, a long grey beard streaming, eyes lit with the
+// charge, a staff up with lightning caught in its head and the other hand
+// raised to call more; riding a zigzag of lightning that hovers over the
+// road, crackling.
+
+function lordOfLightning(r: RacerDef): KartModel {
+  const body = new THREE.Group();
+  const robe = matte(r.color, { shininess: 25, specular: 0x333355 });
+  const lining = matte(0x1a1640, { side: THREE.DoubleSide });
+  const gold = brass();
+  const skin = matte(0xd8b090);
+  const beard = matte(0xd8d8d0, { shininess: 8 });
+  const wood = matte(0x4a3018);
+  const cloud = matte(0x6a6a7a, { shininess: 5, emissive: 0x101018 });
+  const bolt = glow(r.accent);
+  const white = glow(0xffffff);
+
+  // The bolt: a flat zigzag, its point forward, glowing, hovering under him.
+  const ride = new THREE.Group();
+  ride.position.y = 0.42;
+  body.add(ride);
+  const zig = new THREE.Shape();
+  const pts: [number, number][] = [[0, 1.5], [0.42, 0.35], [0.12, 0.42], [0.5, -0.6], [0.2, -0.52], [0.36, -1.5], [-0.42, -0.2], [-0.1, -0.28], [-0.48, 0.55], [-0.16, 0.5]];
+  zig.moveTo(...pts[0]);
+  for (const p of pts.slice(1)) zig.lineTo(...p);
+  zig.closePath();
+  // Flat on the road, the shape's y forward.
+  const zigGeo = new THREE.ExtrudeGeometry(zig, { depth: 0.1, bevelEnabled: true, bevelThickness: 0.03, bevelSize: 0.03, bevelSegments: 1 }).rotateX(Math.PI / 2).translate(0, 0.05, 0);
+  put(ride, zigGeo, bolt, [0, 0, 0]);
+  put(ride, zigGeo, white, [0, 0.02, 0], [0, 0, 0], [0.55, 1.3, 0.75]);
+  // Arcs crackling round it: jagged rings that spin flat and fast.
+  const rotors: THREE.Object3D[] = [];
+  for (const [rad, y, n] of [[0.95, -0.02, 13], [0.7, 0.12, 9]] as const) {
+    const arc = new THREE.Group();
+    arc.position.y = y;
+    const ring = Array.from({ length: n * 2 + 1 }, (_, k) => {
+      const a = (k / (n * 2)) * Math.PI * 2;
+      const rr = rad * (k % 2 ? 0.82 : 1.08);
+      return new THREE.Vector3(Math.cos(a) * rr, (k % 3) * 0.04 - 0.04, Math.sin(a) * rr * 1.35);
+    });
+    put(arc, new THREE.TubeGeometry(new THREE.CatmullRomCurve3(ring, true, 'catmullrom', 0), n * 4, 0.012, 4, true), white, [0, 0, 0]);
+    ride.add(arc);
+    rotors.push(arc);
+  }
+  const pads = [glowSprite(ride, [0, 0, 0.6], 1.2, r.accent), glowSprite(ride, [0, 0, -0.6], 1.2, r.accent), glowSprite(ride, [0, -0.2, 0], 1.6, 0xfffbd0)];
+
+  // Him: standing on it sideways-on like a surfer, robe flaring, leaning into the ride.
+  const wiz = new THREE.Group();
+  wiz.position.y = 0.55;
+  wiz.rotation.x = 0.12;
+  body.add(wiz);
+  // Boots planted on the bolt.
+  for (const z of [0.35, -0.3]) put(wiz, ball(0.11, 10, 8), matte(0x2a1a10), [0, 0.04, z], [0, 0, 0], [0.9, 0.55, 1.5]);
+  // The robe: a long flared cone to the boots, a cloak hanging off the shoulders behind, gold at the hem and down the front.
+  put(wiz, cyl(0.2, 0.44, 1.25, 20), robe, [0, 0.68, 0], [0, 0, 0], [1, 1, 1.2]);
+  put(wiz, cyl(0.45, 0.45, 0.05, 20), gold, [0, 0.08, 0], [0, 0, 0], [1, 1, 1.2]);
+  put(wiz, box(0.06, 1.05, 0.02), gold, [0, 0.6, 0.27], [-0.32, 0, 0]);
+  const cloak = new THREE.CylinderGeometry(0.28, 0.5, 1.15, 16, 1, true, Math.PI * 0.55, Math.PI * 0.9);
+  put(wiz, cloak, lining, [0, 0.72, -0.06], [-0.12, 0, 0], [1, 1, 1.25]);
+  // Lightning sigils stitched on the robe.
+  for (const [x, y, z, k] of [[0.2, 0.45, 0.24, 1], [-0.22, 0.75, 0.18, -1], [0.16, 0.95, 0.15, -1]] as const) {
+    const g = new THREE.Group();
+    g.position.set(x, y, z);
+    g.rotation.set(-0.3, k * 0.3, 0);
+    put(g, box(0.03, 0.12, 0.01), bolt, [0, 0.05, 0], [0, 0, 0.5]);
+    put(g, box(0.03, 0.12, 0.01), bolt, [0.02, -0.05, 0], [0, 0, 0.5]);
+    wiz.add(g);
+  }
+  put(wiz, ring(0.2, 0.03), gold, [0, 0.92, 0], [Math.PI / 2, 0, 0], [1, 1.2, 1]);
+  // Shoulders and arms in wide sleeves: the left raised high to call the storm, the right on the staff.
+  put(wiz, ball(0.26, 14, 10), robe, [0, 1.28, 0], [0, 0, 0], [1.3, 0.75, 1]);
+  const sleeve = (shoulder: [number, number, number], hand: [number, number, number]) => {
+    rod(wiz, shoulder, hand, 0.08, robe, 0.13);
+    put(wiz, ball(0.065, 10, 8), skin, hand);
+  };
+  sleeve([0.28, 1.3, 0], [0.55, 1.75, 0.12]);
+  for (let k = 0; k < 4; k++) put(wiz, cone(0.015, 0.09, 4), skin, [0.55 + (k - 1.5) * 0.03, 1.82, 0.12], [0, 0, (k - 1.5) * 0.2]);
+  glowSprite(wiz, [0.56, 1.88, 0.12], 0.45, r.accent);
+  sleeve([-0.28, 1.28, 0.04], [-0.42, 1.05, 0.38]);
+  // The staff: gnarled wood, a claw of gold at the head holding a crackling orb.
+  const staff = new THREE.Group();
+  staff.position.set(-0.42, 1.05, 0.38);
+  staff.rotation.set(0.35, 0, 0.12);
+  rod(staff, [0, -0.85, 0], [0, 0.85, 0], 0.03, wood, 0.025);
+  for (let k = 0; k < 3; k++) put(staff, ball(0.04, 6, 4), wood, [0, -0.5 + k * 0.5, 0]);
+  for (let k = 0; k < 4; k++) {
+    const a = (k / 4) * Math.PI * 2;
+    put(staff, cone(0.02, 0.18, 4), gold, [Math.cos(a) * 0.07, 0.92, Math.sin(a) * 0.07], [Math.sin(a) * 0.4, 0, -Math.cos(a) * 0.4]);
+  }
+  put(staff, ball(0.1, 12, 10), white, [0, 1.0, 0]);
+  put(staff, ball(0.14, 12, 10), new THREE.MeshBasicMaterial({ color: r.accent, transparent: true, opacity: 0.4 }), [0, 1.0, 0]);
+  glowSprite(staff, [0, 1.0, 0], 0.9, r.accent);
+  wiz.add(staff);
+
+  // The head: an old face, eyes lit with the charge, a great grey beard streaming back, the tall crooked hat.
+  const head = new THREE.Group();
+  head.position.set(0, 1.5, 0.04);
+  put(head, ball(0.17, 16, 12), skin, [0, 0.02, 0], [0, 0, 0], [0.9, 1.05, 0.95]);
+  put(head, ball(0.05, 8, 6), skin, [0, -0.01, 0.17], [0, 0, 0], [0.8, 1, 1.2]);
+  for (const side of [-1, 1]) {
+    put(head, ball(0.03, 8, 6), glow(0xfffbd0), [side * 0.065, 0.05, 0.14]);
+    glowSprite(head, [side * 0.065, 0.05, 0.16], 0.18, r.accent);
+    put(head, ball(0.05, 8, 6), beard, [side * 0.07, 0.11, 0.13], [0, 0, side * 0.3], [1.3, 0.4, 0.6]);
+  }
+  // The beard and moustache, long, swept back a little by the wind.
+  put(head, cone(0.17, 0.62, 12), beard, [0, -0.36, 0.06], [Math.PI - 0.35, 0, 0], [1, 1, 0.6]);
+  put(head, ball(0.09, 10, 8), beard, [0, -0.07, 0.14], [0, 0, 0], [1.6, 0.5, 0.7]);
+  // The hat: a wide brim and a tall cone crooked at the tip, stars and a bolt on it, a storm cloud wrapped round the brim.
+  put(head, cyl(0.38, 0.38, 0.03, 20), robe, [0, 0.16, 0]);
+  put(head, cone(0.2, 0.5, 16), robe, [0, 0.42, -0.02], [-0.12, 0, 0]);
+  put(head, cone(0.1, 0.3, 12), robe, [0, 0.76, -0.12], [-0.7, 0, 0]);
+  put(head, ring(0.2, 0.025), gold, [0, 0.2, 0], [Math.PI / 2, 0, 0]);
+  put(head, box(0.04, 0.14, 0.01), bolt, [0.03, 0.4, 0.17], [-0.12, 0, 0.5]);
+  put(head, box(0.04, 0.14, 0.01), bolt, [0.05, 0.3, 0.18], [-0.12, 0, 0.5]);
+  for (const [x, y, z] of [[-0.1, 0.48, 0.12], [0.11, 0.56, 0.06]] as const) put(head, ball(0.02, 6, 4), glow(0xfff6c0), [x, y, z]);
+  for (let k = 0; k < 9; k++) {
+    const a = (k / 9) * Math.PI * 2;
+    put(head, ball(0.09 + (k % 3) * 0.02, 8, 6), cloud, [Math.cos(a) * 0.36, 0.17 + (k % 2) * 0.03, Math.sin(a) * 0.36], [0, 0, 0], [1.3, 0.7, 1.1]);
+  }
+  wiz.add(head);
+
+  return {
+    body,
+    wheels: [],
+    // Sparks off the bolt's tail under boost.
+    exhausts: [new THREE.Vector3(0.36, 0.45, -1.55)],
+    rearTrack: 0.45,
+    rearZ: -1.3,
+    spinners: [],
+    rotors,
+    shadow: [2.0, 3.4],
+    hover: { bob: 0.09, pads },
+    head,
+  };
+}
+
+// ---- Rattlesnake: off Flying Microtonal Banana, slithering down the road ----------
+// A long diamondback in segments that a wave runs down from the head, its
+// neck held up and the head cocked to strike, a forked tongue out, and a
+// rattle at the tail shaking all the while.
+
+function rattlesnake(r: RacerDef): KartModel {
+  const body = new THREE.Group();
+  const scales = matte(r.color, { shininess: 45, specular: 0x554422 });
+  const diamond = matte(0x3a2410, { shininess: 45, specular: 0x332211 });
+  const pale = matte(0xe8d4a0, { shininess: 30 });
+  const belly = matte(0xd8c08a, { shininess: 20 });
+  const horn = matte(0xc8b080, { shininess: 50, specular: 0x665533 });
+
+  // The body: segments from the neck back, each a slice of the snake that the wave swings side to side.
+  const segments: THREE.Object3D[] = [];
+  const N = 26;
+  const STEP = 0.16;
+  for (let k = 0; k < N; k++) {
+    const t = k / (N - 1);
+    // Thickest a third of the way back, tapering to the tail.
+    const rad = Math.max(0.085, 0.17 * Math.sin(Math.PI * Math.min(1, 0.25 + t * 0.95)) + 0.04);
+    const seg = new THREE.Group();
+    const z = 0.55 - k * STEP;
+    seg.position.set(0, rad * 0.75, z);
+    seg.userData = { z: k * STEP, amp: 0.05 + t * 0.32 };
+    // A long capsule along the body, overlapping the next, flattened like a snake's: one smooth body, not beads.
+    const len = STEP * 1.5;
+    put(seg, new THREE.CapsuleGeometry(rad, len, 4, 12), scales, [0, 0, 0], [Math.PI / 2, 0, 0], [1.2, 1, 0.75]);
+    put(seg, new THREE.CapsuleGeometry(rad * 0.9, len, 4, 10), belly, [0, -rad * 0.22, 0], [Math.PI / 2, 0, 0], [1.15, 1, 0.5]);
+    // The diamonds down the back: dark, edged pale, one every other segment; banded black and white near the rattle.
+    if (t > 0.85) put(seg, new THREE.CapsuleGeometry(rad * 1.02, len * 0.35, 4, 10), k % 2 ? pale : diamond, [0, 0, 0], [Math.PI / 2, 0, 0], [1.2, 1, 0.76]);
+    else if (k % 2 === 0) {
+      // Four-sided domes sunk into the back: a diamond from above, hugging the curve.
+      put(seg, new THREE.SphereGeometry(rad * 0.82, 4, 6), pale, [0, rad * 0.42, 0], [0, 0, 0], [1.05, 0.55, 1.35]);
+      put(seg, new THREE.SphereGeometry(rad * 0.68, 4, 6), diamond, [0, rad * 0.5, 0], [0, 0, 0], [1.05, 0.55, 1.35]);
+    }
+    body.add(seg);
+    segments.push(seg);
+  }
+  // The rattle: a stack of horn beads off the tip, shaking.
+  const tip = segments[N - 1];
+  const rattle = new THREE.Group();
+  rattle.position.set(0, 0.06, -0.06);
+  for (let k = 0; k < 6; k++) put(rattle, ball(0.055 - k * 0.004, 10, 6), horn, [0, k * 0.02, -k * 0.065], [0, 0, 0], [1.2, 0.8, 0.9]);
+  tip.add(rattle);
+
+  // The neck rises from the first segment, S-curved, the head held up and forward to strike.
+  const neck = new THREE.Group();
+  neck.position.set(0, 0.12, 0.62);
+  body.add(neck);
+  const neckPts: [number, number, number][] = [[0, 0, 0], [0, 0.18, 0.08], [0, 0.34, 0.06], [0, 0.42, 0.16]];
+  for (let k = 0; k < neckPts.length - 1; k++) rod(neck, neckPts[k], neckPts[k + 1], 0.13 - k * 0.012, scales, 0.12 - k * 0.012);
+  for (const at of neckPts.slice(1, -1)) put(neck, ball(0.125, 12, 8), scales, at, [0, 0, 0], [1.1, 1, 1]);
+
+  // The head: a broad flat wedge, heat pits and slit eyes, fangs, a forked tongue flicking out.
+  const head = new THREE.Group();
+  head.position.set(0, 0.6, 0.86);
+  // A broad, flat, arrow-shaped wedge: wide at the jaw hinges, narrowing to a blunt snout.
+  const wedge = new THREE.Shape();
+  wedge.moveTo(-0.2, -0.08);
+  wedge.quadraticCurveTo(-0.24, 0.08, -0.12, 0.2);
+  wedge.lineTo(-0.05, 0.33);
+  wedge.quadraticCurveTo(0, 0.37, 0.05, 0.33);
+  wedge.lineTo(0.12, 0.2);
+  wedge.quadraticCurveTo(0.24, 0.08, 0.2, -0.08);
+  wedge.quadraticCurveTo(0, -0.16, -0.2, -0.08);
+  const wedgeGeo = new THREE.ExtrudeGeometry(wedge, { depth: 0.09, bevelEnabled: true, bevelThickness: 0.035, bevelSize: 0.03, bevelSegments: 3, curveSegments: 6 }).rotateX(-Math.PI / 2).translate(0, -0.06, 0);
+  put(head, wedgeGeo, scales, [0, 0, -0.06]);
+  put(head, new THREE.SphereGeometry(0.09, 4, 6), diamond, [0, 0.04, 0.02], [0, 0, 0], [1.1, 0.4, 1.4]);
+  eyes(head, 0.06, 0.1, 0.12, 0.04, 0xd8b020, true);
+  for (const side of [-1, 1]) {
+    put(head, ball(0.06, 8, 6), diamond, [side * 0.11, 0.08, 0.08], [0, 0, side * 0.4], [1.4, 0.35, 1.1]);
+    put(head, cone(0.012, 0.07, 4), pale, [side * 0.05, -0.08, 0.22], [Math.PI, 0, 0]);
+  }
+  const tongue = new THREE.Group();
+  tongue.position.set(0, -0.04, 0.26);
+  rod(tongue, [0, 0, 0], [0, 0, 0.14], 0.01, matte(0xc8203a), 0.008);
+  for (const side of [-1, 1]) rod(tongue, [0, 0, 0.14], [side * 0.03, 0.01, 0.2], 0.008, matte(0xc8203a), 0.005);
+  head.add(tongue);
+  tongue.userData.phase = 0;
+  body.add(head);
+
+  return {
+    body,
+    wheels: [],
+    // Dust kicked off the tail under boost.
+    exhausts: [new THREE.Vector3(0, 0.1, 0.55 - N * STEP)],
+    rearTrack: 0.25,
+    rearZ: -2.5,
+    spinners: [],
+    shadow: [1.4, 4.6],
+    head,
+    segments,
+    rattle,
+    // The tongue flicks in and out.
+    sweepers: [tongue],
   };
 }
 
@@ -2531,6 +2927,9 @@ const BUILDERS: Record<string, (r: RacerDef) => KartModel> = {
   'jason-galea': jasonGalea,
   'arlo': arlo,
   'flying-pig': flyingPig,
+  'skeleton-dragon': skeletonDragon,
+  'lord-of-lightning': lordOfLightning,
+  rattlesnake,
 };
 
 export function buildKartModel(racer: RacerDef): KartModel {

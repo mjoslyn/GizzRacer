@@ -9,7 +9,7 @@ const FINISH = 60;
 const PIER_Y = 12;
 
 /**
- * Fishies Lagoon (circuit 2, easy): a sandy beach road over the dunes, a
+ * Fishing for Fishies (circuit 2, easy): a sandy beach road over the dunes, a
  * causeway that dives under the lagoon, fish leaping across the road, and a
  * high pier with a jump and a plunge back down to the beach.
  */
@@ -66,7 +66,7 @@ export function buildFishiesLagoon(): TrackDef {
   const open = buildOpenWater(b.marks.leap, b.marks.reefApex);
   return {
     id: 'fishies-lagoon',
-    name: 'Fishies Lagoon',
+    name: 'Fishing for Fishies',
     main,
     branches: [open.branch],
     pits: [...b.pits, ...open.pits],

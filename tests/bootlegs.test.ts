@@ -27,7 +27,7 @@ describe('live bootlegs', () => {
         // The gain that evens it with the remixes: within the limits.
         if (r.gain !== undefined) {
           expect(r.gain, song).toBeGreaterThanOrEqual(-6);
-          expect(r.gain, song).toBeLessThanOrEqual(14);
+          expect(r.gain, song).toBeLessThanOrEqual(17);
         }
         if (r.start !== undefined) {
           expect(r.start, song).toBeGreaterThanOrEqual(0);

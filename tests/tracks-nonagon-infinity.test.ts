@@ -65,13 +65,13 @@ describe('Nonagon Infinity Cup', () => {
     expect(defs.map((d) => TRACK_SONGS[d.id].title)).toEqual(['Robot Stop', 'Gamma Knife', 'People-Vultures', 'Wah Wah']);
   });
 
-  it('plays a remix transcribed from the band\'s own recording on every track, and leaves the Speedway its old Robot Stop', () => {
+  it('plays a remix transcribed from the band\'s own recording on every track, and the Speedway another of the album\'s songs', () => {
     for (const id of ['robot-stop', 'gamma-knife', 'people-vultures', 'wah-wah']) {
       expect(TRANSCRIBED[id].recording, id).toBe(TRACK_SONGS[id].title);
       expect(TRANSCRIBED[id].release).toMatch(/^Live In (Brussels '19|Chicago '23)$/);
     }
-    expect(TRACK_SONGS['infinite-loop-speedway'].title).toBe('Robot Stop');
-    expect(TRANSCRIBED['infinite-loop-speedway']).toBeUndefined();
+    expect(TRACK_SONGS['infinite-loop-speedway'].title).toBe('Mr. Beat');
+    expect(TRANSCRIBED['infinite-loop-speedway']).toEqual({ recording: 'Mr. Beat', release: "Live In London '19" });
   });
 });
 

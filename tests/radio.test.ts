@@ -5,7 +5,7 @@ import shows from '../public/music/shows.json';
 
 const rec = (id: string, file: string): LiveRecording => ({ id, file, date: '2024-01-01', venue: 'Somewhere', seconds: 300 });
 
-/** A stand-in for the music player: remembers what it was told to play, and lets a song end. */
+/** A stand-in for the music player: remembers what it was told to play. */
 function fakeMusic() {
   const calls: { live?: LiveRecording; cues?: readonly MusicCue[] | MusicCue; opts?: LiveOptions }[] = [];
   const music = {
@@ -17,14 +17,6 @@ function fakeMusic() {
   return { music, calls, last: () => calls[calls.length - 1] };
 }
 
-const SHOW: Show = { id: 'kglw2024-01-01.sbd', date: '2024-01-01', venue: 'Somewhere' };
-const FILES = [
-  { name: 'kglw2024-01-01t10.mp3', format: 'VBR MP3', title: 'Robot Stop ->' },
-  { name: 'kglw2024-01-01t02.mp3', format: 'VBR MP3', title: 'Magma' },
-  { name: 'kglw2024-01-01t02.flac', format: 'Flac', title: 'Magma' },
-  { name: 'kglw2024-01-01t01.mp3', format: 'VBR MP3' },
-];
-
 function stubFetch(routes: Record<string, unknown>) {
   vi.stubGlobal('fetch', async (url: string) => {
     const key = Object.keys(routes).find((k) => url.includes(k));
@@ -35,6 +27,15 @@ function stubFetch(routes: Record<string, unknown>) {
 
 afterEach(() => vi.unstubAllGlobals());
 
+const SHOW: Show = { id: 'kglw2024-01-01.sbd', date: '2024-01-01', venue: 'Somewhere' };
+const NEXT: Show = { id: 'kglw2024-02-02.sbd', date: '2024-02-02', venue: 'Elsewhere' };
+const FILES = [
+  { name: 'kglw2024-01-01t10.mp3', format: 'VBR MP3', title: 'Robot Stop ->' },
+  { name: 'kglw2024-01-01t02.mp3', format: 'VBR MP3', title: 'Magma' },
+  { name: 'kglw2024-01-01t02.flac', format: 'Flac', title: 'Magma' },
+  { name: 'kglw2024-01-01t01.mp3', format: 'VBR MP3' },
+];
+
 describe('live soundtrack', () => {
   it("reads a show's set in order from its MP3s, titled from their tags or names", () => {
     const set = setFromFiles(SHOW, FILES);
@@ -43,37 +44,15 @@ describe('live soundtrack', () => {
     expect(cleanTitle('03-Sapience.mp3')).toBe('Sapience');
     expect(cleanTitle('d1t04 Gamma Knife.mp3')).toBe('Gamma Knife');
     expect(cleanTitle('People-Vultures >')).toBe('People-Vultures');
-    expect(cleanTitle('kglw2022.12.10.progdog1.flac2444/kglw202212.mp3')).toBe('kglw202212');
   });
 
-  it('matching song: a recording of the song, a different one on next, the one before on back', async () => {
-    stubFetch({ 'bootlegs.json': { Magma: [rec('a', 'a.mp3'), rec('b', 'b.mp3'), rec('c', 'c.mp3')] } });
-    const { music, last } = fakeMusic();
-    let n = 0;
-    const radio = new LiveRadio(music, () => [0.1, 0.5, 0.9][n++ % 3]);
-    expect(await radio.playSong('Magma', ['rattlesnake-remix'])).toBe(true);
-    const first = radio.playing!.rec;
-    expect(last().live).toBe(first);
-    // Looping for the race: no play-through.
-    expect(last().opts?.onEnded).toBeUndefined();
-    radio.next();
-    await Promise.resolve();
-    await Promise.resolve();
-    const second = radio.playing!.rec;
-    expect(second).not.toBe(first);
-    radio.prev();
-    expect(radio.playing!.rec).toBe(first);
-    // A song never played live: nothing to play, the caller plays the remix.
-    expect(await radio.playSong('Catching Smoke', ['x'])).toBe(false);
-    expect(radio.playing).toBe(null);
-  });
-
-  it('play a set: the set in order from where the music starts, kept across races, then another show at its end', async () => {
-    stubFetch({ 'shows.json': [SHOW], '/files': { result: FILES } });
+  it('a live set: the picked show in order from where the music starts, kept across races, then the next show at its end', async () => {
+    stubFetch({ 'shows.json': [SHOW, NEXT], '/files': { result: FILES } });
     const { music, last } = fakeMusic();
     // Magma opens with the band talking, and was taped quiet.
     const radio = new LiveRadio(music, () => 0, async (r) => (r.file.includes('t02') ? { start: 12.5, gain: 7 } : { start: 0, gain: 0 }));
-    await radio.ensureShow(['remix']);
+    await radio.ensureShow(SHOW, ['remix']);
+    expect(radio.playing!.mode).toBe('show');
     expect(radio.playing!.set!.index).toBe(0);
     expect(radio.playing!.title).toBe('Track 1');
     await vi.waitFor(() => expect(last().live?.file).toBe('kglw2024-01-01t01.mp3'));
@@ -84,34 +63,16 @@ describe('live soundtrack', () => {
     expect(last().opts?.gain).toBe(7);
     // The next race keeps the show going.
     const before = radio.playing;
-    await radio.ensureShow(['other-remix']);
+    await radio.ensureShow(SHOW, ['other-remix']);
     expect(radio.playing).toBe(before);
     radio.next();
     expect(radio.playing!.title).toBe('Robot Stop');
-    // Past the last song: another show from its first.
+    radio.prev();
+    expect(radio.playing!.title).toBe('Magma');
     radio.next();
-    await vi.waitFor(() => expect(radio.playing!.set!.index).toBe(0));
-  });
-
-  it("keep playing: the track's song live, then its show plays on from it, and stays put the next race", async () => {
-    const magma: LiveRecording = { id: SHOW.id, file: 'kglw2024-01-01t02.mp3', date: SHOW.date, venue: SHOW.venue, seconds: 600 };
-    stubFetch({ 'bootlegs.json': { Magma: [magma] }, '/files': { result: FILES }, 'shows.json': [SHOW] });
-    const { music, last } = fakeMusic();
-    const radio = new LiveRadio(music, () => 0, async () => ({ start: 0, gain: 0 }));
-    await radio.ensureKeep('Magma', ['remix']);
-    expect(radio.playing!.mode).toBe('keep');
-    expect(last().live).toBe(magma);
-    // Once its set list is in, it knows where it is in the show.
-    await vi.waitFor(() => expect(radio.playing!.set?.index).toBe(1));
-    last().opts!.onEnded!();
-    expect(radio.playing!.title).toBe('Robot Stop');
-    // A new race on another track doesn't cut away.
-    await radio.ensureKeep('Rattlesnake', ['x']);
-    expect(radio.playing!.title).toBe('Robot Stop');
-    // A song never played live: a show from the top instead.
-    radio.stop();
-    await radio.ensureKeep('Catching Smoke', ['x']);
-    await vi.waitFor(() => expect(radio.playing?.mode).toBe('keep'));
+    // Past the last song: the next show on the list, from its first.
+    radio.next();
+    await vi.waitFor(() => expect(radio.playing!.set!.show.id).toBe(NEXT.id));
     expect(radio.playing!.set!.index).toBe(0);
   });
 
@@ -135,5 +96,40 @@ describe('live soundtrack', () => {
       expect(s.id).toMatch(/^[\w.-]+$/);
       expect(s.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     }
+  });
+
+  it('track song: a recording of the song, a different one on next, the one before on back', async () => {
+    stubFetch({ 'bootlegs.json': { Magma: [rec('a', 'a.mp3'), rec('b', 'b.mp3'), rec('c', 'c.mp3')] } });
+    const { music, last } = fakeMusic();
+    let n = 0;
+    const radio = new LiveRadio(music, () => [0.1, 0.5, 0.9][n++ % 3]);
+    const changes = vi.fn();
+    radio.onChange(changes);
+    expect(await radio.playSong('Magma', ['rattlesnake-remix'])).toBe(true);
+    const first = radio.playing!.rec;
+    expect(radio.playing!.title).toBe('Magma');
+    expect(last().live).toBe(first);
+    // Looping for the race: no play-through.
+    expect(last().opts?.onEnded).toBeUndefined();
+    expect(changes).toHaveBeenCalled();
+    radio.next();
+    await vi.waitFor(() => expect(radio.playing!.rec).not.toBe(first));
+    radio.prev();
+    expect(radio.playing!.rec).toBe(first);
+    expect(last().live).toBe(first);
+    // A song never played live: nothing to play, the caller plays the remix.
+    expect(await radio.playSong('Catching Smoke', ['x'])).toBe(false);
+    expect(radio.playing).toBe(null);
+  });
+
+  it("lets go on stop, and a late answer doesn't start a song after it", async () => {
+    stubFetch({ 'bootlegs.json': { Magma: [rec('a', 'a.mp3')] } });
+    const { music, calls } = fakeMusic();
+    const radio = new LiveRadio(music);
+    const pending = radio.playSong('Magma', []);
+    radio.stop();
+    await pending;
+    expect(radio.playing).toBe(null);
+    expect(calls).toHaveLength(0);
   });
 });

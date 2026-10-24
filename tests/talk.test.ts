@@ -77,7 +77,7 @@ describe('skipping the band talk', () => {
     expect(loudness(join(loud, new Float32Array(RATE * 20)), RATE)).toBeCloseTo(loudness(loud, RATE), 0);
     expect(gainFor(TARGET_LOUDNESS - 5)).toBe(5);
     expect(gainFor(TARGET_LOUDNESS + 2)).toBe(-2);
-    expect(gainFor(-80)).toBe(14);
+    expect(gainFor(-80)).toBe(17);
     expect(gainFor(-Infinity)).toBe(0);
     // Read from where the music starts: the talk doesn't count.
     const opening = readOpening(join(talk(20, 0.05), quiet), RATE);

@@ -1,6 +1,6 @@
 import type { TrackDef } from './track';
 
-/** Flat test circuit (Milestone 1), dressed as the green Speedway until Infinite Loop Speedway is built: a long straight, a hairpin, sweepers and an S. */
+/** Flat test circuit (Milestone 1), dressed as the green Speedway until the speedway (Mr. Beat) is built: a long straight, a hairpin, sweepers and an S. */
 export const TEST_TRACK: TrackDef = {
   id: 'test-track',
   name: 'Speedway Test Loop',

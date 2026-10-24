@@ -41,7 +41,7 @@ interface Case {
 const CASES: Case[] = [
   { name: 'Magenta Mountain', build: buildMagentaMountain, branch: 'Snow Bridge', junction: 40 },
   { name: 'Kepler-22b', build: buildKepler22b, branch: 'Membrane', junction: 40, lap: { lap: 2, lastLap: false } },
-  { name: 'Goblin Garden', build: buildGoblinGarden, branch: 'Goblin Hole', junction: 40 },
+  { name: 'The Garden Goblin', build: buildGoblinGarden, branch: 'Goblin Hole', junction: 40 },
   { name: 'Predator X', build: buildPredatorX, branch: 'Bone Bridge', junction: 40 },
 ];
 
@@ -342,7 +342,7 @@ describe('hazards that help when you use them', () => {
 const HEIGHTS: { name: string; build: () => TrackDef; top: number; bottom: number }[] = [
   { name: 'Magenta Mountain', build: buildMagentaMountain, top: 22, bottom: -4 },
   { name: 'Kepler-22b', build: buildKepler22b, top: 16, bottom: -4 },
-  { name: 'Goblin Garden', build: buildGoblinGarden, top: 12, bottom: -4 },
+  { name: 'The Garden Goblin', build: buildGoblinGarden, top: 12, bottom: -4 },
   { name: 'Predator X', build: buildPredatorX, top: 12, bottom: -4 },
 ];
 

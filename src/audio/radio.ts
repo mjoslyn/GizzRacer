@@ -2,16 +2,15 @@ import { liveUrl, type LiveRecording, type MusicCue, type MusicPlayer } from './
 import { readOpening, talkTrack } from './talk';
 
 /**
- * The live soundtrack (Settings > Soundtrack, and the picker's Sound row),
- * from the band's shows on the Internet Archive's Live Music Archive:
+ * The live soundtrack, from the band's shows on the Internet Archive's Live
+ * Music Archive:
  *
- * - Track song: each race a live recording of its track's song, picked at
- *   random (public/music/bootlegs.json), looping;
- * - Keep playing: the track's song live, then that show plays on from it,
- *   song after song, across races and menus;
- * - Play a set: a whole show from the top, song after song, across races
- *   and menus (public/music/shows.json, its set list read from archive.org
- *   when it's picked).
+ * - Track song (Settings > Soundtrack, and the picker's Sound row): each
+ *   race a live recording of its track's song, picked at random
+ *   (public/music/bootlegs.json), looping;
+ * - a live set (Infinite mode's Music row): a show picked from
+ *   public/music/shows.json, its set list read from archive.org, played
+ *   from the top song after song, and the next show on the list after it.
  *
  * Every song starts where the band does, past any talk (audio/talk.ts): the
  * catalogue's own `start`, or for a set's songs worked out from the opening
@@ -19,9 +18,9 @@ import { readOpening, talkTrack } from './talk';
  * (banter, tuning, the encore break, a snippet under SHORT seconds) are
  * skipped. Nothing is rehosted: the audio streams from archive.org, and
  * anything that won't plays the game's own music instead. Driven by the
- * mini player (ui/miniPlayer.ts) and the settings screen.
+ * mini player (ui/miniPlayer.ts).
  */
-export type LiveMode = 'song' | 'keep' | 'show';
+export type LiveMode = 'song' | 'show';
 
 export interface Show {
   id: string;
@@ -48,7 +47,7 @@ const OPENING_BYTES = 2_500_000;
 
 export class LiveRadio {
   private bootlegs: Promise<Record<string, LiveRecording[]>> | null = null;
-  private shows: Promise<Show[]> | null = null;
+  private showList: Promise<Show[]> | null = null;
   private now: Playing | null = null;
   /** Track song: the recordings played, to step back through. */
   private history: LiveRecording[] = [];
@@ -89,12 +88,11 @@ export class LiveRadio {
   }
 
   /**
-   * A live recording of `song`, at random: looping for the race (Track
-   * song), or with `keep`, its show playing on from it (Keep playing).
-   * `fallback` plays when it won't stream. Resolves to false when the song
-   * was never recorded live.
+   * A live recording of `song`, at random, looping for the race. `fallback`
+   * plays when it won't stream. Resolves to false when the song was never
+   * recorded live.
    */
-  async playSong(song: string, fallback: readonly MusicCue[], keep = false): Promise<boolean> {
+  async playSong(song: string, fallback: readonly MusicCue[]): Promise<boolean> {
     const t = ++this.ticket;
     this.fallback = fallback;
     const all = await this.loadBootlegs();
@@ -108,61 +106,46 @@ export class LiveRadio {
     const last = this.now && this.now.title === song ? this.now.rec : null;
     // Not the one just played, when there's a choice.
     const pool = list.length > 1 && last ? list.filter((r) => r.file !== last.file || r.id !== last.id) : list;
-    this.startSong(song, pool[Math.floor(this.rand() * pool.length)], keep);
+    const rec = pool[Math.floor(this.rand() * pool.length)];
+    if (this.now?.mode === 'song') this.history.push(this.now.rec);
+    this.now = { rec, title: song, mode: 'song' };
+    this.music.playLive(rec, this.fallback);
+    this.changed();
     return true;
   }
 
-  private startSong(title: string, rec: LiveRecording, keep: boolean): void {
-    if (this.now?.mode === 'song') this.history.push(this.now.rec);
-    this.now = { rec, title, mode: keep ? 'keep' : 'song' };
-    this.music.playLive(rec, this.fallback, keep ? { onEnded: () => this.next() } : {});
-    this.changed();
-    if (!keep) return;
-    // Keep playing: the rest of its show, read while the song plays.
-    const show: Show = { id: rec.id, date: rec.date, venue: rec.venue };
-    void setList(show)
-      .then((set) => {
-        const index = set.songs.findIndex((r) => r.file === rec.file);
-        if (this.now?.rec !== rec || index < 0) return;
-        this.now = { ...this.now, set: { show, ...set, index } };
-        this.prefetch(this.now.set!, index);
-        this.changed();
-      })
-      .catch(() => undefined);
+  /** The shows there are to play whole, oldest first. */
+  shows(): Promise<Show[]> {
+    this.showList ??= fetchJson<Show[]>(`${BASE}shows.json`).catch(() => {
+      this.showList = null;
+      return [];
+    });
+    return this.showList;
   }
 
-  /**
-   * Keep playing: carries on with whatever is playing (across races and
-   * menus), else starts with `song` live; with no song, or one never played
-   * live, a show at random from the top.
-   */
-  async ensureKeep(song: string | null, fallback: readonly MusicCue[]): Promise<void> {
+  /** Plays `show` through from its first song, unless it's already playing (across races and tracks). */
+  async ensureShow(show: Show, fallback: readonly MusicCue[]): Promise<void> {
     this.fallback = fallback;
-    if (this.now?.mode === 'keep') return;
-    if (song && (await this.playSong(song, fallback, true))) return;
-    await this.newShow('keep');
+    if (this.now?.mode === 'show' && this.now.set?.show.id === show.id) return;
+    await this.playShow(show);
   }
 
-  /** Play a set: keeps the show playing if one is (across races and menus), else starts one at random from the top. */
-  async ensureShow(fallback: readonly MusicCue[]): Promise<void> {
-    this.fallback = fallback;
-    if (this.now?.mode === 'show') return;
-    await this.newShow('show');
-  }
-
-  /** Another show, picked at random, from its first song (past any talk); played as `mode`, by default as what's playing. */
-  async newShow(mode: LiveMode = this.now?.mode === 'keep' ? 'keep' : 'show'): Promise<void> {
+  /** A show from its first song (past any talk), then the next show on the list after its last; another if one won't load. */
+  async playShow(show: Show): Promise<void> {
     const t = ++this.ticket;
-    const shows = await this.loadShows();
-    for (let tries = 0; tries < 4 && shows.length; tries++) {
-      const show = shows[Math.floor(this.rand() * shows.length)];
-      const set = await setList(show).catch(() => null);
+    let at = show;
+    for (let tries = 0; tries < 4; tries++) {
+      const set = await setList(at).catch(() => null);
       if (t !== this.ticket) return;
-      if (!set?.songs.length) continue;
-      const first = playable(set, 0, 1);
-      if (first >= set.songs.length) continue;
-      void this.playSet({ show, ...set, index: first }, mode);
-      return;
+      const first = set?.songs.length ? playable(set, 0, 1) : 0;
+      if (set && first < set.songs.length) {
+        void this.playSet({ show: at, ...set, index: first });
+        return;
+      }
+      const next = await this.showAfter(at);
+      if (t !== this.ticket) return;
+      if (!next) break;
+      at = next;
     }
     // Nothing to stream: the game's music.
     this.now = null;
@@ -170,11 +153,19 @@ export class LiveRadio {
     this.changed();
   }
 
+  /** The show after `show` on the list, round to the first after the last. */
+  private async showAfter(show: Show): Promise<Show | null> {
+    const list = await this.shows();
+    if (!list.length) return null;
+    const i = list.findIndex((s) => s.id === show.id);
+    return list[(i + 1) % list.length];
+  }
+
   /** Plays a set's song (shown at once), starting where its music does, at an even level, if that's known within START_WAIT. */
-  private async playSet(set: NonNullable<Playing['set']>, mode: LiveMode): Promise<void> {
+  private async playSet(set: NonNullable<Playing['set']>): Promise<void> {
     const t = ++this.ticket;
     const rec = set.songs[set.index];
-    this.now = { rec, title: set.titles[set.index], mode, set };
+    this.now = { rec, title: set.titles[set.index], mode: 'show', set };
     this.changed();
     const opening = await Promise.race([this.openingOf(rec), new Promise<null>((res) => setTimeout(() => res(null), START_WAIT))]);
     if (t !== this.ticket) return;
@@ -200,16 +191,19 @@ export class LiveRadio {
     return p;
   }
 
-  /** The next song: on in the set (another show after its last), or another recording of the song. */
+  /** The next song: on in the set (the next show after its last), or another recording of the song. */
   next(): void {
     const now = this.now;
     if (!now) return;
     if (now.set) {
       const i = playable(now.set, now.set.index + 1, 1);
-      if (i < now.set.songs.length) void this.playSet({ ...now.set, index: i }, now.mode);
-      else void this.newShow();
+      if (i < now.set.songs.length) void this.playSet({ ...now.set, index: i });
+      else
+        void this.showAfter(now.set.show).then((s) => {
+          if (s && this.now === now) void this.playShow(s);
+        });
     } else {
-      void this.playSong(now.title, this.fallback, now.mode === 'keep');
+      void this.playSong(now.title, this.fallback);
     }
   }
 
@@ -219,13 +213,13 @@ export class LiveRadio {
     if (!now) return;
     if (now.set) {
       const i = playable(now.set, now.set.index - 1, -1);
-      void this.playSet({ ...now.set, index: i >= 0 ? i : now.set.index }, now.mode);
+      void this.playSet({ ...now.set, index: i >= 0 ? i : now.set.index });
       return;
     }
     const before = this.history.pop();
     if (!before) return;
     this.ticket++;
-    this.now = { rec: before, title: now.title, mode: now.mode };
+    this.now = { rec: before, title: now.title, mode: 'song' };
     this.music.playLive(before, this.fallback);
     this.changed();
   }
@@ -244,14 +238,6 @@ export class LiveRadio {
       return {};
     });
     return this.bootlegs;
-  }
-
-  private loadShows(): Promise<Show[]> {
-    this.shows ??= fetchJson<Show[]>(`${BASE}shows.json`).catch(() => {
-      this.shows = null;
-      return [];
-    });
-    return this.shows;
   }
 }
 

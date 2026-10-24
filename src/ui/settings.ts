@@ -1,7 +1,7 @@
 import { CPU_DIFFICULTIES } from '../ai/cpuDriver';
 import { SOUNDTRACKS, SOUNDTRACK_BLURBS, SOUNDTRACK_NAMES, TILT_RANGES, VIDEO_LOOKS, settings, updateSettings, type Settings } from '../core/settings';
 import { DETAILS, DETAIL_NAMES } from '../render/detail';
-import type { LiveRadio } from '../audio/radio';
+import { chosenShow, onShows, randomShow, showSelect, shows } from '../audio/shows';
 import { creditsHtml } from './credits';
 import type { TiltSteering } from './tilt';
 
@@ -27,15 +27,18 @@ export class SettingsScreen {
   constructor(
     parent: HTMLElement,
     private readonly tilt: TiltSteering,
-    /** The live soundtrack, whose controls are here too: on a phone there's no mini player. */
-    private readonly radio: LiveRadio | null = null,
   ) {
     this.el.className = 'settings';
     parent.appendChild(this.el);
-    radio?.onChange(() => {
-      if (this.visible && !this.asking && !this.credits) this.render();
-    });
     this.el.addEventListener('click', (e) => void this.click(e.target as HTMLElement));
+    this.el.addEventListener('change', (e) => {
+      const sel = e.target as HTMLSelectElement;
+      if (!sel.matches('.settings-select')) return;
+      updateSettings({ liveShow: sel.value });
+      this.render();
+    });
+    // The show list arrives after startup: the Live set row fills in.
+    onShows(() => this.visible && !this.asking && !this.credits && this.render());
     // Keys pressed here mustn't reach the game.
     this.el.addEventListener('keydown', (e) => {
       e.stopPropagation();
@@ -143,9 +146,12 @@ export class SettingsScreen {
         const i = SOUNDTRACKS.indexOf(s.soundtrack);
         const next = SOUNDTRACKS[(Math.max(0, i) + dir + SOUNDTRACKS.length) % SOUNDTRACKS.length];
         updateSettings({ soundtrack: next });
-        this.status = `${SOUNDTRACK_NAMES[next]}: ${SOUNDTRACK_BLURBS[next]}${next === 'remix' ? '' : ". From the band's shows on the Internet Archive; needs a connection; from the next race"}`;
+        this.status = `${SOUNDTRACK_NAMES[next]}: ${SOUNDTRACK_BLURBS[next]}${next === 'remix' ? '' : ". From the band's shows on the Internet Archive; needs a connection"}${next === 'song' ? '; from the next race' : ''}`;
         break;
       }
+      case 'show-random':
+        updateSettings({ liveShow: randomShow(shows(), s.liveShow) });
+        break;
       case 'turns':
         updateSettings({ turnIndicator: !s.turnIndicator });
         this.status = s.turnIndicator ? 'Turn hints off' : 'Turn hints on: the next bend, which way, how sharp and how far, at the top of the screen';
@@ -162,18 +168,6 @@ export class SettingsScreen {
         return;
       case 'credits':
         this.credits = true;
-        break;
-      case 'radio-prev':
-        this.radio?.prev();
-        break;
-      case 'radio-pause':
-        this.radio?.togglePause();
-        break;
-      case 'radio-next':
-        this.radio?.next();
-        break;
-      case 'radio-new':
-        void this.radio?.newShow();
         break;
       case 'back':
         if (this.creditsOnly) {
@@ -217,7 +211,7 @@ export class SettingsScreen {
             <div class="settings-group">Sound and driving</div>
             <div class="lobby-row"><span class="lobby-label">Music</span>${arrows('music', pct(s.music))}</div>
             <div class="lobby-row"><span class="lobby-label">Soundtrack</span>${arrows('soundtrack', SOUNDTRACK_NAMES[s.soundtrack])}</div>
-            ${this.playerHtml()}
+            ${s.soundtrack === 'show' ? this.showRows() : ''}
             <div class="lobby-row"><span class="lobby-label">Effects</span>${arrows('sfx', pct(s.sfx))}</div>
             <div class="lobby-row"><span class="lobby-label">VHS</span>${arrows('look', { full: 'Full', light: 'Light', off: 'Off' }[s.videoLook])}</div>
             <div class="lobby-row"><span class="lobby-label">Throttle</span>${toggle('auto', s.autoAccelerate, s.autoAccelerate ? 'Automatic' : 'Manual')}</div>
@@ -245,24 +239,13 @@ export class SettingsScreen {
     this.show(html);
   }
 
-  /** What the live soundtrack is playing, with its controls; nothing when it isn't. */
-  private playerHtml(): string {
-    const p = this.radio?.playing;
-    if (!p) return '';
-    const esc = (t: string) => t.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
-    const where = [p.rec.venue, p.rec.date].filter(Boolean).join(', ');
-    const sub = p.set ? `${where} · ${p.set.index + 1}/${p.set.songs.length}` : `live, ${where}`;
+  /** Live set: which show, from a dropdown by year, or the dice. */
+  private showRows(): string {
+    const all = shows();
+    const show = chosenShow(all, settings().liveShow);
+    if (!show) return '<div class="lobby-row"><span class="lobby-label">Live set</span><span></span><div class="lobby-value">Loading shows&hellip;</div><span></span></div>';
     return `
-            <div class="settings-player">
-              <div class="settings-player-info"><b>&#9835; ${esc(p.title)}</b><small>${esc(sub)}</small></div>
-              <div class="mp-buttons">
-                <button data-act="radio-prev" aria-label="Previous">&#9198;</button>
-                <button data-act="radio-pause" aria-label="${this.radio!.paused ? 'Play' : 'Pause'}">${this.radio!.paused ? '&#9654;' : '&#9208;'}</button>
-                <button data-act="radio-next" aria-label="Next">&#9197;</button>
-                ${p.mode !== 'song' ? '<button data-act="radio-new" aria-label="Another show">&#128256;</button>' : ''}
-                <a href="https://archive.org/details/${encodeURIComponent(p.rec.id)}" target="_blank" rel="noopener" aria-label="This show on the Internet Archive">&#8599;</a>
-              </div>
-            </div>`;
+            <div class="lobby-row settings-show"><span class="lobby-label">Live set</span>${showSelect(all, show.id, 'settings-select')}<button class="menu-dice" data-act="show-random" title="A show at random" aria-label="A show at random">&#9860;</button></div>`;
   }
 
   private renderCredits(): void {

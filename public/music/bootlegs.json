@@ -1,112 +1,112 @@
 {
- "Robot Stop": [
+ "Mr. Beat": [
   {
-   "id": "kglw2015-06-19",
-   "file": "05 - Robot Stop.mp3",
-   "date": "2015-06-19",
-   "venue": "Bowery Ballroom",
-   "seconds": 306,
-   "start": 15.5,
-   "gain": 2
-  },
-  {
-   "id": "gizz2016-02-28",
-   "file": "03-Robot Stop _.mp3",
-   "date": "2016-02-28",
-   "venue": "Z-Bau Galerie",
+   "id": "kglw2017-01-25",
+   "file": "06 Mr. Beat.mp3",
+   "date": "2017-01-25",
+   "venue": "Bakehouse Studios",
    "seconds": 215,
-   "start": 9.8,
-   "gain": 2.5
+   "start": 5.1,
+   "gain": 0
   },
   {
-   "id": "kglw2016-12-09.ca14.flac2448",
-   "file": "14 - Robot Stop.mp3",
-   "date": "2016-12-09",
-   "venue": "Meredith Music Festival",
-   "seconds": 282,
-   "start": 15.9,
-   "gain": 6
-  },
-  {
-   "id": "kglw2017-04-14.sp-cmc-8.flac1644",
-   "file": "kgatlz-2017-04-14-coachella-aud-t04-robot-stop.mp3",
-   "date": "2017-04-14",
-   "venue": "Coachella",
-   "seconds": 317,
-   "start": 22.1,
-   "gain": 3
-  },
-  {
-   "id": "kglw2017-10-07.mysteryjack",
-   "file": "17 Robot Stop.mp3",
-   "date": "2017-10-07",
-   "venue": "Neurolux- Boise, ID",
-   "seconds": 334,
-   "start": 10.6,
-   "gain": 5
-  },
-  {
-   "id": "kglw2018-06-02.ccm4.flac16",
-   "file": "kglw2018-06-02t19.mp3",
-   "date": "2018-06-02",
-   "venue": "The Warfield",
-   "seconds": 423,
+   "id": "kglw2019-10-14",
+   "file": "10. Mr. Beat.mp3",
+   "date": "2019-10-14",
+   "venue": "L'Olympia",
+   "seconds": 281,
    "start": 0,
-   "gain": 4
+   "gain": 1.5
   },
   {
-   "id": "kglw2018-06-16.sbd-ccm4u.flac1644",
-   "file": "KingGizzard2018-06-16_nyctaper_t14.mp3",
-   "date": "2018-06-16",
-   "venue": "Brooklyn Steel",
-   "seconds": 306,
-   "start": 45.4,
-   "gain": 2.5
+   "id": "kglw2020-02-21",
+   "file": "14 - Mr. Beat.mp3",
+   "date": "2020-02-21",
+   "venue": "The Croxton",
+   "seconds": 257,
+   "start": 0,
+   "gain": 8
   },
   {
-   "id": "kglw2019-09-02.ca14.flac1648",
-   "file": "04-Robot Stop.mp3",
-   "date": "2019-09-02",
-   "venue": "The Tabernacle",
-   "seconds": 430,
-   "start": 66.4,
-   "gain": 2.5
+   "id": "kglw2022-10-31",
+   "file": "05 - Mr. Beat.mp3",
+   "date": "2022-10-31",
+   "venue": "The Criterion, Oklahoma",
+   "seconds": 349,
+   "start": 0,
+   "gain": 3
   },
   {
    "id": "kglw2023-06-01.sbd-flac",
-   "file": "02 Robot Stop.mp3",
+   "file": "07 Mr. Beat.mp3",
    "date": "2023-06-01",
    "venue": "The Caverns",
-   "seconds": 204,
-   "start": 38.3,
-   "gain": -5.5
-  },
-  {
-   "id": "kglw2024-09-01.ToraTapesMX",
-   "file": "01 - Robot Stop.mp3",
-   "date": "2024-09-01",
-   "venue": "Northerly Island",
-   "seconds": 530,
+   "seconds": 303,
    "start": 0,
-   "gain": 0.5
+   "gain": -2
   },
   {
-   "id": "kglw2024-11-17",
-   "file": "kglw202417.mp3",
-   "date": "2024-11-17",
-   "venue": "Mardi Gras World",
-   "seconds": 306,
-   "start": 7.3,
-   "gain": 3
-  },
-  {
-   "id": "kglw2026-08-14",
-   "file": "20 Robot Stop.mp3",
-   "date": "2026-08-14",
-   "venue": "Meadow Creek",
-   "seconds": 738,
+   "id": "kglw2023-08-29",
+   "file": "kglw2023-08-29d1t05 Mr. Beat.mp3",
+   "date": "2023-08-29",
+   "venue": "Le Bikini, Ramonville-Saint-Agne, France",
+   "seconds": 328,
    "start": 0,
-   "gain": 11.5
+   "gain": 5
+  },
+  {
+   "id": "kglw2024-05-22.Hamburg24",
+   "file": "04 - Mr Beat.mp3",
+   "date": "2024-05-22",
+   "venue": "Stadtpark Open Air",
+   "seconds": 529,
+   "start": 0,
+   "gain": 8
+  },
+  {
+   "id": "kglw2024-05-26.dankski",
+   "file": "kglw2024.05.26t03.mp3",
+   "date": "2024-05-26",
+   "venue": "Liverpool Olympia",
+   "seconds": 281,
+   "start": 12.8,
+   "gain": 5.5
+  },
+  {
+   "id": "kglw2024-08-24.daank",
+   "file": "kglw2024.08.24t06.mp3",
+   "date": "2024-08-24",
+   "venue": "Jacobs Pavilion",
+   "seconds": 215,
+   "start": 0,
+   "gain": 9
+  },
+  {
+   "id": "kglw2024-09-09.LATESHOW-mysteryjackofficial",
+   "file": "13 Mr. Beat.mp3",
+   "date": "2024-09-09",
+   "venue": "Red Rocks Amphitheatre",
+   "seconds": 422,
+   "start": 0,
+   "gain": 10.5
+  },
+  {
+   "id": "kglw2024-11-16",
+   "file": "kglw2024-11-16-mk21_03.mp3",
+   "date": "2024-11-16",
+   "venue": "White Oak Music Hall",
+   "seconds": 415,
+   "start": 0,
+   "gain": 7
+  },
+  {
+   "id": "kglw2025-08-15.dpa4006-decca.flac24",
+   "file": "kglw2025-08-15dpa4006-decca-t04.mp3",
+   "date": "2025-08-15",
+   "venue": "Field of Vision - Meadow Creek",
+   "seconds": 354,
+   "start": 0,
+   "gain": 4
   }
  ],
  "Rattlesnake": [
@@ -117,7 +117,7 @@
    "venue": "Coachella",
    "seconds": 355,
    "start": 0,
-   "gain": 3.5
+   "gain": 6.5
   },
   {
    "id": "kglw2017-10-12.ccm4.flac1644",
@@ -126,7 +126,7 @@
    "venue": "The Fillmore",
    "seconds": 355,
    "start": 0,
-   "gain": 1.5
+   "gain": 4.5
   },
   {
    "id": "KGATLW060918",
@@ -135,7 +135,7 @@
    "venue": "The Pabst Theater",
    "seconds": 497,
    "start": 12.7,
-   "gain": 12.5
+   "gain": 15.5
   },
   {
    "id": "kglw2018-06-20.ca14.flac1644",
@@ -144,7 +144,7 @@
    "venue": "Variety Playhouse",
    "seconds": 357,
    "start": 0,
-   "gain": 4
+   "gain": 7
   },
   {
    "id": "kglw2019-10-11.dpa4061.flac2448",
@@ -153,7 +153,7 @@
    "venue": "Carlswerk Victoria",
    "seconds": 358,
    "start": 0,
-   "gain": 4.5
+   "gain": 7.5
   },
   {
    "id": "KGLW2022-04-28",
@@ -162,7 +162,7 @@
    "venue": "Bimbo's 365 Club",
    "seconds": 685,
    "start": 24.2,
-   "gain": 9.5
+   "gain": 12.5
   },
   {
    "id": "kglw2022-10-29",
@@ -171,7 +171,7 @@
    "venue": "Stubb's BBQ Waller Creek Amphitheater",
    "seconds": 741,
    "start": 11,
-   "gain": 2.5
+   "gain": 5.5
   },
   {
    "id": "kglw2023-06-12",
@@ -180,7 +180,7 @@
    "venue": "The Salt Shed",
    "seconds": 699,
    "start": 0,
-   "gain": -1.5
+   "gain": 1.5
   },
   {
    "id": "kglw2024-05-27.dankski",
@@ -189,16 +189,16 @@
    "venue": "The Usher Hall",
    "seconds": 935,
    "start": 0,
-   "gain": 2
+   "gain": 5
   },
   {
-   "id": "kglw2024-09-14.4ch-mix",
-   "file": "02-Rattlesnake.mp3",
+   "id": "kglw2024-09-14.adk",
+   "file": "02 Rattlesnake.mp3",
    "date": "2024-09-14",
    "venue": "The Gorge Amphitheater",
-   "seconds": 673,
+   "seconds": 672,
    "start": 0,
-   "gain": -1
+   "gain": 5
   },
   {
    "id": "kglw2025-06-10.revinylize.mix.stereo",
@@ -207,7 +207,7 @@
    "venue": "Ancient Theatre",
    "seconds": 636,
    "start": 2.6,
-   "gain": 6.5
+   "gain": 9.5
   },
   {
    "id": "kglw2026-08-21.birds",
@@ -216,7 +216,7 @@
    "venue": "Forest Hills Stadium",
    "seconds": 802,
    "start": 0,
-   "gain": 10
+   "gain": 13
   }
  ],
  "Magma": [
@@ -227,7 +227,7 @@
    "venue": "Forest Hills Stadium",
    "seconds": 586,
    "start": 0,
-   "gain": 5
+   "gain": 8
   },
   {
    "id": "kglw2022-12-10.progdog1",
@@ -236,16 +236,16 @@
    "venue": "Palace Foreshore",
    "seconds": 711,
    "start": 0,
-   "gain": 11.5
+   "gain": 14.5
   },
   {
-   "id": "kglw2023-03-03.fob.schoeps.mk41v.vms02ib.9624.flac",
-   "file": "kglw2023-03-03_fob mk41v_96k_17.mp3",
+   "id": "kglw2023-03-03.fob.schoeps.cmc122L.sx-m2d2.9624.flac",
+   "file": "kglw2023-03-03_fob 122L_96k_17.mp3",
    "date": "2023-03-03",
    "venue": "gashouder, amsterdam, nl",
    "seconds": 707,
    "start": 0,
-   "gain": 8.5
+   "gain": 9.5
   },
   {
    "id": "kglw2023-06-11",
@@ -254,7 +254,7 @@
    "venue": "The Salt Shed",
    "seconds": 829,
    "start": 0,
-   "gain": -1.5
+   "gain": 1.5
   },
   {
    "id": "kglw2024-05-15.wav",
@@ -263,7 +263,7 @@
    "venue": "Forest National, Brussels, Belgium",
    "seconds": 719,
    "start": 0,
-   "gain": 11.5
+   "gain": 14.5
   },
   {
    "id": "kglw2024-08-24.daank",
@@ -272,25 +272,25 @@
    "venue": "Jacobs Pavilion",
    "seconds": 663,
    "start": 0,
-   "gain": 9
+   "gain": 12
   },
   {
-   "id": "kglw2024-09-14.4ch-mix",
-   "file": "07-Magma.mp3",
+   "id": "kglw2024-09-14.adk",
+   "file": "06 Magma.mp3",
    "date": "2024-09-14",
    "venue": "The Gorge Amphitheater",
-   "seconds": 680,
-   "start": 52.5,
-   "gain": 1.5
+   "seconds": 670,
+   "start": 51.7,
+   "gain": 6.5
   },
   {
-   "id": "kglw2024-11-10",
-   "file": "kglw2024-11-10-mk21_13.mp3",
+   "id": "kglw2024-11-10_202410",
+   "file": "kglw2024-11-10t12.mp3",
    "date": "2024-11-10",
-   "venue": "Revel Entertainment",
-   "seconds": 873,
+   "venue": "Revel Entertainment Center",
+   "seconds": 889,
    "start": 0,
-   "gain": 9
+   "gain": 11.5
   },
   {
    "id": "kglw2025-05-20.KGLWLisbon25N3",
@@ -299,7 +299,7 @@
    "venue": "Coliseu Dos Recreios",
    "seconds": 733,
    "start": 0,
-   "gain": 4
+   "gain": 7
   },
   {
    "id": "kglw2025-06-10.revinylize.mix.stereo",
@@ -308,7 +308,7 @@
    "venue": "Ancient Theatre",
    "seconds": 818,
    "start": 0,
-   "gain": 10.5
+   "gain": 13.5
   },
   {
    "id": "kglw2025-11-06",
@@ -317,16 +317,16 @@
    "venue": "013",
    "seconds": 808,
    "start": 0,
-   "gain": -2.5
+   "gain": 0.5
   },
   {
-   "id": "kglw2026-08-23",
-   "file": "kglw2026-08-23t05.mp3",
+   "id": "kglw2026-08-23.Birds",
+   "file": "05-Magma.mp3",
    "date": "2026-08-23",
-   "venue": "Under The K Bridge",
-   "seconds": 1067,
+   "venue": "Under the 'K' Bridge",
+   "seconds": 1077,
    "start": 0,
-   "gain": 11
+   "gain": 10
   }
  ],
  "Fishing for Fishies": [
@@ -337,7 +337,7 @@
    "venue": "013",
    "seconds": 1264,
    "start": 3.9,
-   "gain": 1.5
+   "gain": 4.5
   }
  ],
  "Ice V": [
@@ -348,7 +348,7 @@
    "venue": "Roseland Theater",
    "seconds": 728,
    "start": 15.3,
-   "gain": -1
+   "gain": 2
   },
   {
    "id": "kglw2022-10-29",
@@ -357,7 +357,7 @@
    "venue": "Stubb's BBQ Waller Creek Amphitheater",
    "seconds": 615,
    "start": 44.6,
-   "gain": 3.5
+   "gain": 6.5
   },
   {
    "id": "kglw2022-12-10.progdog1",
@@ -366,16 +366,16 @@
    "venue": "Palace Foreshore",
    "seconds": 602,
    "start": 0,
-   "gain": 12
+   "gain": 15
   },
   {
-   "id": "kglw2023-03-18.kglw2023-03-18.aud2.flac16",
-   "file": "KGLW_2023-03-18_AUD_t18_Ice V.mp3",
+   "id": "kglw2023-03-18",
+   "file": "kglw2023.03.18.spacebandit/kglw202317.mp3",
    "date": "2023-03-18",
-   "venue": "Schlachthof, Wiesbaden",
-   "seconds": 711,
+   "venue": "Schlachthof Wiesbaden",
+   "seconds": 701,
    "start": 0,
-   "gain": 14
+   "gain": 7.5
   },
   {
    "id": "kglw2023-06-12",
@@ -384,7 +384,7 @@
    "venue": "The Salt Shed",
    "seconds": 721,
    "start": 0,
-   "gain": -0.5
+   "gain": 2.5
   },
   {
    "id": "kglw2024-05-26.dankski",
@@ -393,7 +393,7 @@
    "venue": "Liverpool Olympia",
    "seconds": 617,
    "start": 0,
-   "gain": 4.5
+   "gain": 7.5
   },
   {
    "id": "kglw2024-08-15.vwmule",
@@ -402,25 +402,25 @@
    "venue": "The Anthem",
    "seconds": 1752,
    "start": 0,
-   "gain": 5.5
+   "gain": 8.5
   },
   {
-   "id": "kglw2024-08-30.mysteryjackofficial",
-   "file": "05 Ice V.mp3",
+   "id": "kglw2024-08-30",
+   "file": "kglw2024-08-30ccm41vt05.mp3",
    "date": "2024-08-30",
-   "venue": "Harrah's Cherokee Center",
-   "seconds": 623,
+   "venue": "Explore Asheville Arena",
+   "seconds": 657,
    "start": 0,
-   "gain": 4.5
+   "gain": 10
   },
   {
-   "id": "kglw2024-11-10",
-   "file": "kglw2024-11-10-mk21_11.mp3",
+   "id": "kglw2024-11-10_202410",
+   "file": "kglw2024-11-10t10.mp3",
    "date": "2024-11-10",
-   "venue": "Revel Entertainment",
-   "seconds": 696,
-   "start": 49.5,
-   "gain": 6
+   "venue": "Revel Entertainment Center",
+   "seconds": 700,
+   "start": 60.7,
+   "gain": 7.5
   },
   {
    "id": "kglw2025-05-18.KGLWLisbon25N1",
@@ -429,7 +429,7 @@
    "venue": "Coliseu Dos Recreios",
    "seconds": 726,
    "start": 48.2,
-   "gain": 1
+   "gain": 4
   },
   {
    "id": "kglw2025-06-06.tora.m5",
@@ -438,16 +438,16 @@
    "venue": "Lycabettus Theatre",
    "seconds": 862,
    "start": 0,
-   "gain": 4.5
+   "gain": 7.5
   },
   {
-   "id": "kglw2026-08-16.discocape-4channel",
-   "file": "kglw2026-08-16-4ch-discocape_09.mp3",
+   "id": "kglw2026-08-16.dpa4015.flac24",
+   "file": "kglw2026-08-16dpa4015-t09.mp3",
    "date": "2026-08-16",
-   "venue": "Meadow Creek",
-   "seconds": 159,
-   "start": 21.9,
-   "gain": 3.5
+   "venue": "Field of Vision II - Meadow Creek",
+   "seconds": 162,
+   "start": 0,
+   "gain": 7
   }
  ],
  "Cyboogie": [
@@ -458,7 +458,7 @@
    "venue": "Forum Melbourne",
    "seconds": 407,
    "start": 38.7,
-   "gain": -1
+   "gain": 2
   },
   {
    "id": "kglw2019-07-12",
@@ -467,7 +467,7 @@
    "venue": "Thebarton Theatre",
    "seconds": 417,
    "start": 0,
-   "gain": -1.5
+   "gain": 1.5
   },
   {
    "id": "KGATLW082319",
@@ -476,7 +476,7 @@
    "venue": "The Riverside Theater",
    "seconds": 407,
    "start": 0,
-   "gain": 6.5
+   "gain": 9.5
   },
   {
    "id": "kglw2019-09-02.ca14.flac1648",
@@ -485,7 +485,7 @@
    "venue": "The Tabernacle",
    "seconds": 477,
    "start": 21.3,
-   "gain": 3
+   "gain": 6
   },
   {
    "id": "kglw2019-10-11.dpa4061.flac2448",
@@ -494,7 +494,7 @@
    "venue": "Carlswerk Victoria",
    "seconds": 459,
    "start": 33.1,
-   "gain": 4.5
+   "gain": 7.5
   },
   {
    "id": "kglw2020-02-21",
@@ -503,7 +503,7 @@
    "venue": "The Croxton",
    "seconds": 515,
    "start": 0,
-   "gain": 4
+   "gain": 7
   },
   {
    "id": "kglw2025-11-01",
@@ -512,7 +512,7 @@
    "venue": "Electric Brixton",
    "seconds": 1053,
    "start": 0,
-   "gain": 4.5
+   "gain": 7.5
   },
   {
    "id": "kglw2026-08-21.birds",
@@ -521,7 +521,7 @@
    "venue": "Forest Hills Stadium",
    "seconds": 551,
    "start": 0,
-   "gain": 13
+   "gain": 16
   }
  ],
  "Mars for the Rich": [
@@ -532,7 +532,7 @@
    "venue": "Thebarton Theatre",
    "seconds": 254,
    "start": 8.3,
-   "gain": -2
+   "gain": 1
   },
   {
    "id": "kglw2019-10-11.dpa4061.flac2448",
@@ -541,7 +541,7 @@
    "venue": "Carlswerk Victoria",
    "seconds": 251,
    "start": 5.5,
-   "gain": 3
+   "gain": 6
   },
   {
    "id": "kglw2022-04-15",
@@ -550,7 +550,7 @@
    "venue": "Coachella",
    "seconds": 248,
    "start": 0,
-   "gain": 3
+   "gain": 6
   },
   {
    "id": "kglw2022-05-22",
@@ -559,7 +559,7 @@
    "venue": "Mr. Smalls Theatre",
    "seconds": 242,
    "start": 0,
-   "gain": 10
+   "gain": 13
   },
   {
    "id": "kg2022-12-31",
@@ -568,16 +568,16 @@
    "venue": "Robrosa Station",
    "seconds": 242,
    "start": 3.9,
-   "gain": 2.5
+   "gain": 5.5
   },
   {
-   "id": "kglw2023-06-08.Burns.Schoeps.MK41.Flac24",
-   "file": "KingGizzard2023-06-08-s2-09.mp3",
+   "id": "kglw2023-06-08.late",
+   "file": "11 Mars for the Rich.mp3",
    "date": "2023-06-08",
-   "venue": "Red Rocks Amphitheatre",
-   "seconds": 369,
-   "start": 32.7,
-   "gain": 6
+   "venue": "Red Rocks",
+   "seconds": 384,
+   "start": 8.5,
+   "gain": 3
   },
   {
    "id": "kglw2024-05-29.dankski",
@@ -586,16 +586,16 @@
    "venue": "The Civic Hall",
    "seconds": 236,
    "start": 5.1,
-   "gain": 2.5
+   "gain": 5.5
   },
   {
-   "id": "kglw2024-08-30.mysteryjackofficial",
-   "file": "11 Mars for the Rich.mp3",
+   "id": "kglw2024-08-30",
+   "file": "kglw2024-08-30ccm41vt11.mp3",
    "date": "2024-08-30",
-   "venue": "Harrah's Cherokee Center",
-   "seconds": 331,
-   "start": 5.6,
-   "gain": 2.5
+   "venue": "Explore Asheville Arena",
+   "seconds": 333,
+   "start": 5.3,
+   "gain": 8
   },
   {
    "id": "kglw2024-11-15",
@@ -604,7 +604,7 @@
    "venue": "Germania Insurance Ampitheater",
    "seconds": 301,
    "start": 59.6,
-   "gain": 1
+   "gain": 4
   },
   {
    "id": "kglw2025-06-06.tora.m5",
@@ -613,16 +613,16 @@
    "venue": "Lycabettus Theatre",
    "seconds": 254,
    "start": 4,
-   "gain": 2.5
+   "gain": 5.5
   },
   {
-   "id": "kglw2025-08-08",
-   "file": "kglw2025-08-08-ozone-v2_16.mp3",
+   "id": "kglw2025-08-08.dpa4027",
+   "file": "kglw2025-08-08dpa4027-2496-t16.mp3",
    "date": "2025-08-08",
-   "venue": "Ford Amphitheater",
-   "seconds": 269,
-   "start": 0,
-   "gain": 1
+   "venue": "Ford Amphitheater(Colorado Springs, CO)",
+   "seconds": 272,
+   "start": 5.5,
+   "gain": 6
   },
   {
    "id": "kglw2026-08-14",
@@ -631,27 +631,27 @@
    "venue": "Meadow Creek",
    "seconds": 278,
    "start": 4.2,
-   "gain": 1.5
+   "gain": 4.5
   }
  ],
  "Supercell": [
   {
-   "id": "kglw2023-06-08.Burns.Schoeps.MK41.Flac24",
-   "file": "KingGizzard2023-06-08-s2-10.mp3",
+   "id": "kglw2023-06-08.late",
+   "file": "12 Supercell.mp3",
    "date": "2023-06-08",
-   "venue": "Red Rocks Amphitheatre",
-   "seconds": 359,
-   "start": 20.4,
-   "gain": 7.5
+   "venue": "Red Rocks",
+   "seconds": 388,
+   "start": 11,
+   "gain": 0
   },
   {
-   "id": "kglw2023-06-21.4chmix",
+   "id": "kglw2023-06-21.MC59W",
    "file": "10-Supercell.mp3",
    "date": "2023-06-21",
    "venue": "Hollywood Bowl",
    "seconds": 314,
-   "start": 26.7,
-   "gain": -5.5
+   "start": 27.5,
+   "gain": 5.5
   },
   {
    "id": "kglw2024-05-15.wav",
@@ -660,16 +660,16 @@
    "venue": "Forest National, Brussels, Belgium",
    "seconds": 348,
    "start": 14.6,
-   "gain": 5.5
+   "gain": 8.5
   },
   {
-   "id": "kglw2024-05-30.dankski",
-   "file": "kglw2024-05-30t04.mp3",
+   "id": "kglw2024-05-30.Bristol24",
+   "file": "05 - Supercell.mp3",
    "date": "2024-05-30",
    "venue": "Bristol Beacon",
-   "seconds": 330,
-   "start": 0,
-   "gain": 0.5
+   "seconds": 309,
+   "start": 9.9,
+   "gain": 3.5
   },
   {
    "id": "kglw2024-08-19",
@@ -678,7 +678,7 @@
    "venue": "The Stage @ Suffolk Downs",
    "seconds": 519,
    "start": 10,
-   "gain": 3
+   "gain": 6
   },
   {
    "id": "kglw2024-08-28.mtx.flac24",
@@ -687,7 +687,7 @@
    "venue": "Brown's Island - Richmond, VA",
    "seconds": 680,
    "start": 9.2,
-   "gain": 4.5
+   "gain": 7.5
   },
   {
    "id": "kglw2024-11-04.bandcampbootlegger",
@@ -696,7 +696,7 @@
    "venue": "Frost Amphitheater",
    "seconds": 328,
    "start": 9.4,
-   "gain": -2.5
+   "gain": 0.5
   },
   {
    "id": "kglw2024-11-12.InsideOut_AKGck63.Matrix",
@@ -705,7 +705,7 @@
    "venue": "The Criterion",
    "seconds": 321,
    "start": 13.9,
-   "gain": -0.5
+   "gain": 2.5
   },
   {
    "id": "kglw2025-05-19.KGLWLisbon25N2",
@@ -714,16 +714,16 @@
    "venue": "Coliseu Dos Recreios",
    "seconds": 352,
    "start": 9.3,
-   "gain": -4
+   "gain": -1
   },
   {
-   "id": "kglw2025-06-09.revinylize.mix.stereo",
+   "id": "kglw2025-06-09.revinylize.mix.surround",
    "file": "17. Supercell.mp3",
    "date": "2025-06-09",
    "venue": "Ancient Theatre",
    "seconds": 394,
    "start": 6.1,
-   "gain": 4.5
+   "gain": 10.5
   },
   {
    "id": "kglw2025-08-17.birds",
@@ -732,7 +732,7 @@
    "venue": "Field of Vision",
    "seconds": 347,
    "start": 6.3,
-   "gain": 2
+   "gain": 5
   },
   {
    "id": "kglw2026-10-17.h1n.flac16",
@@ -741,7 +741,7 @@
    "venue": "carpark opposite Croxton Park Hotel",
    "seconds": 363,
    "start": 73.9,
-   "gain": 3.5
+   "gain": 6.5
   }
  ],
  "The Lord of Lightning": [
@@ -752,7 +752,7 @@
    "venue": "Bakehouse Studios",
    "seconds": 287,
    "start": 14.6,
-   "gain": -4.5
+   "gain": -1.5
   },
   {
    "id": "kglw2017-04-01.mysteryjack",
@@ -761,7 +761,7 @@
    "venue": "Webster Hall- New York, NY",
    "seconds": 326,
    "start": 54.3,
-   "gain": 2.5
+   "gain": 5.5
   },
   {
    "id": "kglw2017-09-27.mysteryjack",
@@ -770,7 +770,7 @@
    "venue": "Variety Playhouse",
    "seconds": 273,
    "start": 61.7,
-   "gain": 3.5
+   "gain": 6.5
   },
   {
    "id": "kglw2017-10-12.ccm4.flac1644",
@@ -779,7 +779,7 @@
    "venue": "The Fillmore",
    "seconds": 274,
    "start": 37.7,
-   "gain": 2
+   "gain": 5
   },
   {
    "id": "kglw2018-06-07.mysteryjack",
@@ -788,7 +788,7 @@
    "venue": "Monk's Bar",
    "seconds": 314,
    "start": 43.4,
-   "gain": 7
+   "gain": 10
   },
   {
    "id": "kglw2018-06-14",
@@ -797,7 +797,7 @@
    "venue": "Royale",
    "seconds": 324,
    "start": 50.5,
-   "gain": 4
+   "gain": 7
   },
   {
    "id": "kglw2018-06-20.ca14.flac1644",
@@ -806,7 +806,7 @@
    "venue": "Variety Playhouse",
    "seconds": 285,
    "start": 41.5,
-   "gain": 5
+   "gain": 8
   },
   {
    "id": "kglw2019-10-16.ca-11.flac1644",
@@ -815,34 +815,34 @@
    "venue": "X-TRA",
    "seconds": 358,
    "start": 0,
-   "gain": 13
+   "gain": 16
   },
   {
-   "id": "kglw2022-10-02",
-   "file": "25 The Lord of Lightning.mp3",
+   "id": "kglw2022-10-02.adk",
+   "file": "24 The Lord of Lightning.mp3",
    "date": "2022-10-02",
    "venue": "William Randolph Hearst Greek Theatre",
-   "seconds": 373,
-   "start": 11.7,
-   "gain": 4.5
+   "seconds": 378,
+   "start": 10.8,
+   "gain": 7.5
   },
   {
-   "id": "kglw2023-06-07",
-   "file": "11 The Lord of Lightning.mp3",
+   "id": "kglw2023-06-07.Burns.Schoeps.MK41.Flac24",
+   "file": "KingGizz2023-06-07-t-11.mp3",
    "date": "2023-06-07",
-   "venue": "Red Rocks",
-   "seconds": 331,
-   "start": 0,
-   "gain": -6
+   "venue": "Red Rocks Amphitheatre",
+   "seconds": 402,
+   "start": 13.1,
+   "gain": 8.5
   },
   {
-   "id": "kglw2024-09-14.4ch-mix",
-   "file": "08-The Lord of Lightning.mp3",
+   "id": "kglw2024-09-14.adk",
+   "file": "08 The Lord of Lightning.mp3",
    "date": "2024-09-14",
    "venue": "The Gorge Amphitheater",
-   "seconds": 370,
-   "start": 42.5,
-   "gain": -2
+   "seconds": 336,
+   "start": 0,
+   "gain": 4.5
   },
   {
    "id": "kglw2025-05-25.Spain2025N3",
@@ -851,7 +851,7 @@
    "venue": "Poble Espanyol",
    "seconds": 426,
    "start": 0,
-   "gain": 0
+   "gain": 3
   }
  ],
  "Dragon": [
@@ -862,16 +862,16 @@
    "venue": "AFAS Live",
    "seconds": 629,
    "start": 0,
-   "gain": 3
+   "gain": 6
   },
   {
-   "id": "kglw2024-05-30.dankski",
-   "file": "kglw2024-05-30t06.mp3",
+   "id": "kglw2024-05-30.Bristol24",
+   "file": "07 - Dragon.mp3",
    "date": "2024-05-30",
    "venue": "Bristol Beacon",
-   "seconds": 636,
-   "start": 23.1,
-   "gain": 0
+   "seconds": 614,
+   "start": 0,
+   "gain": 3.5
   },
   {
    "id": "kglw2024-08-24.daank",
@@ -880,7 +880,7 @@
    "venue": "Jacobs Pavilion",
    "seconds": 594,
    "start": 0,
-   "gain": 2.5
+   "gain": 5.5
   },
   {
    "id": "kglw2024-09-01.ToraTapesMX",
@@ -889,7 +889,7 @@
    "venue": "Northerly Island",
    "seconds": 647,
    "start": 0,
-   "gain": -6
+   "gain": -3
   },
   {
    "id": "kglw2024-09-08.ToraTapesMX",
@@ -898,7 +898,7 @@
    "venue": "Red Rocks Ampitheatre",
    "seconds": 698,
    "start": 0,
-   "gain": -3
+   "gain": 0
   },
   {
    "id": "kglw2024-11-08",
@@ -907,7 +907,7 @@
    "venue": "PH Live",
    "seconds": 675,
    "start": 2.7,
-   "gain": 2
+   "gain": 5
   },
   {
    "id": "kglw2024-11-17",
@@ -916,7 +916,7 @@
    "venue": "Mardi Gras World",
    "seconds": 664,
    "start": 2.4,
-   "gain": 0.5
+   "gain": 3.5
   },
   {
    "id": "kglw2025-05-31.diy",
@@ -925,16 +925,16 @@
    "venue": "Lukiškės Prison",
    "seconds": 719,
    "start": 4.8,
-   "gain": 0.5
+   "gain": 3.5
   },
   {
-   "id": "kglw2025-07-28-PolyTapes",
-   "file": "17-Dragon.mp3",
+   "id": "kglw2025-07-28.SchoepsMK41.Burns.Flac24",
+   "file": "KingGizzard2025-07-28-t-17.mp3",
    "date": "2025-07-28",
    "venue": "The Mann Music Center",
-   "seconds": 668,
-   "start": 0,
-   "gain": 4
+   "seconds": 672,
+   "start": 2,
+   "gain": 13
   },
   {
    "id": "kglw2025-08-06.ravinia",
@@ -943,7 +943,7 @@
    "venue": "Ravinia Festival",
    "seconds": 669,
    "start": 0,
-   "gain": 8.5
+   "gain": 11.5
   },
   {
    "id": "kglw2025-08-10",
@@ -952,7 +952,7 @@
    "venue": "Hollywood Bowl",
    "seconds": 702,
    "start": 0,
-   "gain": -1
+   "gain": 2
   },
   {
    "id": "kglw2025-11-05",
@@ -961,18 +961,18 @@
    "venue": "La Seine Musicale",
    "seconds": 661,
    "start": 0,
-   "gain": -1
+   "gain": 2
   }
  ],
  "Phantom Island": [
   {
-   "id": "kglw2025-07-28-PolyTapes",
-   "file": "02-Phantom Island.mp3",
+   "id": "kglw2025-07-28.SchoepsMK41.Burns.Flac24",
+   "file": "KingGizzard2025-07-28-t-02.mp3",
    "date": "2025-07-28",
    "venue": "The Mann Music Center",
-   "seconds": 354,
-   "start": 33.7,
-   "gain": 4.5
+   "seconds": 344,
+   "start": 0,
+   "gain": 11.5
   },
   {
    "id": "kglw2025-08-01.dten20250801",
@@ -981,7 +981,7 @@
    "venue": "Forest Hills Stadium",
    "seconds": 406,
    "start": 0,
-   "gain": 4
+   "gain": 7
   },
   {
    "id": "kglw2025-08-06.ravinia",
@@ -990,16 +990,16 @@
    "venue": "Ravinia Festival",
    "seconds": 345,
    "start": 41.5,
-   "gain": 10.5
+   "gain": 13.5
   },
   {
-   "id": "kglw2025-08-08",
-   "file": "kglw2025-08-08-ozone-v2_02.mp3",
+   "id": "kglw2025-08-08.dpa4027",
+   "file": "kglw2025-08-08dpa4027-2496-t02.mp3",
    "date": "2025-08-08",
-   "venue": "Ford Amphitheater",
+   "venue": "Ford Amphitheater(Colorado Springs, CO)",
    "seconds": 345,
-   "start": 42.3,
-   "gain": -2.5
+   "start": 41.7,
+   "gain": 4.5
   },
   {
    "id": "kglw2025-08-10",
@@ -1008,7 +1008,7 @@
    "venue": "Hollywood Bowl",
    "seconds": 352,
    "start": 40.9,
-   "gain": -1.5
+   "gain": 1.5
   },
   {
    "id": "kglw2025-11-04",
@@ -1017,7 +1017,7 @@
    "venue": "Royal Albert Hall",
    "seconds": 380,
    "start": 35,
-   "gain": 0.5
+   "gain": 3.5
   },
   {
    "id": "kglw2025-11-05",
@@ -1026,18 +1026,18 @@
    "venue": "La Seine Musicale",
    "seconds": 354,
    "start": 36.4,
-   "gain": 3
+   "gain": 6
   }
  ],
  "Deadstick": [
   {
-   "id": "kglw2025-07-28-PolyTapes",
-   "file": "03-Deadstick.mp3",
+   "id": "kglw2025-07-28.SchoepsMK41.Burns.Flac24",
+   "file": "KingGizzard2025-07-28-t-03.mp3",
    "date": "2025-07-28",
    "venue": "The Mann Music Center",
-   "seconds": 238,
-   "start": 0,
-   "gain": 4.5
+   "seconds": 232,
+   "start": 8.3,
+   "gain": 10
   },
   {
    "id": "kglw2025-08-01.dten20250801",
@@ -1046,7 +1046,7 @@
    "venue": "Forest Hills Stadium",
    "seconds": 218,
    "start": 5.5,
-   "gain": 0.5
+   "gain": 3.5
   },
   {
    "id": "kglw2025-08-06.ravinia",
@@ -1055,16 +1055,16 @@
    "venue": "Ravinia Festival",
    "seconds": 214,
    "start": 3.3,
-   "gain": 10
+   "gain": 13
   },
   {
-   "id": "kglw2025-08-08",
-   "file": "kglw2025-08-08-ozone-v2_03.mp3",
+   "id": "kglw2025-08-08.dpa4027",
+   "file": "kglw2025-08-08dpa4027-2496-t03.mp3",
    "date": "2025-08-08",
-   "venue": "Ford Amphitheater",
-   "seconds": 219,
-   "start": 2.8,
-   "gain": 1
+   "venue": "Ford Amphitheater(Colorado Springs, CO)",
+   "seconds": 214,
+   "start": 2.4,
+   "gain": 5
   },
   {
    "id": "kglw2025-08-10",
@@ -1073,7 +1073,7 @@
    "venue": "Hollywood Bowl",
    "seconds": 209,
    "start": 2.6,
-   "gain": 0
+   "gain": 3
   },
   {
    "id": "kglw2025-11-04",
@@ -1082,7 +1082,7 @@
    "venue": "Royal Albert Hall",
    "seconds": 219,
    "start": 0,
-   "gain": 0
+   "gain": 3
   },
   {
    "id": "kglw2025-11-05",
@@ -1091,18 +1091,18 @@
    "venue": "La Seine Musicale",
    "seconds": 224,
    "start": 0,
-   "gain": 1
+   "gain": 4
   }
  ],
  "Panpsych": [
   {
-   "id": "kglw2025-07-28-PolyTapes",
-   "file": "06-Panpsych.mp3",
+   "id": "kglw2025-07-28.SchoepsMK41.Burns.Flac24",
+   "file": "KingGizzard2025-07-28-t-06.mp3",
    "date": "2025-07-28",
    "venue": "The Mann Music Center",
-   "seconds": 262,
-   "start": 12,
-   "gain": 5.5
+   "seconds": 263,
+   "start": 19,
+   "gain": 10.5
   },
   {
    "id": "kglw2025-08-01.dten20250801",
@@ -1111,7 +1111,7 @@
    "venue": "Forest Hills Stadium",
    "seconds": 267,
    "start": 0,
-   "gain": 2
+   "gain": 5
   },
   {
    "id": "kglw2025-08-06.ravinia",
@@ -1120,16 +1120,16 @@
    "venue": "Ravinia Festival",
    "seconds": 251,
    "start": 16.1,
-   "gain": 11
+   "gain": 14
   },
   {
-   "id": "kglw2025-08-08",
-   "file": "kglw2025-08-08-ozone-v2_06.mp3",
+   "id": "kglw2025-08-08.Bootleg",
+   "file": "06_Panpsych.mp3",
    "date": "2025-08-08",
    "venue": "Ford Amphitheater",
-   "seconds": 265,
-   "start": 63.3,
-   "gain": -3.5
+   "seconds": 256,
+   "start": 11.4,
+   "gain": 11
   },
   {
    "id": "kglw2025-08-10",
@@ -1138,7 +1138,7 @@
    "venue": "Hollywood Bowl",
    "seconds": 254,
    "start": 23.2,
-   "gain": 0
+   "gain": 3
   },
   {
    "id": "kglw2025-11-04",
@@ -1147,7 +1147,7 @@
    "venue": "Royal Albert Hall",
    "seconds": 248,
    "start": 8.8,
-   "gain": 1
+   "gain": 4
   },
   {
    "id": "kglw2025-11-05",
@@ -1156,18 +1156,18 @@
    "venue": "La Seine Musicale",
    "seconds": 268,
    "start": 8.1,
-   "gain": 2.5
+   "gain": 5.5
   }
  ],
  "Sea of Doubt": [
   {
-   "id": "kglw2025-07-28-PolyTapes",
-   "file": "09-Sea of Doubt.mp3",
+   "id": "kglw2025-07-28.SchoepsMK41.Burns.Flac24",
+   "file": "KingGizzard2025-07-28-t-09.mp3",
    "date": "2025-07-28",
    "venue": "The Mann Music Center",
-   "seconds": 295,
-   "start": 6.8,
-   "gain": 5
+   "seconds": 277,
+   "start": 14.5,
+   "gain": 9.5
   },
   {
    "id": "kglw2025-08-01.dten20250801",
@@ -1176,7 +1176,7 @@
    "venue": "Forest Hills Stadium",
    "seconds": 325,
    "start": 15.5,
-   "gain": 1
+   "gain": 4
   },
   {
    "id": "kglw2025-08-06.ravinia",
@@ -1185,16 +1185,16 @@
    "venue": "Ravinia Festival",
    "seconds": 311,
    "start": 9.4,
-   "gain": 10.5
+   "gain": 13.5
   },
   {
-   "id": "kglw2025-08-08",
-   "file": "kglw2025-08-08-ozone-v2_09.mp3",
+   "id": "kglw2025-08-08.dpa4027",
+   "file": "kglw2025-08-08dpa4027-2496-t09.mp3",
    "date": "2025-08-08",
-   "venue": "Ford Amphitheater",
-   "seconds": 295,
-   "start": 31.4,
-   "gain": 0
+   "venue": "Ford Amphitheater(Colorado Springs, CO)",
+   "seconds": 291,
+   "start": 11.7,
+   "gain": 5.5
   },
   {
    "id": "kglw2025-08-10",
@@ -1203,7 +1203,7 @@
    "venue": "Hollywood Bowl",
    "seconds": 306,
    "start": 13.2,
-   "gain": 0
+   "gain": 3
   },
   {
    "id": "kglw2025-11-04",
@@ -1212,7 +1212,7 @@
    "venue": "Royal Albert Hall",
    "seconds": 328,
    "start": 9.3,
-   "gain": 1.5
+   "gain": 4.5
   },
   {
    "id": "kglw2025-11-05",
@@ -1221,7 +1221,7 @@
    "venue": "La Seine Musicale",
    "seconds": 302,
    "start": 7.1,
-   "gain": 3
+   "gain": 6
   }
  ],
  "Magenta Mountain": [
@@ -1232,7 +1232,7 @@
    "venue": "Event Lawn, Virgin Hotels",
    "seconds": 508,
    "start": 30.5,
-   "gain": 4
+   "gain": 7
   },
   {
    "id": "kglw2022-05-25",
@@ -1241,7 +1241,7 @@
    "venue": "Higher Ground",
    "seconds": 588,
    "start": 17,
-   "gain": 5
+   "gain": 8
   },
   {
    "id": "kglw2022-10-04.aud.flac24",
@@ -1250,7 +1250,7 @@
    "venue": "Roseland Theater",
    "seconds": 572,
    "start": 17.6,
-   "gain": -1
+   "gain": 2
   },
   {
    "id": "kglw2022-10-27.twenty8",
@@ -1259,7 +1259,7 @@
    "venue": "The Orpheum",
    "seconds": 574,
    "start": 20.3,
-   "gain": 4.5
+   "gain": 7.5
   },
   {
    "id": "kglw2022-10-31",
@@ -1268,7 +1268,7 @@
    "venue": "The Criterion, Oklahoma",
    "seconds": 584,
    "start": 16.4,
-   "gain": 1
+   "gain": 4
   },
   {
    "id": "kglw2023-03-20",
@@ -1277,7 +1277,7 @@
    "venue": "Cirque Royal/Koninklijk",
    "seconds": 620,
    "start": 17.4,
-   "gain": 2.5
+   "gain": 5.5
   },
   {
    "id": "kglw2023-06-13",
@@ -1286,7 +1286,7 @@
    "venue": "The Salt Shed",
    "seconds": 620,
    "start": 34.8,
-   "gain": -3
+   "gain": 0
   },
   {
    "id": "kglw2024-09-04.ToraTapesMX",
@@ -1295,16 +1295,16 @@
    "venue": "Miller High Life Theatre",
    "seconds": 489,
    "start": 17.1,
-   "gain": 1.5
+   "gain": 4.5
   },
   {
-   "id": "kglw2024-09-14.4ch-mix",
-   "file": "26-Magenta Mountain.mp3",
+   "id": "kglw2024-09-14.adk",
+   "file": "18 Magenta Mountain.mp3",
    "date": "2024-09-14",
    "venue": "The Gorge Amphitheater",
-   "seconds": 575,
-   "start": 24.4,
-   "gain": 7
+   "seconds": 595,
+   "start": 40,
+   "gain": 15
   },
   {
    "id": "kglw2025-05-25.Spain2025N3",
@@ -1313,7 +1313,7 @@
    "venue": "Poble Espanyol",
    "seconds": 894,
    "start": 0,
-   "gain": 12.5
+   "gain": 15.5
   },
   {
    "id": "kglw2025-06-10.revinylize.mix.stereo",
@@ -1322,7 +1322,7 @@
    "venue": "Ancient Theatre",
    "seconds": 843,
    "start": 0,
-   "gain": 10.5
+   "gain": 13.5
   },
   {
    "id": "kglw2025-10-31",
@@ -1331,7 +1331,7 @@
    "venue": "Aviva Studios",
    "seconds": 1203,
    "start": 0,
-   "gain": 12.5
+   "gain": 15.5
   }
  ],
  "Kepler-22b": [
@@ -1342,14 +1342,14 @@
    "venue": "Lycabettus Theatre",
    "seconds": 824,
    "start": 70.6,
-   "gain": -0.5
+   "gain": 2.5
   },
   {
-   "id": "kglw2025-08-15.birds",
-   "file": "14. Kepler-22b -.mp3",
+   "id": "kglw2025-08-15.dpa4006-decca.flac24",
+   "file": "kglw2025-08-15dpa4006-decca-t11.mp3",
    "date": "2025-08-15",
-   "venue": "Field of Vision",
-   "seconds": 395,
+   "venue": "Field of Vision - Meadow Creek",
+   "seconds": 592,
    "start": 0,
    "gain": 3.5
   },
@@ -1360,7 +1360,7 @@
    "venue": "Electric Brixton",
    "seconds": 1268,
    "start": 0,
-   "gain": 7
+   "gain": 10
   },
   {
    "id": "kglw2026-08-21.birds",
@@ -1369,7 +1369,7 @@
    "venue": "Forest Hills Stadium",
    "seconds": 898,
    "start": 26.8,
-   "gain": 11
+   "gain": 14
   }
  ],
  "The Garden Goblin": [
@@ -1380,7 +1380,7 @@
    "venue": "Enmore Theatre",
    "seconds": 225,
    "start": 0,
-   "gain": 4
+   "gain": 7
   },
   {
    "id": "kglw2022-10-04.aud.flac24",
@@ -1389,7 +1389,7 @@
    "venue": "Roseland Theater",
    "seconds": 174,
    "start": 0,
-   "gain": -1
+   "gain": 2
   },
   {
    "id": "kglw2022-10-21.p170",
@@ -1398,7 +1398,7 @@
    "venue": "Forest Hills Stadium",
    "seconds": 187,
    "start": 0,
-   "gain": 2
+   "gain": 5
   },
   {
    "id": "kglw2023-06-13",
@@ -1407,7 +1407,7 @@
    "venue": "The Salt Shed",
    "seconds": 234,
    "start": 0,
-   "gain": -5
+   "gain": -2
   },
   {
    "id": "kglw2023-08-15",
@@ -1416,7 +1416,7 @@
    "venue": "E-Werk Cologne",
    "seconds": 172,
    "start": 0,
-   "gain": 6
+   "gain": 9
   },
   {
    "id": "kglw2023-08-29",
@@ -1425,7 +1425,7 @@
    "venue": "Le Bikini, Ramonville-Saint-Agne, France",
    "seconds": 220,
    "start": 0,
-   "gain": 3.5
+   "gain": 6.5
   },
   {
    "id": "kglw2024-08-28.mtx.flac24",
@@ -1434,7 +1434,7 @@
    "venue": "Brown's Island - Richmond, VA",
    "seconds": 254,
    "start": 0,
-   "gain": 3.5
+   "gain": 6.5
   },
   {
    "id": "kglw2024-09-04.ToraTapesMX",
@@ -1443,7 +1443,7 @@
    "venue": "Miller High Life Theatre",
    "seconds": 225,
    "start": 0,
-   "gain": 0
+   "gain": 3
   },
   {
    "id": "kglw2024-11-04.bandcampbootlegger",
@@ -1452,7 +1452,7 @@
    "venue": "Frost Amphitheater",
    "seconds": 240,
    "start": 0,
-   "gain": -1
+   "gain": 2
   },
   {
    "id": "kglw2025-05-25.Spain2025N3",
@@ -1461,7 +1461,7 @@
    "venue": "Poble Espanyol",
    "seconds": 200,
    "start": 0,
-   "gain": 3
+   "gain": 6
   },
   {
    "id": "kglw2025-08-17.birds",
@@ -1470,7 +1470,7 @@
    "venue": "Field of Vision",
    "seconds": 250,
    "start": 0,
-   "gain": 4.5
+   "gain": 7.5
   },
   {
    "id": "kglw2025-11-01",
@@ -1479,7 +1479,7 @@
    "venue": "Electric Brixton",
    "seconds": 846,
    "start": 0,
-   "gain": 2
+   "gain": 5
   }
  ],
  "Predator X": [
@@ -1490,7 +1490,7 @@
    "venue": "Rialto Theater",
    "seconds": 278,
    "start": 14.5,
-   "gain": 3.5
+   "gain": 6.5
   },
   {
    "id": "KGLW2022-04-28",
@@ -1499,7 +1499,7 @@
    "venue": "Bimbo's 365 Club",
    "seconds": 258,
    "start": 0,
-   "gain": 3.5
+   "gain": 6.5
   },
   {
    "id": "kglw2022-05-22",
@@ -1508,7 +1508,7 @@
    "venue": "Mr. Smalls Theatre",
    "seconds": 355,
    "start": 0,
-   "gain": 10
+   "gain": 13
   },
   {
    "id": "kglw2022-05-26",
@@ -1517,7 +1517,7 @@
    "venue": "Higher Ground",
    "seconds": 273,
    "start": 0,
-   "gain": 5.5
+   "gain": 8.5
   },
   {
    "id": "kglw2022-10-22.ScheopsMK41.Flac24",
@@ -1526,7 +1526,7 @@
    "venue": "Franklin Music Hall",
    "seconds": 420,
    "start": 0,
-   "gain": 6
+   "gain": 9
   },
   {
    "id": "kglw2022-10-28",
@@ -1535,16 +1535,16 @@
    "venue": "Stubb's BBQ Waller Creek Amphitheater",
    "seconds": 302,
    "start": 0,
-   "gain": 4.5
+   "gain": 7.5
   },
   {
-   "id": "kglw2023-03-18.kglw2023-03-18.aud2.flac16",
-   "file": "KGLW_2023-03-18_AUD_t03_Predator X.mp3",
+   "id": "kglw2023-03-18",
+   "file": "kglw2023.03.18.spacebandit/kglw202303.mp3",
    "date": "2023-03-18",
-   "venue": "Schlachthof, Wiesbaden",
-   "seconds": 247,
+   "venue": "Schlachthof Wiesbaden",
+   "seconds": 263,
    "start": 0,
-   "gain": 7.5
+   "gain": 4.5
   },
   {
    "id": "kglw2024-05-26.dankski",
@@ -1553,7 +1553,7 @@
    "venue": "Liverpool Olympia",
    "seconds": 248,
    "start": 0,
-   "gain": 4.5
+   "gain": 7.5
   },
   {
    "id": "kglw2024-09-01.ToraTapesMX",
@@ -1562,7 +1562,7 @@
    "venue": "Northerly Island",
    "seconds": 321,
    "start": 0,
-   "gain": -2
+   "gain": 1
   },
   {
    "id": "kglw2025-06-04",
@@ -1578,7 +1578,7 @@
    "venue": "Forest Hills Stadium",
    "seconds": 255,
    "start": 0,
-   "gain": 7
+   "gain": 10
   },
   {
    "id": "kglw2026-08-16.Full-Three-Shows-discocape",
@@ -1587,7 +1587,7 @@
    "venue": "Meadow Creek",
    "seconds": 289,
    "start": 0,
-   "gain": 6
+   "gain": 9
   }
  ],
  "Crumbling Castle": [
@@ -1598,7 +1598,7 @@
    "venue": "The Warfield",
    "seconds": 564,
    "start": 10.3,
-   "gain": -1.5
+   "gain": 1.5
   },
   {
    "id": "kglw2018-06-16.sbd-ccm4u.flac1644",
@@ -1607,7 +1607,7 @@
    "venue": "Brooklyn Steel",
    "seconds": 512,
    "start": 10.1,
-   "gain": 3.5
+   "gain": 6.5
   },
   {
    "id": "kglw2018-06-22",
@@ -1616,7 +1616,7 @@
    "venue": "Stubbs BBQ Waller Creek Amphitheater",
    "seconds": 537,
    "start": 13,
-   "gain": 8.5
+   "gain": 11.5
   },
   {
    "id": "kglw2019-10-16.ca-11.flac1644",
@@ -1625,16 +1625,16 @@
    "venue": "X-TRA",
    "seconds": 516,
    "start": 10.5,
-   "gain": 6
+   "gain": 9
   },
   {
-   "id": "kglw2022-10-02",
-   "file": "26 Crumbling Castle.mp3",
+   "id": "kglw2022-10-02.adk",
+   "file": "25 Crumbling Castle.mp3",
    "date": "2022-10-02",
    "venue": "William Randolph Hearst Greek Theatre",
-   "seconds": 571,
+   "seconds": 567,
    "start": 0,
-   "gain": 7.5
+   "gain": 10
   },
   {
    "id": "kglw2022-10-29",
@@ -1643,16 +1643,16 @@
    "venue": "Stubb's BBQ Waller Creek Amphitheater",
    "seconds": 581,
    "start": 0,
-   "gain": 4
+   "gain": 7
   },
   {
-   "id": "kglw2023-06-21.4chmix",
+   "id": "kglw2023-06-21.MC59W",
    "file": "13-Crumbling Castle.mp3",
    "date": "2023-06-21",
    "venue": "Hollywood Bowl",
-   "seconds": 562,
+   "seconds": 563,
    "start": 0,
-   "gain": -2.5
+   "gain": 9.5
   },
   {
    "id": "kglw2024-08-15.ak43ccm41vmix",
@@ -1661,7 +1661,7 @@
    "venue": "The Anthem",
    "seconds": 1362,
    "start": 64.3,
-   "gain": 6
+   "gain": 9
   },
   {
    "id": "kglw2024-11-19",
@@ -1670,34 +1670,34 @@
    "venue": "Fox Theatre",
    "seconds": 617,
    "start": 0,
-   "gain": 4
+   "gain": 7
   },
   {
-   "id": "kglw2025-07-28-PolyTapes",
-   "file": "14-Crumbling Castle.mp3",
+   "id": "kglw2025-07-28.SchoepsMK41.Burns.Flac24",
+   "file": "KingGizzard2025-07-28-t-14.mp3",
    "date": "2025-07-28",
    "venue": "The Mann Music Center",
    "seconds": 668,
    "start": 0,
-   "gain": 4.5
+   "gain": 10
   },
   {
-   "id": "kglw2025-08-08",
-   "file": "kglw2025-08-08-ozone-v2_14.mp3",
+   "id": "kglw2025-08-08.dpa4027",
+   "file": "kglw2025-08-08dpa4027-2496-t14.mp3",
    "date": "2025-08-08",
-   "venue": "Ford Amphitheater",
-   "seconds": 669,
+   "venue": "Ford Amphitheater(Colorado Springs, CO)",
+   "seconds": 670,
    "start": 0,
-   "gain": 2.5
+   "gain": 6.5
   },
   {
-   "id": "kglw2026-08-15",
-   "file": "07 Crumbling Castle.mp3",
+   "id": "kglw2026-08-15.discocape-4channel",
+   "file": "kglw2026-08-15-4ch-discocape_07.mp3",
    "date": "2026-08-15",
-   "venue": "Field of Vision II",
-   "seconds": 594,
+   "venue": "Meadow Creek",
+   "seconds": 593,
    "start": 0,
-   "gain": 1
+   "gain": 7
   }
  ],
  "The Castle in the Air": [
@@ -1708,7 +1708,7 @@
    "venue": "The Pabst Theater",
    "seconds": 95,
    "start": 0,
-   "gain": 5.5
+   "gain": 8.5
   },
   {
    "id": "kglw2018-06-16.sbd-ccm4u.flac1644",
@@ -1717,7 +1717,7 @@
    "venue": "Brooklyn Steel",
    "seconds": 94,
    "start": 0,
-   "gain": 3.5
+   "gain": 6.5
   },
   {
    "id": "kglw2018-06-22",
@@ -1726,7 +1726,7 @@
    "venue": "Stubbs BBQ Waller Creek Amphitheater",
    "seconds": 106,
    "start": 0,
-   "gain": 10.5
+   "gain": 13.5
   }
  ],
  "Inner Cell": [
@@ -1737,7 +1737,7 @@
    "venue": "Forum Melbourne",
    "seconds": 247,
    "start": 49.3,
-   "gain": 0.5
+   "gain": 3.5
   },
   {
    "id": "KGATLW082319",
@@ -1746,7 +1746,7 @@
    "venue": "The Riverside Theater",
    "seconds": 229,
    "start": 0,
-   "gain": 8.5
+   "gain": 11.5
   },
   {
    "id": "kglw2019-10-11.dpa4061.flac2448",
@@ -1755,7 +1755,7 @@
    "venue": "Carlswerk Victoria",
    "seconds": 231,
    "start": 0,
-   "gain": 7
+   "gain": 10
   },
   {
    "id": "kglw2022-10-26",
@@ -1764,16 +1764,16 @@
    "venue": "The Eastern",
    "seconds": 236,
    "start": 0,
-   "gain": 5.5
+   "gain": 8.5
   },
   {
-   "id": "kglw2023-03-03.fob.schoeps.mk41v.vms02ib.9624.flac",
-   "file": "kglw2023-03-03_fob mk41v_96k_09.mp3",
+   "id": "kglw2023-03-03.fob.schoeps.cmc122L.sx-m2d2.9624.flac",
+   "file": "kglw2023-03-03_fob 122L_96k_09.mp3",
    "date": "2023-03-03",
    "venue": "gashouder, amsterdam, nl",
-   "seconds": 228,
+   "seconds": 231,
    "start": 0,
-   "gain": 5.5
+   "gain": 7
   },
   {
    "id": "kglw2023-06-12",
@@ -1782,7 +1782,7 @@
    "venue": "The Salt Shed",
    "seconds": 296,
    "start": 0,
-   "gain": -2
+   "gain": 1
   },
   {
    "id": "kglw2024-08-24.daank",
@@ -1791,16 +1791,16 @@
    "venue": "Jacobs Pavilion",
    "seconds": 228,
    "start": 0,
-   "gain": 7
+   "gain": 10
   },
   {
-   "id": "kglw2024-09-14.4ch-mix",
-   "file": "31-Inner Cell.mp3",
+   "id": "kglw2024-09-14.adk",
+   "file": "22 Inner Cell.mp3",
    "date": "2024-09-14",
    "venue": "The Gorge Amphitheater",
-   "seconds": 251,
-   "start": 26.6,
-   "gain": 4.5
+   "seconds": 265,
+   "start": 38.5,
+   "gain": 10.5
   },
   {
    "id": "kglw2024-11-02.bandcampbootlegger",
@@ -1809,7 +1809,7 @@
    "venue": "Rady Shell",
    "seconds": 227,
    "start": 0,
-   "gain": 2
+   "gain": 5
   },
   {
    "id": "kglw2025-05-31.diy",
@@ -1818,16 +1818,16 @@
    "venue": "Lukiškės Prison",
    "seconds": 251,
    "start": 0,
-   "gain": 3.5
+   "gain": 6.5
   },
   {
-   "id": "kglw2025-06-09.revinylize.mix.stereo",
+   "id": "kglw2025-06-09.revinylize.mix.surround",
    "file": "14. Inner Cell.mp3",
    "date": "2025-06-09",
    "venue": "Ancient Theatre",
    "seconds": 295,
    "start": 0,
-   "gain": 9.5
+   "gain": 16
   },
   {
    "id": "kglw2026-08-20",
@@ -1836,7 +1836,7 @@
    "venue": "Forest Hills",
    "seconds": 234,
    "start": 0,
-   "gain": 3
+   "gain": 6
   }
  ],
  "Tetrachromacy": [
@@ -1847,7 +1847,7 @@
    "venue": "Higher Ground",
    "seconds": 280,
    "start": 0,
-   "gain": 6.5
+   "gain": 9.5
   },
   {
    "id": "kglw2024-09-09.day_birds",
@@ -1856,7 +1856,117 @@
    "venue": "Red Rocks Ampitheatre",
    "seconds": 274,
    "start": 0,
-   "gain": 12
+   "gain": 15
+  }
+ ],
+ "Robot Stop": [
+  {
+   "id": "kglw2015-06-19",
+   "file": "05 - Robot Stop.mp3",
+   "date": "2015-06-19",
+   "venue": "Bowery Ballroom",
+   "seconds": 306,
+   "start": 15.5,
+   "gain": 5
+  },
+  {
+   "id": "gizz2016-02-28",
+   "file": "03-Robot Stop _.mp3",
+   "date": "2016-02-28",
+   "venue": "Z-Bau Galerie",
+   "seconds": 215,
+   "start": 9.8,
+   "gain": 5.5
+  },
+  {
+   "id": "kglw2016-12-09.ca14.flac2448",
+   "file": "14 - Robot Stop.mp3",
+   "date": "2016-12-09",
+   "venue": "Meredith Music Festival",
+   "seconds": 282,
+   "start": 15.9,
+   "gain": 9
+  },
+  {
+   "id": "kglw2017-04-14.sp-cmc-8.flac1644",
+   "file": "kgatlz-2017-04-14-coachella-aud-t04-robot-stop.mp3",
+   "date": "2017-04-14",
+   "venue": "Coachella",
+   "seconds": 317,
+   "start": 22.1,
+   "gain": 6
+  },
+  {
+   "id": "kglw2017-10-07.mysteryjack",
+   "file": "17 Robot Stop.mp3",
+   "date": "2017-10-07",
+   "venue": "Neurolux- Boise, ID",
+   "seconds": 334,
+   "start": 10.6,
+   "gain": 8
+  },
+  {
+   "id": "kglw2018-06-02.ccm4.flac16",
+   "file": "kglw2018-06-02t19.mp3",
+   "date": "2018-06-02",
+   "venue": "The Warfield",
+   "seconds": 423,
+   "start": 0,
+   "gain": 7
+  },
+  {
+   "id": "kglw2018-06-16.sbd-ccm4u.flac1644",
+   "file": "KingGizzard2018-06-16_nyctaper_t14.mp3",
+   "date": "2018-06-16",
+   "venue": "Brooklyn Steel",
+   "seconds": 306,
+   "start": 45.4,
+   "gain": 5.5
+  },
+  {
+   "id": "kglw2019-09-02.ca14.flac1648",
+   "file": "04-Robot Stop.mp3",
+   "date": "2019-09-02",
+   "venue": "The Tabernacle",
+   "seconds": 430,
+   "start": 66.4,
+   "gain": 5.5
+  },
+  {
+   "id": "kglw2023-06-01.sbd-flac",
+   "file": "02 Robot Stop.mp3",
+   "date": "2023-06-01",
+   "venue": "The Caverns",
+   "seconds": 204,
+   "start": 38.3,
+   "gain": -2.5
+  },
+  {
+   "id": "kglw2024-09-01.ToraTapesMX",
+   "file": "01 - Robot Stop.mp3",
+   "date": "2024-09-01",
+   "venue": "Northerly Island",
+   "seconds": 530,
+   "start": 0,
+   "gain": 3.5
+  },
+  {
+   "id": "kglw2024-11-17",
+   "file": "kglw202417.mp3",
+   "date": "2024-11-17",
+   "venue": "Mardi Gras World",
+   "seconds": 306,
+   "start": 7.3,
+   "gain": 6
+  },
+  {
+   "id": "kglw2026-08-14",
+   "file": "20 Robot Stop.mp3",
+   "date": "2026-08-14",
+   "venue": "Meadow Creek",
+   "seconds": 738,
+   "start": 0,
+   "gain": 14.5
   }
  ],
  "Gamma Knife": [
@@ -1867,7 +1977,7 @@
    "venue": "Bowery Ballroom",
    "seconds": 274,
    "start": 17.5,
-   "gain": 3.5
+   "gain": 6.5
   },
   {
    "id": "kglw2016-05-23",
@@ -1876,7 +1986,7 @@
    "venue": "The New Parish",
    "seconds": 242,
    "start": 5.1,
-   "gain": 7.5
+   "gain": 10.5
   },
   {
    "id": "kglw2017-04-01.mysteryjack",
@@ -1885,7 +1995,7 @@
    "venue": "Webster Hall- New York, NY",
    "seconds": 241,
    "start": 0,
-   "gain": 2.5
+   "gain": 5.5
   },
   {
    "id": "kglw2017-09-28.mysteryjack",
@@ -1894,7 +2004,7 @@
    "venue": "One Eyed Jacks",
    "seconds": 243,
    "start": 5.4,
-   "gain": 1.5
+   "gain": 4.5
   },
   {
    "id": "kglw2018-06-02.ccm4.flac16",
@@ -1903,7 +2013,7 @@
    "venue": "The Warfield",
    "seconds": 321,
    "start": 4.5,
-   "gain": -1.5
+   "gain": 1.5
   },
   {
    "id": "kglw2018-06-16.sbd-ccm4u.flac1644",
@@ -1912,7 +2022,7 @@
    "venue": "Brooklyn Steel",
    "seconds": 270,
    "start": 4.6,
-   "gain": 3
+   "gain": 6
   },
   {
    "id": "kglw2019-09-02.ca14.flac1648",
@@ -1921,7 +2031,7 @@
    "venue": "The Tabernacle",
    "seconds": 245,
    "start": 3.4,
-   "gain": 4
+   "gain": 7
   },
   {
    "id": "KGLW2022-04-28",
@@ -1930,16 +2040,16 @@
    "venue": "Bimbo's 365 Club",
    "seconds": 292,
    "start": 49.4,
-   "gain": 3.5
+   "gain": 6.5
   },
   {
-   "id": "kglw2023-06-07.mc930s",
-   "file": "kglw2023-06-0718.mp3",
+   "id": "kglw2023-06-07.Burns.Schoeps.MK41.Flac24",
+   "file": "KingGizz2023-06-07-t-14.mp3",
    "date": "2023-06-07",
-   "venue": "Red Rocks",
-   "seconds": 307,
-   "start": 5,
-   "gain": 11.5
+   "venue": "Red Rocks Amphitheatre",
+   "seconds": 312,
+   "start": 4.4,
+   "gain": 7.5
   },
   {
    "id": "kglw2024-05-26.dankski",
@@ -1948,16 +2058,16 @@
    "venue": "Liverpool Olympia",
    "seconds": 497,
    "start": 0,
-   "gain": 10
+   "gain": 13
   },
   {
-   "id": "kglw2024-09-05.24bit",
+   "id": "kglw2024-09-05.16bit",
    "file": "kglw2024-09-05d1t20_Gamma_Knife.mp3",
    "date": "2024-09-05",
    "venue": "The Factory St. Louis, MO",
    "seconds": 308,
    "start": 4.2,
-   "gain": 4
+   "gain": 7
   },
   {
    "id": "kglw2025-05-29.diy",
@@ -1966,7 +2076,7 @@
    "venue": "Lukiškės Prison",
    "seconds": 573,
    "start": 32.4,
-   "gain": 10.5
+   "gain": 13.5
   }
  ],
  "People-Vultures": [
@@ -1977,7 +2087,7 @@
    "venue": "HI-FI Indy, Indianapolis, IN, USA",
    "seconds": 346,
    "start": 0,
-   "gain": 4.5
+   "gain": 7.5
   },
   {
    "id": "kglw2017-01-25",
@@ -1986,7 +2096,7 @@
    "venue": "Bakehouse Studios",
    "seconds": 287,
    "start": 8.2,
-   "gain": -4
+   "gain": -1
   },
   {
    "id": "kglw2017-04-14.sp-cmc-8.flac1644",
@@ -1995,7 +2105,7 @@
    "venue": "Coachella",
    "seconds": 316,
    "start": 7.5,
-   "gain": 4
+   "gain": 7
   },
   {
    "id": "kglw2017-10-07.mysteryjack",
@@ -2004,7 +2114,7 @@
    "venue": "Neurolux- Boise, ID",
    "seconds": 311,
    "start": 9,
-   "gain": 6
+   "gain": 9
   },
   {
    "id": "kglw2018-06-16.sbd-ccm4u.flac1644",
@@ -2013,7 +2123,7 @@
    "venue": "Brooklyn Steel",
    "seconds": 312,
    "start": 7.8,
-   "gain": 2.5
+   "gain": 5.5
   },
   {
    "id": "kglw2020-02-21",
@@ -2022,7 +2132,7 @@
    "venue": "The Croxton",
    "seconds": 305,
    "start": 8.6,
-   "gain": 3
+   "gain": 6
   },
   {
    "id": "kglw2022-05-25",
@@ -2031,7 +2141,7 @@
    "venue": "Higher Ground",
    "seconds": 322,
    "start": 28.5,
-   "gain": 3.5
+   "gain": 6.5
   },
   {
    "id": "kglw2023-06-01.sbd-flac",
@@ -2040,7 +2150,7 @@
    "venue": "The Caverns",
    "seconds": 456,
    "start": 4.2,
-   "gain": -3.5
+   "gain": -0.5
   },
   {
    "id": "kglw2024-05-22.Hamburg24",
@@ -2049,7 +2159,7 @@
    "venue": "Stadtpark Open Air",
    "seconds": 409,
    "start": 8.5,
-   "gain": 7.5
+   "gain": 10.5
   },
   {
    "id": "Gizard2024-08-25.flac",
@@ -2058,7 +2168,7 @@
    "venue": "Megacorp Pavilion",
    "seconds": 469,
    "start": 0,
-   "gain": 9.5
+   "gain": 12.5
   },
   {
    "id": "kglw2024-09-09.late",
@@ -2067,7 +2177,7 @@
    "venue": "Red Rocks",
    "seconds": 488,
    "start": 0,
-   "gain": 9
+   "gain": 12
   },
   {
    "id": "kglw2025-06-10.revinylize.mix.stereo",
@@ -2076,7 +2186,7 @@
    "venue": "Ancient Theatre",
    "seconds": 539,
    "start": 29.6,
-   "gain": 9.5
+   "gain": 12.5
   }
  ],
  "Wah Wah": [
@@ -2087,7 +2197,7 @@
    "venue": "Baby's All Right",
    "seconds": 225,
    "start": 11.7,
-   "gain": 2
+   "gain": 5
   },
   {
    "id": "kglw2018-06-20.ca14.flac1644",
@@ -2096,7 +2206,7 @@
    "venue": "Variety Playhouse",
    "seconds": 213,
    "start": 0,
-   "gain": 2.5
+   "gain": 5.5
   },
   {
    "id": "kglw2020-02-21",
@@ -2105,16 +2215,16 @@
    "venue": "The Croxton",
    "seconds": 232,
    "start": 0,
-   "gain": 2.5
+   "gain": 5.5
   },
   {
-   "id": "kglw2022-10-02",
-   "file": "03 Wah wah.mp3",
+   "id": "kglw2022-10-02.adk",
+   "file": "02 Wah Wah.mp3",
    "date": "2022-10-02",
    "venue": "William Randolph Hearst Greek Theatre",
    "seconds": 371,
-   "start": 2.8,
-   "gain": 14
+   "start": 31.7,
+   "gain": 17
   },
   {
    "id": "kglw2023-06-04",
@@ -2123,7 +2233,7 @@
    "venue": "The Caverns Ampitheater Outdoor Stage",
    "seconds": 1665,
    "start": 0,
-   "gain": 14
+   "gain": 17
   },
   {
    "id": "kglw2023-06-18.cbof",
@@ -2132,7 +2242,7 @@
    "venue": "Remlinger Farms",
    "seconds": 159,
    "start": 0,
-   "gain": 0.5
+   "gain": 3.5
   },
   {
    "id": "kglw2024-03-18",
@@ -2141,7 +2251,7 @@
    "venue": "Teatro Vorterix",
    "seconds": 487,
    "start": 0,
-   "gain": -1.5
+   "gain": 1.5
   },
   {
    "id": "kglw2024-05-29.dankski",
@@ -2150,16 +2260,16 @@
    "venue": "The Civic Hall",
    "seconds": 1200,
    "start": 0,
-   "gain": 8.5
+   "gain": 11.5
   },
   {
-   "id": "kglw2024-09-09.late",
-   "file": "kglw2024-09-09-late_06.mp3",
+   "id": "kglw2024-09-09.LATESHOW-mysteryjackofficial",
+   "file": "06 Wah Wah.mp3",
    "date": "2024-09-09",
-   "venue": "Red Rocks",
-   "seconds": 588,
-   "start": 6,
-   "gain": 9.5
+   "venue": "Red Rocks Amphitheatre",
+   "seconds": 632,
+   "start": 0,
+   "gain": 16
   },
   {
    "id": "kglw2024-11-15",
@@ -2168,7 +2278,7 @@
    "venue": "Germania Insurance Ampitheater",
    "seconds": 472,
    "start": 0,
-   "gain": 11
+   "gain": 14
   },
   {
    "id": "kglw2025-08-02",
@@ -2177,7 +2287,7 @@
    "venue": "Forest Hills Stadium",
    "seconds": 401,
    "start": 0,
-   "gain": 11
+   "gain": 14
   },
   {
    "id": "kglw2026-08-16.Full-Three-Shows-discocape",
@@ -2186,7 +2296,7 @@
    "venue": "Meadow Creek",
    "seconds": 447,
    "start": 31.3,
-   "gain": 2
+   "gain": 5
   }
  ]
 }
