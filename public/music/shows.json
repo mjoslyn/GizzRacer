@@ -345,9 +345,9 @@
   "venue": "Phoenix Theater"
  },
  {
-  "id": "KGLW2022-04-28",
+  "id": "kglw2022-04-28.ak50",
   "date": "2022-04-28",
-  "venue": "Bimbo's 365 Club"
+  "venue": "Bimbo's 365"
  },
  {
   "id": "kglw2022-05-22",
@@ -380,7 +380,7 @@
   "venue": "Desert Daze"
  },
  {
-  "id": "kglw2022-10-02.adk",
+  "id": "kglw2022-10-02",
   "date": "2022-10-02",
   "venue": "William Randolph Hearst Greek Theatre"
  },
@@ -435,9 +435,9 @@
   "venue": "Orpheum Theater"
  },
  {
-  "id": "kglw2022-10-28.incomplete",
+  "id": "kglw2022-10-28",
   "date": "2022-10-28",
-  "venue": "Waller Creek Amphitheater at Stubb's Bar-B-Q"
+  "venue": "Stubb's BBQ Waller Creek Amphitheater"
  },
  {
   "id": "kglw2022-10-29",
@@ -470,14 +470,14 @@
   "venue": "TSB Stadium"
  },
  {
-  "id": "kglw2023-03-02",
+  "id": "kglw2023-03-02.dank",
   "date": "2023-03-02",
-  "venue": "Le Zénith"
+  "venue": "Zenith La Villette"
  },
  {
-  "id": "kglw2023-03-03.fob.schoeps.cmc122L.sx-m2d2.9624.flac",
+  "id": "kglw2023-03-03.dank",
   "date": "2023-03-03",
-  "venue": "gashouder, amsterdam, nl"
+  "venue": "Gashouder"
  },
  {
   "id": "kglw2023-03-04.daank",
@@ -505,9 +505,9 @@
   "venue": "Den Grå Hal"
  },
  {
-  "id": "kglw2023-03-18",
+  "id": "kglw2023-03-18.kglw2023-03-18.aud2.flac16",
   "date": "2023-03-18",
-  "venue": "Schlachthof Wiesbaden"
+  "venue": "Schlachthof, Wiesbaden"
  },
  {
   "id": "kglw2023-03-20",
@@ -645,12 +645,12 @@
   "venue": "Liverpool Olympia"
  },
  {
-  "id": "kglw2024-05-27.dankski",
+  "id": "kglw2024-05-27",
   "date": "2024-05-27",
   "venue": "The Usher Hall"
  },
  {
-  "id": "kglw2024-05-29",
+  "id": "kglw2024-05-29.dankski",
   "date": "2024-05-29",
   "venue": "The Civic Hall"
  },
@@ -660,7 +660,7 @@
   "venue": "Bristol Beacon"
  },
  {
-  "id": "kglw2024-05-31.Brighton24",
+  "id": "kglw2024-05-31",
   "date": "2024-05-31",
   "venue": "Brighton Dome"
  },
@@ -685,7 +685,7 @@
   "venue": "The Stage at Suffolk Downs"
  },
  {
-  "id": "kglw2024-08-20.mk4v.cmc1k.sx-r4.flac",
+  "id": "kglw2024-08-20.SBD",
   "date": "2024-08-20",
   "venue": "Thompson's Point"
  },
@@ -755,12 +755,12 @@
   "venue": "The Astro Amphitheater"
  },
  {
-  "id": "kglw2024-09-08.bandcampbootlegger",
+  "id": "kglw2024-09-08.SBD",
   "date": "2024-09-08",
-  "venue": "Red Rocks Amphitheatre"
+  "venue": "Red Rocks Ampitheatre"
  },
  {
-  "id": "kglw2024-09-09.lateshowbandcampbootlegger",
+  "id": "kglw2024-09-09.earlyshowbandcampbootlegger",
   "date": "2024-09-09",
   "venue": "Red Rocks Amphitheatre"
  },
@@ -775,9 +775,9 @@
   "venue": "Pacific Coliseum"
  },
  {
-  "id": "KGLW2024-09-14.robotstart",
+  "id": "kglw2024-09-14.bandcampbootlegger",
   "date": "2024-09-14",
-  "venue": "The Gorge"
+  "venue": "The Gorge Amphitheater"
  },
  {
   "id": "kglw2024-11-01.bandcampbootlegger",
@@ -960,9 +960,9 @@
   "venue": "Ravinia Festival"
  },
  {
-  "id": "kglw2025-08-08.dpa4027",
+  "id": "kglw2025-08-08",
   "date": "2025-08-08",
-  "venue": "Ford Amphitheater(Colorado Springs, CO)"
+  "venue": "Ford Amphitheater"
  },
  {
   "id": "kglw2025-08-10",
@@ -1090,14 +1090,14 @@
   "venue": "Forest Hills Stadium"
  },
  {
-  "id": "kglw2026-08-22.birds",
+  "id": "kglw2026-08-22",
   "date": "2026-08-22",
   "venue": "Forest Hills Stadium"
  },
  {
-  "id": "kglw2026-08-23.Birds",
+  "id": "kglw2026-08-23",
   "date": "2026-08-23",
-  "venue": "Under the 'K' Bridge"
+  "venue": "Under The K Bridge"
  },
  {
   "id": "kglw2026-10-17.h1n.flac16",
@@ -1105,7 +1105,7 @@
   "venue": "carpark opposite Croxton Park Hotel"
  },
  {
-  "id": "kglw2026-10-18.h1n.flac24",
+  "id": "kglw2026-10-18.h1n.flac16",
   "date": "2026-10-18",
   "venue": "carpark opposite Croxton Park Hotel"
  }

@@ -118,4 +118,6 @@ The Polygondwanaland Cup's remixes and Polygondwanaland's are transcribed from t
 SEQBABY_SEED_DIR=/path/to/that/folder node tools/render-soundtrack.mjs tetrachromacy-remix
 ```
 
+A new track's song needs live recordings too, for Track song and Random song: add it to `TRACK_SONGS` (`src/audio/songs.ts`), then run `NODE_USE_ENV_PROXY=1 node tools/bootlegs.mjs` and `NODE_PATH=$(npm root -g) NODE_USE_ENV_PROXY=1 node tools/bootleg-starts.mjs`. The first re-picks every song's recordings, so keep the songs that already had some (and their measured starts) and take only the new ones; `tests/bootlegs.test.ts` fails for a track whose song has none.
+
 The Crumbling Castle remix plays on Crumbling Castle (`crumbling-castle-remix`, named by its song in seqbaby-seed's `gizzracer/remix-live.mjs`); Polygondwanaland's cue belongs to the title song above.

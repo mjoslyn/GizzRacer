@@ -11,8 +11,15 @@ describe('live bootlegs', () => {
   it("are keyed by the tracks' songs (and story mode's), and most songs have some", () => {
     const songs = new Set([...Object.values(TRACK_SONGS), ...STORY_SONGS.flat()].map((s) => s.title));
     for (const song of Object.keys(catalogue)) expect(songs.has(song), song).toBe(true);
-    const tracks = Object.values(TRACK_SONGS).filter((s) => catalogue[s.title]?.length).length;
-    expect(tracks).toBeGreaterThanOrEqual(24);
+  });
+
+  it("every track's song has live recordings (a new track's song goes in the catalogue: tools/bootlegs.mjs, then tools/bootleg-starts.mjs)", () => {
+    // Never played live: those tracks race to their remix on Track song.
+    const NEVER_LIVE = new Set(['Polygondwanaland', 'Catching Smoke']);
+    for (const [id, s] of Object.entries(TRACK_SONGS)) {
+      if (NEVER_LIVE.has(s.title)) continue;
+      expect(catalogue[s.title]?.length, `${id}: ${s.title}`).toBeGreaterThan(0);
+    }
   });
 
   it("every story chapter has songs of its own played live, enough for both its races", () => {
