@@ -192,7 +192,7 @@ export function buildTrackView(track: Track): TrackView {
     group.add(g);
     const def = i > 0 ? track.def.branches[i - 1] : null;
     if (def?.openOn) {
-      g.add(roadPaint(ribbon, theme.decor));
+      g.add(roadPaint(ribbon, theme.decor, theme.edgeLine));
       lapRoads.push(lapRoad(def, ribbon, g));
     }
   });

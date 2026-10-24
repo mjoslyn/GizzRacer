@@ -275,7 +275,7 @@ export function trackDetail(track: Track, theme: Theme, animated: ((time: number
 
   // Roads that are only there on some laps carry their own paint (render/trackView.ts) and no posts or boards.
   const fixed = ribbons.filter((_, i) => i === 0 || !track.def.branches[i - 1].openOn);
-  for (const r of fixed) g.add(roadPaint(r, theme.decor));
+  for (const r of fixed) g.add(roadPaint(r, theme.decor, theme.edgeLine));
   g.add(edgeProps(fixed, style, abyss, clear, animated));
   g.add(cornerBoards(fixed, abyss, clear));
   if (!abyss) {
@@ -296,11 +296,12 @@ export function trackDetail(track: Track, theme: Theme, animated: ((time: number
  * racing line wears into any hard surface, swinging to the inside of each
  * corner.
  */
-export function roadPaint(ribbon: Ribbon, decor: DecorKind): THREE.Group {
+export function roadPaint(ribbon: Ribbon, decor: DecorKind, edgeLine?: number): THREE.Group {
   const g = new THREE.Group();
   const sp = ribbon.spline;
   const segs = sp.closed ? sp.count : sp.count - 1;
   const lines: number[] = [];
+  const edges: number[] = [];
   const dashes: number[] = [];
   const rubber: number[] = [];
   const lift = 0.045;
@@ -332,8 +333,10 @@ export function roadPaint(ribbon: Ribbon, decor: DecorKind): THREE.Group {
     const surface = ribbon.surfaceAt(i);
     const hwi = ribbon.halfWidth[i];
     const hwj = ribbon.halfWidth[j];
+    // A dark world's edge lines go down every road, walled or not, whatever it's made of.
+    if (edgeLine !== undefined) for (const side of [-1, 1]) strip(edges, i, j, side * (hwi - 0.8), side * (hwi - 0.3), side * (hwj - 0.8), side * (hwj - 0.3));
     if (paintable.has(surface)) {
-      for (const side of [-1, 1]) strip(lines, i, j, side * (hwi - 0.55), side * (hwi - 0.3), side * (hwj - 0.55), side * (hwj - 0.3));
+      if (edgeLine === undefined) for (const side of [-1, 1]) strip(lines, i, j, side * (hwi - 0.55), side * (hwi - 0.3), side * (hwj - 0.55), side * (hwj - 0.3));
       // Dashes: 3 m on, 3 m off, on roads wide enough to have lanes.
       if (hwi > 5.5 && Math.floor(sp.dist[i] / 3) % 2 === 0) strip(dashes, i, j, -0.12, 0.12);
     }
@@ -354,6 +357,7 @@ export function roadPaint(ribbon: Ribbon, decor: DecorKind): THREE.Group {
   const decal = { side: THREE.DoubleSide, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 };
   const paintColor = decor === 'desert' ? 0xfff0b0 : 0xf4f4f0;
   if (lines.length) g.add(mesh(lines, new THREE.MeshLambertMaterial({ color: paintColor, ...decal })));
+  if (edges.length) g.add(mesh(edges, new THREE.MeshBasicMaterial({ color: edgeLine, ...decal })));
   if (dashes.length) g.add(mesh(dashes, new THREE.MeshLambertMaterial({ color: 0xffd23a, ...decal })));
   if (rubber.length) {
     const sandy = decor === 'desert' || decor === 'lagoon';

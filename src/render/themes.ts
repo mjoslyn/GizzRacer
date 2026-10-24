@@ -37,6 +37,8 @@ export interface Theme {
   storm?: boolean;
   /** Dark worlds: the road glows this much with its own texture, and its curbs half again, so the way stays readable. */
   roadGlow?: number;
+  /** Low-contrast worlds (a dark road on dark ground, an orange road on orange dust): a bright line down each edge of every road, unlit, in this colour. */
+  edgeLine?: number;
 }
 
 export const THEMES: Record<ThemeId, Theme> = {
@@ -87,6 +89,7 @@ export const THEMES: Record<ThemeId, Theme> = {
     skyCycle: false,
     dust: 0x8a7a76,
     barrier: { map: () => tex.stoneTexture([40, 32, 34], [96, 80, 74]), crawl: false },
+    edgeLine: 0xffd060,
   },
   jungle: {
     sky: { zenith: '#1a5a7a', high: '#3a8aa0', low: '#a0d0c0', horizon: '#e0f0d8', below: '#6a9a5a', ground: '#2a4a20', cloud: '240,250,245', clouds: 40 },
@@ -185,6 +188,7 @@ export const THEMES: Record<ThemeId, Theme> = {
     dust: 0x2a1c18,
     barrier: { map: tex.rustTexture, crawl: false },
     roadGlow: 0.35,
+    edgeLine: 0xffe08a,
   },
   // Mars for the Rich: a red planet gone wrong, the sky the colour of rust and blood, the colony burning.
   mars: {
@@ -202,6 +206,7 @@ export const THEMES: Record<ThemeId, Theme> = {
     skyCycle: false,
     dust: 0xd07040,
     barrier: { map: tex.corrugatedTexture, crawl: false },
+    edgeLine: 0xfff0d8,
   },
   // Supercell: flattened prairie under a storm the size of a county, green-black light, rain, the funnel coming.
   storm: {
@@ -220,6 +225,7 @@ export const THEMES: Record<ThemeId, Theme> = {
     dust: 0x9aa8a8,
     barrier: { map: () => tex.stoneTexture([90, 96, 92], [160, 168, 160]), crawl: false },
     storm: true,
+    edgeLine: 0xe8f4d0,
   },
   // The Lord of Lightning: a road of starlight over nothing, planets hanging dead, the cyborg's eye watching.
   void: {
@@ -394,6 +400,7 @@ export const THEMES: Record<ThemeId, Theme> = {
     skyCycle: false,
     dust: 0x8a8078,
     barrier: { map: tex.castleWallTexture, crawl: false },
+    edgeLine: 0xf8ecc8,
   },
   // The Castle in the Air: a white castle on the clouds in a golden afternoon, nothing below.
   skycastle: {
@@ -468,6 +475,7 @@ export const THEMES: Record<ThemeId, Theme> = {
     dust: 0x8a8074,
     barrier: { map: tex.steelWallTexture, crawl: false },
     roadGlow: 0.12,
+    edgeLine: 0xffa040,
   },
   // Gamma Knife: a black operating theatre lit green and violet, every beam meeting on one point.
   gamma: {
@@ -541,6 +549,7 @@ export const THEMES: Record<ThemeId, Theme> = {
     dust: 0x8a8070,
     barrier: { map: tex.rustTexture, crawl: false },
     roadGlow: 0.1,
+    edgeLine: 0xffd23a,
   },
   // Mars for the Rich: the rich's colony under glass, gleaming white and gold on the red dust, a clean butterscotch sky.
   dome: {
@@ -595,5 +604,6 @@ export const THEMES: Record<ThemeId, Theme> = {
     dust: 0x3a1a14,
     barrier: { map: tex.hellWallTexture, crawl: false },
     roadGlow: 0.3,
+    edgeLine: 0xffe070,
   },
 };
