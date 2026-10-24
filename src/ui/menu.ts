@@ -2,6 +2,7 @@ import { dailyLabel, dailyParams } from '../core/daily';
 import { cupTrophies, progress, raceKey, unlocks, type Unlocks } from '../core/progress';
 import { SOUNDTRACKS, SOUNDTRACK_BLURBS, SOUNDTRACK_NAMES, settings, updateSettings } from '../core/settings';
 import type { SavedTrack } from '../core/savedTracks';
+import { CPU_DIFFICULTIES } from '../ai/cpuDriver';
 import { MODE_BLURBS, MODE_NAMES, type RaceMode } from './modes';
 import { chosenShow, onShows, randomShow, showSelect, shows, stepShow } from '../audio/shows';
 import { formatTime } from './hud';
@@ -49,7 +50,7 @@ const SKILL_LEVEL_BLURBS = ["As Chapter I plays it: room to learn the game", 'As
 /** Infinite's tour moves on after this many laps of the leader (or a song of a Live set). */
 export const TOUR_LAPS = 3;
 
-export type MenuRow = 'mode' | 'track' | 'gen' | 'theme' | 'complexity' | 'length' | 'racer' | 'engine' | 'mirror' | 'sound' | 'show' | 'watch' | 'skill' | 'level';
+export type MenuRow = 'mode' | 'track' | 'gen' | 'theme' | 'complexity' | 'length' | 'racer' | 'engine' | 'mirror' | 'sound' | 'show' | 'watch' | 'cpus' | 'skill' | 'level';
 const TROPHY_GLYPH = { gold: '&#9733;', silver: '&#9733;', bronze: '&#9733;' } as const;
 const STAT_NAMES = ['speed', 'accel', 'weight', 'handling'] as const;
 const LENGTH_NAMES = { short: 'Short', medium: 'Medium', long: 'Long' };
@@ -69,12 +70,7 @@ export function availableClasses(u: Unlocks = unlocks(progress())): EngineClass[
 /** The picker's screens, in order; a mode without a track screen (Online picks it in the room) skips it. */
 export type MenuStep = 'mode' | 'track' | 'racer' | 'engine';
 const STEP_TITLES: Record<MenuStep, string> = { mode: 'CHOOSE A MODE', track: 'PICK A TRACK', racer: 'PICK A RACER', engine: 'PICK A SPEED' };
-const CLASS_BLURBS: Record<EngineClass, string> = {
-  '50cc': 'Easy: slow karts, forgiving corners',
-  '100cc': 'The standard race',
-  '150cc': 'Fast: the real thing',
-  '200cc': 'Flat out: faster than the tracks were drawn for',
-};
+const CPU_NAMES = { easy: 'Easy', normal: 'Normal', hard: 'Hard' } as const;
 
 /**
  * Mode, track, racer and class picker (and the track generator's dials),
@@ -199,9 +195,12 @@ export class Menu {
       default: {
         // The sound to race to, last: the same choice as Settings > Soundtrack, and for a Live set, which show.
         const sound: MenuRow[] = settings().soundtrack === 'show' ? ['sound', 'show'] : ['sound'];
-        // A skill game makes its own sound, but the Deadstick Landing is flown to the soundtrack.
+        // A skill game makes its own sound, but the Deadstick Landing is flown to the soundtrack. There are no CPUs to set.
         if (m === 'skills') return this.choice.skill === 'deadstick' ? ['level', ...sound] : ['level'];
-        return unlocks(progress()).mirror && (m === 'grandPrix' || m === 'single') ? ['engine', 'mirror', ...sound] : ['engine', ...sound];
+        // How hard the CPUs race, wherever there are CPUs here to race (not Time Trial; online the room decides).
+        const cpus: MenuRow[] = m === 'timeTrial' || m === 'online' ? [] : ['cpus'];
+        const mirror: MenuRow[] = unlocks(progress()).mirror && (m === 'grandPrix' || m === 'single') ? ['mirror'] : [];
+        return ['engine', ...cpus, ...mirror, ...sound];
       }
     }
   }
@@ -315,6 +314,7 @@ export class Menu {
       }
     } else if (row === 'mirror') c.mirror = !c.mirror;
     else if (row === 'sound') updateSettings({ soundtrack: step(SOUNDTRACKS, settings().soundtrack) });
+    else if (row === 'cpus') updateSettings({ cpuDifficulty: step(CPU_DIFFICULTIES, settings().cpuDifficulty) });
     else if (row === 'show') updateSettings({ liveShow: stepShow(shows(), settings().liveShow, dir) });
     else if (row === 'theme') dial(() => (g.params = { ...g.params, theme: step(GEN_THEMES, g.params.theme) }));
     else if (row === 'complexity') dial(() => (g.params = { ...g.params, complexity: Math.min(GEN_COMPLEXITY_MAX, Math.max(1, g.params.complexity + dir)) }));
@@ -377,10 +377,10 @@ export class Menu {
         (rows.includes('sound') ? line('sound', 'Sound', esc(SOUNDTRACK_NAMES[settings().soundtrack]), `<div class="menu-cup-tracks">${esc(SOUNDTRACK_BLURBS[settings().soundtrack])}</div>`, true) : '') +
         (rows.includes('show') ? this.showRows(line) : '');
     } else {
-      const classes = availableClasses();
       body =
         // An arrow switcher, as the mode and racer are, over the classes unlocked.
-        line('engine', 'Speed', c.engine, `<div class="menu-cup-tracks menu-mode-blurb">${esc(CLASS_BLURBS[c.engine])}</div><div class="menu-cup-tracks">${classes.indexOf(c.engine) + 1} of ${classes.length}${classes.length < ENGINE_CLASSES.length ? ' &middot; 200cc unlocks with gold at 150cc' : ''}</div>`) +
+        line('engine', 'Speed', c.engine) +
+        (rows.includes('cpus') ? line('cpus', 'CPUs', CPU_NAMES[settings().cpuDifficulty], '', true) : '') +
         (rows.includes('mirror') ? line('mirror', 'Mirror', c.mirror ? 'ON' : 'OFF', '<div class="menu-cup-tracks">Every track flipped left for right</div>', true) : '') +
         line('sound', 'Sound', esc(SOUNDTRACK_NAMES[settings().soundtrack]), `<div class="menu-cup-tracks">${esc(SOUNDTRACK_BLURBS[settings().soundtrack])}</div>`, true) +
         (rows.includes('show') ? this.showRows(line) : '') +
