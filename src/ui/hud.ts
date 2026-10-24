@@ -24,12 +24,15 @@ function renderTable(t: Table): string {
         `<div class="hud-standing${r.player ? ' me' : ''}"><span class="pos">${r.place}</span><span class="dot" style="background:${r.color}"></span><span class="name">${r.name}</span><span class="time">${r.value}${r.extra ? ` <small>${r.extra}</small>` : ''}</span></div>`,
     )
     .join('');
-  return (
-    `<div class="hud-standings-head hud-big">${t.title}</div>` +
-    (t.note ? `<div class="hud-standings-note">${t.note}</div>` : '') +
-    rows +
-    `<div class="hud-standings-next">${'ontouchstart' in window ? 'tap' : 'press any key'} to continue</div>`
-  );
+  return `<div class="hud-standings-head hud-big">${t.title}</div>` + (t.note ? `<div class="hud-standings-note">${t.note}</div>` : '') + rows;
+}
+
+/** The buttons under a table, kept apart from the rows (which change as karts finish) so a tap never lands on a rebuilt button. */
+function renderActions(t: Table | null): string {
+  const touch = 'ontouchstart' in window;
+  if (!t) return '';
+  const buttons = (t.actions ?? []).map((a) => `<button data-table-act="${a.id}">${a.label}${a.key && !touch ? ` <kbd>${a.key}</kbd>` : ''}</button>`).join('');
+  return (buttons ? `<div class="hud-standings-actions">${buttons}</div>` : '') + `<div class="hud-standings-next">${touch ? 'tap' : 'press any key'} to continue</div>`;
 }
 
 export function formatTime(seconds: number): string {
@@ -49,6 +52,13 @@ export interface TableRow {
   player: boolean;
 }
 
+/** A button under a results-style panel (e.g. the next race with the same song); `key` is its letter on a keyboard. */
+export interface TableAction {
+  id: string;
+  label: string;
+  key?: string;
+}
+
 /** A results-style panel: race results, cup standings, or the podium banner. */
 export interface Table {
   kind: 'results' | 'cup' | 'podium';
@@ -56,6 +66,8 @@ export interface Table {
   /** Line under the title. */
   note?: string;
   rows: TableRow[];
+  /** Buttons under the rows; any other key or tap still continues. */
+  actions?: TableAction[];
 }
 
 export interface HudData {
@@ -159,6 +171,8 @@ export type PauseAction = 'resume' | 'restart' | 'restartNow' | 'keepRacing' | '
 export class Hud {
   readonly minimap = new Minimap();
   onPauseAction: ((action: PauseAction) => void) | null = null;
+  /** A button under the results or standings (Table.actions), by id. */
+  onTableAction: ((id: string) => void) | null = null;
   private readonly el = document.createElement('div');
   private readonly lap: HTMLElement;
   private readonly time: HTMLElement;
@@ -174,6 +188,9 @@ export class Hud {
   private readonly position: HTMLElement;
   private readonly count: HTMLElement;
   private readonly standings: HTMLElement;
+  private readonly standingsBody: HTMLElement;
+  private readonly standingsFoot: HTMLElement;
+  private lastActions = '';
   private readonly title: HTMLElement;
   private readonly itemSlot: HTMLElement;
   private readonly spareSlot: HTMLElement;
@@ -237,7 +254,7 @@ export class Hud {
       </div>
       <div class="hud-count hud-big"></div>
       <div class="hud-banner hud-big">FINISH!</div>
-      <div class="hud-standings"></div>
+      <div class="hud-standings"><div class="hud-standings-body"></div><div class="hud-standings-foot"></div></div>
       <div class="hud-pause">
         <div class="hud-big">PAUSED</div>
         <div class="hud-pause-by"></div>
@@ -284,6 +301,8 @@ export class Hud {
     this.position = q('.hud-position');
     this.count = q('.hud-count');
     this.standings = q('.hud-standings');
+    this.standingsBody = q('.hud-standings-body');
+    this.standingsFoot = q('.hud-standings-foot');
     this.title = q('.hud-title');
     q('[data-title="settings"]').addEventListener('click', () => this.onTitleSettings?.());
     q('[data-title="credits"]').addEventListener('click', () => this.onTitleCredits?.());
@@ -306,6 +325,13 @@ export class Hud {
     this.confirmEl.addEventListener('click', (e) => {
       const act = (e.target as HTMLElement).closest<HTMLElement>('[data-act]')?.dataset.act as PauseAction | undefined;
       if (act) this.onPauseAction?.(act);
+    });
+    this.standings.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-table-act]');
+      if (!btn) return;
+      // Off the button at once, or the next key (Space, the hop) would press it again.
+      btn.blur();
+      this.onTableAction?.(btn.dataset.tableAct!);
     });
     this.pause.addEventListener('click', (e) => {
       const act = (e.target as HTMLElement).closest<HTMLElement>('[data-act]')?.dataset.act as PauseAction | undefined;
@@ -417,7 +443,12 @@ export class Hud {
     const html = d.table ? renderTable(d.table) : '';
     if (html !== this.lastTable) {
       this.lastTable = html;
-      this.standings.innerHTML = html;
+      this.standingsBody.innerHTML = html;
+    }
+    const foot = renderActions(d.table ?? null);
+    if (foot !== this.lastActions) {
+      this.lastActions = foot;
+      this.standingsFoot.innerHTML = foot;
     }
     this.pause.classList.toggle('show', d.paused);
     this.pause.classList.toggle('online', d.online);

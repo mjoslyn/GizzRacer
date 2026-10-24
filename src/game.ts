@@ -53,7 +53,7 @@ import { findBends, nextBend, type Bend } from './tracks/turns';
 import { pointAt } from './tracks/spline';
 import { generateTrack, trackId } from './tracks/generator';
 import { Track, inPit, type TrackDef } from './tracks/track';
-import { Hud, formatTime, type HudData, type Table, type TableRow } from './ui/hud';
+import { Hud, formatTime, type HudData, type Table, type TableAction, type TableRow } from './ui/hud';
 import { deleteSaved, findSaved, saveTrack, savedTracks } from './core/savedTracks';
 import { DAILY_SLOT, Menu, SKILL_LEVELS, TOUR_LAPS, chosenCup, newSeed, type MenuChoice } from './ui/menu';
 import { SaveTrackPanel } from './ui/saveTrack';
@@ -389,6 +389,7 @@ onSettings((s) => {
   if (s.soundtrack === 'remix' && radio.playing) {
     radio.stop();
     liveRace = false;
+    heldSong = false;
     music.play(mode === 'race' ? remixCues(raceMusic().lap) : remixCues('title'));
   } else if (s.soundtrack === 'show') {
     // A Full set picked, or another show: it plays at once, wherever you are, and stays.
@@ -564,8 +565,9 @@ function loadTrack(entry: TrackEntry): void {
  * One kart per racer: the Grand Prix grid, the default grid for a single
  * race, the player alone in Time Trial, or all CPUs for the attract mode.
  */
-function startRace(withPlayer: boolean): void {
+function startRace(withPlayer: boolean, keepSong = false): void {
   const net = withPlayer ? online : null;
+  heldSong = withPlayer && keepSong && !net;
   if (withPlayer && !net && track.def.id !== raceTrack().id) loadTrack(raceTrack());
   const trial = withPlayer && !net && choice.mode === 'timeTrial';
   const infinite = withPlayer && !net && choice.mode === 'infinite';
@@ -646,7 +648,8 @@ function startRace(withPlayer: boolean): void {
   liveRace = false;
   if (withPlayer) {
     setMode('race');
-    startRaceMusic();
+    // Same song: the music from the results plays on, as it is.
+    if (!heldSong) startRaceMusic();
   }
 }
 
@@ -1580,6 +1583,8 @@ function updateSounds(dt: number): void {
 
 /** The live soundtrack has this race's music (it falls back to the game's own by itself if a stream won't play). */
 let liveRace = false;
+/** Same song (the buttons between races): the song from the race before plays on through this one, unchanged. */
+let heldSong = false;
 
 /**
  * Full set: the show plays for all the game's music, from the moment it's
@@ -1636,6 +1641,8 @@ function raceMusic(): TrackDef['music'] {
  * recording of any song (Random song); or the Full set, kept going.
  */
 function startRaceMusic(): void {
+  heldSong = false;
+  remixNow = null;
   // A Full set is all the music, the Deadstick Landing's too.
   if (setPlaying()) return ensureSet();
   if (deadstickMusic()) {
@@ -1693,12 +1700,10 @@ function nowPlaying(): string | null {
 
 function updateMusic(p: RaceKart): void {
   const { lap, finalLap } = raceMusic();
-  if (p.finishTime !== null) {
-    if (!setPlaying()) music.play('podium');
-  }
-  // A live recording plays the whole race through: no final-lap cut.
-  else if (liveRace) return;
-  else if (race.laps > 1 && p.laps.lap === race.laps - 1) music.play(remixCues(finalLap ?? `${lap}-final-lap`).filter((c) => finalLap || c !== `${lap}-final-lap`));
+  // Over the line, the song plays on through the results and standings (the podium has its own).
+  // A live recording, or a song held from the race before, plays the whole race through: no final-lap cut.
+  if (p.finishTime !== null || liveRace || heldSong) return;
+  if (race.laps > 1 && p.laps.lap === race.laps - 1) music.play(remixCues(finalLap ?? `${lap}-final-lap`).filter((c) => finalLap || c !== `${lap}-final-lap`));
   else music.play(remixCues(lap));
 }
 
@@ -1885,11 +1890,11 @@ function table(): Table | null {
   if (mode === 'results') {
     const title = online ? `ROOM ${online.client.code} RESULTS` : story ? `${story.actDef.chapter.toUpperCase()} · ${story.race.boss ? 'BOSS DUEL' : `RACE ${story.race.index + 1}`}` : gp ? `RACE ${gp.round + 1}/${gp.tracks.length} RESULTS` : choice.mode === 'timeTrial' ? 'TIME TRIAL' : 'RESULTS';
     const rows = online ? onlineRows(kartRow) : finishOrder().map(kartRow);
-    return { kind: 'results', title, note: trialNote || undefined, rows };
+    return { kind: 'results', title, note: trialNote || undefined, rows, actions: betweenActions() };
   }
   if (mode === 'standings' && gp) {
     const next = gp.finished ? 'Final standings' : `Next: ${TRACK_LIST[gp.trackIndex].name}`;
-    return { kind: 'cup', title: 'CUP STANDINGS', note: next, rows: cupRows(gp.entries.length) };
+    return { kind: 'cup', title: 'CUP STANDINGS', note: next, rows: cupRows(gp.entries.length), actions: betweenActions() };
   }
   if (mode === 'podium' && gp) {
     const champ = gp.standings()[0];
@@ -1899,6 +1904,72 @@ function table(): Table | null {
   }
   return null;
 }
+
+/**
+ * The buttons between races, the default first (any key or tap does it):
+ * in a Grand Prix, on to the next race with its own song or with the one
+ * playing; after a single race, a time trial or a generated track, the menu,
+ * or the same track again (or the next one) with the song playing on. A
+ * Full set plays on anyway, so there they don't say "same song". None
+ * online, on a story run or in practice, which have their own way on.
+ */
+function betweenActions(): TableAction[] | undefined {
+  if (online || story || practice) return undefined;
+  const set = setPlaying();
+  const same = set ? '' : ', SAME SONG';
+  const song: TableAction = { id: 'song', label: 'NEXT SONG', key: 'N' };
+  if (gp) {
+    const more = mode === 'results' ? !gp.lastRound : !gp.finished;
+    if (!more) return undefined;
+    const next: TableAction = { id: 'next', label: mode === 'results' ? 'CONTINUE' : 'NEXT RACE' };
+    return set ? [next, song] : [next, { id: 'again', label: `NEXT RACE${same}`, key: 'S' }, song];
+  }
+  if (mode !== 'results' || choice.mode === 'infinite') return undefined;
+  const actions: TableAction[] = [
+    { id: 'next', label: 'MENU' },
+    { id: 'again', label: `RACE AGAIN${same}`, key: 'S' },
+  ];
+  if (choice.mode === 'single') actions.push({ id: 'nextTrack', label: `NEXT TRACK${same}`, key: 'T' });
+  actions.push(song);
+  return actions;
+}
+
+/** The game's remix playing after a NEXT SONG between races (another track's), else null for the race's own. */
+let remixNow: string | null = null;
+
+/**
+ * NEXT SONG between races, at once: a live recording moves on to another
+ * song (a Full set to its next one), the game's remixes to another track's.
+ * A same-song button then carries it into the next race.
+ */
+function nextSong(): void {
+  const live = radio.playing;
+  if (live?.mode === 'show') return radio.next();
+  if (live) {
+    void radio.playRandom(remixCues(raceMusic().lap));
+    return;
+  }
+  const now = remixNow ?? raceMusic().lap;
+  const others = TRACK_LIST.map((t) => t.id).filter((id) => id !== now);
+  remixNow = others[Math.floor(Math.random() * others.length)];
+  music.play(remixCues(remixNow));
+}
+
+/** A button between races: the default carries on as any key does; the others start the next race with the song playing on. */
+function betweenRaces(id: string): void {
+  music.unlock();
+  if (id === 'song') return nextSong();
+  if (id === 'next') {
+    advance();
+    return;
+  }
+  // From a Grand Prix's results, straight to the next race: score this one first.
+  if (mode === 'results' && gp) gp.record(finishOrder().map((k) => k.racer), choice.racer);
+  if (id === 'nextTrack') choice.track = menu.choice.track = (choice.track + 1) % TRACK_LIST.length;
+  startRace(true, true);
+}
+
+hud.onTableAction = betweenRaces;
 
 /** The room's results once it calls them (with players' names); until then, as things stand here. */
 function onlineRows(kartRow: (k: RaceKart, i: number) => TableRow): TableRow[] {
@@ -2124,7 +2195,7 @@ window.addEventListener('pointerup', (e) => {
   if (settingsScreen.visible) return;
   if ((e.target as HTMLElement).closest('.settings, .hud-title-settings, .lobby, .board, .savetrack, .nameprompt, .skill')) return music.unlock();
   if (skipIntro()) return;
-  if ((e.target as HTMLElement).closest('.menu, .touch, .hud-pause, .mini-player, .mp-fab')) return music.unlock();
+  if ((e.target as HTMLElement).closest('.menu, .touch, .hud-pause, .mini-player, .mp-fab, .hud-standings-actions')) return music.unlock();
   // Watching: a tap anywhere on the race picks another racer to follow.
   if (watching && mode === 'race' && !loop.paused) return switchWatch(1);
   advance();
@@ -2138,6 +2209,11 @@ window.addEventListener('keydown', (e) => {
       input.consumePause();
     }
     return;
+  }
+  // A button between races by its letter (S: same song, T: next track, N: next song).
+  if ((mode === 'results' || mode === 'standings') && !e.repeat) {
+    const act = betweenActions()?.find((a) => a.key && e.code === `Key${a.key}`);
+    if (act) return betweenRaces(act.id);
   }
   if (advance()) return;
   if (!e.repeat && skipIntro()) return;
