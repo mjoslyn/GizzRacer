@@ -6,7 +6,7 @@ const FINISH = 70;
 /** Short enough that the ruins end well clear of the line, so Waterfall Bend is one clean corner. */
 const CANOPY = 94;
 const RIVERBANK = 75;
-/** Half the river's length, across the road: it runs wide enough for The Fourth Colour to leap it too. */
+/** Half the river's length, across the road: it runs wide enough for Root Network to leap it too. */
 const RIVER_REACH = 60;
 /** Canopy height for the vine bridges, the river ravine's floor and the rise the ruins stand on. */
 const CANOPY_Y = 14;
@@ -14,10 +14,12 @@ const RAVINE_Y = -6;
 const RUINS_Y = 8;
 
 /**
- * Polygondwanaland (spec section 7, hard): vine hairpins, a jump
- * over a river, and walled stone ruins with a clockwork chicane. The
- * Fourth Colour, a secret line beyond sight, cuts the river corner with a
- * longer leap off a crumbling ramp.
+ * Iron Lung, once Polygondwanaland (hard): the jungle, the planet's lungs,
+ * overgrown with mushrooms, in the Ice, Death, Planets, Lungs, Mushrooms and
+ * Lava Cup. Vine hairpins, a jump over a river, and walled stone ruins with
+ * a chicane. Root Network, a secret line
+ * beyond sight, cuts the river corner with a longer leap off a crumbling
+ * ramp.
  */
 export function buildPolygondwanalandJungle(): TrackDef {
   // Canopy Run climbs off the line onto a vine bridge up in the canopy, and the hairpins wind back down on it.
@@ -30,13 +32,13 @@ export function buildPolygondwanalandJungle(): TrackDef {
   b.section('Vine Hairpins', vines);
   b.mark('hairpins');
   b.straight(20).arc(20, -170).straight(35).arc(20, 120);
-  // Down on the forest floor again where The Fourth Colour peels away.
+  // Down on the forest floor again where Root Network peels away.
   b.section('Vine Hairpins', { halfWidth: 8.5 });
   b.arc(20, 50);
   b.mark('colourFrom');
   b.straight(20);
 
-  // Open up to the ramp, so The Fourth Colour can peel away.
+  // Open up to the ramp, so Root Network can peel away.
   b.section('River Jump', { halfWidth: 9 });
   b.mark('river');
   b.straight(40);
@@ -48,16 +50,16 @@ export function buildPolygondwanalandJungle(): TrackDef {
   b.mark('ravine');
   b.arc(45, 90);
 
-  // Crumbling Castle: the riverbank under a rising thick green tide, where The Fourth Colour comes back.
-  b.section('Crumbling Castle', { halfWidth: 9 });
+  // Hell's Itch: the riverbank under a rising thick green tide, where Root Network comes back.
+  b.section("Hell's Itch", { halfWidth: 9 });
   b.straight(68).mark('colourTo').straight(RIVERBANK - 68);
 
-  b.section('Polygon Ruins', { halfWidth: 8, wallHeight: 5, surface: 'rock' });
+  b.section('Spore Ruins', { halfWidth: 8, wallHeight: 5, surface: 'rock' });
   b.mark('ruins');
   b.straight(50);
-  b.section('Horology', { halfWidth: 8, wallHeight: 5, surface: 'rock' });
+  b.section('Mushroom Hollow', { halfWidth: 8, wallHeight: 5, surface: 'rock' });
   b.arc(60, 45).arc(60, -45);
-  b.section('Inner Cell', { halfWidth: 8, wallHeight: 5, surface: 'rock' });
+  b.section('Hyphae Hall', { halfWidth: 8, wallHeight: 5, surface: 'rock' });
   b.straight(40).arc(45, 90);
 
   b.section('Waterfall Bend', { halfWidth: 10 });
@@ -80,7 +82,7 @@ export function buildPolygondwanalandJungle(): TrackDef {
     [b.marks.ravine.s + 40, RAVINE_Y, 0],
     [b.marks.ravine.s + 85, 0, 0],
   ], 2);
-  // The ruins stand on a rise: up the steps (a kinked top that throws fast karts) and down again round the Inner Cell.
+  // The ruins stand on a rise: up the steps (a kinked top that throws fast karts) and down again round Hyphae Hall.
   const ruins = b.marks.ruins.s;
   shape(b, [
     [ruins, 0, 0],
@@ -90,10 +92,10 @@ export function buildPolygondwanalandJungle(): TrackDef {
   ]);
 
   const main = b.finish(true);
-  const colour = buildFourthColour(b.marks.colourFrom, b.marks.colourTo, b.marks.river.pose);
+  const colour = buildRootNetwork(b.marks.colourFrom, b.marks.colourTo, b.marks.river.pose);
   return {
     id: 'polygondwanaland-jungle',
-    name: 'Polygondwanaland',
+    name: 'Iron Lung',
     main,
     branches: [colour.branch],
     pits: b.pits,
@@ -102,6 +104,7 @@ export function buildPolygondwanalandJungle(): TrackDef {
     laps: 3,
     bounds: 420,
     landmarks: [
+      { kind: 'mushroomArch', ribbon: -1, s: 0 },
       { kind: 'templeGate', ribbon: -1, s: b.marks.ruins.s + 4 },
       { kind: 'waterfall', ribbon: -1, s: b.marks.waterfall.s + 30 },
     ],
@@ -122,13 +125,13 @@ export function buildPolygondwanalandJungle(): TrackDef {
 }
 
 /**
- * The Fourth Colour: from the last hairpin, a narrow line veers off left,
- * leaps the river where it runs wide (The Castle in the Air), and swings
+ * Root Network: from the last hairpin, a narrow line veers off left,
+ * leaps the river where it runs wide (the Spore Leap), and swings
  * back onto the bank. At 150cc full speed makes the leap; at 100cc it
  * takes an orange mini-turbo or a boost.
  */
-function buildFourthColour(from: { s: number; pose: Pose }, to: { s: number; pose: Pose }, river: Pose) {
-  const b = new TrackBuilder(from.pose, 'The Fourth Colour', { halfWidth: 5 });
+function buildRootNetwork(from: { s: number; pose: Pose }, to: { s: number; pose: Pose }, river: Pose) {
+  const b = new TrackBuilder(from.pose, 'Root Network', { halfWidth: 5 });
   const veer = 30;
   b.straight(6).arc(50, veer);
   // The river runs across the main road (heading -z) from 59 to 79 m past
@@ -137,20 +140,20 @@ function buildFourthColour(from: { s: number; pose: Pose }, to: { s: number; pos
   const slant = Math.cos((veer * Math.PI) / 180);
   const ramp = 18;
   b.straight((b.pose.z - (river.z - 58)) / slant - ramp);
-  b.section('The Castle in the Air', { halfWidth: 5 });
+  b.section('Spore Leap', { halfWidth: 5 });
   b.elevate(0).straight(ramp).elevate(2.5);
   // The main road's river is the water below: no pit of its own (overlapping pits don't draw).
   b.gap(21 / slant, 0);
   b.elevate(0);
   const landing = b.s;
   // Then a straight and one more left turn onto the bank's line (heading -x).
-  b.section('The Fourth Colour', { halfWidth: 5 });
+  b.section('Root Network', { halfWidth: 5 });
   const r = 40;
   b.straight((b.pose.z - to.pose.z - r * (1 - Math.sin((veer * Math.PI) / 180))) / slant);
   b.arc(r, 90 - veer);
   b.straight(b.pose.x - to.pose.x);
-  // The castle in the air crumbles away on the final lap.
-  const branch: BranchDef = { name: 'The Fourth Colour', mainFrom: from.s, mainTo: to.s, ...b.finish(false), openOn: [1, 2], shut: { kind: 'vanish' } };
+  // The spore leap crumbles away on the final lap.
+  const branch: BranchDef = { name: 'Root Network', mainFrom: from.s, mainTo: to.s, ...b.finish(false), openOn: [1, 2], shut: { kind: 'vanish' } };
   return { branch, landing };
 }
 

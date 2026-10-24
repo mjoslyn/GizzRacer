@@ -55,7 +55,7 @@ describe('Mind Fuzz Cup', () => {
   it("is the four songs of I'm in Your Mind Fuzz's suite in order, each with its own world and a lap and a final-lap song", () => {
     const cup = CUPS.find((c) => c.name === 'Mind Fuzz Cup')!;
     expect(cup.id).toBe('mind-fuzz');
-    expect(cup.tracks).toEqual([32, 33, 34, 35]);
+    expect(cup.tracks).toEqual([0, 1, 2, 3]);
     const defs = cup.tracks.map((t) => TRACK_LIST[t].build());
     expect(defs.map((d) => d.id)).toEqual(IDS);
     expect(cup.tracks.map((t) => TRACK_LIST[t].name)).toEqual(NAMES);

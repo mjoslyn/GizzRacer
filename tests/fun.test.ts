@@ -407,6 +407,12 @@ describe('soundtrack', () => {
       expect(manifest[remixCues(lap)[0]], t.id).toBeTruthy();
       expect(manifest[remixCues(finalLap ?? `${lap}-final-lap`)[0]], `${t.id} final lap`).toBeTruthy();
     }
+    // The songs the album cups gave seven tracks, each transcribed from a live soundboard.
+    const { TRANSCRIBED } = await import('../src/audio/songs');
+    for (const id of ['fishies-lagoon', 'butterfly-skyway', 'cyboogie-city', 'polygondwanaland-jungle', 'murder-of-the-universe', 'infinite-loop-speedway', 'hell-on-mars']) {
+      expect(TRANSCRIBED[id].recording, id).toBe(TRACK_SONGS[id].title);
+      expect(TRANSCRIBED[id].release, id).toMatch(/^Live (in|at) .*'2\d, the soundboard mix$/);
+    }
   });
 });
 

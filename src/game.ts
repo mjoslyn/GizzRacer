@@ -33,7 +33,7 @@ import { GrandPrix } from './core/grandPrix';
 import { ACTS, CLEAR_PLACE, SKILL_STAGE, STAGES_PER_ACT, StoryRun, type BoonId } from './core/story';
 import { DEADSTICK_LAUNCH, DEADSTICK_RUNUP, DEADSTICK_SHOTS, DEADSTICK_SHOT_TIME, planDeadstick, type DeadstickPlan, type SkillKind } from './core/skills';
 import { SkillScreen, type SkillResult } from './ui/skillScreen';
-import { StoryScreen, hearts, practiceCard, storyCard, type StoryPhase } from './ui/storyScreen';
+import { StoryScreen, hearts, practiceCard, practiceRulesCard, storyCard, type StoryPhase } from './ui/storyScreen';
 import { Race, TOUCH_CPU_PACE, ordinal, type RaceKart } from './core/race';
 import { ASSIST_NORMAL, ASSIST_TOUCH } from './physics/steerAssist';
 import { DRIFT_TIERS, PHYSICS_VERSION, copyKartState, createKartState, driftTier, respawnKart, type KartState, type StepEvents } from './physics/kart';
@@ -152,7 +152,7 @@ let mode: Mode = 'title';
 
 let choice: MenuChoice = {
   mode: 'grandPrix',
-  track: 1,
+  track: 4,
   cup: 0,
   randomTracks: randomCupTracks(),
   gen: { slot: -1, params: { seed: newSeed(), theme: 'lagoon', complexity: 3, length: 'medium' } },
@@ -1295,8 +1295,10 @@ function skillStage(): { kind: SkillKind; seed: number; level: number } | null {
 /** Skill Games: the game picked, on its card or (the Deadstick Landing) on a track. */
 function playPractice(): void {
   const p = practice!;
-  if (p.kind === 'deadstick') startRace(true);
-  else startSkillScreen(p.kind, p.seed, p.level);
+  if (p.kind !== 'deadstick') return startSkillScreen(p.kind, p.seed, p.level);
+  // Its rules first, on a card (the card games show theirs over the game).
+  setMode('story');
+  storyScreen.show(practiceRulesCard(p.kind, SKILL_LEVELS[p.level], p.level));
 }
 
 /** A skill game's over: on with the story, or Skill Games' result. */
@@ -1427,6 +1429,7 @@ function endDeadstick(): void {
 
 storyScreen.onPick = (id) => {
   if (practice) {
+    if (id === 'play') return startRace(true);
     if (id !== 'again') return toMenu();
     // Another go, a new draw.
     practice.seed = newSeed();

@@ -14,15 +14,15 @@ import { Track, shortcutLap, type TrackDef } from '../src/tracks/track';
 import { buildVolcanoFortress } from '../src/tracks/volcanoFortress';
 
 /**
- * The Nonagon Cup's shortcuts: each track's branch, and how much of each end
+ * The shortcuts of the old Nonagon Cup's tracks (Motor Spirit, Rattlesnake, Magma, Iron Lung): each track's branch, and how much of each end
  * may run alongside the main road. `high` is how far the road climbs (on a
  * deck), `low` how deep its cut sinks.
  */
 const CUP: { name: string; build: () => TrackDef; near: number; high: number; low: number }[] = [
-  { name: 'Mr. Beat', build: buildInfiniteLoopSpeedway, near: 60, high: 16, low: -3 },
+  { name: 'Motor Spirit', build: buildInfiniteLoopSpeedway, near: 60, high: 16, low: -3 },
   { name: 'Rattlesnake', build: buildRattlesnakeRun, near: 55, high: 12, low: -7 },
   { name: 'Magma', build: buildVolcanoFortress, near: 50, high: 18, low: -5 },
-  { name: 'Polygondwanaland', build: buildPolygondwanalandJungle, near: 55, high: 12, low: -5 },
+  { name: 'Iron Lung', build: buildPolygondwanalandJungle, near: 55, high: 12, low: -5 },
 ];
 
 const lizard = RACERS[0];
@@ -232,7 +232,7 @@ describe.each(CUP)('$name', ({ build, near, high, low }) => {
   });
 });
 
-describe('The Fourth Colour', () => {
+describe('Root Network', () => {
   const def = buildPolygondwanalandJungle();
   const track = new Track(def);
   const gapStart = def.branches[0].gaps[0][0];

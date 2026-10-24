@@ -15,7 +15,7 @@ export const MODE_NAMES: Record<RaceMode, string> = {
 export const MODE_BLURBS: Record<RaceMode, string> = {
   grandPrix: 'Four races for the cup, points across them, rivals who want it too',
   story: 'Murder of the Universe in three chapters: races, skill games and boss duels, a boon for every stage cleared, and one life',
-  skills: "Story mode's skill games on their own: play the riff, the nonagon, the banana, the clock, the Mind Fuzz suite or a deadstick landing",
+  skills: "Story mode's skill games on their own: the riff, the nonagon, the banana, the clock, the Mind Fuzz suite, the rattlesnake, the robot, the fishies, the castle or a deadstick landing",
   single: 'One track, a full field, items on',
   timeTrial: 'Alone against the clock, the ghosts and the leaderboard',
   generator: 'A track made on the spot: the daily, your saved ones, or a new roll',

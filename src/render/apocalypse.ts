@@ -506,7 +506,7 @@ export function colonyGate(ribbon: Ribbon, s: number, animated: Animated): THREE
     g.add(l);
     lights.push(l);
   }
-  const map = tex.billboardTexture('HELL ON MARS', '#5a1a10', '#ffc020');
+  const map = tex.billboardTexture('FLAMETHROWER', '#5a1a10', '#ffc020');
   const sign = new THREE.Mesh(new THREE.PlaneGeometry(hw * 1.2, hw * 0.3), new THREE.MeshBasicMaterial({ map, side: THREE.DoubleSide }));
   sign.position.y = 12.2;
   sign.rotation.y = Math.PI; // face the oncoming karts
@@ -612,6 +612,57 @@ export function voidEye(ribbon: Ribbon, s: number, animated: Animated): THREE.Gr
     const blink = (time % 5) / 5 > 0.96;
     lid.rotation.x = blink ? Math.PI * 0.55 : 0;
     neon.rotation.z = time * 0.3;
+  });
+  g.position.set(f.x, f.y, f.z);
+  g.rotation.y = f.heading;
+  return g;
+}
+
+/**
+ * Gliese 710's gate: a chrome ring round the road, and over it the star
+ * itself, an orange dwarf on its way through the Oort cloud, its corona
+ * breathing and comets wheeling round it.
+ */
+export function starGate(ribbon: Ribbon, s: number, animated: Animated): THREE.Group {
+  const g = new THREE.Group();
+  const f = frameAt(ribbon, s);
+  const hw = ribbon.halfWidthAtS(s) + 3;
+  const chrome = new THREE.MeshPhongMaterial({ color: 0xb8bcc8, shininess: 140, specular: 0xffffff, emissive: 0x2a1406 });
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(hw + 1, 0.9, 10, 48), chrome);
+  ring.position.y = 1;
+  g.add(ring);
+  const band = new THREE.Mesh(new THREE.TorusGeometry(hw + 0.1, 0.18, 6, 48), new THREE.MeshBasicMaterial({ color: 0xffa040 }));
+  band.position.y = 1;
+  g.add(band);
+  const star = new THREE.Group();
+  star.position.y = hw + 9;
+  const body = new THREE.Mesh(new THREE.SphereGeometry(5, 32, 20), new THREE.MeshBasicMaterial({ color: 0xffa040, fog: false }));
+  const surface = new THREE.Mesh(new THREE.SphereGeometry(5.05, 24, 16), new THREE.MeshBasicMaterial({ color: 0xff5a10, transparent: true, opacity: 0.35, wireframe: true, fog: false }));
+  star.add(body, surface);
+  const corona = new THREE.Sprite(additive(tex.glowTexture('rgba(255,200,120,1)', 'rgba(255,90,20,0)'), 0xffb060));
+  corona.scale.setScalar(26);
+  star.add(corona);
+  const comets: THREE.Group[] = [];
+  const cometMat = new THREE.MeshBasicMaterial({ color: 0xd8f0ff, fog: false });
+  const tailMat = additive(tex.glowTexture('rgba(200,230,255,1)', 'rgba(120,180,255,0)'), 0xa8d8ff);
+  for (let k = 0; k < 3; k++) {
+    const c = new THREE.Group();
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.5, 8, 6), cometMat);
+    head.position.x = 10 + k * 3;
+    const tail = new THREE.Sprite(tailMat);
+    tail.scale.set(5, 1.4, 1);
+    tail.position.x = 10 + k * 3;
+    tail.position.z = -1.8;
+    c.add(head, tail);
+    c.rotation.x = 0.4 * (k - 1);
+    star.add(c);
+    comets.push(c);
+  }
+  g.add(star);
+  animated.push((time) => {
+    corona.scale.setScalar(26 + Math.sin(time * 1.3) * 2.5);
+    surface.rotation.y = time * 0.15;
+    comets.forEach((c, k) => (c.rotation.y = time * (0.5 + k * 0.2) + k * 2));
   });
   g.position.set(f.x, f.y, f.z);
   g.rotation.y = f.heading;

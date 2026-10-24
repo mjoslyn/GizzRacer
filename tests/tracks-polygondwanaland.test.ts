@@ -62,10 +62,9 @@ describe('Polygondwanaland Cup', () => {
     }
   });
 
-  it('plays Crumbling Castle on Crumbling Castle and the title song on Polygondwanaland, every one transcribed from the album', () => {
+  it('plays Crumbling Castle on Crumbling Castle, every one transcribed from the album', () => {
     expect(TRACK_SONGS['crumbling-castle'].title).toBe('Crumbling Castle');
-    expect(TRACK_SONGS['polygondwanaland-jungle'].title).toBe('Polygondwanaland');
-    for (const id of ['polygondwanaland-jungle', 'crumbling-castle', 'castle-in-the-air', 'inner-cell', 'tetrachromacy']) {
+    for (const id of ['crumbling-castle', 'castle-in-the-air', 'inner-cell', 'tetrachromacy']) {
       expect(TRANSCRIBED[id].recording, id).toBe(TRACK_SONGS[id].title);
       expect(TRANSCRIBED[id].release).toMatch(/^Polygondwanaland/);
     }

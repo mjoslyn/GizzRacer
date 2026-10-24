@@ -39,25 +39,33 @@ export interface Theme {
   roadGlow?: number;
   /** Low-contrast worlds (a dark road on dark ground, an orange road on orange dust): a bright line down each edge of every road, unlit, in this colour. */
   edgeLine?: number;
+  /** Flying Microtonal Banana's worlds: roads, landmarks and scenery in the cover's cobalt and banana yellow (textures.ts BANANA). */
+  banana?: boolean;
 }
 
+/** Flying Microtonal Banana's worlds through the tape: cobalt shadows, banana yellow, and highlights like the peel. */
+const BANANA_DUOTONE: [number, number, number] = [0x1430b8, 0xffc81a, 0xfff6c8];
+
 export const THEMES: Record<ThemeId, Theme> = {
+  // Rattlesnake, in Flying Microtonal Banana's blue and yellow: banana sand, cobalt mesas, a cobalt sky.
   desert: {
-    sky: DESERT_SKY,
-    fog: { color: 0xe9b88a, near: 180, far: 900 },
-    hemi: { sky: 0xa8c8ff, ground: 0xc07a48, intensity: 1.5 },
-    sun: { color: 0xfff0d0, intensity: 2.4 },
-    ground: tex.sandTexture,
+    sky: { ...DESERT_SKY, horizon: '#ffe6a0', below: '#f2c43a', ground: '#b88a1a' },
+    fog: { color: 0xf6e0a0, near: 180, far: 900 },
+    hemi: { sky: 0xfff0c8, ground: 0xc8a030, intensity: 1.5 },
+    sun: { color: 0xfff4c8, intensity: 2.4 },
+    ground: () => tex.sandTexture(tex.BANANA.sandDark, tex.BANANA.sandLight),
     groundTile: 18,
-    cliff: tex.strataTexture,
+    cliff: () => tex.strataTexture(tex.BANANA.strata, tex.BANANA.crack),
     decor: 'desert',
-    distant: { shape: 'mesa', color: 0xa4502e },
+    distant: { shape: 'mesa', color: 0x2440a8 },
     haze: 1,
-    duotone: [0x0a0002, 0xc00410, 0xf0c020],
-    skyCycle: true,
-    dust: 0xf4e4c8,
-    barrier: { map: tex.diamondTexture, crawl: true },
+    duotone: BANANA_DUOTONE,
+    skyCycle: false,
+    dust: 0xfff0b0,
+    barrier: { map: () => tex.diamondTexture(tex.BANANA.diamond), crawl: true },
+    banana: true,
   },
+
   speedway: {
     sky: { zenith: '#1a4fd8', high: '#3b7cf0', low: '#9cc8ff', horizon: '#e8f4ff', below: '#a8d890', ground: '#4a7a30', cloud: '255,255,255', clouds: 34 },
     fog: { color: 0xcfe6ff, near: 220, far: 1000 },
@@ -67,7 +75,8 @@ export const THEMES: Record<ThemeId, Theme> = {
     groundTile: 14,
     cliff: () => tex.stoneTexture([90, 96, 84], [150, 156, 140]),
     decor: 'meadow',
-    distant: { shape: 'hill', color: 0x3f7a3a },
+    // Motor Spirit: refinery stacks flaring on the horizon behind the hills.
+    distant: { shape: 'flare', color: 0x2a2a30 },
     haze: 0,
     duotone: [0x020a02, 0x18a030, 0xf0f060],
     skyCycle: false,
@@ -107,22 +116,25 @@ export const THEMES: Record<ThemeId, Theme> = {
     dust: 0xc0b48a,
     barrier: { map: tex.woodTexture, crawl: false },
   },
+  // Open Water: cobalt sea and banana sand.
   lagoon: {
-    sky: { zenith: '#0a6ad8', high: '#2a9af0', low: '#9ae0ff', horizon: '#f0fbff', below: '#7ad8d0', ground: '#3aa8b0', cloud: '255,255,255', clouds: 30 },
-    fog: { color: 0xc8f0f4, near: 200, far: 950 },
-    hemi: { sky: 0xd0f4ff, ground: 0x4ab0a8, intensity: 1.6 },
-    sun: { color: 0xfff6e0, intensity: 2.3 },
-    ground: tex.lagoonTexture,
+    sky: { zenith: '#0a2ab8', high: '#2a5ae8', low: '#9ab8ff', horizon: '#fff4c8', below: '#3a6ad8', ground: '#1f4ac0', cloud: '255,250,230', clouds: 30 },
+    fog: { color: 0xdce6ff, near: 200, far: 950 },
+    hemi: { sky: 0xfff4d8, ground: 0x2a5ac8, intensity: 1.6 },
+    sun: { color: 0xfff2c0, intensity: 2.3 },
+    ground: () => tex.lagoonTexture(tex.BANANA.water, tex.BANANA.shore),
     groundTile: 30,
-    cliff: () => tex.stoneTexture([150, 130, 100], [220, 200, 160]),
+    cliff: () => tex.stoneTexture([200, 160, 50], [250, 220, 120]),
     decor: 'lagoon',
-    distant: { shape: 'hill', color: 0x2f8a5a },
+    distant: { shape: 'hill', color: 0x2440a8 },
     haze: 0.3,
-    duotone: [0x00060a, 0x0890b0, 0xfff0a0],
+    duotone: BANANA_DUOTONE,
     skyCycle: false,
-    dust: 0xf0e6c8,
+    dust: 0xfff0c0,
     barrier: { map: tex.boardsTexture, crawl: false },
+    banana: true,
   },
+
   glacier: {
     sky: { zenith: '#2a4a8a', high: '#5a8ac8', low: '#b8d8f0', horizon: '#f4faff', below: '#d8e8f4', ground: '#c8d8e8', cloud: '240,246,255', clouds: 36 },
     fog: { color: 0xdceaf6, near: 110, far: 650 },
@@ -139,38 +151,44 @@ export const THEMES: Record<ThemeId, Theme> = {
     dust: 0xffffff,
     barrier: { map: () => tex.stoneTexture([150, 190, 220], [220, 240, 255]), crawl: false },
   },
+  // Doom City: a cobalt night, the towers lit banana yellow.
   neon: {
-    sky: { zenith: '#05020e', high: '#140a30', low: '#3a1458', horizon: '#ff4ab8', below: '#1a0a28', ground: '#0c0818', cloud: '120,60,160', clouds: 10 },
-    fog: { color: 0x241038, near: 120, far: 700 },
-    hemi: { sky: 0x8a6aff, ground: 0x2a0a3a, intensity: 1.2 },
-    sun: { color: 0xc8a8ff, intensity: 1.4 },
-    ground: tex.neonGridTexture,
+    sky: { zenith: '#02030c', high: '#060c34', low: '#10226a', horizon: '#ffc21a', below: '#08103a', ground: '#05091e', cloud: '60,80,160', clouds: 10, stars: { count: 260, color: '#ffe68a' } },
+    fog: { color: 0x0a1440, near: 120, far: 700 },
+    hemi: { sky: 0x6a8aff, ground: 0x0a1240, intensity: 1.2 },
+    sun: { color: 0xffe0a0, intensity: 1.4 },
+    ground: () => tex.neonGridTexture(tex.BANANA.grid),
     groundTile: 12,
-    cliff: () => tex.stoneTexture([30, 24, 44], [70, 60, 96]),
+    cliff: () => tex.stoneTexture([20, 26, 60], [60, 76, 130]),
     decor: 'city',
-    distant: { shape: 'city', color: 0x1a1030 },
+    distant: { shape: 'city', color: 0x0a1440 },
     haze: 0,
-    duotone: [0x06000c, 0xd010c0, 0x40fff0],
+    duotone: BANANA_DUOTONE,
     skyCycle: false,
-    dust: 0x8a7aa8,
-    barrier: { map: tex.neonRoadTexture, crawl: true },
+    dust: 0x6a7ab0,
+    barrier: { map: () => tex.neonRoadTexture(tex.BANANA.neon), crawl: true },
+    banana: true,
   },
+
+  // Sleep Drifter: drifting off over a sea of cloud under a cobalt night, yellow stars and a crescent moon.
   dream: {
-    sky: { zenith: '#6a4ad8', high: '#a07af0', low: '#f0b8f0', horizon: '#fff0f8', below: '#e8d0f4', ground: '#d8c0ec', cloud: '255,250,255', clouds: 44 },
-    fog: { color: 0xf4dcf4, near: 160, far: 900 },
-    hemi: { sky: 0xffe8ff, ground: 0xb8a0e0, intensity: 1.7 },
-    sun: { color: 0xfff4f0, intensity: 2.2 },
-    ground: tex.cloudSeaTexture,
+    sky: { zenith: '#050a3a', high: '#12288a', low: '#4a6ad0', horizon: '#ffd870', below: '#4a5ab0', ground: '#2a3a90', cloud: '255,226,140', clouds: 24, stars: { count: 320, color: '#fff0a0' }, moon: '#ffe27a' },
+    fog: { color: 0x3a4a9a, near: 160, far: 900 },
+    hemi: { sky: 0xc8d4ff, ground: 0x4a5ab0, intensity: 1.3 },
+    sun: { color: 0xffe8a8, intensity: 1.5 },
+    ground: () => tex.cloudSeaTexture(...tex.BANANA.cloudSea),
     groundTile: 60,
-    cliff: () => tex.stoneTexture([200, 180, 230], [250, 240, 255]),
+    cliff: () => tex.stoneTexture([60, 90, 200], [250, 230, 160]),
     decor: 'sky',
-    distant: { shape: 'cloud', color: 0xfff4fc },
+    distant: { shape: 'cloud', color: 0xb8c8f4 },
     haze: 0,
-    duotone: [0x100418, 0xe050b0, 0xfff0a0],
-    skyCycle: true,
+    duotone: BANANA_DUOTONE,
+    skyCycle: false,
     dust: 0xffffff,
-    barrier: { map: tex.rainbowTexture, crawl: true },
+    barrier: { map: () => tex.rainbowTexture(tex.BANANA.bands), crawl: true },
+    banana: true,
   },
+
   // Dragon: a black sky choked with smoke over a burning oil field, a blood-red sun low on the horizon.
   petro: {
     sky: { zenith: '#030102', high: '#140405', low: '#3a0a06', horizon: '#c8341a', below: '#1a0604', ground: '#080303', cloud: '40,22,20', clouds: 48 },

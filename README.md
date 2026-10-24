@@ -8,16 +8,16 @@ No install and no account. It will always be free. **[The manual](https://www.gi
 
 ## What's in it
 
-- **36 tracks in 9 cups**, plus a Random Cup of four drawn from them, each built around an album or a song
-  - **Nonagon Cup:** Mr. Beat, Rattlesnake, Magma, Polygondwanaland
-  - **Microtonal Cup:** Fishing for Fishies, Ice V, Cyboogie, Catching Smoke
-  - **Apocalypse Cup:** Mars for the Rich, Supercell, The Lord of Lightning, Dragon
-  - **Phantom Island Cup:** Phantom Island, Deadstick, Panpsych, Sea of Doubt
-  - **Omnium Gatherum Cup:** Magenta Mountain, Kepler-22b, The Garden Goblin, Predator X
-  - **Polygondwanaland Cup:** Crumbling Castle (on the N64 castle's layout), The Castle in the Air, Inner Cell, Tetrachromacy
-  - **Nonagon Infinity Cup:** Robot Stop, Gamma Knife, People-Vultures, Wah Wah
-  - **Infest the Rats' Nest Cup:** Planet B, Mars for the Rich (the rich's colony under glass, apart from the Apocalypse Cup's burning one), Perihelion, Hell
+- **36 tracks in 9 cups**, one an album, in the order the albums came out, plus a Random Cup of four drawn from them
   - **Mind Fuzz Cup:** the suite that opens I'm in Your Mind Fuzz, in order: I'm in Your Mind, I'm Not in Your Mind, Cellophane, I'm in Your Mind Fuzz
+  - **Nonagon Infinity Cup:** Robot Stop, Gamma Knife, People-Vultures, Wah Wah
+  - **Flying Microtonal Banana Cup:** Rattlesnake, Open Water, Sleep Drifter, Doom City, all in the cover's cobalt and banana yellow
+  - **Polygondwanaland Cup:** Crumbling Castle (on the N64 castle's layout), The Castle in the Air, Inner Cell, Tetrachromacy
+  - **Infest the Rats' Nest Cup:** Planet B, Mars for the Rich, Perihelion, Hell
+  - **Omnium Gatherum Cup:** Magenta Mountain, Kepler-22b, The Garden Goblin, Predator X
+  - **Ice, Death, Planets, Lungs, Mushrooms and Lava Cup:** Ice V, Magma, Iron Lung, Gliese 710
+  - **PetroDragonic Apocalypse Cup:** Motor Spirit, Supercell, Dragon, Flamethrower
+  - **Phantom Island Cup:** Phantom Island, Deadstick, Panpsych, Sea of Doubt
 - **Roller-coaster tracks:** climbs onto pillared decks, plunges you fly off, canyons sunk into the ground, and a causeway that dives under the lagoon
 - **Launchers and gliders:** a glowing ramp on the lip of every track's big jump (and on a long straight where there's no jump) throws you high, and a trick off it opens your glider, so the leap is a glide you can steer. Up climbs (trading speed for height), down dives (picking speed up)
 - **Rhythm humps, apex pads and slaloms:** a sharp crest on the long straights to fly off, a boost pad on the inside of the big hairpins for the tight line, and a slalom of three pads across the straights of the hillier tracks
@@ -41,7 +41,7 @@ No install and no account. It will always be free. **[The manual](https://www.gi
 ## Modes
 
 - **Grand Prix:** four races, points after each, rivals from the second race on, a podium at the end and a trophy to keep
-- **Story:** Murder of the Universe as a roguelike run. Its three chapters (The Tale of the Altered Beast, The Lord of Lightning vs Balrog, Han-Tyumi and the Murder of the Universe) are each two races on new generated tracks (finish in the top four), a skill game, and a one-on-one duel with the chapter's boss: the Altered Beast in Inner Cell, the Balrog in Supercell, Han-Tyumi in Murder of the Universe. Every stage cleared gives a pick of three boons (Mind Fuzz, Rattlesnake, Sleep Drifter, the Gamma Knife and more). You have one life: a miss ends the run, unless Planet B has given you another, which restarts the stage. The skill games, a different one each chapter: **Play the Riff** (hit the notes as they cross the line), **Nonagon Infinity** (play back the lights round the nonagon), **The Flying Microtonal Banana** (tune a string to the drone until the wobble stops), **Horology** (stop the hand on the mark) and **Deadstick Landing** (glide off a track's launcher and land in the ring). Story races don't post times
+- **Story:** Murder of the Universe as a roguelike run. Its three chapters (The Tale of the Altered Beast, The Lord of Lightning vs Balrog, Han-Tyumi and the Murder of the Universe) are each two races on new generated tracks (finish in the top four), a skill game, and a one-on-one duel with the chapter's boss: the Altered Beast in Inner Cell, the Balrog in Supercell, Han-Tyumi in Murder of the Universe. Every stage cleared gives a pick of three boons (Mind Fuzz, Rattlesnake, Sleep Drifter, the Gamma Knife and more). You have one life: a miss ends the run, unless Planet B has given you another, which restarts the stage. The skill games, a different one each chapter: **Play the Riff** (hit the notes as they cross the line), **Nonagon Infinity** (play back the lights round the nonagon), **The Flying Microtonal Banana** (tune a string to the drone until the wobble stops), **Horology** (stop the hand on the mark), **The Mind Fuzz Suite** (four quick movements, pass three), **Rattlesnake** (the classic snake game: eat the mice, grow, never bite your own rattle), **Robot Stop** (creep up on the robot while it looks away, freeze when it turns), **Fishing for Fishies** (strike when the bobber goes under, not on a nibble), **Crumbling Castle** (drop each sliding stone square on the tower, as what hangs over crumbles) and **Deadstick Landing** (glide off a track's launcher and land in the ring). Each skill game opens on a card of exactly what to do, with Continue to start (the Mind Fuzz Suite has one before each movement). The boon chooser shows your deck, every boon taken so far. Story races don't post times
 - **Single Race:** any track, any class (50cc, 100cc, 150cc, and 200cc once it's unlocked), Mirror once that is
 - **Time Trial:** one lap alone. Online leaderboards, one ghost to chase each race (the next one up the board from you, or one you pick; beat it and the next is next), and the gap to it at every checkpoint.
 - **Between races:** the song plays on through the results and standings. Buttons there race on with the same song (S), go to the next race with its own song (N), or in Single Race take on the next track (T). In Story mode the same song plays on over the cards into the next race.

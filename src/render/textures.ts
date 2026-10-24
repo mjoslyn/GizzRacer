@@ -167,7 +167,7 @@ export function dirtTexture(): THREE.CanvasTexture {
   return finish(c);
 }
 
-export function sandTexture(): THREE.CanvasTexture {
+export function sandTexture(dark: RGB = [176, 98, 52], light: RGB = [222, 146, 84]): THREE.CanvasTexture {
   const S = 512;
   const [c, ctx] = canvas(S);
   const n = fbm(S, 4, 5, 41);
@@ -177,26 +177,17 @@ export function sandTexture(): THREE.CanvasTexture {
     // Wind ripples, warped so they don't look ruled.
     const ripple = Math.sin(((y + warp[i] * 90) / S) * Math.PI * 2 * 18 + x * 0.004) * 0.5 + 0.5;
     const t = n[i] * 0.75 + ripple * 0.25;
-    return shade(mix([176, 98, 52], [222, 146, 84], t), 0.94 + rand() * 0.1);
+    return shade(mix(dark, light, t), 0.94 + rand() * 0.1);
   });
   return finish(c);
 }
 
 /** Horizontal sedimentary bands for canyon walls and cliffs. v runs up the wall. */
-export function strataTexture(): THREE.CanvasTexture {
+export function strataTexture(palette: RGB[] = RED_STRATA, crack = 'rgba(60,20,12,0.45)'): THREE.CanvasTexture {
   const S = 512;
   const [c, ctx] = canvas(S);
   const n = fbm(S, 4, 5, 51);
   const bandNoise = fbm(S, 2, 3, 52);
-  const palette: RGB[] = [
-    [120, 44, 30],
-    [168, 72, 42],
-    [196, 112, 64],
-    [150, 60, 38],
-    [222, 162, 108],
-    [176, 84, 50],
-    [104, 38, 28],
-  ];
   paint(ctx, S, S, (_x, y, i) => {
     const v = (y / S + bandNoise[i] * 0.08) * palette.length * 2;
     const k = Math.floor(v);
@@ -205,18 +196,56 @@ export function strataTexture(): THREE.CanvasTexture {
     const t = Math.min(1, Math.max(0, (v - k - 0.8) * 5));
     return shade(mix(a, b, t), 0.78 + n[i] * 0.4);
   });
-  cracks(ctx, S, 14, 'rgba(60,20,12,0.45)', 2.5, 53);
+  cracks(ctx, S, 14, crack, 2.5, 53);
   return finish(c);
 }
 
+const RED_STRATA: RGB[] = [
+  [120, 44, 30],
+  [168, 72, 42],
+  [196, 112, 64],
+  [150, 60, 38],
+  [222, 162, 108],
+  [176, 84, 50],
+  [104, 38, 28],
+];
+
+/**
+ * Flying Microtonal Banana's cover: cobalt blue and banana yellow. The
+ * album's cup paints its four worlds in them (render/themes.ts `banana`).
+ */
+export const BANANA = {
+  sandDark: [226, 160, 0] as RGB,
+  sandLight: [255, 216, 40] as RGB,
+  strata: [
+    [24, 40, 130],
+    [40, 72, 186],
+    [232, 186, 48],
+    [32, 56, 160],
+    [252, 222, 112],
+    [58, 98, 210],
+    [20, 32, 104],
+  ] as RGB[],
+  crack: 'rgba(10,16,60,0.5)',
+  diamond: { top: '#ffd21a', bottom: '#b88a10', rings: ['#fff4c0', '#10207a', '#2a4ad0'] as const },
+  water: [[18, 60, 180], [60, 130, 236]] as [RGB, RGB],
+  shore: [[240, 190, 20], [255, 222, 80]] as [RGB, RGB],
+  neon: { a: '#ffe45a', aGlow: '#ffb81a', b: '#7aa4ff', bGlow: '#2a5aff', tint: [0, 0, 14] as RGB },
+  grid: { bg: '#05091e', line: '#ffc81a', glow: '#ff9a00', fine: 'rgba(90,130,255,0.7)' },
+  windows: ['#ffd23a', '#fff0a0', '#7aa4ff', '#ffe45a'],
+  windowDark: '#121a3a',
+  cloudSea: [[24, 40, 130], [250, 220, 120]] as [RGB, RGB],
+  bands: ['#1f3fbf', '#ffd21a', '#3a6ae8', '#ffe66a', '#16309a', '#ffc400'],
+};
+
 /** Diamondback pattern for barriers (spec: patterned textures along the barriers). */
-export function diamondTexture(): THREE.CanvasTexture {
+export function diamondTexture(colors: { top: string; bottom: string; rings: readonly [string, string, string] } = { top: '#d9b46a', bottom: '#8a6232', rings: ['#f3e6c4', '#3b2412', '#6e4422'] }): THREE.CanvasTexture {
   const W = 512;
   const H = 128;
   const [c, ctx] = canvas(W, H);
   const g = ctx.createLinearGradient(0, 0, 0, H);
-  g.addColorStop(0, '#d9b46a');
-  g.addColorStop(1, '#8a6232');
+  g.addColorStop(0, colors.top);
+  g.addColorStop(1, colors.bottom);
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, W, H);
   const d = H * 0.8;
@@ -224,9 +253,9 @@ export function diamondTexture(): THREE.CanvasTexture {
     const cx = k * d + d / 2;
     const cy = H / 2;
     for (const [scale, color] of [
-      [1, '#f3e6c4'],
-      [0.82, '#3b2412'],
-      [0.55, '#6e4422'],
+      [1, colors.rings[0]],
+      [0.82, colors.rings[1]],
+      [0.55, colors.rings[2]],
     ] as const) {
       ctx.fillStyle = color;
       ctx.beginPath();
@@ -514,6 +543,10 @@ export interface SkyColors {
   cloud: string;
   /** Number of cloud banks; 0 for a clear sky. */
   clouds: number;
+  /** Stars in the upper sky, and their colour. */
+  stars?: { count: number; color: string };
+  /** A crescent moon this colour, high on one side. */
+  moon?: string;
 }
 
 export const DESERT_SKY: SkyColors = {
@@ -543,6 +576,39 @@ export function skyTexture(colors: SkyColors = DESERT_SKY): THREE.CanvasTexture 
   ctx.fillRect(0, 0, W, H);
 
   const rand = seededRandom(91);
+  if (colors.stars) {
+    const starRand = seededRandom(92);
+    ctx.fillStyle = colors.stars.color;
+    for (let k = 0; k < colors.stars.count; k++) {
+      const x = starRand() * W;
+      const y = H * 0.45 * starRand() ** 1.4;
+      const r = 0.6 + starRand() ** 3 * 2.4;
+      ctx.globalAlpha = 0.5 + starRand() * 0.5;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+  if (colors.moon) {
+    // A crescent: the full disc, then the sky's own colour bitten out of it, in a soft halo.
+    const mx = W * 0.3;
+    const my = H * 0.2;
+    const mr = 46;
+    const halo = ctx.createRadialGradient(mx, my, mr * 0.8, mx, my, mr * 3);
+    halo.addColorStop(0, 'rgba(255,240,170,0.35)');
+    halo.addColorStop(1, 'rgba(255,240,170,0)');
+    ctx.fillStyle = halo;
+    ctx.fillRect(mx - mr * 3, my - mr * 3, mr * 6, mr * 6);
+    ctx.fillStyle = colors.moon;
+    ctx.beginPath();
+    ctx.arc(mx, my, mr, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = colors.high;
+    ctx.beginPath();
+    ctx.arc(mx + mr * 0.45, my - mr * 0.2, mr * 0.88, 0, Math.PI * 2);
+    ctx.fill();
+  }
   for (let k = 0; k < colors.clouds; k++) {
     const cx = rand() * W;
     const cy = H * (0.3 + rand() * 0.15);
@@ -786,31 +852,30 @@ export function iceTexture(): THREE.CanvasTexture {
 }
 
 /** Night asphalt with glowing edge and centre lines (the road shows two tiles across). */
-export function neonRoadTexture(): THREE.CanvasTexture {
+export function neonRoadTexture(colors = { a: '#ff7ae8', aGlow: '#ff3ad8', b: '#8af0ff', bGlow: '#3adcff', tint: [0, -2, 10] as RGB }): THREE.CanvasTexture {
   const S = 256;
   const [c, ctx] = canvas(S);
   const n = fbm(S, 4, 4, 191);
   paint(ctx, S, S, (_x, _y, i) => {
     const v = 18 + n[i] * 20;
-    return [v, v - 2, v + 10];
+    return [v + colors.tint[0], v + colors.tint[1], v + colors.tint[2]];
   });
   const line = (x: number, color: string, dashed: boolean) => {
     ctx.fillStyle = color;
     for (let y = 0; y < S; y += dashed ? 64 : S) ctx.fillRect(x, y, 6, dashed ? 34 : S);
   };
   ctx.shadowBlur = 14;
-  ctx.shadowColor = '#ff3ad8';
-  line(0, '#ff7ae8', true);
-  ctx.shadowColor = '#3adcff';
-  line(S - 6, '#8af0ff', false);
+  ctx.shadowColor = colors.aGlow;
+  line(0, colors.a, true);
+  ctx.shadowColor = colors.bGlow;
+  line(S - 6, colors.b, false);
   return finish(c);
 }
 
 /** Bands of the spectrum across the road, with a soft sheen. */
-export function rainbowTexture(): THREE.CanvasTexture {
+export function rainbowTexture(colors: readonly string[] = ['#ff5a7a', '#ffa64a', '#ffe45a', '#6aef7a', '#4ad0ff', '#7a7aff', '#c86aff']): THREE.CanvasTexture {
   const S = 256;
   const [c, ctx] = canvas(S);
-  const colors = ['#ff5a7a', '#ffa64a', '#ffe45a', '#6aef7a', '#4ad0ff', '#7a7aff', '#c86aff'];
   colors.forEach((col, k) => {
     ctx.fillStyle = col;
     ctx.fillRect((k * S) / colors.length, 0, S / colors.length + 1, S);
@@ -827,7 +892,7 @@ export function rainbowTexture(): THREE.CanvasTexture {
 }
 
 /** Shallow lagoon: turquoise water over sand, with sandbars and ripples. */
-export function lagoonTexture(): THREE.CanvasTexture {
+export function lagoonTexture(water: [RGB, RGB] = [[40, 170, 190], [110, 220, 210]], shore: [RGB, RGB] = [[214, 196, 150], [236, 222, 180]]): THREE.CanvasTexture {
   const S = 512;
   const [c, ctx] = canvas(S);
   const n = fbm(S, 3, 5, 201);
@@ -835,8 +900,8 @@ export function lagoonTexture(): THREE.CanvasTexture {
   paint(ctx, S, S, (x, y, i) => {
     const ripple = Math.sin(((x + warp[i] * 120) / S) * Math.PI * 2 * 14 + y * 0.01) * 0.5 + 0.5;
     const depth = n[i];
-    if (depth > 0.68) return mix([214, 196, 150], [236, 222, 180], ripple * 0.3 + (depth - 0.68) * 2);
-    return shade(mix([40, 170, 190], [110, 220, 210], depth / 0.68), 0.92 + ripple * 0.12);
+    if (depth > 0.68) return mix(shore[0], shore[1], ripple * 0.3 + (depth - 0.68) * 2);
+    return shade(mix(water[0], water[1], depth / 0.68), 0.92 + ripple * 0.12);
   });
   return finish(c);
 }
@@ -852,17 +917,17 @@ export function snowTexture(): THREE.CanvasTexture {
 }
 
 /** A dark grid that glows, for the city's ground. */
-export function neonGridTexture(): THREE.CanvasTexture {
+export function neonGridTexture(colors = { bg: '#0c0818', line: '#7a3ad8', glow: '#b84aff', fine: 'rgba(58,220,255,0.5)' }): THREE.CanvasTexture {
   const S = 256;
   const [c, ctx] = canvas(S);
-  ctx.fillStyle = '#0c0818';
+  ctx.fillStyle = colors.bg;
   ctx.fillRect(0, 0, S, S);
   ctx.shadowBlur = 10;
-  ctx.shadowColor = '#b84aff';
-  ctx.strokeStyle = '#7a3ad8';
+  ctx.shadowColor = colors.glow;
+  ctx.strokeStyle = colors.line;
   ctx.lineWidth = 3;
   ctx.strokeRect(1.5, 1.5, S - 3, S - 3);
-  ctx.strokeStyle = 'rgba(58,220,255,0.5)';
+  ctx.strokeStyle = colors.fine;
   ctx.lineWidth = 1.5;
   ctx.beginPath();
   ctx.moveTo(S / 2, 0);
@@ -874,16 +939,15 @@ export function neonGridTexture(): THREE.CanvasTexture {
 }
 
 /** Lit windows on a dark tower, tiled up the walls. */
-export function windowsTexture(): THREE.CanvasTexture {
+export function windowsTexture(lit: readonly string[] = ['#ffd27a', '#7ae8ff', '#ff7ae0', '#fff4d8'], dark = '#241c34'): THREE.CanvasTexture {
   const S = 128;
   const [c, ctx] = canvas(S);
   const rand = seededRandom(221);
   ctx.fillStyle = '#141020';
   ctx.fillRect(0, 0, S, S);
-  const lit = ['#ffd27a', '#7ae8ff', '#ff7ae0', '#fff4d8'];
   for (let y = 4; y < S; y += 16) {
     for (let x = 4; x < S; x += 16) {
-      ctx.fillStyle = rand() < 0.55 ? lit[Math.floor(rand() * lit.length)] : '#241c34';
+      ctx.fillStyle = rand() < 0.55 ? lit[Math.floor(rand() * lit.length)] : dark;
       ctx.fillRect(x, y, 9, 10);
     }
   }
@@ -891,13 +955,13 @@ export function windowsTexture(): THREE.CanvasTexture {
 }
 
 /** A soft sea of cloud seen from above, for the sky track's void. */
-export function cloudSeaTexture(): THREE.CanvasTexture {
+export function cloudSeaTexture(shadow: RGB = [196, 170, 230], light: RGB = [255, 244, 250]): THREE.CanvasTexture {
   const S = 512;
   const [c, ctx] = canvas(S);
   const n = fbm(S, 3, 6, 231);
   paint(ctx, S, S, (_x, _y, i) => {
     const v = Math.min(1, Math.max(0, (n[i] - 0.3) * 1.8));
-    return mix([196, 170, 230], [255, 244, 250], v);
+    return mix(shadow, light, v);
   });
   return finish(c);
 }

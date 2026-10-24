@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { betterCup, cupKey, cupTrophies, foundShortcut, progress, raceKey, recordCup, recordRace, recordStyle, resetProgress, trophyFor, unlockParam, unlocks, type CupResult } from '../src/core/progress';
+import { betterCup, carryOver, cupKey, cupTrophies, foundShortcut, progress, raceKey, recordCup, recordRace, recordStyle, resetProgress, trophyFor, unlockParam, unlocks, type CupResult } from '../src/core/progress';
 import { CUPS } from '../src/tracks/index';
 
 const cup = (place: number, points = 60, timeMs = 300000, sweep = false) => ({ place, points, timeMs, sweep });
@@ -31,20 +31,20 @@ describe('progress', () => {
   });
 
   it('records a cup, and only improves on it', () => {
-    const first = recordCup('nonagon', '100cc', false, cup(2, 50));
+    const first = recordCup('nonagon-infinity', '100cc', false, cup(2, 50));
     expect(first).toMatchObject({ trophy: 'silver', improved: true, unlocked: ['randomCup'] });
-    expect(recordCup('nonagon', '100cc', false, cup(3, 40))).toMatchObject({ trophy: 'bronze', improved: false, unlocked: [] });
-    expect(recordCup('nonagon', '100cc', false, cup(1, 60))).toMatchObject({ trophy: 'gold', improved: true });
-    expect(progress().cups[cupKey('nonagon', '100cc')].trophy).toBe('gold');
+    expect(recordCup('nonagon-infinity', '100cc', false, cup(3, 40))).toMatchObject({ trophy: 'bronze', improved: false, unlocked: [] });
+    expect(recordCup('nonagon-infinity', '100cc', false, cup(1, 60))).toMatchObject({ trophy: 'gold', improved: true });
+    expect(progress().cups[cupKey('nonagon-infinity', '100cc')].trophy).toBe('gold');
     // Mirror is its own record.
-    expect(progress().cups[cupKey('nonagon', '100cc', true)]).toBeUndefined();
-    expect(cupTrophies(progress(), 'nonagon').map((t) => t.engine)).toEqual(['100cc']);
+    expect(progress().cups[cupKey('nonagon-infinity', '100cc', true)]).toBeUndefined();
+    expect(cupTrophies(progress(), 'nonagon-infinity').map((t) => t.engine)).toEqual(['100cc']);
   });
 
   it('unlocks 200cc with a gold at 150cc and Mirror with gold in every album cup', () => {
-    recordCup('nonagon', '150cc', false, cup(1));
+    recordCup('nonagon-infinity', '150cc', false, cup(1));
     expect(unlocks(progress())).toMatchObject({ class200: true, mirror: false });
-    for (const c of CUPS.slice(1)) recordCup(c.id, '50cc', false, cup(1));
+    for (const c of CUPS.filter((c) => c.id !== 'nonagon-infinity')) recordCup(c.id, '50cc', false, cup(1));
     expect(unlocks(progress()).mirror).toBe(true);
   });
 
@@ -67,6 +67,18 @@ describe('progress', () => {
     expect(recordStyle('rattlesnake-run', '100cc', 0)).toEqual({ best: false, prev: null });
     expect(recordStyle('rattlesnake-run', '100cc', 500)).toEqual({ best: true, prev: null });
     expect(recordStyle('rattlesnake-run', '100cc', 400)).toEqual({ best: false, prev: 500 });
+  });
+
+  it("carries a retired cup's trophies to the album cup that took its tracks, never over one won there", () => {
+    const r = (trophy: CupResult['trophy']): CupResult => ({ trophy, place: 1, points: 60, timeMs: 300000, sweep: false, at: 0 });
+    const out = carryOver({ 'microtonal.150cc': r('gold'), 'apocalypse.100cc.mirror': r('silver'), 'nonagon.100cc': r('bronze'), 'ice-death-planets.100cc': r('gold'), 'phantom-island.50cc': r('gold') });
+    expect(out).toEqual({
+      'flying-microtonal-banana.150cc': r('gold'),
+      'petrodragonic-apocalypse.100cc.mirror': r('silver'),
+      'ice-death-planets.100cc': r('gold'),
+      'phantom-island.50cc': r('gold'),
+    });
+    expect(unlocks({ cups: out, races: {}, style: {}, shortcuts: [] }).class200).toBe(true);
   });
 
   it('a shortcut is new once', () => {

@@ -1,114 +1,4 @@
 {
- "Mr. Beat": [
-  {
-   "id": "kglw2017-01-25",
-   "file": "06 Mr. Beat.mp3",
-   "date": "2017-01-25",
-   "venue": "Bakehouse Studios",
-   "seconds": 215,
-   "start": 5.1,
-   "gain": 0
-  },
-  {
-   "id": "kglw2019-10-14",
-   "file": "10. Mr. Beat.mp3",
-   "date": "2019-10-14",
-   "venue": "L'Olympia",
-   "seconds": 281,
-   "start": 0,
-   "gain": 1.5
-  },
-  {
-   "id": "kglw2020-02-21",
-   "file": "14 - Mr. Beat.mp3",
-   "date": "2020-02-21",
-   "venue": "The Croxton",
-   "seconds": 257,
-   "start": 0,
-   "gain": 8
-  },
-  {
-   "id": "kglw2022-10-31",
-   "file": "05 - Mr. Beat.mp3",
-   "date": "2022-10-31",
-   "venue": "The Criterion, Oklahoma",
-   "seconds": 349,
-   "start": 0,
-   "gain": 3
-  },
-  {
-   "id": "kglw2023-06-01.sbd-flac",
-   "file": "07 Mr. Beat.mp3",
-   "date": "2023-06-01",
-   "venue": "The Caverns",
-   "seconds": 303,
-   "start": 0,
-   "gain": -2
-  },
-  {
-   "id": "kglw2023-08-29",
-   "file": "kglw2023-08-29d1t05 Mr. Beat.mp3",
-   "date": "2023-08-29",
-   "venue": "Le Bikini, Ramonville-Saint-Agne, France",
-   "seconds": 328,
-   "start": 0,
-   "gain": 5
-  },
-  {
-   "id": "kglw2024-05-22.Hamburg24",
-   "file": "04 - Mr Beat.mp3",
-   "date": "2024-05-22",
-   "venue": "Stadtpark Open Air",
-   "seconds": 529,
-   "start": 0,
-   "gain": 8
-  },
-  {
-   "id": "kglw2024-05-26.dankski",
-   "file": "kglw2024.05.26t03.mp3",
-   "date": "2024-05-26",
-   "venue": "Liverpool Olympia",
-   "seconds": 281,
-   "start": 12.8,
-   "gain": 5.5
-  },
-  {
-   "id": "kglw2024-08-24.daank",
-   "file": "kglw2024.08.24t06.mp3",
-   "date": "2024-08-24",
-   "venue": "Jacobs Pavilion",
-   "seconds": 215,
-   "start": 0,
-   "gain": 9
-  },
-  {
-   "id": "kglw2024-09-09.LATESHOW-mysteryjackofficial",
-   "file": "13 Mr. Beat.mp3",
-   "date": "2024-09-09",
-   "venue": "Red Rocks Amphitheatre",
-   "seconds": 422,
-   "start": 0,
-   "gain": 10.5
-  },
-  {
-   "id": "kglw2024-11-16",
-   "file": "kglw2024-11-16-mk21_03.mp3",
-   "date": "2024-11-16",
-   "venue": "White Oak Music Hall",
-   "seconds": 415,
-   "start": 0,
-   "gain": 7
-  },
-  {
-   "id": "kglw2025-08-15.dpa4006-decca.flac24",
-   "file": "kglw2025-08-15dpa4006-decca-t04.mp3",
-   "date": "2025-08-15",
-   "venue": "Field of Vision - Meadow Creek",
-   "seconds": 354,
-   "start": 0,
-   "gain": 4
-  }
- ],
  "Rattlesnake": [
   {
    "id": "kglw2017-04-14.sp-cmc-8.flac1644",
@@ -329,17 +219,6 @@
    "gain": 10
   }
  ],
- "Fishing for Fishies": [
-  {
-   "id": "kglw2025-11-06",
-   "file": "08 - Fishing for Fishies.mp3",
-   "date": "2025-11-06",
-   "venue": "013",
-   "seconds": 1264,
-   "start": 3.9,
-   "gain": 4.5
-  }
- ],
  "Ice V": [
   {
    "id": "kglw2022-10-04.aud.flac24",
@@ -448,80 +327,6 @@
    "seconds": 162,
    "start": 0,
    "gain": 7
-  }
- ],
- "Cyboogie": [
-  {
-   "id": "kg2019-06-27",
-   "file": "23-Cyboogie.mp3",
-   "date": "2019-06-27",
-   "venue": "Forum Melbourne",
-   "seconds": 407,
-   "start": 38.7,
-   "gain": 2
-  },
-  {
-   "id": "kglw2019-07-12",
-   "file": "05. Cyboogie.mp3",
-   "date": "2019-07-12",
-   "venue": "Thebarton Theatre",
-   "seconds": 417,
-   "start": 0,
-   "gain": 1.5
-  },
-  {
-   "id": "KGATLW082319",
-   "file": "15.Cyboogie.mp3",
-   "date": "2019-08-23",
-   "venue": "The Riverside Theater",
-   "seconds": 407,
-   "start": 0,
-   "gain": 9.5
-  },
-  {
-   "id": "kglw2019-09-02.ca14.flac1648",
-   "file": "14-Cyboogie.mp3",
-   "date": "2019-09-02",
-   "venue": "The Tabernacle",
-   "seconds": 477,
-   "start": 21.3,
-   "gain": 6
-  },
-  {
-   "id": "kglw2019-10-11.dpa4061.flac2448",
-   "file": "09 - Cyboogie.mp3",
-   "date": "2019-10-11",
-   "venue": "Carlswerk Victoria",
-   "seconds": 459,
-   "start": 33.1,
-   "gain": 7.5
-  },
-  {
-   "id": "kglw2020-02-21",
-   "file": "26 - Cyboogie.mp3",
-   "date": "2020-02-21",
-   "venue": "The Croxton",
-   "seconds": 515,
-   "start": 0,
-   "gain": 7
-  },
-  {
-   "id": "kglw2025-11-01",
-   "file": "06 - Cyboogie.mp3",
-   "date": "2025-11-01",
-   "venue": "Electric Brixton",
-   "seconds": 1053,
-   "start": 0,
-   "gain": 7.5
-  },
-  {
-   "id": "kglw2026-08-21.birds",
-   "file": "14-Cyboogie.mp3",
-   "date": "2026-08-21",
-   "venue": "Forest Hills Stadium",
-   "seconds": 551,
-   "start": 0,
-   "gain": 16
   }
  ],
  "Mars for the Rich": [
@@ -3517,7 +3322,9 @@
    "file": "King Gizzard & The Lizard Wizard - Live in Bulgaria '25 - 11 Altered Beast III (Live in Bulgaria '25).mp3",
    "date": "2025-06-08",
    "venue": "Ancient Theatre",
-   "seconds": 168
+   "seconds": 168,
+   "start": 0,
+   "gain": 1.5
   }
  ],
  "Alter Me III": [
@@ -3609,7 +3416,9 @@
    "file": "King Gizzard & The Lizard Wizard - Live in Bulgaria '25 - 13 Altered Beast IV (Live in Bulgaria '25).mp3",
    "date": "2025-06-08",
    "venue": "Ancient Theatre",
-   "seconds": 361
+   "seconds": 361,
+   "start": 10.3,
+   "gain": 1
   },
   {
    "id": "kglw2025-08-02.SBD",
@@ -4198,6 +4007,695 @@
    "seconds": 585,
    "start": 0,
    "gain": 3
+  }
+ ],
+ "Open Water": [
+  {
+   "id": "kglw2017-03-31",
+   "file": "01-Open Water.mp3",
+   "date": "2017-03-31",
+   "venue": "Webster Hall",
+   "seconds": 349,
+   "start": 8.5,
+   "gain": 1
+  },
+  {
+   "id": "kglw2019-07-12",
+   "file": "08. Open Water.mp3",
+   "date": "2019-07-12",
+   "venue": "Thebarton Theatre",
+   "seconds": 484,
+   "start": 0,
+   "gain": 0.5
+  },
+  {
+   "id": "kg2021-04-22",
+   "file": "5. Open Water (Live In Sydney _21).mp3",
+   "date": "2021-04-22",
+   "venue": "The Enmore Theatre",
+   "seconds": 339,
+   "start": 0,
+   "gain": -3.5
+  },
+  {
+   "id": "kglw2022-05-22",
+   "file": "kglw2022-05-22t18Open Water.mp3",
+   "date": "2022-05-22",
+   "venue": "Mr. Smalls Theatre",
+   "seconds": 638,
+   "start": 0,
+   "gain": 13.5
+  },
+  {
+   "id": "kglw2025-06-08.night.SBD.flac",
+   "file": "King Gizzard & The Lizard Wizard - Live at Red Rocks '23 - 30 Open Water (Live at Red Rocks '23).mp3",
+   "date": "2023-06-08",
+   "venue": "Red Rocks",
+   "seconds": 538,
+   "start": 0,
+   "gain": -2
+  },
+  {
+   "id": "kglw2024-09-14.bandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live at The Gorge Amphitheatre, Quincy, WA (9-14-24) - 04 Open Water (Live).mp3",
+   "date": "2024-09-14",
+   "venue": "The Gorge Amphitheater",
+   "seconds": 422,
+   "start": 4.2,
+   "gain": 3.5
+  },
+  {
+   "id": "kglw2024-11-12.bandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live in Oklahoma City '24 - 06 Open Water (Live in Oklahoma City '24).mp3",
+   "date": "2024-11-12",
+   "venue": "The Criterion",
+   "seconds": 528,
+   "start": 0,
+   "gain": 1
+  },
+  {
+   "id": "kglw2025-06-04.SBD.flac",
+   "file": "King Gizzard & The Lizard Wizard - Live in Athens '25 - 01 Open Water (Live in Athens '25).mp3",
+   "date": "2025-06-04",
+   "venue": "Lycabettus Theatre",
+   "seconds": 569,
+   "start": 46.1,
+   "gain": 3
+  },
+  {
+   "id": "kglw2025-08-10",
+   "file": "[2025.08.10] King Gizzard & The Lizard Wizard - Live at the Hollywood Bowl '25 (Edited)/12 - Open Water.mp3",
+   "date": "2025-08-10",
+   "venue": "Hollywood Bowl",
+   "seconds": 474,
+   "start": 0,
+   "gain": 3.5
+  },
+  {
+   "id": "kglw2026-08-14.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live at Field of Vision II '26 - 07 Open Water (Live at Field of Vision II '26).mp3",
+   "date": "2026-08-14",
+   "venue": "Field of Vision II, Buena Vista, CO",
+   "seconds": 505,
+   "start": 0,
+   "gain": 3
+  },
+  {
+   "id": "kglw2026-08-20",
+   "file": "16-Open Water.mp3",
+   "date": "2026-08-20",
+   "venue": "Forest Hills",
+   "seconds": 656,
+   "start": 0,
+   "gain": 3.5
+  },
+  {
+   "id": "kglw2026-08-21.Bootsy",
+   "file": "0.9 Open Water.mp3",
+   "date": "2026-08-21",
+   "venue": "Forest Hills Stadium",
+   "seconds": 808,
+   "start": 14.1,
+   "gain": 15
+  }
+ ],
+ "Sleep Drifter": [
+  {
+   "id": "kglw2017-04-01.mysteryjack",
+   "file": "06 Sleep Drifter.mp3",
+   "date": "2017-04-01",
+   "venue": "Webster Hall- New York, NY",
+   "seconds": 386,
+   "start": 0,
+   "gain": 11
+  },
+  {
+   "id": "kglw2017-09-28.mysteryjack",
+   "file": "11 Sleep Drifter.mp3",
+   "date": "2017-09-28",
+   "venue": "One Eyed Jacks",
+   "seconds": 353,
+   "start": 70.6,
+   "gain": 8
+  },
+  {
+   "id": "kglw2018-06-01.slimreaper",
+   "file": "09. Sleep Drifter.mp3",
+   "date": "2018-06-01",
+   "venue": "The Observatory North Park",
+   "seconds": 294,
+   "start": 0,
+   "gain": 11
+  },
+  {
+   "id": "kglw2018-06-14",
+   "file": "kglw2018-06-14d1t17.mp3",
+   "date": "2018-06-14",
+   "venue": "Royale",
+   "seconds": 400,
+   "start": 0,
+   "gain": 10
+  },
+  {
+   "id": "kglw2018-06-22",
+   "file": "13 - Sleep Drifter.mp3",
+   "date": "2018-06-22",
+   "venue": "Stubbs BBQ Waller Creek Amphitheater",
+   "seconds": 433,
+   "start": 20.1,
+   "gain": 17
+  },
+  {
+   "id": "kglw2019-07-12",
+   "file": "09. Sleep Drifter.mp3",
+   "date": "2019-07-12",
+   "venue": "Thebarton Theatre",
+   "seconds": 197,
+   "start": 32.3,
+   "gain": 3.5
+  },
+  {
+   "id": "kglw2021-02-26.bootlegger",
+   "file": "16 Sleep Drifter (Live In Melbourne '21).mp3",
+   "date": "2021-02-26",
+   "venue": "Sidney Myer Music Bowl",
+   "seconds": 321,
+   "start": 0,
+   "gain": 9.5
+  },
+  {
+   "id": "kglw2022-10-21.p170",
+   "file": "kglw2022-10-21t07.mp3",
+   "date": "2022-10-21",
+   "venue": "Forest Hills Stadium",
+   "seconds": 196,
+   "start": 0,
+   "gain": 7
+  },
+  {
+   "id": "kglw2023-03-07.daank",
+   "file": "03 Sleep Drifter.mp3",
+   "date": "2023-03-07",
+   "venue": "Münchenbryggeriet",
+   "seconds": 431,
+   "start": 0,
+   "gain": 11.5
+  },
+  {
+   "id": "kglw2024-09-14.bandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live at The Gorge Amphitheatre, Quincy, WA (9-14-24) - 03 Sleep Drifter (Live).mp3",
+   "date": "2024-09-14",
+   "venue": "The Gorge Amphitheater",
+   "seconds": 277,
+   "start": 0,
+   "gain": 5
+  },
+  {
+   "id": "kglw2024-05-23.SBD.flac",
+   "file": "King Gizzard & The Lizard Wizard - Live in Barcelona '25 - 10 Sleep Drifter (Live in Barcelona '25).mp3",
+   "date": "2025-05-23",
+   "venue": "Plaza Mayor de El Poble Espanyol",
+   "seconds": 356,
+   "start": 0,
+   "gain": 3
+  },
+  {
+   "id": "kglw2026-08-16.Full-Three-Shows-discocape",
+   "file": "kglw2026-08-14-4ch_discocape_11.mp3",
+   "date": "2026-08-16",
+   "venue": "Meadow Creek",
+   "seconds": 209,
+   "start": 0,
+   "gain": 9
+  }
+ ],
+ "Doom City": [
+  {
+   "id": "kglw2017-04-01.mysteryjack",
+   "file": "02 Doom City.mp3",
+   "date": "2017-04-01",
+   "venue": "Webster Hall- New York, NY",
+   "seconds": 196,
+   "start": 12.3,
+   "gain": 6.5
+  },
+  {
+   "id": "kglw2017-10-07.mysteryjack",
+   "file": "11 Doom City.mp3",
+   "date": "2017-10-07",
+   "venue": "Neurolux- Boise, ID",
+   "seconds": 216,
+   "start": 10.6,
+   "gain": 7.5
+  },
+  {
+   "id": "kglw2018-06-14",
+   "file": "kglw2018-06-14d1t19.mp3",
+   "date": "2018-06-14",
+   "venue": "Royale",
+   "seconds": 202,
+   "start": 0,
+   "gain": 5
+  },
+  {
+   "id": "kglw2019-09-04",
+   "file": "10 - Doom City.mp3",
+   "date": "2019-09-04",
+   "venue": "Stubb's Waller Creek Amphitheater",
+   "seconds": 244,
+   "start": 57.5,
+   "gain": 12.5
+  },
+  {
+   "id": "kglw2021-02-26.bootlegger",
+   "file": "04 Doom City (Live In Melbourne '21).mp3",
+   "date": "2021-02-26",
+   "venue": "Sidney Myer Music Bowl",
+   "seconds": 200,
+   "start": 18.3,
+   "gain": 0.5
+  },
+  {
+   "id": "kglw2022-05-25",
+   "file": "kglw2022-05-25t03Doom City.mp3",
+   "date": "2022-05-25",
+   "venue": "Higher Ground",
+   "seconds": 189,
+   "start": 12.9,
+   "gain": 7.5
+  },
+  {
+   "id": "kglw2022-10-10.bootlegger",
+   "file": "34. Doom City (Live At Red Rocks '22).mp3",
+   "date": "2022-10-10",
+   "venue": "Red Rocks Amphitheatre",
+   "seconds": 165,
+   "start": 11.4,
+   "gain": 1
+  },
+  {
+   "id": "kglw2022-10-31",
+   "file": "13 - Doom City.mp3",
+   "date": "2022-10-31",
+   "venue": "The Criterion, Oklahoma",
+   "seconds": 245,
+   "start": 2.2,
+   "gain": 7
+  },
+  {
+   "id": "kglw2023-06-02.FLAC.bootleggermix",
+   "file": "King Gizzard & The Lizard Wizard - Live at The Caverns '23 - 14 Doom City (Live at The Caverns '23).mp3",
+   "date": "2023-06-02",
+   "venue": "The Caverns",
+   "seconds": 188,
+   "start": 31.4,
+   "gain": -2.5
+  },
+  {
+   "id": "kglw2024-08-27.bandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live at The Dell Music Center- Philadelphia- PA (8-27-24) 2/King Gizzard & The Lizard Wizard - Live at The Dell Music Center, Philadelphia, PA (8-27-24) - 02 Doom City (Live).mp3",
+   "date": "2024-08-27",
+   "venue": "The Dell Music Center",
+   "seconds": 236,
+   "start": 21.8,
+   "gain": 1.5
+  },
+  {
+   "id": "kglw2025-05-19.SBD.flac",
+   "file": "King Gizzard & The Lizard Wizard - Live in Lisbon '25 - 07 Doom City (Live in Lisbon '25).mp3",
+   "date": "2025-05-19",
+   "venue": "Coliseu dos Recreios",
+   "seconds": 283,
+   "start": 0,
+   "gain": 2
+  },
+  {
+   "id": "kglw2025-12-07.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live in Brisbane '25 - 03 Doom City (Live In Brisbane '25).mp3",
+   "date": "2025-12-07",
+   "venue": "Fortitude Music Hall, Brisbane, QLD, Australia",
+   "seconds": 221,
+   "start": 31.9,
+   "gain": -1.5
+  }
+ ],
+ "Gliese 710": [
+  {
+   "id": "kglw2026-08-15.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live at Field of Vision II '26 - 20 Gliese 710 (Live at Field of Vision II '26).mp3",
+   "date": "2026-08-15",
+   "venue": "Field of Vision II, Buena Vista, CO",
+   "seconds": 829,
+   "start": 0,
+   "gain": 8
+  },
+  {
+   "id": "kglw2026-08-16.Full-Three-Shows-discocape",
+   "file": "kglw2026-08-15-4ch-discocape_21.mp3",
+   "date": "2026-08-16",
+   "venue": "Meadow Creek",
+   "seconds": 829,
+   "start": 0,
+   "gain": 11
+  },
+  {
+   "id": "kglw2026-08-21.Bootsy",
+   "file": "09 Gliese 710.mp3",
+   "date": "2026-08-21",
+   "venue": "Forest Hills Stadium",
+   "seconds": 622,
+   "start": 0,
+   "gain": 2.5
+  }
+ ],
+ "Motor Spirit": [
+  {
+   "id": "kglw2023-06-07.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live at Red Rocks '23 - 02 Motor Spirit (Live at Red Rocks '23).mp3",
+   "date": "2023-06-07",
+   "venue": "Red Rocks Amphitheatre",
+   "seconds": 456,
+   "start": 0,
+   "gain": -1
+  },
+  {
+   "id": "kglw2024-05-22.Hamburg24",
+   "file": "20 - Motor Spirit.mp3",
+   "date": "2024-05-22",
+   "venue": "Stadtpark Open Air",
+   "seconds": 610,
+   "start": 8.7,
+   "gain": 7.5
+  },
+  {
+   "id": "kglw2024-08-15.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live at The Anthem, Washington, DC (8-15-24) - 13 Motor Spirit (Live).mp3",
+   "date": "2024-08-15",
+   "venue": "The Anthem, Washington DC, USA",
+   "seconds": 728,
+   "start": 8.6,
+   "gain": 0
+  },
+  {
+   "id": "kglw2024-08-25.bandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live at Megacorp Pavilion- Newport- KY (8-25-24) 2/King Gizzard & The Lizard Wizard - Live at Megacorp Pavilion, Newport, KY (8-25-24) - 04 Motor Spirit (Live).mp3",
+   "date": "2024-08-25",
+   "venue": "Megacorp Pavilion",
+   "seconds": 654,
+   "start": 8.3,
+   "gain": -1.5
+  },
+  {
+   "id": "kglw2024-09-03.bandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live at Minneapolis Armory- Minneapolis- MN (9-3-24) 2/King Gizzard & The Lizard Wizard - Live at Minneapolis Armory, Minneapolis, MN (9-3-24) - 21 Motor Spirit (Live).mp3",
+   "date": "2024-09-03",
+   "venue": "Minneapolis Armory",
+   "seconds": 554,
+   "start": 11,
+   "gain": 0
+  },
+  {
+   "id": "kglw2024-09-09.lateshowbandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live at Red Rocks Amphitheatre LATE- Morrison- CO (9-9-24) (1)/King Gizzard & The Lizard Wizard - Live at Red Rocks Amphitheatre LATE, Morrison, CO (9-9-24) - 02 Motor Spirit (Live).mp3",
+   "date": "2024-09-09",
+   "venue": "Red Rocks Amphitheatre",
+   "seconds": 661,
+   "start": 9.3,
+   "gain": 1
+  },
+  {
+   "id": "kglw2024-11-03.bandcampbootlegger",
+   "file": "16 Motor Spirit (Live in Paso Robles '24).mp3",
+   "date": "2024-11-03",
+   "venue": "Vina Robles Amphitheatre",
+   "seconds": 543,
+   "start": 8.4,
+   "gain": -0.5
+  },
+  {
+   "id": "kglw2024-11-13.bandcampbootlegger",
+   "file": "15 Motor Spirit (Live in Arkansas '24).mp3",
+   "date": "2024-11-13",
+   "venue": "JJ's Live",
+   "seconds": 593,
+   "start": 10.4,
+   "gain": -0.5
+  },
+  {
+   "id": "kglw2024-05-23.SBD.flac",
+   "file": "King Gizzard & The Lizard Wizard - Live in Barcelona '25 - 16 Motor Spirit (Live in Barcelona '25).mp3",
+   "date": "2025-05-23",
+   "venue": "Plaza Mayor de El Poble Espanyol",
+   "seconds": 696,
+   "start": 8.8,
+   "gain": -1
+  },
+  {
+   "id": "kglw2025-06-05.SBD.flac",
+   "file": "King Gizzard & The Lizard Wizard - Live in Athens '25 - 19 Motor Spirit (Live in Athens '25).mp3",
+   "date": "2025-06-05",
+   "venue": "Lycabettus Theatre",
+   "seconds": 676,
+   "start": 8.5,
+   "gain": 0
+  },
+  {
+   "id": "kglw2025-08-17.SBD.wav",
+   "file": "King Gizzard & The Lizard Wizard - Live at Field of Vision '25 - 59 Motor Spirit (Live at Field of Vision '25).mp3",
+   "date": "2025-08-17",
+   "venue": "Field of Vision at Meadow Creek",
+   "seconds": 722,
+   "start": 8.7,
+   "gain": 0
+  },
+  {
+   "id": "kglw2025-12-13.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Rockin' in Melbourne '25 - 19 Motor Spirit (Live In Melbourne '25).mp3",
+   "date": "2025-12-13",
+   "venue": "Sidney Myer Music Bowl, Melbourne, VIC, Australia",
+   "seconds": 454,
+   "start": 0,
+   "gain": -0.5
+  }
+ ],
+ "Flamethrower": [
+  {
+   "id": "kglw2024-05-23.Amsterdam24",
+   "file": "06 - Flamethrower.mp3",
+   "date": "2024-05-23",
+   "venue": "AFAS Live",
+   "seconds": 279,
+   "start": 0,
+   "gain": 6
+  },
+  {
+   "id": "kglw2024-05-30.Bristol24",
+   "file": "08 - Flamethrower.mp3",
+   "date": "2024-05-30",
+   "venue": "Bristol Beacon",
+   "seconds": 303,
+   "start": 0,
+   "gain": 3.5
+  },
+  {
+   "id": "kglw2024-08-20.mk4v.cmc1k.sx-r4.flac",
+   "file": "kglw2024-08-20.mk4v.cmc1k.sx-r4+.24bit-04.mp3",
+   "date": "2024-08-20",
+   "venue": "Thompson's Point",
+   "seconds": 268,
+   "start": 0,
+   "gain": 3.5
+  },
+  {
+   "id": "kglw2024-09-01.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live at Northerly Island- Chicago- IL (9-1-24)/King Gizzard & The Lizard Wizard - Live at Northerly Island, Chicago, IL (9-1-24) - 17 Flamethrower (Live).mp3",
+   "date": "2024-09-01",
+   "venue": "Northerly Island",
+   "seconds": 333,
+   "start": 0,
+   "gain": 0
+  },
+  {
+   "id": "kglw2024-09-09.lateshowbandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live at Red Rocks Amphitheatre LATE- Morrison- CO (9-9-24) (1)/King Gizzard & The Lizard Wizard - Live at Red Rocks Amphitheatre LATE, Morrison, CO (9-9-24) - 04 Flamethrower (Live).mp3",
+   "date": "2024-09-09",
+   "venue": "Red Rocks Amphitheatre",
+   "seconds": 264,
+   "start": 0,
+   "gain": 1
+  },
+  {
+   "id": "kglw2024-11-01.bandcampbootlegger",
+   "file": "09 Flamethrower (Live in Los Angeles '24).mp3",
+   "date": "2024-11-01",
+   "venue": "Kia Forum",
+   "seconds": 315,
+   "start": 0,
+   "gain": 1.5
+  },
+  {
+   "id": "kglw2024-11-16.bandcampbootleg",
+   "file": "King Gizzard & The Lizard Wizard - Live in Houston '24 - 15 Flamethrower (Live in Houston '24).mp3",
+   "date": "2024-11-16",
+   "venue": "White Oak Music Hall",
+   "seconds": 437,
+   "start": 0,
+   "gain": -1.5
+  },
+  {
+   "id": "kglw2025-05-20.SBD.flac",
+   "file": "King Gizzard & The Lizard Wizard - Live in Lisbon '25 - 10 Flamethrower (Live in Lisbon '25).mp3",
+   "date": "2025-05-20",
+   "venue": "Coliseu dos Recreios",
+   "seconds": 415,
+   "start": 0,
+   "gain": 1
+  },
+  {
+   "id": "kglw2025-05-29.SBD.flac",
+   "file": "King Gizzard & The Lizard Wizard - Live in Lithuania '25 - 10 Flamethrower (Outro) (Live in Lithuania '25).mp3",
+   "date": "2025-05-29",
+   "venue": "Lukiškės Prison 2.0",
+   "seconds": 459,
+   "start": 31.5,
+   "gain": 1.5
+  },
+  {
+   "id": "kglw2025-08-16.SBD.wav",
+   "file": "King Gizzard & The Lizard Wizard - Live at Field of Vision '25 - 02 Flamethrower (Live at Field of Vision '25).mp3",
+   "date": "2025-08-16",
+   "venue": "Field of Vision at Meadow Creek",
+   "seconds": 306,
+   "start": 0,
+   "gain": -1
+  },
+  {
+   "id": "kglw2025-11-02.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live in London '25 - 13 Flamethrower (Live in London '25).mp3",
+   "date": "2025-11-02",
+   "venue": "Electric Brixton, London, England, United Kingdom",
+   "seconds": 772,
+   "start": 0,
+   "gain": 5.5
+  },
+  {
+   "id": "kglw2025-12-04.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live in Sydney '25 - 10 Flamethrower (Live In Sydney '25).mp3",
+   "date": "2025-12-04",
+   "venue": "Enmore Theatre, Sydney, NSW, Australia",
+   "seconds": 302,
+   "start": 0,
+   "gain": -1.5
+  }
+ ],
+ "Iron Lung": [
+  {
+   "id": "kglw2022-10-02.R07",
+   "file": "27-Iron Lung.mp3",
+   "date": "2022-10-02",
+   "venue": "Greek Theater",
+   "seconds": 577,
+   "start": 0,
+   "gain": 12.5
+  },
+  {
+   "id": "kglw2022-10-15.daank",
+   "file": "kglw2022.10.15t14.mp3",
+   "date": "2022-10-15",
+   "venue": "Radius",
+   "seconds": 695,
+   "start": 0,
+   "gain": 7
+  },
+  {
+   "id": "kglw2022-12-10.progdog1",
+   "file": "kglw2022.12.10.progdog1.flac2444/kglw202210.mp3",
+   "date": "2022-12-10",
+   "venue": "Palace Foreshore",
+   "seconds": 581,
+   "start": 0,
+   "gain": 14
+  },
+  {
+   "id": "kglw2023-06-01.sbd-flac",
+   "file": "08 Iron Lung.mp3",
+   "date": "2023-06-01",
+   "venue": "The Caverns",
+   "seconds": 480,
+   "start": 0,
+   "gain": 1.5
+  },
+  {
+   "id": "kglw.net2023-08-15",
+   "file": "14-Iron Lung.mp3",
+   "date": "2023-08-15",
+   "venue": "E-Werk",
+   "seconds": 895,
+   "start": 61.5,
+   "gain": 7
+  },
+  {
+   "id": "kglw2024-05-29.dankski",
+   "file": "kglw2024.05.29t05.mp3",
+   "date": "2024-05-29",
+   "venue": "The Civic Hall",
+   "seconds": 628,
+   "start": 28.9,
+   "gain": 10
+  },
+  {
+   "id": "kglw2024-08-25.bandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live at Megacorp Pavilion- Newport- KY (8-25-24) 2/King Gizzard & The Lizard Wizard - Live at Megacorp Pavilion, Newport, KY (8-25-24) - 20 Iron Lung (Live).mp3",
+   "date": "2024-08-25",
+   "venue": "Megacorp Pavilion",
+   "seconds": 731,
+   "start": 0,
+   "gain": 2
+  },
+  {
+   "id": "kglw2024-11-02.bandcampbootlegger",
+   "file": "10 Iron Lung (Live in San Diego '24).mp3",
+   "date": "2024-11-02",
+   "venue": "Rady Shell",
+   "seconds": 655,
+   "start": 0,
+   "gain": 8.5
+  },
+  {
+   "id": "kglw2024-11-19.bandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live in Atlanta '24 - 10 Iron Lung (Live in Atlanta '24).mp3",
+   "date": "2024-11-19",
+   "venue": "Fox Theatre",
+   "seconds": 771,
+   "start": 31.1,
+   "gain": 3.5
+  },
+  {
+   "id": "kglw2025-07-28-PolyTapes",
+   "file": "18-Iron Lung.mp3",
+   "date": "2025-07-28",
+   "venue": "The Mann Music Center",
+   "seconds": 576,
+   "start": 46.3,
+   "gain": 8
+  },
+  {
+   "id": "kglw2025-08-08",
+   "file": "kglw2025-08-08-ozone-v2_18.mp3",
+   "date": "2025-08-08",
+   "venue": "Ford Amphitheater",
+   "seconds": 636,
+   "start": 0,
+   "gain": 8.5
+  },
+  {
+   "id": "kglw2026-08-14.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live at Field of Vision II '26 - 17 Iron Lung (Live at Field of Vision II '26).mp3",
+   "date": "2026-08-14",
+   "venue": "Field of Vision II, Buena Vista, CO",
+   "seconds": 608,
+   "start": 0,
+   "gain": 6
   }
  ]
 }

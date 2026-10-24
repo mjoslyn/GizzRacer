@@ -40,65 +40,74 @@ import { buildImInYourMindFuzz } from './imInYourMindFuzz';
 /** Every track the picker offers, in cup order, each with its layout extras laid in (enrich.ts). */
 /** The tracks as drawn, before enrich.ts (tests and tools). */
 export const RAW_TRACK_LIST: { id: string; name: string; build: () => TrackDef }[] = [
-  { id: 'infinite-loop-speedway', name: 'Mr. Beat', build: buildInfiniteLoopSpeedway },
-  { id: 'rattlesnake-run', name: 'Rattlesnake', build: buildRattlesnakeRun },
-  { id: 'volcano-fortress', name: 'Magma', build: buildVolcanoFortress },
-  { id: 'polygondwanaland-jungle', name: 'Polygondwanaland', build: buildPolygondwanalandJungle },
-  { id: 'fishies-lagoon', name: 'Fishing for Fishies', build: buildFishiesLagoon },
-  { id: 'ice-v-glacier', name: 'Ice V', build: buildIceVGlacier },
-  { id: 'cyboogie-city', name: 'Cyboogie', build: buildCyboogieCity },
-  { id: 'butterfly-skyway', name: 'Catching Smoke', build: buildButterflySkyway },
-  { id: 'petrodragonic-apocalypse', name: 'Dragon', build: buildPetrodragonicApocalypse },
-  { id: 'hell-on-mars', name: 'Mars for the Rich', build: buildHellOnMars },
-  { id: 'supercell', name: 'Supercell', build: buildSupercell },
-  { id: 'murder-of-the-universe', name: 'The Lord of Lightning', build: buildMurderOfTheUniverse },
-  { id: 'phantom-island', name: 'Phantom Island', build: buildPhantomIsland },
-  { id: 'deadstick-drop', name: 'Deadstick', build: buildDeadstickDrop },
-  { id: 'panpsych-grove', name: 'Panpsych', build: buildPanpsychGrove },
-  { id: 'sea-of-doubt', name: 'Sea of Doubt', build: buildSeaOfDoubt },
-  { id: 'magenta-mountain', name: 'Magenta Mountain', build: buildMagentaMountain },
-  { id: 'kepler-22b', name: 'Kepler-22b', build: buildKepler22b },
-  { id: 'goblin-garden', name: 'The Garden Goblin', build: buildGoblinGarden },
-  { id: 'predator-x', name: 'Predator X', build: buildPredatorX },
-  { id: 'crumbling-castle', name: 'Crumbling Castle', build: buildCrumblingCastle },
-  { id: 'castle-in-the-air', name: 'The Castle in the Air', build: buildCastleInTheAir },
-  { id: 'inner-cell', name: 'Inner Cell', build: buildInnerCell },
-  { id: 'tetrachromacy', name: 'Tetrachromacy', build: buildTetrachromacy },
-  { id: 'robot-stop', name: 'Robot Stop', build: buildRobotStop },
-  { id: 'gamma-knife', name: 'Gamma Knife', build: buildGammaKnife },
-  { id: 'people-vultures', name: 'People-Vultures', build: buildPeopleVultures },
-  { id: 'wah-wah', name: 'Wah Wah', build: buildWahWah },
-  { id: 'planet-b', name: 'Planet B', build: buildPlanetB },
-  { id: 'mars-for-the-rich', name: 'Mars for the Rich', build: buildMarsForTheRich },
-  { id: 'perihelion', name: 'Perihelion', build: buildPerihelion },
-  { id: 'hell', name: 'Hell', build: buildHell },
   { id: 'im-in-your-mind', name: "I'm in Your Mind", build: buildImInYourMind },
   { id: 'im-not-in-your-mind', name: "I'm Not in Your Mind", build: buildImNotInYourMind },
   { id: 'cellophane', name: 'Cellophane', build: buildCellophane },
   { id: 'im-in-your-mind-fuzz', name: "I'm in Your Mind Fuzz", build: buildImInYourMindFuzz },
+  { id: 'robot-stop', name: 'Robot Stop', build: buildRobotStop },
+  { id: 'gamma-knife', name: 'Gamma Knife', build: buildGammaKnife },
+  { id: 'people-vultures', name: 'People-Vultures', build: buildPeopleVultures },
+  { id: 'wah-wah', name: 'Wah Wah', build: buildWahWah },
+  { id: 'rattlesnake-run', name: 'Rattlesnake', build: buildRattlesnakeRun },
+  { id: 'fishies-lagoon', name: 'Open Water', build: buildFishiesLagoon },
+  { id: 'butterfly-skyway', name: 'Sleep Drifter', build: buildButterflySkyway },
+  { id: 'cyboogie-city', name: 'Doom City', build: buildCyboogieCity },
+  { id: 'crumbling-castle', name: 'Crumbling Castle', build: buildCrumblingCastle },
+  { id: 'castle-in-the-air', name: 'The Castle in the Air', build: buildCastleInTheAir },
+  { id: 'inner-cell', name: 'Inner Cell', build: buildInnerCell },
+  { id: 'tetrachromacy', name: 'Tetrachromacy', build: buildTetrachromacy },
+  { id: 'planet-b', name: 'Planet B', build: buildPlanetB },
+  { id: 'mars-for-the-rich', name: 'Mars for the Rich', build: buildMarsForTheRich },
+  { id: 'perihelion', name: 'Perihelion', build: buildPerihelion },
+  { id: 'hell', name: 'Hell', build: buildHell },
+  { id: 'magenta-mountain', name: 'Magenta Mountain', build: buildMagentaMountain },
+  { id: 'kepler-22b', name: 'Kepler-22b', build: buildKepler22b },
+  { id: 'goblin-garden', name: 'The Garden Goblin', build: buildGoblinGarden },
+  { id: 'predator-x', name: 'Predator X', build: buildPredatorX },
+  { id: 'ice-v-glacier', name: 'Ice V', build: buildIceVGlacier },
+  { id: 'volcano-fortress', name: 'Magma', build: buildVolcanoFortress },
+  { id: 'polygondwanaland-jungle', name: 'Iron Lung', build: buildPolygondwanalandJungle },
+  { id: 'murder-of-the-universe', name: 'Gliese 710', build: buildMurderOfTheUniverse },
+  { id: 'infinite-loop-speedway', name: 'Motor Spirit', build: buildInfiniteLoopSpeedway },
+  { id: 'supercell', name: 'Supercell', build: buildSupercell },
+  { id: 'petrodragonic-apocalypse', name: 'Dragon', build: buildPetrodragonicApocalypse },
+  { id: 'hell-on-mars', name: 'Flamethrower', build: buildHellOnMars },
+  { id: 'phantom-island', name: 'Phantom Island', build: buildPhantomIsland },
+  { id: 'deadstick-drop', name: 'Deadstick', build: buildDeadstickDrop },
+  { id: 'panpsych-grove', name: 'Panpsych', build: buildPanpsychGrove },
+  { id: 'sea-of-doubt', name: 'Sea of Doubt', build: buildSeaOfDoubt },
 ];
 
 export const TRACK_LIST: { id: string; name: string; build: () => TrackDef }[] = RAW_TRACK_LIST.map((t) => ({ ...t, build: () => enrichTrack(t.build()) }));
 
-/** Grand Prix cups: four tracks each, in race order (indexes into TRACK_LIST). */
+/** Grand Prix cups, one an album, in the order the albums came out: four tracks each, in race order (indexes into TRACK_LIST). */
 export const CUPS: { id: string; name: string; tracks: number[] }[] = [
-  { id: 'nonagon', name: 'Nonagon Cup', tracks: [0, 1, 2, 3] },
-  { id: 'microtonal', name: 'Microtonal Cup', tracks: [4, 5, 6, 7] },
-  // Four ends of the world, the oil-field dragons last.
-  { id: 'apocalypse', name: 'Apocalypse Cup', tracks: [9, 10, 11, 8] },
-  // Phantom Island (2025): the island in the mist, the plane with no engine, the forest that's awake, and the sea at night.
-  { id: 'phantom-island', name: 'Phantom Island Cup', tracks: [12, 13, 14, 15] },
-  // Omnium Gatherum (2022): the pink mountain, the ocean planet, the goblin's garden, and the pliosaur.
-  { id: 'omnium-gatherum', name: 'Omnium Gatherum Cup', tracks: [16, 17, 18, 19] },
-  // Polygondwanaland (2017), in album order: the castle falling down, the castle on the clouds, the inside of a cell, and the fourth colour.
-  { id: 'polygondwanaland', name: 'Polygondwanaland Cup', tracks: [20, 21, 22, 23] },
+  // I'm in Your Mind Fuzz (November 2014): the suite the album opens with, four songs run into one, in order. Into the mind, out of it, the cellophane, and the fuzz.
+  { id: 'mind-fuzz', name: 'Mind Fuzz Cup', tracks: [0, 1, 2, 3] },
   // Nonagon Infinity (2016), in album order: the robot factory, the gamma knife, the vultures' dry lake and the pedalboard. The album never ends, so Wah Wah's finish is Robot Stop's start.
-  { id: 'nonagon-infinity', name: 'Nonagon Infinity Cup', tracks: [24, 25, 26, 27] },
+  { id: 'nonagon-infinity', name: 'Nonagon Infinity Cup', tracks: [4, 5, 6, 7] },
+  // Flying Microtonal Banana (February 2017), in album order, all in the cover's blue and yellow: the desert, the lagoon, the road through the sky, and the city at night.
+  { id: 'flying-microtonal-banana', name: 'Flying Microtonal Banana Cup', tracks: [8, 9, 10, 11] },
+  // Polygondwanaland (November 2017), in album order: the castle falling down, the castle on the clouds, the inside of a cell, and the fourth colour.
+  { id: 'polygondwanaland', name: 'Polygondwanaland Cup', tracks: [12, 13, 14, 15] },
   // Infest the Rats' Nest (2019), in album order: the burning Earth, the rich's colony on Mars, the ship falling at the sun, and down into Hell.
-  { id: 'infest-the-rats-nest', name: "Infest the Rats' Nest Cup", tracks: [28, 29, 30, 31] },
-  // I'm in Your Mind Fuzz (2014): the suite the album opens with, four songs run into one, in order. Into the mind, out of it, the cellophane, and the fuzz.
-  { id: 'mind-fuzz', name: 'Mind Fuzz Cup', tracks: [32, 33, 34, 35] },
+  { id: 'infest-the-rats-nest', name: "Infest the Rats' Nest Cup", tracks: [16, 17, 18, 19] },
+  // Omnium Gatherum (April 2022): the pink mountain, the ocean planet, the goblin's garden, and the pliosaur.
+  { id: 'omnium-gatherum', name: 'Omnium Gatherum Cup', tracks: [20, 21, 22, 23] },
+  // Ice, Death, Planets, Lungs, Mushrooms and Lava (October 2022), in album order: the glacier, the volcano, the jungle (the planet's lungs) overgrown with mushrooms, and the road of starlight.
+  { id: 'ice-death-planets', name: 'Ice, Death, Planets, Lungs, Mushrooms and Lava Cup', tracks: [24, 25, 26, 27] },
+  // PetroDragonic Apocalypse (2023), in album order: the speedway, the storm, the oil-field dragons, and Mars on fire.
+  { id: 'petrodragonic-apocalypse', name: 'PetroDragonic Apocalypse Cup', tracks: [28, 29, 30, 31] },
+  // Phantom Island (2025): the island in the mist, the plane with no engine, the forest that's awake, and the sea at night.
+  { id: 'phantom-island', name: 'Phantom Island Cup', tracks: [32, 33, 34, 35] },
 ];
+
+/** Cups that were retired when every cup became an album's, and the album cup that took most of each one's tracks: progress.ts carries their trophies over. */
+export const RETIRED_CUPS: Record<string, string> = {
+  nonagon: 'ice-death-planets',
+  microtonal: 'flying-microtonal-banana',
+  apocalypse: 'petrodragonic-apocalypse',
+};
 
 /** The Random Cup, after the others in the picker: four of the premade tracks drawn at random. */
 export const RANDOM_CUP_NAME = 'Random Cup';

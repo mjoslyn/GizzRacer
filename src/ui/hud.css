@@ -715,17 +715,54 @@ body.touch-mode .hud-help {
 }
 
 /* A skill game's rules: exactly what to do, set apart from the story's text. */
-.story-rules,
-.menu-rules {
+.story-rules {
   font-family: Verdana, sans-serif;
   font-style: normal;
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.45;
   color: #fff6d0;
   text-shadow: 1px 1px 0 #2a0636;
   padding: 8px 12px;
   background: rgba(255, 210, 58, 0.1);
   box-shadow: inset 4px 0 0 #ffd23a;
+}
+
+/* The boon chooser's deck: the boons held so far, each on a small card. */
+.story-deck {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.story-deck-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.story-card {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 7px 9px;
+  background: rgba(255, 210, 58, 0.08);
+  box-shadow: 0 0 0 1px rgba(255, 210, 58, 0.5);
+  font-family: Verdana, sans-serif;
+  font-style: normal;
+  text-shadow: 1px 1px 0 #2a0636;
+}
+
+.story-card-name {
+  font-size: 13px;
+  font-weight: bold;
+  color: #ffe14d;
+}
+
+.story-card-text {
+  font-size: 11px;
+  line-height: 1.3;
+  color: #fff6d0;
+  opacity: 0.85;
 }
 
 /* A story card's choices (a boon, Begin, Try again): the name in solid gold with a heavy outline, as the

@@ -4,13 +4,13 @@ import type { Track } from '../tracks/track';
 
 /**
  * Story mode's skill games: one stands between each chapter's race and its
- * boss. Four are played on a card over the game (ui/skillScreen.ts); the
+ * boss. All but one are played on a card over the game (ui/skillScreen.ts); the
  * Deadstick Landing is flown on a track. This is their rules and draws,
  * kept pure so they can be tested. `level` is the chapter, 0..2.
  */
 
-export type SkillKind = 'riff' | 'nonagon' | 'banana' | 'horology' | 'deadstick' | 'mindfuzz';
-export const SKILL_KINDS: readonly SkillKind[] = ['riff', 'nonagon', 'banana', 'horology', 'deadstick', 'mindfuzz'];
+export type SkillKind = 'riff' | 'nonagon' | 'banana' | 'horology' | 'deadstick' | 'mindfuzz' | 'rattlesnake' | 'robot' | 'fishies' | 'castle';
+export const SKILL_KINDS: readonly SkillKind[] = ['riff', 'nonagon', 'banana', 'horology', 'deadstick', 'mindfuzz', 'rattlesnake', 'robot', 'fishies', 'castle'];
 
 export const SKILLS: Record<SkillKind, { name: string; intro: string; howTo: string }> = {
   riff: {
@@ -38,6 +38,26 @@ export const SKILLS: Record<SkillKind, { name: string; intro: string; howTo: str
     intro: "I'm In Your Mind Fuzz runs four songs into one. Play the suite through: read the mind, find the arrow that is not there, line up the cellophane, then ride the fuzz.",
     howTo: 'Four movements, pass three: arrow keys or WASD for the arrows, Space for the rest, or tap',
   },
+  rattlesnake: {
+    name: 'Rattlesnake',
+    intro: 'Rattlesnake, rattlesnake, rattles me. Slither round the field eating mice, growing with every one, and never bite your own rattle.',
+    howTo: 'Steer with the arrow keys or WASD, or tap the side to turn to',
+  },
+  robot: {
+    name: 'Robot Stop',
+    intro: 'Robot stop, robot go. Creep up on the robot while it looks away, and be stock still by the time it turns round.',
+    howTo: 'Hold Space (or hold a finger down) to creep forward; let go when the robot starts to turn',
+  },
+  fishies: {
+    name: 'Fishing for Fishies',
+    intro: "The fishies are nibbling, but they aren't biting yet. Wait for the bobber to go right under, then strike.",
+    howTo: 'Press Space (or tap) when the bobber goes right under, never on a nibble',
+  },
+  castle: {
+    name: 'Crumbling Castle',
+    intro: 'Build the castle floor by floor. Each stone slides across the one below: drop it square, because whatever hangs over crumbles away.',
+    howTo: 'Press Space (or tap) to drop the sliding stone onto the tower',
+  },
   deadstick: {
     name: 'Deadstick Landing',
     intro: 'Engine dead, glider out. Hit the ramp, hop on the lip to open the wings, and put it down in the ring.',
@@ -45,11 +65,19 @@ export const SKILLS: Record<SkillKind, { name: string; intro: string; howTo: str
   },
 };
 
+/**
+ * Games played on a card, which show their rules on a card of their own
+ * before they start (the Mind Fuzz Suite before each movement), so the
+ * story card leaves them out. The Deadstick Landing is flown on a track,
+ * and keeps its rules on the story card (and Skill Games' card before it).
+ */
+export const explainsItself = (kind: SkillKind): boolean => kind !== 'deadstick';
+
 const lv = <T>(list: readonly T[], level: number): T => list[clamp(Math.round(level), 0, list.length - 1)];
 
 /**
  * Exactly what to do to pass a game at a level, with its real numbers: for
- * the card before it (story mode's, and Skill Games' difficulty screen).
+ * the card before it.
  */
 export function skillRules(kind: SkillKind, level: number): string {
   switch (kind) {
@@ -72,6 +100,22 @@ export function skillRules(kind: SkillKind, level: number): string {
     case 'mindfuzz': {
       const g = makeSuite(1, level);
       return `Four movements; pass ${SUITE_NEED}. One: an arrow flashes in the eye for ${g.mind.flash} seconds: press that arrow (or tap its pad), ${g.mind.need} of ${g.mind.arrows.length}. Two: three arrows show: press the missing fourth within ${g.notMind.time} seconds, ${g.notMind.need} of ${g.notMind.missing.length}. Three: two sheets slide: press Space (or tap) when they overlap, ${g.cellophane.need} of ${g.cellophane.sheets.length}. Four: tap Space (or tap) to push the needle up and hold it in the gold band for ${g.fuzz.need} seconds out of ${g.fuzz.time}.`;
+    }
+    case 'rattlesnake': {
+      const g = makeSnake(1, level);
+      return `The snake never stops moving. Steer it with the arrow keys or WASD (or tap the side to turn to) across a ${g.grid} by ${g.grid} field, and eat the mice: each one makes it a cell longer and a touch quicker. Eat ${g.need} to pass; run into the wall or your own tail and it's over.`;
+    }
+    case 'robot': {
+      const g = makeRobot(1, level);
+      return `Hold Space (or hold a finger down) to creep toward the robot; let go and you stop. When its head starts to turn you have ${g.warn} seconds to be still: moving while it watches is a catch, which sends you back and freezes you until it looks away. Reach it within ${g.time} seconds${g.fakes ? ', and watch for it twitching without turning' : ''}; caught ${g.catches} times and you're out.`;
+    }
+    case 'fishies': {
+      const g = makeFishing(1, level);
+      return `${FISH_ROUNDS} fish come to the bobber. Each nibbles at it first (a little dip), then bites, pulling it right under. Press Space or Enter (or tap) within ${g.window} seconds of the bite to hook it; strike early, on a nibble, and the fish is gone. Hook ${g.need} of ${FISH_ROUNDS}.`;
+    }
+    case 'castle': {
+      const g = makeCastle(1, level);
+      return `A stone slides back and forth over the tower. Press Space or Enter (or tap) to drop it: whatever hangs over the floor below crumbles away, so the next stone is only as wide as what stayed. Drop it square and it keeps its width. Build ${g.floors} floors before the stones crumble to nothing; they slide faster as the castle rises.`;
     }
     case 'deadstick':
       return `Drive at the ramp ahead and hop (Shift or Space, or DRIFT on touch) as you hit it: it throws you high and opens the glider for a long flight. Left alone the glider floats past the ring; hold Down (on touch, drag down) to dive and come down sooner, and steer to line up. Land inside the gold ring, ${deadstickRadius(level)} m from its middle, within ${DEADSTICK_SHOTS} shots.`;
@@ -286,6 +330,20 @@ export function sheetOverlap(a: number, b: number, width: number): number {
   return Math.max(0, width - Math.abs(a - b)) / width;
 }
 
+/** Exactly what to do in one movement of the suite, with its real numbers: for its card before it starts. */
+export function suiteMoveRules(g: SuiteGame, move: SuiteMove): string {
+  switch (move) {
+    case 'mind':
+      return `An arrow flashes in the eye for ${g.mind.flash} seconds, then it's gone. Press that arrow: the arrow keys or WASD, or tap its pad round the edge. Get ${g.mind.need} of ${g.mind.arrows.length} right.`;
+    case 'notMind':
+      return `Three of the four arrows show in the middle. Press the one that isn't there before the gold ring runs out (${g.notMind.time} seconds): the arrow keys or WASD, or tap its pad. Get ${g.notMind.need} of ${g.notMind.missing.length} right.`;
+    case 'cellophane':
+      return `Two see-through sheets slide back and forth. Press Space or Enter (or tap) when they lie over each other: one press a sheet. Line up ${g.cellophane.need} of ${g.cellophane.sheets.length}.`;
+    case 'fuzz':
+      return `Each press of Space or Enter (or tap) kicks the needle up, and it falls away between. Keep it in the gold band for ${g.fuzz.need} seconds in all, out of ${g.fuzz.time}.`;
+  }
+}
+
 /** The fuzz needle: a tap kicks it up, the fuzz falls away under it. */
 export const FUZZ_KICK = 0.4;
 export const FUZZ_FALL = 0.8;
@@ -302,6 +360,215 @@ export function fuzzStep(level: number, v: number, dt: number, tapped: boolean):
     nv = Math.min(0, nv);
   }
   return { level: nl, v: nv };
+}
+
+// ---- Rattlesnake ----
+
+/** Cells the snake starts long. */
+export const SNAKE_START = 3;
+export type Cell = [number, number];
+/** Right, down, left, up. */
+export const SNAKE_DIRS: readonly Cell[] = [
+  [1, 0],
+  [0, 1],
+  [-1, 0],
+  [0, -1],
+];
+
+export interface SnakeGame {
+  /** Cells across the (square) field. */
+  grid: number;
+  /** Seconds a move at the start; each mouse eaten makes it SNAKE_SPEEDUP of that. */
+  step: number;
+  /** Mice to eat to pass. */
+  need: number;
+  seed: number;
+}
+
+export const SNAKE_SPEEDUP = 0.97;
+
+export function makeSnake(seed: number, level: number): SnakeGame {
+  return { grid: lv([12, 13, 14], level), step: lv([0.2, 0.17, 0.14], level), need: lv([10, 12, 14], level), seed };
+}
+
+/** The snake at the start: in the middle of the left half, heading right, head first. */
+export function snakeStart(grid: number): Cell[] {
+  const y = Math.floor(grid / 2);
+  const x = Math.floor(grid / 3);
+  return Array.from({ length: SNAKE_START }, (_, i): Cell => [x - i, y]);
+}
+
+/** Where the next mouse goes: a free cell, picked by `r` (0..1). */
+export function placeMouse(body: readonly Cell[], grid: number, r: number): Cell | null {
+  const taken = new Set(body.map(([x, y]) => y * grid + x));
+  const free: number[] = [];
+  for (let i = 0; i < grid * grid; i++) if (!taken.has(i)) free.push(i);
+  if (!free.length) return null;
+  const i = free[Math.min(free.length - 1, Math.floor(r * free.length))];
+  return [i % grid, Math.floor(i / grid)];
+}
+
+/**
+ * One move of the snake heading `dir` (an index into SNAKE_DIRS): it eats
+ * the mouse and grows, or crashes into the wall or itself. The tail's
+ * cell is free to move into, since the tail moves on as the head arrives.
+ */
+export function snakeStep(body: readonly Cell[], dir: number, mouse: Cell | null, grid: number): { body: Cell[]; ate: boolean; crash: 'wall' | 'tail' | null } {
+  const [dx, dy] = SNAKE_DIRS[dir];
+  const head: Cell = [body[0][0] + dx, body[0][1] + dy];
+  if (head[0] < 0 || head[1] < 0 || head[0] >= grid || head[1] >= grid) return { body: [...body], ate: false, crash: 'wall' };
+  const ate = mouse !== null && head[0] === mouse[0] && head[1] === mouse[1];
+  const rest = ate ? body : body.slice(0, -1);
+  if (rest.some(([x, y]) => x === head[0] && y === head[1])) return { body: [...body], ate: false, crash: 'tail' };
+  return { body: [head, ...rest], ate, crash: null };
+}
+
+/** Whether `dir` turns straight back on `from`. */
+export const snakeReverse = (from: number, dir: number): boolean => (from + 2) % 4 === dir;
+
+// ---- Robot Stop ----
+
+/** The robot's moods: its back turned, turning (time to stop), watching, or a twitch that turns back. */
+export type RobotMood = 'away' | 'turning' | 'watching' | 'twitch';
+
+export interface RobotGame {
+  /** What the robot does, in turn, from the start. */
+  moods: { mood: RobotMood; dur: number }[];
+  /** Seconds it takes to turn: the time to stop. */
+  warn: number;
+  /** Seconds to reach it. */
+  time: number;
+  /** Catches that end it. */
+  catches: number;
+  fakes: boolean;
+}
+
+/** Share of the way the player creeps a second at full pace, and how quickly they get going and stop (a second). */
+export const ROBOT_SPEED = 0.15;
+export const ROBOT_ACCEL = 1.2;
+export const ROBOT_BRAKE = 2;
+/** Moving slower than this counts as stock still. */
+export const ROBOT_STILL = 0.01;
+/** How far a catch sends you back. */
+export const ROBOT_PUSH = 0.2;
+
+export function makeRobot(seed: number, level: number): RobotGame {
+  const rand = seededRandom(seed);
+  const warn = lv([0.7, 0.55, 0.45], level);
+  const fake = lv([0, 0.25, 0.35], level);
+  const moods: { mood: RobotMood; dur: number }[] = [];
+  let t = 0;
+  while (t < 90) {
+    const away = 1 + rand() * lv([2, 1.6, 1.3], level);
+    moods.push({ mood: 'away', dur: away });
+    t += away;
+    if (rand() < fake) {
+      moods.push({ mood: 'twitch', dur: warn }, { mood: 'away', dur: 0.6 + rand() * 0.8 });
+      t += warn + 1;
+    }
+    const watch = 0.8 + rand() * 1.2;
+    moods.push({ mood: 'turning', dur: warn }, { mood: 'watching', dur: watch });
+    t += warn + watch;
+  }
+  return { moods, warn, time: lv([32, 30, 28], level), catches: lv([3, 2, 2], level), fakes: fake > 0 };
+}
+
+/** What the robot's doing `t` seconds in, and how far into it (seconds). */
+export function robotMood(g: RobotGame, t: number): { mood: RobotMood; into: number; index: number } {
+  let at = 0;
+  for (let i = 0; i < g.moods.length; i++) {
+    const m = g.moods[i];
+    if (t < at + m.dur) return { mood: m.mood, into: t - at, index: i };
+    at += m.dur;
+  }
+  return { mood: 'away', into: t - at, index: g.moods.length };
+}
+
+/** One step of the player's creep: speeding up while held, braking when not. */
+export function robotStep(pos: number, v: number, holding: boolean, dt: number): { pos: number; v: number } {
+  const nv = holding ? Math.min(ROBOT_SPEED, v + ROBOT_ACCEL * dt) : Math.max(0, v - ROBOT_BRAKE * dt);
+  return { pos: Math.min(1, pos + nv * dt), v: nv };
+}
+
+// ---- Fishing for Fishies ----
+
+export const FISH_ROUNDS = 5;
+
+export interface FishRound {
+  /** When the fish nibbles, seconds into the round. */
+  nibbles: number[];
+  /** When it bites. */
+  bite: number;
+}
+
+export interface FishingGame {
+  rounds: FishRound[];
+  /** Seconds after the bite to strike in. */
+  window: number;
+  need: number;
+  /** How far down a nibble pulls the bobber (1 is right under, as a bite). */
+  nibbleDepth: number;
+}
+
+export function makeFishing(seed: number, level: number): FishingGame {
+  const rand = seededRandom(seed);
+  const [lo, hi] = lv<[number, number]>([[1, 2], [2, 3], [2, 4]], level);
+  const rounds = Array.from({ length: FISH_ROUNDS }, () => {
+    const n = lo + Math.floor(rand() * (hi - lo + 1));
+    const nibbles: number[] = [];
+    let t = 1 + rand() * 1.5;
+    for (let i = 0; i < n; i++) {
+      nibbles.push(t);
+      t += 0.6 + rand() * 1;
+    }
+    return { nibbles, bite: t + 0.3 + rand() * 1.4 };
+  });
+  return { rounds, window: lv([0.7, 0.55, 0.45], level), need: lv([3, 3, 4], level), nibbleDepth: lv([0.3, 0.4, 0.5], level) };
+}
+
+/** How a strike at `press` seconds into a round goes (null: no strike yet), or null while it's still to play for. */
+export function fishJudge(r: FishRound, window: number, press: number | null, now: number): 'hooked' | 'spooked' | 'away' | null {
+  if (press !== null) return press < r.bite ? 'spooked' : press <= r.bite + window ? 'hooked' : 'away';
+  return now > r.bite + window ? 'away' : null;
+}
+
+// ---- Crumbling Castle ----
+
+/** A drop this close to square snaps square, keeping its width. */
+export const CASTLE_SNAP = 0.015;
+
+export interface CastleGame {
+  /** The first stone's width, a share of the stage. */
+  width: number;
+  floors: number;
+  /** The first stone's speed, stage widths a second; each floor's is CASTLE_SPEEDUP faster. */
+  speed: number;
+  /** Where each floor's stone starts on its slide (0..1 round the back and forth). */
+  phases: number[];
+}
+
+export const CASTLE_SPEEDUP = 1.05;
+
+export function makeCastle(seed: number, level: number): CastleGame {
+  const rand = seededRandom(seed);
+  const floors = lv([8, 10, 12], level);
+  return { width: lv([0.42, 0.38, 0.34], level), floors, speed: lv([0.45, 0.55, 0.65], level), phases: Array.from({ length: floors }, () => rand()) };
+}
+
+/** A sliding stone's left edge (0..1 - w) at `t` seconds: back and forth across the stage. */
+export function castleSlide(t: number, speed: number, w: number, phase: number): number {
+  const span = 1 - w;
+  if (span <= 0) return 0;
+  const u = (((phase + (t * speed) / (2 * span)) % 1) + 1) % 1;
+  return span * (u < 0.5 ? u * 2 : 2 - u * 2);
+}
+
+/** A stone dropped at `x` (width `below.w`) onto `below`: what stays on the tower. */
+export function castleDrop(below: { x: number; w: number }, x: number): { x: number; w: number; square: boolean } {
+  if (Math.abs(x - below.x) <= CASTLE_SNAP) return { x: below.x, w: below.w, square: true };
+  const left = Math.max(below.x, x);
+  const right = Math.min(below.x + below.w, x + below.w);
+  return { x: left, w: Math.max(0, right - left), square: false };
 }
 
 // ---- Deadstick Landing ----

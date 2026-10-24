@@ -54,7 +54,7 @@ describe("Infest the Rats' Nest Cup", () => {
   it('is four new tracks in album order, each with its own world and a lap and a final-lap song', () => {
     const cup = CUPS.find((c) => c.name === "Infest the Rats' Nest Cup")!;
     expect(cup.id).toBe('infest-the-rats-nest');
-    expect(cup.tracks).toEqual([28, 29, 30, 31]);
+    expect(cup.tracks).toEqual([16, 17, 18, 19]);
     const defs = cup.tracks.map((t) => TRACK_LIST[t].build());
     expect(defs.map((d) => d.id)).toEqual(IDS);
     expect(cup.tracks.map((t) => TRACK_LIST[t].name)).toEqual(['Planet B', 'Mars for the Rich', 'Perihelion', 'Hell']);
@@ -68,12 +68,13 @@ describe("Infest the Rats' Nest Cup", () => {
     expect(defs.map((d) => TRACK_SONGS[d.id].title)).toEqual(['Planet B', 'Mars for the Rich', 'Perihelion', 'Hell']);
   });
 
-  it('builds its own Mars for the Rich, apart from the Apocalypse Cup\'s', () => {
+  it('builds its own Mars for the Rich, apart from the burning one, which is Flamethrower now', () => {
     const own = buildMarsForTheRich();
-    const apocalypse = TRACK_LIST.find((t) => t.id === 'hell-on-mars')!.build();
-    expect(own.id).not.toBe(apocalypse.id);
-    expect(own.theme).not.toBe(apocalypse.theme);
-    expect(CUPS.find((c) => c.id === 'apocalypse')!.tracks.map((t) => TRACK_LIST[t].id)).toContain('hell-on-mars');
+    const burning = TRACK_LIST.find((t) => t.id === 'hell-on-mars')!.build();
+    expect(own.id).not.toBe(burning.id);
+    expect(own.theme).not.toBe(burning.theme);
+    expect(burning.name).toBe('Flamethrower');
+    expect(CUPS.find((c) => c.id === 'petrodragonic-apocalypse')!.tracks.map((t) => TRACK_LIST[t].id)).toContain('hell-on-mars');
   });
 
   it('every track has its own landmark gate, a big landmark off the road, and its own road surface', () => {
