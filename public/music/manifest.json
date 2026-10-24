@@ -649,5 +649,61 @@
     "bars": 32,
     "loopSamples": 2300870,
     "sampleRate": 44100
+  },
+  "planet-b-remix": {
+    "title": "planet b (remix)",
+    "bpm": 108,
+    "bars": 32,
+    "loopSamples": 3136000,
+    "sampleRate": 44100
+  },
+  "planet-b-remix-final-lap": {
+    "title": "planet b (remix, final lap)",
+    "bpm": 116,
+    "bars": 32,
+    "loopSamples": 2919724,
+    "sampleRate": 44100
+  },
+  "mars-for-the-rich-remix": {
+    "title": "mars for the rich (live remix)",
+    "bpm": 144,
+    "bars": 32,
+    "loopSamples": 2352000,
+    "sampleRate": 44100
+  },
+  "mars-for-the-rich-remix-final-lap": {
+    "title": "mars for the rich (live remix, final lap)",
+    "bpm": 152,
+    "bars": 32,
+    "loopSamples": 2228211,
+    "sampleRate": 44100
+  },
+  "perihelion-remix": {
+    "title": "perihelion (remix)",
+    "bpm": 136,
+    "bars": 32,
+    "loopSamples": 2490353,
+    "sampleRate": 44100
+  },
+  "perihelion-remix-final-lap": {
+    "title": "perihelion (remix, final lap)",
+    "bpm": 144,
+    "bars": 32,
+    "loopSamples": 2352000,
+    "sampleRate": 44100
+  },
+  "hell-remix": {
+    "title": "hell (remix)",
+    "bpm": 176,
+    "bars": 32,
+    "loopSamples": 1924364,
+    "sampleRate": 44100
+  },
+  "hell-remix-final-lap": {
+    "title": "hell (remix, final lap)",
+    "bpm": 184,
+    "bars": 32,
+    "loopSamples": 1840696,
+    "sampleRate": 44100
   }
 }

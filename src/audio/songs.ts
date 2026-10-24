@@ -72,6 +72,10 @@ export const TRANSCRIBED: Record<string, { recording: string; release: string }>
   'gamma-knife': { recording: 'Gamma Knife', release: "Live In Brussels '19" },
   'people-vultures': { recording: 'People-Vultures', release: "Live In Brussels '19" },
   'wah-wah': { recording: 'Wah Wah', release: "Live In Chicago '23" },
+  'planet-b': { recording: 'Planet B', release: "Live In London '19" },
+  'mars-for-the-rich': { recording: 'Mars for the Rich', release: "Live In Paris '19" },
+  perihelion: { recording: 'Perihelion', release: "Live In Milwaukee '19" },
+  hell: { recording: 'Hell', release: "Live In Asheville '19" },
 };
 
 const FINAL = '-final-lap';
