@@ -1,4 +1,4 @@
-import { CUPS } from '../tracks/index';
+import { CUPS, RETIRED_CUPS } from '../tracks/index';
 import type { EngineClass } from '../physics/racers';
 
 /**
@@ -26,7 +26,7 @@ export interface RaceRecord {
 }
 
 export interface Progress {
-  /** By cup id, class and mirror: `nonagon.100cc`, `nonagon.100cc.mirror`. */
+  /** By cup id, class and mirror: `nonagon-infinity.100cc`, `nonagon-infinity.100cc.mirror`. */
   cups: Record<string, CupResult>;
   /** Best full-race time by track id, class and mirror. */
   races: Record<string, RaceRecord>;
@@ -131,7 +131,7 @@ function load(): Progress {
     const raw = JSON.parse(localStorage.getItem(KEY) ?? 'null') as Partial<Progress> | null;
     if (!raw || typeof raw !== 'object') return structuredClone(EMPTY_PROGRESS);
     return {
-      cups: raw.cups && typeof raw.cups === 'object' ? raw.cups : {},
+      cups: raw.cups && typeof raw.cups === 'object' ? carryOver(raw.cups) : {},
       races: raw.races && typeof raw.races === 'object' ? raw.races : {},
       style: raw.style && typeof raw.style === 'object' ? raw.style : {},
       shortcuts: Array.isArray(raw.shortcuts) ? raw.shortcuts.filter((s): s is string => typeof s === 'string') : [],
@@ -139,6 +139,19 @@ function load(): Progress {
   } catch {
     return structuredClone(EMPTY_PROGRESS);
   }
+}
+
+/** Trophies won on a retired cup, moved to the album cup that took its tracks, unless that one has its own. */
+export function carryOver(cups: Record<string, CupResult>): Record<string, CupResult> {
+  const out: Record<string, CupResult> = {};
+  const retired: [string, CupResult][] = [];
+  for (const [key, result] of Object.entries(cups)) {
+    const [id, ...rest] = key.split('.');
+    if (RETIRED_CUPS[id]) retired.push([[RETIRED_CUPS[id], ...rest].join('.'), result]);
+    else out[key] = result;
+  }
+  for (const [key, result] of retired) out[key] ??= result;
+  return out;
 }
 
 function save(): void {

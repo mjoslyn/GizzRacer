@@ -18,11 +18,11 @@ const VALLEY_Y = -6;
 /**
  * Rattlesnake greybox (spec section 7). Seen from above the course is a
  * coiled snake: a straight tail, serpentine S-bends, a narrow canyon, a
- * double-spiral coil, the long Sleep Drifter straight, round Billabong
+ * double-spiral coil, the long Melting straight, round Billabong
  * Valley, then a leap over a dry riverbed back to the line.
  */
 export function buildRattlesnakeRun(): TrackDef {
-  // Lay the track out once, then stretch Sleep Drifter so the loop closes cleanly.
+  // Lay the track out once, then stretch Melting so the loop closes cleanly.
   const mesaLength = MESA_RUN_UP + MESA_RAMP + MESA_GAP + FINISH_STRAIGHT;
   const target = offsetPose(START, -mesaLength);
   const trial = layout(120);
@@ -45,7 +45,7 @@ export function buildRattlesnakeRun(): TrackDef {
     [b.marks.coilTop.s, COIL_Y, 0],
     [b.marks.wash.s, 0, 0],
   ]);
-  // Sleep Drifter: after the kickers, a camelback whose kinked top throws fast karts.
+  // Melting: after the kickers, a camelback whose kinked top throws fast karts.
   const k = b.marks.drifter.s;
   shape(b, [
     [k + 10, 0, 0],
@@ -132,8 +132,8 @@ function layout(washLength: number): TrackBuilder {
   b.section('The Coil', coil);
   b.spiral(r(60), 46, 60);
 
-  // Sleep Drifter: the long heat-haze straight, two kickers to chain.
-  b.section('Sleep Drifter', { halfWidth: 10 });
+  // Melting: the long heat-haze straight, two kickers to chain.
+  b.section('Melting', { halfWidth: 10 });
   b.mark('wash');
   b.straight(63).kicker().straight(53).kicker().mark('drifter').straight(washLength - 130);
   b.arc(45, -90).straight(5);

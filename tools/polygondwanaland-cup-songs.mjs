@@ -1,9 +1,8 @@
 // The Polygondwanaland Cup's remixes, written in seqbaby.
 //
-// Eight cues, four songs from Polygondwanaland (2017), each a lap cut and a
+// Six cues, three songs from Polygondwanaland (2017), each a lap cut and a
 // faster final-lap cut (+8 bpm, busier drums, the hook up front):
 //
-//   polygondwanaland-jungle-remix(-final-lap)  "Polygondwanaland"
 //   castle-in-the-air-remix(-final-lap)        "The Castle in the Air"
 //   inner-cell-remix(-final-lap)               "Inner Cell"
 //   tetrachromacy-remix(-final-lap)            "Tetrachromacy"
@@ -486,7 +485,7 @@ function scoreOf(song, final) {
 }
 
 // ---------------------------------------------------------------------------
-// 1. Polygondwanaland (remix): the jungle track.
+// 1. Polygondwanaland (remix): once the jungle track's, not raced now.
 //
 // Measured: a pulse of 0.180 s (333 eighths a minute, quarter = 166.7 bpm)
 // in groups of five, the harmony changing every ten pulses, so 10/8 felt
@@ -763,8 +762,10 @@ function cue(title, id, song) {
   });
 }
 
+// Polygondwanaland's transcription stays above, but no track plays it: the
+// jungle track is Mycelium now, in the Ice, Death, Planets, Lungs, Mushrooms
+// and Lava Cup.
 export const SONGS = [
-  ...cue('polygondwanaland', 'polygondwanaland-jungle-remix', POLYGONDWANALAND),
   ...cue('castle in the air', 'castle-in-the-air-remix', CASTLE_IN_THE_AIR),
   ...cue('inner cell', 'inner-cell-remix', INNER_CELL),
   ...cue('tetrachromacy', 'tetrachromacy-remix', TETRACHROMACY),

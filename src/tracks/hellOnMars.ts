@@ -4,34 +4,35 @@ import type { BranchDef, TrackDef } from './track';
 const K = 1.1;
 const START: Pose = { x: -90 * K, z: 160 * K, h: Math.PI / 2 };
 const FINISH = 55;
-/** Perihelion Crater: the rim bulges out round the crater in three arcs of this radius and turn. */
+/** Fire Crater: the rim bulges out round the crater in three arcs of this radius and turn. */
 const RIM_R = 45;
 const RIM_TURN = 65;
-/** Mars for the Rich: the leap over the crater's molten floor. */
+/** Fire Escape: the leap over the crater's molten floor. */
 const CRATER_GAP = 23;
 /** The top of the Olympus Climb, where the Valles Rift leaps off; and how high the far side is. */
 const PEAK = 23;
 const RIFT_LAND = 18;
-/** How deep the Rats' Nest is dug into the ground. */
+/** How deep the Dragon's Nest is dug into the ground. */
 const NEST_DEPTH = 8;
 
 /**
- * Mars for the Rich (hard): a colony on the red planet, overrun and burning.
+ * Flamethrower, once Mars for the Rich (hard): a colony on the red planet,
+ * overrun and burning, the PetroDragonic Apocalypse Cup's finale.
  * A landing strip for a grid, a chicane between the habs, a climb up the
  * flank of Olympus and a leap over a rift of lava, the rim of a crater
- * where dust devils roam (Mars for the Rich, a toll lane, leaps straight
- * across it), a twisting run through the Rats' Nest, and meteors
+ * where dust devils roam (Fire Escape, a toll lane, leaps straight
+ * across it), a twisting run through the Dragon's Nest, and meteors
  * streaking down onto the straights. The climb runs 23 m up the
  * mountain, the rift leaps off the top and the road plunges down the far
- * side; the Rats' Nest is a trench dug 8 m into the red dirt.
+ * side; the Dragon's Nest is a trench dug 8 m into the red dirt.
  */
 export function buildHellOnMars(): TrackDef {
   const b = new TrackBuilder(START, 'Landing Strip', { halfWidth: 11, surface: 'regolith' });
   b.scale = K;
-  // Venusian 1 and 2: two kickers off the junk on the strip.
+  // Two kickers off the junk on the strip.
   b.straight(84).mark('kick1').kicker().straight(30).mark('kick2').kicker().mark('strip').straight(53).arc(50, 90);
 
-  b.section('Superbug Chicane', { halfWidth: 9, wallHeight: 1.2, surface: 'regolith' });
+  b.section('Witchcraft Chicane', { halfWidth: 9, wallHeight: 1.2, surface: 'regolith' });
   b.mark('habs');
   b.straight(40).arc(28, -55).arc(28, 55).straight(40);
 
@@ -48,7 +49,7 @@ export function buildHellOnMars(): TrackDef {
   b.elevate(RIFT_LAND).mark('landed').straight(92);
 
   // The rim swings out round the crater; the toll lane takes the chord.
-  b.section('Perihelion Crater', { halfWidth: 9.5, surface: 'regolith' });
+  b.section('Fire Crater', { halfWidth: 9.5, surface: 'regolith' });
   b.mark('crater');
   b.straight(4);
   b.mark('rimFrom');
@@ -56,7 +57,7 @@ export function buildHellOnMars(): TrackDef {
   b.mark('rimTo');
   b.straight(3).arc(60, 90);
 
-  b.section("Rats' Nest", { halfWidth: 8, wallHeight: 1.5, surface: 'regolith' });
+  b.section("Dragon's Nest", { halfWidth: 8, wallHeight: 1.5, surface: 'regolith' });
   b.mark('nest');
   b.straight(10).arc(20, -70).arc(22, 140).arc(20, -140).arc(22, 140).arc(20, -70).straight(10);
 
@@ -85,7 +86,7 @@ export function buildHellOnMars(): TrackDef {
   const at = (mark: string, d: number) => b.marks[mark].s + d * K;
   return {
     id: 'hell-on-mars',
-    name: 'Mars for the Rich',
+    name: 'Flamethrower',
     main,
     branches: [toll.branch],
     pits: [...b.pits, ...toll.pits],
@@ -128,19 +129,19 @@ function plunge(b: TrackBuilder, s0: number, y0: number, s1: number, y1: number)
 }
 
 /**
- * Mars for the Rich: a narrow toll lane straight across Perihelion Crater,
+ * Fire Escape: a narrow toll lane straight across the Fire Crater,
  * leaping its molten floor. From 150cc a kart at full speed clears it; at
  * 100cc it takes a boost or a mini-turbo.
  */
 function buildTollLane(from: { s: number; pose: Pose }, to: { s: number; pose: Pose }) {
   const chord = Math.hypot(to.pose.x - from.pose.x, to.pose.z - from.pose.z);
-  const b = new TrackBuilder(from.pose, 'Mars for the Rich', { halfWidth: 6, surface: 'regolith' });
+  const b = new TrackBuilder(from.pose, 'Fire Escape', { halfWidth: 6, surface: 'regolith' });
   b.straight(50).elevate(0).straight(18).elevate(2.4);
   b.gap(CRATER_GAP, 16, 'lava');
   b.elevate(0).straight(20);
   // The toll: a pair of double boxes for those who made it over.
   const boxes = b.s;
   b.straight(chord - b.s);
-  const branch: BranchDef = { name: 'Mars for the Rich', mainFrom: from.s, mainTo: to.s, ...b.finish(false) };
+  const branch: BranchDef = { name: 'Fire Escape', mainFrom: from.s, mainTo: to.s, ...b.finish(false) };
   return { branch, pits: b.pits, boxes };
 }

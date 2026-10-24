@@ -5,17 +5,17 @@ import type { BranchDef, TrackDef } from './track';
 const K = 1.165;
 const START: Pose = { x: 47 * K, z: 180 * K, h: Math.PI / 2 };
 const FINISH = 60;
-/** Degrees of the garden's first and last arcs left open, where Catching Smoke forks off and back. */
+/** Degrees of the garden's first and last arcs left open, where Flying Microtonal Banana forks off and back. */
 const SMOKE_OPEN = 43;
-/** Heights: the garden where Catching Smoke forks, the Star Leap, and the bottom and top of the Blue Morpho helix. */
+/** Heights: the garden where Flying Microtonal Banana forks, the Star Leap, and the bottom and top of the Banana Bend helix. */
 const GARDEN_Y = 4;
 const LEAP_Y = 24;
 const MORPHO_Y = 4;
 const MORPHO_TOP = 20;
 
 /**
- * Catching Smoke (circuit 2, hard): a rainbow roller coaster in the
- * sky, the cup's finale. No ground below: leave the road and it's a long
+ * Sleep Drifter, once Catching Smoke (hard): a banded blue and yellow
+ * roller coaster in the sky. No ground below: leave the road and it's a long
  * drop. A climbing bend and a drop into the garden, a long lift to the
  * Star Leap, switchbacks down, a hump, a helix up through itself and a
  * plunge home. Butterfly swarms buffet karts toward the open edges.
@@ -33,7 +33,7 @@ export function buildButterflySkyway(): TrackDef {
   b.section('Butterfly Garden', { halfWidth: 9.5, wallHeight: 1.2, surface: 'rainbow' });
   b.mark('garden');
   b.straight(48);
-  // The garden swings out wide; Catching Smoke cuts straight across. Open edges only
+  // The garden swings out wide; Flying Microtonal Banana cuts straight across. Open edges only
   // while the two roads still touch, so a kart sliding wide lands on one or the other.
   b.section('Butterfly Garden', { halfWidth: 9.5, surface: 'rainbow' });
   b.straight(8);
@@ -45,7 +45,7 @@ export function buildButterflySkyway(): TrackDef {
   b.arc(40, -SMOKE_OPEN);
   b.mark('smokeEnd');
   // The lift: a long climb up to the leap.
-  b.section('Dreams', { halfWidth: 9.5, wallHeight: 1.2, surface: 'rainbow' });
+  b.section('Daydream', { halfWidth: 9.5, wallHeight: 1.2, surface: 'rainbow' });
   b.mark('lift');
   b.straight(30).arc(35, 50).arc(35, -50).straight(50);
   b.section('Garden Bend', { halfWidth: 10, wallHeight: 1.2, surface: 'rainbow' });
@@ -58,7 +58,7 @@ export function buildButterflySkyway(): TrackDef {
   b.gap(18, 30);
   b.elevate(LEAP_Y).straight(25);
 
-  b.section('Shanghai Chrysalis', { halfWidth: 8.5, wallHeight: 1.2, surface: 'rainbow' });
+  b.section('Chrysalis Hairpins', { halfWidth: 8.5, wallHeight: 1.2, surface: 'rainbow' });
   b.mark('hairpins');
   b.straight(12).arc(22, 170).straight(16).arc(22, -170).straight(16).arc(22, 170).straight(16).arc(22, -170).straight(12);
 
@@ -69,7 +69,7 @@ export function buildButterflySkyway(): TrackDef {
   b.section('Metamorphosis Mile', { halfWidth: 9, surface: 'rainbow' });
   b.straight(30);
   // A full turn of helix, climbing over its own start.
-  b.section('Blue Morpho', { halfWidth: 9.5, wallHeight: 1.2, surface: 'rainbow' });
+  b.section('Banana Bend', { halfWidth: 9.5, wallHeight: 1.2, surface: 'rainbow' });
   b.mark('morpho');
   b.arc(20, -360);
   b.section('Falling Upwards', { halfWidth: 11, wallHeight: 1.2, surface: 'rainbow' });
@@ -84,7 +84,7 @@ export function buildButterflySkyway(): TrackDef {
   const smoke = buildCatchingSmoke(b.marks.smoke, b.marks.smokeEnd);
   return {
     id: 'butterfly-skyway',
-    name: 'Catching Smoke',
+    name: 'Sleep Drifter',
     main,
     branches: [smoke.branch],
     pits: b.pits,
@@ -120,7 +120,7 @@ export function buildButterflySkyway(): TrackDef {
  * already, so it only climbs and drops: up the Cloud Nine Bend and off a
  * crest into the garden, the long lift to the Star Leap, down the
  * switchbacks, over a hump on the mile, up the helix and a plunge to the
- * finish. The kickers, the leap and Catching Smoke's junctions keep their own heights.
+ * finish. The kickers, the leap and Flying Microtonal Banana's junctions keep their own heights.
  */
 function shapeCoaster(b: TrackBuilder): void {
   const m = (k: string) => b.marks[k].s;
@@ -159,14 +159,14 @@ function line(b: TrackBuilder, s0: number, s1: number, y0: number, y1: number): 
   b.profile(s0, s1, (u) => y0 + (y1 - y0) * u);
 }
 
-/** Catching Smoke: a narrow, rail-less ribbon straight across the garden's swing, over nothing, dipping in the middle. */
+/** Flying Microtonal Banana: a narrow, rail-less ribbon straight across the garden's swing, over nothing, dipping in the middle. */
 function buildCatchingSmoke(from: { s: number; pose: Pose }, to: { s: number; pose: Pose }) {
   const chord = Math.hypot(to.pose.x - from.pose.x, to.pose.z - from.pose.z);
-  const b = new TrackBuilder(from.pose, 'Catching Smoke', { halfWidth: 6, surface: 'rainbow' });
+  const b = new TrackBuilder(from.pose, 'Flying Microtonal Banana', { halfWidth: 6, surface: 'rainbow' });
   b.straight(chord);
   // Level where it runs beside the main road at either end.
   b.profile(35, chord - 35, (u) => GARDEN_Y - 2 * Math.sin(Math.PI * u) ** 2);
-  // Smoke you can only catch on the final lap: the rest of the race it isn't there.
-  const branch: BranchDef = { name: 'Catching Smoke', mainFrom: from.s, mainTo: to.s, ...b.finish(false), openOn: ['final'], shut: { kind: 'vanish' } };
+  // It only flies on the final lap: the rest of the race it isn't there.
+  const branch: BranchDef = { name: 'Flying Microtonal Banana', mainFrom: from.s, mainTo: to.s, ...b.finish(false), openOn: ['final'], shut: { kind: 'vanish' } };
   return { branch, boxes: chord / 2 };
 }

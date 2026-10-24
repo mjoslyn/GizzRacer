@@ -15,7 +15,7 @@ describe('live bootlegs', () => {
 
   it("every track's song has live recordings (a new track's song goes in the catalogue: tools/bootlegs.mjs, then tools/bootleg-starts.mjs)", () => {
     // Never played live: those tracks race to their remix on Track song.
-    const NEVER_LIVE = new Set(['Polygondwanaland', 'Catching Smoke']);
+    const NEVER_LIVE = new Set(['Mycelium']);
     for (const [id, s] of Object.entries(TRACK_SONGS)) {
       if (NEVER_LIVE.has(s.title)) continue;
       expect(catalogue[s.title]?.length, `${id}: ${s.title}`).toBeGreaterThan(0);

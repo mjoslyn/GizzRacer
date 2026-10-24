@@ -8,15 +8,15 @@ No install and no account. It will always be free. **[The manual](https://www.gi
 
 ## What's in it
 
-- **32 tracks in 8 cups**, plus a Random Cup of four drawn from them, each built around an album or a song
-  - **Nonagon Cup:** Mr. Beat, Rattlesnake, Magma, Polygondwanaland
-  - **Microtonal Cup:** Fishing for Fishies, Ice V, Cyboogie, Catching Smoke
-  - **Apocalypse Cup:** Mars for the Rich, Supercell, The Lord of Lightning, Dragon
-  - **Phantom Island Cup:** Phantom Island, Deadstick, Panpsych, Sea of Doubt
-  - **Omnium Gatherum Cup:** Magenta Mountain, Kepler-22b, The Garden Goblin, Predator X
-  - **Polygondwanaland Cup:** Crumbling Castle (on the N64 castle's layout), The Castle in the Air, Inner Cell, Tetrachromacy
+- **32 tracks in 8 cups**, one an album, in the order the albums came out, plus a Random Cup of four drawn from them
   - **Nonagon Infinity Cup:** Robot Stop, Gamma Knife, People-Vultures, Wah Wah
-  - **Infest the Rats' Nest Cup:** Planet B, Mars for the Rich (the rich's colony under glass, apart from the Apocalypse Cup's burning one), Perihelion, Hell
+  - **Flying Microtonal Banana Cup:** Rattlesnake, Open Water, Sleep Drifter, Doom City, all in the cover's cobalt and banana yellow
+  - **Polygondwanaland Cup:** Crumbling Castle (on the N64 castle's layout), The Castle in the Air, Inner Cell, Tetrachromacy
+  - **Infest the Rats' Nest Cup:** Planet B, Mars for the Rich, Perihelion, Hell
+  - **Omnium Gatherum Cup:** Magenta Mountain, Kepler-22b, The Garden Goblin, Predator X
+  - **Ice, Death, Planets, Lungs, Mushrooms and Lava Cup:** Mycelium, Ice V, Magma, Gliese 710
+  - **PetroDragonic Apocalypse Cup:** Motor Spirit, Supercell, Dragon, Flamethrower
+  - **Phantom Island Cup:** Phantom Island, Deadstick, Panpsych, Sea of Doubt
 - **Roller-coaster tracks:** climbs onto pillared decks, plunges you fly off, canyons sunk into the ground, and a causeway that dives under the lagoon
 - **Launchers and gliders:** a glowing ramp on the lip of every track's big jump (and on a long straight where there's no jump) throws you high, and a trick off it opens your glider, so the leap is a glide you can steer. Up climbs (trading speed for height), down dives (picking speed up)
 - **Rhythm humps, apex pads and slaloms:** a sharp crest on the long straights to fly off, a boost pad on the inside of the big hairpins for the tight line, and a slalom of three pads across the straights of the hillier tracks

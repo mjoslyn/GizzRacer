@@ -498,13 +498,15 @@ export class HazardsView {
     const iceMat = new THREE.MeshPhongMaterial({ color: 0xbfe6ff, emissive: 0x16344a, shininess: 140, specular: 0xffffff, transparent: true, opacity: 0.8 });
     const beamGeo = new THREE.CylinderGeometry(0.07, 0.07, 1, 6);
     beamGeo.rotateZ(Math.PI / 2);
-    const laserMat = new THREE.MeshBasicMaterial({ color: 0xff2a6a, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
-    const postMat = new THREE.MeshPhongMaterial({ color: 0x1a1428, emissive: 0x3a0a2a, shininess: 80 });
+    // Doom City's laser gates and Sleep Drifter's butterflies, in Flying Microtonal Banana's yellow and blue.
+    const laserMat = new THREE.MeshBasicMaterial({ color: 0xffd21a, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
+    const postMat = new THREE.MeshPhongMaterial({ color: 0x0a1030, emissive: 0x0a1a4a, shininess: 80 });
     const laserGlow = glowTexture('rgba(255,90,160,1)', 'rgba(255,40,120,0)');
+    const gateGlow = glowTexture();
     const wingGeo = new THREE.PlaneGeometry(0.7, 0.7);
     wingGeo.translate(0.35, 0, 0);
     const wing = wingTexture();
-    const wingMats = [0xff7ad8, 0x7ae8ff, 0xffe07a, 0xb07aff, 0x7aff9a].map((c) => new THREE.MeshBasicMaterial({ color: c, map: wing, side: THREE.DoubleSide, alphaTest: 0.5 }));
+    const wingMats = [0xffd21a, 0x3a6aff, 0xffe66a, 0x1f3fbf, 0xfff4c0].map((c) => new THREE.MeshBasicMaterial({ color: c, map: wing, side: THREE.DoubleSide, alphaTest: 0.5 }));
 
     const meteorMat = new THREE.MeshPhongMaterial({ map: stoneTexture([60, 30, 24], [120, 70, 50]), emissive: 0xff4a10, emissiveIntensity: 0.45, flatShading: true });
     const trailGeo = new THREE.ConeGeometry(1.4, 9, 10, 1, true);
@@ -1157,7 +1159,7 @@ export class HazardsView {
           for (const side of [-1, 1]) {
             const post = new THREE.Mesh(new THREE.BoxGeometry(0.5, 2.4, 0.5), postMat);
             post.position.set(side * pose.radius, 1.2, 0);
-            const glow = sprite(laserGlow, 0xff3a8a, 1.6);
+            const glow = sprite(gateGlow, 0xffc81a, 1.6);
             glow.position.set(side * pose.radius, 1.1, 0);
             obj.add(post, glow);
             glows.push(glow);

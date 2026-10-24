@@ -21,15 +21,15 @@ interface JumpSpec {
 }
 
 /**
- * The Microtonal Cup's shortcuts and kickers. `jump` is the design of the
+ * The shortcuts and kickers of the old Microtonal Cup's tracks (Open Water, Ice V, Doom City, Sleep Drifter). `jump` is the design of the
  * shortcut's jump, if it has one; `boostAt` is where the test autopilot
  * takes a mini-turbo on the shortcut (metres into the route) to clear it.
  */
 const CASES: { name: string; build: () => TrackDef; jump?: JumpSpec; boostAt?: number }[] = [
-  { name: 'Fishing for Fishies', build: buildFishiesLagoon },
+  { name: 'Open Water', build: buildFishiesLagoon },
   { name: 'Ice V', build: buildIceVGlacier, jump: { engine: '100cc', clear: { speed: 1.35, boost: 1 }, fail: { speed: 1, boost: 0 } }, boostAt: 40 },
-  { name: 'Cyboogie', build: buildCyboogieCity, jump: { engine: '100cc', clear: { speed: 1.35, boost: 1 }, fail: { speed: 1, boost: 0 } }, boostAt: 42 },
-  { name: 'Catching Smoke', build: buildButterflySkyway },
+  { name: 'Doom City', build: buildCyboogieCity, jump: { engine: '100cc', clear: { speed: 1.35, boost: 1 }, fail: { speed: 1, boost: 0 } }, boostAt: 42 },
+  { name: 'Sleep Drifter', build: buildButterflySkyway },
 ];
 
 /** How far from a junction (m) the branch may still run beside the main road. */
@@ -247,10 +247,10 @@ describe.each(CASES)('$name', ({ build, jump: spec, boostAt }) => {
 
 /** The lie of each track's land: its highest road reaches `high` and its lowest `low` (m); the sky track never sinks below its start line. */
 const LIE: Record<string, { high: number; low: number; floor?: number }> = {
-  'Fishing for Fishies': { high: 12, low: -6 },
+  'Open Water': { high: 12, low: -6 },
   'Ice V': { high: 12, low: -8 },
-  'Cyboogie': { high: 18, low: -4 },
-  'Catching Smoke': { high: 25, low: 0, floor: 0 },
+  'Doom City': { high: 18, low: -4 },
+  'Sleep Drifter': { high: 25, low: 0, floor: 0 },
 };
 
 /** Steers toward a point a little further along the main centerline, flat out. */

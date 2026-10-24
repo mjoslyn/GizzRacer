@@ -21,7 +21,7 @@ const race = (over: Partial<RaceRecordSubmission> = {}): RaceRecordSubmission =>
 
 const cup = (over: Partial<CupRecordSubmission> = {}): CupRecordSubmission => ({
   kind: 'cup',
-  cupId: 'nonagon',
+  cupId: 'nonagon-infinity',
   engine: '150cc',
   mirror: false,
   racerId: 'stu-mackenzie',
@@ -36,7 +36,7 @@ describe('record boards', () => {
   it('names a board per kind, track or cup, mirror, class and physics version', () => {
     expect(recordBoardName(race())).toBe(`race.rattlesnake-run.100cc.v${PHYSICS_VERSION}`);
     expect(recordBoardName(race({ mirror: true }))).toBe(`race.rattlesnake-run.mirror.100cc.v${PHYSICS_VERSION}`);
-    expect(recordBoardName(cup())).toBe(`cup.nonagon.150cc.v${PHYSICS_VERSION}`);
+    expect(recordBoardName(cup())).toBe(`cup.nonagon-infinity.150cc.v${PHYSICS_VERSION}`);
   });
 
   it('accepts a plausible race, and refuses the implausible', () => {

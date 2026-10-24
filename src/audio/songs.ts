@@ -9,39 +9,43 @@ export interface TrackSong {
   year: number;
 }
 
+const IDPLML = { album: 'Ice, Death, Planets, Lungs, Mushrooms and Lava', year: 2022 };
+const PDA = { album: 'PetroDragonic Apocalypse', year: 2023 };
+const FMB = { album: 'Flying Microtonal Banana', year: 2017 };
+
 export const TRACK_SONGS: Record<string, TrackSong> = {
-  'infinite-loop-speedway': { title: 'Mr. Beat', album: 'Nonagon Infinity', year: 2016 },
-  'rattlesnake-run': { title: 'Rattlesnake', album: 'Flying Microtonal Banana', year: 2017 },
-  'volcano-fortress': { title: 'Magma', album: 'Ice, Death, Planets, Lungs, Mushrooms and Lava', year: 2022 },
-  'polygondwanaland-jungle': { title: 'Polygondwanaland', album: 'Polygondwanaland', year: 2017 },
-  'fishies-lagoon': { title: 'Fishing for Fishies', album: 'Fishing for Fishies', year: 2019 },
-  'ice-v-glacier': { title: 'Ice V', album: 'Ice, Death, Planets, Lungs, Mushrooms and Lava', year: 2022 },
-  'cyboogie-city': { title: 'Cyboogie', album: 'Fishing for Fishies', year: 2019 },
-  'butterfly-skyway': { title: 'Catching Smoke', album: 'Butterfly 3000', year: 2021 },
-  'hell-on-mars': { title: 'Mars for the Rich', album: "Infest the Rats' Nest", year: 2019 },
-  supercell: { title: 'Supercell', album: 'PetroDragonic Apocalypse', year: 2023 },
-  'murder-of-the-universe': { title: 'The Lord of Lightning', album: 'Murder of the Universe', year: 2017 },
-  'petrodragonic-apocalypse': { title: 'Dragon', album: 'PetroDragonic Apocalypse', year: 2023 },
-  'phantom-island': { title: 'Phantom Island', album: 'Phantom Island', year: 2025 },
-  'deadstick-drop': { title: 'Deadstick', album: 'Phantom Island', year: 2025 },
-  'panpsych-grove': { title: 'Panpsych', album: 'Phantom Island', year: 2025 },
-  'sea-of-doubt': { title: 'Sea of Doubt', album: 'Phantom Island', year: 2025 },
-  'magenta-mountain': { title: 'Magenta Mountain', album: 'Omnium Gatherum', year: 2022 },
-  'kepler-22b': { title: 'Kepler-22b', album: 'Omnium Gatherum', year: 2022 },
-  'goblin-garden': { title: 'The Garden Goblin', album: 'Omnium Gatherum', year: 2022 },
-  'predator-x': { title: 'Predator X', album: 'Omnium Gatherum', year: 2022 },
-  'crumbling-castle': { title: 'Crumbling Castle', album: 'Polygondwanaland', year: 2017 },
-  'castle-in-the-air': { title: 'The Castle in the Air', album: 'Polygondwanaland', year: 2017 },
-  'inner-cell': { title: 'Inner Cell', album: 'Polygondwanaland', year: 2017 },
-  tetrachromacy: { title: 'Tetrachromacy', album: 'Polygondwanaland', year: 2017 },
   'robot-stop': { title: 'Robot Stop', album: 'Nonagon Infinity', year: 2016 },
   'gamma-knife': { title: 'Gamma Knife', album: 'Nonagon Infinity', year: 2016 },
   'people-vultures': { title: 'People-Vultures', album: 'Nonagon Infinity', year: 2016 },
   'wah-wah': { title: 'Wah Wah', album: 'Nonagon Infinity', year: 2016 },
+  'rattlesnake-run': { title: 'Rattlesnake', ...FMB },
+  'fishies-lagoon': { title: 'Open Water', ...FMB },
+  'butterfly-skyway': { title: 'Sleep Drifter', ...FMB },
+  'cyboogie-city': { title: 'Doom City', ...FMB },
+  'crumbling-castle': { title: 'Crumbling Castle', album: 'Polygondwanaland', year: 2017 },
+  'castle-in-the-air': { title: 'The Castle in the Air', album: 'Polygondwanaland', year: 2017 },
+  'inner-cell': { title: 'Inner Cell', album: 'Polygondwanaland', year: 2017 },
+  tetrachromacy: { title: 'Tetrachromacy', album: 'Polygondwanaland', year: 2017 },
   'planet-b': { title: 'Planet B', album: "Infest the Rats' Nest", year: 2019 },
   'mars-for-the-rich': { title: 'Mars for the Rich', album: "Infest the Rats' Nest", year: 2019 },
   perihelion: { title: 'Perihelion', album: "Infest the Rats' Nest", year: 2019 },
   hell: { title: 'Hell', album: "Infest the Rats' Nest", year: 2019 },
+  'magenta-mountain': { title: 'Magenta Mountain', album: 'Omnium Gatherum', year: 2022 },
+  'kepler-22b': { title: 'Kepler-22b', album: 'Omnium Gatherum', year: 2022 },
+  'goblin-garden': { title: 'The Garden Goblin', album: 'Omnium Gatherum', year: 2022 },
+  'predator-x': { title: 'Predator X', album: 'Omnium Gatherum', year: 2022 },
+  'polygondwanaland-jungle': { title: 'Mycelium', ...IDPLML },
+  'ice-v-glacier': { title: 'Ice V', ...IDPLML },
+  'volcano-fortress': { title: 'Magma', ...IDPLML },
+  'murder-of-the-universe': { title: 'Gliese 710', ...IDPLML },
+  'infinite-loop-speedway': { title: 'Motor Spirit', ...PDA },
+  supercell: { title: 'Supercell', ...PDA },
+  'petrodragonic-apocalypse': { title: 'Dragon', ...PDA },
+  'hell-on-mars': { title: 'Flamethrower', ...PDA },
+  'phantom-island': { title: 'Phantom Island', album: 'Phantom Island', year: 2025 },
+  'deadstick-drop': { title: 'Deadstick', album: 'Phantom Island', year: 2025 },
+  'panpsych-grove': { title: 'Panpsych', album: 'Phantom Island', year: 2025 },
+  'sea-of-doubt': { title: 'Sea of Doubt', album: 'Phantom Island', year: 2025 },
 };
 
 /**
@@ -53,8 +57,6 @@ export const TRACK_SONGS: Record<string, TrackSong> = {
  */
 export const TRANSCRIBED: Record<string, { recording: string; release: string }> = {
   title: { recording: 'Ice V', release: "Live At Red Rocks '22" },
-  'polygondwanaland-jungle': { recording: 'Polygondwanaland', release: 'Polygondwanaland (2017), the album master' },
-  'infinite-loop-speedway': { recording: 'Mr. Beat', release: "Live In London '19" },
   'rattlesnake-run': { recording: 'Rattlesnake', release: "Live At Red Rocks '22" },
   'crumbling-castle': { recording: 'Crumbling Castle', release: 'Polygondwanaland (2017), the album master' },
   'castle-in-the-air': { recording: 'The Castle in the Air', release: 'Polygondwanaland (2017), the album master' },
