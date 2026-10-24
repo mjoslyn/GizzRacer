@@ -47,7 +47,7 @@ export interface MenuChoice {
 export const SKILL_LEVELS = ['Easy', 'Normal', 'Hard'] as const;
 const SKILL_LEVEL_BLURBS = ["As Chapter I plays it: room to learn the game", 'As Chapter II plays it', 'As Chapter III plays it: tight and quick'];
 
-/** Infinite's tour moves on after this many laps of the leader (or a song of a Live set). */
+/** Infinite's tour moves on after this many laps of the leader (or a song of a Full set). */
 export const TOUR_LAPS = 3;
 
 export type MenuRow = 'mode' | 'track' | 'gen' | 'theme' | 'complexity' | 'length' | 'racer' | 'engine' | 'mirror' | 'sound' | 'show' | 'watch' | 'cpus' | 'skill' | 'level';
@@ -97,7 +97,7 @@ export class Menu {
     this.choice = { ...initial };
     this.el.className = 'menu';
     parent.appendChild(this.el);
-    // The show dropdown works on its own: keys in it are the dropdown's, and a pick is the Live set's show.
+    // The show dropdown works on its own: keys in it are the dropdown's, and a pick is the Full set's show.
     this.el.addEventListener('keydown', (e) => (e.target as HTMLElement).matches('select') && e.stopPropagation());
     this.el.addEventListener('change', (e) => {
       const sel = e.target as HTMLSelectElement;
@@ -127,7 +127,7 @@ export class Menu {
       else this.render();
     });
     this.render();
-    // The show list arrives after startup: the Live set rows fill in.
+    // The show list arrives after startup: the Full set rows fill in.
     onShows(() => this.visible && this.render());
   }
 
@@ -193,7 +193,7 @@ export class Menu {
         // Watching, there's no racer to pick.
         return m === 'infinite' ? (this.choice.watch ? ['watch'] : ['racer', 'watch']) : ['racer'];
       default: {
-        // The sound to race to, last: the same choice as Settings > Soundtrack, and for a Live set, which show.
+        // The sound to race to, last: the same choice as Settings > Soundtrack, and for a Full set, which show.
         const sound: MenuRow[] = settings().soundtrack === 'show' ? ['sound', 'show'] : ['sound'];
         // A skill game makes its own sound, but the Deadstick Landing is flown to the soundtrack. There are no CPUs to set.
         if (m === 'skills') return this.choice.skill === 'deadstick' ? ['level', ...sound] : ['level'];
@@ -356,7 +356,7 @@ export class Menu {
         body = line('skill', 'Game', esc(SKILLS[c.skill].name), `<div class="menu-cup-tracks menu-mode-blurb">${esc(SKILLS[c.skill].intro)}</div><div class="menu-cup-tracks">${SKILL_KINDS.indexOf(c.skill) + 1} of ${SKILL_KINDS.length}</div>`);
       } else if (c.mode === 'infinite') {
         body = c.tour
-          ? line('track', 'Track', 'Tour', `<div class="menu-cup-tracks">Every track in turn from ${esc(TRACK_LIST[c.track].name)}: the next one every ${TOUR_LAPS} laps, or with each song of a Live set</div>`)
+          ? line('track', 'Track', 'Tour', `<div class="menu-cup-tracks">Every track in turn from ${esc(TRACK_LIST[c.track].name)}: the next one every ${TOUR_LAPS} laps, or with each song of a Full set</div>`)
           : line('track', 'Track', `${TRACK_LIST[c.track].name}${DICE('data-random-track', 'Random track (T)')}`, `<div class="menu-cup-tracks">Laps without end. ${c.track + 1} of ${TRACK_LIST.length}; past the last, the Tour</div>`);
       } else {
         body = line('track', 'Track', `${TRACK_LIST[c.track].name}${c.mode === 'single' ? DICE('data-random-track', 'Random track (T)') : ''}`, `${this.bestLine(TRACK_LIST[c.track].id)}<div class="menu-cup-tracks">${c.track + 1} of ${TRACK_LIST.length}</div>`);
@@ -417,7 +417,7 @@ export class Menu {
   }
 
 
-  /** Live set: which show, from a dropdown by year, or the dice. */
+  /** Full set: which show, from a dropdown by year, or the dice. */
   private showRows(line: (row: MenuRow, label: string, value: string, extra?: string, small?: boolean) => string): string {
     const show = chosenShow(shows(), settings().liveShow);
     if (!show) return line('show', 'Show', 'Loading&hellip;', '', true);

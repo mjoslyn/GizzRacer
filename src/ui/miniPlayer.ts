@@ -3,7 +3,7 @@ import type { LiveRadio } from '../audio/radio';
 
 /**
  * The mini player for the live soundtrack (Settings > Soundtrack: Track
- * song or Live set): the song, the show it's from, a progress line, and back, pause,
+ * song or Full set): the song, the show it's from, a progress line, and back, pause,
  * next and a link to the show on the Internet Archive. On desktop it sits
  * bottom left. On touch there's a ♫ button on screen instead, which opens
  * the same player as a modal; a tap outside it, or its ×, closes it.

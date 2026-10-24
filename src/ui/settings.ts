@@ -37,7 +37,7 @@ export class SettingsScreen {
       updateSettings({ liveShow: sel.value });
       this.render();
     });
-    // The show list arrives after startup: the Live set row fills in.
+    // The show list arrives after startup: the Full set row fills in.
     onShows(() => this.visible && !this.asking && !this.credits && this.render());
     // Keys pressed here mustn't reach the game.
     this.el.addEventListener('keydown', (e) => {
@@ -143,7 +143,7 @@ export class SettingsScreen {
         const i = SOUNDTRACKS.indexOf(s.soundtrack);
         const next = SOUNDTRACKS[(Math.max(0, i) + dir + SOUNDTRACKS.length) % SOUNDTRACKS.length];
         updateSettings({ soundtrack: next });
-        this.status = `${SOUNDTRACK_NAMES[next]}: ${SOUNDTRACK_BLURBS[next]}${next === 'remix' ? '' : ". From the band's shows on the Internet Archive; needs a connection"}${next === 'song' ? '; from the next race' : ''}`;
+        this.status = `${SOUNDTRACK_NAMES[next]}: ${SOUNDTRACK_BLURBS[next]}${next === 'remix' ? '' : ". From the band's shows on the Internet Archive; needs a connection"}${next === 'song' || next === 'random' ? '; from the next race' : ''}`;
         break;
       }
       case 'show-random':
@@ -242,13 +242,13 @@ export class SettingsScreen {
     this.show(html);
   }
 
-  /** Live set: which show, from a dropdown by year, or the dice. */
+  /** Full set: which show, from a dropdown by year, or the dice. */
   private showRows(): string {
     const all = shows();
     const show = chosenShow(all, settings().liveShow);
-    if (!show) return '<div class="lobby-row"><span class="lobby-label">Live set</span><span></span><div class="lobby-value">Loading shows&hellip;</div><span></span></div>';
+    if (!show) return '<div class="lobby-row"><span class="lobby-label">Show</span><span></span><div class="lobby-value">Loading shows&hellip;</div><span></span></div>';
     return `
-            <div class="lobby-row settings-show"><span class="lobby-label">Live set</span>${showSelect(all, show.id, 'settings-select')}<button class="menu-dice" data-act="show-random" title="A show at random" aria-label="A show at random">&#9860;</button></div>`;
+            <div class="lobby-row settings-show"><span class="lobby-label">Show</span>${showSelect(all, show.id, 'settings-select')}<button class="menu-dice" data-act="show-random" title="A show at random" aria-label="A show at random">&#9860;</button></div>`;
   }
 
   private renderCredits(): void {

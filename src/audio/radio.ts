@@ -8,9 +8,10 @@ import { readOpening, talkTrack } from './talk';
  * - Track song (Settings > Soundtrack, and the picker's Sound row): each
  *   race a live recording of its track's song, picked at random
  *   (public/music/bootlegs.json), looping;
- * - a live set (Infinite mode's Music row): a show picked from
- *   public/music/shows.json, its set list read from archive.org, played
- *   from the top song after song, and the next show on the list after it.
+ * - Random song: each race a live recording of any song in that catalogue;
+ * - Full set: a show picked from public/music/shows.json, its set list read
+ *   from archive.org, played from the top song after song, and the next
+ *   show on the list after it, for all the game's music.
  *
  * Every song starts where the band does, past any talk (audio/talk.ts): the
  * catalogue's own `start`, or for a set's songs worked out from the opening
@@ -20,7 +21,7 @@ import { readOpening, talkTrack } from './talk';
  * anything that won't plays the game's own music instead. Driven by the
  * mini player (ui/miniPlayer.ts).
  */
-export type LiveMode = 'song' | 'show';
+export type LiveMode = 'song' | 'random' | 'show';
 
 export interface Show {
   id: string;
@@ -49,8 +50,8 @@ export class LiveRadio {
   private bootlegs: Promise<Record<string, LiveRecording[]>> | null = null;
   private showList: Promise<Show[]> | null = null;
   private now: Playing | null = null;
-  /** Track song: the recordings played, to step back through. */
-  private history: LiveRecording[] = [];
+  /** Track song and Random song: what was played, to step back through. */
+  private history: { rec: LiveRecording; title: string; mode: LiveMode }[] = [];
   private fallback: readonly MusicCue[] = [];
   private readonly listeners = new Set<() => void>();
   /** Where each song's music starts and how loud it is, worked out once. */
@@ -92,7 +93,7 @@ export class LiveRadio {
    * plays when it won't stream. Resolves to false when the song was never
    * recorded live.
    */
-  async playSong(song: string, fallback: readonly MusicCue[]): Promise<boolean> {
+  async playSong(song: string, fallback: readonly MusicCue[], mode: 'song' | 'random' = 'song'): Promise<boolean> {
     const t = ++this.ticket;
     this.fallback = fallback;
     const all = await this.loadBootlegs();
@@ -107,11 +108,19 @@ export class LiveRadio {
     // Not the one just played, when there's a choice.
     const pool = list.length > 1 && last ? list.filter((r) => r.file !== last.file || r.id !== last.id) : list;
     const rec = pool[Math.floor(this.rand() * pool.length)];
-    if (this.now?.mode === 'song') this.history.push(this.now.rec);
-    this.now = { rec, title: song, mode: 'song' };
+    if (this.now && this.now.mode !== 'show') this.history.push({ rec: this.now.rec, title: this.now.title, mode: this.now.mode });
+    this.now = { rec, title: song, mode };
     this.music.playLive(rec, this.fallback);
     this.changed();
     return true;
+  }
+
+  /** Random song: a live recording of any song in the catalogue, a different one from what's playing. */
+  async playRandom(fallback: readonly MusicCue[]): Promise<boolean> {
+    const all = await this.loadBootlegs();
+    const songs = Object.keys(all).filter((s) => all[s].length && s !== this.now?.title);
+    if (!songs.length) return false;
+    return this.playSong(songs[Math.floor(this.rand() * songs.length)], fallback, 'random');
   }
 
   /** The shows there are to play whole, oldest first. */
@@ -202,6 +211,8 @@ export class LiveRadio {
         void this.showAfter(now.set.show).then((s) => {
           if (s && this.now === now) void this.playShow(s);
         });
+    } else if (now.mode === 'random') {
+      void this.playRandom(this.fallback);
     } else {
       void this.playSong(now.title, this.fallback);
     }
@@ -219,8 +230,8 @@ export class LiveRadio {
     const before = this.history.pop();
     if (!before) return;
     this.ticket++;
-    this.now = { rec: before, title: now.title, mode: 'song' };
-    this.music.playLive(before, this.fallback);
+    this.now = before;
+    this.music.playLive(before.rec, this.fallback);
     this.changed();
   }
 

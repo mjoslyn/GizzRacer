@@ -122,6 +122,25 @@ describe('live soundtrack', () => {
     expect(radio.playing).toBe(null);
   });
 
+  it('random song: any song in the catalogue, another on next, back to the one before', async () => {
+    stubFetch({ 'bootlegs.json': { Magma: [rec('a', 'a.mp3')], Rattlesnake: [rec('b', 'b.mp3')], 'Gamma Knife': [rec('c', 'c.mp3')], 'Catching Smoke': [] } });
+    const { music, last } = fakeMusic();
+    let n = 0;
+    const radio = new LiveRadio(music, () => [0.1, 0.6, 0.9][n++ % 3]);
+    expect(await radio.playRandom(['remix'])).toBe(true);
+    const first = radio.playing!;
+    expect(first.mode).toBe('random');
+    expect(['Magma', 'Rattlesnake', 'Gamma Knife']).toContain(first.title);
+    expect(last().live).toBe(first.rec);
+    // Next: a different song, at random.
+    radio.next();
+    await vi.waitFor(() => expect(radio.playing!.title).not.toBe(first.title));
+    expect(radio.playing!.mode).toBe('random');
+    radio.prev();
+    expect(radio.playing!.title).toBe(first.title);
+    expect(last().live).toBe(first.rec);
+  });
+
   it("lets go on stop, and a late answer doesn't start a song after it", async () => {
     stubFetch({ 'bootlegs.json': { Magma: [rec('a', 'a.mp3')] } });
     const { music, calls } = fakeMusic();

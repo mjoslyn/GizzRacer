@@ -2760,7 +2760,7 @@ body[data-mode='menu'] .menu-panel {
   max-height: calc(100dvh - 54px);
 }
 
-/* A Live set's show: a dropdown by year (the picker's Show row and Settings). */
+/* A Full set's show: a dropdown by year (the picker's Show row and Settings). */
 .menu-show,
 .settings-select {
   max-width: 100%;
@@ -2864,7 +2864,7 @@ body.touch-mode .hud-turn {
   color: #fff6d0;
 }
 
-/* Settings' Live set dice: a small square at the row's end, not one of Settings' big buttons. */
+/* Settings' Full set dice: a small square at the row's end, not one of Settings' big buttons. */
 .settings .settings-show .menu-dice {
   width: 40px;
   height: 36px;

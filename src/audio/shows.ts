@@ -1,7 +1,7 @@
 import type { Show } from './radio';
 
 /**
- * The shows a Live set can play (Settings > Soundtrack: Live set, and the
+ * The shows a Full set can play (Settings > Soundtrack: Full set, and the
  * picker's Sound rows): public/music/shows.json, oldest first, loaded once at
  * startup (game.ts), and picked by id (settings().liveShow; null is the
  * newest). Pure, apart from holding the list.
@@ -69,5 +69,5 @@ export function showSelect(all: readonly Show[], id: string | null, cls: string)
     .reverse()
     .map(([y, list]) => `<optgroup label="${y}">${list.map((s) => `<option value="${escape(s.id)}"${s === at ? ' selected' : ''}>${escape(showLabel(s))}</option>`).join('')}</optgroup>`)
     .join('');
-  return `<select class="${cls}" aria-label="Live set: which show">${groups}</select>`;
+  return `<select class="${cls}" aria-label="Full set: which show">${groups}</select>`;
 }

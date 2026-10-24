@@ -6,7 +6,7 @@ import { clamp, damp, lerp, lerpAngle } from './core/math';
 import { CPU_SKILL, CpuDriver, DIFFICULTY_PACE, rivalSkill, withDifficulty } from './ai/cpuDriver';
 import { MusicPlayer } from './audio/music';
 import { LiveRadio } from './audio/radio';
-import { chosenShow, setShows, shows } from './audio/shows';
+import { chosenShow, setShows } from './audio/shows';
 import { MiniPlayer } from './ui/miniPlayer';
 import { HintsTicker } from './ui/hints';
 import { Sfx } from './audio/sfx';
@@ -109,7 +109,7 @@ const hud = new Hud(document.body);
 const music = new MusicPlayer();
 /** The live soundtrack (Settings > Soundtrack): a race's song live. */
 const radio = new LiveRadio(music);
-// The shows a Live set can play, for the picker and Settings.
+// The shows a Full set can play, for the picker and Settings.
 void radio.shows().then(setShows);
 new MiniPlayer(document.body, radio, music);
 /** Controls, items and tips scrolling along the bottom of the picker and the flyover before a race. */
@@ -152,7 +152,7 @@ let choice: MenuChoice = {
 };
 /** Infinite mode: a race of laps without end. */
 const INFINITE_LAPS = 1_000_000;
-/** Infinite with a Live set: the tour moves on with each song, or after this many laps of a long one. */
+/** Infinite with a Full set: the tour moves on with each song, or after this many laps of a long one. */
 const TOUR_SET_LAPS = 8;
 /** Watching: how long (s) the camera stays on one racer before moving on. */
 const WATCH_HOLD = 25;
@@ -162,7 +162,7 @@ let watchIndex = 0;
 let watchTimer = 0;
 /** Which way the steering was held last tick, so a press switches once. */
 let watchSteer = 0;
-/** The Live set song the tour last moved on at. */
+/** The Full set song the tour last moved on at. */
 let tourSong: string | null = null;
 /** The cup in progress, if racing a Grand Prix. */
 let gp: GrandPrix | null = null;
@@ -390,14 +390,11 @@ onSettings((s) => {
     radio.stop();
     liveRace = false;
     music.play(mode === 'race' ? remixCues(raceMusic().lap) : remixCues('title'));
-  } else if (s.soundtrack === 'show' && (set || mode === 'race') && !(mode === 'race' && deadstickMusic())) {
-    // A Live set picked, or another show: it plays at once.
-    const show = chosenShow(shows(), s.liveShow);
-    if (show && radio.playing?.set?.show.id !== show.id) {
-      liveRace = mode === 'race';
-      void radio.ensureShow(show, remixCues(mode === 'race' ? track.def.music.lap : 'title'));
-    }
-  } else if (s.soundtrack === 'song' && set) {
+  } else if (s.soundtrack === 'show') {
+    // A Full set picked, or another show: it plays at once, wherever you are, and stays.
+    ensureSet();
+  } else if (set) {
+    // From a Full set to a song a race: this race's (or the menus') music now.
     radio.stop();
     if (mode === 'race') startRaceMusic();
     else menuMusic();
@@ -819,7 +816,7 @@ function watchStep(dt: number): void {
   } else switchWatch(1 + Math.floor(Math.random() * (race.karts.length - 1)));
 }
 
-/** Infinite's tour: on to the next track once the leader (or I) has done its laps; a Live set moves it on with each song instead. */
+/** Infinite's tour: on to the next track once the leader (or I) has done its laps; a Full set moves it on with each song instead. */
 function tourStep(): boolean {
   if (!choice.tour || intro > 0) return false;
   const k = player ?? race.karts.find((x) => x.position === 1)!;
@@ -833,7 +830,7 @@ function nextTour(): void {
   startRace(true);
 }
 
-// A Live set's next song moves the tour on.
+// A Full set's next song moves the tour on.
 radio.onChange(() => {
   const set = radio.playing?.set;
   const key = set ? `${set.show.id}#${set.index}` : null;
@@ -1220,8 +1217,9 @@ function storyNext(): void {
 /** A skill game on its card over the game. */
 function startSkillScreen(kind: SkillKind, seed: number, level: number): void {
   setMode('skill');
-  // The game makes its own sound: the soundtrack waits (unless a Live set is playing).
-  if (!setPlaying()) music.stop();
+  // The game makes its own sound: the soundtrack waits (unless a Full set is playing).
+  if (setPlaying()) ensureSet();
+  else music.stop();
   skillScreen.start(kind, seed, level);
 }
 
@@ -1583,17 +1581,28 @@ function updateSounds(dt: number): void {
 /** The live soundtrack has this race's music (it falls back to the game's own by itself if a stream won't play). */
 let liveRace = false;
 
-/** A Live set is playing: it carries on through races, menus and the podium. */
+/**
+ * Full set: the show plays for all the game's music, from the moment it's
+ * picked until the game is closed: the title and menus, every race, the
+ * podium, the skill games and the Deadstick Landing.
+ */
 function setPlaying(): boolean {
-  return settings().soundtrack === 'show' && radio.playing?.mode === 'show';
+  return settings().soundtrack === 'show';
 }
 
-/**
- * The race's music, by Settings > Soundtrack: the game's remix of the
- * track's song; a live recording of the song, at random (a song never
- * played live, or a generated track with no song, gets the remix); or the
- * Live set, the picked show, kept going if it's already playing.
- */
+/** Full set: the picked show playing (kept going if it already is), the game's music meanwhile and if it won't load. */
+function ensureSet(): void {
+  const cues = remixCues(mode === 'race' ? raceMusic().lap : 'title');
+  if (mode === 'race') liveRace = true;
+  void radio.shows().then((all) => {
+    const show = chosenShow(all, settings().liveShow);
+    if (!setPlaying()) return;
+    if (show) return radio.ensureShow(show, cues);
+    liveRace = false;
+    music.play(cues);
+  });
+}
+
 /**
  * The songs a race can play live, first choice first: the track's own; or
  * on a story run, its chapter's songs from Murder of the Universe (the
@@ -1620,7 +1629,15 @@ function raceMusic(): TrackDef['music'] {
   return deadstickMusic() ? { lap: DEADSTICK_CUE } : track.def.music;
 }
 
+/**
+ * The race's music, by Settings > Soundtrack: the game's remix of the
+ * track's song; a live recording of the song, at random (a song never
+ * played live, or a generated track with no song, gets the remix); a live
+ * recording of any song (Random song); or the Full set, kept going.
+ */
 function startRaceMusic(): void {
+  // A Full set is all the music, the Deadstick Landing's too.
+  if (setPlaying()) return ensureSet();
   if (deadstickMusic()) {
     liveRace = false;
     if (radio.playing) radio.stop();
@@ -1630,13 +1647,11 @@ function startRaceMusic(): void {
   const cues = remixCues(track.def.music.lap);
   const mode = settings().soundtrack;
   const songs = raceSongs();
-  if (mode === 'show') {
+  if (mode === 'random') {
     liveRace = true;
     const forRace = race;
-    void radio.shows().then((all) => {
-      const show = chosenShow(all, settings().liveShow);
-      if (show) return radio.ensureShow(show, cues);
-      if (race !== forRace) return;
+    void radio.playRandom(cues).then((ok) => {
+      if (ok || race !== forRace) return;
       liveRace = false;
       music.play(cues);
     });
@@ -1661,9 +1676,9 @@ function startRaceMusic(): void {
   music.play(cues);
 }
 
-/** The menus' music: the title remix, unless a Live set is playing on. */
+/** The menus' music: the title remix, unless a Full set is playing on. */
 function menuMusic(): void {
-  if (setPlaying()) return;
+  if (setPlaying()) return ensureSet();
   if (radio.playing) radio.stop();
   music.play(remixCues('title'));
 }

@@ -25,7 +25,7 @@ export interface Settings {
   cpuDifficulty: CpuDifficulty;
   /** The music (audio/radio.ts): see SOUNDTRACK_BLURBS. */
   soundtrack: Soundtrack;
-  /** Live set: the show it plays (an id from public/music/shows.json); null for the newest. */
+  /** Full set: the show it plays (an id from public/music/shows.json); null for the newest. */
   liveShow: string | null;
   /** Graphics detail (render/detail.ts): sun shadows, bump-mapped roads, denser scenery and full resolution, or the flat look at fewer pixels. */
   detail: 'high' | 'medium' | 'low';
@@ -34,14 +34,15 @@ export interface Settings {
 }
 
 export type VideoLook = 'full' | 'light' | 'off';
-export type Soundtrack = 'remix' | 'song' | 'show';
-export const SOUNDTRACKS: readonly Soundtrack[] = ['remix', 'song', 'show'];
+export type Soundtrack = 'remix' | 'song' | 'random' | 'show';
+export const SOUNDTRACKS: readonly Soundtrack[] = ['remix', 'song', 'random', 'show'];
 /** What each is called and what it does, for Settings and the picker. The live ones stream the band's shows from the Internet Archive. */
-export const SOUNDTRACK_NAMES: Record<Soundtrack, string> = { remix: 'Game sound', song: 'Track song', show: 'Live set' };
+export const SOUNDTRACK_NAMES: Record<Soundtrack, string> = { remix: 'Game sound', song: 'Track song', random: 'Random song', show: 'Full set' };
 export const SOUNDTRACK_BLURBS: Record<Soundtrack, string> = {
   remix: "The game's remix of each track's song",
   song: "A live recording of each track's song, a new one every race",
-  show: 'A whole show you pick, from the top, song after song, across races and menus',
+  random: 'A live recording of any of their songs, a new one every race',
+  show: 'A whole show you pick, from the top, song after song: all the music until you close the game',
 };
 export const VIDEO_LOOKS: readonly VideoLook[] = ['full', 'light', 'off'];
 
