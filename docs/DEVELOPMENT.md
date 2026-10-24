@@ -115,7 +115,7 @@ node tools/render-soundtrack.mjs            # all cues
 node tools/render-soundtrack.mjs podium     # one cue
 ```
 
-Some remixes are transcribed from the band's own recordings and written in seqbaby (`seqbaby-seed/gizzracer/remix-live.mjs`, and the Nonagon Infinity Cup's in `seqbaby-seed/gizzracer/remix-nonagon-infinity.mjs`); they render the same way.
+Some remixes are transcribed from the band's own recordings and written in seqbaby (`seqbaby-seed/gizzracer/remix-live.mjs`, the Nonagon Infinity Cup's in `seqbaby-seed/gizzracer/remix-nonagon-infinity.mjs`, and the Mind Fuzz Cup's, from Live at The Caverns '23, in `seqbaby-seed/gizzracer/remix-mindfuzz.mjs`); they render the same way.
 
 The Polygondwanaland Cup's remixes and Polygondwanaland's are transcribed from the album masters (the band's free Polygondwanaland download) and written in `tools/polygondwanaland-cup-songs.mjs`, which exports `SONGS` in seqbaby-seed's shape (title, cue, bars, build) with each song's measured tempo, meter, key and section map in its comments. They belong in seqbaby-seed with the others; until they're moved there, render them through a seed folder whose `people.mjs` exports `PEOPLE = [{ handle: 'gizzracer', songs: SONGS }]`:
 

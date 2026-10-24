@@ -80,6 +80,10 @@ export const TRANSCRIBED: Record<string, { recording: string; release: string }>
   'mars-for-the-rich': { recording: 'Mars for the Rich', release: "Live In Paris '19" },
   perihelion: { recording: 'Perihelion', release: "Live In Milwaukee '19" },
   hell: { recording: 'Hell', release: "Live In Asheville '19" },
+  'im-in-your-mind': { recording: "I'm in Your Mind", release: "Live at The Caverns '23" },
+  'im-not-in-your-mind': { recording: "I'm Not in Your Mind", release: "Live at The Caverns '23" },
+  cellophane: { recording: 'Cellophane', release: "Live at The Caverns '23" },
+  'im-in-your-mind-fuzz': { recording: "I'm in Your Mind Fuzz", release: "Live at The Caverns '23" },
 };
 
 const FINAL = '-final-lap';
