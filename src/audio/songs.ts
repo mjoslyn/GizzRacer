@@ -78,6 +78,13 @@ export const TRANSCRIBED: Record<string, { recording: string; release: string }>
   'mars-for-the-rich': { recording: 'Mars for the Rich', release: "Live In Paris '19" },
   perihelion: { recording: 'Perihelion', release: "Live In Milwaukee '19" },
   hell: { recording: 'Hell', release: "Live In Asheville '19" },
+  'fishies-lagoon': { recording: 'Open Water', release: "Live in Athens '25, the soundboard mix" },
+  'butterfly-skyway': { recording: 'Sleep Drifter', release: "Live in Barcelona '25, the soundboard mix" },
+  'cyboogie-city': { recording: 'Doom City', release: "Live in Lisbon '25, the soundboard mix" },
+  'polygondwanaland-jungle': { recording: 'Iron Lung', release: "Live at Field of Vision II '26, the soundboard mix" },
+  'murder-of-the-universe': { recording: 'Gliese 710', release: "Live at Field of Vision II '26, the soundboard mix" },
+  'infinite-loop-speedway': { recording: 'Motor Spirit', release: "Live at Red Rocks '23, the soundboard mix" },
+  'hell-on-mars': { recording: 'Flamethrower', release: "Live at Field of Vision '25, the soundboard mix" },
 };
 
 const FINAL = '-final-lap';

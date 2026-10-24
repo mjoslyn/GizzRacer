@@ -607,5 +607,103 @@
     "bars": 32,
     "loopSamples": 1840696,
     "sampleRate": 44100
+  },
+  "fishies-lagoon-remix": {
+    "title": "open water (remix)",
+    "bpm": 144,
+    "bars": 32,
+    "loopSamples": 2352000,
+    "sampleRate": 44100
+  },
+  "fishies-lagoon-remix-final-lap": {
+    "title": "open water (remix, final lap)",
+    "bpm": 152,
+    "bars": 32,
+    "loopSamples": 2228211,
+    "sampleRate": 44100
+  },
+  "butterfly-skyway-remix": {
+    "title": "sleep drifter (remix)",
+    "bpm": 170,
+    "bars": 32,
+    "loopSamples": 1992282,
+    "sampleRate": 44100
+  },
+  "butterfly-skyway-remix-final-lap": {
+    "title": "sleep drifter (remix, final lap)",
+    "bpm": 178,
+    "bars": 32,
+    "loopSamples": 1902742,
+    "sampleRate": 44100
+  },
+  "cyboogie-city-remix": {
+    "title": "doom city (remix)",
+    "bpm": 180,
+    "bars": 32,
+    "loopSamples": 1881600,
+    "sampleRate": 44100
+  },
+  "cyboogie-city-remix-final-lap": {
+    "title": "doom city (remix, final lap)",
+    "bpm": 188,
+    "bars": 32,
+    "loopSamples": 1801532,
+    "sampleRate": 44100
+  },
+  "murder-of-the-universe-remix": {
+    "title": "gliese 710 (remix)",
+    "bpm": 128,
+    "bars": 18,
+    "loopSamples": 2604656,
+    "sampleRate": 44100
+  },
+  "murder-of-the-universe-remix-final-lap": {
+    "title": "gliese 710 (remix, final lap)",
+    "bpm": 136,
+    "bars": 18,
+    "loopSamples": 2451441,
+    "sampleRate": 44100
+  },
+  "polygondwanaland-jungle-remix": {
+    "title": "iron lung (remix)",
+    "bpm": 124,
+    "bars": 32,
+    "loopSamples": 2731355,
+    "sampleRate": 44100
+  },
+  "polygondwanaland-jungle-remix-final-lap": {
+    "title": "iron lung (remix, final lap)",
+    "bpm": 132,
+    "bars": 32,
+    "loopSamples": 2565818,
+    "sampleRate": 44100
+  },
+  "infinite-loop-speedway-remix": {
+    "title": "motor spirit (remix)",
+    "bpm": 116,
+    "bars": 30,
+    "loopSamples": 3421552,
+    "sampleRate": 44100
+  },
+  "infinite-loop-speedway-remix-final-lap": {
+    "title": "motor spirit (remix, final lap)",
+    "bpm": 124,
+    "bars": 30,
+    "loopSamples": 3200806,
+    "sampleRate": 44100
+  },
+  "hell-on-mars-remix": {
+    "title": "flamethrower (remix)",
+    "bpm": 192,
+    "bars": 52,
+    "loopSamples": 2866500,
+    "sampleRate": 44100
+  },
+  "hell-on-mars-remix-final-lap": {
+    "title": "flamethrower (remix, final lap)",
+    "bpm": 200,
+    "bars": 52,
+    "loopSamples": 2751840,
+    "sampleRate": 44100
   }
 }

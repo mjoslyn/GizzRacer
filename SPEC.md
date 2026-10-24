@@ -127,7 +127,7 @@ The first three cups used to be the Nonagon, Microtonal and Apocalypse Cups, of 
 - The Lord of Lightning is Gliese 710: the road of starlight, the star itself (an orange dwarf, its corona breathing, comets wheeling round it) over the start ring where the great eye was; Static Electricity, Red Dwarf Bend, Oort Cloud Leap, Dead Star Spiral, Planets Straight, Collision Course, shortcut Rogue Orbit
 - The Apocalypse Cup's burning Mars for the Rich is Flamethrower: a FLAMETHROWER sign on its gate; Witchcraft Chicane, Fire Crater, Dragon's Nest, shortcut Fire Escape
 
-Rattlesnake keeps its song and remix. The seven new songs have no remix yet, so those tracks race to their classic themes until one is written (tests/fun.test.ts `AWAITING_REMIX`). Trophies won on a retired cup carry over to the album cup that took most of its tracks (progress.ts `carryOver`).
+Rattlesnake keeps its song and remix. The seven new songs each have a remix and a final-lap cut transcribed from a live soundboard (seqbaby-seed gizzracer/remix-banana.mjs, remix-ice-death.mjs and remix-petrodragonic.mjs; the recordings are in `TRANSCRIBED`): Open Water (Live in Athens '25), Sleep Drifter (Live in Barcelona '25), Doom City (Live in Lisbon '25), Iron Lung and Gliese 710 (Live at Field of Vision II '26), Motor Spirit (Live at Red Rocks '23) and Flamethrower (Live at Field of Vision '25). Trophies won on a retired cup carry over to the album cup that took most of its tracks (progress.ts `carryOver`).
 
 The sections below describe the tracks as they were first built, under their old names.
 
