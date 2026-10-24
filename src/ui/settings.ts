@@ -10,7 +10,7 @@ const SENSITIVITY = ['High', 'Medium', 'Low'];
 
 /**
  * Settings, from the title screen and the pause menu: volumes, tilt
- * steering and auto-accelerate. Changes apply at once and are saved. The
+ * steering. Changes apply at once and are saved. The
  * credits are a second page of it, reached from Settings or straight from
  * the title screen.
  */
@@ -129,9 +129,6 @@ export class SettingsScreen {
         this.tilt.recenter();
         this.status = 'Straight ahead is how you hold it now';
         break;
-      case 'auto':
-        updateSettings({ autoAccelerate: !s.autoAccelerate });
-        break;
       case 'smart':
         updateSettings({ smartSteering: !s.smartSteering });
         break;
@@ -218,7 +215,6 @@ export class SettingsScreen {
             ${s.soundtrack === 'show' ? this.showRows() : ''}
             <div class="lobby-row"><span class="lobby-label">Effects</span>${arrows('sfx', pct(s.sfx))}</div>
             <div class="lobby-row"><span class="lobby-label">VHS</span>${arrows('look', { full: 'Full', light: 'Light', off: 'Off' }[s.videoLook])}</div>
-            <div class="lobby-row"><span class="lobby-label">Throttle</span>${toggle('auto', s.autoAccelerate, s.autoAccelerate ? 'Automatic' : 'Manual')}</div>
             <div class="lobby-row"><span class="lobby-label">Steering</span>${toggle('smart', s.smartSteering, s.smartSteering ? 'Smart' : 'Manual')}</div>
             <div class="lobby-row"><span class="lobby-label">CPUs</span>${arrows('cpus', { easy: 'Easy', normal: 'Normal', hard: 'Hard' }[s.cpuDifficulty])}</div>
             <div class="lobby-row"><span class="lobby-label">Turn hints</span>${toggle('turns', s.turnIndicator)}</div>

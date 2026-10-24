@@ -4,7 +4,8 @@ import { NEUTRAL_INPUT, type InputFrame } from './inputFrame';
 export { NEUTRAL_INPUT, type InputFrame };
 
 const KEYS = {
-  throttle: ['KeyW', 'ArrowUp'],
+  /** Up: fires the item on the road, climbs with the glider open. */
+  up: ['KeyW', 'ArrowUp'],
   brake: ['KeyS', 'ArrowDown'],
   left: ['KeyA', 'ArrowLeft'],
   right: ['KeyD', 'ArrowRight'],
@@ -23,11 +24,14 @@ const PITCH_DEADZONE = 0.45;
 const PREVENT_DEFAULT = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space']);
 
 /**
- * Reads keyboard and the first standard gamepad into InputFrames.
- * With auto-accelerate on, throttle is always full unless braking.
+ * Reads keyboard and the first standard gamepad into InputFrames. The kart
+ * accelerates by itself: throttle is always full unless braking.
  */
 export class InputManager {
-  autoAccelerate = true;
+  /** The player's glider is open (set by the game each tick): up climbs rather than firing the item. */
+  gliding = false;
+  /** Up has been held since the glider was open: landing with it held is no item press. */
+  private upInAir = false;
   /** Written by the on-screen touch controls. */
   readonly touch = { steer: 0, tilt: 0, tiltPitch: 0, pitch: 0, drift: false, brake: false, item: false };
   private readonly down = new Set<string>();
@@ -53,14 +57,15 @@ export class InputManager {
   /** Samples input for one physics tick. */
   sample(): InputFrame {
     const key = (codes: readonly string[]) => codes.some((c) => this.down.has(c) || this.latched.has(c));
-    let throttle = key(KEYS.throttle) ? 1 : 0;
     let brake = key(KEYS.brake) ? 1 : 0;
     let steer = (key(KEYS.right) ? 1 : 0) - (key(KEYS.left) ? 1 : 0);
-    // Up and down: the throttle and brake keys, which with the glider open climb and dive. Accelerating by hand, up is held
-    // down as the throttle, so it only dives.
-    let pitch = (this.autoAccelerate && key(KEYS.throttle) ? 1 : 0) - (key(KEYS.brake) ? 1 : 0) + this.touch.pitch + this.touch.tiltPitch;
+    // Up fires the item on the road; with the glider open, up and down (the brake key) climb and dive.
+    const up = key(KEYS.up);
+    if (!up) this.upInAir = false;
+    else if (this.gliding) this.upInAir = true;
+    let pitch = (this.gliding && up ? 1 : 0) - (key(KEYS.brake) ? 1 : 0) + this.touch.pitch + this.touch.tiltPitch;
     let drift = key(KEYS.drift);
-    let item = key(KEYS.item);
+    let item = key(KEYS.item) || (!this.gliding && up && !this.upInAir);
     let lookBack = key(KEYS.lookBack);
 
     steer += this.touch.steer + this.touch.tilt;
@@ -72,7 +77,6 @@ export class InputManager {
     if (pad) {
       const btn = (i: number) => pad.buttons[i]?.pressed ?? false;
       const val = (i: number) => pad.buttons[i]?.value ?? 0;
-      throttle = Math.max(throttle, btn(PAD.a) ? 1 : 0, val(PAD.r2));
       brake = Math.max(brake, btn(PAD.b) ? 1 : 0, val(PAD.l2));
       const x = pad.axes[0] ?? 0;
       if (Math.abs(x) > STICK_DEADZONE) {
@@ -88,7 +92,7 @@ export class InputManager {
       lookBack ||= btn(PAD.y);
     }
 
-    if (this.autoAccelerate) throttle = brake > 0 ? 0 : 1;
+    const throttle = brake > 0 ? 0 : 1;
 
     const frame: InputFrame = {
       throttle: clamp(throttle, 0, 1),

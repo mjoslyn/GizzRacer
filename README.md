@@ -51,17 +51,17 @@ No install and no account. It will always be free. **[The manual](https://www.gi
 | | Keyboard | Gamepad | Touch |
 |---|---|---|---|
 | Steer | Left / Right (or A / D) | Left stick | Drag on the left half (or tilt the phone) |
-| Accelerate | Automatic (M for manual: Up / W) | Automatic (manual: A) | Automatic |
+| Accelerate | Automatic | Automatic | Automatic |
 | Brake / reverse | Down / S | B | BRAKE |
 | Hop and drift | Shift / Space | R1 | DRIFT, or tap anywhere |
-| Use item | E | L1 | ITEM |
+| Use item | Up / W, or E | L1 | ITEM |
 | Look back | Q | Y | |
 | Pause | Esc | Start | Pause button |
 
 - **Drift:** hold hop while turning. Sparks charge from blue to orange to purple, and letting go gives a boost. The longer you hold, the bigger it is. Hold a purple on through the corner for **rainbow** sparks, the longest boost there is.
 - **Handling:** every kart skids a little wide through a turn, and wider in a drift. How wide is the racer's handling stat: a Fuzz Golem runs out toward the edge where Beowulf's Witch holds the line.
 - **Tricks:** tap hop just as you leave a ramp, a crest or a launcher for a boost when you land. Chain them for bigger ones.
-- **Gliding:** trick off a launcher (tap hop as you leave it) and your glider opens; without the trick it's just a big jump. Steer as on the road. Up climbs, at the cost of speed, until you stall; down (or brake) dives and picks speed up. On a gamepad it's the stick or d-pad, on touch a drag up or down the steering pad, or with tilt steering, tipping the phone back (climb) or forward (dive). With manual acceleration on, up stays the throttle, so it only dives. It folds when you land, or after a couple of seconds.
+- **Gliding:** trick off a launcher (tap hop as you leave it) and your glider opens; without the trick it's just a big jump. Steer as on the road. Up climbs, at the cost of speed, until you stall; down (or brake) dives and picks speed up. On a gamepad it's the stick or d-pad, on touch a drag up or down the steering pad, or with tilt steering, tipping the phone back (climb) or forward (dive). With the glider open, up climbs rather than firing your item. It folds when you land, or after a couple of seconds.
 - **Rocket start:** hop just as the countdown's 1 goes out.
 - **Slipstream:** tuck in behind another kart to charge a boost.
 - **Nonagon Infinity:** hop as it reaches you to ride over it. The warning's bar fills as it closes, and says HOP when it's time.

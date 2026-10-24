@@ -35,7 +35,8 @@ function controls(touch: boolean): string[] {
     'Steer with Left and Right (or A and D)',
     'Shift or Space to hop; hold it while turning to drift',
     'E uses your item, Q looks back, Down brakes and reverses',
-    'Esc pauses, R restarts, M switches to manual throttle, N mutes the music',
+    'Up (or E) fires your item; with the glider open, up climbs instead',
+    'Esc pauses, R restarts, N mutes the music',
     'Gliding? Up climbs, Down dives',
     'A gamepad works too: stick to steer, R1 drift, L1 item, B brake',
   ];

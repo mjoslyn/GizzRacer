@@ -425,7 +425,6 @@ onSettings((s) => {
   }
   music.setVolume(s.music * MUSIC_LEVEL);
   sfx.setVolume(s.sfx);
-  input.autoAccelerate = s.autoAccelerate;
   touch.setTiltMode(s.tilt);
 });
 // Android allows the sensor straight away; iPhones need a tap (see touchend below).
@@ -844,6 +843,8 @@ radio.onChange(() => {
 });
 
 function step(dt: number): void {
+  // Up fires the item, but with the glider open it climbs.
+  input.gliding = !!player && player.state.glideTime > 0;
   lastInput = input.sample();
   // Mirror mode flips the world on screen, so left is right at the wheel too.
   if (mirrored() && (lastInput.steer !== 0)) lastInput = { ...lastInput, steer: -lastInput.steer };
@@ -1766,7 +1767,6 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
       racerName: f.racer.name,
       engineClass: `${choice.engine}${!online && choice.mode !== 'timeTrial' && settings().cpuDifficulty !== 'normal' ? ` · ${settings().cpuDifficulty} CPUs` : ''}`,
       trackName: gp && !gp.finished ? `${track.def.name} · race ${gp.round + 1}/${gp.tracks.length}${gp.rivals.length ? ` · vs ${gp.rivals.map((r) => r.name).join(' & ')}` : ''}` : ghosts.length ? `${track.def.name} · ${ghosts.map((g) => `${g.label} ${formatTime(g.run.total)}`).join(' · ')}` : `${track.def.name}${mirrored() ? ' · Mirror' : ''}`,
-      autoAccelerate: input.autoAccelerate,
       finished,
       paused: loop.paused && !frozen && !hud.confirmingRestart,
       pausedBy,
@@ -2127,7 +2127,6 @@ window.addEventListener('keydown', (e) => {
     return;
   }
   if (e.code === 'KeyR') hud.onPauseAction?.('restart');
-  else if (e.code === 'KeyM') updateSettings({ autoAccelerate: !settings().autoAccelerate });
   else if (e.code === 'KeyN') musicMuted = music.toggleMute();
   else if (e.code === 'KeyB') sfxMuted = sfx.toggleMute();
 });

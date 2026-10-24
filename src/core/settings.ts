@@ -11,7 +11,6 @@ export interface Settings {
   /** Degrees of turn for full steering lock: lower is twitchier. */
   tiltRange: number;
   tiltInvert: boolean;
-  autoAccelerate: boolean;
   /** The phone steering question has been answered (asked once, on the first tap past the title). */
   steeringChosen: boolean;
   /** The Rattlesnake video's tape-and-duotone look (render/postfx.ts): full, toned down, or off. */
@@ -46,7 +45,7 @@ export const SOUNDTRACK_BLURBS: Record<Soundtrack, string> = {
 };
 export const VIDEO_LOOKS: readonly VideoLook[] = ['full', 'light', 'off'];
 
-export const DEFAULT_SETTINGS: Settings = { music: 0.6, sfx: 1, tilt: false, tiltRange: 24, tiltInvert: false, autoAccelerate: true, steeringChosen: false, videoLook: 'light', videoLookChosen: false, smartSteering: true, turnIndicator: true, cpuDifficulty: 'normal', soundtrack: 'remix', liveShow: null, detail: 'high', detailChosen: false };
+export const DEFAULT_SETTINGS: Settings = { music: 0.6, sfx: 1, tilt: false, tiltRange: 24, tiltInvert: false, steeringChosen: false, videoLook: 'light', videoLookChosen: false, smartSteering: true, turnIndicator: true, cpuDifficulty: 'normal', soundtrack: 'remix', liveShow: null, detail: 'high', detailChosen: false };
 
 /** A phone or tablet: Low detail unless the player says otherwise. */
 function coarseDevice(): boolean {

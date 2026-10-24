@@ -67,7 +67,6 @@ export interface HudData {
   racerName: string;
   engineClass: string;
   trackName: string;
-  autoAccelerate: boolean;
   finished: boolean;
   paused: boolean;
   /** Online: who paused the race for everyone. */
@@ -233,8 +232,8 @@ export class Hud {
         <div class="hud-surface"></div>
       </div>
       <div class="hud-help">
-        &larr;/&rarr; steer &middot; &darr; brake/reverse &middot; Shift/Space hop+drift (tap at a ramp lip for a trick) &middot; E item &middot; Q look back &middot; Esc pause<br />
-        R restart &middot; M auto/manual throttle &middot; N music on/off &middot; B sound effects on/off
+        &larr;/&rarr; steer &middot; &darr; brake/reverse &middot; Shift/Space hop+drift (tap at a ramp lip for a trick) &middot; &uarr; or E item &middot; Q look back &middot; Esc pause<br />
+        R restart &middot; N music on/off &middot; B sound effects on/off
       </div>
       <div class="hud-count hud-big"></div>
       <div class="hud-banner hud-big">FINISH!</div>
@@ -382,7 +381,7 @@ export class Hud {
     this.updateTurn(d);
     this.speed.innerHTML = `${Math.round(Math.abs(k.speed) * 3.6)}<small>km/h</small>`;
     this.surface.innerHTML = k.boostTime > 0 ? '<span class="hud-boost">BOOST!</span>' : k.surface;
-    this.racer.innerHTML = `${d.trackName}<br />${d.racerName} &middot; ${d.engineClass}${d.autoAccelerate ? '' : ' &middot; manual'}${d.muted ? ' &middot; music off' : ''}${d.sfxMuted ? ' &middot; sfx off' : ''}${d.nowPlaying && !d.muted ? `<br /><span class="hud-live">&#9835; ${escapeHtml(d.nowPlaying)}</span>` : ''}`;
+    this.racer.innerHTML = `${d.trackName}<br />${d.racerName} &middot; ${d.engineClass}${d.muted ? ' &middot; music off' : ''}${d.sfxMuted ? ' &middot; sfx off' : ''}${d.nowPlaying && !d.muted ? `<br /><span class="hud-live">&#9835; ${escapeHtml(d.nowPlaying)}</span>` : ''}`;
     this.position.innerHTML = `${ordinal(d.position)}<small>/${d.karts}</small>`;
     if (d.position !== this.lastPosition) {
       // Pop on every change, green when gaining a place, red when losing one.
