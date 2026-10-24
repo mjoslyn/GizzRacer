@@ -113,7 +113,7 @@ Every Grand Prix cup is one album's, four of its songs in album order, and the c
 3. Polygondwanaland Cup (November 2017): Crumbling Castle, The Castle in the Air, Inner Cell, Tetrachromacy
 4. Infest the Rats' Nest Cup (2019): Planet B, Mars for the Rich, Perihelion, Hell
 5. Omnium Gatherum Cup (April 2022): Magenta Mountain, Kepler-22b, The Garden Goblin, Predator X
-6. Ice, Death, Planets, Lungs, Mushrooms and Lava Cup (October 2022): Mycelium, Ice V, Magma, Gliese 710
+6. Ice, Death, Planets, Lungs, Mushrooms and Lava Cup (October 2022): Ice V, Magma, Iron Lung, Gliese 710
 7. PetroDragonic Apocalypse Cup (2023): Motor Spirit, Supercell, Dragon, Flamethrower
 8. Phantom Island Cup (2025): Phantom Island, Deadstick, Panpsych, Sea of Doubt
 
@@ -123,7 +123,7 @@ The first three cups used to be the Nonagon, Microtonal and Apocalypse Cups, of 
 - Fishing for Fishies is Open Water: the lagoon in blue and yellow, a cobalt and yellow lighthouse; Anoxia Reef, Microtonal Pier, shortcut The Shallows
 - Catching Smoke is Sleep Drifter: the road through the sky at night, yellow stars and a crescent moon over a cobalt sea of cloud, a banded blue and yellow road; shortcut Flying Microtonal Banana
 - Cyboogie is Doom City: the neon downtown lit cobalt and yellow, a DOOM CITY arch, yellow laser gates; Doom Alley, Nuclear Fusion Sweep, shortcut Fusion Reactor
-- Polygondwanaland is Mycelium: the jungle overgrown with toadstools taller than the trees and fairy rings on glowing threads of mycelium, two giant toadstools leaning over the start; Hell's Itch, Spore Ruins, Iron Lung, Hyphae Hall, shortcut Root Network
+- Polygondwanaland is Iron Lung: the jungle, the planet's lungs, overgrown with toadstools taller than the trees and fairy rings on glowing threads of mycelium, two giant toadstools leaning over the start; Hell's Itch, Spore Ruins, Mushroom Hollow, Hyphae Hall, shortcut Root Network
 - The Lord of Lightning is Gliese 710: the road of starlight, the star itself (an orange dwarf, its corona breathing, comets wheeling round it) over the start ring where the great eye was; Static Electricity, Red Dwarf Bend, Oort Cloud Leap, Dead Star Spiral, Planets Straight, Collision Course, shortcut Rogue Orbit
 - The Apocalypse Cup's burning Mars for the Rich is Flamethrower: a FLAMETHROWER sign on its gate; Witchcraft Chicane, Fire Crater, Dragon's Nest, shortcut Fire Escape
 

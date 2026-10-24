@@ -53,7 +53,7 @@ const STYLES: Record<DecorKind, DetailStyle> = {
     edge: { kind: 'torch', height: 1.7, spacing: 17, color: 0x6a4a2a, stripe: 0x3a2a14 },
     light: 0xffa040,
     cover: { shape: 'tuft', colors: [0x2a7a2a, 0x3a9a3a, 0x1a5a20, 0xff5a8a], count: 1800 },
-    boards: { words: ['MYCELIUM', 'SPORES', 'FUNGI', 'GROW'], bg: ['#2a5a2a', '#7a4a1a'], fg: '#ffe45a' },
+    boards: { words: ['IRON LUNG', 'BREATHE', 'SPORES', 'MYCELIUM'], bg: ['#2a5a2a', '#7a4a1a'], fg: '#ffe45a' },
     crowd: true,
   },
   lagoon: {

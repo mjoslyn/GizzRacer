@@ -14,7 +14,7 @@ No install and no account. It will always be free. **[The manual](https://www.gi
   - **Polygondwanaland Cup:** Crumbling Castle (on the N64 castle's layout), The Castle in the Air, Inner Cell, Tetrachromacy
   - **Infest the Rats' Nest Cup:** Planet B, Mars for the Rich, Perihelion, Hell
   - **Omnium Gatherum Cup:** Magenta Mountain, Kepler-22b, The Garden Goblin, Predator X
-  - **Ice, Death, Planets, Lungs, Mushrooms and Lava Cup:** Mycelium, Ice V, Magma, Gliese 710
+  - **Ice, Death, Planets, Lungs, Mushrooms and Lava Cup:** Ice V, Magma, Iron Lung, Gliese 710
   - **PetroDragonic Apocalypse Cup:** Motor Spirit, Supercell, Dragon, Flamethrower
   - **Phantom Island Cup:** Phantom Island, Deadstick, Panpsych, Sea of Doubt
 - **Roller-coaster tracks:** climbs onto pillared decks, plunges you fly off, canyons sunk into the ground, and a causeway that dives under the lagoon

@@ -14,7 +14,7 @@ import { Track, shortcutLap, type TrackDef } from '../src/tracks/track';
 import { buildVolcanoFortress } from '../src/tracks/volcanoFortress';
 
 /**
- * The shortcuts of the old Nonagon Cup's tracks (Motor Spirit, Rattlesnake, Magma, Mycelium): each track's branch, and how much of each end
+ * The shortcuts of the old Nonagon Cup's tracks (Motor Spirit, Rattlesnake, Magma, Iron Lung): each track's branch, and how much of each end
  * may run alongside the main road. `high` is how far the road climbs (on a
  * deck), `low` how deep its cut sinks.
  */
@@ -22,7 +22,7 @@ const CUP: { name: string; build: () => TrackDef; near: number; high: number; lo
   { name: 'Motor Spirit', build: buildInfiniteLoopSpeedway, near: 60, high: 16, low: -3 },
   { name: 'Rattlesnake', build: buildRattlesnakeRun, near: 55, high: 12, low: -7 },
   { name: 'Magma', build: buildVolcanoFortress, near: 50, high: 18, low: -5 },
-  { name: 'Mycelium', build: buildPolygondwanalandJungle, near: 55, high: 12, low: -5 },
+  { name: 'Iron Lung', build: buildPolygondwanalandJungle, near: 55, high: 12, low: -5 },
 ];
 
 const lizard = RACERS[0];

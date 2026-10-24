@@ -56,9 +56,9 @@ export const RAW_TRACK_LIST: { id: string; name: string; build: () => TrackDef }
   { id: 'kepler-22b', name: 'Kepler-22b', build: buildKepler22b },
   { id: 'goblin-garden', name: 'The Garden Goblin', build: buildGoblinGarden },
   { id: 'predator-x', name: 'Predator X', build: buildPredatorX },
-  { id: 'polygondwanaland-jungle', name: 'Mycelium', build: buildPolygondwanalandJungle },
   { id: 'ice-v-glacier', name: 'Ice V', build: buildIceVGlacier },
   { id: 'volcano-fortress', name: 'Magma', build: buildVolcanoFortress },
+  { id: 'polygondwanaland-jungle', name: 'Iron Lung', build: buildPolygondwanalandJungle },
   { id: 'murder-of-the-universe', name: 'Gliese 710', build: buildMurderOfTheUniverse },
   { id: 'infinite-loop-speedway', name: 'Motor Spirit', build: buildInfiniteLoopSpeedway },
   { id: 'supercell', name: 'Supercell', build: buildSupercell },
@@ -84,7 +84,7 @@ export const CUPS: { id: string; name: string; tracks: number[] }[] = [
   { id: 'infest-the-rats-nest', name: "Infest the Rats' Nest Cup", tracks: [12, 13, 14, 15] },
   // Omnium Gatherum (April 2022): the pink mountain, the ocean planet, the goblin's garden, and the pliosaur.
   { id: 'omnium-gatherum', name: 'Omnium Gatherum Cup', tracks: [16, 17, 18, 19] },
-  // Ice, Death, Planets, Lungs, Mushrooms and Lava (October 2022), in album order: the jungle, the glacier, the volcano, and the road of starlight.
+  // Ice, Death, Planets, Lungs, Mushrooms and Lava (October 2022), in album order: the glacier, the volcano, the jungle (the planet's lungs) overgrown with mushrooms, and the road of starlight.
   { id: 'ice-death-planets', name: 'Ice, Death, Planets, Lungs, Mushrooms and Lava Cup', tracks: [20, 21, 22, 23] },
   // PetroDragonic Apocalypse (2023), in album order: the speedway, the storm, the oil-field dragons, and Mars on fire.
   { id: 'petrodragonic-apocalypse', name: 'PetroDragonic Apocalypse Cup', tracks: [24, 25, 26, 27] },

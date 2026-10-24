@@ -1215,7 +1215,7 @@ function rainbowArch(ribbon: Ribbon, s: number, banana = false): THREE.Group {
   return g;
 }
 
-/** Mycelium's gate: two giant toadstools leaning in over the road till their caps touch, spores drifting down from the gills. */
+/** Iron Lung's gate: two giant toadstools leaning in over the road till their caps touch, spores drifting down from the gills. */
 function mushroomArch(ribbon: Ribbon, s: number, animated: ((time: number) => void)[]): THREE.Group {
   const g = new THREE.Group();
   const f = frameAt(ribbon, s);
@@ -2259,7 +2259,7 @@ function featureBuilder(theme: Theme, mats: Materials, animated: ((time: number)
         }
         return at(t, x, z, rand);
       };
-      // Mycelium: the forest floor is a fungus's, toadstools taller than the trees and rings of them in the clearings.
+      // Iron Lung: the jungle's floor is a fungus's, toadstools taller than the trees and rings of them in the clearings.
       const capColors = [0xd8302a, 0xe8902a, 0x8a4ad8, 0xf0e0c0];
       const caps = capColors.map((c) => lambert(0xffffff, { map: tex.spotsTexture(`#${c.toString(16).padStart(6, '0')}`, '#fff8e8', 16) }));
       const gills = lambert(0xe8d8b8, { side: THREE.DoubleSide });

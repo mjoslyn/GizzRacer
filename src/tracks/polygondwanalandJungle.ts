@@ -14,9 +14,10 @@ const RAVINE_Y = -6;
 const RUINS_Y = 8;
 
 /**
- * Mycelium, once Polygondwanaland (hard): vine hairpins, a jump over a
- * river, and walled stone ruins with a chicane, the Ice, Death, Planets,
- * Lungs, Mushrooms and Lava Cup's opener. Root Network, a secret line
+ * Iron Lung, once Polygondwanaland (hard): the jungle, the planet's lungs,
+ * overgrown with mushrooms, in the Ice, Death, Planets, Lungs, Mushrooms and
+ * Lava Cup. Vine hairpins, a jump over a river, and walled stone ruins with
+ * a chicane. Root Network, a secret line
  * beyond sight, cuts the river corner with a longer leap off a crumbling
  * ramp.
  */
@@ -56,7 +57,7 @@ export function buildPolygondwanalandJungle(): TrackDef {
   b.section('Spore Ruins', { halfWidth: 8, wallHeight: 5, surface: 'rock' });
   b.mark('ruins');
   b.straight(50);
-  b.section('Iron Lung', { halfWidth: 8, wallHeight: 5, surface: 'rock' });
+  b.section('Mushroom Hollow', { halfWidth: 8, wallHeight: 5, surface: 'rock' });
   b.arc(60, 45).arc(60, -45);
   b.section('Hyphae Hall', { halfWidth: 8, wallHeight: 5, surface: 'rock' });
   b.straight(40).arc(45, 90);
@@ -94,7 +95,7 @@ export function buildPolygondwanalandJungle(): TrackDef {
   const colour = buildRootNetwork(b.marks.colourFrom, b.marks.colourTo, b.marks.river.pose);
   return {
     id: 'polygondwanaland-jungle',
-    name: 'Mycelium',
+    name: 'Iron Lung',
     main,
     branches: [colour.branch],
     pits: b.pits,

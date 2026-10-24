@@ -118,7 +118,7 @@ describe('live soundtrack', () => {
     expect(radio.playing!.rec).toBe(first);
     expect(last().live).toBe(first);
     // A song never played live: nothing to play, the caller plays the remix.
-    expect(await radio.playSong('Mycelium', ['x'])).toBe(false);
+    expect(await radio.playSong('Catching Smoke', ['x'])).toBe(false);
     expect(radio.playing).toBe(null);
   });
 
@@ -141,7 +141,7 @@ describe('live soundtrack', () => {
   });
 
   it('random song: any song in the catalogue, another on next, back to the one before', async () => {
-    stubFetch({ 'bootlegs.json': { Magma: [rec('a', 'a.mp3')], Rattlesnake: [rec('b', 'b.mp3')], 'Gamma Knife': [rec('c', 'c.mp3')], Mycelium: [] } });
+    stubFetch({ 'bootlegs.json': { Magma: [rec('a', 'a.mp3')], Rattlesnake: [rec('b', 'b.mp3')], 'Gamma Knife': [rec('c', 'c.mp3')], 'Catching Smoke': [] } });
     const { music, last } = fakeMusic();
     let n = 0;
     const radio = new LiveRadio(music, () => [0.1, 0.6, 0.9][n++ % 3]);
