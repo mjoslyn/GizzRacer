@@ -102,7 +102,7 @@ export interface HudData {
 }
 
 /** Text from outside (a venue's name off the Internet Archive) made safe to put in HTML. */
-export function escapeHtml(s: string): string {
+function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
 
@@ -266,6 +266,7 @@ export class Hud {
         <div class="hud-title-buttons">
           <button class="hud-title-settings" data-title="settings">SETTINGS</button>
           <button class="hud-title-settings" data-title="credits">CREDITS</button>
+          <button class="hud-title-settings" data-title="manual">MANUAL</button>
         </div>
         <div class="hud-title-ios">For full screen: Share &rarr; Add to Home Screen</div>
       </div>`;
@@ -287,6 +288,8 @@ export class Hud {
     this.title = q('.hud-title');
     q('[data-title="settings"]').addEventListener('click', () => this.onTitleSettings?.());
     q('[data-title="credits"]').addEventListener('click', () => this.onTitleCredits?.());
+    // The manual is a page of its own (manual.html), in a new tab so the game keeps its place.
+    q('[data-title="manual"]').addEventListener('click', () => window.open('manual.html', '_blank', 'noopener'));
     this.itemSlot = q('.hud-item');
     this.itemImg = q('.hud-item img') as HTMLImageElement;
     this.itemName = q('.hud-item-name');

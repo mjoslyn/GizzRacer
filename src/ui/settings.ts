@@ -169,6 +169,10 @@ export class SettingsScreen {
       case 'credits':
         this.credits = true;
         break;
+      case 'manual':
+        // A page of its own, in a new tab so the game keeps its place.
+        window.open('manual.html', '_blank', 'noopener');
+        return;
       case 'back':
         if (this.creditsOnly) {
           this.close();
@@ -233,7 +237,10 @@ export class SettingsScreen {
           }
         </div>
         ${this.status ? `<div class="lobby-status">${this.status}</div>` : ''}
-        <button class="settings-credits" data-act="credits">Credits</button>
+        <div class="settings-links">
+          <button class="settings-credits" data-act="manual">Manual</button>
+          <button class="settings-credits" data-act="credits">Credits</button>
+        </div>
         <button class="lobby-big hud-big" data-act="done">DONE</button>
       </div>`;
     this.show(html);

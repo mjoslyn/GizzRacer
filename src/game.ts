@@ -53,7 +53,7 @@ import { findBends, nextBend, type Bend } from './tracks/turns';
 import { pointAt } from './tracks/spline';
 import { generateTrack, trackId } from './tracks/generator';
 import { Track, inPit, type TrackDef } from './tracks/track';
-import { Hud, escapeHtml, formatTime, type HudData, type Table, type TableRow } from './ui/hud';
+import { Hud, formatTime, type HudData, type Table, type TableRow } from './ui/hud';
 import { deleteSaved, findSaved, saveTrack, savedTracks } from './core/savedTracks';
 import { DAILY_SLOT, Menu, TOUR_LAPS, chosenCup, newSeed, type MenuChoice } from './ui/menu';
 import { SaveTrackPanel } from './ui/saveTrack';
@@ -114,10 +114,6 @@ void radio.shows().then(setShows);
 new MiniPlayer(document.body, radio, music);
 /** Controls, items and tips scrolling along the bottom of the picker and the flyover before a race. */
 const hints = new HintsTicker(document.body);
-/** Watching: who the camera is on, for a few seconds after it moves, and how to pick another. */
-const watchCaption = document.createElement('div');
-watchCaption.className = 'watch-caption';
-document.body.appendChild(watchCaption);
 const sfx = new Sfx(
   () => music.context,
   (level, hold) => music.duck(level, hold),
@@ -164,8 +160,6 @@ let watchIndex = 0;
 let watchTimer = 0;
 /** Which way the steering was held last tick, so a press switches once. */
 let watchSteer = 0;
-/** When the camera last moved to another racer (elapsed s), for the caption. */
-let watchSwitchedAt = -Infinity;
 /** The Live set song the tour last moved on at. */
 let tourSong: string | null = null;
 /** The cup in progress, if racing a Grand Prix. */
@@ -617,7 +611,6 @@ function startRace(withPlayer: boolean): void {
   if (watching) {
     watchIndex = Math.floor(Math.random() * race.karts.length);
     watchTimer = 0;
-    watchSwitchedAt = elapsed;
   }
   splits = [];
   lastCheckpoint = -1;
@@ -801,7 +794,6 @@ function switchWatch(dir: number): void {
   const at = order.indexOf(race.karts[watchIndex]);
   watchIndex = race.karts.indexOf(order[(at + dir + order.length) % order.length]);
   watchTimer = 0;
-  watchSwitchedAt = elapsed;
   chase.snap();
 }
 
@@ -816,7 +808,6 @@ function watchStep(dt: number): void {
   if (Math.random() < 0.4 && leader !== watchIndex) {
     watchIndex = leader;
     watchTimer = 0;
-    watchSwitchedAt = elapsed;
     chase.snap();
   } else switchWatch(1 + Math.floor(Math.random() * (race.karts.length - 1)));
 }
@@ -1754,15 +1745,6 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
     },
     elapsed,
   );
-  // Watching: who's on screen, for a few seconds after the camera moves to them.
-  const captioned = watching && mode === 'race' && intro === 0 && !loop.paused && elapsed - watchSwitchedAt < 5;
-  watchCaption.classList.toggle('show', captioned);
-  if (captioned) {
-    const line = `<b>${escapeHtml(f.racer.name)}</b> · ${ordinal(f.position)} · ${escapeHtml(track.def.name)}`;
-    const how = touch.enabled ? 'tap for another racer' : '&larr; &rarr; another racer · Esc menu';
-    const html = `${line}<small>${how}</small>`;
-    if (watchCaption.innerHTML !== html) watchCaption.innerHTML = html;
-  }
   hud.minimap.draw(race.karts.map((k, i) => ({ x: snaps[i].x, z: snaps[i].z, color: hex(k.racer.color), player: k === player, rival: k.rival })));
   // Heat haze shimmers hardest on the straights; the kaleidoscope runs on the player's final lap.
   const straight = 1 - clamp(track.main.maxCurvature(f.progressS, f.progressS + 80) * 25, 0, 1);
