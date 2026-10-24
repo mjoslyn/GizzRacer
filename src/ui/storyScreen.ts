@@ -1,4 +1,4 @@
-import { SKILLS, skillRules, type SkillKind } from '../core/skills';
+import { SKILLS, explainsItself, skillRules, type SkillKind } from '../core/skills';
 import { BOONS, CLEAR_PLACE, type StoryRun } from '../core/story';
 import type { RacerDef } from '../physics/racers';
 
@@ -14,6 +14,8 @@ export interface StoryCard {
   opts: { id: string; name: string; blurb: string }[];
   /** Small line under the choices: the boons held. */
   footer?: string;
+  /** The boons held, as a deck of small cards (the boon chooser's, in place of the footer): each once, with how many. */
+  deck?: { name: string; text: string; count: number }[];
 }
 
 /**
@@ -78,10 +80,19 @@ export class StoryScreen {
         <div class="story-body">${esc(c.body)}</div>
         ${c.detail ? `<div class="story-rules">${esc(c.detail)}</div>` : ''}
         <div class="story-opts">${opts}</div>
+        ${c.deck ? deckHtml(c.deck) : ''}
         ${c.footer ? `<div class="story-footer">${esc(c.footer)}</div>` : ''}
         <div class="menu-hint">${c.opts.length > 1 ? '&uarr;&darr; choose &middot; ' : ''}Enter to go on</div>
       </div>`;
   }
+}
+
+/** The run's deck: every boon held on a small card, stacked ones counted. */
+function deckHtml(deck: NonNullable<StoryCard['deck']>): string {
+  const cards = deck
+    .map((b) => `<div class="story-card"><span class="story-card-name">${esc(b.name)}${b.count > 1 ? ` <b>&times;${b.count}</b>` : ''}</span><span class="story-card-text">${esc(b.text)}</span></div>`)
+    .join('');
+  return `<div class="story-deck"><div class="story-kicker">Your deck</div>${cards ? `<div class="story-deck-cards">${cards}</div>` : '<div class="story-footer">Empty so far: this pick is its first card.</div>'}</div>`;
 }
 
 function esc(s: string): string {
@@ -112,7 +123,7 @@ export function storyCard(run: StoryRun, phase: StoryPhase, player: RacerDef, no
       return { kicker, title: act.title, body: act.intro, opts: go('Begin', `Two races, a skill game, then the boss one on one. Finish each race in the top ${CLEAR_PLACE}.`), footer };
     case 'skill': {
       const k = SKILLS[race.skill!];
-      return { kicker: `${act.chapter} · Skill game · ${hearts(run.lives)}`, title: k.name, body: k.intro, detail: skillRules(race.skill!, race.act), opts: go('Play', 'Ready when you are'), footer };
+      return { kicker: `${act.chapter} · Skill game · ${hearts(run.lives)}`, title: k.name, body: k.intro, detail: explainsItself(race.skill!) ? undefined : skillRules(race.skill!, race.act), opts: go('Play', 'Ready when you are'), footer };
     }
     case 'boss': {
       const boss = run.bossRacer(player);
@@ -124,7 +135,7 @@ export function storyCard(run: StoryRun, phase: StoryPhase, player: RacerDef, no
         title: 'Take a boon',
         body: lead(race.index === 0 ? `${act.chapter} begins: ${act.title}. Something to carry in.` : 'The loop gives something back. Take one with you.'),
         opts: run.offer.map((b) => ({ id: b, name: BOONS[b].name, blurb: BOONS[b].text })),
-        footer,
+        deck: [...new Set(run.boons)].map((b) => ({ ...BOONS[b], count: run.boons.filter((x) => x === b).length })),
       };
     case 'failed':
       return {
@@ -151,6 +162,17 @@ export function storyCard(run: StoryRun, phase: StoryPhase, player: RacerDef, no
         footer,
       };
   }
+}
+
+/** Skill Games' card before the Deadstick Landing, flown on a track: exactly what to do, and Continue. */
+export function practiceRulesCard(kind: SkillKind, levelName: string, level: number): StoryCard {
+  return {
+    kicker: `Skill Games · ${levelName}`,
+    title: SKILLS[kind].name,
+    body: SKILLS[kind].intro,
+    detail: skillRules(kind, level),
+    opts: [{ id: 'play', name: 'Continue', blurb: 'Ready when you are' }],
+  };
 }
 
 /** Skill Games' card after a game: how it went, and another go or back to the picker. */

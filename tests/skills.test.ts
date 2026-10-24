@@ -29,6 +29,25 @@ import {
   makeSuite,
   sheetAt,
   sheetOverlap,
+  CASTLE_SPEEDUP,
+  FISH_ROUNDS,
+  ROBOT_PUSH,
+  ROBOT_STILL,
+  SNAKE_START,
+  castleDrop,
+  castleSlide,
+  fishJudge,
+  makeCastle,
+  makeFishing,
+  makeRobot,
+  makeSnake,
+  placeMouse,
+  robotMood,
+  robotStep,
+  snakeReverse,
+  snakeStart,
+  snakeStep,
+  type Cell,
 } from '../src/core/skills';
 import { ACTS } from '../src/core/story';
 import { respawnKart } from '../src/physics/kart';
@@ -172,6 +191,148 @@ describe('the mind fuzz suite', () => {
       expect(play(true)).toBeGreaterThanOrEqual(g.fuzz.need);
       expect(play(false)).toBeLessThan(g.fuzz.need);
     }
+  });
+});
+
+describe('rattlesnake', () => {
+  it('moves, eats and grows, and crashes into the wall or its own tail', () => {
+    const body = snakeStart(12);
+    expect(body).toHaveLength(SNAKE_START);
+    const head = body[0];
+    const ahead: Cell = [head[0] + 1, head[1]];
+    const ate = snakeStep(body, 0, ahead, 12);
+    expect(ate.ate).toBe(true);
+    expect(ate.body).toHaveLength(SNAKE_START + 1);
+    expect(ate.body[0]).toEqual(ahead);
+    const moved = snakeStep(body, 0, null, 12);
+    expect(moved.body).toHaveLength(SNAKE_START);
+    expect(snakeStep([[11, 5]], 0, null, 12).crash).toBe('wall');
+    expect(snakeStep([[0, 0]], 3, null, 12).crash).toBe('wall');
+    // A loop of five turning into its own middle bites; into the tail's cell, which moves on, it doesn't.
+    const loop: Cell[] = [[2, 2], [2, 3], [3, 3], [3, 2], [3, 1], [2, 1]];
+    expect(snakeStep(loop, 0, null, 12).crash).toBe('tail');
+    expect(snakeStep(loop.slice(0, 5).concat([[2, 1]]), 3, null, 12).crash).toBe(null);
+    expect(snakeReverse(0, 2)).toBe(true);
+    expect(snakeReverse(1, 0)).toBe(false);
+  });
+
+  it('a mouse always goes on a free cell, and enough room to eat them all', () => {
+    const body = snakeStart(12);
+    for (let r = 0; r < 1; r += 0.01) {
+      const m = placeMouse(body, 12, r)!;
+      expect(body.some(([x, y]) => x === m[0] && y === m[1])).toBe(false);
+    }
+    expect(placeMouse([[0, 0]], 1, 0.5)).toBeNull();
+    for (let level = 0; level < 3; level++) {
+      const g = makeSnake(1, level);
+      expect(SNAKE_START + g.need).toBeLessThan(g.grid * g.grid / 3);
+    }
+    expect(makeSnake(1, 2).step).toBeLessThan(makeSnake(1, 0).step);
+  });
+});
+
+describe('robot stop', () => {
+  /** Plays a run: holding on `hold(mood, into)`. Returns whether the robot was reached, and the catches. */
+  function play(seed: number, level: number, hold: (mood: string, into: number) => boolean) {
+    const g = makeRobot(seed, level);
+    let pos = 0;
+    let v = 0;
+    let caught = 0;
+    let caughtIn = -1;
+    for (let t = 0; t < g.time; t += 1 / 60) {
+      const m = robotMood(g, t);
+      const frozen = m.mood === 'watching' && caughtIn === m.index;
+      ({ pos, v } = robotStep(pos, v, hold(m.mood, m.into) && !frozen, 1 / 60));
+      if (frozen) v = 0;
+      if (m.mood === 'watching' && v > ROBOT_STILL && caughtIn !== m.index) {
+        caughtIn = m.index;
+        caught++;
+        pos = Math.max(0, pos - ROBOT_PUSH);
+        v = 0;
+        if (caught >= g.catches) return { reached: false, caught };
+      }
+      if (pos >= 1) return { reached: true, caught };
+    }
+    return { reached: false, caught };
+  }
+  const REACT = 0.25;
+
+  it('a player who lets go a reaction after it starts to turn gets there in time, never caught', () => {
+    for (let level = 0; level < 3; level++)
+      for (let seed = 1; seed <= 40; seed++) {
+        const run = play(seed, level, (mood, into) => mood === 'away' || ((mood === 'turning' || mood === 'twitch') && into < REACT));
+        expect(run, `seed ${seed} level ${level}`).toEqual({ reached: true, caught: 0 });
+      }
+  });
+
+  it('holding on regardless is caught', () => {
+    for (let level = 0; level < 3; level++) expect(play(3, level, () => true).reached).toBe(false);
+  });
+
+  it('only the harder chapters fake a turn', () => {
+    expect(makeRobot(2, 0).moods.some((m) => m.mood === 'twitch')).toBe(false);
+    expect(makeRobot(2, 2).moods.some((m) => m.mood === 'twitch')).toBe(true);
+  });
+});
+
+describe('fishing for fishies', () => {
+  it('nibbles come before the bite, and a strike counts only after it', () => {
+    for (let level = 0; level < 3; level++) {
+      const g = makeFishing(level + 4, level);
+      expect(g.rounds).toHaveLength(FISH_ROUNDS);
+      expect(g.need).toBeLessThanOrEqual(FISH_ROUNDS);
+      expect(g.nibbleDepth).toBeLessThan(1);
+      for (const r of g.rounds) {
+        expect(r.nibbles.length).toBeGreaterThan(0);
+        for (const n of r.nibbles) expect(n).toBeLessThan(r.bite);
+        expect(fishJudge(r, g.window, r.nibbles[0], r.nibbles[0])).toBe('spooked');
+        expect(fishJudge(r, g.window, r.bite + g.window / 2, r.bite + g.window / 2)).toBe('hooked');
+        expect(fishJudge(r, g.window, null, r.bite)).toBe(null);
+        expect(fishJudge(r, g.window, null, r.bite + g.window + 0.01)).toBe('away');
+      }
+    }
+    expect(makeFishing(1, 2).window).toBeLessThan(makeFishing(1, 0).window);
+  });
+});
+
+describe('crumbling castle', () => {
+  it('a stone slides across the stage and back', () => {
+    const g = makeCastle(3, 1);
+    let lo = 1;
+    let hi = 0;
+    for (let t = 0; t < 10; t += 1 / 60) {
+      const x = castleSlide(t, g.speed, g.width, g.phases[0]);
+      expect(x).toBeGreaterThanOrEqual(0);
+      expect(x).toBeLessThanOrEqual(1 - g.width + 1e-9);
+      lo = Math.min(lo, x);
+      hi = Math.max(hi, x);
+    }
+    expect(lo).toBeLessThan(0.02);
+    expect(hi).toBeGreaterThan(1 - g.width - 0.02);
+  });
+
+  it('what hangs over crumbles; a square drop keeps its width', () => {
+    expect(castleDrop({ x: 0.3, w: 0.4 }, 0.31)).toEqual({ x: 0.3, w: 0.4, square: true });
+    const right = castleDrop({ x: 0.3, w: 0.4 }, 0.4);
+    expect(right.x).toBeCloseTo(0.4);
+    expect(right.w).toBeCloseTo(0.3);
+    const left = castleDrop({ x: 0.3, w: 0.4 }, 0.2);
+    expect(left.x).toBeCloseTo(0.3);
+    expect(left.w).toBeCloseTo(0.3);
+    expect(castleDrop({ x: 0.3, w: 0.4 }, 0.75).w).toBe(0);
+  });
+
+  it('square drops build it all, and dropping off by a little every time does not', () => {
+    for (let level = 0; level < 3; level++) {
+      const g = makeCastle(5, level);
+      let top = { x: (1 - g.width) / 2, w: g.width };
+      for (let f = 0; f < g.floors; f++) top = castleDrop(top, top.x);
+      expect(top.w).toBe(g.width);
+      top = { x: (1 - g.width) / 2, w: g.width };
+      for (let f = 0; f < g.floors; f++) top = castleDrop(top, top.x + 0.06);
+      expect(top.w).toBeLessThan(0.005);
+    }
+    expect(CASTLE_SPEEDUP).toBeGreaterThan(1);
   });
 });
 

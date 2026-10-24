@@ -9,7 +9,7 @@ import { formatTime } from './hud';
 import { ENGINE_CLASSES, RACERS, type EngineClass, type RacerDef } from '../physics/racers';
 import { GEN_COMPLEXITY_MAX, GEN_LENGTHS, GEN_THEMES, GEN_THEME_NAMES, trackName, type GenParams } from '../tracks/generator';
 import { CUPS, RANDOM_CUP_ID, RANDOM_CUP_NAME, TRACK_LIST, randomCupTracks } from '../tracks/index';
-import { SKILLS, SKILL_KINDS, skillRules, type SkillKind } from '../core/skills';
+import { SKILLS, SKILL_KINDS, type SkillKind } from '../core/skills';
 
 export { MODE_NAMES, type RaceMode } from './modes';
 const MODES = Object.keys(MODE_NAMES) as RaceMode[];
@@ -401,7 +401,6 @@ export class Menu {
       title = 'PICK A DIFFICULTY';
       body =
         line('level', 'Level', SKILL_LEVELS[c.skillLevel], `<div class="menu-cup-tracks menu-mode-blurb">${esc(SKILL_LEVEL_BLURBS[c.skillLevel])}</div>`) +
-        `<div class="menu-rules">${esc(skillRules(c.skill, c.skillLevel))}</div>` +
         (rows.includes('sound') ? line('sound', 'Sound', esc(SOUNDTRACK_NAMES[settings().soundtrack]), `<div class="menu-cup-tracks">${esc(SOUNDTRACK_BLURBS[settings().soundtrack])}</div>`, true) : '') +
         (rows.includes('show') ? this.showRows(line) : '');
     } else {

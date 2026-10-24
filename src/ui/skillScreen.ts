@@ -11,6 +11,7 @@ import {
   RIFF_LANES,
   RIFF_OK,
   SKILLS,
+  skillRules,
   bananaHz,
   horologyHit,
   makeBanana,
@@ -24,11 +25,33 @@ import {
   SUITE_NEED,
   fuzzStep,
   makeSuite,
+  suiteMoveRules,
   sheetAt,
   sheetOverlap,
+  CASTLE_SPEEDUP,
+  FISH_ROUNDS,
+  ROBOT_PUSH,
+  ROBOT_STILL,
+  castleDrop,
+  castleSlide,
+  fishJudge,
+  makeCastle,
+  makeFishing,
+  makeRobot,
+  makeSnake,
+  placeMouse,
+  snakeReverse,
+  snakeStart,
+  snakeStep,
+  SNAKE_DIRS,
+  SNAKE_SPEEDUP,
+  type Cell,
+  robotMood,
+  robotStep,
   type SkillKind,
   type SuiteMove,
 } from '../core/skills';
+import { seededRandom } from '../core/math';
 
 /** How a skill game ended: passed or not, and a line saying how it went. */
 export interface SkillResult {
@@ -49,6 +72,8 @@ interface MiniGame {
   update(t: number, dt: number): void;
   draw(s: Stage, t: number): void;
   key(code: string, repeat: boolean): void;
+  /** A key let go (for a key held down). */
+  keyUp?(code: string): void;
   /** A tap, in the stage's own 0..1 square. */
   tap(u: number, v: number): void;
   /** The finger or button lifted (for a button held down to repeat). */
@@ -107,6 +132,28 @@ class Synth {
     osc.stop(t + 0.2);
   }
 
+  /** A rattle: a short burst of hiss. */
+  rattle(level = 0.18): void {
+    const ctx = this.context();
+    const v = this.volume();
+    if (!ctx || v <= 0) return;
+    const t = ctx.currentTime;
+    const len = Math.round(ctx.sampleRate * 0.12);
+    const buffer = ctx.createBuffer(1, len, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    // Three quick clicks of hiss, as the tail's rings knock.
+    for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * Math.max(0, 1 - ((i / len) * 3) % 1) ** 2;
+    const src = ctx.createBufferSource();
+    const filter = ctx.createBiquadFilter();
+    const gain = ctx.createGain();
+    src.buffer = buffer;
+    filter.type = 'highpass';
+    filter.frequency.value = 3000;
+    gain.gain.value = level * v;
+    src.connect(filter).connect(gain).connect(ctx.destination);
+    src.start(t);
+  }
+
   /** A dull miss. */
   thud(): void {
     this.note(70, 0.18, 'square', 0.1);
@@ -137,9 +184,10 @@ class Synth {
 
 /**
  * Story mode's skill games, drawn on a canvas over the game: Play the
- * Riff, Nonagon Infinity, the Flying Microtonal Banana, Horology and the
- * Mind Fuzz Suite. Keys,
- * mouse or touch. (The Deadstick Landing is flown on a track, in game.ts.)
+ * Riff, Nonagon Infinity, the Flying Microtonal Banana, Horology, the
+ * Mind Fuzz Suite, Rattlesnake, Robot Stop, Fishing for Fishies and
+ * Crumbling Castle. Keys, mouse or touch. (The Deadstick Landing is flown
+ * on a track, in game.ts.)
  */
 export class SkillScreen {
   onDone: (r: SkillResult) => void = () => {};
@@ -168,6 +216,9 @@ export class SkillScreen {
       this.game?.tap((e.clientX - st.x) / st.size, (e.clientY - st.y) / st.size);
     });
     for (const type of ['pointerup', 'pointercancel', 'pointerleave'] as const) this.canvas.addEventListener(type, () => this.game?.release?.());
+    window.addEventListener('keyup', (e) => this.game?.keyUp?.(e.code));
+    // A key held as the window loses focus never comes up: let it go.
+    window.addEventListener('blur', () => this.game?.release?.());
   }
 
   get visible(): boolean {
@@ -177,16 +228,10 @@ export class SkillScreen {
   start(kind: SkillKind, seed: number, level: number): void {
     this.stop();
     const s = this.synth;
-    this.game =
-      kind === 'riff'
-        ? new RiffGame(s, seed, level)
-        : kind === 'nonagon'
-          ? new NonagonGame(s, seed, level)
-          : kind === 'banana'
-            ? new BananaGame(s, seed, level)
-            : kind === 'mindfuzz'
-              ? new SuiteGame(s, seed, level)
-              : new HorologyGame(s, seed, level);
+    const Game = GAMES[kind];
+    if (!Game) return;
+    // The suite has a card before each movement; every other game one before it starts.
+    this.game = kind === 'mindfuzz' ? new Game(s, seed, level) : new Briefed(SKILLS[kind].name, skillRules(kind, level), () => new Game(s, seed, level));
     this.title = SKILLS[kind].name;
     this.howTo = SKILLS[kind].howTo;
     this.t = 0;
@@ -807,6 +852,140 @@ const PAD_DIRS: [number, number][] = [
   [1, 0],
 ];
 
+/** A rules card's Continue button, in the stage's 0..1 square: x, y, width, height. */
+const CARD_CONTINUE = [0.3, 0.8, 0.4, 0.1] as const;
+
+/** Whether a tap (in the stage's 0..1 square) is on a rules card's Continue. */
+function onContinue(u: number, v: number): boolean {
+  const [x, y, w, h] = CARD_CONTINUE;
+  return u >= x && u <= x + w && v >= y && v <= y + h;
+}
+
+/** A card over the stage: a small line, a heading, exactly what to do, and Continue. */
+function rulesCard(s: Stage, kicker: string, heading: string, text: string): void {
+  const g = s.g;
+  const mx = s.x + s.size * 0.06;
+  const my = s.y + s.size * 0.05;
+  const mw = s.size * 0.88;
+  const mh = s.size * 0.9;
+  g.fillStyle = 'rgba(20, 0, 30, 0.94)';
+  g.fillRect(mx, my, mw, mh);
+  g.strokeStyle = GOLD;
+  g.lineWidth = 2;
+  g.strokeRect(mx, my, mw, mh);
+  const cx = s.x + s.size / 2;
+  g.textAlign = 'center';
+  g.textBaseline = 'alphabetic';
+  g.fillStyle = CREAM;
+  g.font = `${s.size * 0.03}px Verdana, sans-serif`;
+  g.fillText(kicker, cx, my + s.size * 0.07);
+  g.fillStyle = GOLD;
+  g.font = `italic bold ${s.size * 0.055}px Verdana, sans-serif`;
+  g.fillText(heading.toUpperCase(), cx, my + s.size * 0.14);
+  // The rules, as big as fit between the heading and Continue.
+  const top = my + s.size * 0.22;
+  const room = s.y + (CARD_CONTINUE[1] - 0.04) * s.size - top;
+  let size = s.size * 0.036;
+  let lines: string[] = [];
+  for (; size > s.size * 0.022; size *= 0.94) {
+    g.font = `${size}px Verdana, sans-serif`;
+    lines = wrap(g, text, mw - s.size * 0.08);
+    if (lines.length * size * 1.45 <= room) break;
+  }
+  g.fillStyle = CREAM;
+  lines.forEach((line, i) => g.fillText(line, cx, top + i * size * 1.45));
+  const [bx, by, bw, bh] = CARD_CONTINUE;
+  g.fillStyle = 'rgba(255, 210, 58, 0.85)';
+  g.fillRect(s.x + bx * s.size, s.y + by * s.size, bw * s.size, bh * s.size);
+  g.fillStyle = INK;
+  g.font = `bold ${s.size * 0.045}px Verdana, sans-serif`;
+  g.textBaseline = 'middle';
+  g.fillText('CONTINUE', cx, s.y + (by + bh / 2) * s.size);
+  g.textBaseline = 'alphabetic';
+}
+
+/**
+ * A game behind its rules card: the rules until Continue (Enter, Space, or
+ * a tap on it), then the game, made then so its clock and its sound start
+ * from Continue.
+ */
+class Briefed implements MiniGame {
+  private inner: MiniGame | null = null;
+  /** A result before the game began: given up on the card. */
+  private early: SkillResult | null = null;
+  private now = 0;
+  private t0 = 0;
+
+  constructor(
+    private readonly heading: string,
+    private readonly rules: string,
+    private readonly make: () => MiniGame,
+  ) {}
+
+  get result(): SkillResult | null {
+    return this.inner ? this.inner.result : this.early;
+  }
+
+  set result(r: SkillResult | null) {
+    if (this.inner) this.inner.result = r;
+    else this.early = r;
+  }
+
+  update(t: number, dt: number): void {
+    this.now = t;
+    this.inner?.update(t - this.t0, dt);
+  }
+
+  draw(s: Stage, t: number): void {
+    if (this.inner) return this.inner.draw(s, t - this.t0);
+    panel(s);
+    rulesCard(s, 'HOW TO PLAY', this.heading, this.rules);
+    s.status('Read how it goes, then Continue');
+  }
+
+  key(code: string, repeat: boolean): void {
+    if (this.inner) this.inner.key(code, repeat);
+    else if (!repeat && (code === 'Enter' || code === 'Space')) this.go();
+  }
+
+  keyUp(code: string): void {
+    this.inner?.keyUp?.(code);
+  }
+
+  tap(u: number, v: number): void {
+    if (this.inner) this.inner.tap(u, v);
+    else if (onContinue(u, v)) this.go();
+  }
+
+  release(): void {
+    this.inner?.release?.();
+  }
+
+  stop(): void {
+    this.inner?.stop?.();
+  }
+
+  private go(): void {
+    this.t0 = this.now;
+    this.inner = this.make();
+  }
+}
+
+/** Breaks `text` into lines no wider than `width` in the context's font. */
+function wrap(g: CanvasRenderingContext2D, text: string, width: number): string[] {
+  const lines: string[] = [];
+  let line = '';
+  for (const word of text.split(' ')) {
+    const next = line ? `${line} ${word}` : word;
+    if (line && g.measureText(next).width > width) {
+      lines.push(line);
+      line = word;
+    } else line = next;
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
 /**
  * I'm In Your Mind Fuzz's opening suite, four songs run together, as four
  * short movements: read the arrow in the eye, find the one not there, line
@@ -816,7 +995,7 @@ class SuiteGame implements MiniGame {
   result: SkillResult | null = null;
   private readonly game;
   private move = 0;
-  /** Each movement: its title card, the play, then how it went. */
+  /** Each movement: its card saying what to do (until Continue), the play, then how it went. */
   private phase: 'title' | 'play' | 'done' = 'title';
   private clock = 0;
   private round = 0;
@@ -851,10 +1030,7 @@ class SuiteGame implements MiniGame {
   update(_t: number, dt: number): void {
     this.clock += dt;
     if (this.mark && (this.mark.for -= dt) <= 0) this.mark = null;
-    if (this.phase === 'title') {
-      if (this.clock > 1.6) this.begin();
-      return;
-    }
+    if (this.phase === 'title') return;
     if (this.phase === 'done') {
       if (this.clock > 1.1) this.nextMove();
       return;
@@ -876,7 +1052,9 @@ class SuiteGame implements MiniGame {
   }
 
   key(code: string, repeat: boolean): void {
-    if (repeat || this.phase !== 'play') return;
+    if (repeat) return;
+    if (this.phase === 'title' && (code === 'Enter' || code === 'Space')) return this.begin();
+    if (this.phase !== 'play') return;
     if (this.now === 'fuzz' || this.now === 'cellophane') {
       if (code === 'Space' || code === 'Enter' || code === 'ArrowUp' || code === 'KeyW') this.press(-1);
       return;
@@ -886,6 +1064,10 @@ class SuiteGame implements MiniGame {
   }
 
   tap(u: number, v: number): void {
+    if (this.phase === 'title') {
+      if (onContinue(u, v)) this.begin();
+      return;
+    }
     if (this.phase !== 'play') return;
     if (this.now === 'fuzz' || this.now === 'cellophane') return this.press(-1);
     // The arrow pads round the edge (drawn in drawPads): which side the tap is toward. The middle, where the
@@ -1002,15 +1184,8 @@ class SuiteGame implements MiniGame {
     g.textAlign = 'center';
     g.textBaseline = 'middle';
     if (this.phase === 'title') {
-      g.fillStyle = GOLD;
-      g.font = `italic bold ${s.size * 0.07}px Verdana, sans-serif`;
-      g.fillText(SUITE_NAMES[move].song.toUpperCase(), cx, cy - s.size * 0.04);
-      g.fillStyle = CREAM;
-      g.font = `${s.size * 0.035}px Verdana, sans-serif`;
-      g.fillText(SUITE_NAMES[move].how, cx, cy + s.size * 0.06);
-      g.textBaseline = 'alphabetic';
+      this.drawCard(s, move);
       s.status(`Movement ${this.move + 1} of ${SUITE_MOVES.length}`);
-      this.drawMarks(s);
       return;
     }
     const arrowAt = (a: number, x: number, y: number, size: number, color: string) => {
@@ -1089,6 +1264,11 @@ class SuiteGame implements MiniGame {
     s.status(this.phase === 'done' ? (this.notes[this.notes.length - 1] ?? '') : `${SUITE_NAMES[move].song} · ${counts}`);
   }
 
+  /** A movement's card: its song, exactly what to do, and Continue to start it. */
+  private drawCard(s: Stage, move: SuiteMove): void {
+    rulesCard(s, `MOVEMENT ${this.move + 1} OF ${SUITE_MOVES.length}`, SUITE_NAMES[move].song, suiteMoveRules(this.game, move));
+  }
+
   /** The four arrow pads round the edge, to tap (and to see which key is which). */
   private drawPads(s: Stage): void {
     const g = s.g;
@@ -1123,3 +1303,557 @@ class SuiteGame implements MiniGame {
     }
   }
 }
+
+// ---- Rattlesnake ----
+
+/** Arrow keys and WASD to SNAKE_DIRS: right, down, left, up. */
+const SNAKE_KEYS: Record<string, number> = { ArrowRight: 0, KeyD: 0, ArrowDown: 1, KeyS: 1, ArrowLeft: 2, KeyA: 2, ArrowUp: 3, KeyW: 3 };
+
+/** The classic snake game, as a rattlesnake eating mice. */
+class SnakeGame implements MiniGame {
+  result: SkillResult | null = null;
+  private readonly game;
+  private readonly rand;
+  private body: Cell[];
+  private mouse: Cell | null;
+  private dir = 0;
+  /** Turns pressed and not yet made: two, so a quick double turn isn't lost between moves. */
+  private readonly turns: number[] = [];
+  private step: number;
+  private clock = -0.8;
+  private eaten = 0;
+
+  constructor(
+    private readonly synth: Synth,
+    seed: number,
+    level: number,
+  ) {
+    this.game = makeSnake(seed, level);
+    this.rand = seededRandom(seed);
+    this.body = snakeStart(this.game.grid);
+    this.mouse = placeMouse(this.body, this.game.grid, this.rand());
+    this.step = this.game.step;
+  }
+
+  update(_t: number, dt: number): void {
+    this.clock += dt;
+    while (this.clock >= this.step && !this.result) {
+      this.clock -= this.step;
+      this.move();
+    }
+  }
+
+  private move(): void {
+    const next = this.turns.shift();
+    if (next !== undefined) this.dir = next;
+    const out = snakeStep(this.body, this.dir, this.mouse, this.game.grid);
+    if (out.crash) {
+      this.synth.thud();
+      this.result = { passed: false, note: `${out.crash === 'wall' ? 'Hit the wall' : 'Bit your own rattle'} with ${this.eaten} of ${this.game.need} mice eaten` };
+      return;
+    }
+    this.body = out.body;
+    if (!out.ate) return;
+    this.eaten++;
+    this.synth.rattle();
+    this.synth.note(440 + this.eaten * 40, 0.12, 'triangle', 0.12);
+    this.step *= SNAKE_SPEEDUP;
+    this.mouse = placeMouse(this.body, this.game.grid, this.rand());
+    if (this.eaten >= this.game.need || !this.mouse) this.result = { passed: true, note: `${this.eaten} mice eaten, ${this.body.length} long` };
+  }
+
+  key(code: string): void {
+    const d = SNAKE_KEYS[code];
+    if (d !== undefined) this.turn(d);
+  }
+
+  /** A tap turns toward its side of the head: up or down when heading across, left or right when heading up or down. */
+  tap(u: number, v: number): void {
+    const n = this.game.grid;
+    const [hx, hy] = this.body[0];
+    const heading = this.turns[this.turns.length - 1] ?? this.dir;
+    if (heading % 2 === 0) this.turn(v * n < hy + 0.5 ? 3 : 1);
+    else this.turn(u * n < hx + 0.5 ? 2 : 0);
+  }
+
+  private turn(d: number): void {
+    const heading = this.turns[this.turns.length - 1] ?? this.dir;
+    if (d === heading || snakeReverse(heading, d) || this.turns.length >= 2) return;
+    this.turns.push(d);
+  }
+
+  draw(s: Stage, t: number): void {
+    panel(s);
+    const g = s.g;
+    const n = this.game.grid;
+    const c = (s.size - 8) / n;
+    const at = (x: number) => s.x + 4 + x * c;
+    const atY = (y: number) => s.y + 4 + y * c;
+    // A sandy checkerboard, the desert floor.
+    for (let y = 0; y < n; y++)
+      for (let x = 0; x < n; x++) {
+        g.fillStyle = (x + y) % 2 ? 'rgba(200, 160, 64, 0.12)' : 'rgba(200, 160, 64, 0.06)';
+        g.fillRect(at(x), atY(y), c, c);
+      }
+    if (this.mouse) {
+      const [mx, my] = this.mouse;
+      const wig = Math.sin(t * 12) * c * 0.05;
+      g.fillStyle = '#c8c0c8';
+      g.beginPath();
+      g.ellipse(at(mx) + c / 2 + wig, atY(my) + c / 2, c * 0.32, c * 0.22, 0, 0, Math.PI * 2);
+      g.fill();
+      g.fillStyle = '#ff9ab0';
+      g.beginPath();
+      g.arc(at(mx) + c * 0.3 + wig, atY(my) + c * 0.3, c * 0.1, 0, Math.PI * 2);
+      g.fill();
+    }
+    // The snake, banded gold and brown, its rattle on the tail shaking.
+    this.body.forEach(([x, y], i) => {
+      const tail = i === this.body.length - 1 && i > 0;
+      const pad = tail ? c * 0.22 : i === 0 ? c * 0.04 : c * 0.1;
+      g.fillStyle = tail ? '#e8d8a0' : i === 0 ? '#8a6a30' : i % 4 < 2 ? '#c8a040' : '#6a4a20';
+      const shake = tail ? Math.sin(t * 60) * c * 0.06 : 0;
+      g.fillRect(at(x) + pad + shake, atY(y) + pad, c - pad * 2, c - pad * 2);
+    });
+    const [hx, hy] = this.body[0];
+    const [dx, dy] = SNAKE_DIRS[this.dir];
+    g.fillStyle = GOLD;
+    for (const side of [-1, 1]) {
+      g.beginPath();
+      g.arc(at(hx) + c / 2 + dx * c * 0.2 - dy * side * c * 0.2, atY(hy) + c / 2 + dy * c * 0.2 + dx * side * c * 0.2, c * 0.08, 0, Math.PI * 2);
+      g.fill();
+    }
+    s.status(this.clock < 0 && this.eaten === 0 ? 'Ready...' : `${this.eaten} of ${this.game.need} mice`);
+  }
+}
+
+// ---- Robot Stop ----
+
+class RobotGame implements MiniGame {
+  result: SkillResult | null = null;
+  private readonly game;
+  private pos = 0;
+  private v = 0;
+  private holding = false;
+  private caught = 0;
+  /** The watching spell the last catch was in, so a spell catches once. */
+  private caughtIn = -1;
+  /** A catch's flash. */
+  private flash = 0;
+  private lastMood = '';
+
+  constructor(
+    private readonly synth: Synth,
+    seed: number,
+    level: number,
+  ) {
+    this.game = makeRobot(seed, level);
+  }
+
+  update(t: number, dt: number): void {
+    this.flash = Math.max(0, this.flash - dt * 2);
+    const m = robotMood(this.game, t);
+    if (m.mood !== this.lastMood) {
+      this.lastMood = m.mood;
+      if (m.mood === 'turning' || m.mood === 'twitch') this.synth.note(520, 0.15, 'square', 0.06);
+      else if (m.mood === 'watching') this.synth.note(880, 0.25, 'square', 0.08);
+    }
+    // Caught, you stand frozen until it looks away again.
+    const frozen = m.mood === 'watching' && this.caughtIn === m.index;
+    const next = robotStep(this.pos, this.v, this.holding && !frozen, dt);
+    this.pos = next.pos;
+    this.v = frozen ? 0 : next.v;
+    if (m.mood === 'watching' && this.v > ROBOT_STILL && this.caughtIn !== m.index) {
+      this.caughtIn = m.index;
+      this.caught++;
+      this.flash = 1;
+      this.pos = Math.max(0, this.pos - ROBOT_PUSH);
+      this.v = 0;
+      this.synth.thud();
+      if (this.caught >= this.game.catches) this.result = { passed: false, note: `Caught ${this.caught} times, ${Math.round(this.pos * 100)}% of the way` };
+    }
+    if (this.pos >= 1) this.result = { passed: true, note: `Reached the robot in ${t.toFixed(1)}s${this.caught ? `, caught ${this.caught}` : ', never caught'}` };
+    else if (t > this.game.time && !this.result) this.result = { passed: false, note: `Out of time, ${Math.round(this.pos * 100)}% of the way` };
+  }
+
+  key(code: string): void {
+    if (code === 'Space' || code === 'Enter' || code === 'ArrowUp' || code === 'KeyW') this.holding = true;
+  }
+
+  keyUp(code: string): void {
+    if (code === 'Space' || code === 'Enter' || code === 'ArrowUp' || code === 'KeyW') this.holding = false;
+  }
+
+  tap(): void {
+    this.holding = true;
+  }
+
+  release(): void {
+    this.holding = false;
+  }
+
+  draw(s: Stage, t: number): void {
+    panel(s);
+    const g = s.g;
+    const m = robotMood(this.game, t);
+    // The robot at the far end, up top; the player creeping up from the bottom.
+    const rx = s.x + s.size / 2;
+    const ry = s.y + s.size * 0.2;
+    // How far round it's facing: 0 its back to you, 1 looking right at you.
+    const face = m.mood === 'away' ? 0 : m.mood === 'watching' ? 1 : Math.min(1, m.into / this.game.warn) * (m.mood === 'twitch' ? Math.sin((m.into / this.game.warn) * Math.PI) * 0.6 : 1);
+    g.fillStyle = '#9aa4b0';
+    g.fillRect(rx - s.size * 0.08, ry - s.size * 0.02, s.size * 0.16, s.size * 0.14);
+    const hw = s.size * 0.1 * (0.4 + 0.6 * Math.abs(Math.cos((face * Math.PI) / 2) * 2 - 1));
+    g.fillStyle = '#c8d0d8';
+    g.fillRect(rx - hw / 2, ry - s.size * 0.12, hw, s.size * 0.09);
+    if (face > 0.5) {
+      // Its eyes: red and watching.
+      g.fillStyle = face >= 1 ? '#ff3a3a' : '#ff9a3a';
+      for (const d of [-1, 1]) {
+        g.beginPath();
+        g.arc(rx + d * hw * 0.22, ry - s.size * 0.08, s.size * 0.014, 0, Math.PI * 2);
+        g.fill();
+      }
+    }
+    // The light over its head: green while it's away, amber turning, red watching.
+    g.fillStyle = m.mood === 'away' ? '#3ad86a' : m.mood === 'watching' ? '#ff3a3a' : '#ffb03a';
+    g.beginPath();
+    g.arc(rx, ry - s.size * 0.15, s.size * 0.02, 0, Math.PI * 2);
+    g.fill();
+    // The floor between, and the player on it.
+    const top = s.y + s.size * 0.34;
+    const bottom = s.y + s.size * 0.84;
+    g.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+    g.lineWidth = 2;
+    for (let i = 0; i <= 10; i++) {
+      const y = bottom - (bottom - top) * (i / 10);
+      g.beginPath();
+      g.moveTo(s.x + s.size * 0.3, y);
+      g.lineTo(s.x + s.size * 0.7, y);
+      g.stroke();
+    }
+    const py = bottom - (bottom - top) * this.pos;
+    const bob = this.v > ROBOT_STILL ? Math.sin(t * 20) * s.size * 0.006 : 0;
+    g.fillStyle = this.flash > 0 ? '#ff5a5a' : '#ff5ad0';
+    g.beginPath();
+    g.arc(rx, py - s.size * 0.03 + bob, s.size * 0.03, 0, Math.PI * 2);
+    g.fill();
+    g.fillRect(rx - s.size * 0.025, py - s.size * 0.005 + bob, s.size * 0.05, s.size * 0.05);
+    for (let i = 0; i < this.game.catches; i++) {
+      g.fillStyle = i < this.caught ? '#ff5a5a' : 'rgba(255,255,255,0.2)';
+      g.beginPath();
+      g.arc(s.x + s.size * (0.07 + i * 0.06), s.y + s.size * 0.06, s.size * 0.02, 0, Math.PI * 2);
+      g.fill();
+    }
+    g.textAlign = 'center';
+    g.font = `bold ${s.size * 0.06}px Verdana, sans-serif`;
+    g.fillStyle = m.mood === 'away' ? '#3ad86a' : m.mood === 'watching' ? '#ff3a3a' : '#ffb03a';
+    g.fillText(m.mood === 'away' ? 'ROBOT GO' : 'ROBOT STOP', s.x + s.size / 2, s.y + s.size * 0.97);
+    s.status(`${Math.round(this.pos * 100)}% of the way · ${Math.max(0, Math.ceil(this.game.time - t))}s left`);
+  }
+}
+
+// ---- Fishing for Fishies ----
+
+class FishingGame implements MiniGame {
+  result: SkillResult | null = null;
+  private readonly game;
+  private round = 0;
+  private clock = 0;
+  private press: number | null = null;
+  private hooked = 0;
+  private readonly marks: boolean[] = [];
+  /** How the round went, shown a moment before the next. */
+  private outcome: 'hooked' | 'spooked' | 'away' | null = null;
+  private pause = 0;
+  private heard = -1;
+  private bit = false;
+
+  constructor(
+    private readonly synth: Synth,
+    seed: number,
+    level: number,
+  ) {
+    this.game = makeFishing(seed, level);
+  }
+
+  update(_t: number, dt: number): void {
+    if (this.pause > 0) {
+      if ((this.pause -= dt) <= 0) this.next();
+      return;
+    }
+    this.clock += dt;
+    const r = this.game.rounds[this.round];
+    const n = r.nibbles.filter((x) => x <= this.clock).length;
+    if (n > this.heard) {
+      if (this.heard >= 0) this.synth.note(1200, 0.06, 'sine', 0.1);
+      this.heard = n;
+    }
+    if (!this.bit && this.clock >= r.bite) {
+      this.bit = true;
+      this.synth.note(140, 0.3, 'sine', 0.2);
+    }
+    const out = fishJudge(r, this.game.window, this.press, this.clock);
+    if (out) this.end(out);
+  }
+
+  key(code: string, repeat: boolean): void {
+    if (!repeat && (code === 'Space' || code === 'Enter')) this.strike();
+  }
+
+  tap(): void {
+    this.strike();
+  }
+
+  private strike(): void {
+    if (this.pause > 0 || this.press !== null) return;
+    this.press = this.clock;
+  }
+
+  private end(out: 'hooked' | 'spooked' | 'away'): void {
+    this.outcome = out;
+    const ok = out === 'hooked';
+    this.marks.push(ok);
+    if (ok) this.hooked++;
+    this.synth.note(ok ? 784 : 110, 0.3, 'triangle', 0.15);
+    this.pause = 1.2;
+  }
+
+  private next(): void {
+    const left = FISH_ROUNDS - this.marks.length;
+    // Over when it's decided either way.
+    if (this.hooked >= this.game.need || this.hooked + left < this.game.need || left === 0) {
+      this.result = { passed: this.hooked >= this.game.need, note: `${this.hooked} of ${this.marks.length} fish hooked (needed ${this.game.need})` };
+      return;
+    }
+    this.round++;
+    this.clock = 0;
+    this.press = null;
+    this.outcome = null;
+    this.heard = -1;
+    this.bit = false;
+  }
+
+  draw(s: Stage, t: number): void {
+    panel(s);
+    const g = s.g;
+    const water = s.y + s.size * 0.45;
+    const r = this.game.rounds[this.round];
+    // How far under the bobber is: a nibble's quick dip, or right under on the bite.
+    let dip = 0;
+    for (const n of r.nibbles) {
+      const d = this.clock - n;
+      if (d >= 0 && d < 0.3) dip = Math.max(dip, Math.sin((d / 0.3) * Math.PI) * this.game.nibbleDepth);
+    }
+    if (this.clock >= r.bite && this.outcome !== 'spooked') dip = this.outcome === 'hooked' ? -0.8 : 1;
+    if (this.outcome === 'away') dip = 0;
+    const bx = s.x + s.size / 2;
+    const bob = Math.sin(t * 2.4) * s.size * 0.006;
+    const by = water + bob + dip * s.size * 0.06;
+    // The line, up from the bobber to the rod's tip.
+    g.strokeStyle = 'rgba(255, 246, 208, 0.6)';
+    g.lineWidth = 1.5;
+    g.beginPath();
+    g.moveTo(bx, by - s.size * 0.03);
+    g.lineTo(s.x + s.size * 0.85, s.y + s.size * 0.08);
+    g.stroke();
+    g.strokeStyle = '#8a5a30';
+    g.lineWidth = 5;
+    g.beginPath();
+    g.moveTo(s.x + s.size * 0.85, s.y + s.size * 0.08);
+    g.lineTo(s.x + s.size * 0.98, s.y + s.size * 0.4);
+    g.stroke();
+    // The bobber: red over white, the water drawn back over what's under.
+    const br = s.size * 0.03;
+    g.fillStyle = '#ff3a3a';
+    g.beginPath();
+    g.arc(bx, by, br, Math.PI, 0);
+    g.fill();
+    g.fillStyle = '#fff6d0';
+    g.beginPath();
+    g.arc(bx, by, br, 0, Math.PI);
+    g.fill();
+    // Ripples off a nibble or the bite.
+    const since = Math.min(...[...r.nibbles, r.bite].map((n) => (this.clock >= n ? this.clock - n : Infinity)));
+    if (since < 0.8) {
+      g.strokeStyle = `rgba(255, 255, 255, ${0.6 * (1 - since / 0.8)})`;
+      g.lineWidth = 2;
+      g.beginPath();
+      g.ellipse(bx, water, s.size * (0.04 + since * 0.15), s.size * (0.01 + since * 0.03), 0, 0, Math.PI * 2);
+      g.stroke();
+    }
+    // A fish under the water, circling the bait; hauled up flapping once it's hooked.
+    const hooked = this.outcome === 'hooked';
+    const fx = hooked ? bx : bx + Math.cos(t * 1.3) * s.size * 0.18;
+    const fy = hooked ? by + s.size * 0.06 : water + s.size * 0.25 + Math.sin(t * 1.3) * s.size * 0.05;
+    const fish = () => {
+      g.fillStyle = hooked ? GOLD : '#ff9a1f';
+      g.beginPath();
+      g.ellipse(fx, fy, s.size * 0.05, s.size * 0.022, hooked ? Math.PI / 2 + Math.sin(t * 20) * 0.3 : 0, 0, Math.PI * 2);
+      g.fill();
+    };
+    if (!hooked) fish();
+    // The water over all that's under it: the bobber pulled under shows through, dimmed.
+    g.fillStyle = 'rgba(40, 110, 190, 0.6)';
+    g.fillRect(s.x + 3, water, s.size - 6, s.size * 0.55 - 3);
+    if (hooked) fish();
+    for (let i = 0; i < FISH_ROUNDS; i++) {
+      const m = this.marks[i];
+      g.fillStyle = m === undefined ? 'rgba(255,255,255,0.2)' : m ? GOLD : '#ff5a5a';
+      g.beginPath();
+      g.arc(s.x + s.size * (0.07 + i * 0.06), s.y + s.size * 0.06, s.size * 0.02, 0, Math.PI * 2);
+      g.fill();
+    }
+    if (this.outcome) {
+      g.textAlign = 'center';
+      g.fillStyle = this.outcome === 'hooked' ? GOLD : '#ff5a5a';
+      g.font = `bold ${s.size * 0.06}px Verdana, sans-serif`;
+      g.fillText(this.outcome === 'hooked' ? 'HOOKED!' : this.outcome === 'spooked' ? 'TOO SOON: SPOOKED' : 'IT GOT AWAY', s.x + s.size / 2, s.y + s.size * 0.28);
+    }
+    s.status(`Fish ${Math.min(this.round + 1, FISH_ROUNDS)} of ${FISH_ROUNDS} · ${this.hooked} hooked`);
+  }
+}
+
+// ---- Crumbling Castle ----
+
+const CASTLE_STONES = ['#b8a890', '#a89878', '#c8b8a0', '#988868'];
+
+class CastleGame implements MiniGame {
+  result: SkillResult | null = null;
+  private readonly game;
+  /** The floors laid, bottom up; the ground floor is the first stone, square. */
+  private readonly tower: { x: number; w: number }[] = [];
+  /** Seconds the stone in play has been sliding, and its speed. */
+  private clock = 0;
+  private speed: number;
+  /** Bits crumbling off, falling. */
+  private readonly debris: { x: number; w: number; floor: number; t: number }[] = [];
+  private square = 0;
+  private pause = 0;
+
+  constructor(
+    private readonly synth: Synth,
+    seed: number,
+    level: number,
+  ) {
+    this.game = makeCastle(seed, level);
+    this.tower.push({ x: (1 - this.game.width) / 2, w: this.game.width });
+    this.speed = this.game.speed;
+  }
+
+  private get top(): { x: number; w: number } {
+    return this.tower[this.tower.length - 1];
+  }
+
+  /** The stone in play's left edge. */
+  private get sliding(): number {
+    return castleSlide(this.clock, this.speed, this.top.w, this.game.phases[this.tower.length - 1] ?? 0);
+  }
+
+  update(_t: number, dt: number): void {
+    for (const d of this.debris) d.t += dt;
+    this.square = Math.max(0, this.square - dt * 2);
+    if (this.pause > 0) {
+      this.pause -= dt;
+      return;
+    }
+    this.clock += dt;
+  }
+
+  key(code: string, repeat: boolean): void {
+    if (!repeat && (code === 'Space' || code === 'Enter')) this.drop();
+  }
+
+  tap(): void {
+    this.drop();
+  }
+
+  private drop(): void {
+    if (this.pause > 0 || this.result) return;
+    const below = this.top;
+    const x = this.sliding;
+    const laid = castleDrop(below, x);
+    const floor = this.tower.length;
+    // What hung over crumbles off, left or right.
+    if (!laid.square) {
+      if (x < below.x) this.debris.push({ x, w: Math.min(below.w, below.x - x), floor, t: 0 });
+      if (x + below.w > below.x + below.w) this.debris.push({ x: Math.max(x, below.x + below.w), w: Math.min(below.w, x - below.x), floor, t: 0 });
+    }
+    if (laid.w <= 0.005) {
+      this.synth.thud();
+      this.result = { passed: false, note: `The castle crumbled at ${floor - 1} of ${this.game.floors} floors` };
+      return;
+    }
+    this.tower.push({ x: laid.x, w: laid.w });
+    if (laid.square) this.square = 1;
+    this.synth.note(laid.square ? 660 + floor * 30 : 196 + floor * 12, 0.25, laid.square ? 'triangle' : 'square', 0.12);
+    if (floor >= this.game.floors) {
+      this.result = { passed: true, note: `All ${this.game.floors} floors up, ${Math.round((laid.w / this.game.width) * 100)}% of the first stone's width left` };
+      return;
+    }
+    this.clock = 0;
+    this.speed *= CASTLE_SPEEDUP;
+    this.pause = 0.25;
+  }
+
+  draw(s: Stage): void {
+    panel(s);
+    const g = s.g;
+    const fh = s.size * 0.07;
+    const ground = s.y + s.size * 0.92;
+    // The view climbs with the tower, keeping the top few floors and the stone in play in sight.
+    const floorsUp = this.tower.length;
+    const lift = Math.max(0, floorsUp - 8) * fh;
+    const yOf = (floor: number) => ground - (floor + 1) * fh + lift;
+    const xOf = (x: number) => s.x + 8 + x * (s.size - 16);
+    const wOf = (w: number) => w * (s.size - 16);
+    g.save();
+    g.beginPath();
+    g.rect(s.x + 3, s.y + 3, s.size - 6, s.size - 6);
+    g.clip();
+    g.fillStyle = 'rgba(80, 140, 60, 0.5)';
+    g.fillRect(s.x, ground + lift, s.size, s.size);
+    this.tower.forEach((f, i) => {
+      g.fillStyle = CASTLE_STONES[i % CASTLE_STONES.length];
+      g.fillRect(xOf(f.x), yOf(i), wOf(f.w), fh - 2);
+      // Battlements on the top floor.
+      if (i === this.tower.length - 1 && this.result?.passed) {
+        for (let b = 0; b < 5; b += 2) g.fillRect(xOf(f.x) + (wOf(f.w) / 5) * b, yOf(i) - fh * 0.4, wOf(f.w) / 5, fh * 0.4);
+      }
+    });
+    if (this.square > 0) {
+      g.strokeStyle = `rgba(255, 210, 58, ${this.square})`;
+      g.lineWidth = 3;
+      const f = this.top;
+      g.strokeRect(xOf(f.x), yOf(this.tower.length - 1), wOf(f.w), fh - 2);
+    }
+    for (const d of this.debris) {
+      if (d.t > 1.5) continue;
+      g.globalAlpha = 1 - d.t / 1.5;
+      g.fillStyle = CASTLE_STONES[d.floor % CASTLE_STONES.length];
+      g.fillRect(xOf(d.x) + (d.x < 0.5 ? -1 : 1) * d.t * 30, yOf(d.floor) + 0.5 * 900 * d.t * d.t, wOf(d.w), fh - 2);
+      g.globalAlpha = 1;
+    }
+    if (!this.result) {
+      g.fillStyle = CASTLE_STONES[floorsUp % CASTLE_STONES.length];
+      g.globalAlpha = this.pause > 0 ? 0.4 : 1;
+      g.fillRect(xOf(this.sliding), yOf(floorsUp), wOf(this.top.w), fh - 2);
+      g.globalAlpha = 1;
+    }
+    g.restore();
+    s.status(`Floor ${Math.min(floorsUp, this.game.floors)} of ${this.game.floors}`);
+  }
+}
+
+/** Each card game, by its kind (the Deadstick Landing is flown on a track instead). */
+const GAMES: Partial<Record<SkillKind, new (synth: Synth, seed: number, level: number) => MiniGame>> = {
+  riff: RiffGame,
+  nonagon: NonagonGame,
+  banana: BananaGame,
+  horology: HorologyGame,
+  mindfuzz: SuiteGame,
+  rattlesnake: SnakeGame,
+  robot: RobotGame,
+  fishies: FishingGame,
+  castle: CastleGame,
+};
