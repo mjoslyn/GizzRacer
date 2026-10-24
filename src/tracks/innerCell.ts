@@ -2,13 +2,23 @@ import { TrackBuilder, offsetPose, type Pose } from './builder';
 import type { BranchDef, TrackDef } from './track';
 
 const K = 1.12;
-const START: Pose = { x: -125 * K, z: -40 * K, h: Math.PI };
+const DEG = Math.PI / 180;
+const START: Pose = { x: -100 * K, z: -130 * K, h: 100 * DEG };
 const FINISH = 45;
-/** The Nuclear Rim: the road swings round the nucleus in three arcs of this radius and turn. */
-const RIM_R = 34;
-const RIM_TURN = 70;
-/** The Endoplasmic Loop's radius, and how high it climbs. */
+/** The cell's near end and its shoulders bend round on arcs of this radius; the far end closes the lap on arcs of the other. */
+const LOBE_R = 120;
+const FAR_R = 90;
+/**
+ * The Nuclear Rim: the membrane pinched in round the nucleus, a broad bowl of
+ * this radius between two tighter shoulders of the next; each shoulder turns
+ * this far, the bowl twice as far back.
+ */
+const RIM_R = 131;
+const RIM_SHOULDER = 45;
+const RIM_TURN = 50;
+/** The Endoplasmic Loop's radius, how far round it turns, and how high it climbs. */
 const LOOP_R = 21;
+const LOOP_TURN = 330;
 const LOOP_TOP = 13;
 /** How deep the Lysosome Sink runs. */
 const SINK_DEPTH = 6;
@@ -17,56 +27,60 @@ const GOLGI_WALL = 4;
 
 /**
  * Inner Cell (the Polygondwanaland Cup's third), after the song: a road
- * through a living cell, seen from the size of a ribosome. Through the
- * Membrane Pass (two kickers), down the Cytoplasm Stream, where vesicles
- * drift across, round the Mitochondria Esses and up the Endoplasmic Loop,
- * three quarters of a turn and over the road it came in on. Hairpins
- * through the stacked membranes of the Golgi, the Lysosome Sink 6 m down,
- * a jump over a pool of cytoplasm, and the Nuclear Rim winding round the
- * nucleus, which the Nuclear Pore cuts straight through.
+ * through a living cell, seen from the size of a ribosome. The lap is the
+ * cell itself, a fat kidney bean with its membrane pinched in on one side.
+ * Through the Membrane Pass (two kickers) along its round back, down the
+ * Cytoplasm Stream, where vesicles drift across, round the Mitochondria
+ * Esses at the near end and up the Endoplasmic Loop, most of a turn out
+ * past the end and over the road it came in on. Jinks through the stacked
+ * membranes of the Golgi, the Lysosome Sink 6 m down, and the Nuclear Rim
+ * curving in round the nucleus where the membrane is pinched, which the
+ * Nuclear Pore cuts straight across. Then a jump over a pool of cytoplasm
+ * and round the far end home.
  */
 export function buildInnerCell(): TrackDef {
   const b = new TrackBuilder(START, 'Membrane Pass', { halfWidth: 11, surface: 'membrane' });
   b.scale = K;
-  b.straight(40).mark('kick1').kicker().straight(30).mark('kick2').kicker().straight(50);
+  b.straight(40).mark('kick1').kicker().straight(30).mark('kick2').kicker().straight(30);
 
   b.section('Cytoplasm Stream', { halfWidth: 10, surface: 'membrane' });
   b.mark('stream');
-  b.arc(50, -90).straight(110);
+  b.arc(260, -30);
   b.mark('streamEnd');
   b.section('Mitochondria Esses', { halfWidth: 9.5, wallHeight: 1.2, surface: 'membrane' });
   b.mark('esses');
-  b.arc(30, -60).arc(30, 120).arc(30, -60).straight(20);
+  b.arc(LOBE_R, -50).arc(40, 20).arc(40, -40).arc(40, 20).arc(LOBE_R, -50);
 
-  // Three quarters of a turn up the reticulum and over the road below.
+  // Most of a turn up the reticulum and over the road below.
   b.section('Endoplasmic Loop', { halfWidth: 9, wallHeight: 1.2, surface: 'membrane', bridge: true });
   b.mark('loop');
-  b.arc(LOOP_R, 270);
+  b.arc(LOOP_R, LOOP_TURN);
   b.mark('loopTop');
-  b.straight(150);
+  b.straight(45);
 
   b.section('Golgi Switchbacks', { halfWidth: 8.5, wallHeight: GOLGI_WALL, surface: 'membrane' });
   b.mark('golgi');
-  b.arc(20, -170).straight(16).arc(20, 170).straight(16);
+  b.straight(10).arc(25, 35).arc(25, -70).arc(25, 35).straight(10);
   b.section('Lysosome Sink', { halfWidth: 9, wallHeight: GOLGI_WALL, surface: 'membrane' });
   b.mark('sink');
-  b.arc(36, -80).straight(30);
+  b.arc(LOBE_R, -30);
   b.mark('sinkEnd');
   b.straight(10);
-
-  b.section('Ribosome Jump', { halfWidth: 9, wallHeight: 1.2, surface: 'membrane' });
-  b.mark('jump');
-  b.arc(36, 90).straight(10).mark('ramp').elevate(0).rise(18, 3);
-  b.gap(13, 30, 'water');
-  b.elevate(0).straight(20);
 
   b.section('Nuclear Rim', { halfWidth: 9.5, surface: 'membrane' });
   b.mark('rim');
   b.straight(5);
   b.mark('poreFrom');
-  b.arc(RIM_R, RIM_TURN).arc(RIM_R, -2 * RIM_TURN).arc(RIM_R, RIM_TURN);
+  b.arc(RIM_SHOULDER, -RIM_TURN).arc(RIM_R, 2 * RIM_TURN).arc(RIM_SHOULDER, -RIM_TURN);
   b.mark('poreTo');
-  b.turnTo(offsetPose(START, -FINISH * K), 38);
+
+  b.section('Ribosome Jump', { halfWidth: 9, wallHeight: 1.2, surface: 'membrane' });
+  b.mark('jump');
+  b.arc(LOBE_R, -20).straight(10).mark('ramp').elevate(0).rise(18, 3);
+  b.gap(13, 30, 'water');
+  b.elevate(0).straight(20);
+  b.mark('jumpEnd');
+  b.turnTo(offsetPose(START, -FINISH * K), FAR_R);
   b.section('Finish Straight', { halfWidth: 11, surface: 'membrane' });
   b.mark('finish');
   b.straight(FINISH);
@@ -79,7 +93,7 @@ export function buildInnerCell(): TrackDef {
   plunge(b, m('loopTop', 40), LOOP_TOP, m('loopTop', 95), 0);
   ease(b, m('sink', 10), 0, m('sink', 50), -SINK_DEPTH);
   ease(b, m('sink', 50), -SINK_DEPTH, m('sinkEnd', 10), 0);
-  b.profile(m('poreTo', 40), m('finish', -10), (u) => 3 * Math.sin(Math.PI * u) ** 2);
+  b.profile(m('jumpEnd', 10), m('finish', -10), (u) => 3 * Math.sin(Math.PI * u) ** 2);
 
   const main = b.finish(true);
   const pore = buildNuclearPore(b.marks.poreFrom, b.marks.poreTo);
@@ -95,7 +109,7 @@ export function buildInnerCell(): TrackDef {
       { s: at('loopTop', 30), length: 8, lateral: 0, halfWidth: 2.5 },
       { s: at('jump', 70), length: 8, lateral: 0, halfWidth: 2.5 },
     ],
-    checkpoints: ['stream', 'esses', 'loop', 'golgi', 'sink', 'jump', 'rim'].map((k) => b.marks[k].s / main.length),
+    checkpoints: ['stream', 'esses', 'loop', 'golgi', 'sink', 'rim', 'jump'].map((k) => b.marks[k].s / main.length),
     laps: 3,
     bounds: 440,
     landmarks: [
