@@ -2413,7 +2413,7 @@ export function opartTexture(): THREE.CanvasTexture {
   return finish(c);
 }
 
-/** The ground round I'm Not in Your Mind: rings of black and white rippling out, a spiral that won't keep still. */
+/** The ground round I'm Not in Your Mind: grey rings rippling out across white, a spiral that won't keep still, softer than the road's black and white checks so the road stands out on it. */
 export function notMindGroundTexture(): THREE.CanvasTexture {
   const S = 512;
   const [c, ctx] = canvas(S);
@@ -2423,8 +2423,8 @@ export function notMindGroundTexture(): THREE.CanvasTexture {
     const dx = Math.min(x % 256, 256 - (x % 256));
     const dy = Math.min(y % 256, 256 - (y % 256));
     const d = Math.hypot(dx - 128, dy - 128);
-    const ring = Math.sin(d * 0.22 + n[i] * 5) > 0;
-    return ring ? mix([210, 208, 204], [250, 248, 244], n[i]) : mix([10, 8, 14], [40, 36, 44], n[i]);
+    const ring = Math.sin(d * 0.098 + n[i] * 3) > 0.6;
+    return ring ? mix([150, 148, 156], [176, 172, 180], n[i]) : mix([226, 224, 220], [250, 248, 244], n[i]);
   });
   return finish(c);
 }
@@ -2443,14 +2443,13 @@ export function opartWallTexture(): THREE.CanvasTexture {
 /** The colours cellophane comes in. */
 export const CELLOPHANE_COLOURS = ['#ff3a6a', '#ffd020', '#30e080', '#30a0ff', '#b060ff'];
 
-/** Cellophane's road: overlapping sheets of coloured cellophane, crinkled, light catching in the creases. */
+/** Cellophane's road: overlapping sheets of coloured cellophane over a dark tray, jewel-toned against the pale ground, crinkled, light catching in the creases. */
 export function filmTexture(): THREE.CanvasTexture {
   const S = 256;
   const [c, ctx] = canvas(S);
   const n = fbm(S, 6, 4, 1251);
-  paint(ctx, S, S, (_x, _y, i) => mix([200, 200, 220], [250, 250, 255], n[i]));
+  paint(ctx, S, S, (_x, _y, i) => mix([16, 14, 36], [40, 34, 74], n[i]));
   const rand = seededRandom(1252);
-  ctx.globalCompositeOperation = 'multiply';
   for (let k = 0; k < 14; k++) {
     const x = rand() * S;
     const y = rand() * S;
@@ -2458,7 +2457,7 @@ export function filmTexture(): THREE.CanvasTexture {
     const h = 40 + rand() * 80;
     const a = rand() * Math.PI;
     ctx.fillStyle = CELLOPHANE_COLOURS[k % CELLOPHANE_COLOURS.length];
-    ctx.globalAlpha = 0.45;
+    ctx.globalAlpha = 0.4;
     wrapStroke(ctx, S, () => {
       ctx.translate(x, y);
       ctx.rotate(a);
@@ -2466,7 +2465,6 @@ export function filmTexture(): THREE.CanvasTexture {
     });
   }
   ctx.globalAlpha = 1;
-  ctx.globalCompositeOperation = 'source-over';
   // Creases: thin bright lines where the light catches.
   cracks(ctx, S, 26, 'rgba(255,255,255,0.7)', 1, 1253);
   return finish(c);

@@ -151,7 +151,10 @@ function materials(theme: Theme): Materials {
         return new THREE.MeshPhongMaterial({ map, emissive: 0xffffff, emissiveMap: map, emissiveIntensity: 0.12, shininess: 50, specular: 0x8a4a6a });
       })(),
       opart: lambert(tex.opartTexture()),
-      film: new THREE.MeshPhongMaterial({ map: tex.filmTexture(), shininess: 150, specular: 0xffffff }),
+      film: (() => {
+        const map = tex.filmTexture();
+        return new THREE.MeshPhongMaterial({ map, emissive: 0xffffff, emissiveMap: map, emissiveIntensity: 0.3, shininess: 90, specular: 0x50506a });
+      })(),
       fuzz: (() => {
         const map = tex.fuzzRoadTexture();
         return bumpy(map, 0.12, { emissive: 0xffffff, emissiveMap: map, emissiveIntensity: 0.25 });
@@ -209,7 +212,7 @@ export function buildTrackView(track: Track): TrackView {
     group.add(g);
     const def = i > 0 ? track.def.branches[i - 1] : null;
     if (def?.openOn) {
-      g.add(roadPaint(ribbon, theme.decor, theme.edgeLine));
+      g.add(roadPaint(ribbon, theme.decor, theme.edgeLine, theme.edgeWidth));
       lapRoads.push(lapRoad(def, ribbon, g));
     }
   });

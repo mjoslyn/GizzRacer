@@ -1,6 +1,6 @@
 import { dailyLabel, dailyParams } from '../core/daily';
 import { cupTrophies, progress, raceKey, unlocks, type Unlocks } from '../core/progress';
-import { SOUNDTRACKS, SOUNDTRACK_BLURBS, SOUNDTRACK_NAMES, VIDEO_LOOKS, settings, updateSettings } from '../core/settings';
+import { SONG_END_SOUNDTRACKS, SOUNDTRACKS, SOUNDTRACK_BLURBS, SOUNDTRACK_NAMES, VIDEO_LOOKS, settings, updateSettings } from '../core/settings';
 import type { SavedTrack } from '../core/savedTracks';
 import { CPU_DIFFICULTIES } from '../ai/cpuDriver';
 import { MODE_BLURBS, MODE_NAMES, type RaceMode } from './modes';
@@ -63,11 +63,20 @@ const GENERATIVE_BLURBS: Record<Generative, string> = {
 
 const VHS_NAMES = { full: 'Full', light: 'Light', off: 'Off' } as const;
 
+/** The modes that can race to the song's end (Settings > Race to): the ones raced to a number of laps against CPUs. */
+const SONG_END_MODES: readonly RaceMode[] = ['single', 'grandPrix', 'generator'];
+
+/** Whether this race runs to the song's end: the mode can, the soundtrack has a song that ends, and it's switched on. */
+export function racesToSongEnd(mode: RaceMode): boolean {
+  const s = settings();
+  return s.raceToSongEnd && SONG_END_MODES.includes(mode) && SONG_END_SOUNDTRACKS.includes(s.soundtrack);
+}
+
 /** Each song, without a Full set to say when a song ends: every this many laps. */
 export const SONG_SWITCH_LAPS = 5;
 const SWITCH_NAMES: Record<string, string> = { never: 'Never', 1: 'Every lap', 5: 'Every 5 laps', 10: 'Every 10 laps', 20: 'Every 20 laps', song: 'Each song' };
 
-export type MenuRow = 'mode' | 'track' | 'gen' | 'theme' | 'complexity' | 'length' | 'racer' | 'engine' | 'mirror' | 'sound' | 'show' | 'watch' | 'cpus' | 'vhs' | 'switch' | 'generative' | 'skill' | 'level';
+export type MenuRow = 'mode' | 'track' | 'gen' | 'theme' | 'complexity' | 'length' | 'racer' | 'engine' | 'mirror' | 'sound' | 'show' | 'watch' | 'cpus' | 'vhs' | 'switch' | 'generative' | 'skill' | 'level' | 'songEnd';
 const TROPHY_GLYPH = { gold: '&#9733;', silver: '&#9733;', bronze: '&#9733;' } as const;
 const STAT_NAMES = ['speed', 'accel', 'weight', 'handling'] as const;
 const LENGTH_NAMES = { short: 'Short', medium: 'Medium', long: 'Long' };
@@ -212,6 +221,8 @@ export class Menu {
       default: {
         // The sound to race to, last: the same choice as Settings > Soundtrack, and for a Full set, which show.
         const sound: MenuRow[] = settings().soundtrack === 'show' ? ['sound', 'show'] : ['sound'];
+        // With a song that ends (Track song, Full set), the race can run until it does.
+        if (SONG_END_MODES.includes(m) && SONG_END_SOUNDTRACKS.includes(settings().soundtrack)) sound.push('songEnd');
         // A skill game makes its own sound, but the Deadstick Landing is flown to the soundtrack. There are no CPUs to set.
         if (m === 'skills') return this.choice.skill === 'deadstick' ? ['level', ...sound] : ['level'];
         // How hard the CPUs race, wherever there are CPUs here to race (not Time Trial; online the room decides).
@@ -332,6 +343,7 @@ export class Menu {
       }
     } else if (row === 'mirror') c.mirror = !c.mirror;
     else if (row === 'sound') updateSettings({ soundtrack: step(SOUNDTRACKS, settings().soundtrack) });
+    else if (row === 'songEnd') updateSettings({ raceToSongEnd: !settings().raceToSongEnd });
     else if (row === 'cpus') updateSettings({ cpuDifficulty: step(CPU_DIFFICULTIES, settings().cpuDifficulty) });
     else if (row === 'vhs') updateSettings({ videoLook: step(VIDEO_LOOKS, settings().videoLook), videoLookChosen: true });
     else if (row === 'show') updateSettings({ liveShow: stepShow(shows(), settings().liveShow, dir) });
@@ -412,6 +424,7 @@ export class Menu {
         (rows.includes('mirror') ? line('mirror', 'Mirror', c.mirror ? 'ON' : 'OFF', '<div class="menu-cup-tracks">Every track flipped left for right</div>', true) : '') +
         line('sound', 'Sound', esc(SOUNDTRACK_NAMES[settings().soundtrack]), `<div class="menu-cup-tracks">${esc(SOUNDTRACK_BLURBS[settings().soundtrack])}</div>`, true) +
         (rows.includes('show') ? this.showRows(line) : '') +
+        (rows.includes('songEnd') ? this.songEndRow(line) : '') +
         this.unlockLine();
     }
     const last = this.step === steps.length - 1;
@@ -452,6 +465,14 @@ export class Menu {
     if (!show) return line('show', 'Show', 'Loading&hellip;', '', true);
     const all = shows();
     return line('show', 'Show', `${showSelect(all, show.id, 'menu-show')}${DICE('data-random-show', 'A show at random')}`, `<div class="menu-cup-tracks">Played whole from the top: ${all.length} shows to pick from</div>`, true);
+  }
+
+  /** Race to: the laps, or until the song ends. */
+  private songEndRow(line: (row: MenuRow, label: string, value: string, extra?: string, small?: boolean) => string): string {
+    const on = settings().raceToSongEnd;
+    const what = settings().soundtrack === 'show' ? 'the song playing in the set' : "the track's song";
+    const blurb = on ? `Laps without end until ${what} ends: whoever's in front then wins. No race times are kept` : "The track's laps, as ever";
+    return line('songEnd', 'Race to', on ? "Song's end" : 'Laps', `<div class="menu-cup-tracks">${blurb}</div>`, true);
   }
 
   /** The trophies won on the chosen cup, by class, or what's left to win. */

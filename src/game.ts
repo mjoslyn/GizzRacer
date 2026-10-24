@@ -56,7 +56,7 @@ import { GEN_COMPLEXITY_MAX, GEN_LENGTHS, GEN_THEMES, generateTrack, trackId, ty
 import { Track, inPit, type TrackDef } from './tracks/track';
 import { Hud, formatTime, type HudData, type Table, type TableAction, type TableRow } from './ui/hud';
 import { deleteSaved, findSaved, saveTrack, savedTracks } from './core/savedTracks';
-import { DAILY_SLOT, Menu, SKILL_LEVELS, SONG_SWITCH_LAPS, chosenCup, newSeed, type MenuChoice } from './ui/menu';
+import { DAILY_SLOT, Menu, SKILL_LEVELS, SONG_SWITCH_LAPS, chosenCup, newSeed, racesToSongEnd, type MenuChoice } from './ui/menu';
 import { SaveTrackPanel } from './ui/saveTrack';
 import { Podium } from './render/podium';
 import { ScreenFit } from './ui/screen';
@@ -175,6 +175,20 @@ const INFINITE_LAPS = 1_000_000;
 const TOUR_SET_LAPS = 8;
 /** Laps without end turn the sky over every this many laps. */
 const SKY_LAPS = 3;
+/** A race to the song's end lasts at least this long (s): a song ending sooner, it runs to the end of the next. */
+const SONG_RACE_MIN = 60;
+/** A race to the song's end with no song heard this long (s) into it goes back to laps. */
+const SONG_WAIT = 15;
+/**
+ * Race to the song's end (the picker's Race to): `on` for a race set up so
+ * (laps without end, no race times kept); `live` while it waits on the song,
+ * the recording it's on (`key`) and how far in (`at`, s), `ended` once that
+ * song ends (loops round, or the next comes on), `silent` for how long no song
+ * has been heard (s); `over` once the song ended it.
+ */
+const songRace = { on: false, live: false, over: false, key: null as string | null, at: 0, ended: false, silent: 0 };
+/** The cup in progress has had a race run to the song's end: no cup time to post. */
+let gpSongRace = false;
 /** Watching: how long (s) the camera stays on one racer before moving on. */
 const WATCH_HOLD = 25;
 /** Watching the CPUs race (Infinite, Watch): no kart of mine, the camera on `watchIndex`'s. */
@@ -339,6 +353,7 @@ const menu = new Menu(
     story = c.mode === 'story' ? new StoryRun(fieldSeed) : null;
     gpTimes = [];
     gpPlaces = [];
+    gpSongRace = false;
     cupNote = '';
     practice = c.mode === 'skills' ? { kind: c.skill, level: c.skillLevel, seed: newSeed() } : null;
     // Infinite starts on the picked track, or with Generative on (or mix, by the toss) a generated one.
@@ -631,7 +646,10 @@ function startRace(withPlayer: boolean, keepSong = false, seamless = false): voi
   document.body.classList.toggle('watching', watching);
   // The Deadstick Landing: the player alone, no items, flying at a ring.
   const solo = withPlayer && !net && skillStage()?.kind === 'deadstick';
-  race = new Race(track, net ? net.start.seed : raceSeed++, !trial && !solo, trial ? TRIAL_LAPS : infinite ? INFINITE_LAPS : track.def.laps);
+  const toSongEnd = withPlayer && !net && racesToSongEnd(choice.mode);
+  Object.assign(songRace, { on: toSongEnd, live: toSongEnd, over: false, key: null, at: 0, ended: false, silent: 0 });
+  if (toSongEnd && gp) gpSongRace = true;
+  race = new Race(track, net ? net.start.seed : raceSeed++, !trial && !solo, trial ? TRIAL_LAPS : infinite || toSongEnd ? INFINITE_LAPS : track.def.laps);
   endDeadstickRing();
   setupGhost(trial);
   player = null;
@@ -882,6 +900,57 @@ function watchStep(dt: number): void {
   } else switchWatch(1 + Math.floor(Math.random() * (race.karts.length - 1)));
 }
 
+/**
+ * Race to the song's end: follows the song playing (every frame, paused or
+ * not) and notes when it ends: it loops back round, or another comes on.
+ * Only the song the radio asked for counts, not the one before still
+ * playing while it buffers.
+ */
+function watchSong(dt: number): void {
+  if (!songRace.live || mode !== 'race') return;
+  const p = radio.playing;
+  const rec = music.live;
+  const at = music.liveProgress()?.at;
+  const key = p ? `${p.rec.id}/${p.rec.file}` : null;
+  if (!rec || at === undefined || `${rec.id}/${rec.file}` !== key) {
+    if (race.started) songRace.silent += dt;
+    return;
+  }
+  songRace.silent = 0;
+  if (songRace.key !== null && (key !== songRace.key || at < songRace.at - 2)) songRace.ended = true;
+  songRace.key = key;
+  songRace.at = at;
+}
+
+/** Race to the song's end: the song over (and the race long enough), everyone finishes where they are; no song to hear, it's laps again. */
+function songRaceStep(p: RaceKart): void {
+  const ended = songRace.ended;
+  songRace.ended = false;
+  if (!race.started || p.finishTime !== null) return;
+  if (ended && race.time >= SONG_RACE_MIN) {
+    songRace.live = false;
+    songRace.over = true;
+    race.endNow();
+    sfx.finish();
+    hud.flash("THE SONG'S OVER!");
+  } else if (songRace.silent > SONG_WAIT) {
+    // The stream won't play: race to the line after the leader's next lap, at least the track's own laps.
+    songRace.live = false;
+    race.laps = Math.max(track.def.laps, ...race.karts.map((k) => k.laps.lap + 1));
+    hud.flash(`NO SONG: ${race.laps} LAPS`);
+  }
+}
+
+/** Race to the song's end: what's left of the song that will end the race (s), for the HUD; null when that isn't known yet. */
+function songLeft(): number | null {
+  if (!songRace.live || songRace.key === null) return null;
+  const p = music.liveProgress();
+  if (!p || !p.length) return null;
+  const left = Math.max(0, p.length - p.at);
+  // A song ending before the race is long enough doesn't end it: the next one's length isn't known yet.
+  return Math.max(0, race.time) + left >= SONG_RACE_MIN ? left : null;
+}
+
 /** Infinite's track switch: on to the next track once the leader (or I) has done its laps; Each song moves on with a Full set's songs instead. */
 function tourStep(): boolean {
   const every = choice.switchEvery;
@@ -948,6 +1017,7 @@ function step(dt: number): void {
     else if (race.results.length > 0) startRace(false);
     return;
   }
+  if (songRace.live) songRaceStep(player);
   const ev = events[race.karts.indexOf(player)];
   style?.tick(dt);
   // Nothing scores after the flag: the autopilot's laps are not yours.
@@ -1189,17 +1259,22 @@ function finishRace(p: RaceKart): void {
   const ms = Math.round(p.finishTime! * 1000);
   const mirror = mirrored();
   const parts: string[] = [];
+  if (gp) {
+    // By round, so a restarted race replaces its own entry.
+    gpTimes[gp.round] = p.finishTime!;
+    gpPlaces[gp.round] = p.position;
+  }
+  // Raced to the song's end: no race length to compare, so no best time or style to keep.
+  if (songRace.on) {
+    trialNote = [style?.summary(), `${p.laps.lap} lap${p.laps.lap === 1 ? '' : 's'} to the song`].filter(Boolean).join(' · ');
+    return;
+  }
   if (style) {
     parts.push(style.summary());
     if (recordStyle(track.def.id, choice.engine, style.score).best) parts.push('NEW STYLE BEST!');
   }
   const rec = recordRace(track.def.id, choice.engine, mirror, ms);
   parts.push(rec.best ? (rec.prevMs === null ? 'First race time set' : `BEST RACE! ${formatTime((rec.prevMs - ms) / 1000).replace(/^0:0?/, '-')}s`) : `Best race ${formatTime(rec.prevMs! / 1000)}`);
-  if (gp) {
-    // By round, so a restarted race replaces its own entry.
-    gpTimes[gp.round] = p.finishTime!;
-    gpPlaces[gp.round] = p.position;
-  }
   trialNote = parts.join(' · ');
   const before = trialNote;
   const record = { kind: 'race' as const, trackId: track.def.id, engine: choice.engine, mirror, racerId: p.racer.id, lapsMs: p.lapTimes.map((l) => Math.round(l * 1000)), totalMs: p.lapTimes.reduce((a, l) => a + Math.round(l * 1000), 0), style: style?.score ?? 0 };
@@ -1472,6 +1547,8 @@ function finishCup(): string {
   if (res.trophy) parts.push(`${res.trophy.toUpperCase()} TROPHY${res.improved ? '!' : ''}`);
   for (const u of res.unlocked) parts.push({ randomCup: 'RANDOM CUP UNLOCKED!', class200: '200cc UNLOCKED!', mirror: 'MIRROR MODE UNLOCKED!' }[u]);
   if (res.trophy || res.unlocked.length) sfx.fanfare();
+  // A race run to the song's end has no time to compare: the trophy stands, the online cup board doesn't get it.
+  if (gpSongRace) return parts.join(' · ');
   const record = { kind: 'cup' as const, cupId: cup.id, engine: choice.engine, mirror, racerId: choice.racer.id, points: entry.points, totalMs: timeMs, places: gpPlaces.slice() };
   namePrompt.ask('your cup result', () => postRecord(record).catch(() => {}));
   return parts.join(' · ');
@@ -1886,6 +1963,7 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
   sun.target.position.set(s.x, s.y, s.z);
   sun.position.copy(sun.target.position).addScaledVector(SUN_DIR, 200);
   updateSounds(dt);
+  watchSong(frameDt);
 
   const finished = f.finishTime !== null;
   hints.show(mode === 'menu' || (mode === 'race' && intro > 0 && !!player));
@@ -1923,6 +2001,7 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
       splits,
       turn: turnHint(),
       nowPlaying: nowPlaying(),
+      songLeft: mode === 'race' ? songLeft() : null,
     },
     elapsed,
   );
@@ -1963,7 +2042,8 @@ function table(): Table | null {
     place: ordinal(i + 1),
     name: k.racer.name,
     color: hex(k.racer.color),
-    value: k.finishTime === null ? '...' : formatTime(k.finishTime),
+    // Ended by the song, everyone finished at once: the laps each got round count.
+    value: k.finishTime === null ? '...' : songRace.over ? `${k.laps.lap} lap${k.laps.lap === 1 ? '' : 's'}` : formatTime(k.finishTime),
     extra: k.rival ? 'RIVAL' : undefined,
     player: k === player,
   });
