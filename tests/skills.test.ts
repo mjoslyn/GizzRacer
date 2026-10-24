@@ -18,6 +18,9 @@ import {
   planDeadstick,
   riffJudge,
   riffPasses,
+  SKILL_KINDS,
+  skillRules,
+  deadstickRadius,
   SUITE_ARROWS,
   SUITE_MOVES,
   SUITE_NEED,
@@ -31,6 +34,18 @@ import { respawnKart } from '../src/physics/kart';
 import { RACERS } from '../src/physics/racers';
 import { TRACK_LIST } from '../src/tracks/index';
 import { Track } from '../src/tracks/track';
+
+describe('skill rules', () => {
+  it('every game says exactly what to do at every level, with its real targets', () => {
+    for (const kind of SKILL_KINDS) for (let level = 0; level < 3; level++) expect(skillRules(kind, level).length, kind).toBeGreaterThan(80);
+    expect(skillRules('riff', 0)).toContain(`${Math.round(makeRiff(1, 0).need * 100)}%`);
+    expect(skillRules('nonagon', 2)).toContain(`all ${makeNonagon(1, 2).seq.length}`);
+    expect(skillRules('banana', 1)).toContain(`${makeBanana(1, 1).tolerance} cents`);
+    expect(skillRules('horology', 2)).toContain(`land ${makeHorology(1, 2).need}`);
+    expect(skillRules('mindfuzz', 0)).toContain(`${makeSuite(1, 0).fuzz.need} seconds`);
+    expect(skillRules('deadstick', 2)).toContain(`${deadstickRadius(2)} m`);
+  });
+});
 
 describe('play the riff', () => {
   it('plays the bar four times, in time, in the lanes, faster by chapter', () => {

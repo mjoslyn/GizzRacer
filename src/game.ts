@@ -30,10 +30,10 @@ import { OnlineRace } from './net/onlineRace';
 import type { Effect, RoomStart } from './net/protocol';
 import type { RoomClient } from './net/room';
 import { GrandPrix } from './core/grandPrix';
-import { CLEAR_PLACE, SKILL_STAGE, STAGES_PER_ACT, StoryRun, type BoonId } from './core/story';
+import { ACTS, CLEAR_PLACE, SKILL_STAGE, STAGES_PER_ACT, StoryRun, type BoonId } from './core/story';
 import { DEADSTICK_RUNUP, DEADSTICK_SHOTS, DEADSTICK_SHOT_TIME, planDeadstick, type DeadstickPlan, type SkillKind } from './core/skills';
 import { SkillScreen, type SkillResult } from './ui/skillScreen';
-import { StoryScreen, hearts, storyCard, type StoryPhase } from './ui/storyScreen';
+import { StoryScreen, hearts, practiceCard, storyCard, type StoryPhase } from './ui/storyScreen';
 import { Race, TOUCH_CPU_PACE, ordinal, type RaceKart } from './core/race';
 import { ASSIST_NORMAL, ASSIST_TOUCH } from './physics/steerAssist';
 import { DRIFT_TIERS, PHYSICS_VERSION, copyKartState, createKartState, driftTier, respawnKart, type KartState, type StepEvents } from './physics/kart';
@@ -55,7 +55,7 @@ import { generateTrack, trackId } from './tracks/generator';
 import { Track, inPit, type TrackDef } from './tracks/track';
 import { Hud, formatTime, type HudData, type Table, type TableRow } from './ui/hud';
 import { deleteSaved, findSaved, saveTrack, savedTracks } from './core/savedTracks';
-import { DAILY_SLOT, Menu, TOUR_LAPS, chosenCup, newSeed, type MenuChoice } from './ui/menu';
+import { DAILY_SLOT, Menu, SKILL_LEVELS, TOUR_LAPS, chosenCup, newSeed, type MenuChoice } from './ui/menu';
 import { SaveTrackPanel } from './ui/saveTrack';
 import { Podium } from './render/podium';
 import { ScreenFit } from './ui/screen';
@@ -147,6 +147,8 @@ let choice: MenuChoice = {
   mirror: false,
   tour: false,
   watch: false,
+  skill: 'riff',
+  skillLevel: 0,
 };
 /** Infinite mode: a race of laps without end. */
 const INFINITE_LAPS = 1_000_000;
@@ -168,6 +170,8 @@ let gp: GrandPrix | null = null;
 let story: StoryRun | null = null;
 let storyPhase: StoryPhase = 'chapter';
 let storyBoss: RaceKart | null = null;
+/** Skill Games: the game played on its own, how hard (0..2, a story chapter's), and its draw (new each go). */
+let practice: { kind: SkillKind; level: number; seed: number } | null = null;
 /** The Deadstick Landing in progress: its ring, and the shots flown at it. */
 interface Deadstick {
   plan: DeadstickPlan;
@@ -313,7 +317,9 @@ const menu = new Menu(
     gpTimes = [];
     gpPlaces = [];
     cupNote = '';
+    practice = c.mode === 'skills' ? { kind: c.skill, level: c.skillLevel, seed: newSeed() } : null;
     if (story) showStory('chapter');
+    else if (practice) playPractice();
     else startRace(true);
   },
   savedTracks,
@@ -351,6 +357,7 @@ lobby.onStart = (start, client) => {
   client.onFx = (fx) => online?.client === client && onEffects(fx);
   gp = null;
   story = null;
+  practice = null;
   choice = { ...choice, engine: start.settings.engine };
   if (track.def.id !== TRACK_LIST[start.settings.track].id) loadTrack(TRACK_LIST[start.settings.track]);
   startRace(true);
@@ -432,7 +439,7 @@ function updateBoard(refresh = false): void {
   const picking = mode === 'menu' && menu.showsBoard;
   const on = picking && choice.mode === 'timeTrial';
   board.show(on);
-  const rec = picking && !on && choice.mode !== 'online' && choice.mode !== 'infinite' && choice.mode !== 'story';
+  const rec = picking && !on && choice.mode !== 'online' && choice.mode !== 'infinite' && choice.mode !== 'story' && choice.mode !== 'skills';
   records.show(rec);
   document.body.classList.toggle('board-open', on || rec);
   if (on) board.load(TRACK_LIST[choice.track].id, TRACK_LIST[choice.track].name, choice.engine, refresh);
@@ -521,6 +528,7 @@ function menuTrack(): TrackEntry {
 function raceTrack(): TrackEntry {
   if (gp) return TRACK_LIST[gp.trackIndex];
   if (story) return storyTrack();
+  if (practice?.kind === 'deadstick') return launchTrack(practice.level, practice.seed);
   return choice.mode === 'generator' ? generatedTrack() : TRACK_LIST[choice.track];
 }
 
@@ -568,7 +576,7 @@ function startRace(withPlayer: boolean): void {
   watching = infinite && choice.watch;
   document.body.classList.toggle('watching', watching);
   // The Deadstick Landing: the player alone, no items, flying at a ring.
-  const solo = withPlayer && !net && story?.race.skill === 'deadstick';
+  const solo = withPlayer && !net && skillStage()?.kind === 'deadstick';
   race = new Race(track, net ? net.start.seed : raceSeed++, !trial && !solo, trial ? TRIAL_LAPS : infinite ? INFINITE_LAPS : track.def.laps);
   endDeadstickRing();
   setupGhost(trial);
@@ -970,7 +978,7 @@ function step(dt: number): void {
   if (player.finishTime !== null && !raceRecorded) {
     raceRecorded = true;
     if (story) finishStoryRace(player);
-    else if (!online && choice.mode !== 'timeTrial') finishRace(player);
+    else if (!online && choice.mode !== 'timeTrial' && !practice) finishRace(player);
   }
   if (mode === 'race' && player.finishTime !== null && race.time - player.finishTime > RESULTS_DELAY) {
     if (choice.mode === 'timeTrial') {
@@ -1204,25 +1212,57 @@ function storyNext(): void {
   if (run.actStart && storyPhase !== 'chapter') return showStory('chapter');
   if (r.skill && storyPhase !== 'skill') return showStory('skill');
   if (r.boss && storyPhase !== 'boss') return showStory('boss');
-  if (r.skill && r.skill !== 'deadstick') {
-    setMode('skill');
-    // The game makes its own sound: the soundtrack waits (unless a Live set is playing).
-    if (!setPlaying()) music.stop();
-    skillScreen.start(r.skill, r.seed, r.act);
-    return;
-  }
+  if (r.skill && r.skill !== 'deadstick') return startSkillScreen(r.skill, r.seed, r.act);
   startRace(true);
 }
 
+/** A skill game on its card over the game. */
+function startSkillScreen(kind: SkillKind, seed: number, level: number): void {
+  setMode('skill');
+  // The game makes its own sound: the soundtrack waits (unless a Live set is playing).
+  if (!setPlaying()) music.stop();
+  skillScreen.start(kind, seed, level);
+}
+
+/** The skill game being played, a story stage's or Skill Games', with its draw and how hard. */
+function skillStage(): { kind: SkillKind; seed: number; level: number } | null {
+  const r = story?.race;
+  if (r?.skill) return { kind: r.skill, seed: r.seed, level: r.act };
+  return practice;
+}
+
+/** Skill Games: the game picked, on its card or (the Deadstick Landing) on a track. */
+function playPractice(): void {
+  const p = practice!;
+  if (p.kind === 'deadstick') startRace(true);
+  else startSkillScreen(p.kind, p.seed, p.level);
+}
+
+/** A skill game's over: on with the story, or Skill Games' result. */
+function skillDone(r: SkillResult): void {
+  if (story) return storyResult(r.passed, r.note);
+  if (!practice) return;
+  setMode('story');
+  storyScreen.show(practiceCard(practice.kind, SKILL_LEVELS[practice.level], r));
+}
+
+/** A track to fly the Deadstick Landing on: one of a chapter's, by the draw. */
+function launchTrack(level: number, seed: number): TrackEntry {
+  const list = ACTS[level].launchTracks;
+  const id = list[seed % list.length];
+  return TRACK_LIST.find((t) => t.id === id) ?? TRACK_LIST[0];
+}
+
 skillScreen.onDone = (r) => {
-  if (!story) return;
+  if (!story && !practice) return;
   menuMusic();
-  storyResult(r.passed, r.note);
+  skillDone(r);
 };
 
 /** Puts the ring on the road past the launcher and the player on the run-up. */
 function beginDeadstick(p: RaceKart): void {
-  const plan = planDeadstick(track, story!.race.seed, story!.race.act);
+  const stage = skillStage()!;
+  const plan = planDeadstick(track, stage.seed, stage.level);
   if (!plan) {
     // A track with nowhere to land: nothing to fly, so nothing lost.
     hud.flash('NO RAMP HERE');
@@ -1316,10 +1356,16 @@ function endDeadstickRing(): void {
 function endDeadstick(): void {
   const r = deadstick!.result!;
   endDeadstickRing();
-  storyResult(r.passed, r.note);
+  skillDone(r);
 }
 
 storyScreen.onPick = (id) => {
+  if (practice) {
+    if (id !== 'again') return toMenu();
+    // Another go, a new draw.
+    practice.seed = newSeed();
+    return playPractice();
+  }
   if (!story) return;
   if (id === 'menu') return toMenu();
   if (id === 'again') {
@@ -1551,6 +1597,7 @@ function setPlaying(): boolean {
 function raceSongs(): string[] {
   const own = TRACK_SONGS[track.def.id]?.title;
   const r = story?.race;
+  if (practice?.kind === 'deadstick') return own ? [DEADSTICK_SONG, own] : [DEADSTICK_SONG];
   if (!r) return own ? [own] : [];
   const list = (STORY_SONGS[r.act] ?? []).map((s) => s.title);
   const lead = r.boss ? [STORY_BOSS_SONGS[r.act]] : r.skill === 'deadstick' ? [DEADSTICK_SONG] : [];
@@ -1884,6 +1931,7 @@ function postTrial(p: RaceKart): void {
 function toMenu(): void {
   gp = null;
   story = null;
+  practice = null;
   endDeadstickRing();
   endPodium();
   setMode('menu');

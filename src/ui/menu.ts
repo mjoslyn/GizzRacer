@@ -8,6 +8,7 @@ import { formatTime } from './hud';
 import { ENGINE_CLASSES, RACERS, type EngineClass, type RacerDef } from '../physics/racers';
 import { GEN_COMPLEXITY_MAX, GEN_LENGTHS, GEN_THEMES, GEN_THEME_NAMES, trackName, type GenParams } from '../tracks/generator';
 import { CUPS, RANDOM_CUP_ID, RANDOM_CUP_NAME, TRACK_LIST, randomCupTracks } from '../tracks/index';
+import { SKILLS, SKILL_KINDS, skillRules, type SkillKind } from '../core/skills';
 
 export { MODE_NAMES, type RaceMode } from './modes';
 const MODES = Object.keys(MODE_NAMES) as RaceMode[];
@@ -36,12 +37,19 @@ export interface MenuChoice {
   tour: boolean;
   /** Infinite: the CPUs race and you watch, a visualizer for the music. */
   watch: boolean;
+  /** Skill Games: which game, and how hard (0..2, as story mode's chapters). */
+  skill: SkillKind;
+  skillLevel: number;
 }
+
+/** Skill Games' difficulties: each a story chapter's. */
+export const SKILL_LEVELS = ['Easy', 'Normal', 'Hard'] as const;
+const SKILL_LEVEL_BLURBS = ["As Chapter I plays it: room to learn the game", 'As Chapter II plays it', 'As Chapter III plays it: tight and quick'];
 
 /** Infinite's tour moves on after this many laps of the leader (or a song of a Live set). */
 export const TOUR_LAPS = 3;
 
-export type MenuRow = 'mode' | 'track' | 'gen' | 'theme' | 'complexity' | 'length' | 'racer' | 'engine' | 'mirror' | 'sound' | 'show' | 'watch';
+export type MenuRow = 'mode' | 'track' | 'gen' | 'theme' | 'complexity' | 'length' | 'racer' | 'engine' | 'mirror' | 'sound' | 'show' | 'watch' | 'skill' | 'level';
 const TROPHY_GLYPH = { gold: '&#9733;', silver: '&#9733;', bronze: '&#9733;' } as const;
 const STAT_NAMES = ['speed', 'accel', 'weight', 'handling'] as const;
 const LENGTH_NAMES = { short: 'Short', medium: 'Medium', long: 'Long' };
@@ -170,9 +178,10 @@ export class Menu {
     return true;
   }
 
-  /** The screens this mode has: Online picks its track in the room, Story's are the story's. */
+  /** The screens this mode has: Online picks its track in the room, Story's are the story's, and a skill game needs a racer only to fly the Deadstick Landing. */
   private steps(): MenuStep[] {
     const m = this.choice.mode;
+    if (m === 'skills') return this.choice.skill === 'deadstick' ? ['mode', 'track', 'racer', 'engine'] : ['mode', 'track', 'engine'];
     return m === 'online' || m === 'story' ? ['mode', 'racer', 'engine'] : ['mode', 'track', 'racer', 'engine'];
   }
 
@@ -183,13 +192,15 @@ export class Menu {
       case 'mode':
         return ['mode'];
       case 'track':
-        return m === 'generator' ? ['gen', 'theme', 'complexity', 'length'] : ['track'];
+        return m === 'generator' ? ['gen', 'theme', 'complexity', 'length'] : m === 'skills' ? ['skill'] : ['track'];
       case 'racer':
         // Watching, there's no racer to pick.
         return m === 'infinite' ? (this.choice.watch ? ['watch'] : ['racer', 'watch']) : ['racer'];
       default: {
         // The sound to race to, last: the same choice as Settings > Soundtrack, and for a Live set, which show.
         const sound: MenuRow[] = settings().soundtrack === 'show' ? ['sound', 'show'] : ['sound'];
+        // A skill game makes its own sound, but the Deadstick Landing is flown to the soundtrack.
+        if (m === 'skills') return this.choice.skill === 'deadstick' ? ['level', ...sound] : ['level'];
         return unlocks(progress()).mirror && (m === 'grandPrix' || m === 'single') ? ['engine', 'mirror', ...sound] : ['engine', ...sound];
       }
     }
@@ -282,6 +293,10 @@ export class Menu {
       const at = ((c.tour ? TRACK_LIST.length : c.track) + dir + n) % n;
       c.tour = at === TRACK_LIST.length;
       if (!c.tour) c.track = at;
+    } else if (row === 'skill') {
+      c.skill = step(SKILL_KINDS, c.skill);
+    } else if (row === 'level') {
+      c.skillLevel = (c.skillLevel + dir + SKILL_LEVELS.length) % SKILL_LEVELS.length;
     } else if (row === 'watch') {
       c.watch = !c.watch;
       // The racer row comes and goes with it: stay on this one.
@@ -336,6 +351,9 @@ export class Menu {
       } else if (c.mode === 'generator') {
         title = 'BUILD A TRACK';
         body = this.generatorRows(line);
+      } else if (c.mode === 'skills') {
+        title = 'PICK A GAME';
+        body = line('skill', 'Game', esc(SKILLS[c.skill].name), `<div class="menu-cup-tracks menu-mode-blurb">${esc(SKILLS[c.skill].intro)}</div><div class="menu-cup-tracks">${SKILL_KINDS.indexOf(c.skill) + 1} of ${SKILL_KINDS.length}</div>`);
       } else if (c.mode === 'infinite') {
         body = c.tour
           ? line('track', 'Track', 'Tour', `<div class="menu-cup-tracks">Every track in turn from ${esc(TRACK_LIST[c.track].name)}: the next one every ${TOUR_LAPS} laps, or with each song of a Live set</div>`)
@@ -351,6 +369,13 @@ export class Menu {
         (c.mode === 'infinite'
           ? line('watch', 'Drive', c.watch ? 'Watch' : 'Race', `<div class="menu-cup-tracks">${c.watch ? 'The CPUs race, you watch: the camera follows one and moves on now and then; &larr;&rarr; or a tap picks another' : 'You race the CPUs, lap after lap. Or Watch: the CPUs race to the music'}</div>`, true)
           : '');
+    } else if (c.mode === 'skills') {
+      title = 'PICK A DIFFICULTY';
+      body =
+        line('level', 'Level', SKILL_LEVELS[c.skillLevel], `<div class="menu-cup-tracks menu-mode-blurb">${esc(SKILL_LEVEL_BLURBS[c.skillLevel])}</div>`) +
+        `<div class="menu-rules">${esc(skillRules(c.skill, c.skillLevel))}</div>` +
+        (rows.includes('sound') ? line('sound', 'Sound', esc(SOUNDTRACK_NAMES[settings().soundtrack]), `<div class="menu-cup-tracks">${esc(SOUNDTRACK_BLURBS[settings().soundtrack])}</div>`, true) : '') +
+        (rows.includes('show') ? this.showRows(line) : '');
     } else {
       const classes = availableClasses();
       body =
@@ -372,9 +397,9 @@ export class Menu {
         ${body}
         <div class="menu-nav">
           <button class="menu-back" data-back${this.step === 0 ? ' disabled' : ''}>&lsaquo; back</button>
-          ${last ? `<button class="menu-start hud-big" data-start>${c.mode === 'online' ? 'ROOMS' : c.mode === 'infinite' && c.watch ? 'WATCH!' : 'RACE!'}</button>` : `<button class="menu-start menu-next hud-big" data-next>next &rsaquo;</button>`}
+          ${last ? `<button class="menu-start hud-big" data-start>${c.mode === 'online' ? 'ROOMS' : c.mode === 'infinite' && c.watch ? 'WATCH!' : c.mode === 'skills' ? 'PLAY!' : 'RACE!'}</button>` : `<button class="menu-start menu-next hud-big" data-next>next &rsaquo;</button>`}
         </div>
-        <div class="menu-hint">&larr;&rarr; change${rows.length > 1 ? ' &middot; &uarr;&darr; row' : ''} &middot; Enter ${last ? (c.mode === 'online' ? 'rooms' : 'race') : 'next'} &middot; Backspace back</div>
+        <div class="menu-hint">&larr;&rarr; change${rows.length > 1 ? ' &middot; &uarr;&darr; row' : ''} &middot; Enter ${last ? (c.mode === 'online' ? 'rooms' : c.mode === 'skills' ? 'play' : 'race') : 'next'} &middot; Backspace back</div>
       </div>`;
   }
 
@@ -384,6 +409,8 @@ export class Menu {
     if (s === 'mode') return MODE_NAMES[c.mode];
     if (s === 'track' && c.mode === 'infinite' && c.tour) return 'Tour';
     if (s === 'racer' && c.mode === 'infinite' && c.watch) return 'Watching';
+    if (c.mode === 'skills' && s === 'track') return SKILLS[c.skill].name;
+    if (c.mode === 'skills' && s === 'engine') return SKILL_LEVELS[c.skillLevel];
     if (s === 'track') return c.mode === 'grandPrix' ? chosenCup(c).name : c.mode === 'generator' ? (this.saved()[c.gen.slot]?.name ?? (c.gen.slot === DAILY_SLOT ? 'Daily' : 'New track')) : TRACK_LIST[c.track].name;
     if (s === 'racer') return c.racer.name;
     return `${c.engine}${c.mirror && (c.mode === 'grandPrix' || c.mode === 'single') ? ' Mirror' : ''}`;

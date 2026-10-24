@@ -299,7 +299,7 @@ const RIFF_HZ = [164.81, 196, 220, 246.94];
 const RIFF_KEYS: Record<string, number> = { ArrowLeft: 0, KeyD: 0, ArrowDown: 1, KeyF: 1, ArrowUp: 2, KeyJ: 2, ArrowRight: 3, KeyK: 3 };
 const RIFF_ARROWS = ['←', '↓', '↑', '→'];
 /** Seconds a note takes to fall the lane: long enough to read what's coming. */
-const RIFF_FALL = 2.1;
+const RIFF_FALL = 2.8;
 
 class RiffGame implements MiniGame {
   result: SkillResult | null = null;

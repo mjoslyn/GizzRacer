@@ -655,6 +655,20 @@ body.touch-mode .hud-help {
   opacity: 0.85;
 }
 
+/* A skill game's rules: exactly what to do, set apart from the story's text. */
+.story-rules,
+.menu-rules {
+  font-family: Verdana, sans-serif;
+  font-style: normal;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #fff6d0;
+  text-shadow: 1px 1px 0 #2a0636;
+  padding: 8px 12px;
+  background: rgba(255, 210, 58, 0.1);
+  box-shadow: inset 4px 0 0 #ffd23a;
+}
+
 /* A story card's choices (a boon, Begin, Try again): the name in solid gold with a heavy outline, as the
    picker's values, and what it does in plain type beside it; under it on a narrow screen. */
 .story-opts {

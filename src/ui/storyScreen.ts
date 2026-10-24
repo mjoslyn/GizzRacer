@@ -1,4 +1,4 @@
-import { SKILLS } from '../core/skills';
+import { SKILLS, skillRules, type SkillKind } from '../core/skills';
 import { BOONS, CLEAR_PLACE, type StoryRun } from '../core/story';
 import type { RacerDef } from '../physics/racers';
 
@@ -8,6 +8,8 @@ export interface StoryCard {
   kicker: string;
   title: string;
   body: string;
+  /** Exactly what to do, under the body (a skill game's rules). */
+  detail?: string;
   /** What can be picked; the first is lit to start. */
   opts: { id: string; name: string; blurb: string }[];
   /** Small line under the choices: the boons held. */
@@ -74,6 +76,7 @@ export class StoryScreen {
         <div class="story-kicker">${esc(c.kicker)}</div>
         <div class="menu-title hud-big">${esc(c.title)}</div>
         <div class="story-body">${esc(c.body)}</div>
+        ${c.detail ? `<div class="story-rules">${esc(c.detail)}</div>` : ''}
         <div class="story-opts">${opts}</div>
         ${c.footer ? `<div class="story-footer">${esc(c.footer)}</div>` : ''}
         <div class="menu-hint">${c.opts.length > 1 ? '&uarr;&darr; choose &middot; ' : ''}Enter to go on</div>
@@ -109,7 +112,7 @@ export function storyCard(run: StoryRun, phase: StoryPhase, player: RacerDef, no
       return { kicker, title: act.title, body: act.intro, opts: go('Begin', `Two races, a skill game, then the boss one on one. Finish each race in the top ${CLEAR_PLACE}.`), footer };
     case 'skill': {
       const k = SKILLS[race.skill!];
-      return { kicker: `${act.chapter} · Skill game · ${hearts(run.lives)}`, title: k.name, body: k.intro, opts: go('Play', k.howTo), footer };
+      return { kicker: `${act.chapter} · Skill game · ${hearts(run.lives)}`, title: k.name, body: k.intro, detail: skillRules(race.skill!, race.act), opts: go('Play', 'Ready when you are'), footer };
     }
     case 'boss': {
       const boss = run.bossRacer(player);
@@ -148,4 +151,17 @@ export function storyCard(run: StoryRun, phase: StoryPhase, player: RacerDef, no
         footer,
       };
   }
+}
+
+/** Skill Games' card after a game: how it went, and another go or back to the picker. */
+export function practiceCard(kind: SkillKind, level: string, r: { passed: boolean; note: string }): StoryCard {
+  return {
+    kicker: `Skill Games · ${level}`,
+    title: r.passed ? 'Nailed it' : 'Not this time',
+    body: `${SKILLS[kind].name}: ${r.note}.`,
+    opts: [
+      { id: 'again', name: 'Play again', blurb: 'Another go, a new draw' },
+      { id: 'menu', name: 'Back to the picker', blurb: 'Another game, or another level' },
+    ],
+  };
 }

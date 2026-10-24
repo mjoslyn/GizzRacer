@@ -16,36 +16,67 @@ export const SKILLS: Record<SkillKind, { name: string; intro: string; howTo: str
   riff: {
     name: 'Play the Riff',
     intro: 'A King Gizzard song lives or dies on its riff. This one comes round four times: play it back without dropping it.',
-    howTo: 'Hit each lane as its note crosses the line: arrow keys or D F J K, or tap the lanes',
+    howTo: 'Press each lane as its note hits the gold line: arrow keys or D F J K, or tap the lane',
   },
   nonagon: {
     name: 'Nonagon Infinity',
     intro: 'Nine sides, one loop, and it never ends. Watch the lights go round the nonagon, then play them back.',
-    howTo: 'Keys 1 to 9 or tap the sides (arrows and Enter work too). One slip and it is over',
+    howTo: 'Watch the lights, then press them back in order: keys 1 to 9 (or arrows and Enter), or tap the sides',
   },
   banana: {
     name: 'The Flying Microtonal Banana',
     intro: 'The banana plays between the notes. Tune your string to the drone: when the wobble stops, you are there.',
-    howTo: 'Left and right tune fine, up and down coarse, Enter locks it in. Three strings, get two',
+    howTo: 'Tune until the ring stops wobbling: left and right a little, up and down a lot, Enter locks it in',
   },
   horology: {
     name: 'Horology',
     intro: 'Time is a loop too, and it is slipping. Stop the hand inside the mark before it gets away.',
-    howTo: 'Space, Enter or a tap stops the hand. Five tries, and the mark shrinks every time',
+    howTo: 'Press Space or Enter (or tap) while the hand is inside the gold mark',
   },
   mindfuzz: {
     name: 'The Mind Fuzz Suite',
     intro: "I'm In Your Mind Fuzz runs four songs into one. Play the suite through: read the mind, find the arrow that is not there, line up the cellophane, then ride the fuzz.",
-    howTo: 'Four movements, pass three. Arrow keys (or WASD) and Space, or tap',
+    howTo: 'Four movements, pass three: arrow keys or WASD for the arrows, Space for the rest, or tap',
   },
   deadstick: {
     name: 'Deadstick Landing',
     intro: 'Engine dead, glider out. Hit the ramp, hop on the lip to open the wings, and put it down in the ring.',
-    howTo: 'Hop on the ramp to glide; up climbs, down dives. Three shots to land in the ring',
+    howTo: 'Hop as you hit the ramp to open the glider; up climbs, down dives. Land in the ring',
   },
 };
 
 const lv = <T>(list: readonly T[], level: number): T => list[clamp(Math.round(level), 0, list.length - 1)];
+
+/**
+ * Exactly what to do to pass a game at a level, with its real numbers: for
+ * the card before it (story mode's, and Skill Games' difficulty screen).
+ */
+export function skillRules(kind: SkillKind, level: number): string {
+  switch (kind) {
+    case 'riff': {
+      const r = makeRiff(1, level);
+      return `Notes fall down four lanes. As each reaches the gold line, press its lane: the arrow keys or D F J K, or tap the lane. After a one-bar count-in the riff plays four times at ${r.bpm} bpm. Hit ${Math.round(r.need * 100)}% of the notes to pass; every two presses with no note there cost one.`;
+    }
+    case 'nonagon': {
+      const g = makeNonagon(1, level);
+      return `The nine sides light up one at a time. When they stop, press them back in the same order: keys 1 to 9 (or arrows and Enter), or tap the sides. It starts with ${NONAGON_FIRST} lights and adds one each round. Play back all ${g.seq.length} to pass; one wrong side and it's over.`;
+    }
+    case 'banana': {
+      const g = makeBanana(1, level);
+      return `Two notes play: the drone and your string. Tune your string until the yellow ring stops wobbling, then lock it in. Left and right move it a little, up and down a lot, Enter locks (or tap the buttons). Get ${BANANA_NEED} of ${BANANA_ROUNDS} strings within ${g.tolerance} cents of the drone, ${BANANA_TIME} seconds each.`;
+    }
+    case 'horology': {
+      const g = makeHorology(1, level);
+      return `A hand sweeps round the clock. Press Space or Enter (or tap) while it's inside the gold mark. ${HOROLOGY_ROUNDS} tries, the mark shrinking and the hand speeding up each time; land ${g.need} of them.`;
+    }
+    case 'mindfuzz': {
+      const g = makeSuite(1, level);
+      return `Four movements; pass ${SUITE_NEED}. One: an arrow flashes in the eye for ${g.mind.flash} seconds: press that arrow (or tap its pad), ${g.mind.need} of ${g.mind.arrows.length}. Two: three arrows show: press the missing fourth within ${g.notMind.time} seconds, ${g.notMind.need} of ${g.notMind.missing.length}. Three: two sheets slide: press Space (or tap) when they overlap, ${g.cellophane.need} of ${g.cellophane.sheets.length}. Four: tap Space (or tap) to push the needle up and hold it in the gold band for ${g.fuzz.need} seconds out of ${g.fuzz.time}.`;
+    }
+    case 'deadstick':
+      return `Drive at the ramp ahead and hop (Shift or Space, or DRIFT on touch) as you hit it to open the glider. In the air, Up climbs and carries you further, Down dives and brings you down sooner (on touch, drag up or down). Come down inside the gold ring, ${deadstickRadius(level)} m from its middle, within ${DEADSTICK_SHOTS} shots.`;
+  }
+}
 
 // ---- Play the Riff ----
 
@@ -78,7 +109,7 @@ export interface Riff {
  */
 export function makeRiff(seed: number, level: number): Riff {
   const rand = seededRandom(seed);
-  const bpm = lv([96, 106, 116], level);
+  const bpm = lv([80, 88, 96], level);
   const eighth = 30 / bpm;
   const fill = lv([0.4, 0.48, 0.55], level);
   const bar: (number | null)[] = [];
@@ -207,10 +238,10 @@ export function horologyHit(r: HorologyRound, angle: number): boolean {
 export const SUITE_MOVES = ['mind', 'notMind', 'cellophane', 'fuzz'] as const;
 export type SuiteMove = (typeof SUITE_MOVES)[number];
 export const SUITE_NAMES: Record<SuiteMove, { song: string; how: string }> = {
-  mind: { song: "I'm In Your Mind", how: 'An arrow flashes in the eye: press it' },
-  notMind: { song: "I'm Not In Your Mind", how: 'Three arrows show: press the one that is not there' },
-  cellophane: { song: 'Cellophane', how: 'Press when the two sheets line up' },
-  fuzz: { song: "I'm In Your Mind Fuzz", how: 'Tap to pump the fuzz: keep the needle in the band' },
+  mind: { song: "I'm In Your Mind", how: 'An arrow flashes in the eye: press that arrow (or tap its pad)' },
+  notMind: { song: "I'm Not In Your Mind", how: 'Three arrows show: press the missing fourth before the ring runs out' },
+  cellophane: { song: 'Cellophane', how: 'Two sheets slide: press Space (or tap) when they overlap' },
+  fuzz: { song: "I'm In Your Mind Fuzz", how: 'Tap Space (or tap) to push the needle up: keep it in the gold band' },
 };
 /** Movements to pass for the suite. */
 export const SUITE_NEED = 3;
