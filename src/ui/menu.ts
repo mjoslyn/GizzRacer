@@ -170,9 +170,10 @@ export class Menu {
     return true;
   }
 
-  /** The screens this mode has: Online picks its track in the room. */
+  /** The screens this mode has: Online picks its track in the room, Story's are the story's. */
   private steps(): MenuStep[] {
-    return this.choice.mode === 'online' ? ['mode', 'racer', 'engine'] : ['mode', 'track', 'racer', 'engine'];
+    const m = this.choice.mode;
+    return m === 'online' || m === 'story' ? ['mode', 'racer', 'engine'] : ['mode', 'track', 'racer', 'engine'];
   }
 
   /** The rows on the screen showing: the generator's dials share the track screen, Mirror the speed's once it's unlocked. */

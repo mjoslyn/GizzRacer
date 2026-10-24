@@ -102,7 +102,7 @@ export interface HudData {
 }
 
 /** Text from outside (a venue's name off the Internet Archive) made safe to put in HTML. */
-export function escapeHtml(s: string): string {
+function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
 

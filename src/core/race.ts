@@ -129,6 +129,8 @@ export class RaceKart implements ItemHolder {
   assistLevel: AssistLevel = ASSIST_NORMAL;
   /** A Grand Prix rival: named on the HUD, a touch sharper to drive against. */
   rival = false;
+  /** Story mode: the item a boon makes item boxes lean toward, over the racer's own. */
+  favour: ItemKind | null = null;
   /** The branch (shortcut) it's on, -1 for the main road; and the last branch it was on, for noticing a new one. */
   branch = -1;
   /** Online: the remote player pressed their item button. */
@@ -181,9 +183,9 @@ export class RaceKart implements ItemHolder {
     return this.driver !== null;
   }
 
-  /** The band member's own item comes up a little more often for them. */
+  /** The band member's own item comes up a little more often for them, or the item a story boon leans toward. */
   get signature(): ItemKind | null {
-    return SIGNATURE_ITEMS[this.racer.id] ?? null;
+    return this.favour ?? SIGNATURE_ITEMS[this.racer.id] ?? null;
   }
 
   /** A hop on the grid: in the window it's a rocket start, before it the engine bogs. */

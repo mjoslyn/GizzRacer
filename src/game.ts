@@ -30,6 +30,10 @@ import { OnlineRace } from './net/onlineRace';
 import type { Effect, RoomStart } from './net/protocol';
 import type { RoomClient } from './net/room';
 import { GrandPrix } from './core/grandPrix';
+import { CLEAR_PLACE, SKILL_STAGE, STAGES_PER_ACT, StoryRun, type BoonId } from './core/story';
+import { DEADSTICK_RUNUP, DEADSTICK_SHOTS, DEADSTICK_SHOT_TIME, planDeadstick, type DeadstickPlan, type SkillKind } from './core/skills';
+import { SkillScreen, type SkillResult } from './ui/skillScreen';
+import { StoryScreen, hearts, storyCard, type StoryPhase } from './ui/storyScreen';
 import { Race, TOUCH_CPU_PACE, ordinal, type RaceKart } from './core/race';
 import { ASSIST_NORMAL, ASSIST_TOUCH } from './physics/steerAssist';
 import { DRIFT_TIERS, PHYSICS_VERSION, copyKartState, createKartState, driftTier, respawnKart, type KartState, type StepEvents } from './physics/kart';
@@ -49,7 +53,7 @@ import { findBends, nextBend, type Bend } from './tracks/turns';
 import { pointAt } from './tracks/spline';
 import { generateTrack, trackId } from './tracks/generator';
 import { Track, inPit, type TrackDef } from './tracks/track';
-import { Hud, escapeHtml, formatTime, type HudData, type Table, type TableRow } from './ui/hud';
+import { Hud, formatTime, type HudData, type Table, type TableRow } from './ui/hud';
 import { deleteSaved, findSaved, saveTrack, savedTracks } from './core/savedTracks';
 import { DAILY_SLOT, Menu, TOUR_LAPS, chosenCup, newSeed, type MenuChoice } from './ui/menu';
 import { SaveTrackPanel } from './ui/saveTrack';
@@ -110,10 +114,6 @@ void radio.shows().then(setShows);
 new MiniPlayer(document.body, radio, music);
 /** Controls, items and tips scrolling along the bottom of the picker and the flyover before a race. */
 const hints = new HintsTicker(document.body);
-/** Watching: who the camera is on, for a few seconds after it moves, and how to pick another. */
-const watchCaption = document.createElement('div');
-watchCaption.className = 'watch-caption';
-document.body.appendChild(watchCaption);
 const sfx = new Sfx(
   () => music.context,
   (level, hold) => music.duck(level, hold),
@@ -129,9 +129,11 @@ const INTRO_TIME = 4.5;
 /**
  * title -> menu -> race -> results -> menu. A Grand Prix goes
  * results -> standings -> next race, and after the last one -> podium.
+ * Story goes results -> story (a card: a boon, a retry, the next chapter) -> next stage;
+ * a skill game is played in 'skill' (or, the Deadstick Landing, in 'race').
  * Behind the title and the menu, CPUs race the chosen track as an attract mode.
  */
-type Mode = 'title' | 'menu' | 'race' | 'results' | 'standings' | 'podium' | 'lobby';
+type Mode = 'title' | 'menu' | 'race' | 'results' | 'standings' | 'podium' | 'lobby' | 'story' | 'skill';
 let mode: Mode = 'title';
 
 let choice: MenuChoice = {
@@ -158,12 +160,27 @@ let watchIndex = 0;
 let watchTimer = 0;
 /** Which way the steering was held last tick, so a press switches once. */
 let watchSteer = 0;
-/** When the camera last moved to another racer (elapsed s), for the caption. */
-let watchSwitchedAt = -Infinity;
 /** The Live set song the tour last moved on at. */
 let tourSong: string | null = null;
 /** The cup in progress, if racing a Grand Prix. */
 let gp: GrandPrix | null = null;
+/** The story run in progress, its card showing between races, and the boss's kart on a boss race. */
+let story: StoryRun | null = null;
+let storyPhase: StoryPhase = 'chapter';
+let storyBoss: RaceKart | null = null;
+/** The Deadstick Landing in progress: its ring, and the shots flown at it. */
+interface Deadstick {
+  plan: DeadstickPlan;
+  ring: THREE.Group;
+  shots: number;
+  best: number;
+  flying: boolean;
+  /** Seconds into this shot, and seconds left before the next (or the end). */
+  shotTime: number;
+  wait: number;
+  result: SkillResult | null;
+}
+let deadstick: Deadstick | null = null;
 let podium: Podium | null = null;
 /** The results screen's line under the title: a Time Trial's record, a race's style and best time. */
 let trialNote = '';
@@ -292,10 +309,12 @@ const menu = new Menu(
     if (c.mode === 'online') return setMode('lobby');
     fieldSeed = Math.floor(Math.random() * 2 ** 31);
     gp = c.mode === 'grandPrix' ? new GrandPrix(defaultGrid(c.racer, fieldSeed), chosenCup(c).tracks) : null;
+    story = c.mode === 'story' ? new StoryRun(fieldSeed) : null;
     gpTimes = [];
     gpPlaces = [];
     cupNote = '';
-    startRace(true);
+    if (story) showStory('chapter');
+    else startRace(true);
   },
   savedTracks,
   (t) => deleteSaved(t),
@@ -315,6 +334,12 @@ let netTicks = 0;
 /** When I last asked the room to use my item (its answer takes a round trip). */
 let itemSentAt = -Infinity;
 const lobby = new LobbyScreen(document.body, () => choice.racer);
+const storyScreen = new StoryScreen(document.body);
+const skillScreen = new SkillScreen(
+  document.body,
+  () => music.context,
+  () => (sfxMuted ? 0 : settings().sfx),
+);
 lobby.onBack = () => setMode('menu');
 lobby.onSettings = (s) => {
   // The attract race behind the lobby shows the room's track.
@@ -325,6 +350,7 @@ lobby.onStart = (start, client) => {
   client.onSnap = (snap) => online?.client === client && online.net?.receive(snap, performance.now() / 1000);
   client.onFx = (fx) => online?.client === client && onEffects(fx);
   gp = null;
+  story = null;
   choice = { ...choice, engine: start.settings.engine };
   if (track.def.id !== TRACK_LIST[start.settings.track].id) loadTrack(TRACK_LIST[start.settings.track]);
   startRace(true);
@@ -406,7 +432,7 @@ function updateBoard(refresh = false): void {
   const picking = mode === 'menu' && menu.showsBoard;
   const on = picking && choice.mode === 'timeTrial';
   board.show(on);
-  const rec = picking && !on && choice.mode !== 'online' && choice.mode !== 'infinite';
+  const rec = picking && !on && choice.mode !== 'online' && choice.mode !== 'infinite' && choice.mode !== 'story';
   records.show(rec);
   document.body.classList.toggle('board-open', on || rec);
   if (on) board.load(TRACK_LIST[choice.track].id, TRACK_LIST[choice.track].name, choice.engine, refresh);
@@ -441,6 +467,8 @@ function setMode(next: Mode): void {
   hud.showTitle(next === 'title');
   menu.show(next === 'menu');
   lobby.show(next === 'lobby');
+  if (next !== 'story') storyScreen.show(null);
+  if (next !== 'skill') skillScreen.stop();
   // A generated track can be kept once it's been raced.
   const generated = next === 'results' && choice.mode === 'generator' && !online;
   savePanel.show(generated ? track.def.name : null, generated && !!findSaved(choice.gen.params));
@@ -492,6 +520,7 @@ function menuTrack(): TrackEntry {
 /** The track the next race with the player runs on. */
 function raceTrack(): TrackEntry {
   if (gp) return TRACK_LIST[gp.trackIndex];
+  if (story) return storyTrack();
   return choice.mode === 'generator' ? generatedTrack() : TRACK_LIST[choice.track];
 }
 
@@ -538,7 +567,10 @@ function startRace(withPlayer: boolean): void {
   const infinite = withPlayer && !net && choice.mode === 'infinite';
   watching = infinite && choice.watch;
   document.body.classList.toggle('watching', watching);
-  race = new Race(track, net ? net.start.seed : raceSeed++, !trial, trial ? TRIAL_LAPS : infinite ? INFINITE_LAPS : track.def.laps);
+  // The Deadstick Landing: the player alone, no items, flying at a ring.
+  const solo = withPlayer && !net && story?.race.skill === 'deadstick';
+  race = new Race(track, net ? net.start.seed : raceSeed++, !trial && !solo, trial ? TRIAL_LAPS : infinite ? INFINITE_LAPS : track.def.laps);
+  endDeadstickRing();
   setupGhost(trial);
   player = null;
   trialNote = '';
@@ -555,15 +587,21 @@ function startRace(withPlayer: boolean): void {
     netTicks = 0;
     itemSentAt = -Infinity;
   } else {
-    const grid = !withPlayer ? defaultGrid(null, raceSeed) : watching ? defaultGrid(null, fieldSeed) : trial ? [choice.racer] : gp ? gp.grid() : defaultGrid(choice.racer, fieldSeed);
+    const boss = withPlayer && story?.race.boss ? story.bossRacer(choice.racer) : null;
+    const grid = !withPlayer ? defaultGrid(null, raceSeed) : watching ? defaultGrid(null, fieldSeed) : trial || solo ? [choice.racer] : gp ? gp.grid() : story ? storyGrid(boss) : defaultGrid(choice.racer, fieldSeed);
+    storyBoss = null;
     for (const r of grid) {
-      if (withPlayer && !watching && r === choice.racer) player = race.addKart(r, choice.engine, null);
-      else {
-        // A Grand Prix rival drives a touch sharper, and wears the name.
-        const rival = withPlayer && !!gp && gp.rivals.includes(r);
+      if (withPlayer && !watching && r === choice.racer) {
+        player = race.addKart(r, choice.engine, null);
+        if (story) storyBoons(player, story);
+      } else {
+        // A Grand Prix rival, or a story boss, drives a touch sharper and wears the name.
+        const rival = withPlayer && ((!!gp && gp.rivals.includes(r)) || r === boss);
         // The difficulty setting shapes how every CPU drives, offline (online the room decides).
         const skill = withDifficulty(CPU_SKILL[choice.engine], settings().cpuDifficulty);
-        race.addKart(r, choice.engine, rival ? rivalSkill(skill) : skill).rival = rival;
+        const k = race.addKart(r, choice.engine, rival ? rivalSkill(skill) : skill);
+        k.rival = rival;
+        if (r === boss) storyBoss = k;
       }
     }
     // The CPUs ahead hold back a little for the player (Race.rubberBand), never for a ghost or the attract mode.
@@ -573,7 +611,6 @@ function startRace(withPlayer: boolean): void {
   if (watching) {
     watchIndex = Math.floor(Math.random() * race.karts.length);
     watchTimer = 0;
-    watchSwitchedAt = elapsed;
   }
   splits = [];
   lastCheckpoint = -1;
@@ -596,7 +633,8 @@ function startRace(withPlayer: boolean): void {
   chase.snap();
   // Straight ahead is however the phone is held as the race begins.
   if (withPlayer) tilt.recenter();
-  intro = withPlayer && !net ? INTRO_TIME : 0;
+  intro = withPlayer && !net && !solo ? INTRO_TIME : 0;
+  if (solo && player) beginDeadstick(player);
   // Online, everyone's GO is the room's: count down to it on the room clock.
   if (net) race.time = Math.max(-10, -(net.start.at - net.client.serverNow()) / 1000);
   // Watching, the field goes as the flyover ends: no countdown to sit through.
@@ -756,7 +794,6 @@ function switchWatch(dir: number): void {
   const at = order.indexOf(race.karts[watchIndex]);
   watchIndex = race.karts.indexOf(order[(at + dir + order.length) % order.length]);
   watchTimer = 0;
-  watchSwitchedAt = elapsed;
   chase.snap();
 }
 
@@ -771,7 +808,6 @@ function watchStep(dt: number): void {
   if (Math.random() < 0.4 && leader !== watchIndex) {
     watchIndex = leader;
     watchTimer = 0;
-    watchSwitchedAt = elapsed;
     chase.snap();
   } else switchWatch(1 + Math.floor(Math.random() * (race.karts.length - 1)));
 }
@@ -817,10 +853,11 @@ function step(dt: number): void {
     player.assist = settings().smartSteering;
     // On touch (a phone or tablet): a firmer hand on the wheel, and the CPUs a little slower. The difficulty sets their pace too.
     player.assistLevel = touch.enabled ? ASSIST_TOUCH : ASSIST_NORMAL;
-    race.cpuPace = DIFFICULTY_PACE[settings().cpuDifficulty] * (touch.enabled ? TOUCH_CPU_PACE : 1);
+    race.cpuPace = DIFFICULTY_PACE[settings().cpuDifficulty] * (touch.enabled ? TOUCH_CPU_PACE : 1) * (story ? story.pace : 1);
   }
   const inputs = race.karts.map((k) => (k === player ? lastInput : undefined));
   const events = race.step(dt, inputs);
+  if (deadstick && player) deadstickStep(dt, events[race.karts.indexOf(player)]);
   events.forEach((ev, i) => {
     if (ev.landed > 3) views[i].impact(ev.landed);
     if (ev.wallHit > 0.2) views[i].collide(ev.wallHit);
@@ -932,7 +969,8 @@ function step(dt: number): void {
   surgeWarning(player, dt);
   if (player.finishTime !== null && !raceRecorded) {
     raceRecorded = true;
-    if (!online && choice.mode !== 'timeTrial') finishRace(player);
+    if (story) finishStoryRace(player);
+    else if (!online && choice.mode !== 'timeTrial') finishRace(player);
   }
   if (mode === 'race' && player.finishTime !== null && race.time - player.finishTime > RESULTS_DELAY) {
     if (choice.mode === 'timeTrial') {
@@ -1099,6 +1137,198 @@ function finishRace(p: RaceKart): void {
       .catch((err: Error) => (trialNote = `${before} · not posted: ${err.message}`));
   });
 }
+
+/**
+ * A story race's verdict for the results. Nothing is recorded or posted:
+ * boons change the kart, so its times aren't comparable.
+ */
+function finishStoryRace(p: RaceKart): void {
+  const boss = storyBoss;
+  const lost = story!.lives > 1 ? 'a life lost' : 'the loop ends';
+  const parts = [story!.passes(p.position, boss?.position ?? null) ? 'CLEARED!' : boss ? `${boss.racer.name} beat you: ${lost}` : `Top ${CLEAR_PLACE} needed: ${lost}`];
+  if (style) parts.push(style.summary());
+  trialNote = parts.join(' · ');
+}
+
+/** The race intro's line in story mode: the chapter, the race or the boss, the lives. */
+function storyIntro(run: StoryRun): string {
+  const r = run.race;
+  return `${run.actDef.chapter} · ${r.boss ? `Boss: ${run.bossRacer(choice.racer).name}, one on one` : `Race ${r.index + 1}`} · ${hearts(run.lives)}`;
+}
+
+/** A story race's track: a new one in the chapter's worlds, the boss's own, or one to fly the Deadstick Landing on. */
+function storyTrack(): TrackEntry {
+  const r = story!.race;
+  if (r.skill === 'deadstick') {
+    const id = story!.launchTrack;
+    return TRACK_LIST.find((t) => t.id === id) ?? TRACK_LIST[0];
+  }
+  if (r.gen) {
+    const params = r.gen;
+    return { id: trackId(params), build: () => generateTrack(params) };
+  }
+  const id = story!.actDef.boss.trackId;
+  return TRACK_LIST.find((t) => t.id === id) ?? TRACK_LIST[0];
+}
+
+/** The field for a story race: the run's CPUs, or the boss and the player alone for a boss duel. */
+function storyGrid(boss: RacerDef | null): RacerDef[] {
+  return boss ? [boss, choice.racer] : defaultGrid(choice.racer, fieldSeed);
+}
+
+/** The player's kart as the run's boons have made it. */
+function storyBoons(k: RaceKart, run: StoryRun): void {
+  run.applyBoons(k.baseParams);
+  k.params = { ...k.baseParams };
+  k.favour = run.favour;
+  if (run.startItem) k.item = run.startItem;
+}
+
+/** Shows a story card between stages; `note` says how the last one went. */
+function showStory(phase: StoryPhase, note = ''): void {
+  storyPhase = phase;
+  setMode('story');
+  storyScreen.show(storyCard(story!, phase, choice.racer, note));
+}
+
+/** Scores the stage just played and shows what comes of it. */
+function storyResult(passed: boolean, note = ''): void {
+  const out = story!.record(passed);
+  showStory(out === 'cleared' ? 'boon' : out, note);
+}
+
+/** On to the run's next stage, by way of the chapter's, the skill game's or the boss's card when one is due. */
+function storyNext(): void {
+  const run = story!;
+  const r = run.race;
+  if (run.actStart && storyPhase !== 'chapter') return showStory('chapter');
+  if (r.skill && storyPhase !== 'skill') return showStory('skill');
+  if (r.boss && storyPhase !== 'boss') return showStory('boss');
+  if (r.skill && r.skill !== 'deadstick') {
+    setMode('skill');
+    // The game makes its own sound: the soundtrack waits (unless a Live set is playing).
+    if (!setPlaying()) music.stop();
+    skillScreen.start(r.skill, r.seed, r.act);
+    return;
+  }
+  startRace(true);
+}
+
+skillScreen.onDone = (r) => {
+  if (!story) return;
+  menuMusic();
+  storyResult(r.passed, r.note);
+};
+
+/** Puts the ring on the road past the launcher and the player on the run-up. */
+function beginDeadstick(p: RaceKart): void {
+  const plan = planDeadstick(track, story!.race.seed, story!.race.act);
+  if (!plan) {
+    // A track with nowhere to land: nothing to fly, so nothing lost.
+    hud.flash('NO RAMP HERE');
+    return;
+  }
+  const ring = new THREE.Group();
+  const gold = new THREE.MeshBasicMaterial({ color: 0xffd23a, side: THREE.DoubleSide, transparent: true, opacity: 0.9, depthWrite: false });
+  const band = new THREE.Mesh(new THREE.RingGeometry(plan.radius - 1.2, plan.radius, 48), gold);
+  const eye = new THREE.Mesh(new THREE.CircleGeometry(1.2, 24), new THREE.MeshBasicMaterial({ color: 0xff5ad0, side: THREE.DoubleSide, depthWrite: false }));
+  for (const m of [band, eye]) {
+    m.rotation.x = -Math.PI / 2;
+    ring.add(m);
+  }
+  eye.position.y = 0.02;
+  // A tall beam and a hoop over the ring, so it can be seen from the run-up.
+  const glow = new THREE.MeshBasicMaterial({ color: 0xffd23a, transparent: true, opacity: 0.55, depthWrite: false, side: THREE.DoubleSide });
+  const beam = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 60, 16, 1, true), glow);
+  beam.position.y = 30;
+  const hoop = new THREE.Mesh(new THREE.TorusGeometry(plan.radius, 0.35, 8, 48), glow);
+  hoop.position.y = 9;
+  hoop.rotation.y = Math.atan2(plan.target.x - track.respawnPose(plan.launchS).x, plan.target.z - track.respawnPose(plan.launchS).z);
+  ring.add(beam, hoop);
+  ring.position.set(plan.target.x, plan.target.y + 0.15, plan.target.z);
+  scene.add(ring);
+  deadstick = { plan, ring, shots: 0, best: Infinity, flying: false, shotTime: 0, wait: 0, result: null };
+  placeShot(p, false);
+}
+
+/** The player back on the run-up: standing for the countdown, or rolling for the next shot. */
+function placeShot(p: RaceKart, rolling: boolean): void {
+  const d = deadstick!;
+  const pose = track.respawnPose(d.plan.launchS - DEADSTICK_RUNUP);
+  respawnKart(p.state, pose.x, pose.y, pose.z, pose.heading);
+  p.state.speed = rolling ? p.params.topSpeed : 0;
+  copyKartState(p.state, p.prev);
+  chase.snap();
+  d.flying = false;
+  d.shotTime = 0;
+  hud.flash(`SHOT ${d.shots + 1} OF ${DEADSTICK_SHOTS}: HOP ON THE RAMP`);
+}
+
+/** Watches the shot in the air and scores where it comes down. */
+function deadstickStep(dt: number, ev: StepEvents | undefined): void {
+  const d = deadstick!;
+  const p = player!;
+  if (d.wait > 0) {
+    d.wait -= dt;
+    if (d.wait > 0) return;
+    if (d.result) return endDeadstick();
+    return placeShot(p, true);
+  }
+  if (!race.started) return;
+  d.shotTime += dt;
+  if (ev?.launched) d.flying = true;
+  const next = () => {
+    if (d.shots < DEADSTICK_SHOTS) d.wait = 1.4;
+    else finish(false);
+  };
+  const finish = (passed: boolean) => {
+    d.result = { passed, note: passed ? `Down in the ring, ${d.best.toFixed(1)} m from the middle` : d.best < Infinity ? `Closest: ${d.best.toFixed(1)} m from the middle (the ring is ${d.plan.radius} m)` : 'Never got off the ramp' };
+    d.wait = 1.8;
+    if (passed) sfx.fanfare();
+  };
+  if (d.flying && p.state.grounded) {
+    const off = Math.hypot(p.state.x - d.plan.target.x, p.state.z - d.plan.target.z);
+    d.shots++;
+    d.best = Math.min(d.best, off);
+    if (off <= d.plan.radius) {
+      hud.flash('BULLSEYE!');
+      finish(true);
+    } else {
+      hud.flash(`${off.toFixed(1)} M OFF`);
+      next();
+    }
+  } else if (!d.flying && d.shotTime > DEADSTICK_SHOT_TIME) {
+    d.shots++;
+    hud.flash('MISSED THE RAMP');
+    next();
+  }
+}
+
+/** Takes the ring away. */
+function endDeadstickRing(): void {
+  if (!deadstick) return;
+  scene.remove(deadstick.ring);
+  dispose(deadstick.ring);
+  deadstick = null;
+}
+
+/** The Deadstick Landing's done: on to the story's card. */
+function endDeadstick(): void {
+  const r = deadstick!.result!;
+  endDeadstickRing();
+  storyResult(r.passed, r.note);
+}
+
+storyScreen.onPick = (id) => {
+  if (!story) return;
+  if (id === 'menu') return toMenu();
+  if (id === 'again') {
+    story = new StoryRun(Math.floor(Math.random() * 2 ** 31));
+    return showStory('chapter');
+  }
+  if (storyPhase === 'boon') story.take(id as BoonId);
+  storyNext();
+};
 
 /** A finished cup: its trophy, what it unlocked, and the online cup board. Returns the podium's line. */
 function finishCup(): string {
@@ -1482,7 +1712,7 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
       position: f.position,
       karts: race.karts.length,
       countdown: intro > 0 ? -1 : -race.time,
-      intro: intro > 0 ? { name: track.def.name, sub: gp ? `Race ${gp.round + 1} of ${gp.tracks.length}${gp.rivals.length ? ` · your rivals: ${gp.rivals.map((r) => r.name).join(' and ')}` : ''}${mirrored() ? ' · Mirror' : ''}` : choice.mode === 'timeTrial' ? 'Time Trial' : choice.mode === 'infinite' ? `${watching ? 'Watching the CPUs' : 'Infinite'}${choice.tour ? ' · Tour' : ''} · ${choice.engine}` : `${choice.engine}${mirrored() ? ' · Mirror' : ''}` } : null,
+      intro: intro > 0 ? { name: track.def.name, sub: story ? storyIntro(story) : gp ? `Race ${gp.round + 1} of ${gp.tracks.length}${gp.rivals.length ? ` · your rivals: ${gp.rivals.map((r) => r.name).join(' and ')}` : ''}${mirrored() ? ' · Mirror' : ''}` : choice.mode === 'timeTrial' ? 'Time Trial' : choice.mode === 'infinite' ? `${watching ? 'Watching the CPUs' : 'Infinite'}${choice.tour ? ' · Tour' : ''} · ${choice.engine}` : `${choice.engine}${mirrored() ? ' · Mirror' : ''}` } : null,
       table: table(),
       muted: musicMuted,
       sfxMuted,
@@ -1497,15 +1727,6 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
     },
     elapsed,
   );
-  // Watching: who's on screen, for a few seconds after the camera moves to them.
-  const captioned = watching && mode === 'race' && intro === 0 && !loop.paused && elapsed - watchSwitchedAt < 5;
-  watchCaption.classList.toggle('show', captioned);
-  if (captioned) {
-    const line = `<b>${escapeHtml(f.racer.name)}</b> · ${ordinal(f.position)} · ${escapeHtml(track.def.name)}`;
-    const how = touch.enabled ? 'tap for another racer' : '&larr; &rarr; another racer · Esc menu';
-    const html = `${line}<small>${how}</small>`;
-    if (watchCaption.innerHTML !== html) watchCaption.innerHTML = html;
-  }
   hud.minimap.draw(race.karts.map((k, i) => ({ x: snaps[i].x, z: snaps[i].z, color: hex(k.racer.color), player: k === player, rival: k.rival })));
   // Heat haze shimmers hardest on the straights; the kaleidoscope runs on the player's final lap.
   const straight = 1 - clamp(track.main.maxCurvature(f.progressS, f.progressS + 80) * 25, 0, 1);
@@ -1528,6 +1749,8 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
   underwaterFog(fx.water);
   music.setMuffle(fx.water);
   if (drawGallery(frameDt)) return;
+  // A skill game covers the screen: the world behind it holds still rather than spend the frame.
+  if (mode === 'skill') return;
   const beat = music.beatPhase();
   postFx.render(scene, camera, { haze: fx.haze, kaleido: fx.kaleido, beat: beat >= 0 ? beat : (elapsed * 2.4) % 1, time: elapsed, vhs: fx.vhs, duo: fx.duo, box: fx.box, palette: theme.duotone, water: fx.water });
 });
@@ -1558,7 +1781,7 @@ function table(): Table | null {
         player: e.racer === choice.racer,
       }));
   if (mode === 'results') {
-    const title = online ? `ROOM ${online.client.code} RESULTS` : gp ? `RACE ${gp.round + 1}/${gp.tracks.length} RESULTS` : choice.mode === 'timeTrial' ? 'TIME TRIAL' : 'RESULTS';
+    const title = online ? `ROOM ${online.client.code} RESULTS` : story ? `${story.actDef.chapter.toUpperCase()} · ${story.race.boss ? 'BOSS DUEL' : `RACE ${story.race.index + 1}`}` : gp ? `RACE ${gp.round + 1}/${gp.tracks.length} RESULTS` : choice.mode === 'timeTrial' ? 'TIME TRIAL' : 'RESULTS';
     const rows = online ? onlineRows(kartRow) : finishOrder().map(kartRow);
     return { kind: 'results', title, note: trialNote || undefined, rows };
   }
@@ -1640,6 +1863,8 @@ function postTrial(p: RaceKart): void {
 /** Back to the picker, with the attract race on the picker's track. */
 function toMenu(): void {
   gp = null;
+  story = null;
+  endDeadstickRing();
   endPodium();
   setMode('menu');
   if (track.def.id !== menuTrack().id) loadTrack(menuTrack());
@@ -1681,6 +1906,10 @@ function advance(): boolean {
   }
   if (mode === 'results' && online) {
     backToLobby();
+    return true;
+  }
+  if (mode === 'results' && story && player) {
+    storyResult(story.passes(player.position, storyBoss?.position ?? null));
     return true;
   }
   if (mode === 'results') {
@@ -1758,6 +1987,8 @@ hud.onPauseAction = (action) => {
   } else if (action === 'restart') {
     // An online race runs on the room's clock: no restarts. Offline, ask first: R is next to nothing mid-race.
     if (online || hud.confirmingRestart) return;
+    // A story race is run once: a miss costs a life, not a restart.
+    if (story) return hud.flash('NO RESTARTS IN THE LOOP');
     restartFromPause = loop.paused;
     setPaused(true);
     hud.confirmRestart(true);
@@ -1788,7 +2019,7 @@ window.addEventListener(
 );
 window.addEventListener('pointerup', (e) => {
   if (settingsScreen.visible) return;
-  if ((e.target as HTMLElement).closest('.settings, .hud-title-settings, .lobby, .board, .savetrack, .nameprompt')) return music.unlock();
+  if ((e.target as HTMLElement).closest('.settings, .hud-title-settings, .lobby, .board, .savetrack, .nameprompt, .skill')) return music.unlock();
   if (skipIntro()) return;
   if ((e.target as HTMLElement).closest('.menu, .touch, .hud-pause, .mini-player, .mp-fab')) return music.unlock();
   // Watching: a tap anywhere on the race picks another racer to follow.
@@ -1807,6 +2038,14 @@ window.addEventListener('keydown', (e) => {
   }
   if (advance()) return;
   if (!e.repeat && skipIntro()) return;
+  if (mode === 'story') {
+    if (!e.repeat) storyScreen.key(e.code);
+    return;
+  }
+  if (mode === 'skill') {
+    skillScreen.key(e.code, e.repeat);
+    return;
+  }
   if (menu.key(e.code)) return;
   if (e.repeat || mode !== 'race') return;
   if (hud.confirmingRestart) {
@@ -1900,6 +2139,14 @@ Object.assign(window, {
     /** Runs the simulation ahead by `seconds` without rendering (testing). */
     simulate(seconds: number) {
       for (let t = 0; t < seconds; t += 1 / 60) step(1 / 60);
+    },
+    /** Starts a story run at a chapter's skill game, as `kind` (testing). */
+    storySkill(kind: SkillKind, act = 0) {
+      choice = { ...choice, mode: 'story' };
+      story = new StoryRun(12345);
+      story.cleared = act * STAGES_PER_ACT + SKILL_STAGE;
+      story.skills[act] = kind;
+      showStory('skill');
     },
     /** Picks the player's racer by id for the next race (testing). */
     pick(id: string) {
