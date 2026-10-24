@@ -21,7 +21,9 @@ export function creditsHtml(): string {
   // Story mode's chapters, and the songs of theirs its races play live.
   const chapters = ACTS.map((a, i) => {
     const songs = STORY_SONGS[i] ?? [];
-    return `<li><span class="credits-track">${esc(a.chapter)}: ${esc(a.title)}</span><span class="credits-song">${songs.map((s) => esc(s.title)).join(', ')} <small>${esc(songs[0]?.album ?? '')}, ${songs[0]?.year ?? ''}</small></span></li>`;
+    // Any song from another album says which.
+    const titles = songs.map((s) => `${esc(s.title)}${s.album !== songs[0].album ? ` (${esc(s.album)})` : ''}`).join(', ');
+    return `<li><span class="credits-track">${esc(a.chapter)}: ${esc(a.title)}</span><span class="credits-song">${titles} <small>${esc(songs[0]?.album ?? '')}, ${songs[0]?.year ?? ''}</small></span></li>`;
   }).join('');
   const samples = Object.entries(TRANSCRIBED)
     .map(([id, s]) => {
