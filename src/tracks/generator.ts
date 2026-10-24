@@ -11,7 +11,7 @@ import { Track, inPit, type BranchDef, type HazardDef, type ItemBoxRow, type Lan
  */
 
 export type GenTheme = TrackDef['theme'];
-export const GEN_THEMES: readonly GenTheme[] = ['desert', 'speedway', 'volcano', 'jungle', 'lagoon', 'glacier', 'neon', 'dream', 'petro', 'mars', 'storm', 'void', 'phantom', 'airfield', 'grove', 'doubt', 'magenta', 'kepler', 'goblin', 'primeval', 'castle', 'skycastle', 'cell', 'prism', 'factory', 'gamma', 'carrion', 'wah'];
+export const GEN_THEMES: readonly GenTheme[] = ['desert', 'speedway', 'volcano', 'jungle', 'lagoon', 'glacier', 'neon', 'dream', 'petro', 'mars', 'storm', 'void', 'phantom', 'airfield', 'grove', 'doubt', 'magenta', 'kepler', 'goblin', 'primeval', 'castle', 'skycastle', 'cell', 'prism', 'factory', 'gamma', 'carrion', 'wah', 'smog', 'dome', 'solar', 'inferno'];
 export const GEN_THEME_NAMES: Record<GenTheme, string> = {
   desert: 'Desert',
   speedway: 'Speedway',
@@ -41,6 +41,10 @@ export const GEN_THEME_NAMES: Record<GenTheme, string> = {
   gamma: 'Gamma Knife',
   carrion: 'People-Vultures',
   wah: 'Wah Wah',
+  smog: 'Planet B',
+  dome: 'Mars for the Rich',
+  solar: 'Perihelion',
+  inferno: 'Hell',
 };
 export type GenLength = 'short' | 'medium' | 'long';
 export const GEN_LENGTHS: readonly GenLength[] = ['short', 'medium', 'long'];
@@ -434,6 +438,53 @@ const PALETTES: Record<GenTheme, Palette> = {
     tallWalls: 5,
     places: ['Pedalboard', 'Heel Down', 'Toe Down', 'Sweep', 'Resonance', 'Feedback', 'Filter', 'Octave', 'Fuzz'],
     music: { lap: 'wah-wah', finalLap: 'wah-wah-final-lap' },
+  },
+  smog: {
+    surface: 'tar',
+    deck: 'tar',
+    alt: 'oil',
+    liquid: 'oil',
+    hazards: ['smog'],
+    start: 'smogGate',
+    landmarks: ['smogGate'],
+    tallWalls: 6,
+    places: ['Smokestack', 'Smog', 'Refinery', 'Landfill', 'Sewer', 'Ash', 'Overpass', 'Slag', 'Planet B'],
+    music: { lap: 'planet-b', finalLap: 'planet-b-final-lap' },
+  },
+  dome: {
+    surface: 'gilded',
+    deck: 'gilded',
+    alt: 'regolith',
+    hazards: ['airlocks', 'dustDevils'],
+    start: 'domeGate',
+    landmarks: ['domeGate'],
+    tallWalls: 6,
+    places: ['Penthouse', 'Dome', 'Airlock', 'Undercity', 'Champagne', 'Gilded', 'Red Dust', 'Terrace', 'Tharsis'],
+    music: { lap: 'mars-for-the-rich', finalLap: 'mars-for-the-rich-final-lap' },
+  },
+  solar: {
+    surface: 'heatshield',
+    deck: 'heatshield',
+    alt: 'heatshield',
+    liquid: 'lava',
+    hazards: ['flares'],
+    start: 'shipGate',
+    landmarks: ['shipGate'],
+    tallWalls: 5,
+    places: ['Corona', 'Sunspot', 'Prominence', 'Slingshot', 'Heat Shield', 'Photon', 'Flare', 'Orbit', 'Perihelion'],
+    music: { lap: 'perihelion', finalLap: 'perihelion-final-lap' },
+  },
+  inferno: {
+    surface: 'brimstone',
+    deck: 'brimstone',
+    alt: 'rock',
+    liquid: 'lava',
+    hazards: ['rats', 'flameJets'],
+    start: 'hellGate',
+    landmarks: ['hellGate'],
+    tallWalls: 6,
+    places: ['Brimstone', 'Pit', 'Rat', 'Circle', 'Sulphur', 'Damnation', 'Nest', 'Cinder', 'Abyss'],
+    music: { lap: 'hell', finalLap: 'hell-final-lap' },
   },
 };
 
@@ -1144,7 +1195,13 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
         break;
       case 'gammaRays':
       case 'vultures':
+      case 'smog':
+      case 'airlocks':
+      case 'rats':
         hazards.push({ kind, at: at(count - 1), period: 4.5 });
+        break;
+      case 'flares':
+        hazards.push({ kind, at: at(count - 1), period: 5 });
         break;
       case 'vines':
         hazards.push({ kind, at: at(count), period: 3.6 });

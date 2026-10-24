@@ -1,12 +1,13 @@
 import * as THREE from 'three';
-import { BOULDER_STAGES, CRUSHER_STAGES, GAMMA_EDGE, GAMMA_STAGES, GEYSER_ERUPT, GUST_STAGES, HOLE_CORE, JAWS_LUNGE, JET_STAGES, LIGHTNING_STRIKE, ROBOT_STAGES, VULTURE_STAGES, WAH_LIFT, WAH_STAGES, prismColour, type HazardPose } from '../items/hazards';
+import { AIRLOCK_DEPTH, AIRLOCK_STAGES, BOULDER_STAGES, CRUSHER_STAGES, FLARE_CLEAR, FLARE_STAGES, RAT_LENGTH, RAT_STAGES, SMOG_RADIUS, SMOG_STAGES, flareHeight, GAMMA_EDGE, GAMMA_STAGES, GEYSER_ERUPT, GUST_STAGES, HOLE_CORE, JAWS_LUNGE, JET_STAGES, LIGHTNING_STRIKE, ROBOT_STAGES, VULTURE_STAGES, WAH_LIFT, WAH_STAGES, prismColour, type HazardPose } from '../items/hazards';
 import { goblinFigure } from './omnium';
 import { robotFigure, vultureFigure, wahPedalFigure } from './nonagon';
+import { ratFigure } from './infest';
 import { BOX_RESPAWN, SHIELD_ITEMS, WAVE_RANGE, type ItemHolder, type ItemSystem } from '../items/items';
 import type { KartState } from '../physics/kart';
 import type { HazardSystem } from '../items/hazards';
 import { CUT_RIM } from '../tracks/track';
-import { TETRA_COLOURS, basaltTexture, castleWallTexture, dustTexture, wingTexture, flameTexture, glowTexture, itemBoxTexture, scaleTexture, stoneTexture, warningTexture, woodTexture } from './textures';
+import { TETRA_COLOURS, basaltTexture, castleWallTexture, dustTexture, wingTexture, flameTexture, furTexture, glowTexture, itemBoxTexture, scaleTexture, stoneTexture, warningTexture, woodTexture } from './textures';
 
 const MINE_POOL = 12;
 const MISSILE_POOL = 8;
@@ -558,6 +559,15 @@ export class HazardsView {
     const gammaBeam = new THREE.MeshBasicMaterial({ color: 0x60ff90, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending, depthWrite: false });
     const gammaGlow = glowTexture('rgba(160,255,200,1)', 'rgba(60,255,140,0)');
     const shadowTex = glowTexture('rgba(0,0,0,1)', 'rgba(0,0,0,0)');
+    const lockWhite = new THREE.MeshPhongMaterial({ color: 0xf0ece4, shininess: 90, specular: 0xffffff, flatShading: true });
+    const lockGold = new THREE.MeshPhongMaterial({ color: 0xe0b040, shininess: 140, specular: 0xffffff, flatShading: true });
+    const lockGlass = new THREE.MeshPhongMaterial({ color: 0x9ad0e8, emissive: 0x1a3040, shininess: 160, transparent: true, opacity: 0.6 });
+    const flareGlow = glowTexture('rgba(255,230,150,1)', 'rgba(255,90,0,0)');
+    const puff = glowTexture('rgba(255,255,255,0.95)', 'rgba(255,255,255,0)');
+    // Lighter than the rats in the scenery, so a swarm reads against a dark road.
+    const ratFur = new THREE.MeshLambertMaterial({ map: furTexture(), color: 0xd8c8b8, emissive: 0x2a1a14 });
+    const ratEye = new THREE.MeshBasicMaterial({ color: 0xff2010 });
+    const eyeGlow = glowTexture('rgba(255,60,30,1)', 'rgba(255,0,0,0)');
 
     for (const pose of hazards.poses) {
       const obj = new THREE.Group();
@@ -931,6 +941,97 @@ export class HazardsView {
           }
           obj.add(pedal.group, stamp, dust);
           parts.push(pedal.treadle, stamp, dust);
+          break;
+        }
+        case 'smog': {
+          // A bank of smog: a churning knot of brown and sick-green puffs, and its shadow on the road.
+          const cloud = new THREE.Group();
+          for (let i = 0; i < 10; i++) {
+            const pf = sprite(puff, i % 3 ? 0xa8985e : 0x8a9a52, 4);
+            (pf.material as THREE.SpriteMaterial).blending = THREE.NormalBlending;
+            pf.userData.k = i;
+            cloud.add(pf);
+          }
+          const shadow = new THREE.Mesh(new THREE.PlaneGeometry(SMOG_RADIUS * 2.6, SMOG_RADIUS * 2.6), new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, opacity: 0.5, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 }));
+          shadow.rotation.x = -Math.PI / 2;
+          this.group.add(shadow);
+          obj.add(cloud);
+          parts.push(cloud, shadow);
+          break;
+        }
+        case 'airlocks': {
+          // A frame across the road (two pylons, a lintel, a lamp on top) and two doors sliding in from the pylons to a slit.
+          const frame = new THREE.Group();
+          const posts = [0, 1].map(() => {
+            const post = new THREE.Mesh(new THREE.BoxGeometry(1.4, 6.6, 2), lockWhite);
+            post.position.y = 3.3;
+            frame.add(post);
+            return post;
+          });
+          const lintel = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 2), lockGold);
+          lintel.position.y = 7;
+          frame.add(lintel);
+          const lamp = sprite(laserGlow, 0x40ff60, 3.5);
+          lamp.position.y = 8.2;
+          frame.add(lamp);
+          const doors = [0, 1].map(() => {
+            const d = new THREE.Group();
+            const panel = new THREE.Mesh(new THREE.BoxGeometry(1, 5, AIRLOCK_DEPTH * 2), lockWhite);
+            panel.position.y = 2.5;
+            const trim = new THREE.Mesh(new THREE.BoxGeometry(1, 0.4, AIRLOCK_DEPTH * 2 + 0.1), lockGold);
+            trim.position.y = 5.1;
+            const pane = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.6, AIRLOCK_DEPTH * 2 + 0.05), lockGlass);
+            pane.position.y = 3.4;
+            d.add(panel, trim, pane);
+            frame.add(d);
+            return d;
+          });
+          obj.add(frame);
+          parts.push(frame, posts[0], posts[1], lintel, lamp, doors[0], doors[1]);
+          break;
+        }
+        case 'flares': {
+          // A loop of plasma from one edge of the road to the other, the footpoints glowing as it gathers, a burn across the road while it's low.
+          const arc = new THREE.Group();
+          for (let i = 0; i <= 24; i++) {
+            const d = sprite(flareGlow, i % 2 ? 0xff7a10 : 0xffd060, 3);
+            d.userData.a = (i / 24) * Math.PI;
+            arc.add(d);
+          }
+          const feet = [-1, 1].map((side) => {
+            const f = sprite(flareGlow, 0xffa030, 4);
+            f.position.set(side * pose.radius, 0.6, 0);
+            obj.add(f);
+            return f;
+          });
+          const burn = new THREE.Mesh(
+            new THREE.PlaneGeometry(pose.radius * 2, 3.4),
+            new THREE.MeshBasicMaterial({ color: 0xff6a10, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }),
+          );
+          burn.rotation.x = -Math.PI / 2;
+          burn.position.y = 0.1;
+          obj.add(arc, burn);
+          parts.push(arc, feet[0], feet[1], burn);
+          break;
+        }
+        case 'rats': {
+          // A stream of rats running across the road behind the lead one, and eyes glinting in the hole they pour out of.
+          const swarm = new THREE.Group();
+          for (let i = 0; i < 9; i++) {
+            const r = ratFigure(1.9, ratFur, ratEye);
+            r.group.userData.k = i;
+            r.group.userData.rat = r;
+            swarm.add(r.group);
+          }
+          const eyes = new THREE.Group();
+          for (let i = 0; i < 6; i++) {
+            const e = sprite(eyeGlow, 0xff3020, 0.6);
+            e.userData.k = i;
+            eyes.add(e);
+          }
+          this.group.add(eyes);
+          obj.add(swarm);
+          parts.push(swarm, eyes);
           break;
         }
         case 'geysers': {
@@ -1426,6 +1527,108 @@ export class HazardsView {
               d.position.set(Math.cos(a) * (2.5 + puff * 3), 0.3 + puff * 0.8, -2 + Math.sin(a) * (2.5 + puff * 3));
               d.scale.setScalar(1.5 + puff * 3);
               ((d as THREE.Sprite).material as THREE.SpriteMaterial).opacity = 1 - puff;
+            });
+          }
+          break;
+        }
+        case 'smog': {
+          const [cloud, shadow] = parts;
+          const u = p.phase;
+          const S = SMOG_STAGES;
+          // Gathering at the stack: small and thick; rolling: full size; clearing: thinning and lifting away.
+          const grow = u < S.roll ? 0.45 + 0.55 * (u / S.roll) : 1;
+          const thin = u < S.clear ? 1 : Math.max(0, 1 - ((u - S.clear) / (1 - S.clear)) * 1.4);
+          cloud.children.forEach((pf) => {
+            const k = pf.userData.k as number;
+            const a = elapsed * (0.6 + (k % 3) * 0.25) + k * 0.7;
+            pf.position.set(Math.cos(a) * 2.6 * grow, (k % 4) * 1.1 * grow + (1 - thin) * 4, Math.sin(a) * 2.6 * grow);
+            pf.scale.setScalar((5 + (k % 3) * 1.5) * grow * (1 + (1 - thin) * 0.5));
+            ((pf as THREE.Sprite).material as THREE.SpriteMaterial).opacity = 0.95 * thin;
+          });
+          shadow.position.set(p.x, p.ground + 0.05, p.z);
+          shadow.visible = thin > 0.05;
+          (shadow as THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>).material.opacity = 0.45 * thin * grow;
+          break;
+        }
+        case 'airlocks': {
+          const [, postA, postB, lintel, lamp, doorA, doorB] = parts;
+          obj.rotation.y = p.heading;
+          const fx = Math.sin(p.heading);
+          const fz = Math.cos(p.heading);
+          // Local +x is to the left (a lateral L sits at x = -L), and the pose is the slit: the road's middle is at local x = c.
+          const c = (p.x - p.ax) * -fz + (p.z - p.az) * fx;
+          const R = p.radius;
+          postA.position.x = c + R + 0.7;
+          postB.position.x = c - R - 0.7;
+          lintel.position.x = c;
+          lintel.scale.x = 2 * R + 2.8;
+          const wA = c + R - p.gap;
+          doorA.visible = wA > 0.05;
+          doorA.position.x = (p.gap + c + R) / 2;
+          doorA.scale.x = Math.max(0.05, wA);
+          const wB = R - c - p.gap;
+          doorB.visible = wB > 0.05;
+          doorB.position.x = (c - R - p.gap) / 2;
+          doorB.scale.x = Math.max(0.05, wB);
+          const A = AIRLOCK_STAGES;
+          const u = p.phase;
+          const lampMat = (lamp as THREE.Sprite).material as THREE.SpriteMaterial;
+          // Green open, amber blinking as they close, red while shut (that's when the slit pays).
+          if (u >= A.shut && u < A.open) lampMat.color.setHex(0xff3020);
+          else if (u >= A.close - 0.1 && u < A.shut) lampMat.color.setHex(Math.sin(elapsed * 18) > 0 ? 0xffb020 : 0x402000);
+          else lampMat.color.setHex(p.active ? 0xffb020 : 0x40ff60);
+          break;
+        }
+        case 'flares': {
+          const [arc, footA, footB, burn] = parts;
+          obj.rotation.y = p.heading;
+          const u = p.phase;
+          const F = FLARE_STAGES;
+          const h = flareHeight(u);
+          const up = u >= F.erupt && u < F.land;
+          const low = h < FLARE_CLEAR;
+          arc.visible = up;
+          if (up) {
+            arc.children.forEach((d, i) => {
+              const a = d.userData.a as number;
+              const wobble = low ? Math.sin(elapsed * 20 + i) * 0.4 : Math.sin(elapsed * 6 + i) * 0.3;
+              d.position.set(Math.cos(a) * p.radius, Math.sin(a) * Math.max(h, 0.8) + wobble + 0.3, Math.sin(elapsed * 4 + i * 0.7) * 0.4);
+              d.scale.setScalar(low ? 4.5 + Math.sin(elapsed * 25 + i) : 5 + Math.sin(elapsed * 8 + i) * 0.8);
+            });
+          }
+          // The footpoints glow from the warning on, brightest as it erupts.
+          const g = u >= F.glow && u < F.done ? Math.min(1, (u - F.glow) / (F.erupt - F.glow)) : 0;
+          footA.visible = footB.visible = g > 0;
+          footA.scale.setScalar(2 + g * 5 + Math.sin(elapsed * 14) * 0.6);
+          footB.scale.setScalar(2 + g * 5 + Math.cos(elapsed * 13) * 0.6);
+          // A burn across the road while it boils low, and where it splashes down.
+          burn.visible = p.active;
+          (burn as THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>).material.opacity = 0.35 + 0.25 * Math.abs(Math.sin(elapsed * 12));
+          break;
+        }
+        case 'rats': {
+          const [swarm, eyes] = parts;
+          obj.rotation.y = p.heading;
+          swarm.visible = p.active;
+          if (p.active) {
+            swarm.children.forEach((rg) => {
+              const k = rg.userData.k as number;
+              const r = rg.userData.rat as ReturnType<typeof ratFigure>;
+              // Behind the lead rat along the way they run (-z), spread a little along the road (x).
+              rg.position.set(Math.sin(k * 2.3) * 1 + Math.sin(elapsed * 6 + k) * 0.1, Math.abs(Math.sin(elapsed * 14 + k)) * 0.15, -(k / 8) * RAT_LENGTH);
+              r.legs.forEach((l, j) => (l.rotation.x = Math.sin(elapsed * 22 + k + j * 1.6) * 0.7));
+              r.tail.forEach((l, j) => (l.rotation.y = Math.sin(elapsed * 10 + k + j) * 0.4));
+            });
+          }
+          // Eyes in the hole at the edge they're about to pour from: the warning.
+          eyes.visible = p.phase < RAT_STAGES.pour;
+          if (eyes.visible) {
+            eyes.children.forEach((e) => {
+              const k = e.userData.k as number;
+              const pair = Math.floor(k / 2);
+              const side = k % 2 ? 0.18 : -0.18;
+              e.position.set(p.x + Math.cos(p.heading) * (side + (pair - 1) * 0.8), p.ground + 0.35 + (pair % 2) * 0.25, p.z - Math.sin(p.heading) * (side + (pair - 1) * 0.8));
+              ((e as THREE.Sprite).material as THREE.SpriteMaterial).opacity = Math.sin(elapsed * 3 + pair * 2) > -0.3 ? 1 : 0;
             });
           }
           break;

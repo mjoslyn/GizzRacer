@@ -1512,6 +1512,10 @@ const HIT_TEXT: Record<ItemKind | HazardKind, string> = {
   gammaRays: 'PIERCED!',
   vultures: 'PICKED OFF!',
   wahs: 'STOMPED!',
+  smog: 'CHOKED!',
+  airlocks: 'LOCKED OUT!',
+  flares: 'SCORCHED!',
+  rats: 'INFESTED!',
 };
 
 /** What a hazard used well says: the ones that can help. */
@@ -1551,6 +1555,10 @@ const BONUS_TEXT: Record<HazardKind, string> = {
   gammaRays: "KNIFE'S EDGE!",
   vultures: 'CARRIED OFF!',
   wahs: 'WAH!',
+  smog: 'UP IN SMOKE!',
+  airlocks: 'SLIPPED THROUGH!',
+  flares: 'SOLAR WIND!',
+  rats: 'RAT RACE!',
 };
 
 /** Takes a group out of the scene and frees what it built. */

@@ -38,6 +38,10 @@ export const TRACK_SONGS: Record<string, TrackSong> = {
   'gamma-knife': { title: 'Gamma Knife', album: 'Nonagon Infinity', year: 2016 },
   'people-vultures': { title: 'People-Vultures', album: 'Nonagon Infinity', year: 2016 },
   'wah-wah': { title: 'Wah Wah', album: 'Nonagon Infinity', year: 2016 },
+  'planet-b': { title: 'Planet B', album: "Infest the Rats' Nest", year: 2019 },
+  'mars-for-the-rich': { title: 'Mars for the Rich', album: "Infest the Rats' Nest", year: 2019 },
+  perihelion: { title: 'Perihelion', album: "Infest the Rats' Nest", year: 2019 },
+  hell: { title: 'Hell', album: "Infest the Rats' Nest", year: 2019 },
 };
 
 /**

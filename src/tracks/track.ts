@@ -64,7 +64,7 @@ export function branchOpen(def: BranchDef, ctx?: LapContext): boolean {
 }
 
 export interface Landmark {
-  kind: 'skeletonArch' | 'fangs' | 'fortressGate' | 'templeGate' | 'waterfall' | 'gantry' | 'lighthouse' | 'iceArch' | 'neonArch' | 'rainbowArch' | 'dragonGate' | 'dragonFlight' | 'colonyGate' | 'rodGate' | 'voidEye' | 'phantomArch' | 'runwayGate' | 'treeGate' | 'wreckGate' | 'worldTree' | 'crystalGate' | 'magentaPeak' | 'keplerArch' | 'goblinGate' | 'jawsGate' | 'castleGate' | 'castleKeep' | 'cloudGate' | 'airCastle' | 'skyTower' | 'cellGate' | 'nucleus' | 'prismGate' | 'prismEye' | 'factoryGate' | 'robotColossus' | 'gammaGate' | 'gammaRing' | 'carrionGate' | 'carcass' | 'wahGate' | 'wahPedal';
+  kind: 'skeletonArch' | 'fangs' | 'fortressGate' | 'templeGate' | 'waterfall' | 'gantry' | 'lighthouse' | 'iceArch' | 'neonArch' | 'rainbowArch' | 'dragonGate' | 'dragonFlight' | 'colonyGate' | 'rodGate' | 'voidEye' | 'phantomArch' | 'runwayGate' | 'treeGate' | 'wreckGate' | 'worldTree' | 'crystalGate' | 'magentaPeak' | 'keplerArch' | 'goblinGate' | 'jawsGate' | 'castleGate' | 'castleKeep' | 'cloudGate' | 'airCastle' | 'skyTower' | 'cellGate' | 'nucleus' | 'prismGate' | 'prismEye' | 'factoryGate' | 'robotColossus' | 'gammaGate' | 'gammaRing' | 'carrionGate' | 'carcass' | 'wahGate' | 'wahPedal' | 'smogGate' | 'burningEarth' | 'domeGate' | 'richDome' | 'shipGate' | 'theSun' | 'hellGate' | 'ratsNest';
   ribbon: number; // -1 = main, else branch index
   s: number; // builder units
   /** Metres to the right of the road (left if negative), for a landmark that stands off it. */
@@ -95,7 +95,7 @@ export interface TrackDef {
   itemBoxes: ItemBoxRow[];
   hazards: HazardDef[];
   /** Visual theme (render/themes.ts). */
-  theme: 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism' | 'factory' | 'gamma' | 'carrion' | 'wah';
+  theme: 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism' | 'factory' | 'gamma' | 'carrion' | 'wah' | 'smog' | 'dome' | 'solar' | 'inferno';
   /** No ground: off the road is a long drop (the sky track). */
   abyss?: boolean;
   /** Music cues (public/music/<cue>.mp3): one for the race, one for the final lap. */
@@ -183,7 +183,15 @@ export type HazardDef =
   /** People-Vultures: a vulture circling (its shadow on the road), then diving to swoop low along it. */
   | { kind: 'vultures'; at: number[]; period: number }
   /** Wah Wah: giant wah pedals on the road that rock up and stamp down, on a rhythm. */
-  | { kind: 'wahs'; at: number[]; period: number };
+  | { kind: 'wahs'; at: number[]; period: number }
+  /** Planet B: banks of toxic smog belched from a smokestack at the roadside, rolling across the road. */
+  | { kind: 'smog'; at: number[]; period: number }
+  /** Mars for the Rich: the colony's airlock doors sliding in from both edges to a slit, then opening again. */
+  | { kind: 'airlocks'; at: number[]; period: number }
+  /** Perihelion: a solar flare erupting from one edge to the other, arching high over the road, then collapsing onto it. */
+  | { kind: 'flares'; at: number[]; period: number }
+  /** Hell: a swarm of rats pouring out of a hole at one edge and streaming across the road. */
+  | { kind: 'rats'; at: number[]; period: number };
 
 export interface StartSlot {
   x: number;

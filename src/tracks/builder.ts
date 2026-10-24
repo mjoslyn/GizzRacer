@@ -31,7 +31,15 @@ export type RoadSurface =
   /** People-Vultures' dry lake: cracked, scorched earth. */
   | 'scorched'
   /** Wah Wah's fretboard: dark wood with frets across it. */
-  | 'fret';
+  | 'fret'
+  /** Planet B's road: cracked, sooty asphalt with tar bleeding up through it. */
+  | 'tar'
+  /** Mars for the Rich's boulevard: white marble inlaid with gold. */
+  | 'gilded'
+  /** Perihelion's road: the ship's heat shield tiles, glowing at the seams. */
+  | 'heatshield'
+  /** Hell's road: black brimstone, lava glowing in the cracks. */
+  | 'brimstone';
 
 /**
  * Every road is built this much wider than its section says: the layouts
