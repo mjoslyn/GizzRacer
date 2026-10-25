@@ -32,9 +32,19 @@ export class DynamicResolution {
   private recover = RECOVER;
   /** Windows left since a step up: dropping back down within them makes the next one wait longer. */
   private probation = 0;
+  /** The lowest level it may drop to: on a TV, blur reads worse than a dropped frame. */
+  private floor = RESOLUTION_SCALES.length - 1;
 
   get scale(): number {
     return RESOLUTION_SCALES[this.level];
+  }
+
+  /** Limits how far the resolution may drop (an index into RESOLUTION_SCALES); true if the scale changed to keep to it. */
+  limit(level: number): boolean {
+    this.floor = Math.max(0, Math.min(RESOLUTION_SCALES.length - 1, level));
+    if (this.level <= this.floor) return false;
+    this.level = this.floor;
+    return true;
   }
 
   /** Back to full resolution with a clean slate (a new Detail level). */
@@ -59,7 +69,7 @@ export class DynamicResolution {
       this.good = 0;
       if (this.probation > 0) this.recover = Math.min(this.recover * 2, MAX_RECOVER);
       this.probation = 0;
-      if (this.level === RESOLUTION_SCALES.length - 1) return false;
+      if (this.level >= this.floor) return false;
       this.level++;
       return true;
     }

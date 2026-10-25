@@ -3167,7 +3167,8 @@ body:not([data-mode='party']) .party {
 
 .party-phones b {
   display: block;
-  font-size: min(9vh, 64px);
+  color: #fff27a;
+  font-size: min(10vh, 84px);
   letter-spacing: 0.25em;
 }
 
@@ -3285,7 +3286,16 @@ body.cast {
   --tv: 1.6;
 }
 
-body.couch .party-side,
+/* The join screen's empty seats are kept short so it fits (PartyScreen.fit scales the rest to the screen). */
+.party-side .party-seat.empty {
+  justify-content: center;
+  padding: 6px;
+}
+
+.party-side .party-seat.empty .party-p {
+  font-size: 20px;
+}
+
 body.couch .hud-standings,
 body.couch .hud-count,
 body.couch .hud-intro,
@@ -3303,11 +3313,6 @@ body.couch .party-main > .party-phones {
   font-size: calc(16px * var(--tv));
 }
 
-.party-phones b {
-  color: #fff27a;
-  letter-spacing: 4px;
-  font-size: 22px;
-}
 
 .party-nav {
   display: flex;
@@ -3536,4 +3541,24 @@ body:not(.split) .seat-hud {
 @keyframes seat-bite {
   from { opacity: 1; }
   to { opacity: 0; }
+}
+
+.party-beta {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 8px;
+  padding: 2px 8px;
+  font-size: 0.32em;
+  letter-spacing: 2px;
+  color: #2a0636;
+  -webkit-text-stroke: 0;
+  background: #fff27a;
+  transform: skewX(-8deg);
+}
+
+.party-beta-note {
+  font-size: 12px;
+  opacity: 0.75;
+  margin-top: -8px;
+  text-shadow: 2px 2px 0 #3a0f45;
 }

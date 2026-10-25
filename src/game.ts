@@ -45,7 +45,7 @@ import { HazardsView, ItemsView } from './render/itemViews';
 import { KartView, setDustColor } from './render/kartView';
 import { DETAIL_SPEC, setGraphicsDetail } from './render/detail';
 import { PostFx } from './render/postfx';
-import { DynamicResolution } from './render/resolution';
+import { DynamicResolution, RESOLUTION_SCALES } from './render/resolution';
 import { RacerGallery } from './render/gallery';
 import { flareRingTexture, glowTexture, setTextureAnisotropy } from './render/textures';
 import { WATER_LEVEL, buildTrackView, type TrackView } from './render/trackView';
@@ -115,7 +115,15 @@ scene.add(sunAnchor);
 const postFx = new PostFx(renderer);
 /** Drops the resolution while frames run long, and brings it back once they don't. */
 const resolution = new DynamicResolution();
-let resolutionDetail = settings().detail;
+/**
+ * Opened on a TV by Cast to TV: the laptop draws this page offscreen and
+ * streams it, so it draws at Low detail (no shadows, full resolution): a
+ * steady frame and steady sound matter more than shadows. Not saved, so the
+ * laptop's own Settings stay as they are.
+ */
+const castReceiver = isRoomCode(new URLSearchParams(location.search).get('party')?.toUpperCase() ?? '');
+const detailLevel = () => (castReceiver ? 'low' : settings().detail);
+let resolutionDetail = detailLevel();
 const input = new InputManager();
 const hud = new Hud(document.body);
 const music = new MusicPlayer();
@@ -527,9 +535,11 @@ function applyPad(p: RemotePad, s: PadState): void {
 /** A phone's buttons off the road: the join screen's, pause, and on from the results. */
 function padAction(id: string, a: PadAction, row?: PadRow): void {
   if (mode === 'party') {
-    if (a !== 'pause' && a !== 'continue') party.remoteAction(id, a, row);
-  } else if (partyOn && mode === 'race' && a === 'pause') {
-    if (!hud.confirmingRestart) requestPause(!loop.paused);
+    if (a === 'left' || a === 'right' || a === 'ready' || a === 'leave') party.remoteAction(id, a, row);
+  } else if (partyOn && mode === 'race' && (a === 'pause' || a === 'resume')) {
+    if (!hud.confirmingRestart) requestPause(a === 'pause');
+  } else if (partyOn && mode === 'race' && a === 'quit' && loop.paused) {
+    hud.onPauseAction?.('quit');
   } else if (partyOn && (mode === 'results' || mode === 'standings' || mode === 'podium') && a === 'continue') {
     advance();
   }
@@ -598,7 +608,7 @@ function tellPads(): void {
   for (const id of padNames.keys()) {
     const n = party.remoteSeat(id);
     const seat = n >= 0 ? party.seats[n] : null;
-    const info: SeatInfo = { t: 'seat', n: seat ? n : null, racer: seat?.racer.name ?? '', color: seat ? SEAT_COLORS[n] : '', ready: seat?.ready ?? false, phase, host: n === 0 ? settingsText(party.settings) : null };
+    const info: SeatInfo = { t: 'seat', n: seat ? n : null, racer: seat?.racer.name ?? '', color: seat ? SEAT_COLORS[n] : '', ready: seat?.ready ?? false, phase, paused: phase === 'race' && loop.paused, host: n === 0 ? settingsText(party.settings) : null };
     const text = JSON.stringify(info);
     if (padTold.get(id) === text) continue;
     padTold.set(id, text);
@@ -685,8 +695,8 @@ onSettings((s) => {
     else menuMusic();
   }
   // Detail (render/detail.ts): shadows and the resolution switch at once; the road grain and the scenery arrive with the next track built.
-  const spec = DETAIL_SPEC[s.detail];
-  setGraphicsDetail(s.detail);
+  const spec = DETAIL_SPEC[detailLevel()];
+  setGraphicsDetail(detailLevel());
   renderer.shadowMap.enabled = spec.shadows;
   sun.castShadow = spec.shadows;
   KartView.realShadows = spec.shadows;
@@ -700,8 +710,8 @@ onSettings((s) => {
     sun.shadow.camera.updateProjectionMatrix();
   }
   // Low draws at fewer pixels: on a phone that is most of the saving. A new level starts back at full resolution.
-  if (s.detail !== resolutionDetail) {
-    resolutionDetail = s.detail;
+  if (detailLevel() !== resolutionDetail) {
+    resolutionDetail = detailLevel();
     resolution.reset();
   }
   applyPixelRatio();
@@ -739,7 +749,7 @@ function updateBoard(refresh = false): void {
 
 /** The Detail level's pixel ratio, scaled down by dynamic resolution while frames are dropping. */
 function applyPixelRatio(): void {
-  const ratio = Math.min(window.devicePixelRatio, DETAIL_SPEC[settings().detail].pixelRatio) * resolution.scale;
+  const ratio = Math.min(window.devicePixelRatio, DETAIL_SPEC[detailLevel()].pixelRatio) * resolution.scale;
   if (renderer.getPixelRatio() === ratio) return;
   renderer.setPixelRatio(ratio);
   fitRenderer();
@@ -1264,6 +1274,8 @@ radio.onChange(() => {
 });
 
 function step(dt: number): void {
+  // Casting: the TV's page runs the race; nothing to simulate here.
+  if (cast) return;
   // Up fires the item, but with the glider open it climbs.
   input.gliding = !!player && player.state.glideTime > 0;
   lastInput = input.sample();
@@ -2367,6 +2379,10 @@ function updateSeatHuds(): void {
 }
 
 const loop = new FixedLoop(step, (alpha, frameDt) => {
+  // Casting, the TV's page draws the game: this one stops drawing, so the laptop has only that to do.
+  if (cast) return;
+  // On a TV, blur reads worse than a dropped frame: the resolution drops only so far.
+  if (resolution.limit(document.body.classList.contains('couch') ? 1 : RESOLUTION_SCALES.length - 1)) applyPixelRatio();
   if (resolution.sample(frameDt)) applyPixelRatio();
   if (mode === 'party') party.poll(performance.now() / 1000);
   tellPads();

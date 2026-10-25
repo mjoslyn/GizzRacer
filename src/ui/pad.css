@@ -366,3 +366,13 @@ button:active {
     padding: 10px 32px;
   }
 }
+
+.pad-pause .pad-tilts {
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.pad-quit {
+  margin-top: 6px;
+  opacity: 0.8;
+}

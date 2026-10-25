@@ -1,6 +1,7 @@
 import { MAX_SEATS, PAD, SEAT_COLORS, SEAT_KEYS, SEAT_KEY_NAMES, connectedPads, sameSource, sourceName, type KeySide, type SeatSource } from '../core/seatInput';
 import { CPU_DIFFICULTIES, type CpuDifficulty } from '../ai/cpuDriver';
 import { progress, unlocks } from '../core/progress';
+import { SOUNDTRACKS, SOUNDTRACK_NAMES, settings as gameSettings, updateSettings } from '../core/settings';
 import { RACERS, type EngineClass, type RacerDef } from '../physics/racers';
 import { CUPS, RANDOM_CUP_ID, RANDOM_CUP_NAME, TRACK_LIST, randomCupTracks } from '../tracks/index';
 import { availableClasses } from './menu';
@@ -25,8 +26,8 @@ export interface PartySettings {
   cpus: CpuDifficulty;
 }
 
-/** P1's rows on the join screen: their racer, then the settings. */
-export const P1_ROWS = ['racer', 'cup', 'engine', 'cpus'] as const;
+/** P1's rows on the join screen: their racer, then the settings (the music is Settings > Soundtrack, for everyone). */
+export const P1_ROWS = ['racer', 'cup', 'engine', 'cpus', 'sound'] as const;
 export type P1Row = (typeof P1_ROWS)[number];
 const CPU_NAMES: Record<CpuDifficulty, string> = { easy: 'Easy', normal: 'Normal', hard: 'Hard' };
 
@@ -36,8 +37,8 @@ export function partyCup(s: PartySettings): { id: string; name: string; tracks: 
 }
 
 /** The settings as P1's phone shows them. */
-export function settingsText(s: PartySettings): { cup: string; engine: string; cpus: string } {
-  return { cup: partyCup(s).name, engine: s.engine, cpus: CPU_NAMES[s.cpus] };
+export function settingsText(s: PartySettings): { cup: string; engine: string; cpus: string; sound: string } {
+  return { cup: partyCup(s).name, engine: s.engine, cpus: CPU_NAMES[s.cpus], sound: SOUNDTRACK_NAMES[gameSettings().soundtrack] };
 }
 
 /** Seconds from everyone ready to the race. */
@@ -71,6 +72,8 @@ export class PartyScreen {
   private readonly padWas = new Map<number, { buttons: boolean[]; stick: number; stickY: number }>();
   private startAt: number | null = null;
   private lastHtml = '';
+  /** What the side column was last scaled for (its html, the screen's height, the TV scale). */
+  private lastFit = '';
 
   constructor(
     parent: HTMLElement,
@@ -155,6 +158,7 @@ export class PartyScreen {
       if (pressed(PAD.start)) this.readyAll();
       if (pressed(PAD.b)) this.leave(i);
     });
+    this.fit();
     const all = this.seats.length > 0 && this.seats.every((s) => s.ready);
     if (!all) this.startAt = null;
     else if (this.startAt === null) this.startAt = now + START_WAIT;
@@ -240,6 +244,7 @@ export class PartyScreen {
       s.cup = (s.cup + dir + n) % n;
       if (s.cup === CUPS.length) s.randomTracks = randomCupTracks();
     } else if (row === 'engine') s.engine = step(availableClasses(), s.engine);
+    else if (row === 'sound') updateSettings({ soundtrack: step(SOUNDTRACKS, gameSettings().soundtrack) });
     else s.cpus = step(CPU_DIFFICULTIES, s.cpus);
     for (const x of this.seats) x.ready = false;
     this.onSettings({ ...s });
@@ -307,12 +312,13 @@ export class PartyScreen {
         ${setting('cup', 'Cup', cup.name, `<div class="party-set-tracks">${cup.tracks.map((t) => esc(TRACK_LIST[t].name)).join(' &middot; ')}</div>`)}
         ${setting('engine', 'Speed', st.engine)}
         ${setting('cpus', 'CPUs', CPU_NAMES[st.cpus])}
+        ${setting('sound', 'Music', SOUNDTRACK_NAMES[gameSettings().soundtrack])}
       </div>`;
     const cards = Array.from({ length: MAX_SEATS }, (_, i) => {
       const s = this.seats[i];
       const color = SEAT_COLORS[i];
       if (!s) {
-        return `<div class="party-seat empty" style="--seat:${color}"><div class="party-p hud-big">P${i + 1}</div><div class="party-join">Press <b>Shift</b> (WASD) or <b>Right Shift</b> (arrows), <b>A</b> on a controller, or join from a phone</div></div>`;
+        return `<div class="party-seat empty" style="--seat:${color}"><div class="party-p hud-big">P${i + 1}</div><div class="party-join">Scan to join, or press <b>Shift</b>, <b>Right Shift</b> or <b>A</b></div></div>`;
       }
       const how = s.source.kind === 'keys' ? SEAT_KEY_NAMES[s.source.side] : s.source.kind === 'pad' ? 'Stick or d-pad · A hop · L item' : 'Tilt or drag to steer';
       return `<div class="party-seat${s.ready ? ' ready' : ''}" style="--seat:${color}">
@@ -334,7 +340,7 @@ export class PartyScreen {
     if (this.casting) {
       const html = `
         <div class="party-panel">
-          <div class="party-title hud-big">PARTY</div>
+          <div class="party-title hud-big">PARTY <span class="party-beta">BETA</span></div>
           <div class="party-status">Casting: the race is on the TV. Phones drive it; join and ready up there.</div>
           <div class="party-phones">${this.phoneInfo}</div>
           <div class="party-nav"><button data-party="back">&lsaquo; back</button><button data-party="cast">Stop casting</button></div>
@@ -346,7 +352,8 @@ export class PartyScreen {
       <div class="party-panel party-main">
         <div class="party-phones">${this.phoneInfo}</div>
         <div class="party-side">
-        <div class="party-title hud-big">PARTY</div>
+        <div class="party-title hud-big">PARTY <span class="party-beta">BETA</span></div>
+        <div class="party-beta-note">Party mode is new: tell us what breaks</div>
         ${settings}
         <div class="party-status">${status}</div>
         <div class="party-seats">${cards}</div>
@@ -361,6 +368,24 @@ export class PartyScreen {
     if (html === this.lastHtml) return;
     this.lastHtml = html;
     this.el.innerHTML = html;
+    this.fit();
+  }
+
+  /**
+   * Scales the side column (settings, seats, buttons) as big as the TV
+   * wants (hud.css --tv, on body.couch) but no bigger than fits the screen:
+   * read from across the room, never cut off.
+   */
+  private fit(): void {
+    const side = this.el.querySelector<HTMLElement>('.party-side');
+    if (!side || !this.visible) return;
+    const tv = parseFloat(getComputedStyle(document.body).getPropertyValue('--tv')) || 1;
+    const key = `${this.lastHtml.length}:${innerHeight}:${tv}`;
+    if (key === this.lastFit) return;
+    this.lastFit = key;
+    side.style.zoom = '1';
+    const tall = side.getBoundingClientRect().height;
+    side.style.zoom = String(Math.max(0.6, Math.min(tv, (innerHeight - 24) / Math.max(1, tall))));
   }
 }
 

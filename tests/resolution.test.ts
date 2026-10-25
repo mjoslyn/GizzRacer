@@ -72,3 +72,20 @@ describe('dynamic resolution', () => {
     expect(r.scale).toBe(1);
   });
 });
+
+describe('resolution floor', () => {
+  it('on a TV it drops no further than the floor, and a new floor pulls it straight back up', async () => {
+    const { DynamicResolution, RESOLUTION_SCALES } = await import('../src/render/resolution');
+    const r = new DynamicResolution();
+    const slow = () => {
+      for (let i = 0; i < 120; i++) r.sample(1 / 60);
+      for (let w = 0; w < 10; w++) for (let i = 0; i < 30; i++) r.sample(1 / 30);
+    };
+    slow();
+    expect(r.scale).toBe(RESOLUTION_SCALES[RESOLUTION_SCALES.length - 1]);
+    expect(r.limit(1)).toBe(true);
+    expect(r.scale).toBe(RESOLUTION_SCALES[1]);
+    slow();
+    expect(r.scale).toBe(RESOLUTION_SCALES[1]);
+  });
+});

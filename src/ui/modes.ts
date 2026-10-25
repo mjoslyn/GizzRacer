@@ -9,7 +9,7 @@ export const MODE_NAMES: Record<RaceMode, string> = {
   timeTrial: 'Time Trial',
   generator: 'Track Generator',
   infinite: 'Infinite',
-  party: 'Party',
+  party: 'Party (beta)',
   online: 'Online',
 };
 

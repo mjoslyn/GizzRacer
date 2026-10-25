@@ -136,7 +136,8 @@ function receive(data: string): void {
     // A race starting: straight ahead is however the phone's held now.
     if (m.phase === 'race' && seat?.phase !== 'race') tilt.recenter();
     seat = m;
-    if (m.phase !== 'race') {
+    // Off the road or paused: nothing stays held.
+    if (m.phase !== 'race' || m.paused) {
       held.clear();
       drag.id = -1;
       drag.steer = drag.pitch = 0;
@@ -203,7 +204,7 @@ function view(): { key: string; html: string } {
     const h = seat.host;
     const row = (r: PadRow, label: string, value: string) => `
       <div class="pad-set"><span class="pad-set-label">${label}</span><button data-act="left" data-row="${r}">&#9664;</button><span>${esc(value)}</span><button data-act="right" data-row="${r}">&#9654;</button></div>`;
-    const sets = h ? `<div class="pad-sets">${row('cup', 'Cup', h.cup)}${row('engine', 'Speed', h.engine)}${row('cpus', 'CPUs', h.cpus)}</div>` : '<div class="pad-sub">P1 picks the cup</div>';
+    const sets = h ? `<div class="pad-sets">${row('cup', 'Cup', h.cup)}${row('engine', 'Speed', h.engine)}${row('cpus', 'CPUs', h.cpus)}${row('sound', 'Music', h.sound)}</div>` : '<div class="pad-sub">P1 picks the cup</div>';
     return {
       key: `join:${seat.n}:${seat.racer}:${seat.ready}:${tiltOn}:${tiltLevel}:${JSON.stringify(h)}:${status}`,
       html: `
@@ -231,6 +232,22 @@ function view(): { key: string; html: string } {
   }
   if (seat.phase === 'results') {
     return { key: `results:${seat.n}`, html: `<div class="pad-card" ${style}>${head}<div class="pad-p">${p}</div><button class="pad-big" data-act="continue">CONTINUE</button></div>` };
+  }
+  if (seat.paused) {
+    return {
+      key: `paused:${seat.n}:${tiltOn}:${tiltLevel}:${status}`,
+      html: `
+        <div class="pad-card pad-pause" ${style}>
+          <div class="pad-p">PAUSED</div>
+          <button class="pad-big" data-act="resume">RESUME</button>
+          <div class="pad-tilts">
+            <button class="pad-tilt" data-do="tilt">Steer: ${tiltOn ? 'tilt the phone' : 'drag'}</button>
+            ${tiltOn ? `<button class="pad-tilt" data-do="level">Tilt: ${TILT_LEVELS[tiltLevel].name}</button><button class="pad-tilt" data-do="recenter">Recenter tilt</button>` : ''}
+          </div>
+          <div class="pad-status">${esc(status)}</div>
+          <button class="pad-tilt pad-quit" data-act="quit">Quit the cup</button>
+        </div>`,
+    };
   }
   return {
     key: `race:${seat.n}:${tiltOn}`,
@@ -296,6 +313,15 @@ root.addEventListener('click', (e) => {
   else if (what === 'leave') {
     act('leave');
     leave();
+  } else if (what === 'recenter') {
+    // However the phone's held now is straight ahead.
+    tilt.recenter();
+    status = 'Tilt recentered: hold the phone as you will to drive';
+    render();
+    setTimeout(() => {
+      status = '';
+      render();
+    }, 2500);
   } else if (what === 'level') {
     tiltLevel = (tiltLevel + 1) % TILT_LEVELS.length;
     save(TILT_LEVEL_KEY, String(tiltLevel));

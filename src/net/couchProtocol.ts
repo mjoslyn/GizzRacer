@@ -13,9 +13,9 @@ export const HELD = { brake: 1, drift: 2, item: 4, lookBack: 8 } as const;
 export const TAP = { drift: 1, item: 2 } as const;
 
 /** A phone's buttons off the race: the join screen's, pause, and on past the results. */
-export type PadAction = 'left' | 'right' | 'ready' | 'leave' | 'pause' | 'continue';
+export type PadAction = 'left' | 'right' | 'ready' | 'leave' | 'pause' | 'resume' | 'quit' | 'continue';
 /** What P1's phone's left and right change on the join screen: their racer, or one of the settings. */
-export type PadRow = 'racer' | 'cup' | 'engine' | 'cpus';
+export type PadRow = 'racer' | 'cup' | 'engine' | 'cpus' | 'sound';
 
 /** What the TV tells a phone about its seat. */
 export interface SeatInfo {
@@ -27,8 +27,10 @@ export interface SeatInfo {
   ready: boolean;
   /** What the TV is showing: the join screen, a race, or the screens between. */
   phase: 'join' | 'race' | 'results' | 'away';
+  /** The race is paused (by anyone): the phone shows its pause screen. */
+  paused: boolean;
   /** P1 picks for everyone: the cup, the speed and the CPUs, as their phone shows them. */
-  host: { cup: string; engine: string; cpus: string } | null;
+  host: { cup: string; engine: string; cpus: string; sound: string } | null;
 }
 
 export type TvToPad = SeatInfo | { t: 'buzz'; ms: number };
