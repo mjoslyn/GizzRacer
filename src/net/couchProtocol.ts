@@ -13,7 +13,7 @@ export const HELD = { brake: 1, drift: 2, item: 4, lookBack: 8 } as const;
 export const TAP = { drift: 1, item: 2 } as const;
 
 /** A phone's buttons off the race: the join screen's, pause, and on past the results. */
-export type PadAction = 'left' | 'right' | 'ready' | 'leave' | 'pause' | 'resume' | 'quit' | 'continue';
+export type PadAction = 'left' | 'right' | 'ready' | 'leave' | 'pause' | 'resume' | 'quit' | 'continue' | 'row';
 /** What P1's phone's left and right change on the join screen: their racer, or one of the settings. */
 export type PadRow = 'racer' | 'cup' | 'engine' | 'cpus' | 'sound';
 
@@ -37,7 +37,8 @@ export type TvToPad = SeatInfo | { t: 'buzz'; ms: number };
 
 export type CouchClientMsg =
   | { t: 'hello'; role: 'tv' }
-  | { t: 'hello'; role: 'pad'; id: string; name: string }
+  /** `controller`: a gamepad on the laptop, sent on to a cast (no touch screen: no touch steering help). */
+  | { t: 'hello'; role: 'pad'; id: string; name: string; controller?: boolean }
   | { t: 'in'; s: PadState }
   | { t: 'act'; a: PadAction; row?: PadRow }
   /** The TV to one phone. */
@@ -45,7 +46,7 @@ export type CouchClientMsg =
 
 export type CouchServerMsg =
   /** To the TV: a phone said hello (on every reconnect too). */
-  | { t: 'pad'; id: string; name: string }
+  | { t: 'pad'; id: string; name: string; controller: boolean }
   | { t: 'in'; id: string; s: PadState }
   | { t: 'act'; id: string; a: PadAction; row?: PadRow }
   /** To the TV: a phone's gone (closed, locked, out of signal). */

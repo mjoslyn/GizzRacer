@@ -59,6 +59,7 @@ import { Keyboard, SEAT_COLORS, SeatInput, remotePad, type RemotePad, type SeatS
 import { PartyScreen, partyCup, settingsText, type PartySeat, type PartySettings } from './ui/party';
 import { SeatHud } from './ui/seatHud';
 import { CouchHost } from './net/couch';
+import { CastPads } from './net/castPads';
 import { HELD, TAP, type PadAction, type PadRow, type PadState, type SeatInfo } from './net/couchProtocol';
 import { isRoomCode, makeRoomCode } from './net/protocol';
 import qrcode from 'qrcode-generator';
@@ -488,6 +489,8 @@ function partyAttract(s: PartySettings): void {
 /** Party mode's phones: the TV's connection (opened the first time the join screen shows), and the phones connected, by id, with their names. */
 let couch: CouchHost | null = null;
 const padNames = new Map<string, string>();
+/** The pads that are a laptop's controllers sent on to this cast, not phones. */
+const padControllers = new Set<string>();
 /** What each phone was last told, so it's only told again when something changes. */
 const padTold = new Map<string, string>();
 
@@ -499,10 +502,11 @@ function openCouch(code = makeRoomCode()): void {
   qr.addData(host.link);
   qr.make();
   party.phoneInfo = `<div class="party-qr">${qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true })}</div><div>Phones as controllers: scan, or open <u>${host.link.replace(/^https?:\/\//, '').replace(/\?.*$/, '')}</u> and enter <b>${host.code}</b></div>`;
-  host.onPad = (id, name) => {
+  host.onPad = (id, name, controller) => {
     padNames.set(id, name);
+    if (controller) padControllers.add(id);
     if (!remotes.has(id)) remotes.set(id, remotePad());
-    if (mode === 'party') party.joinRemote(id, name || undefined);
+    if (mode === 'party') party.joinRemote(id, name || undefined, controller);
     padTold.delete(id);
     // Answered at once, not just on the next frame: a TV tab in the background draws no frames.
     tellPads();
@@ -535,7 +539,7 @@ function applyPad(p: RemotePad, s: PadState): void {
 /** A phone's buttons off the road: the join screen's, pause, and on from the results. */
 function padAction(id: string, a: PadAction, row?: PadRow): void {
   if (mode === 'party') {
-    if (a === 'left' || a === 'right' || a === 'ready' || a === 'leave') party.remoteAction(id, a, row);
+    if (a === 'left' || a === 'right' || a === 'ready' || a === 'leave' || a === 'row') party.remoteAction(id, a, row);
   } else if (partyOn && mode === 'race' && (a === 'pause' || a === 'resume')) {
     if (!hud.confirmingRestart) requestPause(a === 'pause');
   } else if (partyOn && mode === 'race' && a === 'quit' && loop.paused) {
@@ -556,6 +560,9 @@ interface PresentationConnection extends EventTarget {
 }
 declare const PresentationRequest: { new (urls: string[]): { start(): Promise<PresentationConnection> } };
 let cast: PresentationConnection | null = null;
+/** Casting: this laptop's controllers, sent on to the TV as pads. */
+let castPads: CastPads | null = null;
+const laptopId = `laptop-${Math.random().toString(36).slice(2, 10)}`;
 const castCode = new URLSearchParams(location.search).get('party')?.toUpperCase() ?? null;
 
 function startCast(): void {
@@ -565,6 +572,7 @@ function startCast(): void {
     .start()
     .then((conn) => {
       cast = conn;
+      castPads = new CastPads(code, laptopId);
       setCastMute(true);
       couch?.close();
       couch = null;
@@ -575,6 +583,8 @@ function startCast(): void {
       const back = () => {
         if (cast !== conn) return;
         cast = null;
+        castPads?.close();
+        castPads = null;
         setCastMute(false);
         party.casting = false;
         openCouch(code);
@@ -776,7 +786,7 @@ function setMode(next: Mode): void {
   if (next === 'party') {
     if (!cast) openCouch(castCode && isRoomCode(castCode) ? castCode : undefined);
     // Phones that came while the TV was elsewhere join now.
-    for (const [id, name] of padNames) party.joinRemote(id, name || undefined);
+    for (const [id, name] of padNames) party.joinRemote(id, name || undefined, padControllers.has(id));
   }
   party.show(next === 'party');
   if (next !== 'story') storyScreen.show(null);
@@ -1308,7 +1318,9 @@ function step(dt: number): void {
     // A Party player on a phone gets the touch hand too.
     let touchSeat = false;
     for (const seat of seats) {
-      const onTouch = seat.input ? seat.input.source.kind === 'remote' : touch.enabled;
+      // A phone steers by touch; a controller sent on from the laptop doesn't.
+      const src = seat.input?.source;
+      const onTouch = src ? src.kind === 'remote' && !padControllers.has(src.id) : touch.enabled;
       seat.kart.assist = settings().smartSteering;
       seat.kart.assistLevel = onTouch ? ASSIST_TOUCH : ASSIST_NORMAL;
       touchSeat ||= onTouch;
@@ -2379,8 +2391,11 @@ function updateSeatHuds(): void {
 }
 
 const loop = new FixedLoop(step, (alpha, frameDt) => {
-  // Casting, the TV's page draws the game: this one stops drawing, so the laptop has only that to do.
-  if (cast) return;
+  // Casting, the TV's page draws the game: this one stops drawing, so the laptop has only that to do, and passing on its controllers.
+  if (cast) {
+    castPads?.tick(performance.now() / 1000);
+    return;
+  }
   // On a TV, blur reads worse than a dropped frame: the resolution drops only so far.
   if (resolution.limit(document.body.classList.contains('couch') ? 1 : RESOLUTION_SCALES.length - 1)) applyPixelRatio();
   if (resolution.sample(frameDt)) applyPixelRatio();
@@ -3016,6 +3031,11 @@ Object.assign(window, {
       partySeats = sources.slice(0, n).map((source, i) => ({ source, racer: RACERS[i], ready: true }));
       choice = { ...choice, mode: 'party' };
       startRace(true);
+    },
+    /** Sends this page's controllers to a Party code as a cast would, without casting (testing). */
+    castControllers(code: string) {
+      const pads = new CastPads(code, laptopId);
+      setInterval(() => pads.tick(performance.now() / 1000), 16);
     },
     /** Party mode's phones: their buttons as the TV last heard them (testing). */
     get pads() {

@@ -35,7 +35,7 @@ export class Couch extends Server<Env> {
       if (!id) return;
       conn.setState({ role: 'pad', id });
       send(conn, this.tvs().length ? { t: 'hastv' } : { t: 'notv' });
-      return this.toTv({ t: 'pad', id, name: cleanPadId(msg.name, 16) });
+      return this.toTv({ t: 'pad', id, name: cleanPadId(msg.name, 16), controller: msg.controller === true });
     }
     const me = conn.state;
     if (!me) return;

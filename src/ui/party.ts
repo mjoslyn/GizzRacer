@@ -15,6 +15,8 @@ export interface PartySeat {
   ready: boolean;
   /** A phone's player name, if it gave one. */
   name?: string;
+  /** A remote seat that's a controller on the laptop, sent on to a cast, not a phone. */
+  controller?: boolean;
 }
 
 /** What P1 sets for everyone: the cup raced as a Grand Prix, its speed, and how hard the CPUs drive. */
@@ -171,7 +173,7 @@ export class PartyScreen {
   }
 
   /** A phone joins (or rejoins under the same id). */
-  joinRemote(id: string, name?: string): boolean {
+  joinRemote(id: string, name?: string, controller = false): boolean {
     const src: SeatSource = { kind: 'remote', id };
     const i = this.find(src);
     if (i >= 0) {
@@ -179,16 +181,21 @@ export class PartyScreen {
       return true;
     }
     if (!this.join(src)) return false;
-    if (name) this.seats[this.seats.length - 1].name = name;
+    const seat = this.seats[this.seats.length - 1];
+    if (name) seat.name = name;
+    seat.controller = controller;
     this.render();
     return true;
   }
 
   /** A phone's buttons on the join screen: its racer, ready, leave; P1's phone sets a row too (`row`). */
-  remoteAction(id: string, act: 'left' | 'right' | 'ready' | 'leave', row: P1Row = 'racer'): void {
+  remoteAction(id: string, act: 'left' | 'right' | 'ready' | 'leave' | 'row', row: P1Row = 'racer'): void {
     const i = this.find({ kind: 'remote', id });
     if (i < 0) return;
-    if (act === 'left' || act === 'right') {
+    // A controller P1 moving between rows: marked on the screen, as for keys.
+    if (act === 'row') {
+      if (i === 0) this.p1Row = Math.max(0, P1_ROWS.indexOf(row));
+    } else if (act === 'left' || act === 'right') {
       const dir = act === 'left' ? -1 : 1;
       if (row === 'racer' || i !== 0) this.pick(i, dir);
       else this.set(row, dir);
@@ -297,7 +304,7 @@ export class PartyScreen {
     const cup = partyCup(st);
     const p1 = this.seats[0];
     // P1's rows are marked when they set them from keys or a controller (a phone has its own screen).
-    const on = (row: P1Row) => (p1 && p1.source.kind !== 'remote' && P1_ROWS[this.p1Row] === row ? ' on' : '');
+    const on = (row: P1Row) => (p1 && (p1.source.kind !== 'remote' || p1.controller) && P1_ROWS[this.p1Row] === row ? ' on' : '');
     const setting = (row: Exclude<P1Row, 'racer'>, label: string, value: string, extra = '') => `
       <div class="party-set${on(row)}">
         <span class="party-set-label">${label}</span>
@@ -308,7 +315,7 @@ export class PartyScreen {
       </div>`;
     const settings = `
       <div class="party-settings">
-        <div class="party-settings-head">${p1 ? `P1 picks${p1.source.kind === 'remote' ? ' on their phone' : ': &uarr;&darr; row, &larr;&rarr; change'}` : 'The first to join picks the cup'}</div>
+        <div class="party-settings-head">${p1 ? `P1 picks${p1.source.kind === 'remote' && !p1.controller ? ' on their phone' : ': &uarr;&darr; row, &larr;&rarr; change'}` : 'The first to join picks the cup'}</div>
         ${setting('cup', 'Cup', cup.name, `<div class="party-set-tracks">${cup.tracks.map((t) => esc(TRACK_LIST[t].name)).join(' &middot; ')}</div>`)}
         ${setting('engine', 'Speed', st.engine)}
         ${setting('cpus', 'CPUs', CPU_NAMES[st.cpus])}
@@ -320,10 +327,10 @@ export class PartyScreen {
       if (!s) {
         return `<div class="party-seat empty" style="--seat:${color}"><div class="party-p hud-big">P${i + 1}</div><div class="party-join">Scan to join, or press <b>Shift</b>, <b>Right Shift</b> or <b>A</b></div></div>`;
       }
-      const how = s.source.kind === 'keys' ? SEAT_KEY_NAMES[s.source.side] : s.source.kind === 'pad' ? 'Stick or d-pad · A hop · L item' : 'Tilt or drag to steer';
+      const how = s.source.kind === 'keys' ? SEAT_KEY_NAMES[s.source.side] : s.source.kind === 'pad' || s.controller ? 'Stick or d-pad · A hop · L item' : 'Tilt or drag to steer';
       return `<div class="party-seat${s.ready ? ' ready' : ''}" style="--seat:${color}">
         <div class="party-p hud-big">P${i + 1}</div>
-        <div class="party-src">${esc(s.name ? `${s.name} · ${sourceName(s.source)}` : sourceName(s.source))}</div>
+        <div class="party-src">${esc(s.controller ? `${s.name ?? 'Controller'} (laptop)` : s.name ? `${s.name} · ${sourceName(s.source)}` : sourceName(s.source))}</div>
         <div class="party-racer${i === 0 ? on('racer') : ''}">
           <button class="menu-arrow" data-seat="${i}" data-act="prev">&#9664;</button>
           <span class="party-name"><i style="background:${hex(s.racer.color)}"></i>${esc(s.racer.name)}</span>
@@ -341,7 +348,7 @@ export class PartyScreen {
       const html = `
         <div class="party-panel">
           <div class="party-title hud-big">PARTY <span class="party-beta">BETA</span></div>
-          <div class="party-status">Casting: the race is on the TV. Phones drive it; join and ready up there.</div>
+          <div class="party-status">Casting: the race is on the TV. Join with a phone, or press A on a controller paired with this laptop.</div>
           <div class="party-phones">${this.phoneInfo}</div>
           <div class="party-nav"><button data-party="back">&lsaquo; back</button><button data-party="cast">Stop casting</button></div>
         </div>`;

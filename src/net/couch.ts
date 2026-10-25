@@ -7,7 +7,7 @@ import type { CouchClientMsg, CouchServerMsg, PadAction, PadRow, PadState, TvToP
  * each phone's hello, buttons and leaving, and answering each one.
  */
 export class CouchHost {
-  onPad: (id: string, name: string) => void = () => {};
+  onPad: (id: string, name: string, controller: boolean) => void = () => {};
   onInput: (id: string, s: PadState) => void = () => {};
   onAction: (id: string, a: PadAction, row?: PadRow) => void = () => {};
   onGone: (id: string) => void = () => {};
@@ -43,7 +43,7 @@ export class CouchHost {
     } catch {
       return;
     }
-    if (msg.t === 'pad') this.onPad(msg.id, msg.name);
+    if (msg.t === 'pad') this.onPad(msg.id, msg.name, msg.controller === true);
     else if (msg.t === 'in') this.onInput(msg.id, msg.s);
     else if (msg.t === 'act') this.onAction(msg.id, msg.a, msg.row);
     else if (msg.t === 'gone') this.onGone(msg.id);
