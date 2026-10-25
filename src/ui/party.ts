@@ -1,5 +1,9 @@
 import { MAX_SEATS, PAD, SEAT_COLORS, SEAT_KEYS, SEAT_KEY_NAMES, connectedPads, sameSource, sourceName, type KeySide, type SeatSource } from '../core/seatInput';
-import { RACERS, type RacerDef } from '../physics/racers';
+import { CPU_DIFFICULTIES, type CpuDifficulty } from '../ai/cpuDriver';
+import { progress, unlocks } from '../core/progress';
+import { RACERS, type EngineClass, type RacerDef } from '../physics/racers';
+import { CUPS, RANDOM_CUP_ID, RANDOM_CUP_NAME, TRACK_LIST, randomCupTracks } from '../tracks/index';
+import { availableClasses } from './menu';
 
 const hex = (c: number) => `#${c.toString(16).padStart(6, '0')}`;
 
@@ -12,6 +16,30 @@ export interface PartySeat {
   name?: string;
 }
 
+/** What P1 sets for everyone: the cup raced as a Grand Prix, its speed, and how hard the CPUs drive. */
+export interface PartySettings {
+  /** An index into CUPS, or CUPS.length for the Random Cup (once unlocked). */
+  cup: number;
+  randomTracks: number[];
+  engine: EngineClass;
+  cpus: CpuDifficulty;
+}
+
+/** P1's rows on the join screen: their racer, then the settings. */
+export const P1_ROWS = ['racer', 'cup', 'engine', 'cpus'] as const;
+export type P1Row = (typeof P1_ROWS)[number];
+const CPU_NAMES: Record<CpuDifficulty, string> = { easy: 'Easy', normal: 'Normal', hard: 'Hard' };
+
+/** The cup P1 has picked: one of CUPS, or the Random Cup's draw. */
+export function partyCup(s: PartySettings): { id: string; name: string; tracks: number[] } {
+  return s.cup < CUPS.length ? CUPS[s.cup] : { id: RANDOM_CUP_ID, name: RANDOM_CUP_NAME, tracks: s.randomTracks };
+}
+
+/** The settings as P1's phone shows them. */
+export function settingsText(s: PartySettings): { cup: string; engine: string; cpus: string } {
+  return { cup: partyCup(s).name, engine: s.engine, cpus: CPU_NAMES[s.cpus] };
+}
+
 /** Seconds from everyone ready to the race. */
 const START_WAIT = 2;
 /** A stick pushed this far is a press left or right. */
@@ -20,12 +48,18 @@ const STICK_PRESS = 0.6;
 /**
  * Party mode's join screen: up to four players on one screen. Each joins
  * with their own controls (a half of the keyboard, a gamepad, or a phone),
- * picks a racer with left and right, and readies up; once everyone is
- * ready the race starts.
+ * picks a racer with left and right, and readies up. P1 also picks the cup
+ * (raced as a Grand Prix), the speed and the CPUs for everyone. Once
+ * everyone is ready the cup starts.
  */
 export class PartyScreen {
   seats: PartySeat[] = [];
   onStart: (seats: PartySeat[]) => void = () => {};
+  /** P1 changed a setting (the game shows the cup's first track behind the screen). */
+  onSettings: (s: PartySettings) => void = () => {};
+  settings: PartySettings;
+  /** The row P1's keys or controller are on. */
+  private p1Row = 0;
   onBack: () => void = () => {};
   /** The Cast button: shown where the browser can cast a page (Chrome); `casting` while it is. */
   onCast: (() => void) | null = null;
@@ -34,7 +68,7 @@ export class PartyScreen {
   phoneInfo = '';
   private readonly el = document.createElement('div');
   /** Each gamepad's buttons and stick last frame, for presses. */
-  private readonly padWas = new Map<number, { buttons: boolean[]; stick: number }>();
+  private readonly padWas = new Map<number, { buttons: boolean[]; stick: number; stickY: number }>();
   private startAt: number | null = null;
   private lastHtml = '';
 
@@ -42,7 +76,9 @@ export class PartyScreen {
     parent: HTMLElement,
     /** The racer picked in the menu: the first player's to start with. */
     private readonly preferred: () => RacerDef,
+    initial: PartySettings,
   ) {
+    this.settings = { ...initial };
     this.el.className = 'party';
     parent.appendChild(this.el);
     this.el.addEventListener('click', (e) => this.click(e.target as HTMLElement));
@@ -75,8 +111,10 @@ export class PartyScreen {
       if (i < 0) {
         if (ok) this.join(src);
         else continue;
-      } else if (k.left.includes(code)) this.pick(i, -1);
-      else if (k.right.includes(code)) this.pick(i, 1);
+      } else if (k.left.includes(code)) this.change(i, -1);
+      else if (k.right.includes(code)) this.change(i, 1);
+      else if (i === 0 && k.up.includes(code)) this.moveRow(-1);
+      else if (i === 0 && k.brake.includes(code)) this.moveRow(1);
       else if (ok) this.toggleReady(i);
       else if (k.lookBack.includes(code)) this.leave(i);
       else continue;
@@ -95,9 +133,11 @@ export class PartyScreen {
       if (!pad?.connected) return;
       const buttons = pad.buttons.map((b) => b.pressed);
       const x = pad.axes[0] ?? 0;
+      const y = pad.axes[1] ?? 0;
       const stick = x > STICK_PRESS ? 1 : x < -STICK_PRESS ? -1 : 0;
+      const stickY = y > STICK_PRESS ? 1 : y < -STICK_PRESS ? -1 : 0;
       const was = this.padWas.get(index);
-      this.padWas.set(index, { buttons, stick });
+      this.padWas.set(index, { buttons, stick, stickY });
       if (!was) return;
       const pressed = (b: number) => buttons[b] && !was.buttons[b];
       const src: SeatSource = { kind: 'pad', index };
@@ -108,7 +148,9 @@ export class PartyScreen {
         return;
       }
       const dir = (pressed(PAD.dRight) ? 1 : 0) - (pressed(PAD.dLeft) ? 1 : 0) || (stick !== was.stick ? stick : 0);
-      if (dir) this.pick(i, dir);
+      if (dir) this.change(i, dir);
+      const row = (pressed(PAD.dDown) ? 1 : 0) - (pressed(PAD.dUp) ? 1 : 0) || (stickY !== was.stickY ? stickY : 0);
+      if (row && i === 0) this.moveRow(row);
       if (pressed(PAD.a)) this.toggleReady(i);
       if (pressed(PAD.start)) this.readyAll();
       if (pressed(PAD.b)) this.leave(i);
@@ -138,12 +180,15 @@ export class PartyScreen {
     return true;
   }
 
-  /** A phone's buttons on the join screen. */
-  remoteAction(id: string, act: 'left' | 'right' | 'ready' | 'leave'): void {
+  /** A phone's buttons on the join screen: its racer, ready, leave; P1's phone sets a row too (`row`). */
+  remoteAction(id: string, act: 'left' | 'right' | 'ready' | 'leave', row: P1Row = 'racer'): void {
     const i = this.find({ kind: 'remote', id });
     if (i < 0) return;
-    if (act === 'left' || act === 'right') this.pick(i, act === 'left' ? -1 : 1);
-    else if (act === 'ready') this.toggleReady(i);
+    if (act === 'left' || act === 'right') {
+      const dir = act === 'left' ? -1 : 1;
+      if (row === 'racer' || i !== 0) this.pick(i, dir);
+      else this.set(row, dir);
+    } else if (act === 'ready') this.toggleReady(i);
     else this.leave(i);
     this.render();
   }
@@ -170,6 +215,34 @@ export class PartyScreen {
 
   private leave(i: number): void {
     this.seats.splice(i, 1);
+    if (i === 0) this.p1Row = 0;
+  }
+
+  /** Left or right for a seat: P1's on the row they're on, everyone else's racer. */
+  private change(i: number, dir: number): void {
+    const row = i === 0 ? P1_ROWS[this.p1Row] : 'racer';
+    if (row === 'racer') this.pick(i, dir);
+    else this.set(row, dir);
+  }
+
+  private moveRow(dir: number): void {
+    this.p1Row = (this.p1Row + dir + P1_ROWS.length) % P1_ROWS.length;
+  }
+
+  /** P1 changes a setting. Settled once everyone's ready: no changing the cup under them. */
+  private set(row: Exclude<P1Row, 'racer'>, dir: number): void {
+    if (this.seats[0]?.ready) return;
+    const s = this.settings;
+    const step = <T>(list: readonly T[], v: T) => list[(list.indexOf(v) + dir + list.length) % list.length];
+    if (row === 'cup') {
+      // The cups, then the Random Cup once a trophy has unlocked it: four new tracks each time it comes round.
+      const n = CUPS.length + (unlocks(progress()).randomCup ? 1 : 0);
+      s.cup = (s.cup + dir + n) % n;
+      if (s.cup === CUPS.length) s.randomTracks = randomCupTracks();
+    } else if (row === 'engine') s.engine = step(availableClasses(), s.engine);
+    else s.cpus = step(CPU_DIFFICULTIES, s.cpus);
+    for (const x of this.seats) x.ready = false;
+    this.onSettings({ ...s });
   }
 
   /** The next racer no one else has, that way. */
@@ -200,6 +273,8 @@ export class PartyScreen {
     if (b.dataset.party === 'cast') return this.onCast?.();
     if (b.dataset.party === 'go') this.readyAll();
     if (b.dataset.party === 'keys') this.join({ kind: 'keys', side: this.find({ kind: 'keys', side: 'left' }) < 0 ? 'left' : 'right' });
+    const setting = b.dataset.set as Exclude<P1Row, 'racer'> | undefined;
+    if (setting) this.set(setting, Number(b.dataset.dir));
     const i = Number(b.dataset.seat);
     if (b.dataset.seat !== undefined && this.seats[i]) {
       const act = b.dataset.act;
@@ -213,6 +288,26 @@ export class PartyScreen {
 
   private render(force = false): void {
     if (!this.visible && !force) return;
+    const st = this.settings;
+    const cup = partyCup(st);
+    const p1 = this.seats[0];
+    // P1's rows are marked when they set them from keys or a controller (a phone has its own screen).
+    const on = (row: P1Row) => (p1 && p1.source.kind !== 'remote' && P1_ROWS[this.p1Row] === row ? ' on' : '');
+    const setting = (row: Exclude<P1Row, 'racer'>, label: string, value: string, extra = '') => `
+      <div class="party-set${on(row)}">
+        <span class="party-set-label">${label}</span>
+        <button class="menu-arrow" data-set="${row}" data-dir="-1">&#9664;</button>
+        <span class="party-set-value">${esc(value)}</span>
+        <button class="menu-arrow" data-set="${row}" data-dir="1">&#9654;</button>
+        ${extra}
+      </div>`;
+    const settings = `
+      <div class="party-settings">
+        <div class="party-settings-head">${p1 ? `P1 picks${p1.source.kind === 'remote' ? ' on their phone' : ': &uarr;&darr; row, &larr;&rarr; change'}` : 'The first to join picks the cup'}</div>
+        ${setting('cup', 'Cup', cup.name, `<div class="party-set-tracks">${cup.tracks.map((t) => esc(TRACK_LIST[t].name)).join(' &middot; ')}</div>`)}
+        ${setting('engine', 'Speed', st.engine)}
+        ${setting('cpus', 'CPUs', CPU_NAMES[st.cpus])}
+      </div>`;
     const cards = Array.from({ length: MAX_SEATS }, (_, i) => {
       const s = this.seats[i];
       const color = SEAT_COLORS[i];
@@ -223,7 +318,7 @@ export class PartyScreen {
       return `<div class="party-seat${s.ready ? ' ready' : ''}" style="--seat:${color}">
         <div class="party-p hud-big">P${i + 1}</div>
         <div class="party-src">${esc(s.name ? `${s.name} · ${sourceName(s.source)}` : sourceName(s.source))}</div>
-        <div class="party-racer">
+        <div class="party-racer${i === 0 ? on('racer') : ''}">
           <button class="menu-arrow" data-seat="${i}" data-act="prev">&#9664;</button>
           <span class="party-name"><i style="background:${hex(s.racer.color)}"></i>${esc(s.racer.name)}</span>
           <button class="menu-arrow" data-seat="${i}" data-act="next">&#9654;</button>
@@ -248,16 +343,19 @@ export class PartyScreen {
       return;
     }
     const html = `
-      <div class="party-panel">
+      <div class="party-panel party-main">
+        <div class="party-phones">${this.phoneInfo}</div>
+        <div class="party-side">
         <div class="party-title hud-big">PARTY</div>
+        ${settings}
         <div class="party-status">${status}</div>
         <div class="party-seats">${cards}</div>
-        <div class="party-phones">${this.phoneInfo}</div>
         <div class="party-nav">
           <button data-party="back">&lsaquo; back</button>
           ${this.seats.length < MAX_SEATS && !this.casting ? '<button data-party="keys">+ keyboard player</button>' : ''}
           ${this.onCast ? `<button data-party="cast">${this.casting ? 'Stop casting' : 'Cast to TV'}</button>` : ''}
           <button class="party-go hud-big" data-party="go"${this.seats.length ? '' : ' disabled'}>RACE!</button>
+        </div>
         </div>
       </div>`;
     if (html === this.lastHtml) return;

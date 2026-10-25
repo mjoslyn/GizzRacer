@@ -194,7 +194,7 @@ export class Menu {
     else if (code === 'Enter' || code === 'Space') return this.next(), true;
     else if (code === 'Backspace' || code === 'Escape') return this.back(), true;
     else if (code === 'KeyR' && this.choice.mode !== 'online') return this.randomRacer(), true;
-    else if (code === 'KeyT' && (this.choice.mode === 'single' || this.choice.mode === 'infinite' || this.choice.mode === 'party')) return this.randomTrack(), true;
+    else if (code === 'KeyT' && (this.choice.mode === 'single' || this.choice.mode === 'infinite')) return this.randomTrack(), true;
     else return false;
     this.render();
     return true;
@@ -204,8 +204,8 @@ export class Menu {
   private steps(): MenuStep[] {
     const m = this.choice.mode;
     if (m === 'skills') return this.choice.skill === 'deadstick' ? ['mode', 'track', 'racer', 'engine'] : ['mode', 'track', 'engine'];
-    // Party: each player picks a racer on the join screen.
-    if (m === 'party') return ['mode', 'track', 'engine'];
+    // Party: straight to the join screen, where each player picks a racer and P1 the cup and speed.
+    if (m === 'party') return ['mode'];
     return m === 'online' || m === 'story' ? ['mode', 'racer', 'engine'] : ['mode', 'track', 'racer', 'engine'];
   }
 
@@ -401,7 +401,7 @@ export class Menu {
           line('generative', 'Gen tracks', gen.toUpperCase(), `<div class="menu-cup-tracks">${GENERATIVE_BLURBS[gen]}</div>`, true) +
           line('switch', 'Switch tracks', SWITCH_NAMES[String(sw)], `<div class="menu-cup-tracks">${how}</div>`, true);
       } else {
-        body = line('track', 'Track', `${TRACK_LIST[c.track].name}${c.mode === 'single' || c.mode === 'party' ? DICE('data-random-track', 'Random track (T)') : ''}`, `${this.bestLine(TRACK_LIST[c.track].id)}<div class="menu-cup-tracks">${c.track + 1} of ${TRACK_LIST.length}</div>`);
+        body = line('track', 'Track', `${TRACK_LIST[c.track].name}${c.mode === 'single' ? DICE('data-random-track', 'Random track (T)') : ''}`, `${this.bestLine(TRACK_LIST[c.track].id)}<div class="menu-cup-tracks">${c.track + 1} of ${TRACK_LIST.length}</div>`);
       }
     } else if (at === 'racer') {
       const color = `#${c.racer.color.toString(16).padStart(6, '0')}`;

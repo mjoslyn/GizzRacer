@@ -49,17 +49,17 @@ import { DynamicResolution } from './render/resolution';
 import { RacerGallery } from './render/gallery';
 import { flareRingTexture, glowTexture, setTextureAnisotropy } from './render/textures';
 import { WATER_LEVEL, buildTrackView, type TrackView } from './render/trackView';
-import { TRACK_LIST, randomCupTracks } from './tracks/index';
+import { CUPS, TRACK_LIST, randomCupTracks } from './tracks/index';
 import { findBends, nextBend, type Bend } from './tracks/turns';
 import { pointAt } from './tracks/spline';
 import { GEN_COMPLEXITY_MAX, GEN_LENGTHS, GEN_THEMES, generateTrack, trackId, type GenParams } from './tracks/generator';
 import { Track, inPit, type TrackDef } from './tracks/track';
 import { Hud, SURGE_HOP_WINDOW, formatTime, type Callout, type HudData, type Table, type TableAction, type TableRow } from './ui/hud';
 import { Keyboard, SEAT_COLORS, SeatInput, remotePad, type RemotePad, type SeatSource } from './core/seatInput';
-import { PartyScreen, type PartySeat } from './ui/party';
+import { PartyScreen, partyCup, settingsText, type PartySeat, type PartySettings } from './ui/party';
 import { SeatHud } from './ui/seatHud';
 import { CouchHost } from './net/couch';
-import { HELD, TAP, type PadAction, type PadState, type SeatInfo } from './net/couchProtocol';
+import { HELD, TAP, type PadAction, type PadRow, type PadState, type SeatInfo } from './net/couchProtocol';
 import { isRoomCode, makeRoomCode } from './net/protocol';
 import qrcode from 'qrcode-generator';
 import { seatPan, splitFov, splitRects } from './render/split';
@@ -317,6 +317,8 @@ let frozen = false;
 let lastInput: InputFrame = NEUTRAL_INPUT;
 let musicMuted = false;
 let sfxMuted = false;
+/** Casting to a TV (Cast to TV): the TV plays the sound, so this device keeps quiet. */
+let castMuted = false;
 /** A Nonagon Infinity is in earshot of you when it's this close (m). */
 const SURGE_WARN = 120;
 const snapshots = new Map<RaceKart, KartState>();
@@ -426,7 +428,9 @@ const menu = new Menu(
       story = null;
       practice = null;
       infiniteGen = null;
-      return setMode('party');
+      setMode('party');
+      partyAttract(party.settings);
+      return;
     }
     gp = c.mode === 'grandPrix' ? new GrandPrix(defaultGrid(c.racer, fieldSeed), chosenCup(c).tracks) : null;
     story = c.mode === 'story' ? new StoryRun(fieldSeed) : null;
@@ -460,8 +464,18 @@ let netTicks = 0;
 /** When I last asked the room to use my item (its answer takes a round trip). */
 let itemSentAt = -Infinity;
 const lobby = new LobbyScreen(document.body, () => choice.racer);
-const party = new PartyScreen(document.body, () => choice.racer);
+const party = new PartyScreen(document.body, () => choice.racer, { cup: Math.min(choice.cup, CUPS.length - 1), randomTracks: choice.randomTracks, engine: choice.engine, cpus: settings().cpuDifficulty });
 party.onBack = () => setMode('menu');
+party.onSettings = (s) => {
+  updateSettings({ cpuDifficulty: s.cpus });
+  partyAttract(s);
+};
+
+/** Behind the join screen, CPUs race the first track of P1's cup. */
+function partyAttract(s: PartySettings): void {
+  const first = TRACK_LIST[partyCup(s).tracks[0]];
+  if (mode === 'party' && track.def.id !== first.id) loadTrack(first);
+}
 
 /** Party mode's phones: the TV's connection (opened the first time the join screen shows), and the phones connected, by id, with their names. */
 let couch: CouchHost | null = null;
@@ -482,9 +496,14 @@ function openCouch(code = makeRoomCode()): void {
     if (!remotes.has(id)) remotes.set(id, remotePad());
     if (mode === 'party') party.joinRemote(id, name || undefined);
     padTold.delete(id);
+    // Answered at once, not just on the next frame: a TV tab in the background draws no frames.
+    tellPads();
   };
   host.onInput = (id, s) => applyPad(remotes.get(id) ?? remotes.set(id, remotePad()).get(id)!, s);
-  host.onAction = padAction;
+  host.onAction = (id, a, row) => {
+    padAction(id, a, row);
+    tellPads();
+  };
   // A phone that's gone lets go of everything; its seat waits for it to come back.
   host.onGone = (id) => {
     remotes.set(id, remotePad());
@@ -506,12 +525,12 @@ function applyPad(p: RemotePad, s: PadState): void {
 }
 
 /** A phone's buttons off the road: the join screen's, pause, and on from the results. */
-function padAction(id: string, a: PadAction): void {
+function padAction(id: string, a: PadAction, row?: PadRow): void {
   if (mode === 'party') {
-    if (a !== 'pause' && a !== 'continue') party.remoteAction(id, a);
+    if (a !== 'pause' && a !== 'continue') party.remoteAction(id, a, row);
   } else if (partyOn && mode === 'race' && a === 'pause') {
     if (!hud.confirmingRestart) requestPause(!loop.paused);
-  } else if (partyOn && mode === 'results' && a === 'continue') {
+  } else if (partyOn && (mode === 'results' || mode === 'standings' || mode === 'podium') && a === 'continue') {
     advance();
   }
 }
@@ -536,6 +555,7 @@ function startCast(): void {
     .start()
     .then((conn) => {
       cast = conn;
+      setCastMute(true);
       couch?.close();
       couch = null;
       padNames.clear();
@@ -545,6 +565,7 @@ function startCast(): void {
       const back = () => {
         if (cast !== conn) return;
         cast = null;
+        setCastMute(false);
         party.casting = false;
         openCouch(code);
         party.show(mode === 'party');
@@ -556,6 +577,13 @@ function startCast(): void {
     .catch(() => {});
 }
 
+/** Quiet here while the TV plays the sound; back to Settings' volumes once the cast ends. */
+function setCastMute(on: boolean): void {
+  castMuted = on;
+  music.setVolume(on ? 0 : settings().music * MUSIC_LEVEL);
+  sfx.setVolume(on ? 0 : settings().sfx);
+}
+
 function stopCast(): void {
   cast?.terminate();
 }
@@ -565,11 +593,12 @@ if ('PresentationRequest' in window && !castCode) party.onCast = () => (cast ? s
 /** Tells each phone its seat and what the TV is showing, when that changes. */
 function tellPads(): void {
   if (!couch || cast) return;
-  const phase: SeatInfo['phase'] = mode === 'party' ? 'join' : partyOn && mode === 'race' ? 'race' : partyOn && mode === 'results' ? 'results' : 'away';
+  const between = mode === 'results' || mode === 'standings' || mode === 'podium';
+  const phase: SeatInfo['phase'] = mode === 'party' ? 'join' : partyOn && mode === 'race' ? 'race' : partyOn && between ? 'results' : 'away';
   for (const id of padNames.keys()) {
     const n = party.remoteSeat(id);
     const seat = n >= 0 ? party.seats[n] : null;
-    const info: SeatInfo = { t: 'seat', n: seat ? n : null, racer: seat?.racer.name ?? '', color: seat ? SEAT_COLORS[n] : '', ready: seat?.ready ?? false, phase };
+    const info: SeatInfo = { t: 'seat', n: seat ? n : null, racer: seat?.racer.name ?? '', color: seat ? SEAT_COLORS[n] : '', ready: seat?.ready ?? false, phase, host: n === 0 ? settingsText(party.settings) : null };
     const text = JSON.stringify(info);
     if (padTold.get(id) === text) continue;
     padTold.set(id, text);
@@ -586,6 +615,13 @@ party.onStart = (joined) => {
   partySeats = joined;
   // A phone's buttons start from nothing held each race.
   for (const p of joined) if (p.source.kind === 'remote') remotes.set(p.source.id, remotePad());
+  // P1's cup, raced as a Grand Prix: the players side by side on the first grid, then the standings reversed.
+  const s = party.settings;
+  updateSettings({ cpuDifficulty: s.cpus });
+  choice = { ...choice, engine: s.engine };
+  fieldSeed = Math.floor(Math.random() * 2 ** 31);
+  gp = new GrandPrix(partyGrid(joined.map((p) => p.racer), fieldSeed), partyCup(s).tracks);
+  gpSongRace = false;
   startRace(true);
 };
 const storyScreen = new StoryScreen(document.body);
@@ -669,8 +705,8 @@ onSettings((s) => {
     resolution.reset();
   }
   applyPixelRatio();
-  music.setVolume(s.music * MUSIC_LEVEL);
-  sfx.setVolume(s.sfx);
+  music.setVolume(castMuted ? 0 : s.music * MUSIC_LEVEL);
+  sfx.setVolume(castMuted ? 0 : s.sfx);
   touch.setTiltMode(s.tilt);
 });
 // Android allows the sensor straight away; iPhones need a tap (see touchend below).
@@ -2437,6 +2473,8 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
   const splitView = split() && intro === 0;
   document.body.classList.toggle('split', splitView);
   document.body.classList.toggle('split-3', splitView && seats.length === 3);
+  // Party on the TV: big type for the room (hud.css, body.couch).
+  document.body.classList.toggle('couch', mode === 'party' || partyOn);
   if (split()) updateSeatHuds();
   // Heat haze shimmers hardest on the straights; the kaleidoscope runs on the player's final lap.
   const straight = 1 - clamp(track.main.maxCurvature(f.progressS, f.progressS + 80) * 25, 0, 1);
@@ -2469,6 +2507,11 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
 /** The podium's extra line: the trophy and what it unlocked. */
 let cupNote = '';
 
+/** A Party player's seat label ('P2') for a racer, or '' for a CPU. */
+function humanLabel(r: RacerDef): string {
+  return partyOn ? (seats.find((s) => s.kart.racer === r)?.label ?? '') : '';
+}
+
 /** The panel for the results, cup standings and podium screens. */
 function table(): Table | null {
   const kartRow = (k: RaceKart, i: number): TableRow => ({
@@ -2487,11 +2530,11 @@ function table(): Table | null {
       .slice(0, n)
       .map((e, i): TableRow => ({
         place: ordinal(i + 1),
-        name: e.racer.name,
+        name: humanLabel(e.racer) ? `${humanLabel(e.racer)} · ${e.racer.name}` : e.racer.name,
         color: hex(e.racer.color),
         value: `${e.points} pts`,
         extra: [mode === 'standings' && e.gained ? `+${e.gained}` : '', gp!.rivals.includes(e.racer) ? 'RIVAL' : ''].filter(Boolean).join(' ') || undefined,
-        player: e.racer === choice.racer,
+        player: partyOn ? !!humanLabel(e.racer) : e.racer === choice.racer,
       }));
   if (mode === 'results') {
     const title = online ? `ROOM ${online.client.code} RESULTS` : story ? `${story.actDef.chapter.toUpperCase()} · ${story.race.boss ? 'BOSS DUEL' : `RACE ${story.race.index + 1}`}` : gp ? `RACE ${gp.round + 1}/${gp.tracks.length} RESULTS` : choice.mode === 'timeTrial' ? 'TIME TRIAL' : partyOn ? 'PARTY RESULTS' : 'RESULTS';
@@ -2505,7 +2548,7 @@ function table(): Table | null {
   if (mode === 'podium' && gp) {
     const champ = gp.standings()[0];
     const me = gp.standings().findIndex((e) => e.racer === choice.racer) + 1;
-    const note = `${champ.racer === choice.racer ? `You win the ${chosenCup(choice).name}!` : `You finished ${ordinal(me)}`}${cupNote ? ` · ${cupNote}` : ''}`;
+    const note = partyOn ? `${humanLabel(champ.racer) ? `${humanLabel(champ.racer)} wins` : 'The CPUs take'} the ${partyCup(party.settings).name}!` : `${champ.racer === choice.racer ? `You win the ${chosenCup(choice).name}!` : `You finished ${ordinal(me)}`}${cupNote ? ` · ${cupNote}` : ''}`;
     return { kind: 'podium', title: `${champ.racer.name.toUpperCase()} WINS!`, note, rows: cupRows(3) };
   }
   return null;
@@ -2647,8 +2690,11 @@ function toMenu(): void {
 
 /** Party mode: back to the join screen, the players still there, with the attract race behind it. */
 function toParty(): void {
+  gp = null;
+  endPodium();
   setMode('party');
   startRace(false);
+  partyAttract(party.settings);
 }
 
 function startPodium(): void {
@@ -2688,7 +2734,7 @@ function advance(): boolean {
     backToLobby();
     return true;
   }
-  if (mode === 'results' && partyOn) {
+  if (mode === 'results' && partyOn && !gp) {
     toParty();
     return true;
   }
@@ -2701,19 +2747,22 @@ function advance(): boolean {
       toMenu();
       return true;
     }
-    gp.record(finishOrder().map((k) => k.racer), choice.racer);
+    // Party mode has no one player to pick rivals for.
+    gp.record(finishOrder().map((k) => k.racer), partyOn ? undefined : choice.racer);
     setMode('standings');
     return true;
   }
   if (mode === 'standings') {
     if (gp?.finished) {
-      cupNote = finishCup();
+      // A party's cup is no one player's record.
+      cupNote = partyOn ? '' : finishCup();
       startPodium();
     } else startRace(true);
     return true;
   }
   if (mode === 'podium') {
-    toMenu();
+    if (partyOn) toParty();
+    else toMenu();
     return true;
   }
   return false;

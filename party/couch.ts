@@ -41,7 +41,7 @@ export class Couch extends Server<Env> {
     if (!me) return;
     if (me.role === 'pad') {
       if (msg.t === 'in' && validState(msg.s)) this.toTv({ t: 'in', id: me.id, s: msg.s });
-      else if (msg.t === 'act' && typeof msg.a === 'string') this.toTv({ t: 'act', id: me.id, a: msg.a });
+      else if (msg.t === 'act' && typeof msg.a === 'string') this.toTv({ t: 'act', id: me.id, a: msg.a, row: typeof msg.row === 'string' ? msg.row : undefined });
       return;
     }
     if (msg.t === 'to') {

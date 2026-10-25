@@ -28,7 +28,11 @@ export class TiltSteering {
   /** A real reading has arrived (desktops send none, or one with nulls). */
   private sensed = false;
 
-  constructor(private readonly input: InputManager) {
+  constructor(
+    private readonly input: InputManager,
+    /** Degrees of turn for full lock, if not Settings' (the phone controller has its own). */
+    private readonly range: (() => number) | null = null,
+  ) {
     window.addEventListener('deviceorientation', (e) => {
       if (e.beta !== null) this.sensed = true;
       this.orientation(e);
@@ -96,7 +100,7 @@ export class TiltSteering {
     if (d < -180) d += 360;
     const mag = Math.max(0, Math.abs(d) - DEADZONE);
     const s = settings();
-    const steer = (Math.sign(d) * mag * side * (s.tiltInvert ? -1 : 1)) / s.tiltRange;
+    const steer = (Math.sign(d) * mag * side * (s.tiltInvert ? -1 : 1)) / (this.range?.() ?? s.tiltRange);
     this.input.touch.tilt = Math.max(-1, Math.min(1, steer));
     this.input.touch.tiltPitch = e.gamma === null ? 0 : this.pitchFrom(e.gamma, side);
   }

@@ -21,6 +21,6 @@ export const MODE_BLURBS: Record<RaceMode, string> = {
   timeTrial: 'Alone against the clock, the ghosts and the leaderboard',
   generator: 'A track made on the spot: the daily, your saved ones, or a new roll',
   infinite: 'Laps without end, one track or a new one every few laps, generated if you like: race, or sit back and watch the CPUs to the music',
-  party: 'Up to four on one screen, split: controllers, both halves of the keyboard, or phones as controllers',
+  party: 'Up to four on one screen, split, racing a cup P1 picks: controllers, both halves of the keyboard, or phones as controllers',
   online: 'Race friends with a room code',
 };

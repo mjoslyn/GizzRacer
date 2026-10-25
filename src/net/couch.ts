@@ -1,5 +1,5 @@
 import PartySocket from 'partysocket';
-import type { CouchClientMsg, CouchServerMsg, PadAction, PadState, TvToPad } from './couchProtocol';
+import type { CouchClientMsg, CouchServerMsg, PadAction, PadRow, PadState, TvToPad } from './couchProtocol';
 
 /**
  * The TV's end of Party mode's phones (docs/MULTIPLAYER.md section 12):
@@ -9,7 +9,7 @@ import type { CouchClientMsg, CouchServerMsg, PadAction, PadState, TvToPad } fro
 export class CouchHost {
   onPad: (id: string, name: string) => void = () => {};
   onInput: (id: string, s: PadState) => void = () => {};
-  onAction: (id: string, a: PadAction) => void = () => {};
+  onAction: (id: string, a: PadAction, row?: PadRow) => void = () => {};
   onGone: (id: string) => void = () => {};
   private readonly socket: PartySocket;
 
@@ -45,7 +45,7 @@ export class CouchHost {
     }
     if (msg.t === 'pad') this.onPad(msg.id, msg.name);
     else if (msg.t === 'in') this.onInput(msg.id, msg.s);
-    else if (msg.t === 'act') this.onAction(msg.id, msg.a);
+    else if (msg.t === 'act') this.onAction(msg.id, msg.a, msg.row);
     else if (msg.t === 'gone') this.onGone(msg.id);
   }
 }

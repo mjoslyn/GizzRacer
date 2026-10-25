@@ -14,6 +14,8 @@ export const TAP = { drift: 1, item: 2 } as const;
 
 /** A phone's buttons off the race: the join screen's, pause, and on past the results. */
 export type PadAction = 'left' | 'right' | 'ready' | 'leave' | 'pause' | 'continue';
+/** What P1's phone's left and right change on the join screen: their racer, or one of the settings. */
+export type PadRow = 'racer' | 'cup' | 'engine' | 'cpus';
 
 /** What the TV tells a phone about its seat. */
 export interface SeatInfo {
@@ -25,6 +27,8 @@ export interface SeatInfo {
   ready: boolean;
   /** What the TV is showing: the join screen, a race, or the screens between. */
   phase: 'join' | 'race' | 'results' | 'away';
+  /** P1 picks for everyone: the cup, the speed and the CPUs, as their phone shows them. */
+  host: { cup: string; engine: string; cpus: string } | null;
 }
 
 export type TvToPad = SeatInfo | { t: 'buzz'; ms: number };
@@ -33,7 +37,7 @@ export type CouchClientMsg =
   | { t: 'hello'; role: 'tv' }
   | { t: 'hello'; role: 'pad'; id: string; name: string }
   | { t: 'in'; s: PadState }
-  | { t: 'act'; a: PadAction }
+  | { t: 'act'; a: PadAction; row?: PadRow }
   /** The TV to one phone. */
   | { t: 'to'; id: string; m: TvToPad };
 
@@ -41,7 +45,7 @@ export type CouchServerMsg =
   /** To the TV: a phone said hello (on every reconnect too). */
   | { t: 'pad'; id: string; name: string }
   | { t: 'in'; id: string; s: PadState }
-  | { t: 'act'; id: string; a: PadAction }
+  | { t: 'act'; id: string; a: PadAction; row?: PadRow }
   /** To the TV: a phone's gone (closed, locked, out of signal). */
   | { t: 'gone'; id: string }
   /** To a phone: from the TV. */

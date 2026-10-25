@@ -298,3 +298,71 @@ button:active {
     grid-row: 3;
   }
 }
+
+/* P1's settings on the join screen: the cup, the speed, the CPUs. */
+.pad-sets {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.pad-set {
+  display: grid;
+  grid-template-columns: 64px 44px 1fr 44px;
+  gap: 8px;
+  align-items: center;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.pad-set-label {
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-align: left;
+}
+
+.pad-set button {
+  padding: 8px 0;
+  font-size: 13px;
+}
+
+.pad-tilts {
+  display: flex;
+  gap: 12px;
+}
+
+/* The join screen: your racer and READY on one side, P1's picks and the steering on the other (stacked when upright). */
+.pad-join {
+  width: min(860px, calc(100vw - 24px));
+}
+
+.pad-join-main,
+.pad-join-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+@media (orientation: landscape) {
+  .pad-join {
+    flex-direction: row;
+    align-items: center;
+    gap: 24px;
+    padding-top: 30px;
+  }
+  .pad-join-main,
+  .pad-join-side {
+    flex: 1;
+    min-width: 0;
+  }
+  .pad-join .pad-p {
+    font-size: 44px;
+  }
+  .pad-join .pad-big {
+    padding: 10px 32px;
+  }
+}
