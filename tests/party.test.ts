@@ -91,3 +91,12 @@ describe('party seats', () => {
     expect(other.sample().steer).toBe(0);
   });
 });
+
+describe('party phones', () => {
+  it("a phone's id and name are kept short and plain", async () => {
+    const { cleanPadId } = await import('../src/net/couchProtocol');
+    expect(cleanPadId('ab<script>cd', 40)).toBe('abscriptcd');
+    expect(cleanPadId('x'.repeat(50), 16)).toHaveLength(16);
+    expect(cleanPadId(42, 16)).toBe('');
+  });
+});

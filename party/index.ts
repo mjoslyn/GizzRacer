@@ -1,5 +1,6 @@
 import { routePartykitRequest } from 'partyserver';
 
+export { Couch } from './couch';
 export { Players } from './players';
 export { Records } from './records';
 export { Room } from './room';

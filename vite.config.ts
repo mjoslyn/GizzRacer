@@ -5,8 +5,8 @@ export default defineConfig({
   build: {
     // three.js alone is ~550 kB minified.
     chunkSizeWarningLimit: 800,
-    // The game, and its manual (manual.html, served at /manual).
-    rollupOptions: { input: { main: 'index.html', manual: 'manual.html' } },
+    // The game, its manual (manual.html, served at /manual), and the phone controller for Party mode (pad.html).
+    rollupOptions: { input: { main: 'index.html', manual: 'manual.html', pad: 'pad.html' } },
   },
   server: {
     // `wrangler dev` runs the PartyKit servers on 8787 (npm run dev:party).

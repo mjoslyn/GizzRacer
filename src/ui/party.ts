@@ -27,6 +27,9 @@ export class PartyScreen {
   seats: PartySeat[] = [];
   onStart: (seats: PartySeat[]) => void = () => {};
   onBack: () => void = () => {};
+  /** The Cast button: shown where the browser can cast a page (Chrome); `casting` while it is. */
+  onCast: (() => void) | null = null;
+  casting = false;
   /** The phones' corner: how to join from one (the room code, the link), set by the game once a room is open. */
   phoneInfo = '';
   private readonly el = document.createElement('div');
@@ -63,6 +66,7 @@ export class PartyScreen {
       this.onBack();
       return true;
     }
+    if (this.casting) return false;
     for (const side of ['left', 'right'] as KeySide[]) {
       const k = SEAT_KEYS[side];
       const src: SeatSource = { kind: 'keys', side };
@@ -84,6 +88,8 @@ export class PartyScreen {
 
   /** Every frame while showing: the gamepads (A joins and readies, B leaves, left and right pick), and the start. */
   poll(now: number): void {
+    // Casting, the race is the TV's: nothing joins or starts here.
+    if (this.casting) return;
     const pads = connectedPads();
     pads.forEach((pad, index) => {
       if (!pad?.connected) return;
@@ -191,6 +197,7 @@ export class PartyScreen {
     const b = t.closest<HTMLElement>('[data-seat], [data-party]');
     if (!b) return;
     if (b.dataset.party === 'back') return this.onBack();
+    if (b.dataset.party === 'cast') return this.onCast?.();
     if (b.dataset.party === 'go') this.readyAll();
     if (b.dataset.party === 'keys') this.join({ kind: 'keys', side: this.find({ kind: 'keys', side: 'left' }) < 0 ? 'left' : 'right' });
     const i = Number(b.dataset.seat);
@@ -229,6 +236,17 @@ export class PartyScreen {
     const all = this.seats.length > 0 && this.seats.every((s) => s.ready);
     const left = this.startAt !== null ? Math.max(0, Math.ceil(this.startAt - performance.now() / 1000)) : null;
     const status = !this.seats.length ? 'Join to race: up to four on this screen' : all ? `Starting${left ? ` in ${left}` : ''}...` : 'Pick a racer, then press hop (or A) when you are ready';
+    if (this.casting) {
+      const html = `
+        <div class="party-panel">
+          <div class="party-title hud-big">PARTY</div>
+          <div class="party-status">Casting: the race is on the TV. Phones drive it; join and ready up there.</div>
+          <div class="party-phones">${this.phoneInfo}</div>
+          <div class="party-nav"><button data-party="back">&lsaquo; back</button><button data-party="cast">Stop casting</button></div>
+        </div>`;
+      if (html !== this.lastHtml) this.el.innerHTML = this.lastHtml = html;
+      return;
+    }
     const html = `
       <div class="party-panel">
         <div class="party-title hud-big">PARTY</div>
@@ -237,7 +255,8 @@ export class PartyScreen {
         <div class="party-phones">${this.phoneInfo}</div>
         <div class="party-nav">
           <button data-party="back">&lsaquo; back</button>
-          ${this.seats.length < MAX_SEATS ? '<button data-party="keys">+ keyboard player</button>' : ''}
+          ${this.seats.length < MAX_SEATS && !this.casting ? '<button data-party="keys">+ keyboard player</button>' : ''}
+          ${this.onCast ? `<button data-party="cast">${this.casting ? 'Stop casting' : 'Cast to TV'}</button>` : ''}
           <button class="party-go hud-big" data-party="go"${this.seats.length ? '' : ' disabled'}>RACE!</button>
         </div>
       </div>`;

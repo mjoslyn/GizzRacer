@@ -58,6 +58,10 @@ import { Hud, SURGE_HOP_WINDOW, formatTime, type Callout, type HudData, type Tab
 import { Keyboard, SEAT_COLORS, SeatInput, remotePad, type RemotePad, type SeatSource } from './core/seatInput';
 import { PartyScreen, type PartySeat } from './ui/party';
 import { SeatHud } from './ui/seatHud';
+import { CouchHost } from './net/couch';
+import { HELD, TAP, type PadAction, type PadState, type SeatInfo } from './net/couchProtocol';
+import { isRoomCode, makeRoomCode } from './net/protocol';
+import qrcode from 'qrcode-generator';
 import { seatPan, splitFov, splitRects } from './render/split';
 import { deleteSaved, findSaved, saveTrack, savedTracks } from './core/savedTracks';
 import { DAILY_SLOT, Menu, SKILL_LEVELS, SONG_SWITCH_LAPS, chosenCup, newSeed, racesToSongEnd, type MenuChoice } from './ui/menu';
@@ -458,6 +462,126 @@ let itemSentAt = -Infinity;
 const lobby = new LobbyScreen(document.body, () => choice.racer);
 const party = new PartyScreen(document.body, () => choice.racer);
 party.onBack = () => setMode('menu');
+
+/** Party mode's phones: the TV's connection (opened the first time the join screen shows), and the phones connected, by id, with their names. */
+let couch: CouchHost | null = null;
+const padNames = new Map<string, string>();
+/** What each phone was last told, so it's only told again when something changes. */
+const padTold = new Map<string, string>();
+
+/** Opens the code phones join with (a new one, or the one handed over to a cast), and puts it (a QR code, the link and the code) on the join screen. */
+function openCouch(code = makeRoomCode()): void {
+  if (couch) return;
+  const host = (couch = new CouchHost(code));
+  const qr = qrcode(0, 'M');
+  qr.addData(host.link);
+  qr.make();
+  party.phoneInfo = `<div class="party-qr">${qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true })}</div><div>Phones as controllers: scan, or open <u>${host.link.replace(/^https?:\/\//, '').replace(/\?.*$/, '')}</u> and enter <b>${host.code}</b></div>`;
+  host.onPad = (id, name) => {
+    padNames.set(id, name);
+    if (!remotes.has(id)) remotes.set(id, remotePad());
+    if (mode === 'party') party.joinRemote(id, name || undefined);
+    padTold.delete(id);
+  };
+  host.onInput = (id, s) => applyPad(remotes.get(id) ?? remotes.set(id, remotePad()).get(id)!, s);
+  host.onAction = padAction;
+  // A phone that's gone lets go of everything; its seat waits for it to come back.
+  host.onGone = (id) => {
+    remotes.set(id, remotePad());
+    padNames.delete(id);
+    padTold.delete(id);
+  };
+}
+
+/** A phone's packed state onto its seat's buttons. */
+function applyPad(p: RemotePad, s: PadState): void {
+  p.steer = clamp(s[0], -1, 1);
+  p.pitch = clamp(s[1], -1, 1);
+  p.brake = (s[2] & HELD.brake) !== 0;
+  p.drift = (s[2] & HELD.drift) !== 0;
+  p.item = (s[2] & HELD.item) !== 0;
+  p.lookBack = (s[2] & HELD.lookBack) !== 0;
+  p.driftTap ||= (s[3] & TAP.drift) !== 0;
+  p.itemTap ||= (s[3] & TAP.item) !== 0;
+}
+
+/** A phone's buttons off the road: the join screen's, pause, and on from the results. */
+function padAction(id: string, a: PadAction): void {
+  if (mode === 'party') {
+    if (a !== 'pause' && a !== 'continue') party.remoteAction(id, a);
+  } else if (partyOn && mode === 'race' && a === 'pause') {
+    if (!hud.confirmingRestart) requestPause(!loop.paused);
+  } else if (partyOn && mode === 'results' && a === 'continue') {
+    advance();
+  }
+}
+
+/**
+ * Cast to TV (Chrome, with the Presentation API): the game opens again on
+ * the Chromecast, straight into Party under this code, and the phones move
+ * over to it. This page lets go of the code meanwhile (one TV to a code),
+ * and takes it back when the cast ends.
+ */
+interface PresentationConnection extends EventTarget {
+  terminate(): void;
+}
+declare const PresentationRequest: { new (urls: string[]): { start(): Promise<PresentationConnection> } };
+let cast: PresentationConnection | null = null;
+const castCode = new URLSearchParams(location.search).get('party')?.toUpperCase() ?? null;
+
+function startCast(): void {
+  const code = couch?.code ?? makeRoomCode();
+  const url = `${location.origin}${location.pathname}?party=${code}`;
+  new PresentationRequest([url])
+    .start()
+    .then((conn) => {
+      cast = conn;
+      couch?.close();
+      couch = null;
+      padNames.clear();
+      padTold.clear();
+      party.casting = true;
+      party.show(mode === 'party');
+      const back = () => {
+        if (cast !== conn) return;
+        cast = null;
+        party.casting = false;
+        openCouch(code);
+        party.show(mode === 'party');
+      };
+      conn.addEventListener('terminate', back);
+      conn.addEventListener('close', back);
+    })
+    // Picked nothing, or no device: nothing changes.
+    .catch(() => {});
+}
+
+function stopCast(): void {
+  cast?.terminate();
+}
+
+if ('PresentationRequest' in window && !castCode) party.onCast = () => (cast ? stopCast() : startCast());
+
+/** Tells each phone its seat and what the TV is showing, when that changes. */
+function tellPads(): void {
+  if (!couch || cast) return;
+  const phase: SeatInfo['phase'] = mode === 'party' ? 'join' : partyOn && mode === 'race' ? 'race' : partyOn && mode === 'results' ? 'results' : 'away';
+  for (const id of padNames.keys()) {
+    const n = party.remoteSeat(id);
+    const seat = n >= 0 ? party.seats[n] : null;
+    const info: SeatInfo = { t: 'seat', n: seat ? n : null, racer: seat?.racer.name ?? '', color: seat ? SEAT_COLORS[n] : '', ready: seat?.ready ?? false, phase };
+    const text = JSON.stringify(info);
+    if (padTold.get(id) === text) continue;
+    padTold.set(id, text);
+    couch.tell(id, info);
+  }
+}
+
+/** A short buzz on a Party player's phone (Android: iPhones don't vibrate for the web). */
+function buzz(seat: Seat, ms: number): void {
+  const src = seat.input?.source;
+  if (src?.kind === 'remote') couch?.tell(src.id, { t: 'buzz', ms });
+}
 party.onStart = (joined) => {
   partySeats = joined;
   // A phone's buttons start from nothing held each race.
@@ -603,6 +727,11 @@ function setMode(next: Mode): void {
   hud.showTitle(next === 'title');
   menu.show(next === 'menu');
   lobby.show(next === 'lobby');
+  if (next === 'party') {
+    if (!cast) openCouch(castCode && isRoomCode(castCode) ? castCode : undefined);
+    // Phones that came while the TV was elsewhere join now.
+    for (const [id, name] of padNames) party.joinRemote(id, name || undefined);
+  }
   party.show(next === 'party');
   if (next !== 'story') storyScreen.show(null);
   if (next !== 'skill') skillScreen.stop();
@@ -1295,6 +1424,7 @@ function seatStep(seat: Seat, ev: StepEvents, dt: number): void {
       seatFlash(seat, HIT_TEXT[e.by]);
       sfx.hurt(e.by);
       if (HIT_TEXT[e.by]) seatBite(seat);
+      buzz(seat, 160);
       if (e.by !== 'tempoShift' && e.by !== 'bassDrop') c.bump(0.5);
       if (e.by === 'bassDrop') c.bump(1.2);
       if (item && e.from) seatCallout(seat, { from: who(e.from, seat), to: 'you', by: item, kind: 'took' });
@@ -1856,6 +1986,7 @@ function playerSounds(seat: Seat, ev: StepEvents): void {
   if (p.laps.lap !== heard.lap) {
     if (p.finishTime !== null) {
       sfx.finish();
+      buzz(seat, 400);
       if (seat.hud) seatFlash(seat, `FINISH! ${ordinal(p.position)}`);
     } else if (p.laps.lap > heard.lap) {
       const final = p.laps.lap === race.laps - 1;
@@ -2202,6 +2333,7 @@ function updateSeatHuds(): void {
 const loop = new FixedLoop(step, (alpha, frameDt) => {
   if (resolution.sample(frameDt)) applyPixelRatio();
   if (mode === 'party') party.poll(performance.now() / 1000);
+  tellPads();
   // A Party player's Start (every seat's checked, so none is left pending).
   const seatPause = seats.map((x) => x.input?.consumePause() ?? false).some(Boolean);
   if ((input.consumePause() || seatPause) && mode === 'race') {
@@ -2820,6 +2952,10 @@ Object.assign(window, {
       choice = { ...choice, mode: 'party' };
       startRace(true);
     },
+    /** Party mode's phones: their buttons as the TV last heard them (testing). */
+    get pads() {
+      return Object.fromEntries(remotes);
+    },
     get seats() {
       return seats.map((x) => ({ label: x.label, racer: x.kart.racer.id, lap: x.kart.laps.lap, place: x.kart.position, finished: x.kart.finishTime !== null }));
     },
@@ -2837,6 +2973,12 @@ Object.assign(window, {
 });
 
 loadTrack(TRACK_LIST[choice.track]);
-setMode('title');
+if (castCode && isRoomCode(castCode)) {
+  // Opened on a TV by Cast to TV: straight to Party's join screen under the code the phones have. No one's here to press a key, so the sound starts as it may.
+  menu.choice.mode = choice.mode = 'party';
+  document.body.classList.add('cast');
+  setMode('party');
+  music.unlock();
+} else setMode('title');
 loop.start();
 

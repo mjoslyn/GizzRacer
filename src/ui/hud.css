@@ -3148,6 +3148,21 @@ body:not([data-mode='party']) .party {
   display: none;
 }
 
+.party-phones {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  text-align: left;
+}
+
+.party-qr svg {
+  display: block;
+  width: 112px;
+  height: 112px;
+  background: #fff;
+  box-shadow: 0 0 0 3px #ffd23a, 0 0 0 6px #3a0f45;
+}
+
 .party-phones b {
   color: #fff27a;
   letter-spacing: 4px;

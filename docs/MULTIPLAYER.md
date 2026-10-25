@@ -33,6 +33,7 @@ The game itself stays a static site and can be hosted anywhere (Netlify, Cloudfl
 | `trials` | leaderboard (`rattlesnake-run.100cc.v3`) | runs table, ghosts, top-N cache |
 | `players` | single instance (`global`) | guest identities and display names |
 | `records` | leaderboard (`race.rattlesnake-run.100cc.v11`, `cup.nonagon.150cc.v11`) | best full-race time per player, or best cup result |
+| `couch` | Party mode's phone code (`KZRT`) | nothing: passes phones' buttons to the TV and the TV's word back (section 12) |
 
 Code lives in `party/` (server) and `src/net/` (client), sharing `src/core`, `src/physics`, `src/items`, `src/tracks` and `src/ai`.
 
@@ -210,3 +211,13 @@ Even many races a day should stay within or near Cloudflare's free and entry tie
 - **Public or private:** public leaderboards mean name moderation; the spec's open question on public release still stands.
 - **Identity:** guest identities are tied to one browser. Is an export code enough, or is real sign-in wanted later?
 - **Ghost access:** may anyone download any top-50 ghost, or only the top 10?
+
+## 12. Party mode's phones
+
+Party mode (split screen on one device, `src/ui/party.ts`) can take phones as controllers. No game runs on a phone: it's a pad.
+
+- **Code:** the TV (the device showing the game) opens a `couch` party under a fresh room-style code the first time the Party join screen shows, and puts the code, the link and a QR code on that screen. A phone opens `pad.html?c=CODE` (`src/pad.ts`), or types the code there.
+- **Messages** (`src/net/couchProtocol.ts`): a phone says hello with a stable id (kept in its browser) and an optional name; the TV joins it to a seat. While racing, the phone sends what's held as `[steer, pitch, held flags, taps]` about 30 times a second when it changes, and every 0.5 s anyway; taps carry presses shorter than a send. The TV tells each phone its seat (number, racer, ready, what the TV shows) when that changes, and buzzes it on a hit or the finish (Android only).
+- **Server** (`party/couch.ts`): a relay. It keeps no state beyond which connection is the TV; a phone leaving is passed on as `gone`, and its seat waits for it (its buttons let go).
+- **Steering:** drag on the phone's left half (up and down pitch the glider), or tilt (`src/ui/tilt.ts`, recentred at each race start). Phones get the touch steering assist and the CPUs' touch pace.
+- **Cast to TV** (Chrome, the Presentation API): the game opens on the Chromecast at `/?party=CODE`, straight into Party under the same code, and the laptop lets go of the code until the cast ends. Keyboard and controller players stay on the laptop's own screen, so a cast race is driven by phones. Elsewhere, cast the tab from the browser's menu instead.
