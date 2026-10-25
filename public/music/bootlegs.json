@@ -3576,7 +3576,7 @@
    "date": "2017-03-31",
    "venue": "Webster Hall",
    "seconds": 349,
-   "start": 8.5,
+   "start": 22.0,
    "gain": 1
   },
   {
@@ -3585,7 +3585,7 @@
    "date": "2019-07-12",
    "venue": "Thebarton Theatre",
    "seconds": 484,
-   "start": 0,
+   "start": 4.0,
    "gain": 0.5
   },
   {
@@ -3594,7 +3594,7 @@
    "date": "2021-04-22",
    "venue": "The Enmore Theatre",
    "seconds": 339,
-   "start": 0,
+   "start": 3.0,
    "gain": -3.5
   },
   {
@@ -3603,7 +3603,7 @@
    "date": "2022-05-22",
    "venue": "Mr. Smalls Theatre",
    "seconds": 638,
-   "start": 0,
+   "start": 5.5,
    "gain": 13.5
   },
   {
@@ -3621,7 +3621,7 @@
    "date": "2024-09-14",
    "venue": "The Gorge Amphitheater",
    "seconds": 422,
-   "start": 4.2,
+   "start": 3.5,
    "gain": 3.5
   },
   {
@@ -3657,7 +3657,7 @@
    "date": "2026-08-14",
    "venue": "Field of Vision II, Buena Vista, CO",
    "seconds": 505,
-   "start": 0,
+   "start": 3.5,
    "gain": 3
   },
   {
@@ -3686,7 +3686,7 @@
    "date": "2017-04-01",
    "venue": "Webster Hall- New York, NY",
    "seconds": 386,
-   "start": 0,
+   "start": 3.5,
    "gain": 11
   },
   {
@@ -3695,7 +3695,7 @@
    "date": "2017-09-28",
    "venue": "One Eyed Jacks",
    "seconds": 353,
-   "start": 70.6,
+   "start": 2.5,
    "gain": 8
   },
   {
@@ -3704,7 +3704,7 @@
    "date": "2018-06-01",
    "venue": "The Observatory North Park",
    "seconds": 294,
-   "start": 0,
+   "start": 3.5,
    "gain": 11
   },
   {
@@ -3713,7 +3713,7 @@
    "date": "2018-06-14",
    "venue": "Royale",
    "seconds": 400,
-   "start": 0,
+   "start": 4.5,
    "gain": 10
   },
   {
@@ -3731,7 +3731,7 @@
    "date": "2019-07-12",
    "venue": "Thebarton Theatre",
    "seconds": 197,
-   "start": 32.3,
+   "start": 26.0,
    "gain": 3.5
   },
   {
@@ -3859,7 +3859,7 @@
    "date": "2022-10-31",
    "venue": "The Criterion, Oklahoma",
    "seconds": 245,
-   "start": 2.2,
+   "start": 67.5,
    "gain": 7
   },
   {
@@ -3886,7 +3886,7 @@
    "date": "2025-05-19",
    "venue": "Coliseu dos Recreios",
    "seconds": 283,
-   "start": 0,
+   "start": 31.5,
    "gain": 2
   },
   {
@@ -3906,7 +3906,7 @@
    "date": "2026-08-15",
    "venue": "Field of Vision II, Buena Vista, CO",
    "seconds": 829,
-   "start": 0,
+   "start": 3.5,
    "gain": 8
   },
   {
@@ -3915,7 +3915,7 @@
    "date": "2026-08-16",
    "venue": "Meadow Creek",
    "seconds": 829,
-   "start": 0,
+   "start": 3.5,
    "gain": 11
   },
   {
@@ -3924,7 +3924,7 @@
    "date": "2026-08-21",
    "venue": "Forest Hills Stadium",
    "seconds": 622,
-   "start": 0,
+   "start": 17.0,
    "gain": 2.5
   }
  ],
@@ -3935,7 +3935,7 @@
    "date": "2023-06-07",
    "venue": "Red Rocks Amphitheatre",
    "seconds": 456,
-   "start": 0,
+   "start": 3.0,
    "gain": -1
   },
   {
@@ -3944,7 +3944,7 @@
    "date": "2024-05-22",
    "venue": "Stadtpark Open Air",
    "seconds": 610,
-   "start": 8.7,
+   "start": 0,
    "gain": 7.5
   },
   {
@@ -3953,7 +3953,7 @@
    "date": "2024-08-15",
    "venue": "The Anthem, Washington DC, USA",
    "seconds": 728,
-   "start": 8.6,
+   "start": 0,
    "gain": 0
   },
   {
@@ -3962,7 +3962,7 @@
    "date": "2024-08-25",
    "venue": "Megacorp Pavilion",
    "seconds": 654,
-   "start": 8.3,
+   "start": 0,
    "gain": -1.5
   },
   {
@@ -3971,7 +3971,7 @@
    "date": "2024-09-03",
    "venue": "Minneapolis Armory",
    "seconds": 554,
-   "start": 11,
+   "start": 1.5,
    "gain": 0
   },
   {
@@ -3980,7 +3980,7 @@
    "date": "2024-09-09",
    "venue": "Red Rocks Amphitheatre",
    "seconds": 661,
-   "start": 9.3,
+   "start": 0,
    "gain": 1
   },
   {
@@ -3989,7 +3989,7 @@
    "date": "2024-11-03",
    "venue": "Vina Robles Amphitheatre",
    "seconds": 543,
-   "start": 8.4,
+   "start": 0,
    "gain": -0.5
   },
   {
@@ -3998,7 +3998,7 @@
    "date": "2024-11-13",
    "venue": "JJ's Live",
    "seconds": 593,
-   "start": 10.4,
+   "start": 0,
    "gain": -0.5
   },
   {
@@ -4007,7 +4007,7 @@
    "date": "2025-05-23",
    "venue": "Plaza Mayor de El Poble Espanyol",
    "seconds": 696,
-   "start": 8.8,
+   "start": 0,
    "gain": -1
   },
   {
@@ -4016,7 +4016,7 @@
    "date": "2025-06-05",
    "venue": "Lycabettus Theatre",
    "seconds": 676,
-   "start": 8.5,
+   "start": 0,
    "gain": 0
   },
   {
@@ -4025,7 +4025,7 @@
    "date": "2025-08-17",
    "venue": "Field of Vision at Meadow Creek",
    "seconds": 722,
-   "start": 8.7,
+   "start": 0,
    "gain": 0
   },
   {
@@ -4034,7 +4034,7 @@
    "date": "2025-12-13",
    "venue": "Sidney Myer Music Bowl, Melbourne, VIC, Australia",
    "seconds": 454,
-   "start": 0,
+   "start": 1.5,
    "gain": -0.5
   }
  ],
@@ -4135,7 +4135,7 @@
    "date": "2025-11-02",
    "venue": "Electric Brixton, London, England, United Kingdom",
    "seconds": 772,
-   "start": 0,
+   "start": 16.5,
    "gain": 5.5
   },
   {
@@ -4191,7 +4191,7 @@
    "date": "2023-08-15",
    "venue": "E-Werk",
    "seconds": 895,
-   "start": 61.5,
+   "start": 56.5,
    "gain": 7
   },
   {
@@ -4200,7 +4200,7 @@
    "date": "2024-05-29",
    "venue": "The Civic Hall",
    "seconds": 628,
-   "start": 28.9,
+   "start": 19.0,
    "gain": 10
   },
   {
@@ -4218,7 +4218,7 @@
    "date": "2024-11-02",
    "venue": "Rady Shell",
    "seconds": 655,
-   "start": 0,
+   "start": 28.0,
    "gain": 8.5
   },
   {
@@ -4245,7 +4245,7 @@
    "date": "2025-08-08",
    "venue": "Ford Amphitheater",
    "seconds": 636,
-   "start": 0,
+   "start": 5.5,
    "gain": 8.5
   },
   {
@@ -4254,7 +4254,7 @@
    "date": "2026-08-14",
    "venue": "Field of Vision II, Buena Vista, CO",
    "seconds": 608,
-   "start": 0,
+   "start": 3.5,
    "gain": 6
   }
  ]
