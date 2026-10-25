@@ -1,5 +1,5 @@
 /** The picker's modes, named and described: here so the picker and the manual (manual.ts) say the same. */
-export type RaceMode = 'grandPrix' | 'story' | 'skills' | 'single' | 'timeTrial' | 'generator' | 'infinite' | 'online';
+export type RaceMode = 'grandPrix' | 'story' | 'skills' | 'single' | 'timeTrial' | 'generator' | 'infinite' | 'party' | 'online';
 
 export const MODE_NAMES: Record<RaceMode, string> = {
   grandPrix: 'Grand Prix',
@@ -9,6 +9,7 @@ export const MODE_NAMES: Record<RaceMode, string> = {
   timeTrial: 'Time Trial',
   generator: 'Track Generator',
   infinite: 'Infinite',
+  party: 'Party',
   online: 'Online',
 };
 
@@ -20,5 +21,6 @@ export const MODE_BLURBS: Record<RaceMode, string> = {
   timeTrial: 'Alone against the clock, the ghosts and the leaderboard',
   generator: 'A track made on the spot: the daily, your saved ones, or a new roll',
   infinite: 'Laps without end, one track or a new one every few laps, generated if you like: race, or sit back and watch the CPUs to the music',
+  party: 'Up to four on one screen, split: controllers, both halves of the keyboard, or phones as controllers',
   online: 'Race friends with a room code',
 };

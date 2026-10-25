@@ -10,10 +10,13 @@ import type { ItemKind } from '../items/items';
 export class Sfx {
   private out: GainNode | null = null;
   /** One-shot effects ride louder than the engine bed. */
-  private shots: GainNode | null = null;
+  private mainShots: GainNode | null = null;
   private noise: AudioBuffer | null = null;
-  private engine: Engine | null = null;
-  private screech: Screech | null = null;
+  /** Engine and tire voices: one for the solo player, one per seat in Party mode. */
+  private readonly voices: { engine: Engine; screech: Screech; bus: GainNode; pan: StereoPannerNode; panned: boolean }[] = [];
+  /** Party mode: the one-shots of a seat lean to its side of the screen (see `at`). */
+  private panning = 0;
+  private readonly panShots = new Map<number, GainNode>();
   private hum: { osc: OscillatorNode; osc2: OscillatorNode; gain: GainNode } | null = null;
   private wind: { gain: GainNode; bp: BiquadFilterNode } | null = null;
   private alarmWait = 0;
@@ -48,9 +51,9 @@ export class Sfx {
       const makeup = ctx.createGain();
       makeup.gain.value = 1.6;
       this.out.connect(comp).connect(makeup).connect(ctx.destination);
-      this.shots = ctx.createGain();
-      this.shots.gain.value = 5;
-      this.shots.connect(this.out);
+      this.mainShots = ctx.createGain();
+      this.mainShots.gain.value = 5;
+      this.mainShots.connect(this.out);
       this.noise = whiteNoise(ctx);
       this.wooLoad = fetch('sfx/woo.mp3')
         .then((r) => r.arrayBuffer())
@@ -77,13 +80,69 @@ export class Sfx {
    * speed is a 0..1 fraction of top speed; `screech` 0..1 is how hard the
    * tires are sliding (drifts, hard turns).
    */
-  updateEngine(level: number, speed: number, boosting: boolean, drifting: boolean, screech = 0): void {
+  updateEngine(level: number, speed: number, boosting: boolean, drifting: boolean, screech = 0, voice = 0, pan = 0): void {
     const ctx = this.ctx;
     if (!ctx) return;
-    this.engine ??= new Engine(ctx, this.out!);
-    this.engine.set(ctx, level, speed, boosting, drifting);
-    this.screech ??= new Screech(ctx, this.out!, this.noise!);
-    this.screech.set(ctx, level * screech, speed);
+    const v = this.voice(ctx, voice, pan);
+    v.engine.set(ctx, level, speed, boosting, drifting);
+    v.screech.set(ctx, level * screech, speed);
+  }
+
+  /** Silences the engine voices from `from` on (Party mode's seats, once the party's over). */
+  quietEngines(from: number): void {
+    const ctx = this.context();
+    if (!ctx) return;
+    for (let i = from; i < this.voices.length; i++) {
+      this.voices[i].engine.set(ctx, 0, 0, false, false);
+      this.voices[i].screech.set(ctx, 0, 0);
+    }
+  }
+
+  /** An engine voice, made the first time it's asked for; off centre, it goes through a panner. */
+  private voice(ctx: AudioContext, i: number, pan: number) {
+    while (this.voices.length <= i) {
+      const bus = ctx.createGain();
+      const p = ctx.createStereoPanner();
+      p.connect(this.out!);
+      bus.connect(this.out!);
+      this.voices.push({ engine: new Engine(ctx, bus), screech: new Screech(ctx, bus, this.noise!), bus, pan: p, panned: false });
+    }
+    const v = this.voices[i];
+    const panned = pan !== 0;
+    if (panned !== v.panned) {
+      // Straight out when centred: a panner would take a mono voice down 3 dB.
+      v.bus.disconnect();
+      v.bus.connect(panned ? v.pan : this.out!);
+      v.panned = panned;
+    }
+    if (panned) v.pan.pan.value = pan;
+    return v;
+  }
+
+  /** Plays what `play` sounds leaning `pan` (-1 left .. 1 right): a Party seat's own sounds. */
+  at(pan: number, play: () => void): void {
+    this.panning = pan;
+    try {
+      play();
+    } finally {
+      this.panning = 0;
+    }
+  }
+
+  /** Where one-shots go: the main bus, or a seat's panned one. */
+  private get shots(): GainNode | null {
+    const ctx = this.ctx;
+    if (!ctx || this.panning === 0) return this.mainShots;
+    let bus = this.panShots.get(this.panning);
+    if (!bus) {
+      bus = ctx.createGain();
+      bus.gain.value = 5;
+      const p = ctx.createStereoPanner();
+      p.pan.value = this.panning;
+      bus.connect(p).connect(this.out!);
+      this.panShots.set(this.panning, bus);
+    }
+    return bus;
   }
 
   countdown(go: boolean): void {

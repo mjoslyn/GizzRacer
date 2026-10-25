@@ -40,7 +40,7 @@ import { DRIFT_TIERS, PHYSICS_VERSION, copyKartState, createKartState, driftTier
 import { FIELD_SIZE, RACERS, pickRivals, type RacerDef } from './physics/racers';
 import type { HazardKind } from './items/hazards';
 import { ITEMS, type ItemHolder, type ItemKind } from './items/items';
-import { ChaseCamera, type CameraPlacement } from './render/chaseCamera';
+import { ChaseCamera, DEFAULT_PLACEMENT, type CameraPlacement } from './render/chaseCamera';
 import { HazardsView, ItemsView } from './render/itemViews';
 import { KartView, setDustColor } from './render/kartView';
 import { DETAIL_SPEC, setGraphicsDetail } from './render/detail';
@@ -54,7 +54,11 @@ import { findBends, nextBend, type Bend } from './tracks/turns';
 import { pointAt } from './tracks/spline';
 import { GEN_COMPLEXITY_MAX, GEN_LENGTHS, GEN_THEMES, generateTrack, trackId, type GenParams } from './tracks/generator';
 import { Track, inPit, type TrackDef } from './tracks/track';
-import { Hud, formatTime, type HudData, type Table, type TableAction, type TableRow } from './ui/hud';
+import { Hud, SURGE_HOP_WINDOW, formatTime, type Callout, type HudData, type Table, type TableAction, type TableRow } from './ui/hud';
+import { Keyboard, SEAT_COLORS, SeatInput, remotePad, type RemotePad, type SeatSource } from './core/seatInput';
+import { PartyScreen, type PartySeat } from './ui/party';
+import { SeatHud } from './ui/seatHud';
+import { seatPan, splitFov, splitRects } from './render/split';
 import { deleteSaved, findSaved, saveTrack, savedTracks } from './core/savedTracks';
 import { DAILY_SLOT, Menu, SKILL_LEVELS, SONG_SWITCH_LAPS, chosenCup, newSeed, racesToSongEnd, type MenuChoice } from './ui/menu';
 import { SaveTrackPanel } from './ui/saveTrack';
@@ -149,9 +153,10 @@ const INTRO_TIME = 4.5;
  * results -> standings -> next race, and after the last one -> podium.
  * Story goes results -> story (a card: a boon, a retry, the next chapter) -> next stage;
  * a skill game is played in 'skill' (or, the Deadstick Landing, in 'race').
+ * Party mode goes menu -> party (the join screen) -> race -> results -> party.
  * Behind the title and the menu, CPUs race the chosen track as an attract mode.
  */
-type Mode = 'title' | 'menu' | 'race' | 'results' | 'standings' | 'podium' | 'lobby' | 'story' | 'skill';
+type Mode = 'title' | 'menu' | 'race' | 'results' | 'standings' | 'podium' | 'lobby' | 'story' | 'skill' | 'party';
 let mode: Mode = 'title';
 
 let choice: MenuChoice = {
@@ -230,8 +235,6 @@ let style: StyleMeter | null = null;
 /** Time Trial: the gap to the ghost at each checkpoint passed, and the last checkpoint seen. */
 let splits: { label: string; gap: number }[] = [];
 let lastCheckpoint = -1;
-/** The shortcut the player was last on, so a new one is noticed once. */
-let lastBranch = -1;
 /** The race's records have been written (once per race, when the player finishes). */
 let raceRecorded = false;
 /** The player's times and places through the cup in progress, for its record. */
@@ -310,13 +313,78 @@ let frozen = false;
 let lastInput: InputFrame = NEUTRAL_INPUT;
 let musicMuted = false;
 let sfxMuted = false;
-/** What the player's kart was doing last tick, to turn changes into sounds. */
-const heard = { count: 0, lap: 0, tier: 0, rolling: false };
 /** A Nonagon Infinity is in earshot of you when it's this close (m). */
 const SURGE_WARN = 120;
-/** Seconds the player has been driving against the track. */
-let wrongWay = 0;
 const snapshots = new Map<RaceKart, KartState>();
+
+/**
+ * A human at the wheel: the solo player, or one of Party mode's players.
+ * Each has its own controls, camera, callouts and sounds (leaning to its
+ * side of the screen). With more than one the screen splits
+ * (render/split.ts) and each gets a SeatHud; one alone has the whole
+ * screen, the full HUD and the main camera, as a solo race does.
+ */
+interface Seat {
+  kart: RaceKart;
+  /** 'P1'..'P4' in Party mode, '' for the solo player. */
+  label: string;
+  /** Party mode's controls for this seat; the solo player drives with `input`. */
+  input: SeatInput | null;
+  last: InputFrame;
+  camera: THREE.PerspectiveCamera;
+  chase: ChaseCamera;
+  hud: SeatHud | null;
+  pan: number;
+  /** What the kart was doing last tick, to turn changes into sounds. */
+  heard: { count: number; lap: number; tier: number; rolling: boolean };
+  /** Seconds driving against the track. */
+  wrongWay: number;
+  /** The shortcut it was last on, so a new one is noticed once. */
+  lastBranch: number;
+}
+let seats: Seat[] = [];
+/** The keyboard as Party mode's seats read it: a half each. */
+const keyboard = new Keyboard();
+/** Party mode: who's playing (from the join screen), and whether this race is theirs. */
+let partySeats: PartySeat[] | null = null;
+let partyOn = false;
+/** Phones driving Party seats: their buttons as last sent, by id. */
+const remotes = new Map<string, RemotePad>();
+/** Party mode: the time each seat crossed the line is in its kart; this is when the results come anyway, for a straggler. */
+const PARTY_GRACE = 30;
+
+/** The screen is split: Party mode with more than one player. */
+function split(): boolean {
+  return seats.length > 1;
+}
+
+function seatFlash(seat: Seat, text: string): void {
+  if (seat.hud) seat.hud.flash(text);
+  else hud.flash(text);
+}
+
+function seatCallout(seat: Seat, c: Callout): void {
+  if (seat.hud) seat.hud.callout(c);
+  else hud.callout(c);
+}
+
+function seatBite(seat: Seat): void {
+  if (seat.hud) {
+    if (settings().videoLook !== 'off') seat.hud.bite();
+  } else bite();
+}
+
+/** The seat driving a kart, if a human is. */
+function seatOf(k: ItemHolder | undefined): Seat | undefined {
+  return k ? seats.find((s) => s.kart === k) : undefined;
+}
+
+/** How far (m) the nearest human is from a point, for sounds that fade with distance. */
+function nearestSeat(x: number, z: number): number {
+  let best = Infinity;
+  for (const s of seats) best = Math.min(best, Math.hypot(x - s.kart.state.x, z - s.kart.state.z));
+  return best;
+}
 
 /** Mirror mode is on for what's showing: a Grand Prix or Single Race offline with the picker's Mirror on. */
 function mirrored(): boolean {
@@ -349,6 +417,13 @@ const menu = new Menu(
     choice = { ...c };
     if (c.mode === 'online') return setMode('lobby');
     fieldSeed = Math.floor(Math.random() * 2 ** 31);
+    if (c.mode === 'party') {
+      gp = null;
+      story = null;
+      practice = null;
+      infiniteGen = null;
+      return setMode('party');
+    }
     gp = c.mode === 'grandPrix' ? new GrandPrix(defaultGrid(c.racer, fieldSeed), chosenCup(c).tracks) : null;
     story = c.mode === 'story' ? new StoryRun(fieldSeed) : null;
     gpTimes = [];
@@ -381,6 +456,14 @@ let netTicks = 0;
 /** When I last asked the room to use my item (its answer takes a round trip). */
 let itemSentAt = -Infinity;
 const lobby = new LobbyScreen(document.body, () => choice.racer);
+const party = new PartyScreen(document.body, () => choice.racer);
+party.onBack = () => setMode('menu');
+party.onStart = (joined) => {
+  partySeats = joined;
+  // A phone's buttons start from nothing held each race.
+  for (const p of joined) if (p.source.kind === 'remote') remotes.set(p.source.id, remotePad());
+  startRace(true);
+};
 const storyScreen = new StoryScreen(document.body);
 const skillScreen = new SkillScreen(
   document.body,
@@ -477,7 +560,7 @@ function updateBoard(refresh = false): void {
   const picking = mode === 'menu' && menu.showsBoard;
   const on = picking && choice.mode === 'timeTrial';
   board.show(on);
-  const rec = picking && !on && choice.mode !== 'online' && choice.mode !== 'infinite' && choice.mode !== 'story' && choice.mode !== 'skills';
+  const rec = picking && !on && choice.mode !== 'online' && choice.mode !== 'infinite' && choice.mode !== 'story' && choice.mode !== 'skills' && choice.mode !== 'party';
   records.show(rec);
   document.body.classList.toggle('board-open', on || rec);
   if (on) board.load(TRACK_LIST[choice.track].id, TRACK_LIST[choice.track].name, choice.engine, refresh);
@@ -520,18 +603,19 @@ function setMode(next: Mode): void {
   hud.showTitle(next === 'title');
   menu.show(next === 'menu');
   lobby.show(next === 'lobby');
+  party.show(next === 'party');
   if (next !== 'story') storyScreen.show(null);
   if (next !== 'skill') skillScreen.stop();
   // A generated track can be kept once it's been raced.
   const generated = next === 'results' && choice.mode === 'generator' && !online;
   savePanel.show(generated ? track.def.name : null, generated && !!findSaved(choice.gen.params));
-  touch.setVisible(next === 'race' && !watching);
+  touch.setVisible(next === 'race' && !watching && !partyOn);
   if (next !== 'race') {
     watching = false;
     document.body.classList.remove('watching');
   }
   loop.paused = false;
-  if (next === 'title' || next === 'menu' || next === 'lobby') menuMusic();
+  if (next === 'title' || next === 'menu' || next === 'lobby' || next === 'party') menuMusic();
   // Back at the picker: fetch the board again, it may include the run just posted.
   updateBoard(true);
 }
@@ -601,6 +685,38 @@ function defaultGrid(racer: RacerDef | null, seed: number): RacerDef[] {
   return grid;
 }
 
+/** Party mode's grid: the players side by side from PLAYER_SLOT, CPUs drawn by `seed` round them. */
+function partyGrid(humans: RacerDef[], seed: number): RacerDef[] {
+  const grid = pickRivals(new Set(humans.map((r) => r.id)), Math.max(0, FIELD_SIZE - humans.length), seed);
+  grid.splice(Math.min(PLAYER_SLOT, grid.length), 0, ...humans);
+  return grid;
+}
+
+/**
+ * The humans for the race just set up: the solo player alone, with the main
+ * camera and HUD; or Party mode's players, each with a camera and a HUD of
+ * their own once there's more than one.
+ */
+function makeSeats(party: PartySeat[] | null): void {
+  for (const s of seats) s.hud?.remove();
+  const seat = (kart: RaceKart, label: string, input: SeatInput | null, own: boolean, pan: number): Seat => {
+    const cam = own ? new THREE.PerspectiveCamera(DEFAULT_PLACEMENT.fov, 1, 0.1, 4000) : camera;
+    return { kart, label, input, last: NEUTRAL_INPUT, camera: cam, chase: own ? new ChaseCamera(cam) : chase, hud: own ? new SeatHud(document.body, `${label} · ${kart.racer.name}`, SEAT_COLORS[Number(label.slice(1)) - 1]) : null, pan, heard: { count: 0, lap: 0, tier: 0, rolling: false }, wrongWay: 0, lastBranch: -1 };
+  };
+  if (party) {
+    const own = party.length > 1;
+    seats = party.flatMap((p, i) => {
+      const kart = race.karts.find((k) => k.racer === p.racer && !k.isCpu);
+      return kart ? [seat(kart, `P${i + 1}`, partyInput(p.source), own, seatPan(i, party.length))] : [];
+    });
+  } else seats = player ? [seat(player, '', null, false, 0)] : [];
+}
+
+/** A Party seat's controls: a half of the keyboard, a gamepad, or a phone (its buttons as the room last passed them on). */
+function partyInput(source: SeatSource): SeatInput {
+  return new SeatInput(source, keyboard, () => (source.kind === 'remote' ? (remotes.get(source.id) ?? null) : null));
+}
+
 function loadTrack(entry: TrackEntry): void {
   if (trackView) {
     scene.remove(trackView.group);
@@ -646,6 +762,9 @@ function startRace(withPlayer: boolean, keepSong = false, seamless = false): voi
   document.body.classList.toggle('watching', watching);
   // The Deadstick Landing: the player alone, no items, flying at a ring.
   const solo = withPlayer && !net && skillStage()?.kind === 'deadstick';
+  // Party mode: every player who joined drives a kart of their own.
+  const party = withPlayer && !net && choice.mode === 'party' && partySeats?.length ? partySeats : null;
+  partyOn = !!party;
   const toSongEnd = withPlayer && !net && racesToSongEnd(choice.mode);
   Object.assign(songRace, { on: toSongEnd, live: toSongEnd, over: false, key: null, at: 0, ended: false, silent: 0 });
   if (toSongEnd && gp) gpSongRace = true;
@@ -654,7 +773,6 @@ function startRace(withPlayer: boolean, keepSong = false, seamless = false): voi
   setupGhost(trial);
   player = null;
   trialNote = '';
-  Object.assign(heard, { count: 0, lap: 0, tier: 0, rolling: false });
   if (net) {
     // The room's grid: I drive my kart here; every other kart is the room's, shown from its snapshots.
     const me = identity().playerId;
@@ -668,12 +786,15 @@ function startRace(withPlayer: boolean, keepSong = false, seamless = false): voi
     itemSentAt = -Infinity;
   } else {
     const boss = withPlayer && story?.race.boss ? story.bossRacer(choice.racer) : null;
-    const grid = !withPlayer ? defaultGrid(null, raceSeed) : watching ? defaultGrid(null, fieldSeed) : trial || solo ? [choice.racer] : gp ? gp.grid() : story ? storyGrid(boss) : defaultGrid(choice.racer, fieldSeed);
+    const humans = party ? party.map((p) => p.racer) : [choice.racer];
+    const grid = !withPlayer ? defaultGrid(null, raceSeed) : watching ? defaultGrid(null, fieldSeed) : trial || solo ? [choice.racer] : gp ? gp.grid() : story ? storyGrid(boss) : party ? partyGrid(humans, fieldSeed) : defaultGrid(choice.racer, fieldSeed);
     storyBoss = null;
     for (const r of grid) {
-      if (withPlayer && !watching && r === choice.racer) {
-        player = race.addKart(r, choice.engine, null);
-        if (story) storyBoons(player, story);
+      if (withPlayer && !watching && humans.includes(r)) {
+        const k = race.addKart(r, choice.engine, null);
+        // The first player's kart is `player`: the HUD, the music and the sky follow it.
+        if (r === humans[0]) player = k;
+        if (story) storyBoons(k, story);
       } else {
         // A Grand Prix rival, or a story boss, drives a touch sharper and wears the name.
         const rival = withPlayer && ((!!gp && gp.rivals.includes(r)) || r === boss);
@@ -684,10 +805,11 @@ function startRace(withPlayer: boolean, keepSong = false, seamless = false): voi
         if (r === boss) storyBoss = k;
       }
     }
-    // The CPUs ahead hold back a little for the player (Race.rubberBand), never for a ghost or the attract mode.
+    // The CPUs ahead hold back a little for the player (Race.rubberBand), never for a ghost or the attract mode. In Party mode, for the one at the back (step).
     race.focus = withPlayer && !trial ? player : null;
   }
-  style = withPlayer && !net && !trial && !watching ? new StyleMeter() : null;
+  style = withPlayer && !net && !trial && !watching && !party ? new StyleMeter() : null;
+  makeSeats(party);
   if (carry) {
     for (const k of race.karts) {
       const v = carry.get(k.racer.id);
@@ -701,7 +823,6 @@ function startRace(withPlayer: boolean, keepSong = false, seamless = false): voi
   }
   splits = [];
   lastCheckpoint = -1;
-  lastBranch = -1;
   raceRecorded = false;
   hud.minimap.setMirror(mirrored());
   // Attract mode skips the countdown.
@@ -718,6 +839,7 @@ function startRace(withPlayer: boolean, keepSong = false, seamless = false): voi
   });
   snapshots.clear();
   chase.snap();
+  for (const seat of seats) seat.chase.snap();
   // Straight ahead is however the phone is held as the race begins.
   if (withPlayer) tilt.recenter();
   intro = withPlayer && !net && !solo && !seamless ? INTRO_TIME : 0;
@@ -982,10 +1104,22 @@ function step(dt: number): void {
   lastInput = input.sample();
   // Mirror mode flips the world on screen, so left is right at the wheel too.
   if (mirrored() && (lastInput.steer !== 0)) lastInput = { ...lastInput, steer: -lastInput.steer };
+  for (const seat of seats) {
+    if (!seat.input) {
+      seat.last = lastInput;
+      continue;
+    }
+    seat.input.gliding = seat.kart.state.glideTime > 0;
+    seat.last = seat.input.sample();
+  }
+  keyboard.endTick();
   if (mode === 'podium') return;
   if (intro > 0) {
     intro = Math.max(0, intro - dt);
-    if (intro === 0) chase.snap();
+    if (intro === 0) {
+      chase.snap();
+      for (const seat of seats) seat.chase.snap();
+    }
     return;
   }
   // Online countdowns follow the room's clock, so a slow frame can't make anyone late to GO.
@@ -993,12 +1127,20 @@ function step(dt: number): void {
   const net = player && online?.net;
   if (net) netStep(net, player!);
   if (player) {
-    player.assist = settings().smartSteering;
     // On touch (a phone or tablet): a firmer hand on the wheel, and the CPUs a little slower. The difficulty sets their pace too.
-    player.assistLevel = touch.enabled ? ASSIST_TOUCH : ASSIST_NORMAL;
-    race.cpuPace = DIFFICULTY_PACE[settings().cpuDifficulty] * (touch.enabled ? TOUCH_CPU_PACE : 1) * (story ? story.pace : 1);
+    // A Party player on a phone gets the touch hand too.
+    let touchSeat = false;
+    for (const seat of seats) {
+      const onTouch = seat.input ? seat.input.source.kind === 'remote' : touch.enabled;
+      seat.kart.assist = settings().smartSteering;
+      seat.kart.assistLevel = onTouch ? ASSIST_TOUCH : ASSIST_NORMAL;
+      touchSeat ||= onTouch;
+    }
+    race.cpuPace = DIFFICULTY_PACE[settings().cpuDifficulty] * (touchSeat ? TOUCH_CPU_PACE : 1) * (story ? story.pace : 1);
+    // Party: the CPUs ahead hold back for whoever is at the back.
+    if (partyOn) race.focus = seats.filter((x) => x.kart.finishTime === null).sort((a, b) => a.kart.distance - b.kart.distance)[0]?.kart ?? null;
   }
-  const inputs = race.karts.map((k) => (k === player ? lastInput : undefined));
+  const inputs = race.karts.map((k) => seatOf(k)?.last);
   const events = race.step(dt, inputs);
   if (deadstick && player) deadstickStep(dt, events[race.karts.indexOf(player)]);
   events.forEach((ev, i) => {
@@ -1018,105 +1160,27 @@ function step(dt: number): void {
     return;
   }
   if (songRace.live) songRaceStep(player);
-  const ev = events[race.karts.indexOf(player)];
   style?.tick(dt);
-  // Nothing scores after the flag: the autopilot's laps are not yours.
-  const st = player.finishTime === null ? style : null;
-  if (ev.boostTier > 0) {
-    chase.bump(0.3 + ev.boostTier * 0.2);
-    chase.kick(3 + ev.boostTier * 3);
-    st?.add(driftMove(ev.boostTier));
-  }
-  if (ev.glided) {
-    chase.bump(0.5);
-    chase.kick(5);
-  }
-  if (ev.trick) {
-    chase.bump(0.6);
-    chase.kick(4 + ev.trickStreak * 2);
-    st?.add('trick', ev.trickStreak);
-  }
-  if (player.drafted) {
-    sfx.slipstream();
-    chase.kick(6);
-    st?.add('slipstream');
-  }
-  checkShortcut(player);
+  for (const seat of seats) sfx.at(seat.pan, () => seatStep(seat, events[race.karts.indexOf(seat.kart)], dt));
   checkSplit(player);
-  if (player.bump > 3) sfx.bump(Math.min(1, player.bump / 10));
-  if (ev.wallHit > 0.3) chase.bump(ev.wallHit);
-  if (player.respawned) chase.snap();
-  playerSounds(player, ev);
-  if (race.time >= 0 && race.time - dt < 0 && player.launch) {
-    hud.flash(player.launch === 'rocket' ? 'ROCKET START!' : 'TOO EARLY!');
-    if (player.launch === 'rocket') {
-      sfx.rocket();
-      chase.kick(8);
-      st?.add('rocket');
-    } else {
-      sfx.stall();
-    }
-  }
-  checkWrongWay(player, dt);
   // Record a little past the line so the ghost visibly crosses it.
   if (recorder && (player.finishTime === null || race.time - player.finishTime < GHOST_OVERRUN)) recorder.record(race.time, player.state);
-  for (const e of race.events) {
-    if (e.type === 'pickup' && e.kart === player) sfx.pickup();
-    if (e.type === 'box') boxSound(e.kart === player, e.x, e.z, e.double);
-    if (e.type === 'block' || e.type === 'dodge') {
-      const mine = e.kart === player;
-      if (mine || e.from === player) hud.callout({ from: who(e.from), to: who(e.kart), by: e.by, kind: e.type === 'block' ? 'blocked' : 'dodged' });
-      if (mine) {
-        if (e.type === 'block') sfx.block();
-        else sfx.dodge();
-        st?.add(e.type === 'block' ? 'block' : 'dodge');
-      }
-      continue;
-    }
-    if (e.type === 'bonus') {
-      if (e.kart === player) {
-        hud.flash(BONUS_TEXT[e.by]);
-        sfx.boost(2);
-        st?.add('hazard');
-      }
-      continue;
-    }
-    if (e.type === 'use' && e.kart === player) {
-      sfx.use(e.item);
-      if (e.item === 'wooCannon') {
-        hud.flash('WOO CANNON!');
-        chase.bump(0.8);
-      }
-    } else if (e.type === 'use' && e.item === 'wooCannon') {
-      // Someone else's cannon going off nearby: you hear it too, fading with distance.
-      const o = e.kart.state;
-      const d = Math.hypot(o.x - player.state.x, o.z - player.state.z);
-      if (d < 80) sfx.woo(0.6 * (1 - d / 80));
-    }
-    if (e.type !== 'hit') continue;
-    const item = e.by in ITEMS ? (e.by as ItemKind) : null;
-    if (e.kart === player) {
-      hud.flash(HIT_TEXT[e.by]);
-      sfx.hurt(e.by);
-      if (HIT_TEXT[e.by]) bite();
-      if (e.by !== 'tempoShift' && e.by !== 'bassDrop') chase.bump(0.5);
-      if (e.by === 'bassDrop') chase.bump(1.2);
-      if (item && e.from) hud.callout({ from: who(e.from), to: 'you', by: item, kind: 'took' });
-    } else if (e.from === player && item) {
-      // Area items hit a crowd: one line each, but only one flash and sound.
-      hud.callout({ from: 'you', to: who(e.kart), by: item, kind: 'landed' });
-      // The feed says who you hit; a sound is enough on top of it.
-      if (e.by !== 'tempoShift' && e.by !== 'bassDrop') sfx.scored();
-      st?.add('hit');
-    }
+  // The wave's alarm, faster as it closes on whoever it's after.
+  let surge: number | null = null;
+  for (const seat of seats) {
+    const near = surgeCloseness(seat.kart)?.near;
+    if (near !== undefined) surge = Math.max(surge ?? 0, near);
   }
-  surgeWarning(player, dt);
+  sfx.surgeAlarm(dt, surge);
   if (player.finishTime !== null && !raceRecorded) {
     raceRecorded = true;
     if (story) finishStoryRace(player);
-    else if (!online && choice.mode !== 'timeTrial' && !practice) finishRace(player);
+    // Party races keep no records: whose would they be?
+    else if (!online && choice.mode !== 'timeTrial' && !practice && !partyOn) finishRace(player);
   }
-  if (mode === 'race' && player.finishTime !== null && race.time - player.finishTime > RESULTS_DELAY) {
+  if (mode === 'race' && partyOn) {
+    if (partyOver()) setMode('results');
+  } else if (mode === 'race' && player.finishTime !== null && race.time - player.finishTime > RESULTS_DELAY) {
     if (choice.mode === 'timeTrial') {
       trialNote = saveTrial(player.finishTime, Math.min(...player.lapTimes), player.racer.id);
       const rival = rivalGhost();
@@ -1131,7 +1195,117 @@ function step(dt: number): void {
     }
     setMode('results');
   }
-  updateMusic(player);
+  // Party: the music's final lap is the leading player's.
+  updateMusic(partyOn ? leadSeat().kart : player);
+}
+
+/** Party mode's race is over for the screen: everyone's over the line (and had a moment), or the first did long enough ago. */
+function partyOver(): boolean {
+  const times = seats.map((s) => s.kart.finishTime);
+  const done = times.filter((t): t is number => t !== null);
+  if (!done.length) return false;
+  if (done.length === times.length) return race.time - Math.max(...done) > RESULTS_DELAY;
+  return race.time - Math.min(...done) > PARTY_GRACE;
+}
+
+/** The player furthest round the course. */
+function leadSeat(): Seat {
+  return seats.reduce((a, b) => (b.kart.distance > a.kart.distance ? b : a));
+}
+
+/** One human's tick: their camera's kicks, their sounds and callouts, laps and the wrong way. Their sounds lean to their side of the screen (sfx.at). */
+function seatStep(seat: Seat, ev: StepEvents, dt: number): void {
+  const p = seat.kart;
+  const c = seat.chase;
+  // Nothing scores after the flag: the autopilot's laps are not yours. Style is the solo player's.
+  const st = p === player && p.finishTime === null ? style : null;
+  if (ev.boostTier > 0) {
+    c.bump(0.3 + ev.boostTier * 0.2);
+    c.kick(3 + ev.boostTier * 3);
+    st?.add(driftMove(ev.boostTier));
+  }
+  if (ev.glided) {
+    c.bump(0.5);
+    c.kick(5);
+  }
+  if (ev.trick) {
+    c.bump(0.6);
+    c.kick(4 + ev.trickStreak * 2);
+    st?.add('trick', ev.trickStreak);
+  }
+  if (p.drafted) {
+    sfx.slipstream();
+    c.kick(6);
+    st?.add('slipstream');
+  }
+  checkShortcut(seat);
+  if (p.bump > 3) sfx.bump(Math.min(1, p.bump / 10));
+  if (ev.wallHit > 0.3) c.bump(ev.wallHit);
+  if (p.respawned) c.snap();
+  playerSounds(seat, ev);
+  if (race.time >= 0 && race.time - dt < 0 && p.launch) {
+    seatFlash(seat, p.launch === 'rocket' ? 'ROCKET START!' : 'TOO EARLY!');
+    if (p.launch === 'rocket') {
+      sfx.rocket();
+      c.kick(8);
+      st?.add('rocket');
+    } else {
+      sfx.stall();
+    }
+  }
+  checkWrongWay(seat, dt);
+  // Sounds of someone else's doing nearby are played once, for the first seat: not once per player.
+  const first = seat === seats[0];
+  for (const e of race.events) {
+    const mine = e.kart === p;
+    if (e.type === 'pickup' && mine) sfx.pickup();
+    if (e.type === 'box' && (mine || (first && !seatOf(e.kart)))) boxSound(mine, e.x, e.z, e.double);
+    if (e.type === 'block' || e.type === 'dodge') {
+      if (mine || e.from === p) seatCallout(seat, { from: who(e.from, seat), to: who(e.kart, seat), by: e.by, kind: e.type === 'block' ? 'blocked' : 'dodged' });
+      if (mine) {
+        if (e.type === 'block') sfx.block();
+        else sfx.dodge();
+        st?.add(e.type === 'block' ? 'block' : 'dodge');
+      }
+      continue;
+    }
+    if (e.type === 'bonus') {
+      if (mine) {
+        seatFlash(seat, BONUS_TEXT[e.by]);
+        sfx.boost(2);
+        st?.add('hazard');
+      }
+      continue;
+    }
+    if (e.type === 'use' && mine) {
+      sfx.use(e.item);
+      if (e.item === 'wooCannon') {
+        seatFlash(seat, 'WOO CANNON!');
+        c.bump(0.8);
+      }
+    } else if (e.type === 'use' && e.item === 'wooCannon' && first && !seatOf(e.kart)) {
+      // Someone else's cannon going off nearby: you hear it too, fading with distance.
+      const o = e.kart.state;
+      const d = nearestSeat(o.x, o.z);
+      if (d < 80) sfx.woo(0.6 * (1 - d / 80));
+    }
+    if (e.type !== 'hit') continue;
+    const item = e.by in ITEMS ? (e.by as ItemKind) : null;
+    if (mine) {
+      seatFlash(seat, HIT_TEXT[e.by]);
+      sfx.hurt(e.by);
+      if (HIT_TEXT[e.by]) seatBite(seat);
+      if (e.by !== 'tempoShift' && e.by !== 'bassDrop') c.bump(0.5);
+      if (e.by === 'bassDrop') c.bump(1.2);
+      if (item && e.from) seatCallout(seat, { from: who(e.from, seat), to: 'you', by: item, kind: 'took' });
+    } else if (e.from === p && item) {
+      // Area items hit a crowd: one line each, but only one flash and sound.
+      seatCallout(seat, { from: 'you', to: who(e.kart, seat), by: item, kind: 'landed' });
+      // The feed says who you hit; a sound is enough on top of it.
+      if (e.by !== 'tempoShift' && e.by !== 'bassDrop') sfx.scored();
+      st?.add('hit');
+    }
+  }
 }
 
 /** Online: place the other karts, use my item through the room, and report where I am. */
@@ -1179,10 +1353,12 @@ function onEffects(fx: Effect[]): void {
   }
 }
 
-/** A racer's name for the callout feed. */
-function who(k: ItemHolder | undefined): string {
+/** A racer's name for a seat's callouts: 'you', another player by seat, or the racer's name. */
+function who(k: ItemHolder | undefined, seat: Seat | undefined = seats[0]): string {
   if (!k) return '?';
-  return k === player ? 'you' : (k as RaceKart).racer.name;
+  if (seat ? k === seat.kart : k === player) return 'you';
+  const other = seatOf(k);
+  return other?.label ? other.label : (k as RaceKart).racer.name;
 }
 
 /** An item box breaking: loud when it's yours, fainter for someone else's nearby. */
@@ -1192,7 +1368,7 @@ function boxSound(mine: boolean, x: number, z: number, double: boolean): void {
     return;
   }
   if (!player) return;
-  const d = Math.hypot(x - player.state.x, z - player.state.z);
+  const d = seats.length ? nearestSeat(x, z) : Math.hypot(x - player.state.x, z - player.state.z);
   if (d < 40) sfx.box(0.45 * (1 - d / 40), double);
 }
 
@@ -1214,12 +1390,6 @@ function surgeCloseness(p: RaceKart): { near: number; eta: number } | null {
   return { near: 1 - d / SURGE_WARN, eta };
 }
 
-/** The wave's alarm, faster as it closes. */
-function surgeWarning(p: RaceKart, dt: number): void {
-  const near = surgeCloseness(p);
-  sfx.surgeAlarm(dt, near?.near ?? null);
-}
-
 /**
  * The next bend for the HUD: only racing, on the main road (a shortcut has
  * bends of its own), with the hints on. Mirrored, left is right.
@@ -1232,13 +1402,14 @@ function turnHint(): HudData['turn'] {
   return { dir: mirrored() ? (-bend.dir as -1 | 1) : bend.dir, angle: bend.angle, severity: bend.severity, distance };
 }
 
-/** A shortcut the player has just driven onto: style points, and noted in their progress. Quietly: no pop-up, no sting. */
-function checkShortcut(p: RaceKart): void {
+/** A shortcut a player has just driven onto: style points, and noted in their progress. Quietly: no pop-up, no sting. */
+function checkShortcut(seat: Seat): void {
+  const p = seat.kart;
   const b = p.branch;
-  if (b === lastBranch) return;
-  lastBranch = b;
+  if (b === seat.lastBranch) return;
+  seat.lastBranch = b;
   if (b < 0 || !race.started || p.finishTime !== null) return;
-  style?.add('shortcut');
+  if (p === player) style?.add('shortcut');
   foundShortcut(track.def.id, track.def.branches[b]?.name ?? 'shortcut');
 }
 
@@ -1669,20 +1840,27 @@ function dispose(group: THREE.Group): void {
   });
 }
 
-/** Countdown beeps, laps, drift sparks, hops, landings and the like for the player's kart. */
-function playerSounds(p: RaceKart, ev: StepEvents): void {
+/** Countdown beeps, laps, drift sparks, hops, landings and the like for a player's kart. */
+function playerSounds(seat: Seat, ev: StepEvents): void {
+  const p = seat.kart;
+  const heard = seat.heard;
   const count = race.time < 0 ? Math.ceil(-race.time) : 0;
   if (count !== heard.count) {
-    if (count > 0) sfx.countdown(false);
-    else if (heard.count === 1) sfx.countdown(true);
+    // The countdown is everyone's: heard once.
+    if (seat === seats[0]) {
+      if (count > 0) sfx.countdown(false);
+      else if (heard.count === 1) sfx.countdown(true);
+    }
     heard.count = count;
   }
   if (p.laps.lap !== heard.lap) {
-    if (p.finishTime !== null) sfx.finish();
-    else if (p.laps.lap > heard.lap) {
+    if (p.finishTime !== null) {
+      sfx.finish();
+      if (seat.hud) seatFlash(seat, `FINISH! ${ordinal(p.position)}`);
+    } else if (p.laps.lap > heard.lap) {
       const final = p.laps.lap === race.laps - 1;
       sfx.lap(final);
-      hud.flash(final ? 'FINAL LAP!' : `LAP ${p.laps.lap + 1}`);
+      seatFlash(seat, final ? 'FINAL LAP!' : `LAP ${p.laps.lap + 1}`);
     }
     heard.lap = p.laps.lap;
   }
@@ -1702,13 +1880,14 @@ function playerSounds(p: RaceKart, ev: StepEvents): void {
 }
 
 /** Warns a player who has been driving the wrong way for a second, every 1.5 s until they turn round. */
-function checkWrongWay(p: RaceKart, dt: number): void {
+function checkWrongWay(seat: Seat, dt: number): void {
+  const p = seat.kart;
   const s = p.state;
   const a = pointAt(track.spline, p.progressS);
   const along = Math.sin(s.heading) * a.tx + Math.cos(s.heading) * a.tz;
   const backwards = race.started && p.finishTime === null && s.speed > 4 && along < -0.3 * Math.hypot(a.tx, a.tz);
-  wrongWay = backwards ? wrongWay + dt : 0;
-  if (wrongWay > 1 && (wrongWay - 1) % 1.5 < dt) hud.flash('WRONG WAY!');
+  seat.wrongWay = backwards ? seat.wrongWay + dt : 0;
+  if (seat.wrongWay > 1 && (seat.wrongWay - 1) % 1.5 < dt) seatFlash(seat, 'WRONG WAY!');
 }
 
 /** How hard the tires squeal, 0..1: always in a drift, and on hard turns at speed. Dirt doesn't squeal. */
@@ -1720,11 +1899,14 @@ function tireScreech(s: KartState, speedRatio: number): number {
 
 /** Engine note, tire squeal and hazard ambience, every frame. */
 function updateSounds(dt: number): void {
+  if (split()) return partySounds(dt);
   const p = player;
   const racing = mode === 'race' && !loop.paused && p !== null;
   const s = p?.state;
   const speedRatio = s ? Math.abs(s.speed) / p!.baseParams.topSpeed : 0;
   sfx.updateEngine(racing ? 1 : 0, speedRatio, !!s && s.boostTime > 0, !!s && s.driftDir !== 0, s ? tireScreech(s, speedRatio) : 0);
+  // Party's other engines, quiet once it's over.
+  sfx.quietEngines(1);
   // The drift's charge sings higher toward purple; a draft whistles as it builds.
   sfx.driftCharge(racing && s && s.driftDir !== 0 ? Math.min(1, s.driftCharge / DRIFT_TIERS[DRIFT_TIERS.length - 1]) : 0);
   sfx.draft(racing && p ? p.draft : 0);
@@ -1733,15 +1915,53 @@ function updateSounds(dt: number): void {
     sfx.hazards(dt, null, null);
     return;
   }
+  hazardSounds(dt, [s]);
+}
+
+/**
+ * Party mode's engines: one each, leaning to each player's side and a
+ * little quieter so four don't drown the music. The drift's song, the
+ * draft and the cannon are the loudest player's.
+ */
+function partySounds(dt: number): void {
+  const racing = mode === 'race' && !loop.paused;
+  const level = racing ? 1 / Math.sqrt(seats.length) : 0;
+  let charge = 0;
+  let draft = 0;
+  let cannon = false;
+  seats.forEach((seat, i) => {
+    const p = seat.kart;
+    const s = p.state;
+    const speedRatio = Math.abs(s.speed) / p.baseParams.topSpeed;
+    sfx.updateEngine(level, speedRatio, s.boostTime > 0, s.driftDir !== 0, tireScreech(s, speedRatio), i, seat.pan);
+    if (s.driftDir !== 0) charge = Math.max(charge, Math.min(1, s.driftCharge / DRIFT_TIERS[DRIFT_TIERS.length - 1]));
+    draft = Math.max(draft, p.draft);
+    cannon ||= s.cannonTime > 0;
+  });
+  sfx.quietEngines(seats.length);
+  sfx.driftCharge(racing ? charge : 0);
+  sfx.draft(racing ? draft : 0);
+  sfx.cannonLoop(racing && cannon);
+  if (!racing) {
+    sfx.hazards(dt, null, null);
+    return;
+  }
+  hazardSounds(dt, seats.map((x) => x.kart.state));
+}
+
+/** The rattle and the whirl of the nearest hazards of their kinds to any of `karts`, panned by which side of that kart they're on. */
+function hazardSounds(dt: number, karts: KartState[]): void {
   const near = (kind: HazardKind) => {
     let best: { d: number; pan: number } | null = null;
     for (const h of race.hazards.poses) {
       if (h.kind !== kind) continue;
-      const dx = h.x - s.x;
-      const dz = h.z - s.z;
-      const d = Math.hypot(dx, dz);
-      // Pan by which side of the kart it's on.
-      if (!best || d < best.d) best = { d, pan: d > 0 ? ((dx * -Math.cos(s.heading) + dz * Math.sin(s.heading)) / d) * (mirrored() ? -1 : 1) : 0 };
+      for (const s of karts) {
+        const dx = h.x - s.x;
+        const dz = h.z - s.z;
+        const d = Math.hypot(dx, dz);
+        // Pan by which side of the kart it's on.
+        if (!best || d < best.d) best = { d, pan: d > 0 ? ((dx * -Math.cos(s.heading) + dz * Math.sin(s.heading)) / d) * (mirrored() ? -1 : 1) : 0 };
+      }
     }
     return best;
   };
@@ -1907,9 +2127,84 @@ function drawGallery(dt: number): boolean {
   return true;
 }
 
+const splitSize = new THREE.Vector2();
+
+/** Each player's part of the screen, in CSS pixels. */
+function seatRects() {
+  renderer.getSize(splitSize);
+  return splitRects(seats.length, splitSize.x, splitSize.y);
+}
+
+/**
+ * Party mode's split screen: each player's view drawn into their part of
+ * the screen, the sky, the sun and the lap's roads set for theirs. The
+ * post effects (haze, the tape) are a full-screen pass, so they sit out.
+ */
+function renderSplit(hue: number, drawn: KartState[]): void {
+  const rects = seatRects();
+  const h = splitSize.y;
+  renderer.setScissorTest(true);
+  // The quarter no one has, with three players: the map sits there.
+  renderer.setViewport(0, 0, splitSize.x, h);
+  renderer.setScissor(0, 0, splitSize.x, h);
+  renderer.clear();
+  seats.forEach((seat, i) => {
+    const r = rects[i];
+    const cam = seat.camera;
+    // The GL viewport counts from the bottom.
+    renderer.setViewport(r.x, h - r.y - r.h, r.w, r.h);
+    renderer.setScissor(r.x, h - r.y - r.h, r.w, r.h);
+    const k = drawn[race.karts.indexOf(seat.kart)];
+    trackView!.update(elapsed, cam.position, hue, seat.kart.state);
+    sunAnchor.position.copy(cam.position).addScaledVector(SUN_DIR, 1400);
+    sun.target.position.set(k.x, k.y, k.z);
+    sun.position.copy(sun.target.position).addScaledVector(SUN_DIR, 200);
+    renderer.render(scene, cam);
+  });
+  renderer.setScissorTest(false);
+  renderer.setViewport(0, 0, splitSize.x, h);
+}
+
+/** Party mode's HUDs, one over each player's part of the screen; their cameras set for its shape. */
+function updateSeatHuds(): void {
+  const rects = seatRects();
+  const hidden = mode !== 'race' || loop.paused || intro > 0;
+  seats.forEach((seat, i) => {
+    const r = rects[i];
+    const aspect = r.w / Math.max(1, r.h);
+    if (seat.camera.aspect !== aspect) {
+      seat.camera.aspect = aspect;
+      seat.chase.placement.fov = splitFov(DEFAULT_PLACEMENT.fov, aspect);
+      seat.camera.updateProjectionMatrix();
+    }
+    const p = seat.kart;
+    const surge = surgeCloseness(p);
+    seat.hud?.place(r);
+    seat.hud?.update(
+      {
+        kart: p.state,
+        lap: p.laps.lap,
+        totalLaps: race.laps >= INFINITE_LAPS ? Infinity : race.laps,
+        position: p.position,
+        karts: race.karts.length,
+        finished: p.finishTime !== null,
+        item: p.item,
+        rolling: p.rolling,
+        spare: p.spare,
+        hop: !!surge && surge.eta <= SURGE_HOP_WINDOW,
+        hidden,
+      },
+      elapsed,
+    );
+  });
+}
+
 const loop = new FixedLoop(step, (alpha, frameDt) => {
   if (resolution.sample(frameDt)) applyPixelRatio();
-  if (input.consumePause() && mode === 'race') {
+  if (mode === 'party') party.poll(performance.now() / 1000);
+  // A Party player's Start (every seat's checked, so none is left pending).
+  const seatPause = seats.map((x) => x.input?.consumePause() ?? false).some(Boolean);
+  if ((input.consumePause() || seatPause) && mode === 'race') {
     if (hud.confirmingRestart) hud.onPauseAction?.('keepRacing');
     else requestPause(!loop.paused);
   }
@@ -1945,7 +2240,8 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
     introCamera();
   } else {
     race.karts.forEach((k, i) => views[i].update(drawn[i], k.params.topSpeed, dt, elapsed, k.fallTime > 0));
-    chase.update(s, f.params.topSpeed, player ? lastInput.lookBack : false, dt);
+    chase.update(s, f.params.topSpeed, seats[0]?.last.lookBack ?? false, dt);
+    if (split()) for (const seat of seats) seat.chase.update(drawn[race.karts.indexOf(seat.kart)], seat.kart.params.topSpeed, seat.last.lookBack, dt);
   }
   // Where the camera is in the world the simulation knows (the views are flipped, the camera isn't).
   const camWorld = flip ? new THREE.Vector3(-camera.position.x, camera.position.y, camera.position.z) : camera.position;
@@ -2005,7 +2301,11 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
     },
     elapsed,
   );
-  hud.minimap.draw(race.karts.map((k, i) => ({ x: snaps[i].x, z: snaps[i].z, color: hex(k.racer.color), player: k === player, rival: k.rival })));
+  hud.minimap.draw(race.karts.map((k, i) => ({ x: snaps[i].x, z: snaps[i].z, color: hex(k.racer.color), player: !!seatOf(k), rival: k.rival })));
+  const splitView = split() && intro === 0;
+  document.body.classList.toggle('split', splitView);
+  document.body.classList.toggle('split-3', splitView && seats.length === 3);
+  if (split()) updateSeatHuds();
   // Heat haze shimmers hardest on the straights; the kaleidoscope runs on the player's final lap.
   const straight = 1 - clamp(track.main.maxCurvature(f.progressS, f.progressS + 80) * 25, 0, 1);
   const hazeTarget = podium ? 0 : theme.haze * (0.3 + 0.7 * straight);
@@ -2029,6 +2329,7 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
   if (drawGallery(frameDt)) return;
   // A skill game covers the screen: the world behind it holds still rather than spend the frame.
   if (mode === 'skill') return;
+  if (splitView) return renderSplit(theme.skyCycle ? Math.PI * 2 * skyTurn : 0, drawn);
   const beat = music.beatPhase();
   postFx.render(scene, camera, { haze: fx.haze, kaleido: fx.kaleido, beat: beat >= 0 ? beat : (elapsed * 2.4) % 1, time: elapsed, vhs: fx.vhs, duo: fx.duo, box: fx.box, palette: theme.duotone, water: fx.water });
 });
@@ -2040,12 +2341,13 @@ let cupNote = '';
 function table(): Table | null {
   const kartRow = (k: RaceKart, i: number): TableRow => ({
     place: ordinal(i + 1),
-    name: k.racer.name,
+    // Party mode: each player by seat.
+    name: seatOf(k)?.label ? `${seatOf(k)!.label} · ${k.racer.name}` : k.racer.name,
     color: hex(k.racer.color),
     // Ended by the song, everyone finished at once: the laps each got round count.
     value: k.finishTime === null ? '...' : songRace.over ? `${k.laps.lap} lap${k.laps.lap === 1 ? '' : 's'}` : formatTime(k.finishTime),
     extra: k.rival ? 'RIVAL' : undefined,
-    player: k === player,
+    player: !!seatOf(k),
   });
   const cupRows = (n: number) =>
     gp!
@@ -2060,7 +2362,7 @@ function table(): Table | null {
         player: e.racer === choice.racer,
       }));
   if (mode === 'results') {
-    const title = online ? `ROOM ${online.client.code} RESULTS` : story ? `${story.actDef.chapter.toUpperCase()} · ${story.race.boss ? 'BOSS DUEL' : `RACE ${story.race.index + 1}`}` : gp ? `RACE ${gp.round + 1}/${gp.tracks.length} RESULTS` : choice.mode === 'timeTrial' ? 'TIME TRIAL' : 'RESULTS';
+    const title = online ? `ROOM ${online.client.code} RESULTS` : story ? `${story.actDef.chapter.toUpperCase()} · ${story.race.boss ? 'BOSS DUEL' : `RACE ${story.race.index + 1}`}` : gp ? `RACE ${gp.round + 1}/${gp.tracks.length} RESULTS` : choice.mode === 'timeTrial' ? 'TIME TRIAL' : partyOn ? 'PARTY RESULTS' : 'RESULTS';
     const rows = online ? onlineRows(kartRow) : finishOrder().map(kartRow);
     return { kind: 'results', title, note: trialNote || undefined, rows, actions: betweenActions() };
   }
@@ -2105,10 +2407,10 @@ function betweenActions(): TableAction[] | undefined {
   }
   if (mode !== 'results' || choice.mode === 'infinite') return undefined;
   const actions: TableAction[] = [
-    { id: 'next', label: 'MENU' },
+    { id: 'next', label: partyOn ? 'PLAYERS' : 'MENU' },
     { id: 'again', label: `RACE AGAIN${same}`, key: 'S' },
   ];
-  if (choice.mode === 'single') actions.push({ id: 'nextTrack', label: `NEXT TRACK${same}`, key: 'T' });
+  if (choice.mode === 'single' || partyOn) actions.push({ id: 'nextTrack', label: `NEXT TRACK${same}`, key: 'T' });
   actions.push(song);
   return actions;
 }
@@ -2129,7 +2431,7 @@ function betweenRaces(id: string): void {
     advance();
     return;
   }
-  if (id === 'nextTrack' || (id === 'song' && choice.mode === 'single')) choice.track = menu.choice.track = (choice.track + 1) % TRACK_LIST.length;
+  if (id === 'nextTrack' || (id === 'song' && (choice.mode === 'single' || partyOn))) choice.track = menu.choice.track = (choice.track + 1) % TRACK_LIST.length;
   startRace(true, id !== 'song');
 }
 
@@ -2211,6 +2513,12 @@ function toMenu(): void {
   else startRace(false);
 }
 
+/** Party mode: back to the join screen, the players still there, with the attract race behind it. */
+function toParty(): void {
+  setMode('party');
+  startRace(false);
+}
+
 function startPodium(): void {
   const top3 = gp!.standings().slice(0, 3).map((e) => e.racer);
   podium = new Podium(track, top3);
@@ -2246,6 +2554,10 @@ function advance(): boolean {
   }
   if (mode === 'results' && online) {
     backToLobby();
+    return true;
+  }
+  if (mode === 'results' && partyOn) {
+    toParty();
     return true;
   }
   if (mode === 'results' && story && player) {
@@ -2342,6 +2654,7 @@ hud.onPauseAction = (action) => {
     settingsScreen.open();
   } else if (action === 'quit') {
     if (online) backToLobby();
+    else if (partyOn) toParty();
     else toMenu();
   }
 };
@@ -2359,7 +2672,7 @@ window.addEventListener(
 );
 window.addEventListener('pointerup', (e) => {
   if (settingsScreen.visible) return;
-  if ((e.target as HTMLElement).closest('.settings, .hud-title-settings, .lobby, .board, .savetrack, .nameprompt, .skill')) return music.unlock();
+  if ((e.target as HTMLElement).closest('.settings, .hud-title-settings, .lobby, .party, .board, .savetrack, .nameprompt, .skill')) return music.unlock();
   if (skipIntro()) return;
   if ((e.target as HTMLElement).closest('.menu, .touch, .hud-pause, .mini-player, .mp-fab, .hud-standings-actions')) return music.unlock();
   // Watching: a tap anywhere on the race picks another racer to follow.
@@ -2374,6 +2687,10 @@ window.addEventListener('keydown', (e) => {
       // That Escape closes Settings; it isn't also a pause toggle.
       input.consumePause();
     }
+    return;
+  }
+  if (mode === 'party') {
+    party.key(e.code);
     return;
   }
   // A button between races by its letter (S: same song, T: next track, N: next song).
@@ -2495,6 +2812,16 @@ Object.assign(window, {
       story.cleared = act * STAGES_PER_ACT + SKILL_STAGE;
       story.skills[act] = kind;
       showStory('skill');
+    },
+    /** Starts a Party race for `n` players on the keyboard halves and the first gamepads (testing). */
+    party(n = 2) {
+      const sources: SeatSource[] = [{ kind: 'keys', side: 'left' }, { kind: 'keys', side: 'right' }, { kind: 'pad', index: 0 }, { kind: 'pad', index: 1 }];
+      partySeats = sources.slice(0, n).map((source, i) => ({ source, racer: RACERS[i], ready: true }));
+      choice = { ...choice, mode: 'party' };
+      startRace(true);
+    },
+    get seats() {
+      return seats.map((x) => ({ label: x.label, racer: x.kart.racer.id, lap: x.kart.laps.lap, place: x.kart.position, finished: x.kart.finishTime !== null }));
     },
     /** Picks the player's racer by id for the next race (testing). */
     pick(id: string) {

@@ -2979,3 +2979,406 @@ body.touch-mode.watching .mp-fab.show {
   right: 16px;
   top: 14px;
 }
+
+/* ---- Party mode: the join screen ---- */
+.party {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--hud-font);
+  font-style: italic;
+  color: var(--hud-fg);
+  background: radial-gradient(ellipse at center, rgba(20, 0, 30, 0.55), rgba(20, 0, 30, 0.85));
+}
+
+.party.show {
+  display: flex;
+}
+
+body:not([data-mode='party']) .party {
+  display: none;
+}
+
+.party-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: min(980px, calc(100vw - 32px));
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+.party-title {
+  font-size: min(48px, 9vw);
+}
+
+.party-status {
+  font-size: 15px;
+  color: #fff27a;
+  text-shadow: 2px 2px 0 #3a0f45;
+}
+
+.party-seats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  width: 100%;
+}
+
+@media (max-width: 760px) {
+  .party-seats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.party-seat {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-height: 190px;
+  padding: 12px 10px;
+  box-sizing: border-box;
+  background: linear-gradient(180deg, rgba(60, 15, 75, 0.88), rgba(25, 5, 40, 0.9));
+  box-shadow: 0 0 0 3px var(--seat), 0 0 0 6px #3a0f45;
+  text-align: center;
+}
+
+.party-seat.empty {
+  opacity: 0.6;
+  justify-content: center;
+}
+
+.party-seat.ready {
+  background: linear-gradient(180deg, rgba(30, 110, 60, 0.9), rgba(10, 50, 25, 0.92));
+}
+
+.party-p {
+  font-size: 34px;
+}
+
+.party-join,
+.party-how,
+.party-src {
+  font-size: 12px;
+  line-height: 1.4;
+  text-shadow: 2px 2px 0 #3a0f45;
+}
+
+.party-src {
+  font-size: 13px;
+  font-weight: bold;
+  color: var(--seat);
+}
+
+.party-racer {
+  display: grid;
+  grid-template-columns: 34px 1fr 34px;
+  gap: 6px;
+  align-items: center;
+  width: 100%;
+}
+
+.party-name {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-weight: 900;
+  font-size: 17px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.party-name i {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px #fff7e6;
+}
+
+.party button {
+  font: inherit;
+  font-style: italic;
+  color: var(--hud-fg);
+  background: linear-gradient(180deg, #7a2a8a, #3a0f45);
+  border: 0;
+  box-shadow: 0 0 0 3px #ffd23a, 0 0 0 6px #3a0f45;
+  padding: 8px 16px;
+  cursor: pointer;
+  text-shadow: 2px 2px 0 #3a0f45;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.party .menu-arrow {
+  padding: 4px 0;
+  font-size: 14px;
+}
+
+.party-seat.ready .party-ready {
+  background: linear-gradient(180deg, #ffe14d, #e0a020);
+  color: #2a0636;
+}
+
+.party .party-leave {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  padding: 0 7px;
+  font-size: 16px;
+  box-shadow: 0 0 0 2px #3a0f45;
+}
+
+.party-phones {
+  font-size: 14px;
+  text-align: center;
+  text-shadow: 2px 2px 0 #3a0f45;
+}
+
+.party-phones:empty {
+  display: none;
+}
+
+.party-phones b {
+  color: #fff27a;
+  letter-spacing: 4px;
+  font-size: 22px;
+}
+
+.party-nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 4px;
+}
+
+.party .party-go {
+  font-size: 24px;
+  padding: 8px 26px;
+}
+
+.party button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* ---- Party mode: the split screen and each player's HUD ---- */
+/* The full HUD keeps the countdown, the map and the screens between races; each player's corner has the rest. */
+body.split .hud-tl,
+body.split .hud-br,
+body.split .hud-item,
+body.split .hud-drift,
+body.split .hud-turn,
+body.split .hud-flash,
+body.split .hud-warn,
+body.split .hud-racer,
+body.split .hud-help,
+body.split .hud-banner {
+  display: none !important;
+}
+
+/* The map in the middle, where the players' parts meet, clear of the karts; with three, in the empty quarter. */
+body.split .hud-tr {
+  top: 50%;
+  right: auto;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+body.split .hud-minimap {
+  width: min(22vh, 160px);
+  height: min(22vh, 160px);
+}
+
+body.split.split-3 .hud-tr {
+  left: 75%;
+  top: 75%;
+}
+
+body.split.split-3 .hud-minimap {
+  width: min(40vh, 320px);
+  height: min(40vh, 320px);
+}
+
+.seat-hud {
+  position: fixed;
+  pointer-events: none;
+  font-style: italic;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 2px rgba(20, 0, 30, 0.9), inset 0 0 0 4px var(--seat);
+}
+
+.seat-hud.hidden {
+  display: none;
+}
+
+body:not(.split) .seat-hud {
+  display: none;
+}
+
+.seat-tag {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%) skewX(-6deg);
+  padding: 2px 10px;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  color: #2a0636;
+  background: var(--seat);
+  white-space: nowrap;
+}
+
+.seat-lap {
+  position: absolute;
+  top: 8px;
+  left: 14px;
+  font-size: clamp(18px, 4.5vh, 34px);
+}
+
+.seat-pos {
+  position: absolute;
+  right: 14px;
+  bottom: 8px;
+  font-size: clamp(26px, 8vh, 56px);
+  line-height: 1;
+}
+
+.seat-pos small {
+  font-size: 0.42em;
+}
+
+.seat-item {
+  position: absolute;
+  top: 8px;
+  right: 14px;
+  width: clamp(44px, 10vh, 72px);
+  height: clamp(44px, 10vh, 72px);
+  border-radius: 12px;
+  background: radial-gradient(circle at 50% 40%, rgba(80, 20, 110, 0.55), rgba(20, 0, 30, 0.7));
+  box-shadow: 0 0 0 3px #ffd23a, 0 0 0 6px #3a0f45;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.seat-item img {
+  width: 82%;
+  height: 82%;
+  visibility: hidden;
+}
+
+.seat-item.rolling,
+.seat-item.ready {
+  background: radial-gradient(circle at 50% 45%, rgba(255, 246, 220, 0.85), rgba(150, 90, 200, 0.75) 60%, rgba(40, 0, 60, 0.8));
+}
+
+.seat-item.ready {
+  animation: hud-item-glow 0.9s ease-in-out infinite alternate;
+}
+
+.seat-item-name {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: bold;
+  color: #fff6d0;
+  text-shadow: 0 2px 0 #3a0f45, 0 0 6px #3a0f45;
+}
+
+.seat-spare {
+  position: absolute;
+  left: -40%;
+  bottom: -10%;
+  width: 45%;
+  height: 45%;
+  display: none;
+}
+
+.seat-item.spare .seat-spare {
+  display: block;
+}
+
+.seat-spare img {
+  width: 100%;
+  height: 100%;
+  visibility: visible;
+}
+
+.seat-drift {
+  position: absolute;
+  left: 25%;
+  bottom: 10px;
+  height: 6px;
+  width: 0;
+  max-width: 50%;
+  border-radius: 3px;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.seat-flash {
+  position: absolute;
+  top: 22%;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: clamp(20px, 6vh, 40px);
+  letter-spacing: 2px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.seat-flash.show {
+  opacity: 1;
+}
+
+.seat-flash.pop {
+  animation: hud-flash-pop 0.35s ease-out;
+}
+
+.seat-callout {
+  position: absolute;
+  left: 14px;
+  bottom: 12px;
+  max-width: 55%;
+  font-size: 12px;
+  font-weight: bold;
+  text-transform: uppercase;
+  text-shadow: 2px 2px 0 #3a0f45;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.seat-callout.show {
+  opacity: 1;
+}
+
+.seat-bite {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(255, 0, 20, 0) 40%, rgba(255, 0, 20, 0.55));
+  opacity: 0;
+}
+
+.seat-bite.on {
+  animation: seat-bite 0.6s ease-out;
+}
+
+@keyframes seat-bite {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
