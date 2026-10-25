@@ -46,6 +46,10 @@ export const TRACK_SONGS: Record<string, TrackSong> = {
   'deadstick-drop': { title: 'Deadstick', album: 'Phantom Island', year: 2025 },
   'panpsych-grove': { title: 'Panpsych', album: 'Phantom Island', year: 2025 },
   'sea-of-doubt': { title: 'Sea of Doubt', album: 'Phantom Island', year: 2025 },
+  'im-in-your-mind': { title: "I'm in Your Mind", album: "I'm in Your Mind Fuzz", year: 2014 },
+  'im-not-in-your-mind': { title: "I'm Not in Your Mind", album: "I'm in Your Mind Fuzz", year: 2014 },
+  cellophane: { title: 'Cellophane', album: "I'm in Your Mind Fuzz", year: 2014 },
+  'im-in-your-mind-fuzz': { title: "I'm in Your Mind Fuzz", album: "I'm in Your Mind Fuzz", year: 2014 },
 };
 
 /**
@@ -85,6 +89,10 @@ export const TRANSCRIBED: Record<string, { recording: string; release: string }>
   'murder-of-the-universe': { recording: 'Gliese 710', release: "Live at Field of Vision II '26, the soundboard mix" },
   'infinite-loop-speedway': { recording: 'Motor Spirit', release: "Live at Red Rocks '23, the soundboard mix" },
   'hell-on-mars': { recording: 'Flamethrower', release: "Live at Field of Vision '25, the soundboard mix" },
+  'im-in-your-mind': { recording: "I'm in Your Mind", release: "Live at The Caverns '23" },
+  'im-not-in-your-mind': { recording: "I'm Not in Your Mind", release: "Live at The Caverns '23" },
+  cellophane: { recording: 'Cellophane', release: "Live at The Caverns '23" },
+  'im-in-your-mind-fuzz': { recording: "I'm in Your Mind Fuzz", release: "Live at The Caverns '23" },
 };
 
 const FINAL = '-final-lap';

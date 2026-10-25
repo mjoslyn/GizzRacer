@@ -32,10 +32,18 @@ import { buildPlanetB } from './planetB';
 import { buildMarsForTheRich } from './marsForTheRich';
 import { buildPerihelion } from './perihelion';
 import { buildHell } from './hell';
+import { buildImInYourMind } from './imInYourMind';
+import { buildImNotInYourMind } from './imNotInYourMind';
+import { buildCellophane } from './cellophane';
+import { buildImInYourMindFuzz } from './imInYourMindFuzz';
 
 /** Every track the picker offers, in cup order, each with its layout extras laid in (enrich.ts). */
 /** The tracks as drawn, before enrich.ts (tests and tools). */
 export const RAW_TRACK_LIST: { id: string; name: string; build: () => TrackDef }[] = [
+  { id: 'im-in-your-mind', name: "I'm in Your Mind", build: buildImInYourMind },
+  { id: 'im-not-in-your-mind', name: "I'm Not in Your Mind", build: buildImNotInYourMind },
+  { id: 'cellophane', name: 'Cellophane', build: buildCellophane },
+  { id: 'im-in-your-mind-fuzz', name: "I'm in Your Mind Fuzz", build: buildImInYourMindFuzz },
   { id: 'robot-stop', name: 'Robot Stop', build: buildRobotStop },
   { id: 'gamma-knife', name: 'Gamma Knife', build: buildGammaKnife },
   { id: 'people-vultures', name: 'People-Vultures', build: buildPeopleVultures },
@@ -74,22 +82,24 @@ export const TRACK_LIST: { id: string; name: string; build: () => TrackDef }[] =
 
 /** Grand Prix cups, one an album, in the order the albums came out: four tracks each, in race order (indexes into TRACK_LIST). */
 export const CUPS: { id: string; name: string; tracks: number[] }[] = [
+  // I'm in Your Mind Fuzz (November 2014): the suite the album opens with, four songs run into one, in order. Into the mind, out of it, the cellophane, and the fuzz.
+  { id: 'mind-fuzz', name: 'Mind Fuzz Cup', tracks: [0, 1, 2, 3] },
   // Nonagon Infinity (2016), in album order: the robot factory, the gamma knife, the vultures' dry lake and the pedalboard. The album never ends, so Wah Wah's finish is Robot Stop's start.
-  { id: 'nonagon-infinity', name: 'Nonagon Infinity Cup', tracks: [0, 1, 2, 3] },
+  { id: 'nonagon-infinity', name: 'Nonagon Infinity Cup', tracks: [4, 5, 6, 7] },
   // Flying Microtonal Banana (February 2017), in album order, all in the cover's blue and yellow: the desert, the lagoon, the road through the sky, and the city at night.
-  { id: 'flying-microtonal-banana', name: 'Flying Microtonal Banana Cup', tracks: [4, 5, 6, 7] },
+  { id: 'flying-microtonal-banana', name: 'Flying Microtonal Banana Cup', tracks: [8, 9, 10, 11] },
   // Polygondwanaland (November 2017), in album order: the castle falling down, the castle on the clouds, the inside of a cell, and the fourth colour.
-  { id: 'polygondwanaland', name: 'Polygondwanaland Cup', tracks: [8, 9, 10, 11] },
+  { id: 'polygondwanaland', name: 'Polygondwanaland Cup', tracks: [12, 13, 14, 15] },
   // Infest the Rats' Nest (2019), in album order: the burning Earth, the rich's colony on Mars, the ship falling at the sun, and down into Hell.
-  { id: 'infest-the-rats-nest', name: "Infest the Rats' Nest Cup", tracks: [12, 13, 14, 15] },
+  { id: 'infest-the-rats-nest', name: "Infest the Rats' Nest Cup", tracks: [16, 17, 18, 19] },
   // Omnium Gatherum (April 2022): the pink mountain, the ocean planet, the goblin's garden, and the pliosaur.
-  { id: 'omnium-gatherum', name: 'Omnium Gatherum Cup', tracks: [16, 17, 18, 19] },
+  { id: 'omnium-gatherum', name: 'Omnium Gatherum Cup', tracks: [20, 21, 22, 23] },
   // Ice, Death, Planets, Lungs, Mushrooms and Lava (October 2022), in album order: the glacier, the volcano, the jungle (the planet's lungs) overgrown with mushrooms, and the road of starlight.
-  { id: 'ice-death-planets', name: 'Ice, Death, Planets, Lungs, Mushrooms and Lava Cup', tracks: [20, 21, 22, 23] },
+  { id: 'ice-death-planets', name: 'Ice, Death, Planets, Lungs, Mushrooms and Lava Cup', tracks: [24, 25, 26, 27] },
   // PetroDragonic Apocalypse (2023), in album order: the speedway, the storm, the oil-field dragons, and Mars on fire.
-  { id: 'petrodragonic-apocalypse', name: 'PetroDragonic Apocalypse Cup', tracks: [24, 25, 26, 27] },
+  { id: 'petrodragonic-apocalypse', name: 'PetroDragonic Apocalypse Cup', tracks: [28, 29, 30, 31] },
   // Phantom Island (2025): the island in the mist, the plane with no engine, the forest that's awake, and the sea at night.
-  { id: 'phantom-island', name: 'Phantom Island Cup', tracks: [28, 29, 30, 31] },
+  { id: 'phantom-island', name: 'Phantom Island Cup', tracks: [32, 33, 34, 35] },
 ];
 
 /** Cups that were retired when every cup became an album's, and the album cup that took most of each one's tracks: progress.ts carries their trophies over. */

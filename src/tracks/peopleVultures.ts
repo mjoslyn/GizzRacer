@@ -2,9 +2,18 @@ import { TrackBuilder, offsetPose, type Pose } from './builder';
 import type { BranchDef, TrackDef } from './track';
 
 const K = 1.12;
-const START: Pose = { x: -110 * K, z: -150 * K, h: Math.PI / 2 };
+const DEG = Math.PI / 180;
+/** The triangle's side, vertex to vertex (m): equilateral, pointing up, its centre just under the origin. */
+const SIDE = 440;
+const HEIGHT = (SIDE * Math.sqrt(3)) / 2;
+/** The two bottom corners' radius (unscaled): big and round. */
+const CORNER_R = 40;
+/** How much road a 120 degree turn of radius r (unscaled) takes off each side it joins (m). */
+const trim = (r: number) => r * K * Math.tan(60 * DEG);
+/** A straight of `m` real metres. */
+const fill = (m: number) => m / K;
 const FINISH = 45;
-/** The Circling Bend: the road swings out round a gulch in three arcs of this radius and turn. */
+/** The Circling Bend: the road swings in round a gulch in three arcs of this radius and turn. */
 const BEND_R = 34;
 const BEND_TURN = 70;
 /** The Thermal Spiral's radius, and the top of it. */
@@ -14,58 +23,88 @@ const SPIRAL_TOP = 15;
 const GULLY_DEPTH = 6;
 /** The ribs along Ribcage Run. */
 const RIBS = 4;
+/** Up the right-hand side from the bottom right corner, toward the apex: the finish straight starts just out of that corner. */
+const UP_RIGHT = -30 * DEG;
+/** The triangle sits a little low in its bounds, to leave the loop over the apex room. */
+const DROP = 40;
+const START: Pose = offsetPose({ x: SIDE / 2, z: -HEIGHT / 3 - DROP, h: UP_RIGHT }, trim(CORNER_R) + FINISH * K);
 
 /**
  * People-Vultures (the Nonagon Infinity Cup's third), after the song: a
- * dry lake under a bruised sky, the birds circling. Down Carcass Straight
- * (two kickers) under a gate of vulture totems, through the Scavenger
- * Bend, up the Thermal Spiral the way a vulture rides a thermal, a full
- * turn to 15 m over its own start, and The Swoop off the top. Ribcage Run
- * between ribs 4 m tall, Bone Gully sunk 6 m with vultures diving at the
- * road, the Gizzard Leap over a gulch and the Circling Bend round another,
- * which the Carrion Bridge, a span of bones, crosses straight over until
- * the birds pick it clean on the final lap.
+ * dry lake under a bruised sky, the birds circling. The layout is a big
+ * triangle pointing up, the carcass at its middle: three long straight
+ * sides of 440 m, the two bottom corners big and round, and at the apex the
+ * road doesn't turn but runs on past it and circles back, the way a vulture
+ * rides a thermal, so the top of the triangle is a sharp crossing with a
+ * loop above it. Up the right-hand side: Carcass Straight (two kickers)
+ * under a gate of vulture totems, the Scavenger Bend jinking out and back
+ * onto the side's line, and through the apex into the Thermal Spiral, two
+ * thirds of a turn round the outside, up 15 m, back over the apex on a
+ * deck above the road it came in on. The Swoop falls off the top down the
+ * left-hand side, then Ribcage Run between ribs 4 m tall and Bone Gully
+ * sunk 6 m with vultures diving at the road. The Gizzard Leap rounds the
+ * bottom left corner and jumps a gulch along the base, and the Circling
+ * Bend swings in off the base round another, which the Carrion Bridge, a
+ * span of bones, crosses straight over on the base's line until the birds
+ * pick it clean on the final lap. The bottom right corner brings it home.
  */
 export function buildPeopleVultures(): TrackDef {
   const b = new TrackBuilder(START, 'Carcass Straight', { halfWidth: 11, surface: 'scorched' });
   b.scale = K;
   b.straight(40).mark('kick1').kicker().straight(30).mark('kick2').kicker().straight(70);
+  const carcass = 140 * K + 14;
 
+  // On up the right-hand side, a jink out and back, to the apex and past it.
   b.section('Scavenger Bend', { halfWidth: 10, wallHeight: 1.2, surface: 'scorched' });
   b.mark('scavenger');
-  b.arc(42, -90).straight(10).arc(28, 60).arc(28, -60).straight(20);
+  const jink = 4 * 40 * K * Math.sin(20 * DEG);
+  const loopR = SPIRAL_R * K;
+  /** How far past the apex the loop starts, and short of it that it ends: its tangents cross at the apex. */
+  const overshoot = loopR * Math.tan(60 * DEG);
+  const scavenger = SIDE - trim(CORNER_R) - FINISH * K - carcass + overshoot;
+  b.straight(fill((scavenger - jink) / 3));
+  b.arc(40, 20).arc(40, -40).arc(40, 20);
+  b.straight(fill(((scavenger - jink) * 2) / 3));
 
-  // A full turn up on the thermal and over the road it started on.
+  // Round the outside of the apex on the thermal, and back over it.
   b.section('Thermal Spiral', { halfWidth: 9.5, wallHeight: 1.2, surface: 'boards', bridge: true });
   b.mark('spiral');
-  b.arc(SPIRAL_R, -360);
+  b.arc(SPIRAL_R, 240);
   b.mark('spiralTop');
+  const deck = overshoot + 10;
+  b.straight(fill(deck));
   b.section('The Swoop', { halfWidth: 10, surface: 'scorched' });
   b.mark('swoop');
-  b.straight(130);
+  b.straight(120);
 
+  // Down the left-hand side to the bottom left corner.
+  const gully = 150 * K;
   b.section('Ribcage Run', { halfWidth: 9, wallHeight: RIBS, surface: 'scorched' });
   b.mark('ribs');
-  b.arc(16, -90).straight(30).arc(16, 90).straight(30).arc(16, -90).straight(20);
+  b.straight(fill(SIDE - trim(CORNER_R) - (deck - overshoot) - 120 * K - gully));
   b.section('Bone Gully', { halfWidth: 9, wallHeight: RIBS, surface: 'sand' });
   b.mark('gully');
   b.straight(140);
   b.mark('gullyEnd');
   b.straight(10);
 
+  // Round onto the base and over the gulch.
   b.section('Gizzard Leap', { halfWidth: 9, wallHeight: 1.2, surface: 'scorched' });
   b.mark('leap');
-  b.arc(36, -90).straight(10).mark('ramp').elevate(0).rise(18, 3);
+  b.arc(CORNER_R, -120);
+  const lead = 40;
+  b.straight(fill(lead)).mark('ramp').elevate(0).rise(18, 3);
   b.gap(13, 30);
   b.elevate(0).straight(20);
 
+  // The base: in off its line round the gulch, and back onto it.
   b.section('Circling Bend', { halfWidth: 9.5, surface: 'scorched' });
   b.mark('bend');
   b.straight(5);
   b.mark('boneFrom');
   b.arc(BEND_R, -BEND_TURN).arc(BEND_R, 2 * BEND_TURN).arc(BEND_R, -BEND_TURN);
   b.mark('boneTo');
-  b.turnTo(offsetPose(START, -FINISH * K), 38);
+  b.turnTo(offsetPose(START, -FINISH * K), CORNER_R);
   b.section('Finish Straight', { halfWidth: 11, surface: 'scorched' });
   b.mark('finish');
   b.straight(FINISH);
@@ -92,7 +131,7 @@ export function buildPeopleVultures(): TrackDef {
     boostPads: [
       { s: 40, length: 8, lateral: 0, halfWidth: 2.5 },
       { s: at('swoop', 110), length: 8, lateral: 0, halfWidth: 2.5 },
-      { s: at('leap', 70), length: 8, lateral: 0, halfWidth: 2.5 },
+      { s: b.marks.ramp.s - 10, length: 8, lateral: 0, halfWidth: 2.5 },
     ],
     checkpoints: ['scavenger', 'spiral', 'swoop', 'ribs', 'gully', 'leap', 'bend'].map((k) => b.marks[k].s / main.length),
     laps: 3,
@@ -100,7 +139,7 @@ export function buildPeopleVultures(): TrackDef {
     landmarks: [
       { kind: 'carrionGate', ribbon: -1, s: 6 },
       { kind: 'carrionGate', ribbon: -1, s: at('ribs', -2) },
-      { kind: 'carcass', ribbon: -1, s: at('swoop', 60), lateral: 120 },
+      { kind: 'carcass', ribbon: -1, s: at('gully', 20), lateral: SIDE / (2 * Math.sqrt(3)) },
     ],
     itemBoxes: [
       { s: 75, count: 4 },

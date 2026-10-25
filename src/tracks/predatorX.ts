@@ -2,9 +2,22 @@ import { TrackBuilder, offsetPose, type Pose } from './builder';
 import type { BranchDef, TrackDef } from './track';
 
 const K = 1.12;
-const START: Pose = { x: 70 * K, z: 165 * K, h: -Math.PI / 2 };
+const DEG = Math.PI / 180;
+/** Each jaw's outer edge opens off the snout at this angle to the centreline (degrees). */
+const JAW_ANGLE = 22;
+/** How thick a jaw is, centreline to centreline: the hairpin round each tip has half this radius. */
+const JAW = 68;
+/** The snout's point, where the two outer edges would meet. */
+const SNOUT = { x: -270, z: 0 };
+/** The line is this far up the upper jaw's outer edge from the snout's point (m). */
+const START_UP = 276;
+const START: Pose = {
+  x: SNOUT.x + START_UP * Math.cos(JAW_ANGLE * DEG),
+  z: SNOUT.z + START_UP * Math.sin(JAW_ANGLE * DEG),
+  h: -(90 + JAW_ANGLE) * DEG,
+};
 const FINISH = 45;
-/** The Apex Bend: the shore road swings out round a lagoon in three arcs of this radius and turn. */
+/** The Dorsal Fin: the upper jaw's back bulges out round a lagoon in three arcs of this radius and turn. */
 const LAGOON_R = 34;
 const LAGOON_TURN = 70;
 /** How high the road climbs onto the Fossil Cliffs. */
@@ -14,47 +27,59 @@ const CUT_DEPTH = 6;
 
 /**
  * Predator X (the Omnium Gatherum Cup's finale): a primeval coast where the
- * pliosaur hunts, after the song. Along Bone Beach, vents going off on the
- * Fossil Flats (two kickers among them), up the Fossil Cliffs in
- * switchbacks and off the top, through the Cycad Woods, then the Pliosaur
- * Causeway: a rail-less causeway over its water, a fin circling off one
- * side and then the other before the jaws come up over the edge. The
- * Abyssal Cut sunk 6 m and a jump, and the Apex Bend swinging round a
- * lagoon, which the Bone Bridge, a spine of vertebrae, crosses straight
- * over. On the final lap it is gone.
+ * pliosaur hunts, after the song. The lap is its open jaws seen from above:
+ * two long jaws meeting at a pointed snout and gaping wide at the other end,
+ * the road out along the outside of one and back along the inside, into
+ * the throat and out along the other. Along Bone Beach and the Fossil Flats
+ * on the upper jaw's back, vents going off (two kickers among them), round
+ * the snout and up the lower jaw onto the Fossil Cliffs and off the top,
+ * through the Cycad Woods and round the lower jaw's tip, then the Pliosaur
+ * Causeway back along the inside of the jaw: a rail-less causeway over its
+ * water, a fin circling off one side and then the other before the jaws
+ * come up over the edge. The Abyssal Cut sunk 6 m round the throat and a
+ * jump out of it along the upper jaw's inside, the Apex Bend round its tip,
+ * and the Dorsal Fin, where the upper jaw's back bulges out round a lagoon
+ * that the Bone Bridge, a spine of vertebrae, crosses straight over. On the
+ * final lap it is gone.
  */
 export function buildPredatorX(): TrackDef {
   const b = new TrackBuilder(START, 'Bone Beach', { halfWidth: 11, surface: 'sand' });
   b.scale = K;
-  b.straight(140).arc(50, -90);
+  // The snout and the throat turn through the same angle, one each way.
+  const point = 180 - 2 * JAW_ANGLE;
+  b.straight(40);
 
   b.section('Fossil Flats', { halfWidth: 10, surface: 'sand' });
   b.mark('flats');
-  b.straight(40).mark('kick1').kicker().straight(30).mark('kick2').kicker().straight(30);
+  b.straight(40).mark('kick1').kicker().straight(30).mark('kick2').kicker().straight(35);
 
+  // Round the snout and up the lower jaw onto the cliffs, then off the top.
   b.section('Fossil Cliffs', { halfWidth: 9, wallHeight: 1.2, surface: 'rock' });
   b.mark('cliff');
-  b.arc(30, -90).straight(30).arc(24, 180).straight(30).arc(24, -180).mark('cliffTop').straight(70);
+  b.arc(36, -point).straight(150).mark('cliffTop').straight(70);
   b.section('Cycad Woods', { halfWidth: 9, surface: 'sand' });
   b.mark('woods');
-  b.arc(40, -90).straight(10).arc(32, -60).arc(32, 60);
+  b.straight(84).arc(JAW / 2, -180);
 
-  // The pliosaur's water, either side.
+  // Back along the inside of the lower jaw, the pliosaur's water either side.
   b.section('Pliosaur Causeway', { halfWidth: 9, surface: 'rock' });
   b.mark('causeway');
   b.elevate(0).straight(10).elevate(1.5);
   b.bridge(60, 30, 'water');
   b.elevate(1.5).straight(10).elevate(0);
 
+  // Down into the throat, and out along the inside of the upper jaw.
   b.section('Abyssal Cut', { halfWidth: 9, wallHeight: 1.2, surface: 'rock' });
   b.mark('cut');
-  b.arc(36, 90).straight(10).mark('ramp').elevate(0).rise(18, 3);
+  b.straight(77).arc(30, point).straight(10).mark('ramp').elevate(0).rise(18, 3);
   b.gap(13, 30, 'water');
   b.elevate(0).straight(20);
+  b.straight(128);
 
+  // Round the upper jaw's tip and back along its top, past the fin.
   b.section('Apex Bend', { halfWidth: 9.5, surface: 'sand' });
   b.mark('bend');
-  b.straight(5);
+  b.arc(JAW / 2, -180).straight(5);
   b.mark('boneFrom');
   b.arc(LAGOON_R, LAGOON_TURN).arc(LAGOON_R, -2 * LAGOON_TURN).arc(LAGOON_R, LAGOON_TURN);
   b.mark('boneTo');
@@ -65,7 +90,7 @@ export function buildPredatorX(): TrackDef {
 
   // Heights, over the layout: dunes on the flats, the cliff and its plunge, a rise in the woods, the cut before the gap.
   const m = (name: string, d = 0) => b.marks[name].s + d * K;
-  b.profile(30, m('flats', -20), (u) => 3 * Math.sin(2 * Math.PI * u) ** 2);
+  b.profile(10, m('flats', -5), (u) => 1.5 * Math.sin(Math.PI * u) ** 2);
   ease(b, m('cliff'), 0, m('cliffTop'), CLIFF_TOP);
   plunge(b, m('cliffTop'), CLIFF_TOP, m('cliffTop', 70), 0);
   ease(b, m('woods', 10), 0, m('woods', 35), 5);

@@ -11,7 +11,7 @@ import { Track, inPit, type BranchDef, type HazardDef, type ItemBoxRow, type Lan
  */
 
 export type GenTheme = TrackDef['theme'];
-export const GEN_THEMES: readonly GenTheme[] = ['desert', 'speedway', 'volcano', 'jungle', 'lagoon', 'glacier', 'neon', 'dream', 'petro', 'mars', 'storm', 'void', 'phantom', 'airfield', 'grove', 'doubt', 'magenta', 'kepler', 'goblin', 'primeval', 'castle', 'skycastle', 'cell', 'prism', 'factory', 'gamma', 'carrion', 'wah', 'smog', 'dome', 'solar', 'inferno'];
+export const GEN_THEMES: readonly GenTheme[] = ['desert', 'speedway', 'volcano', 'jungle', 'lagoon', 'glacier', 'neon', 'dream', 'petro', 'mars', 'storm', 'void', 'phantom', 'airfield', 'grove', 'doubt', 'magenta', 'kepler', 'goblin', 'primeval', 'castle', 'skycastle', 'cell', 'prism', 'factory', 'gamma', 'carrion', 'wah', 'smog', 'dome', 'solar', 'inferno', 'mind', 'notmind', 'cellophane', 'mindfuzz'];
 export const GEN_THEME_NAMES: Record<GenTheme, string> = {
   desert: 'Desert',
   speedway: 'Speedway',
@@ -45,6 +45,10 @@ export const GEN_THEME_NAMES: Record<GenTheme, string> = {
   dome: 'Mars for the Rich',
   solar: 'Perihelion',
   inferno: 'Hell',
+  mind: "I'm in Your Mind",
+  notmind: "I'm Not in Your Mind",
+  cellophane: 'Cellophane',
+  mindfuzz: "I'm in Your Mind Fuzz",
 };
 export type GenLength = 'short' | 'medium' | 'long';
 export const GEN_LENGTHS: readonly GenLength[] = ['short', 'medium', 'long'];
@@ -485,6 +489,51 @@ const PALETTES: Record<GenTheme, Palette> = {
     tallWalls: 6,
     places: ['Brimstone', 'Pit', 'Rat', 'Circle', 'Sulphur', 'Damnation', 'Nest', 'Cinder', 'Abyss'],
     music: { lap: 'hell', finalLap: 'hell-final-lap' },
+  },
+  mind: {
+    surface: 'neural',
+    deck: 'neural',
+    alt: 'neon',
+    hazards: ['eyes'],
+    start: 'eyeGate',
+    landmarks: ['eyeGate'],
+    tallWalls: 6,
+    places: ['Cortex', 'Synapse', 'Third Eye', 'Neuron', 'Dream', 'Subconscious', 'Thought', 'Mind', 'Pineal'],
+    music: { lap: 'im-in-your-mind', finalLap: 'im-in-your-mind-final-lap' },
+  },
+  notmind: {
+    surface: 'opart',
+    deck: 'opart',
+    alt: 'neon',
+    hazards: ['arrows'],
+    start: 'arrowGate',
+    landmarks: ['arrowGate'],
+    tallWalls: 5,
+    places: ['Nowhere', 'Blind Spot', 'Vacant', 'Mirror', 'Empty Head', 'Void', 'Missing', 'Not There', 'Blank'],
+    music: { lap: 'im-not-in-your-mind', finalLap: 'im-not-in-your-mind-final-lap' },
+  },
+  cellophane: {
+    surface: 'film',
+    deck: 'film',
+    alt: 'prism',
+    liquid: 'water',
+    hazards: ['sheets'],
+    start: 'filmGate',
+    landmarks: ['filmGate'],
+    tallWalls: 6,
+    places: ['Wrapper', 'Crinkle', 'Fold', 'Kaleidoscope', 'Stained Glass', 'Roll', 'Cling', 'Sheen', 'Cellophane'],
+    music: { lap: 'cellophane', finalLap: 'cellophane-final-lap' },
+  },
+  mindfuzz: {
+    surface: 'fuzz',
+    deck: 'fuzz',
+    alt: 'neon',
+    hazards: ['fuzz', 'eyes'],
+    start: 'fuzzGate',
+    landmarks: ['fuzzGate'],
+    tallWalls: 6,
+    places: ['Overdrive', 'Feedback', 'Swirl', 'Amp', 'Distortion', 'Needle', 'Static', 'Wall of Sound', 'Fuzz'],
+    music: { lap: 'im-in-your-mind-fuzz', finalLap: 'im-in-your-mind-fuzz-final-lap' },
   },
 };
 
@@ -1201,7 +1250,13 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
         hazards.push({ kind, at: at(count - 1), period: 4.5 });
         break;
       case 'flares':
+      case 'eyes':
+      case 'sheets':
         hazards.push({ kind, at: at(count - 1), period: 5 });
+        break;
+      case 'arrows':
+      case 'fuzz':
+        hazards.push({ kind, at: at(count - 1), period: 4.5 });
         break;
       case 'vines':
         hazards.push({ kind, at: at(count), period: 3.6 });

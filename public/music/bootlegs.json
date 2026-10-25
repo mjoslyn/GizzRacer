@@ -2436,6 +2436,446 @@
    "gain": 5
   }
  ],
+ "I'm in Your Mind": [
+  {
+   "id": "kglw2014-10-13.multitrack.flac",
+   "file": "KingGizzard2014-10-13_nyctaper_t01.mp3",
+   "date": "2014-10-13",
+   "venue": "Babys All Right",
+   "seconds": 208,
+   "start": 0,
+   "gain": 4.5
+  },
+  {
+   "id": "kglw2015-09-12.sbd-mk41v.flac1644",
+   "file": "kglw2015-09-12pourhouse_acidjack-01.mp3",
+   "date": "2015-09-12",
+   "venue": "Pour House",
+   "seconds": 219,
+   "start": 23.2,
+   "gain": 3
+  },
+  {
+   "id": "kglw2016-05-07.hifiindy2016",
+   "file": "08 - I'm In Your Mind -.mp3",
+   "date": "2016-05-07",
+   "venue": "HI-FI Indy, Indianapolis, IN, USA",
+   "seconds": 201,
+   "start": 0,
+   "gain": 7.5
+  },
+  {
+   "id": "kglw2018-08-22.AUD.FLAC16",
+   "file": "KGLW_2018-08-22_AUD_t12_I'm In Your Mind.mp3",
+   "date": "2018-08-22",
+   "venue": "Club Manufaktur",
+   "seconds": 224,
+   "start": 0,
+   "gain": 7
+  },
+  {
+   "id": "kglw2019-10-16.ca-11.flac1644",
+   "file": "KG&TLW_2019-10-16_AUD_t08.mp3",
+   "date": "2019-10-16",
+   "venue": "X-TRA",
+   "seconds": 210,
+   "start": 0,
+   "gain": 8.5
+  },
+  {
+   "id": "kglw2022-05-24",
+   "file": "kglw2022-05-24t05I'm In Your Mind >.mp3",
+   "date": "2022-05-24",
+   "venue": "Water Street Music Hall",
+   "seconds": 160,
+   "start": 0,
+   "gain": 7
+  },
+  {
+   "id": "kglw2022-10-23.vwmule",
+   "file": "kglw2022-10-23.vwmule.t04.mp3",
+   "date": "2022-10-23",
+   "venue": "The Anthem",
+   "seconds": 1218,
+   "start": 0,
+   "gain": 8.5
+  },
+  {
+   "id": "kglw2023-06-02.FLAC.bootleggermix",
+   "file": "King Gizzard & The Lizard Wizard - Live at The Caverns '23 - 01 I'm In Your Mind (Live at The Caverns '23).mp3",
+   "date": "2023-06-02",
+   "venue": "The Caverns",
+   "seconds": 203,
+   "start": 2.3,
+   "gain": -2.5
+  },
+  {
+   "id": "kglw2024-08-16.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live at Forest Hills Stadium, Queens, NY (8-16-24) - 09 I'm In Your Mind (Live).mp3",
+   "date": "2024-08-16",
+   "venue": "Forest Hills Stadium, Queens, NY, USA",
+   "seconds": 198,
+   "start": 0,
+   "gain": 0.5
+  },
+  {
+   "id": "kglw2024-08-31.bandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live at Ascend Amphitheater- Nashville- TN (8-31-24) 2/King Gizzard & The Lizard Wizard - Live at Ascend Amphitheater, Nashville, TN (8-31-24) - 08 I'm In Your Mind (Live).mp3",
+   "date": "2024-08-31",
+   "venue": "Ascend Amphitheater",
+   "seconds": 202,
+   "start": 0,
+   "gain": 0.5
+  },
+  {
+   "id": "kglw2025-06-05.SBD.flac",
+   "file": "King Gizzard & The Lizard Wizard - Live in Athens '25 - 20 I'm In Your Mind (Live in Athens '25).mp3",
+   "date": "2025-06-05",
+   "venue": "Lycabettus Theatre",
+   "seconds": 242,
+   "start": 0,
+   "gain": 0.5
+  },
+  {
+   "id": "kglw2026-08-20",
+   "file": "11-I'm In Your Mind _.mp3",
+   "date": "2026-08-20",
+   "venue": "Forest Hills",
+   "seconds": 329,
+   "start": 0,
+   "gain": 4.5
+  }
+ ],
+ "I'm Not in Your Mind": [
+  {
+   "id": "kglw2014-10-13.multitrack.flac",
+   "file": "KingGizzard2014-10-13_nyctaper_t02.mp3",
+   "date": "2014-10-13",
+   "venue": "Babys All Right",
+   "seconds": 135,
+   "start": 0,
+   "gain": 5
+  },
+  {
+   "id": "kglw2015-06-24.matrix.flac1644",
+   "file": "KingGizzard2015-06-24_nyctaper_t02.mp3",
+   "date": "2015-06-24",
+   "venue": "Baby's All Right",
+   "seconds": 168,
+   "start": 0,
+   "gain": 5.5
+  },
+  {
+   "id": "kglw2016-05-07.hifiindy2016",
+   "file": "09 - I'm Not In Your Mind -.mp3",
+   "date": "2016-05-07",
+   "venue": "HI-FI Indy, Indianapolis, IN, USA",
+   "seconds": 127,
+   "start": 0,
+   "gain": 8.5
+  },
+  {
+   "id": "kglw2018-08-22.AUD.FLAC16",
+   "file": "KGLW_2018-08-22_AUD_t13_I'm Not In Your Mind.mp3",
+   "date": "2018-08-22",
+   "venue": "Club Manufaktur",
+   "seconds": 110,
+   "start": 0,
+   "gain": 6
+  },
+  {
+   "id": "king-gizzard-the-lizard-wizard-live-in-london-19-audio",
+   "file": "1.5 King Gizzard & The Lizard Wizard - Live In London '19 - 05 I'm Not In Your Mind (Live In London '19).mp3",
+   "date": "2019-10-05",
+   "venue": "Alexandra Palace",
+   "seconds": 119,
+   "start": 0,
+   "gain": -1
+  },
+  {
+   "id": "kglw2022-03-07",
+   "file": "03-I'm Not In Your Mind _.mp3",
+   "date": "2022-03-07",
+   "venue": "Enmore Theatre",
+   "seconds": 324,
+   "start": 0,
+   "gain": 7
+  },
+  {
+   "id": "kglw2022-10-23.vwmule",
+   "file": "kglw2022-10-23.vwmule.t04.mp3",
+   "date": "2022-10-23",
+   "venue": "The Anthem",
+   "seconds": 1218,
+   "start": 0,
+   "gain": 8.5
+  },
+  {
+   "id": "kglw2023-03-20",
+   "file": "kglw202311.mp3",
+   "date": "2023-03-20",
+   "venue": "Cirque Royal/Koninklijk",
+   "seconds": 314,
+   "start": 0,
+   "gain": 4.5
+  },
+  {
+   "id": "kglw2024-08-16.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live at Forest Hills Stadium, Queens, NY (8-16-24) - 10 I'm Not In Your Mind (Live).mp3",
+   "date": "2024-08-16",
+   "venue": "Forest Hills Stadium, Queens, NY, USA",
+   "seconds": 138,
+   "start": 0,
+   "gain": 1
+  },
+  {
+   "id": "kglw2024-08-31.bandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live at Ascend Amphitheater- Nashville- TN (8-31-24) 2/King Gizzard & The Lizard Wizard - Live at Ascend Amphitheater, Nashville, TN (8-31-24) - 09 I'm Not In Your Mind (Live).mp3",
+   "date": "2024-08-31",
+   "venue": "Ascend Amphitheater",
+   "seconds": 165,
+   "start": 0,
+   "gain": 0.5
+  },
+  {
+   "id": "kglw2025-06-05.SBD.flac",
+   "file": "King Gizzard & The Lizard Wizard - Live in Athens '25 - 21 I'm Not In Your Mind (Live in Athens '25).mp3",
+   "date": "2025-06-05",
+   "venue": "Lycabettus Theatre",
+   "seconds": 270,
+   "start": 0,
+   "gain": 0.5
+  },
+  {
+   "id": "kglw2026-08-20",
+   "file": "12- I'm Not In Your Mind _.mp3",
+   "date": "2026-08-20",
+   "venue": "Forest Hills",
+   "seconds": 242,
+   "start": 0,
+   "gain": 4
+  }
+ ],
+ "Cellophane": [
+  {
+   "id": "kglw2014-10-31.nyctaper.matrix.flac16",
+   "file": "KingGizzard2014-10-31_nyctaper_t09.mp3",
+   "date": "2014-10-31",
+   "venue": "338 Moffat",
+   "seconds": 233,
+   "start": 0,
+   "gain": 6
+  },
+  {
+   "id": "gizz2016-02-28",
+   "file": "15-Cellophane _.mp3",
+   "date": "2016-02-28",
+   "venue": "Z-Bau Galerie",
+   "seconds": 182,
+   "start": 0,
+   "gain": 6
+  },
+  {
+   "id": "kglw2017-03-31",
+   "file": "20-Cellophane.mp3",
+   "date": "2017-03-31",
+   "venue": "Webster Hall",
+   "seconds": 197,
+   "start": 0,
+   "gain": 1
+  },
+  {
+   "id": "kglw2017-09-28.mysteryjack",
+   "file": "07 Cellophane.mp3",
+   "date": "2017-09-28",
+   "venue": "One Eyed Jacks",
+   "seconds": 247,
+   "start": 0,
+   "gain": 6.5
+  },
+  {
+   "id": "kglw2018-06-02.ccm4.flac16",
+   "file": "kglw2018-06-02t05.mp3",
+   "date": "2018-06-02",
+   "venue": "The Warfield",
+   "seconds": 167,
+   "start": 0,
+   "gain": 1
+  },
+  {
+   "id": "kglw2018-06-22",
+   "file": "06 - Cellophane.mp3",
+   "date": "2018-06-22",
+   "venue": "Stubbs BBQ Waller Creek Amphitheater",
+   "seconds": 99,
+   "start": 0,
+   "gain": 12
+  },
+  {
+   "id": "kglw2022-03-07",
+   "file": "04-Cellophane _.mp3",
+   "date": "2022-03-07",
+   "venue": "Enmore Theatre",
+   "seconds": 186,
+   "start": 0,
+   "gain": 6
+  },
+  {
+   "id": "kglw2022-10-23.vwmule",
+   "file": "kglw2022-10-23.vwmule.t04.mp3",
+   "date": "2022-10-23",
+   "venue": "The Anthem",
+   "seconds": 1218,
+   "start": 0,
+   "gain": 8.5
+  },
+  {
+   "id": "kglw2023-06-02.FLAC.bootleggermix",
+   "file": "King Gizzard & The Lizard Wizard - Live at The Caverns '23 - 03 Cellophane (Live at The Caverns '23).mp3",
+   "date": "2023-06-02",
+   "venue": "The Caverns",
+   "seconds": 206,
+   "start": 0,
+   "gain": -2.5
+  },
+  {
+   "id": "kglw2024-08-20.mk4v.cmc1k.sx-r4.flac",
+   "file": "kglw2024-08-20.mk4v.cmc1k.sx-r4+.24bit-10.mp3",
+   "date": "2024-08-20",
+   "venue": "Thompson's Point",
+   "seconds": 126,
+   "start": 0,
+   "gain": 4.5
+  },
+  {
+   "id": "kglw2024-11-04.bandcampbootlegger",
+   "file": "05 Cellophane (Live in Stanford '24).mp3",
+   "date": "2024-11-04",
+   "venue": "Frost Amphitheater",
+   "seconds": 217,
+   "start": 0,
+   "gain": 1
+  },
+  {
+   "id": "kglw2025-12-04.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live in Sydney '25 - 15 Cellophane (Live In Sydney '25).mp3",
+   "date": "2025-12-04",
+   "venue": "Enmore Theatre, Sydney, NSW, Australia",
+   "seconds": 287,
+   "start": 0,
+   "gain": -1.5
+  }
+ ],
+ "I'm in Your Mind Fuzz": [
+  {
+   "id": "kglw2014-10-13.multitrack.flac",
+   "file": "KingGizzard2014-10-13_nyctaper_t04.mp3",
+   "date": "2014-10-13",
+   "venue": "Babys All Right",
+   "seconds": 153,
+   "start": 0,
+   "gain": 3.5
+  },
+  {
+   "id": "kglw2015-06-24.matrix.flac1644",
+   "file": "KingGizzard2015-06-24_nyctaper_t04.mp3",
+   "date": "2015-06-24",
+   "venue": "Baby's All Right",
+   "seconds": 184,
+   "start": 0,
+   "gain": 4
+  },
+  {
+   "id": "gizz2016-02-28",
+   "file": "16-I'm in Your Mind Fuzz.mp3",
+   "date": "2016-02-28",
+   "venue": "Z-Bau Galerie",
+   "seconds": 240,
+   "start": 0,
+   "gain": 5
+  },
+  {
+   "id": "kglw2016-05-23",
+   "file": "12-I'm In Your Mind Fuzz.mp3",
+   "date": "2016-05-23",
+   "venue": "The New Parish",
+   "seconds": 213,
+   "start": 0,
+   "gain": 10.5
+  },
+  {
+   "id": "kglw2022-03-07",
+   "file": "05-I'm In Your Mind Fuzz.mp3",
+   "date": "2022-03-07",
+   "venue": "Enmore Theatre",
+   "seconds": 179,
+   "start": 0,
+   "gain": 5
+  },
+  {
+   "id": "kg2022-10-11",
+   "file": "44. I'm In Your Mind Fuzz (Live At Red Rocks '22).mp3",
+   "date": "2022-10-11",
+   "venue": "Red Rocks Amphitheater",
+   "seconds": 171,
+   "start": 0,
+   "gain": 0
+  },
+  {
+   "id": "kglw2022-10-28",
+   "file": "kglw2022-10-28 09-I'm in Your Mind Fuzz.mp3",
+   "date": "2022-10-28",
+   "venue": "Stubb's BBQ Waller Creek Amphitheater",
+   "seconds": 291,
+   "start": 0,
+   "gain": 5.5
+  },
+  {
+   "id": "kglw2023-06-02.FLAC.bootleggermix",
+   "file": "King Gizzard & The Lizard Wizard - Live at The Caverns '23 - 04 I'm In Your Mind Fuzz (Live at The Caverns '23).mp3",
+   "date": "2023-06-02",
+   "venue": "The Caverns",
+   "seconds": 203,
+   "start": 0,
+   "gain": -3
+  },
+  {
+   "id": "kglw2024-08-16.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live at Forest Hills Stadium, Queens, NY (8-16-24) - 12 I'm In Your Mind Fuzz (Live).mp3",
+   "date": "2024-08-16",
+   "venue": "Forest Hills Stadium, Queens, NY, USA",
+   "seconds": 267,
+   "start": 0,
+   "gain": 0
+  },
+  {
+   "id": "kglw2024-08-31.bandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live at Ascend Amphitheater- Nashville- TN (8-31-24) 2/King Gizzard & The Lizard Wizard - Live at Ascend Amphitheater, Nashville, TN (8-31-24) - 11 I'm In Your Mind Fuzz (Live).mp3",
+   "date": "2024-08-31",
+   "venue": "Ascend Amphitheater",
+   "seconds": 202,
+   "start": 0,
+   "gain": -0.5
+  },
+  {
+   "id": "kglw2024-11-04.bandcampbootlegger",
+   "file": "06 I'm In Your Mind Fuzz (Live in Stanford '24).mp3",
+   "date": "2024-11-04",
+   "venue": "Frost Amphitheater",
+   "seconds": 220,
+   "start": 0,
+   "gain": 0.5
+  },
+  {
+   "id": "kglw2025-08-15.SBD.wav",
+   "file": "King Gizzard & The Lizard Wizard - Live at Field of Vision '25 - 15 I'm In Your Mind Fuzz (Live at Field of Vision '25).mp3",
+   "date": "2025-08-15",
+   "venue": "Field of Vision at Meadow Creek",
+   "seconds": 210,
+   "start": 0,
+   "gain": 0
+  }
+ ],
  "Altered Beast I": [
   {
    "id": "kglw2018-06-02.ccm4.flac16",

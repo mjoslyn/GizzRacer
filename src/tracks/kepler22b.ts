@@ -2,12 +2,23 @@ import { TrackBuilder, offsetPose, type Pose } from './builder';
 import type { BranchDef, TrackDef } from './track';
 
 const K = 1.12;
-const START: Pose = { x: -70 * K, z: 165 * K, h: Math.PI / 2 };
+/** The ring's sweep: the lap is one great near-circle, every bend of it outside its features an arc of this radius. */
+const RING_R = 180;
+const START: Pose = { x: -50 * K, z: 180 * K, h: Math.PI / 2 };
 const FINISH = 45;
-/** The Habitable Zone: the shore road swings out round a lagoon in three arcs of this radius and turn. */
+/** The last bend home, closing the ring. */
+const CLOSE_R = 145;
+/** The Habitable Zone: the ring bulges out round a lagoon in three arcs of this radius and turn. */
 const LAGOON_R = 34;
 const LAGOON_TURN = 70;
-/** The Orbital Ring climbs a full circle on a deck from this height to the ridge's. */
+/**
+ * The Orbital Ring climbs round a loop of this radius tucked inside the big
+ * ring, this many degrees short of a full circle, so it leaves across the
+ * road it came in on (and over it).
+ */
+const LOOP_R = 28;
+const LOOP_SHORT = 30;
+/** The Orbital Ring's deck climbs from this height to the ridge's. */
 const RING_FROM = 2;
 const RIDGE = 18;
 /** Where the Freefall lands, well below the ridge it left. */
@@ -19,59 +30,62 @@ export const SHALLOWS_GRAVITY = 0.45;
 
 /**
  * Kepler-22b (the Omnium Gatherum Cup's second): an ocean world in the
- * habitable zone, after the song. From Splashdown into the Weightless
- * Shallows, where gravity is under half and the two kickers throw you
- * floating over the islands, round the Orbital Ring, a full circle on a deck
- * climbing over the road it started on, along the Ocean Ridge with geysers
- * going off, then the Freefall off the end of it, 10 m down. A rail-less
- * reef bridge, the road down in the Trench, and the Habitable Zone swinging
- * round a lagoon, which the Membrane, a narrow causeway, cuts straight
- * across from the second lap.
+ * habitable zone, after the song. The whole lap is one great ring round the
+ * ocean, the roundest road in the game. From Splashdown round into the
+ * Weightless Shallows, where gravity is under half and the two kickers throw
+ * you floating over the islands, then the Orbital Ring: a little orbit
+ * tucked inside the big one, most of a circle on a deck, climbing to cross
+ * back over the road it came in on. Along the Ocean Ridge with geysers going
+ * off, then the Freefall off the end of it, 10 m down, swinging back onto
+ * the ring. A rail-less reef bridge, the road down in the Trench, and the
+ * Habitable Zone, where the ring bulges out round a lagoon, which the
+ * Membrane, a narrow causeway, cuts straight across from the second lap.
  */
 export function buildKepler22b(): TrackDef {
   const b = new TrackBuilder(START, 'Splashdown', { halfWidth: 12, surface: 'reef' });
   b.scale = K;
-  b.straight(140).arc(50, 90);
+  b.straight(20).arc(RING_R, 26);
 
   // Low gravity: float off the kickers.
   b.section('Weightless Shallows', { halfWidth: 10, surface: 'reef', gravity: SHALLOWS_GRAVITY });
   b.mark('shallows');
-  b.straight(40).mark('kick1').kicker().straight(30).mark('kick2').kicker().straight(100);
+  b.arc(RING_R, 12).mark('kick1').kicker().arc(RING_R, 10).mark('kick2').kicker().arc(RING_R, 22);
 
   b.section('Orbital Ring', { halfWidth: 9, wallHeight: 1.2, surface: 'boards', bridge: true });
   b.mark('ring');
-  b.arc(30, 90).straight(20).arc(28, -360);
+  b.arc(RING_R, 30).arc(LOOP_R, 360 - LOOP_SHORT);
   b.mark('ringTop');
   b.section('Ocean Ridge', { halfWidth: 10, surface: 'reef', bridge: true });
   b.mark('ridge');
-  b.straight(60);
+  b.arc(RING_R, 20);
   b.mark('lip');
   b.rise(18, RIDGE + 3);
   b.gap(14, 30, 'water');
   b.section('Freefall', { halfWidth: 10, surface: 'sand' });
   b.mark('landing');
   b.elevate(LANDING).straight(20);
-  b.arc(34, 90);
+  b.arc(RING_R / 2, LOOP_SHORT + 25);
 
   b.section('Reef Bridge', { halfWidth: 8, surface: 'boards' });
   b.mark('reef');
   b.elevate(0).straight(10).elevate(1.5);
   b.bridge(45, 30, 'water');
   b.elevate(1.5).straight(10).elevate(0);
+  b.arc(RING_R, 22);
 
   b.section('Trench', { halfWidth: 9, wallHeight: 1.2, surface: 'reef' });
   b.mark('trench');
-  b.arc(32, 60).arc(32, -60);
+  b.arc(RING_R, 40);
   b.mark('trenchEnd');
-  b.arc(36, -90);
+  b.arc(RING_R, 22);
 
   b.section('Habitable Zone', { halfWidth: 9.5, surface: 'reef' });
   b.mark('zone');
-  b.straight(5);
+  b.arc(RING_R, 24).straight(5);
   b.mark('memFrom');
   b.arc(LAGOON_R, -LAGOON_TURN).arc(LAGOON_R, 2 * LAGOON_TURN).arc(LAGOON_R, -LAGOON_TURN);
   b.mark('memTo');
-  b.turnTo(offsetPose(START, -FINISH * K), 38);
+  b.turnTo(offsetPose(START, -FINISH * K), CLOSE_R);
   b.section('Finish Straight', { halfWidth: 12, surface: 'reef' });
   b.mark('finish');
   b.straight(FINISH);

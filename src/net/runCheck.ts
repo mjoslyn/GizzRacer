@@ -25,7 +25,19 @@ export const TRIAL_LAPS = 1;
  * on the old layout don't stand against the new one (a physics version
  * bump does the same for every track at once).
  */
-export const TRACK_REVISIONS: Record<string, number> = {};
+export const TRACK_REVISIONS: Record<string, number> = {
+  // Relaid out so no two tracks share a shape.
+  'robot-stop': 1,
+  'people-vultures': 1,
+  'wah-wah': 1,
+  'kepler-22b': 1,
+  'predator-x': 1,
+  'inner-cell': 1,
+  'planet-b': 1,
+  'mars-for-the-rich': 1,
+  'perihelion': 1,
+  'hell': 1,
+};
 
 /** A track's id for its records: with its revision, once it has one. */
 export function recordId(trackId: string): string {

@@ -71,6 +71,10 @@ const LIFE: Record<DecorKind, LifeSpec> = {
   domes: { motes: { color: 0xd8865a, count: 300, size: 0.5, drift: 'blow' } },
   corona: { flock: { kind: 'orb', color: 0xffe080, count: 12, height: 20, size: 0.7, glow: true }, motes: { color: 0xffc050, count: 400, size: 0.45, drift: 'rise', glow: true } },
   pit: { flock: { kind: 'bat', color: 0x0a0202, count: 14, height: 20, size: 1.1 }, motes: { color: 0xff6a20, count: 420, size: 0.45, drift: 'rise', glow: true } },
+  neurons: { flock: { kind: 'orb', color: 0x80f0ff, count: 14, height: 16, size: 0.6, glow: true }, motes: { color: 0xff90d8, count: 340, size: 0.4, drift: 'float', glow: true } },
+  opart: { flock: { kind: 'bird', color: 0x101014, count: 12, height: 20, size: 0.9 }, motes: { color: 0xffffff, count: 260, size: 0.45, drift: 'blow' } },
+  panes: { flock: { kind: 'moth', color: 0xffd020, count: 12, height: 14, size: 0.8 }, motes: { color: 0xfff0ff, count: 300, size: 0.4, drift: 'float', glow: true } },
+  static: { flock: { kind: 'orb', color: 0x80ff90, count: 12, height: 18, size: 0.7, glow: true }, motes: { color: 0xc080ff, count: 460, size: 0.45, drift: 'float', glow: true } },
 };
 
 export function trackLife(track: Track, theme: Theme, animated: ((time: number) => void)[]): Life {

@@ -243,6 +243,34 @@ const STYLES: Record<DecorKind, DetailStyle> = {
     boards: { words: ['HELL', 'ABANDON HOPE', 'RATS NEST', 'NO WAY OUT'], bg: ['#1a0202', '#4a0606'], fg: '#ff6a20' },
     crowd: true,
   },
+  neurons: {
+    edge: { kind: 'pole', height: 1.6, spacing: 12, color: 0x6a1a5a, stripe: 0x80f0ff },
+    light: 0xc080ff,
+    cover: { shape: 'crystal', colors: [0xff80c0, 0xc060ff, 0x80f0ff, 0xffd0e8], count: 1100 },
+    boards: { words: ["I'M IN YOUR MIND", 'THIRD EYE', 'MIND READ', 'THINK FAST'], bg: ['#4a0a5a', '#c03a90'], fg: '#ffe0f4' },
+    crowd: true,
+  },
+  opart: {
+    edge: { kind: 'pole', height: 1.4, spacing: 10, color: 0x101014, stripe: 0xf4f4f0 },
+    light: 0xff2a6a,
+    cover: { shape: 'pebble', colors: [0x101014, 0xf4f4f0, 0x606064], count: 1000 },
+    boards: { words: ["I'M NOT IN YOUR MIND", 'NOT THERE', 'NOWHERE', 'BLANK'], bg: ['#101014', '#f4f4f0'], fg: '#ff2a6a' },
+    crowd: true,
+  },
+  panes: {
+    edge: { kind: 'lamp', height: 3.2, spacing: 14, color: 0x1a1a24, stripe: 0xffd020 },
+    light: 0xfff4d0,
+    cover: { shape: 'crystal', colors: [0xff3a6a, 0xffd020, 0x30e080, 0x30a0ff, 0xb060ff], count: 1200 },
+    boards: { words: ['CELLOPHANE', 'SEE THROUGH', 'WRAP IT UP', 'CRINKLE'], bg: ['#30a0ff', '#ff3a6a'], fg: '#fff4c0' },
+    crowd: true,
+  },
+  static: {
+    edge: { kind: 'lamp', height: 2.6, spacing: 14, color: 0x1a1420, stripe: 0x80ff90 },
+    light: 0x80ff90,
+    cover: { shape: 'tuft', colors: [0x6a2a9a, 0x40c060, 0xa040c0, 0x2a8a3a], count: 1500 },
+    boards: { words: ['MIND FUZZ', 'TURN IT UP', 'INTO THE RED', 'FUZZ'], bg: ['#2a0a3a', '#40c060'], fg: '#ffb0f0' },
+    crowd: true,
+  },
   sky: {
     edge: { kind: 'star', height: 1.4, spacing: 14, color: 0xffe8a0, stripe: 0xffffff },
     light: 0xfff0ff,
@@ -275,7 +303,7 @@ export function trackDetail(track: Track, theme: Theme, animated: ((time: number
 
   // Roads that are only there on some laps carry their own paint (render/trackView.ts) and no posts or boards.
   const fixed = ribbons.filter((_, i) => i === 0 || !track.def.branches[i - 1].openOn);
-  for (const r of fixed) g.add(roadPaint(r, theme.decor, theme.edgeLine));
+  for (const r of fixed) g.add(roadPaint(r, theme.decor, theme.edgeLine, theme.edgeWidth));
   g.add(edgeProps(fixed, style, abyss, clear, animated));
   g.add(cornerBoards(fixed, abyss, clear));
   if (!abyss) {
@@ -296,7 +324,7 @@ export function trackDetail(track: Track, theme: Theme, animated: ((time: number
  * racing line wears into any hard surface, swinging to the inside of each
  * corner.
  */
-export function roadPaint(ribbon: Ribbon, decor: DecorKind, edgeLine?: number): THREE.Group {
+export function roadPaint(ribbon: Ribbon, decor: DecorKind, edgeLine?: number, edgeWidth = 0.5): THREE.Group {
   const g = new THREE.Group();
   const sp = ribbon.spline;
   const segs = sp.closed ? sp.count : sp.count - 1;
@@ -325,7 +353,7 @@ export function roadPaint(ribbon: Ribbon, decor: DecorKind, edgeLine?: number): 
     line[i] = -Math.max(-0.55, Math.min(0.55, (sum / 25) * 14));
   }
   const paintable = new Set(['asphalt']);
-  const wearable = new Set(['asphalt', 'salt', 'rock', 'sand', 'boards', 'regolith', 'wet', 'paving', 'reef', 'flagstone', 'membrane', 'steel', 'scorched', 'fret', 'tar', 'gilded', 'heatshield', 'brimstone']);
+  const wearable = new Set(['asphalt', 'salt', 'rock', 'sand', 'boards', 'regolith', 'wet', 'paving', 'reef', 'flagstone', 'membrane', 'steel', 'scorched', 'fret', 'tar', 'gilded', 'heatshield', 'brimstone', 'neural', 'film', 'fuzz']);
   for (let i = 0; i < segs; i++) {
     const j = (i + 1) % n;
     const sMid = (sp.dist[i] + (j === 0 ? sp.length : sp.dist[j])) / 2;
@@ -334,7 +362,7 @@ export function roadPaint(ribbon: Ribbon, decor: DecorKind, edgeLine?: number): 
     const hwi = ribbon.halfWidth[i];
     const hwj = ribbon.halfWidth[j];
     // A dark world's edge lines go down every road, walled or not, whatever it's made of.
-    if (edgeLine !== undefined) for (const side of [-1, 1]) strip(edges, i, j, side * (hwi - 0.8), side * (hwi - 0.3), side * (hwj - 0.8), side * (hwj - 0.3));
+    if (edgeLine !== undefined) for (const side of [-1, 1]) strip(edges, i, j, side * (hwi - 0.3 - edgeWidth), side * (hwi - 0.3), side * (hwj - 0.3 - edgeWidth), side * (hwj - 0.3));
     if (paintable.has(surface)) {
       if (edgeLine === undefined) for (const side of [-1, 1]) strip(lines, i, j, side * (hwi - 0.55), side * (hwi - 0.3), side * (hwj - 0.55), side * (hwj - 0.3));
       // Dashes: 3 m on, 3 m off, on roads wide enough to have lanes.

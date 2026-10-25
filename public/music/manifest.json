@@ -705,5 +705,61 @@
     "bars": 52,
     "loopSamples": 2751840,
     "sampleRate": 44100
+  },
+  "im-in-your-mind-remix": {
+    "title": "i'm in your mind (remix)",
+    "bpm": 108,
+    "bars": 32,
+    "loopSamples": 3136000,
+    "sampleRate": 44100
+  },
+  "im-in-your-mind-remix-final-lap": {
+    "title": "i'm in your mind (remix, final lap)",
+    "bpm": 116,
+    "bars": 32,
+    "loopSamples": 2919724,
+    "sampleRate": 44100
+  },
+  "im-not-in-your-mind-remix": {
+    "title": "i'm not in your mind (remix)",
+    "bpm": 108,
+    "bars": 32,
+    "loopSamples": 3136000,
+    "sampleRate": 44100
+  },
+  "im-not-in-your-mind-remix-final-lap": {
+    "title": "i'm not in your mind (remix, final lap)",
+    "bpm": 116,
+    "bars": 32,
+    "loopSamples": 2919724,
+    "sampleRate": 44100
+  },
+  "im-in-your-mind-fuzz-remix": {
+    "title": "i'm in your mind fuzz (remix)",
+    "bpm": 108,
+    "bars": 32,
+    "loopSamples": 3136000,
+    "sampleRate": 44100
+  },
+  "im-in-your-mind-fuzz-remix-final-lap": {
+    "title": "i'm in your mind fuzz (remix, final lap)",
+    "bpm": 116,
+    "bars": 32,
+    "loopSamples": 2919724,
+    "sampleRate": 44100
+  },
+  "cellophane-remix": {
+    "title": "cellophane (remix)",
+    "bpm": 108,
+    "bars": 32,
+    "loopSamples": 3136000,
+    "sampleRate": 44100
+  },
+  "cellophane-remix-final-lap": {
+    "title": "cellophane (remix, final lap)",
+    "bpm": 116,
+    "bars": 32,
+    "loopSamples": 2919724,
+    "sampleRate": 44100
   }
 }

@@ -27,6 +27,8 @@ export interface Settings {
   soundtrack: Soundtrack;
   /** Full set: the show it plays (an id from public/music/shows.json); null for the newest. */
   liveShow: string | null;
+  /** Track song or Full set: a race runs until the song ends, not to a number of laps (Single Race, Grand Prix, Track Generator). */
+  raceToSongEnd: boolean;
   /** Graphics detail (render/detail.ts): sun shadows, bump-mapped roads, denser scenery and full resolution, or the flat look at fewer pixels. */
   detail: 'high' | 'medium' | 'low';
   /** The player picked a detail level themselves; until then phones get Low and everything else High. */
@@ -44,9 +46,11 @@ export const SOUNDTRACK_BLURBS: Record<Soundtrack, string> = {
   random: 'A live recording of any of their songs, a new one every race',
   show: 'A whole show you pick, from the top, song after song: all the music until you close the game',
 };
+/** The soundtracks a race can run to the end of: a song with an end to it, not the game's loops or a new song every race. */
+export const SONG_END_SOUNDTRACKS: readonly Soundtrack[] = ['song', 'show'];
 export const VIDEO_LOOKS: readonly VideoLook[] = ['full', 'light', 'off'];
 
-export const DEFAULT_SETTINGS: Settings = { music: 0.6, sfx: 1, tilt: false, tiltRange: 24, tiltInvert: false, steeringChosen: false, videoLook: 'light', videoLookChosen: false, smartSteering: true, turnIndicator: true, cpuDifficulty: 'normal', soundtrack: 'remix', liveShow: null, detail: 'high', detailChosen: false };
+export const DEFAULT_SETTINGS: Settings = { music: 0.6, sfx: 1, tilt: false, tiltRange: 24, tiltInvert: false, steeringChosen: false, videoLook: 'light', videoLookChosen: false, smartSteering: true, turnIndicator: true, cpuDifficulty: 'normal', soundtrack: 'remix', liveShow: null, raceToSongEnd: false, detail: 'high', detailChosen: false };
 
 /** A phone or tablet: Low detail unless the player says otherwise. */
 function coarseDevice(): boolean {

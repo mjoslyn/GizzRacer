@@ -44,7 +44,7 @@ describe('progress', () => {
   it('unlocks 200cc with a gold at 150cc and Mirror with gold in every album cup', () => {
     recordCup('nonagon-infinity', '150cc', false, cup(1));
     expect(unlocks(progress())).toMatchObject({ class200: true, mirror: false });
-    for (const c of CUPS.slice(1)) recordCup(c.id, '50cc', false, cup(1));
+    for (const c of CUPS.filter((c) => c.id !== 'nonagon-infinity')) recordCup(c.id, '50cc', false, cup(1));
     expect(unlocks(progress()).mirror).toBe(true);
   });
 

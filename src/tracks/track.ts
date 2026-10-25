@@ -64,7 +64,7 @@ export function branchOpen(def: BranchDef, ctx?: LapContext): boolean {
 }
 
 export interface Landmark {
-  kind: 'skeletonArch' | 'fangs' | 'fortressGate' | 'templeGate' | 'waterfall' | 'gantry' | 'lighthouse' | 'iceArch' | 'neonArch' | 'rainbowArch' | 'mushroomArch' | 'starGate' | 'dragonGate' | 'dragonFlight' | 'colonyGate' | 'rodGate' | 'voidEye' | 'phantomArch' | 'runwayGate' | 'treeGate' | 'wreckGate' | 'worldTree' | 'crystalGate' | 'magentaPeak' | 'keplerArch' | 'goblinGate' | 'jawsGate' | 'castleGate' | 'castleKeep' | 'cloudGate' | 'airCastle' | 'skyTower' | 'cellGate' | 'nucleus' | 'prismGate' | 'prismEye' | 'factoryGate' | 'robotColossus' | 'gammaGate' | 'gammaRing' | 'carrionGate' | 'carcass' | 'wahGate' | 'wahPedal' | 'smogGate' | 'burningEarth' | 'domeGate' | 'richDome' | 'shipGate' | 'theSun' | 'hellGate' | 'ratsNest';
+  kind: 'skeletonArch' | 'fangs' | 'fortressGate' | 'templeGate' | 'waterfall' | 'gantry' | 'lighthouse' | 'iceArch' | 'neonArch' | 'rainbowArch' | 'mushroomArch' | 'starGate' | 'dragonGate' | 'dragonFlight' | 'colonyGate' | 'rodGate' | 'voidEye' | 'phantomArch' | 'runwayGate' | 'treeGate' | 'wreckGate' | 'worldTree' | 'crystalGate' | 'magentaPeak' | 'keplerArch' | 'goblinGate' | 'jawsGate' | 'castleGate' | 'castleKeep' | 'cloudGate' | 'airCastle' | 'skyTower' | 'cellGate' | 'nucleus' | 'prismGate' | 'prismEye' | 'factoryGate' | 'robotColossus' | 'gammaGate' | 'gammaRing' | 'carrionGate' | 'carcass' | 'wahGate' | 'wahPedal' | 'smogGate' | 'burningEarth' | 'domeGate' | 'richDome' | 'shipGate' | 'theSun' | 'hellGate' | 'ratsNest' | 'eyeGate' | 'mindFace' | 'arrowGate' | 'emptyHead' | 'filmGate' | 'cellophaneBloom' | 'fuzzGate' | 'fuzzMeter';
   ribbon: number; // -1 = main, else branch index
   s: number; // builder units
   /** Metres to the right of the road (left if negative), for a landmark that stands off it. */
@@ -95,7 +95,7 @@ export interface TrackDef {
   itemBoxes: ItemBoxRow[];
   hazards: HazardDef[];
   /** Visual theme (render/themes.ts). */
-  theme: 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism' | 'factory' | 'gamma' | 'carrion' | 'wah' | 'smog' | 'dome' | 'solar' | 'inferno';
+  theme: 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism' | 'factory' | 'gamma' | 'carrion' | 'wah' | 'smog' | 'dome' | 'solar' | 'inferno' | 'mind' | 'notmind' | 'cellophane' | 'mindfuzz';
   /** No ground: off the road is a long drop (the sky track). */
   abyss?: boolean;
   /** Music cues (public/music/<cue>.mp3): one for the race, one for the final lap. */
@@ -191,7 +191,15 @@ export type HazardDef =
   /** Perihelion: a solar flare erupting from one edge to the other, arching high over the road, then collapsing onto it. */
   | { kind: 'flares'; at: number[]; period: number }
   /** Hell: a swarm of rats pouring out of a hole at one edge and streaming across the road. */
-  | { kind: 'rats'; at: number[]; period: number };
+  | { kind: 'rats'; at: number[]; period: number }
+  /** I'm in Your Mind: an eye opening over the road, flashing an arrow to one half, then blasting the other. */
+  | { kind: 'eyes'; at: number[]; period: number }
+  /** I'm Not in Your Mind: four arrows across the road, three lit and one not there. */
+  | { kind: 'arrows'; at: number[]; period: number }
+  /** Cellophane: two sheets of coloured cellophane sliding past each other across the road. */
+  | { kind: 'sheets'; at: number[]; period: number }
+  /** I'm in Your Mind Fuzz: patches of fuzz on the road, their needle rising into the gold and on into the red. */
+  | { kind: 'fuzz'; at: number[]; period: number };
 
 export interface StartSlot {
   x: number;
