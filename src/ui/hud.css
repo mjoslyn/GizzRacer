@@ -2044,6 +2044,14 @@ body:not([data-mode='race']) .hud-item {
   font-size: 15px;
 }
 
+/* Two choices in one row (Controls: Pad or Tilt). */
+.settings-seg {
+  grid-column: 2 / 5;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
 .settings-toggle.on {
   background: linear-gradient(180deg, #2a9a5a, #0f4525) !important;
 }

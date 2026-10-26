@@ -49,9 +49,13 @@ export class TiltSteering {
    */
   get available(): boolean {
     if (typeof window === 'undefined' || !('DeviceOrientationEvent' in window)) return false;
-    const touch = navigator.maxTouchPoints > 0 || matchMedia('(pointer: coarse)').matches;
     const asksPermission = typeof (DeviceOrientationEvent as unknown as PermissionCapable).requestPermission === 'function';
-    return touch && (this.sensed || asksPermission);
+    return this.touchDevice && (this.sensed || asksPermission);
+  }
+
+  /** A phone or tablet: steered by the on-screen pad, or by tilt where there's a sensor. */
+  get touchDevice(): boolean {
+    return navigator.maxTouchPoints > 0 || matchMedia('(pointer: coarse)').matches;
   }
 
   /** A permission ask still open: taps while it's up share it rather than asking again. */

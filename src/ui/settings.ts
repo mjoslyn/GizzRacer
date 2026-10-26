@@ -106,12 +106,14 @@ export class SettingsScreen {
         updateSettings({ videoLook: VIDEO_LOOKS[(Math.max(0, i) + dir + VIDEO_LOOKS.length) % VIDEO_LOOKS.length], videoLookChosen: true });
         break;
       }
-      case 'tilt':
-        if (s.tilt) {
+      case 'controls':
+        if (btn.dataset.pick === 'pad') {
           this.tilt.stop();
-          updateSettings({ tilt: false });
-        } else if (await this.tilt.start()) {
-          updateSettings({ tilt: true });
+          updateSettings({ tilt: false, steeringChosen: true });
+          this.status = 'Pad: drag left and right on the left side of the screen';
+        } else if (s.tilt) break;
+        else if (await this.tilt.start()) {
+          updateSettings({ tilt: true, steeringChosen: true });
           this.status = 'Tilt on: hold the phone level and steer like a wheel';
         } else {
           this.status = 'Tilt needs motion sensor access. Allow it for this site in your browser settings.';
@@ -203,6 +205,8 @@ export class SettingsScreen {
     const arrows = (act: string, value: string) =>
       `<button class="menu-arrow" data-act="${act}" data-dir="-1">&#9664;</button><div class="lobby-value">${value}</div><button class="menu-arrow" data-act="${act}" data-dir="1">&#9654;</button>`;
     const toggle = (act: string, on: boolean, label = on ? 'On' : 'Off') => `<span></span><button class="settings-toggle${on ? ' on' : ''}" data-act="${act}">${label}</button><span></span>`;
+    // Pad or tilt, side by side: the one in use lit.
+    const controls = `<div class="settings-seg"><button class="settings-toggle${s.tilt ? '' : ' on'}" data-act="controls" data-pick="pad">Pad</button><button class="settings-toggle${s.tilt ? ' on' : ''}" data-act="controls" data-pick="tilt"${this.tilt.available ? '' : ' disabled title="No motion sensor on this device"'}>Tilt</button></div>`;
     const sensitivity = SENSITIVITY[Math.max(0, TILT_RANGES.indexOf(s.tiltRange as (typeof TILT_RANGES)[number]))];
     const html = `
       <div class="lobby-panel settings-panel">
@@ -221,10 +225,10 @@ export class SettingsScreen {
             <div class="lobby-row"><span class="lobby-label">Detail</span>${arrows('detail', DETAIL_NAMES[s.detail])}</div>
           </div>
           ${
-            this.tilt.available
+            this.tilt.touchDevice
               ? `<div class="settings-col">
-            <div class="settings-group">Phone steering</div>
-            <div class="lobby-row"><span class="lobby-label">Tilt</span>${toggle('tilt', s.tilt)}</div>
+            <div class="settings-group">Phone controls</div>
+            <div class="lobby-row"><span class="lobby-label">Controls</span>${controls}</div>
             <div class="lobby-row${s.tilt ? '' : ' off'}"><span class="lobby-label">Sensitivity</span>${arrows('range', sensitivity)}</div>
             <div class="lobby-row${s.tilt ? '' : ' off'}"><span class="lobby-label">Invert</span>${toggle('invert', s.tiltInvert)}</div>
             <button class="settings-recenter" data-act="recenter"${s.tilt ? '' : ' disabled'}>Recentre tilt</button>
@@ -268,7 +272,7 @@ export class SettingsScreen {
         <div class="steer-choices">
           <button class="steer-choice" data-act="choose-drag">
             <span class="steer-icon drag"><i></i></span>
-            <b class="hud-big">DRAG</b>
+            <b class="hud-big">PAD</b>
             <small>Drag left and right on the left side of the screen</small>
           </button>
           <button class="steer-choice" data-act="choose-tilt">
