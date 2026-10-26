@@ -67,7 +67,10 @@ if (!only || only === 'skills') {
       await page.waitForTimeout(300);
     }
     await click('[data-start]');
-    await page.waitForTimeout(4500);
+    // Past the rules card (Enter is its Continue), and a few seconds in.
+    await page.waitForTimeout(2000);
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(4000);
     await page.screenshot({ path: `${out}skills/${kinds[i]}.jpg`, type: 'jpeg', quality: 72 });
     console.log(`skill ${kinds[i]}`);
     await page.keyboard.press('Escape');
