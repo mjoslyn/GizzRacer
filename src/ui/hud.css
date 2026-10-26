@@ -3664,6 +3664,20 @@ body:not(.split) .seat-hud {
   overflow: visible;
 }
 
+/* The pick's name and what it is (a racer's stats, a mode's blurb, a track's best) stay in view as the grid
+   scrolls under them. */
+.menu-pick-top {
+  position: sticky;
+  top: -1px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 4px;
+  background: rgb(52, 18, 62);
+  box-shadow: 0 4px 6px rgba(22, 4, 36, 0.8);
+}
+
 .menu .menu-pick .menu-cup-tracks,
 .menu .menu-pick .menu-stats,
 .menu .menu-pick .menu-bio {
@@ -3712,8 +3726,8 @@ body:not(.split) .seat-hud {
   text-align: center;
   box-shadow: 0 0 0 2px #3a0f45, inset 0 0 0 1px rgba(255, 210, 58, 0.35);
   touch-action: manipulation;
-  /* Moved to with the arrows, a tile scrolls clear of the pinned Back and NEXT. */
-  scroll-margin: 24px 0 72px;
+  /* Moved to with the arrows, a tile scrolls clear of the pinned name above and Back and NEXT below. */
+  scroll-margin: 90px 0 72px;
 }
 
 .menu .menu-tile:hover {
@@ -3894,17 +3908,6 @@ body.coarse .menu[data-step='racer'] {
   }
   .menu .menu-shots .menu-tile > span:not(.menu-tile-mosaic):not(.menu-tile-icon) {
     font-size: 10px;
-  }
-  /* The pick's name stays in view as the grid scrolls under it. */
-  .menu-pick-head {
-    position: sticky;
-    top: -1px;
-    z-index: 2;
-    background: rgb(52, 18, 62);
-    box-shadow: 0 4px 6px rgba(22, 4, 36, 0.8);
-  }
-  .menu .menu-tile {
-    scroll-margin-top: 52px;
   }
 }
 

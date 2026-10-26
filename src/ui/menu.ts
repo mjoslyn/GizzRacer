@@ -466,8 +466,10 @@ export class Menu {
     // A grid row: the pick's name (and its dice) over what it is, then every choice as a tile.
     const pickRow = (row: MenuRow, value: string, about: string, grid: string, foot = '') => `
       <div class="menu-row menu-pick${rows[this.row] === row ? ' on' : ''}" data-row="${row}">
-        <div class="menu-pick-head"><div class="menu-value hud-big">${value}</div></div>
-        ${about}
+        <div class="menu-pick-top">
+          <div class="menu-pick-head"><div class="menu-value hud-big">${value}</div></div>
+          ${about}
+        </div>
         ${grid}
         ${foot}
       </div>`;

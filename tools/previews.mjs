@@ -1,7 +1,7 @@
 // The picker's preview shots (public/previews): every track from partway down the intro's swoop, and every
 // skill game a few seconds in. Run against the dev server (npm run dev) in another terminal:
 //
-//   node tools/previews.mjs [http://localhost:5173/] [tracks|skills] [first track index]
+//   node tools/previews.mjs [http://localhost:5173/] [tracks|skills] [first track index | one skill game]
 //
 // Software rendering (no GPU) takes a few seconds a shot.
 import { mkdirSync } from 'node:fs';
@@ -12,7 +12,10 @@ const { chromium } = require('playwright');
 
 const base = process.argv[2] ?? 'http://localhost:5173/';
 const only = process.argv[3];
-const from = Number(process.argv[4] ?? 0);
+const from = Number(process.argv[4] ?? 0) || 0;
+const oneSkill = only === 'skills' ? process.argv[4] : undefined;
+/** How long into a skill game its shot is taken (ms): the snake runs into a wall if left too long. */
+const SKILL_WAIT = { rattlesnake: 1200 };
 const SIZE = { width: 400, height: 225 };
 const out = new URL('../public/previews/', import.meta.url).pathname;
 
@@ -55,8 +58,13 @@ if (!only || only === 'skills') {
   await click('[data-next]');
   await page.waitForTimeout(300);
   const kinds = await page.evaluate(() => [...document.querySelectorAll('[data-grid="skill"] .menu-tile')].map((t) => t.dataset.tileId));
-  await click('[data-back]');
   for (let i = 0; i < kinds.length; i++) {
+    if (oneSkill && kinds[i] !== oneSkill) continue;
+    // A fresh page each time, on the mode screen (a tap on the mode already picked would move on).
+    await page.goto(`${base}?shots&unlock=1`);
+    await page.waitForTimeout(3000);
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(800);
     // Skill Games, the game, the difficulty, PLAY!
     await click('[data-pick="mode:2"]');
     await click('[data-next]');
@@ -70,14 +78,9 @@ if (!only || only === 'skills') {
     // Past the rules card (Enter is its Continue), and a few seconds in.
     await page.waitForTimeout(2000);
     await page.keyboard.press('Enter');
-    await page.waitForTimeout(4000);
+    await page.waitForTimeout(SKILL_WAIT[kinds[i]] ?? 4000);
     await page.screenshot({ path: `${out}skills/${kinds[i]}.jpg`, type: 'jpeg', quality: 72 });
     console.log(`skill ${kinds[i]}`);
-    await page.keyboard.press('Escape');
-    await page.goto(`${base}?shots&unlock=1`);
-    await page.waitForTimeout(3000);
-    await page.keyboard.press('Enter');
-    await page.waitForTimeout(800);
   }
 }
 await browser.close();
