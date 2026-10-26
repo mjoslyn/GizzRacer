@@ -197,12 +197,12 @@ export class Menu {
     if (!this.visible) return false;
     const rows = this.rows();
     const vertical = (dir: number) => (rows.length > 1 ? this.moveRow(dir) : this.change(dir));
-    // In a grid, up and down go a line at a time; past its top or foot, to the next row if there is one.
+    // In a grid, up and down go to the tile above or below; past its top or foot, to the next row if there is one.
     const up = code === 'ArrowUp' || code === 'KeyW';
     const grid = this.el.querySelector(`[data-grid="${this.activeRow}"]`);
     if ((up || code === 'ArrowDown' || code === 'KeyS') && grid) {
-      const j = this.gridIndex(this.activeRow) + (up ? -1 : 1) * getComputedStyle(grid).gridTemplateColumns.split(' ').length;
-      if (j >= 0 && j < this.gridCount(this.activeRow)) return this.pick(this.activeRow, j, false), true;
+      const j = this.tileAcross(grid, this.gridIndex(this.activeRow), up);
+      if (j >= 0) return this.pick(this.activeRow, j, false), true;
       if (rows.length === 1) return true;
     }
     if (code === 'ArrowUp' || code === 'KeyW') vertical(-1);
@@ -328,6 +328,32 @@ export class Menu {
     this.render();
     this.revealPicked();
     this.onChange(c, row);
+  }
+
+  /**
+   * The tile on the line above or below tile `i`, nearest it across, or -1
+   * at the grid's edge. Found by where the tiles are drawn, so it holds
+   * however many fit to a line, and across the albums' headings that break
+   * the track grid's lines.
+   */
+  private tileAcross(grid: Element, i: number, up: boolean): number {
+    const tiles = [...grid.querySelectorAll('.menu-tile')].map((t) => t.getBoundingClientRect());
+    const at = tiles[i];
+    if (!at) return -1;
+    const mid = (r: DOMRect) => r.left + r.width / 2;
+    let best = -1;
+    let bestScore = Infinity;
+    tiles.forEach((r, j) => {
+      const dy = up ? at.top - r.bottom : r.top - at.bottom;
+      if (dy < -1) return;
+      // The nearest line first, then the nearest across it.
+      const score = Math.round(dy / 8) * 10000 + Math.abs(mid(r) - mid(at));
+      if (score < bestScore) {
+        bestScore = score;
+        best = j;
+      }
+    });
+    return best;
   }
 
   /** Down a grid past the fold on a phone: the panel follows the picked tile. */

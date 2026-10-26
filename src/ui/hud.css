@@ -3667,8 +3667,13 @@ body:not(.split) .seat-hud {
 /* The pick's name and what it is (a racer's stats, a mode's blurb, a track's best) stay in view as the grid
    scrolls under them. */
 .menu-pick-top {
+  /* Pinned to the panel's very top, its padding too, so nothing scrolls past above it; the padding is taken back
+     from the gap above, so at rest it sits where it would. */
+  --pad: clamp(8px, 1.6vh, 16px);
   position: sticky;
-  top: -1px;
+  top: calc(-1 * var(--pad));
+  margin-top: calc(-1 * var(--pad));
+  padding-top: var(--pad);
   z-index: 2;
   display: flex;
   flex-direction: column;
@@ -3879,8 +3884,8 @@ body.coarse .menu[data-step='racer'] {
   padding-right: 8px;
 }
 
-/* A phone on its side: the crumb names the screen, so a grid screen's title goes; racers five to a line, big
-   enough to tap, the rest a scroll away (the hint above NEXT says so). */
+/* A phone on its side: the crumb names the screen, so a grid screen's title goes; every grid three to a line,
+   big enough to tap, the rest a scroll away (the hint above NEXT says so). */
 @media (max-height: 560px) {
   .menu-panel:has(.menu-tiles) .menu-title {
     display: none;
@@ -3892,8 +3897,9 @@ body.coarse .menu[data-step='racer'] {
     min-height: 36px;
     font-size: 13px;
   }
-  .menu-racers {
-    grid-template-columns: repeat(5, 1fr);
+  .menu-racers,
+  .menu-tracks {
+    grid-template-columns: repeat(3, 1fr);
   }
   .menu .menu-racers .menu-tile {
     aspect-ratio: 3 / 2;
