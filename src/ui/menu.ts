@@ -421,12 +421,15 @@ export class Menu {
       body =
         // An arrow switcher, as the mode and racer are, over the classes unlocked.
         line('engine', 'Speed', c.engine) +
+        // The smaller choices together: two to a line on a short screen, so RACE! stays in view.
+        '<div class="menu-options">' +
         (rows.includes('cpus') ? line('cpus', 'CPUs', CPU_NAMES[settings().cpuDifficulty], '', true) : '') +
         line('vhs', 'VHS', VHS_NAMES[settings().videoLook], '', true) +
         (rows.includes('mirror') ? line('mirror', 'Mirror', c.mirror ? 'ON' : 'OFF', '<div class="menu-cup-tracks">Every track flipped left for right</div>', true) : '') +
         line('sound', 'Sound', esc(SOUNDTRACK_NAMES[settings().soundtrack]), `<div class="menu-cup-tracks">${esc(SOUNDTRACK_BLURBS[settings().soundtrack])}</div>`, true) +
         (rows.includes('show') ? this.showRows(line) : '') +
         (rows.includes('songEnd') ? this.songEndRow(line) : '') +
+        '</div>' +
         this.unlockLine();
     }
     const last = this.step === steps.length - 1;

@@ -3580,3 +3580,48 @@ body:not(.split) .seat-hud {
   margin-top: -8px;
   text-shadow: 2px 2px 0 #3a0f45;
 }
+
+/* The speed screen's smaller choices (CPUs, VHS, Mirror, Sound and the rest), together under the Speed. */
+.menu-options {
+  display: flex;
+  flex-direction: column;
+  gap: inherit;
+  flex-shrink: 0;
+}
+
+/* Back and RACE! stay in view at the panel's foot: anything that doesn't fit scrolls under them. */
+.menu-nav {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  padding-top: 4px;
+  background: linear-gradient(180deg, rgba(22, 4, 36, 0), rgb(22, 4, 36) 6px);
+}
+
+/* Short screens (a phone on its side): the smaller choices two to a line, without their blurbs. */
+@media (max-height: 560px) {
+  .menu-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px 8px;
+  }
+  .menu-options .menu-row {
+    grid-template-columns: 52px 30px 1fr 30px;
+    gap: 4px;
+    padding: 2px 4px;
+  }
+  .menu-options .menu-label {
+    font-size: 11px;
+    letter-spacing: 1px;
+  }
+  .menu-options .menu-row .menu-value {
+    font-size: clamp(15px, 4.4vh, 19px);
+  }
+  .menu-options .menu-cup-tracks {
+    display: none;
+  }
+  /* The show's dropdown needs the width. */
+  .menu-options .menu-row[data-row='show'] {
+    grid-column: 1 / -1;
+  }
+}
