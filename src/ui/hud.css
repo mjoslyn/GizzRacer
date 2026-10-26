@@ -3651,8 +3651,8 @@ body:not(.split) .seat-hud {
   }
 }
 
-/* ---- The racer grid: every racer at once on the picker's racer screen ---- */
-.menu .menu-racer-pick {
+/* ---- The picker's grids: every mode, cup, track, skill game or racer at once, a tile each ---- */
+.menu .menu-pick {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -3660,28 +3660,94 @@ body:not(.split) .seat-hud {
   cursor: default;
 }
 
-.menu-racer-head .menu-value {
+.menu-pick-head .menu-value {
   overflow: visible;
 }
 
-.menu-racers {
+.menu .menu-pick .menu-cup-tracks,
+.menu .menu-pick .menu-stats,
+.menu .menu-pick .menu-bio {
+  margin-top: 0;
+}
+
+.menu-tiles {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 6px;
   padding: 3px;
 }
 
-.menu .menu-racer {
+.menu-tracks {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.menu-racers {
+  grid-template-columns: repeat(6, 1fr);
+}
+
+/* An album's name across the track grid, over its four tracks. */
+.menu-tiles-group {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #fff27a;
+  text-shadow: 1px 1px 0 #3a0f45;
+}
+
+.menu-tiles-group:first-child {
+  margin-top: 0;
+}
+
+.menu .menu-tile {
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 5px 6px;
+  font-size: 14px;
+  line-height: 1.15;
+  text-align: center;
+  box-shadow: 0 0 0 2px #3a0f45, inset 0 0 0 1px rgba(255, 210, 58, 0.35);
+  touch-action: manipulation;
+  /* Moved to with the arrows, a tile scrolls clear of the pinned Back and NEXT. */
+  scroll-margin: 24px 0 72px;
+}
+
+.menu .menu-tile:hover {
+  box-shadow: 0 0 0 2px #ffd23a;
+}
+
+.menu .menu-tile.on {
+  background: linear-gradient(180deg, #b0409a, #5a1a6a);
+  box-shadow: 0 0 0 3px #ffd23a, 0 0 14px 3px rgba(255, 210, 58, 0.7);
+  z-index: 1;
+}
+
+/* A cup's best trophy, in the tile's corner. */
+.menu-tile .menu-trophy {
+  position: absolute;
+  top: 1px;
+  right: 3px;
+  padding: 0;
+  font-size: 12px;
+  font-style: normal;
+  background: none;
+}
+
+/* Racers: a picture each, its colour behind it, the name along the foot. */
+.menu .menu-racers .menu-tile {
   aspect-ratio: 4 / 3;
+  min-height: 0;
   padding: 0;
   overflow: hidden;
   background: radial-gradient(ellipse at 50% 80%, color-mix(in srgb, var(--racer) 60%, transparent), rgba(30, 6, 44, 0.92) 72%);
   box-shadow: inset 0 3px 0 var(--racer), 0 0 0 2px #3a0f45;
-  touch-action: manipulation;
 }
 
-.menu .menu-racer img {
+.menu .menu-racers .menu-tile img {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -3689,7 +3755,7 @@ body:not(.split) .seat-hud {
   object-fit: contain;
 }
 
-.menu .menu-racer span {
+.menu .menu-racers .menu-tile span {
   position: absolute;
   left: 0;
   right: 0;
@@ -3704,47 +3770,52 @@ body:not(.split) .seat-hud {
   text-shadow: 1px 1px 0 #3a0f45;
 }
 
-.menu .menu-racer:hover {
+.menu .menu-racers .menu-tile:hover {
   box-shadow: inset 0 3px 0 var(--racer), 0 0 0 2px #ffd23a;
 }
 
-.menu .menu-racer.on {
+.menu .menu-racers .menu-tile.on {
   box-shadow: inset 0 3px 0 var(--racer), 0 0 0 3px #ffd23a, 0 0 14px 3px rgba(255, 210, 58, 0.7);
-  z-index: 1;
 }
 
-.menu .menu-racer-pick .menu-stats,
-.menu .menu-racer-pick .menu-bio {
-  margin-top: 0;
-}
-
-/* A phone on its side: five to a line, tiles big enough to tap, and the rest a scroll away (the hint above NEXT says so). */
-@media (max-height: 560px) {
-  .menu-racers {
-    grid-template-columns: repeat(5, 1fr);
-    gap: 5px;
-  }
-}
-
-/* Moved to with the arrows, a tile scrolls clear of the pinned Back and NEXT. */
-.menu .menu-racer {
-  scroll-margin: 8px 0 72px;
-}
-
-/* On a phone the racer screen stands alone, centred, with no gallery behind. */
+/* On a phone the grid screens stand alone, centred; the racer screen with no gallery behind. */
+body.coarse .menu[data-step='mode'],
+body.coarse .menu[data-step='track'],
 body.coarse .menu[data-step='racer'] {
   justify-content: center;
   padding-left: 8px;
   padding-right: 8px;
 }
 
-/* A phone on its side: the crumb names the racer screen, so its title goes to make room for all three lines of racers. */
+/* A phone on its side: the crumb names the screen, so a grid screen's title goes; racers five to a line, big
+   enough to tap, the rest a scroll away (the hint above NEXT says so). */
 @media (max-height: 560px) {
-  .menu[data-step='racer'] .menu-title {
+  .menu-panel:has(.menu-tiles) .menu-title {
     display: none;
   }
-  .menu .menu-racer {
+  .menu-tiles {
+    gap: 5px;
+  }
+  .menu .menu-tile {
+    min-height: 36px;
+    font-size: 13px;
+  }
+  .menu-racers {
+    grid-template-columns: repeat(5, 1fr);
+  }
+  .menu .menu-racers .menu-tile {
     aspect-ratio: 3 / 2;
+  }
+  /* The pick's name stays in view as the grid scrolls under it. */
+  .menu-pick-head {
+    position: sticky;
+    top: -1px;
+    z-index: 2;
+    background: rgb(52, 18, 62);
+    box-shadow: 0 4px 6px rgba(22, 4, 36, 0.8);
+  }
+  .menu .menu-tile {
+    scroll-margin-top: 52px;
   }
 }
 

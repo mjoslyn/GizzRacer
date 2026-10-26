@@ -137,9 +137,12 @@ export class Menu {
     this.el.addEventListener('click', (e) => {
       // A click opening the dropdown mustn't redraw it shut.
       if ((e.target as HTMLElement).matches('select, option')) return;
-      const t = (e.target as HTMLElement).closest<HTMLElement>('[data-pick-racer], [data-row], [data-start], [data-next], [data-back], [data-step], [data-delete], [data-random], [data-random-track], [data-random-show]');
+      const t = (e.target as HTMLElement).closest<HTMLElement>('[data-pick], [data-row], [data-start], [data-next], [data-back], [data-step], [data-delete], [data-random], [data-random-track], [data-random-show]');
       if (!t) return;
-      if (t.dataset.pickRacer !== undefined) return this.pickRacer(RACERS[Number(t.dataset.pickRacer)]);
+      if (t.dataset.pick !== undefined) {
+        const [row, i] = t.dataset.pick.split(':');
+        return this.pick(row as MenuRow, Number(i));
+      }
       if (t.dataset.start !== undefined) return this.onStart(this.choice);
       if (t.dataset.next !== undefined) return this.next();
       if (t.dataset.back !== undefined) return this.back();
@@ -193,11 +196,12 @@ export class Menu {
     if (!this.visible) return false;
     const rows = this.rows();
     const vertical = (dir: number) => (rows.length > 1 ? this.moveRow(dir) : this.change(dir));
-    // In the racer grid, up and down go a line of racers at a time; past its top or foot, to the next row if there is one.
+    // In a grid, up and down go a line at a time; past its top or foot, to the next row if there is one.
     const up = code === 'ArrowUp' || code === 'KeyW';
-    if ((up || code === 'ArrowDown' || code === 'KeyS') && this.activeStep === 'racer' && this.activeRow === 'racer') {
-      const j = RACERS.indexOf(this.choice.racer) + (up ? -1 : 1) * this.gridColumns();
-      if (j >= 0 && j < RACERS.length) return this.pickRacer(RACERS[j], false), true;
+    const grid = this.el.querySelector(`[data-grid="${this.activeRow}"]`);
+    if ((up || code === 'ArrowDown' || code === 'KeyS') && grid) {
+      const j = this.gridIndex(this.activeRow) + (up ? -1 : 1) * getComputedStyle(grid).gridTemplateColumns.split(' ').length;
+      if (j >= 0 && j < this.gridCount(this.activeRow)) return this.pick(this.activeRow, j, false), true;
       if (rows.length === 1) return true;
     }
     if (code === 'ArrowUp' || code === 'KeyW') vertical(-1);
@@ -284,28 +288,70 @@ export class Menu {
     this.onChange(this.choice, 'track');
   }
 
-  /** A racer picked in the grid. A tap on the one already picked moves on. */
-  private pickRacer(racer: RacerDef | undefined, tapped = true): void {
-    if (!racer) return;
-    if (tapped && racer === this.choice.racer) return this.next();
-    this.choice.racer = racer;
-    this.row = 0;
-    this.render();
-    // Down the grid past the fold on a phone: the panel follows.
-    this.el.querySelector('.menu-racer.on')?.scrollIntoView({ block: 'nearest' });
-    this.onChange(this.choice, 'racer');
+  /** How many tiles a grid row has: the modes, the cups (and the Random Cup once it's unlocked) or tracks, the skill games, the racers. */
+  private gridCount(row: MenuRow): number {
+    const c = this.choice;
+    if (row === 'mode') return MODES.length;
+    if (row === 'skill') return SKILL_KINDS.length;
+    if (row === 'racer') return RACERS.length;
+    if (row === 'track') return c.mode === 'grandPrix' ? CUPS.length + (unlocks(progress()).randomCup ? 1 : 0) : TRACK_LIST.length;
+    return 0;
   }
 
-  /** How many racers a line of the grid holds (it has more on a phone). */
-  private gridColumns(): number {
-    const grid = this.el.querySelector('.menu-racers');
-    return grid ? getComputedStyle(grid).gridTemplateColumns.split(' ').length : 6;
+  /** Which tile of a grid row is picked. */
+  private gridIndex(row: MenuRow): number {
+    const c = this.choice;
+    if (row === 'mode') return MODES.indexOf(c.mode);
+    if (row === 'skill') return SKILL_KINDS.indexOf(c.skill);
+    if (row === 'racer') return RACERS.indexOf(c.racer);
+    return c.mode === 'grandPrix' ? c.cup : c.track;
+  }
+
+  /** A tile picked, tapped or moved to with the arrows. A tap on the one already picked moves on. */
+  private pick(row: MenuRow, i: number, tapped = true): void {
+    if (!(i >= 0 && i < this.gridCount(row))) return;
+    if (tapped && i === this.gridIndex(row)) return this.next();
+    const c = this.choice;
+    if (row === 'mode') {
+      // Another mode has its own screens: back to the first.
+      c.mode = MODES[i];
+      this.step = 0;
+    } else if (row === 'skill') c.skill = SKILL_KINDS[i];
+    else if (row === 'racer') c.racer = RACERS[i];
+    else if (c.mode === 'grandPrix') {
+      c.cup = i;
+      // The Random Cup draws four new tracks every time it's picked.
+      if (i === CUPS.length) c.randomTracks = randomCupTracks();
+    } else c.track = i;
+    this.row = Math.max(0, this.rows().indexOf(row));
+    this.render();
+    this.revealPicked();
+    this.onChange(c, row);
+  }
+
+  /** Down a grid past the fold on a phone: the panel follows the picked tile. */
+  private revealPicked(): void {
+    this.el.querySelector('[data-grid] .on')?.scrollIntoView({ block: 'nearest' });
+  }
+
+  /**
+   * A row's choices as tiles, the picked one lit: tap one to pick it, tap
+   * it again to go on. `groups` puts a heading across the grid before the
+   * tile at each index (the tracks, by album).
+   */
+  private tiles(row: MenuRow, cls: string, items: { label: string; id?: string; img?: string; style?: string; badge?: string }[], groups: { at: number; label: string }[] = []): string {
+    const on = this.gridIndex(row);
+    const html = items.map((t, i) => {
+      const group = groups.find((g) => g.at === i);
+      return `${group ? `<div class="menu-tiles-group">${esc(group.label)}</div>` : ''}<button class="menu-tile${i === on ? ' on' : ''}" data-pick="${row}:${i}"${t.id ? ` data-tile-id="${t.id}"` : ''}${t.style ? ` style="${t.style}"` : ''} title="${esc(t.label)}">${t.img ? `<img src="${t.img}" alt="" />` : ''}<span>${esc(t.label)}</span>${t.badge ?? ''}</button>`;
+    });
+    return `<div class="menu-tiles ${cls}" data-grid="${row}">${html.join('')}</div>`;
   }
 
   /** A racer's picture is ready: into its tile, without redrawing the rest. */
   setPortrait(racerId: string, url: string): void {
     this.portraits.set(racerId, url);
-    const tile = this.el.querySelector(`[data-racer-id="${racerId}"]`);
+    const tile = this.el.querySelector(`[data-grid="racer"] [data-tile-id="${racerId}"]`);
     if (tile && !tile.querySelector('img')) tile.insertAdjacentHTML('afterbegin', `<img src="${url}" alt="" />`);
   }
 
@@ -399,6 +445,7 @@ export class Menu {
     else if (row === 'racer') c.racer = step(RACERS, c.racer);
     else c.engine = step(availableClasses(), c.engine);
     this.render();
+    this.revealPicked();
     this.onChange(this.choice, row);
   }
 
@@ -415,21 +462,38 @@ export class Menu {
         <button class="menu-arrow" data-row="${row}" data-dir="1">&#9654;</button>
         ${extra}
       </div>`;
+    // A grid row: the pick's name (and its dice) over what it is, then every choice as a tile.
+    const pickRow = (row: MenuRow, value: string, about: string, grid: string, foot = '') => `
+      <div class="menu-row menu-pick${rows[this.row] === row ? ' on' : ''}" data-row="${row}">
+        <div class="menu-pick-head"><div class="menu-value hud-big">${value}</div></div>
+        ${about}
+        ${grid}
+        ${foot}
+      </div>`;
+    // The tracks four to a line, one album to a line, under its name.
+    const trackTiles = () =>
+      this.tiles(
+        'track',
+        'menu-tracks',
+        TRACK_LIST.map((t) => ({ label: t.name })),
+        CUPS.map((cup) => ({ at: cup.tracks[0], label: cup.name.replace(/ Cup$/, '') })),
+      );
     let title = STEP_TITLES[at];
     let body: string;
     if (at === 'mode') {
-      // An arrow switcher, as the racer is: the mode, what it is, and where it is in the list.
-      body = line('mode', 'Mode', MODE_NAMES[c.mode], `<div class="menu-cup-tracks menu-mode-blurb">${esc(MODE_BLURBS[c.mode])}</div><div class="menu-cup-tracks">${MODES.indexOf(c.mode) + 1} of ${MODES.length}</div>`);
+      body = pickRow('mode', MODE_NAMES[c.mode], `<div class="menu-cup-tracks menu-mode-blurb">${esc(MODE_BLURBS[c.mode])}</div>`, this.tiles('mode', 'menu-modes', MODES.map((m) => ({ label: MODE_NAMES[m] }))));
     } else if (at === 'track') {
       if (c.mode === 'grandPrix') {
         title = 'PICK A CUP';
-        body = line('track', 'Cup', chosenCup(c).name, `<div class="menu-cup-tracks">${chosenCup(c).tracks.map((t) => TRACK_LIST[t].name).join(' &middot; ')}</div>${this.trophyLine()}`);
+        const cups = [...CUPS, ...(unlocks(progress()).randomCup ? [{ id: RANDOM_CUP_ID, name: RANDOM_CUP_NAME }] : [])];
+        const tiles = cups.map((cup) => ({ label: cup.name.replace(/ Cup$/, ''), badge: this.cupBadge(cup.id) }));
+        body = pickRow('track', chosenCup(c).name, `<div class="menu-cup-tracks">${chosenCup(c).tracks.map((t) => TRACK_LIST[t].name).join(' &middot; ')}</div>${this.trophyLine()}`, this.tiles('track', 'menu-cups', tiles));
       } else if (c.mode === 'generator') {
         title = 'BUILD A TRACK';
         body = this.generatorRows(line);
       } else if (c.mode === 'skills') {
         title = 'PICK A GAME';
-        body = line('skill', 'Game', esc(SKILLS[c.skill].name), `<div class="menu-cup-tracks menu-mode-blurb">${esc(SKILLS[c.skill].intro)}</div><div class="menu-cup-tracks">${SKILL_KINDS.indexOf(c.skill) + 1} of ${SKILL_KINDS.length}</div>`);
+        body = pickRow('skill', esc(SKILLS[c.skill].name), `<div class="menu-cup-tracks menu-mode-blurb">${esc(SKILLS[c.skill].intro)}</div>`, this.tiles('skill', 'menu-skills', SKILL_KINDS.map((k) => ({ label: SKILLS[k].name }))));
       } else if (c.mode === 'infinite') {
         const sw = c.switchEvery;
         const how =
@@ -440,29 +504,21 @@ export class Menu {
               : `On to the next track every ${sw === 1 ? 'lap' : `${sw} laps`} of the leader, every track in turn`;
         const gen = c.generative;
         body =
-          (gen === 'on' ? '' : line('track', 'Track', `${TRACK_LIST[c.track].name}${DICE('data-random-track', 'Random track (T)')}`, `<div class="menu-cup-tracks">${sw === 'never' ? '' : 'From '}${c.track + 1} of ${TRACK_LIST.length}</div>`)) +
+          (gen === 'on' ? '' : pickRow('track', `${TRACK_LIST[c.track].name}${DICE('data-random-track', 'Random track (T)')}`, `<div class="menu-cup-tracks">${sw === 'never' ? '' : 'From '}${c.track + 1} of ${TRACK_LIST.length}</div>`, trackTiles())) +
           line('generative', 'Gen tracks', gen.toUpperCase(), `<div class="menu-cup-tracks">${GENERATIVE_BLURBS[gen]}</div>`, true) +
           line('switch', 'Switch tracks', SWITCH_NAMES[String(sw)], `<div class="menu-cup-tracks">${how}</div>`, true);
       } else {
-        body = line('track', 'Track', `${TRACK_LIST[c.track].name}${c.mode === 'single' ? DICE('data-random-track', 'Random track (T)') : ''}`, `${this.bestLine(TRACK_LIST[c.track].id)}<div class="menu-cup-tracks">${c.track + 1} of ${TRACK_LIST.length}</div>`);
+        body = pickRow('track', `${TRACK_LIST[c.track].name}${c.mode === 'single' ? DICE('data-random-track', 'Random track (T)') : ''}`, this.bestLine(TRACK_LIST[c.track].id), trackTiles());
       }
     } else if (at === 'racer') {
       const hex = (n: number) => `#${n.toString(16).padStart(6, '0')}`;
       const stats = STAT_NAMES.map((k) => `<div class="menu-stat"><span>${k}</span><i style="width:${c.racer.stats[k] * 20}%;background:${hex(c.racer.color)}"></i></div>`).join('');
       // Every racer at once, a tile each: its picture once drawn, its colour until then.
-      const tiles = RACERS.map((r, i) => {
-        const img = this.portraits.get(r.id);
-        return `<button class="menu-racer${r === c.racer ? ' on' : ''}" data-pick-racer="${i}" data-racer-id="${r.id}" style="--racer:${hex(r.color)}" title="${esc(r.name)}">${img ? `<img src="${img}" alt="" />` : ''}<span>${esc(r.name)}</span></button>`;
-      }).join('');
+      const tiles = this.tiles('racer', 'menu-racers', RACERS.map((r) => ({ label: r.name, id: r.id, img: this.portraits.get(r.id), style: `--racer:${hex(r.color)}` })));
       body =
         (c.mode === 'infinite' && c.watch
           ? ''
-          : `<div class="menu-row menu-racer-pick${rows[this.row] === 'racer' ? ' on' : ''}" data-row="racer">
-            <div class="menu-racer-head"><div class="menu-value hud-big">${c.racer.name}${c.mode === 'online' ? '' : DICE('data-random', 'Random racer (R)')}</div></div>
-            <div class="menu-stats">${stats}</div>
-            <div class="menu-racers">${tiles}</div>
-            <div class="menu-bio">${c.racer.bio}</div>
-          </div>`) +
+          : pickRow('racer', `${c.racer.name}${c.mode === 'online' ? '' : DICE('data-random', 'Random racer (R)')}`, `<div class="menu-stats">${stats}</div>`, tiles, `<div class="menu-bio">${c.racer.bio}</div>`)) +
         (c.mode === 'infinite'
           ? line('watch', 'Drive', c.watch ? 'Watch' : 'Race', `<div class="menu-cup-tracks">${c.watch ? 'The CPUs race, you watch: the camera follows one and moves on now and then; &larr;&rarr; or a tap picks another' : 'You race the CPUs, lap after lap. Or Watch: the CPUs race to the music'}</div>`, true)
           : '');
@@ -501,7 +557,7 @@ export class Menu {
           <button class="menu-back" data-back${this.step === 0 ? ' disabled' : ''}>&lsaquo; back</button>
           ${last ? `<button class="menu-start hud-big" data-start>${c.mode === 'online' ? 'ROOMS' : c.mode === 'party' ? 'PLAYERS' : c.mode === 'infinite' && c.watch ? 'WATCH!' : c.mode === 'skills' ? 'PLAY!' : 'RACE!'}</button>` : `<button class="menu-start menu-next hud-big" data-next>next &rsaquo;</button>`}
         </div>
-        <div class="menu-hint">${at === 'racer' && rows[this.row] === 'racer' ? '&larr;&rarr;&uarr;&darr; pick' : `&larr;&rarr; change${rows.length > 1 ? ' &middot; &uarr;&darr; row' : ''}`} &middot; Enter ${last ? (c.mode === 'online' ? 'rooms' : c.mode === 'party' ? 'players' : c.mode === 'skills' ? 'play' : 'race') : 'next'} &middot; Backspace back</div>
+        <div class="menu-hint">${this.gridCount(rows[this.row]) ? '&larr;&rarr;&uarr;&darr; pick' : `&larr;&rarr; change${rows.length > 1 ? ' &middot; &uarr;&darr; row' : ''}`} &middot; Enter ${last ? (c.mode === 'online' ? 'rooms' : c.mode === 'party' ? 'players' : c.mode === 'skills' ? 'play' : 'race') : 'next'} &middot; Backspace back</div>
       </div>`;
     this.markMore();
   }
@@ -541,6 +597,16 @@ export class Menu {
     const what = settings().soundtrack === 'show' ? 'the song playing in the set' : "the track's song";
     const blurb = on ? `Laps without end until ${what} ends: whoever's in front then wins. No race times are kept` : "The track's laps, as ever";
     return line('songEnd', 'Race to', on ? "Song's end" : 'Laps', `<div class="menu-cup-tracks">${blurb}</div>`, true);
+  }
+
+  /** A cup tile's best trophy, at any class. */
+  private cupBadge(cupId: string): string {
+    const rank = { bronze: 1, silver: 2, gold: 3 } as const;
+    const best = cupTrophies(progress(), cupId, this.choice.mirror)
+      .map((t) => t.result.trophy)
+      .filter((t): t is NonNullable<typeof t> => !!t)
+      .sort((a, b) => rank[b] - rank[a])[0];
+    return best ? `<i class="menu-trophy ${best}">${TROPHY_GLYPH[best]}</i>` : '';
   }
 
   /** The trophies won on the chosen cup, by class, or what's left to win. */
