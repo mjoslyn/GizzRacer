@@ -47,8 +47,9 @@ export class SettingsScreen {
   }
 
   /**
-   * First run on a phone: drag or tilt? The answer is saved; Settings can
-   * change it later.
+   * Before the first race on a phone: pad or tilt? The answer is saved
+   * (`steeringChosen`); Settings can change it later. `onDone` runs once
+   * it's answered.
    */
   askSteering(onDone: () => void): void {
     this.onClose = onDone;

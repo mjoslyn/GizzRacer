@@ -3650,3 +3650,98 @@ body:not(.split) .seat-hud {
     grid-column: 1 / -1;
   }
 }
+
+/* ---- The racer grid: every racer at once on the picker's racer screen ---- */
+.menu .menu-racer-pick {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: stretch;
+  cursor: default;
+}
+
+.menu-racer-head .menu-value {
+  overflow: visible;
+}
+
+.menu-racers {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+  padding: 3px;
+}
+
+.menu .menu-racer {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  padding: 0;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 80%, color-mix(in srgb, var(--racer) 60%, transparent), rgba(30, 6, 44, 0.92) 72%);
+  box-shadow: inset 0 3px 0 var(--racer), 0 0 0 2px #3a0f45;
+  touch-action: manipulation;
+}
+
+.menu .menu-racer img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.menu .menu-racer span {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 1px 2px;
+  font-size: 10px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: rgba(20, 0, 30, 0.72);
+  text-shadow: 1px 1px 0 #3a0f45;
+}
+
+.menu .menu-racer:hover {
+  box-shadow: inset 0 3px 0 var(--racer), 0 0 0 2px #ffd23a;
+}
+
+.menu .menu-racer.on {
+  box-shadow: inset 0 3px 0 var(--racer), 0 0 0 3px #ffd23a, 0 0 14px 3px rgba(255, 210, 58, 0.7);
+  z-index: 1;
+}
+
+.menu .menu-racer-pick .menu-stats,
+.menu .menu-racer-pick .menu-bio {
+  margin-top: 0;
+}
+
+/* A phone on its side: a longer line of smaller tiles, their pictures alone (the name's above). */
+@media (max-height: 560px) {
+  .menu-racers {
+    grid-template-columns: repeat(8, 1fr);
+    gap: 5px;
+  }
+  .menu .menu-racer span {
+    display: none;
+  }
+}
+
+/* On a phone the racer screen stands alone, centred, with no gallery behind. */
+body.coarse .menu[data-step='racer'] {
+  justify-content: center;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+/* A phone on its side: the crumb names the racer screen, so its title goes to make room for all three lines of racers. */
+@media (max-height: 560px) {
+  .menu[data-step='racer'] .menu-title {
+    display: none;
+  }
+  .menu .menu-racer {
+    aspect-ratio: 3 / 2;
+  }
+}

@@ -47,6 +47,7 @@ import { DETAIL_SPEC, setGraphicsDetail } from './render/detail';
 import { PostFx } from './render/postfx';
 import { DynamicResolution, RESOLUTION_SCALES } from './render/resolution';
 import { RacerGallery } from './render/gallery';
+import { Portraits } from './render/portraits';
 import { flareRingTexture, glowTexture, setTextureAnisotropy } from './render/textures';
 import { WATER_LEVEL, buildTrackView, type TrackView } from './render/trackView';
 import { CUPS, TRACK_LIST, randomCupTracks } from './tracks/index';
@@ -68,7 +69,7 @@ import { deleteSaved, findSaved, saveTrack, savedTracks } from './core/savedTrac
 import { DAILY_SLOT, Menu, SKILL_LEVELS, SONG_SWITCH_LAPS, chosenCup, newSeed, racesToSongEnd, type MenuChoice } from './ui/menu';
 import { SaveTrackPanel } from './ui/saveTrack';
 import { Podium } from './render/podium';
-import { ScreenFit } from './ui/screen';
+import { COARSE, ScreenFit } from './ui/screen';
 import { TouchControls } from './ui/touch';
 const SUN_DIR = new THREE.Vector3(-0.5, 0.55, -0.65).normalize();
 
@@ -429,6 +430,8 @@ const menu = new Menu(
   choice,
   onMenuChange,
   (c) => {
+    // Before the first race on a phone: pad or tilt? Asked until it's answered, then on to the race.
+    if (c.mode !== 'party' && controlsUnchosen()) return settingsScreen.askSteering(() => menu.start());
     choice = { ...c };
     if (c.mode === 'online') return setMode('lobby');
     fieldSeed = Math.floor(Math.random() * 2 ** 31);
@@ -2316,9 +2319,19 @@ let elapsed = 0;
 /** The racer gallery, built the first time the picker's racer row is used. */
 let gallery: RacerGallery | null = null;
 
-/** While the picker's racer row is in use, the gallery takes over the screen, focused on the chosen racer. */
+/** The racers' pictures for the picker's grid, drawn the first time it shows. */
+let portraits: Portraits | null = null;
+
+/**
+ * While the picker's racer row is in use, the gallery takes over the
+ * screen, focused on the chosen racer. Not on a phone: the grid is
+ * centred there and the track stays behind it.
+ */
 function drawGallery(dt: number): boolean {
   if (mode !== 'menu' || !menu.visible || menu.activeRow !== 'racer') return false;
+  portraits ??= new Portraits((id, url) => menu.setPortrait(id, url));
+  portraits.step();
+  if (COARSE) return false;
   const fresh = !gallery;
   gallery ??= new RacerGallery();
   gallery.focus(choice.racer, fresh);
@@ -2755,14 +2768,20 @@ function endPodium(): void {
   chase.snap();
 }
 
+/**
+ * Whether a phone's player is yet to say pad or tilt (Settings or the
+ * question before a race; either saves it). Only where tilt is possible:
+ * otherwise it's the pad and nothing to ask.
+ */
+function controlsUnchosen(): boolean {
+  return (touch.enabled || COARSE) && !settings().steeringChosen && tilt.available;
+}
+
 /** Any key or tap moves past the title, results, standings and podium. The first one also unlocks audio. */
 function advance(): boolean {
   music.unlock();
   if (mode === 'title') {
     toMenu();
-    // First time on a phone: drag or tilt? Asked once, saved.
-    // Only where tilt is possible; otherwise it's drag steering and nothing to ask.
-    if (touch.enabled && !settings().steeringChosen && tilt.available) settingsScreen.askSteering(() => updateSettings({ steeringChosen: true }));
     if (linkedRoom) {
       menu.choice.mode = choice.mode = 'online';
       setMode('lobby');

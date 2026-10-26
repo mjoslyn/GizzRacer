@@ -1,5 +1,5 @@
 /** Phones and tablets: a coarse pointer, or touch with no hover. */
-const COARSE =
+export const COARSE =
   typeof matchMedia !== 'undefined' &&
   (matchMedia('(pointer: coarse)').matches || (navigator.maxTouchPoints > 0 && matchMedia('(hover: none)').matches));
 

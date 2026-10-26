@@ -109,6 +109,8 @@ export class Menu {
   private step = 0;
   private row = 0;
   choice: MenuChoice;
+  /** Each racer's picture for the grid (render/portraits.ts), as they arrive. */
+  private readonly portraits = new Map<string, string>();
 
   constructor(
     parent: HTMLElement,
@@ -135,8 +137,9 @@ export class Menu {
     this.el.addEventListener('click', (e) => {
       // A click opening the dropdown mustn't redraw it shut.
       if ((e.target as HTMLElement).matches('select, option')) return;
-      const t = (e.target as HTMLElement).closest<HTMLElement>('[data-row], [data-start], [data-next], [data-back], [data-step], [data-delete], [data-random], [data-random-track], [data-random-show]');
+      const t = (e.target as HTMLElement).closest<HTMLElement>('[data-pick-racer], [data-row], [data-start], [data-next], [data-back], [data-step], [data-delete], [data-random], [data-random-track], [data-random-show]');
       if (!t) return;
+      if (t.dataset.pickRacer !== undefined) return this.pickRacer(RACERS[Number(t.dataset.pickRacer)]);
       if (t.dataset.start !== undefined) return this.onStart(this.choice);
       if (t.dataset.next !== undefined) return this.next();
       if (t.dataset.back !== undefined) return this.back();
@@ -187,6 +190,13 @@ export class Menu {
     if (!this.visible) return false;
     const rows = this.rows();
     const vertical = (dir: number) => (rows.length > 1 ? this.moveRow(dir) : this.change(dir));
+    // In the racer grid, up and down go a line of racers at a time; past its top or foot, to the next row if there is one.
+    const up = code === 'ArrowUp' || code === 'KeyW';
+    if ((up || code === 'ArrowDown' || code === 'KeyS') && this.activeStep === 'racer' && this.activeRow === 'racer') {
+      const j = RACERS.indexOf(this.choice.racer) + (up ? -1 : 1) * this.gridColumns();
+      if (j >= 0 && j < RACERS.length) return this.pickRacer(RACERS[j], false), true;
+      if (rows.length === 1) return true;
+    }
     if (code === 'ArrowUp' || code === 'KeyW') vertical(-1);
     else if (code === 'ArrowDown' || code === 'KeyS') vertical(1);
     else if (code === 'ArrowLeft' || code === 'KeyA') return this.change(-1), true;
@@ -236,6 +246,11 @@ export class Menu {
     }
   }
 
+  /** Starts with the choice as it stands, as RACE! does. */
+  start(): void {
+    this.onStart(this.choice);
+  }
+
   /** On to the next screen; from the last, the race (or the rooms). */
   private next(): void {
     if (this.step >= this.steps().length - 1) {
@@ -264,6 +279,29 @@ export class Menu {
     this.choice.track = others[Math.floor(Math.random() * others.length)];
     this.render();
     this.onChange(this.choice, 'track');
+  }
+
+  /** A racer picked in the grid. A tap on the one already picked moves on. */
+  private pickRacer(racer: RacerDef | undefined, tapped = true): void {
+    if (!racer) return;
+    if (tapped && racer === this.choice.racer) return this.next();
+    this.choice.racer = racer;
+    this.row = 0;
+    this.render();
+    this.onChange(this.choice, 'racer');
+  }
+
+  /** How many racers a line of the grid holds (it has more on a phone). */
+  private gridColumns(): number {
+    const grid = this.el.querySelector('.menu-racers');
+    return grid ? getComputedStyle(grid).gridTemplateColumns.split(' ').length : 6;
+  }
+
+  /** A racer's picture is ready: into its tile, without redrawing the rest. */
+  setPortrait(racerId: string, url: string): void {
+    this.portraits.set(racerId, url);
+    const tile = this.el.querySelector(`[data-racer-id="${racerId}"]`);
+    if (tile && !tile.querySelector('img')) tile.insertAdjacentHTML('afterbegin', `<img src="${url}" alt="" />`);
   }
 
   /** Picks a racer at random (the racer row's dice, or R). */
@@ -404,10 +442,22 @@ export class Menu {
         body = line('track', 'Track', `${TRACK_LIST[c.track].name}${c.mode === 'single' ? DICE('data-random-track', 'Random track (T)') : ''}`, `${this.bestLine(TRACK_LIST[c.track].id)}<div class="menu-cup-tracks">${c.track + 1} of ${TRACK_LIST.length}</div>`);
       }
     } else if (at === 'racer') {
-      const color = `#${c.racer.color.toString(16).padStart(6, '0')}`;
-      const stats = STAT_NAMES.map((k) => `<div class="menu-stat"><span>${k}</span><i style="width:${c.racer.stats[k] * 20}%;background:${color}"></i></div>`).join('');
+      const hex = (n: number) => `#${n.toString(16).padStart(6, '0')}`;
+      const stats = STAT_NAMES.map((k) => `<div class="menu-stat"><span>${k}</span><i style="width:${c.racer.stats[k] * 20}%;background:${hex(c.racer.color)}"></i></div>`).join('');
+      // Every racer at once, a tile each: its picture once drawn, its colour until then.
+      const tiles = RACERS.map((r, i) => {
+        const img = this.portraits.get(r.id);
+        return `<button class="menu-racer${r === c.racer ? ' on' : ''}" data-pick-racer="${i}" data-racer-id="${r.id}" style="--racer:${hex(r.color)}" title="${esc(r.name)}">${img ? `<img src="${img}" alt="" />` : ''}<span>${esc(r.name)}</span></button>`;
+      }).join('');
       body =
-        (c.mode === 'infinite' && c.watch ? '' : line('racer', 'Racer', `${c.racer.name}${c.mode === 'online' ? '' : DICE('data-random', 'Random racer (R)')}`, `<div class="menu-stats">${stats}</div><div class="menu-bio">${c.racer.bio}</div>`)) +
+        (c.mode === 'infinite' && c.watch
+          ? ''
+          : `<div class="menu-row menu-racer-pick${rows[this.row] === 'racer' ? ' on' : ''}" data-row="racer">
+            <div class="menu-racer-head"><div class="menu-value hud-big">${c.racer.name}${c.mode === 'online' ? '' : DICE('data-random', 'Random racer (R)')}</div></div>
+            <div class="menu-stats">${stats}</div>
+            <div class="menu-racers">${tiles}</div>
+            <div class="menu-bio">${c.racer.bio}</div>
+          </div>`) +
         (c.mode === 'infinite'
           ? line('watch', 'Drive', c.watch ? 'Watch' : 'Race', `<div class="menu-cup-tracks">${c.watch ? 'The CPUs race, you watch: the camera follows one and moves on now and then; &larr;&rarr; or a tap picks another' : 'You race the CPUs, lap after lap. Or Watch: the CPUs race to the music'}</div>`, true)
           : '');
@@ -436,6 +486,7 @@ export class Menu {
     const crumbs = steps
       .map((s, i) => `<button class="menu-crumb${i === this.step ? ' on' : ''}${i > this.step ? ' todo' : ''}" data-step="${i}"><small>${i + 1}</small> ${esc(this.crumb(s))}</button>`)
       .join('<span class="menu-crumb-sep">&rsaquo;</span>');
+    this.el.dataset.step = at;
     this.el.innerHTML = `
       <div class="menu-panel">
         <div class="menu-crumbs">${crumbs}</div>
@@ -445,7 +496,7 @@ export class Menu {
           <button class="menu-back" data-back${this.step === 0 ? ' disabled' : ''}>&lsaquo; back</button>
           ${last ? `<button class="menu-start hud-big" data-start>${c.mode === 'online' ? 'ROOMS' : c.mode === 'party' ? 'PLAYERS' : c.mode === 'infinite' && c.watch ? 'WATCH!' : c.mode === 'skills' ? 'PLAY!' : 'RACE!'}</button>` : `<button class="menu-start menu-next hud-big" data-next>next &rsaquo;</button>`}
         </div>
-        <div class="menu-hint">&larr;&rarr; change${rows.length > 1 ? ' &middot; &uarr;&darr; row' : ''} &middot; Enter ${last ? (c.mode === 'online' ? 'rooms' : c.mode === 'party' ? 'players' : c.mode === 'skills' ? 'play' : 'race') : 'next'} &middot; Backspace back</div>
+        <div class="menu-hint">${at === 'racer' && rows[this.row] === 'racer' ? '&larr;&rarr;&uarr;&darr; pick' : `&larr;&rarr; change${rows.length > 1 ? ' &middot; &uarr;&darr; row' : ''}`} &middot; Enter ${last ? (c.mode === 'online' ? 'rooms' : c.mode === 'party' ? 'players' : c.mode === 'skills' ? 'play' : 'race') : 'next'} &middot; Backspace back</div>
       </div>`;
   }
 
