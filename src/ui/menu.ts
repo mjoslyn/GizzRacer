@@ -155,6 +155,9 @@ export class Menu {
       if (t.dataset.dir) this.change(Number(t.dataset.dir));
       else this.render();
     });
+    // Scrolling (it doesn't bubble, so caught on the way down) or a new size: is there still more below?
+    this.el.addEventListener('scroll', () => this.markMore(), true);
+    window.addEventListener('resize', () => this.markMore());
     this.render();
     // The show list arrives after startup: the Full set rows fill in.
     onShows(() => this.visible && this.render());
@@ -498,6 +501,13 @@ export class Menu {
         </div>
         <div class="menu-hint">${at === 'racer' && rows[this.row] === 'racer' ? '&larr;&rarr;&uarr;&darr; pick' : `&larr;&rarr; change${rows.length > 1 ? ' &middot; &uarr;&darr; row' : ''}`} &middot; Enter ${last ? (c.mode === 'online' ? 'rooms' : c.mode === 'party' ? 'players' : c.mode === 'skills' ? 'play' : 'race') : 'next'} &middot; Backspace back</div>
       </div>`;
+    this.markMore();
+  }
+
+  /** Marks the panel while there's more of it below the fold, for the hint above RACE!. */
+  private markMore(): void {
+    const panel = this.el.querySelector<HTMLElement>('.menu-panel');
+    if (panel) panel.classList.toggle('more', panel.scrollTop + panel.clientHeight < panel.scrollHeight - 4);
   }
 
   /** What a crumb says for a screen: the pick made there, or what it's for. */
