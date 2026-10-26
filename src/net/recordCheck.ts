@@ -53,6 +53,15 @@ export function recordBoardName(sub: RecordSubmission, version = PHYSICS_VERSION
   return `${sub.kind}.${id}${sub.mirror ? '.mirror' : ''}.${sub.engine}.v${version}`;
 }
 
+/**
+ * A cup's fastest-time board, `cuptime.{cup}...`: the same cup results
+ * ranked by time alone, any finish. The Random Cup has none: its tracks
+ * change from cup to cup.
+ */
+export function cupTimeBoardName(sub: CupRecordSubmission, version = PHYSICS_VERSION): string | null {
+  return sub.cupId === RANDOM_CUP_ID ? null : recordBoardName(sub, version).replace(/^cup\./, 'cuptime.');
+}
+
 /** A generated track's dials from its id (`trackId` in tracks/generator.ts), or null if it isn't one. */
 export function parseGenId(id: string): GenParams | null {
   const m = /^gen-([a-z]+)-(\d)-(short|medium|long)-(\d+)$/.exec(id);

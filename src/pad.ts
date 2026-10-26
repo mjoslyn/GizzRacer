@@ -347,9 +347,10 @@ root.addEventListener('keydown', (e) => {
 
 // The race's controls: buttons held while touched, the drag steering from where the finger went down.
 let settled = false;
+// Tilt saved on needs motion permission again each visit on iPhones, and only a touchend counts as the tap that asks.
+root.addEventListener('touchend', () => tiltOn && !tilt.running && void tilt.start(), { passive: true });
 root.addEventListener('pointerdown', (e) => {
-  // Tilt needs a tap to start on iPhones, and full screen and the wake lock a tap too: any tap will do.
-  if (tiltOn && !tilt.running) void tilt.start();
+  // Full screen and the wake lock need a tap: any tap will do.
   if (socket && !settled) {
     settled = true;
     void settle();

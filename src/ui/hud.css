@@ -1685,6 +1685,24 @@ body:not([data-mode='menu']) .board {
   text-align: center;
 }
 
+.board-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin: 4px 0 2px;
+}
+
+.board-tabs button {
+  font-size: 12px;
+  padding: 2px 10px;
+  opacity: 0.6;
+}
+
+.board-tabs button.on {
+  opacity: 1;
+  box-shadow: 0 0 0 2px #ffd23a;
+}
+
 .board-sub,
 .board-status,
 .board-hint,

@@ -3,7 +3,8 @@ import type { EngineClass } from '../physics/racers';
 
 /**
  * What the player has done, kept in this browser: a trophy per cup and
- * class, the best full-race time per track and class, the best style score
+ * class, the fastest cup per cup and class, the best full-race time per
+ * track and class, the best style score
  * per track, and which shortcuts they've found. Unlocks fall out of it.
  */
 export type Trophy = 'gold' | 'silver' | 'bronze';
@@ -28,6 +29,8 @@ export interface RaceRecord {
 export interface Progress {
   /** By cup id, class and mirror: `nonagon-infinity.100cc`, `nonagon-infinity.100cc.mirror`. */
   cups: Record<string, CupResult>;
+  /** Fastest cup (its races added up, any finish) by cup id, class and mirror. */
+  cupTimes: Record<string, RaceRecord>;
   /** Best full-race time by track id, class and mirror. */
   races: Record<string, RaceRecord>;
   /** Best style score by track id and class. */
@@ -45,7 +48,7 @@ export interface Unlocks {
   mirror: boolean;
 }
 
-export const EMPTY_PROGRESS: Progress = { cups: {}, races: {}, style: {}, shortcuts: [] };
+export const EMPTY_PROGRESS: Progress = { cups: {}, cupTimes: {}, races: {}, style: {}, shortcuts: [] };
 
 const KEY = 'gizzracer.progress';
 const TROPHY_FOR_PLACE: Record<number, Trophy> = { 1: 'gold', 2: 'silver', 3: 'bronze' };
@@ -132,6 +135,7 @@ function load(): Progress {
     if (!raw || typeof raw !== 'object') return structuredClone(EMPTY_PROGRESS);
     return {
       cups: raw.cups && typeof raw.cups === 'object' ? carryOver(raw.cups) : {},
+      cupTimes: raw.cupTimes && typeof raw.cupTimes === 'object' ? raw.cupTimes : {},
       races: raw.races && typeof raw.races === 'object' ? raw.races : {},
       style: raw.style && typeof raw.style === 'object' ? raw.style : {},
       shortcuts: Array.isArray(raw.shortcuts) ? raw.shortcuts.filter((s): s is string => typeof s === 'string') : [],
@@ -182,6 +186,19 @@ export function recordCup(cupId: string, engine: EngineClass, mirror: boolean, r
   const after = unlocks(p);
   const unlocked = (Object.keys(after) as (keyof Unlocks)[]).filter((k) => after[k] && !before[k]);
   return { trophy: entry.trophy, improved, unlocked };
+}
+
+/** Records a cup's time, its races added up. Returns whether it's the fastest here and what it beat. */
+export function recordCupTime(cupId: string, engine: EngineClass, mirror: boolean, ms: number): { best: boolean; prevMs: number | null } {
+  const p = (current ??= load());
+  const key = cupKey(cupId, engine, mirror);
+  const prev = p.cupTimes[key] ?? null;
+  const best = !prev || ms < prev.ms;
+  if (best) {
+    p.cupTimes[key] = { ms, at: Date.now() };
+    save();
+  }
+  return { best, prevMs: prev?.ms ?? null };
 }
 
 /** Records a full race's time. Returns whether it's the best here and what it beat. */

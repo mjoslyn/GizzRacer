@@ -1,5 +1,5 @@
 import { Server, getServerByName } from 'partyserver';
-import { checkRecord, recordBoardName, type RecordSubmission } from '../src/net/recordCheck';
+import { checkRecord, cupTimeBoardName, recordBoardName, type RecordSubmission } from '../src/net/recordCheck';
 import { json } from './players';
 
 /** How many entries a leaderboard request returns. */
@@ -17,9 +17,9 @@ interface RecordRow {
 
 /**
  * One records leaderboard (src/net/recordCheck.ts): a track's fastest full
- * races, or a cup's best results, per class and physics version. Keeps each
- * player's best. A race board ranks by time; a cup board by points, then
- * time.
+ * races, a cup's best results, or a cup's fastest runs, per class and
+ * physics version. Keeps each player's best. A race board and a cup's
+ * fastest board (`cuptime.`) rank by time; a cup board by points, then time.
  *
  *   GET  /parties/records/{board}?player={id}   top entries, plus that player's rank
  *   POST /parties/records/{board}               { playerId, token, record }
@@ -28,10 +28,16 @@ export class Records extends Server<Env> {
   onStart(): void {
     this.sql`CREATE TABLE IF NOT EXISTS records (player_id TEXT PRIMARY KEY, name TEXT NOT NULL, racer_id TEXT NOT NULL, points INTEGER NOT NULL, time_ms INTEGER NOT NULL, detail TEXT NOT NULL, created_at INTEGER NOT NULL)`;
     this.sql`CREATE INDEX IF NOT EXISTS records_by_rank ON records (points DESC, time_ms)`;
+    this.sql`CREATE INDEX IF NOT EXISTS records_by_time ON records (time_ms)`;
   }
 
-  private get kind(): 'race' | 'cup' {
-    return this.name.startsWith('cup.') ? 'cup' : 'race';
+  private get kind(): 'race' | 'cup' | 'cuptime' {
+    return this.name.startsWith('cup.') ? 'cup' : this.name.startsWith('cuptime.') ? 'cuptime' : 'race';
+  }
+
+  /** Points come first only on a cup board; the rest rank by time (a race board's points are all 0). */
+  private get byPoints(): boolean {
+    return this.kind === 'cup';
   }
 
   async onRequest(req: Request): Promise<Response> {
@@ -42,7 +48,8 @@ export class Records extends Server<Env> {
   }
 
   private board(player: string | null) {
-    const top = this.sql<RecordRow>`SELECT * FROM records ORDER BY points DESC, time_ms, created_at LIMIT ${TOP}`.map(publicRecord);
+    const rows = this.byPoints ? this.sql<RecordRow>`SELECT * FROM records ORDER BY points DESC, time_ms, created_at LIMIT ${TOP}` : this.sql<RecordRow>`SELECT * FROM records ORDER BY time_ms, created_at LIMIT ${TOP}`;
+    const top = rows.map(publicRecord);
     let me = null;
     if (player) {
       const [mine] = this.sql<RecordRow>`SELECT * FROM records WHERE player_id = ${player}`;
@@ -53,12 +60,17 @@ export class Records extends Server<Env> {
   }
 
   private rank(r: RecordRow): number {
+    if (!this.byPoints) {
+      const [{ ahead }] = this.sql<{ ahead: number }>`SELECT COUNT(*) AS ahead FROM records WHERE time_ms < ${r.time_ms} OR (time_ms = ${r.time_ms} AND created_at < ${r.created_at})`;
+      return ahead + 1;
+    }
     const [{ ahead }] = this.sql<{ ahead: number }>`SELECT COUNT(*) AS ahead FROM records WHERE points > ${r.points} OR (points = ${r.points} AND (time_ms < ${r.time_ms} OR (time_ms = ${r.time_ms} AND created_at < ${r.created_at})))`;
     return ahead + 1;
   }
 
   /** Whether a new result beats the one on the board. */
   private beats(sub: RecordSubmission, old: RecordRow): boolean {
+    if (!this.byPoints) return sub.totalMs < old.time_ms;
     const points = sub.kind === 'cup' ? sub.points : 0;
     return points > old.points || (points === old.points && sub.totalMs < old.time_ms);
   }
@@ -67,7 +79,8 @@ export class Records extends Server<Env> {
     const body = (await req.json().catch(() => null)) as { playerId?: string; token?: string; record?: RecordSubmission } | null;
     const record = body?.record;
     if (!body || !record || typeof body.playerId !== 'string' || typeof body.token !== 'string') return json({ error: 'bad request' }, 400);
-    if (recordBoardName(record, record.physicsVersion) !== this.name) return json({ error: 'wrong board' }, 400);
+    const fastest = record.kind === 'cup' ? cupTimeBoardName(record, record.physicsVersion) : null;
+    if (recordBoardName(record, record.physicsVersion) !== this.name && fastest !== this.name) return json({ error: 'wrong board' }, 400);
     const players = await getServerByName(this.env.Players, 'global');
     const name = await players.verify(body.playerId, body.token);
     if (!name) return json({ error: 'unknown player' }, 403);

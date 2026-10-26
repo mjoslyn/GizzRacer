@@ -32,7 +32,7 @@ The game itself stays a static site and can be hosted anywhere (Netlify, Cloudfl
 | `room` | room code (`KZRT`) | lobby, race simulation, Grand Prix standings |
 | `trials` | leaderboard (`rattlesnake-run.100cc.v3`) | runs table, ghosts, top-N cache |
 | `players` | single instance (`global`) | guest identities and display names |
-| `records` | leaderboard (`race.rattlesnake-run.100cc.v11`, `cup.nonagon.150cc.v11`) | best full-race time per player, or best cup result |
+| `records` | leaderboard (`race.rattlesnake-run.100cc.v11`, `cup.nonagon.150cc.v11`, `cuptime.nonagon.150cc.v11`) | best full-race time per player, best cup result, or fastest cup (any finish; none for the Random Cup) |
 | `couch` | Party mode's phone code (`KZRT`) | nothing: passes phones' buttons to the TV and the TV's word back (section 12) |
 
 Code lives in `party/` (server) and `src/net/` (client), sharing `src/core`, `src/physics`, `src/items`, `src/tracks` and `src/ai`.

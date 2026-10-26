@@ -8,7 +8,7 @@ describe('progress', () => {
   beforeEach(() => resetProgress());
 
   it('starts empty, with nothing unlocked', () => {
-    expect(progress()).toEqual({ cups: {}, races: {}, style: {}, shortcuts: [] });
+    expect(progress()).toEqual({ cups: {}, cupTimes: {}, races: {}, style: {}, shortcuts: [] });
     expect(unlocks(progress())).toEqual({ randomCup: false, class200: false, mirror: false });
   });
 
@@ -78,7 +78,7 @@ describe('progress', () => {
       'ice-death-planets.100cc': r('gold'),
       'phantom-island.50cc': r('gold'),
     });
-    expect(unlocks({ cups: out, races: {}, style: {}, shortcuts: [] }).class200).toBe(true);
+    expect(unlocks({ cups: out, cupTimes: {}, races: {}, style: {}, shortcuts: [] }).class200).toBe(true);
   });
 
   it('a shortcut is new once', () => {

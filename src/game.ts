@@ -18,8 +18,8 @@ import { fetchGhost, uploadRun } from './net/trials';
 import { LeaderboardPanel } from './ui/leaderboard';
 import { RecordsPanel } from './ui/recordsPanel';
 import { NamePrompt } from './ui/namePrompt';
-import { cupBoard, postRecord, raceBoard } from './net/records';
-import { foundShortcut, recordCup, recordRace, recordStyle } from './core/progress';
+import { cupBoard, cupTimeBoard, postRecord, raceBoard } from './net/records';
+import { foundShortcut, recordCup, recordCupTime, recordRace, recordStyle } from './core/progress';
 import { StyleMeter, driftMove } from './core/style';
 import { SURGE_CLOSE, SURGE_CLOSING, SURGE_FAST } from './items/items';
 import { LobbyScreen } from './ui/lobby';
@@ -749,7 +749,7 @@ function updateBoard(refresh = false): void {
   const tag = `${choice.engine}${mirror ? ' · Mirror' : ''}`;
   if (choice.mode === 'grandPrix') {
     const cup = chosenCup(choice);
-    records.load(cupBoard(cup.id, choice.engine, mirror), `${cup.name} · ${tag}`, refresh);
+    records.load(cupBoard(cup.id, choice.engine, mirror), `${cup.name} · ${tag}`, refresh, cupTimeBoard(cup.id, choice.engine, mirror));
   } else {
     const t = choice.mode === 'generator' ? generatedTrack() : TRACK_LIST[choice.track];
     const name = choice.mode === 'generator' ? (choice.gen.slot === DAILY_SLOT ? `Daily: ${track.def.name}` : track.def.name) : TRACK_LIST[choice.track].name;
@@ -1910,8 +1910,17 @@ function finishCup(): string {
   if (res.trophy || res.unlocked.length) sfx.fanfare();
   // A race run to the song's end has no time to compare: the trophy stands, the online cup board doesn't get it.
   if (gpSongRace) return parts.join(' · ');
+  // The fastest cup, wherever you finished: the Random Cup's tracks change, so it has no time to beat.
+  const fastest = cupTimeBoard(cup.id, choice.engine, mirror) !== null;
+  if (fastest) {
+    const t = recordCupTime(cup.id, choice.engine, mirror, timeMs);
+    if (t.best && t.prevMs !== null) parts.push(`FASTEST CUP! ${formatTime((t.prevMs - timeMs) / 1000).replace(/^0:0?/, '-')}s`);
+  }
   const record = { kind: 'cup' as const, cupId: cup.id, engine: choice.engine, mirror, racerId: choice.racer.id, points: entry.points, totalMs: timeMs, places: gpPlaces.slice() };
-  namePrompt.ask('your cup result', () => postRecord(record).catch(() => {}));
+  namePrompt.ask('your cup result', () => {
+    postRecord(record).catch(() => {});
+    if (fastest) postRecord(record, true).catch(() => {});
+  });
   return parts.join(' · ');
 }
 

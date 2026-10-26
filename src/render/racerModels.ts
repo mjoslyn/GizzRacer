@@ -1616,7 +1616,7 @@ function mantisShredder(r: RacerDef): KartModel {
   };
 }
 
-// ---- Gator Drummer: an alligator running on its four legs, headphones on ------
+// ---- Gator: an alligator running on its four legs, headphones on ------
 
 function gatorDrummer(r: RacerDef): KartModel {
   const body = new THREE.Group();
