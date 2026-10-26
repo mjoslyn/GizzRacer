@@ -2088,11 +2088,22 @@ body:not([data-mode='race']) .hud-item {
   font-size: 14px;
 }
 
-/* The Manual and Credits side by side. */
-.settings-links {
-  display: flex;
+/* Manual, Credits and DONE on one line, pinned to the panel's foot: the rows scroll under it if they must. */
+.settings-foot {
+  position: sticky;
+  bottom: -18px;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: auto auto 1fr;
   gap: 12px;
-  justify-content: center;
+  align-items: center;
+  margin-bottom: -18px;
+  padding: 6px 0 18px;
+  background: linear-gradient(180deg, rgba(25, 5, 40, 0), rgb(25, 5, 40) 6px);
+}
+
+.settings-foot .lobby-big {
+  margin-top: 0;
 }
 
 .credits-panel {
@@ -2342,6 +2353,12 @@ button.hud-big {
     font-size: 18px !important;
     padding: 6px !important;
     margin-top: 2px;
+  }
+
+  .settings-foot {
+    bottom: -10px;
+    margin-bottom: -10px;
+    padding-bottom: 10px;
   }
 
   .settings .lobby-status {

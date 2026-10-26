@@ -213,35 +213,35 @@ export class SettingsScreen {
         <div class="lobby-title hud-big">SETTINGS</div>
         <div class="settings-cols">
           <div class="settings-col">
-            <div class="settings-group">Sound and driving</div>
+            <div class="settings-group">Sound and look</div>
             <div class="lobby-row"><span class="lobby-label">Music</span>${arrows('music', pct(s.music))}</div>
             <div class="lobby-row"><span class="lobby-label">Soundtrack</span>${arrows('soundtrack', SOUNDTRACK_NAMES[s.soundtrack])}</div>
             ${s.soundtrack === 'show' ? this.showRows() : ''}
             <div class="lobby-row"><span class="lobby-label">Effects</span>${arrows('sfx', pct(s.sfx))}</div>
             <div class="lobby-row"><span class="lobby-label">VHS</span>${arrows('look', { full: 'Full', light: 'Light', off: 'Off' }[s.videoLook])}</div>
+            <div class="lobby-row"><span class="lobby-label">Detail</span>${arrows('detail', DETAIL_NAMES[s.detail])}</div>
+          </div>
+          <div class="settings-col">
+            <div class="settings-group">Driving</div>
             <div class="lobby-row"><span class="lobby-label">Steering</span>${toggle('smart', s.smartSteering, s.smartSteering ? 'Smart' : 'Manual')}</div>
             <div class="lobby-row"><span class="lobby-label">CPUs</span>${arrows('cpus', { easy: 'Easy', normal: 'Normal', hard: 'Hard' }[s.cpuDifficulty])}</div>
             <div class="lobby-row"><span class="lobby-label">Turn hints</span>${toggle('turns', s.turnIndicator)}</div>
-            <div class="lobby-row"><span class="lobby-label">Detail</span>${arrows('detail', DETAIL_NAMES[s.detail])}</div>
-          </div>
-          ${
-            this.tilt.touchDevice
-              ? `<div class="settings-col">
-            <div class="settings-group">Phone controls</div>
+            ${
+              this.tilt.touchDevice
+                ? `<div class="settings-group">Phone controls</div>
             <div class="lobby-row"><span class="lobby-label">Controls</span>${controls}</div>
             <div class="lobby-row${s.tilt ? '' : ' off'}"><span class="lobby-label">Sensitivity</span>${arrows('range', sensitivity)}</div>
-            <div class="lobby-row${s.tilt ? '' : ' off'}"><span class="lobby-label">Invert</span>${toggle('invert', s.tiltInvert)}</div>
-            <button class="settings-recenter" data-act="recenter"${s.tilt ? '' : ' disabled'}>Recentre tilt</button>
-          </div>`
-              : ''
-          }
+            <div class="lobby-row${s.tilt ? '' : ' off'}"><span class="lobby-label">Invert</span><div class="settings-seg"><button class="settings-toggle${s.tiltInvert ? ' on' : ''}" data-act="invert"${s.tilt ? '' : ' disabled'}>${s.tiltInvert ? 'On' : 'Off'}</button><button class="settings-toggle" data-act="recenter"${s.tilt ? '' : ' disabled'}>Recentre</button></div></div>`
+                : ''
+            }
+          </div>
         </div>
         ${this.status ? `<div class="lobby-status">${this.status}</div>` : ''}
-        <div class="settings-links">
+        <div class="settings-foot">
           <button class="settings-credits" data-act="manual">Manual</button>
           <button class="settings-credits" data-act="credits">Credits</button>
+          <button class="lobby-big hud-big" data-act="done">DONE</button>
         </div>
-        <button class="lobby-big hud-big" data-act="done">DONE</button>
       </div>`;
     this.show(html);
   }
