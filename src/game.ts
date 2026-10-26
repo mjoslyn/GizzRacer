@@ -1159,9 +1159,17 @@ function rivalGhost(): Ghost | null {
   return ghosts.find((g) => g.label !== 'you') ?? ghosts[0] ?? null;
 }
 
-/** Swoops along the last stretch of the lap down onto the grid. */
-function introCamera(): void {
-  const u = 1 - intro / INTRO_TIME;
+/**
+ * Tools only (tools/previews.mjs, `?shots`): behind the picker, the camera
+ * holds partway down the intro's swoop, where the picker's track previews
+ * are taken from.
+ */
+const SHOT_CAMERA = new URLSearchParams(location.search).has('shots');
+/** How far down the swoop the preview shots are taken. */
+const SHOT_SWOOP = 0.12;
+
+/** Swoops along the last stretch of the lap down onto the grid (`u`, 0 to 1, how far down). */
+function introCamera(u = 1 - intro / INTRO_TIME): void {
   const e = u * u * (3 - 2 * u);
   const s = lerp(-240, -36, e);
   const p = pointAt(track.spline, s);
@@ -2459,6 +2467,9 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
   } else if (intro > 0) {
     race.karts.forEach((k, i) => views[i].update(drawn[i], k.params.topSpeed, dt, elapsed, k.fallTime > 0));
     introCamera();
+  } else if (SHOT_CAMERA && mode === 'menu') {
+    race.karts.forEach((k, i) => views[i].update(drawn[i], k.params.topSpeed, dt, elapsed, k.fallTime > 0));
+    introCamera(SHOT_SWOOP);
   } else {
     race.karts.forEach((k, i) => views[i].update(drawn[i], k.params.topSpeed, dt, elapsed, k.fallTime > 0));
     chase.update(s, f.params.topSpeed, seats[0]?.last.lookBack ?? false, dt);

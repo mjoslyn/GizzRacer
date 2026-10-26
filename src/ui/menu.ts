@@ -4,6 +4,7 @@ import { SONG_END_SOUNDTRACKS, SOUNDTRACKS, SOUNDTRACK_BLURBS, SOUNDTRACK_NAMES,
 import type { SavedTrack } from '../core/savedTracks';
 import { CPU_DIFFICULTIES } from '../ai/cpuDriver';
 import { MODE_BLURBS, MODE_NAMES, type RaceMode } from './modes';
+import { MODE_ICONS, RANDOM_CUP_ICON } from './modeIcons';
 import { chosenShow, onShows, randomShow, showSelect, shows, stepShow } from '../audio/shows';
 import { formatTime } from './hud';
 import { ENGINE_CLASSES, RACERS, type EngineClass, type RacerDef } from '../physics/racers';
@@ -339,11 +340,11 @@ export class Menu {
    * it again to go on. `groups` puts a heading across the grid before the
    * tile at each index (the tracks, by album).
    */
-  private tiles(row: MenuRow, cls: string, items: { label: string; id?: string; img?: string; style?: string; badge?: string }[], groups: { at: number; label: string }[] = []): string {
+  private tiles(row: MenuRow, cls: string, items: { label: string; id?: string; img?: string; art?: string; style?: string; badge?: string }[], groups: { at: number; label: string }[] = []): string {
     const on = this.gridIndex(row);
     const html = items.map((t, i) => {
       const group = groups.find((g) => g.at === i);
-      return `${group ? `<div class="menu-tiles-group">${esc(group.label)}</div>` : ''}<button class="menu-tile${i === on ? ' on' : ''}" data-pick="${row}:${i}"${t.id ? ` data-tile-id="${t.id}"` : ''}${t.style ? ` style="${t.style}"` : ''} title="${esc(t.label)}">${t.img ? `<img src="${t.img}" alt="" />` : ''}<span>${esc(t.label)}</span>${t.badge ?? ''}</button>`;
+      return `${group ? `<div class="menu-tiles-group">${esc(group.label)}</div>` : ''}<button class="menu-tile${i === on ? ' on' : ''}" data-pick="${row}:${i}"${t.id ? ` data-tile-id="${t.id}"` : ''}${t.style ? ` style="${t.style}"` : ''} title="${esc(t.label)}">${t.art ?? ''}${t.img ? `<img src="${t.img}" alt="" loading="lazy" onerror="this.remove()" />` : ''}<span>${esc(t.label)}</span>${t.badge ?? ''}</button>`;
     });
     return `<div class="menu-tiles ${cls}" data-grid="${row}">${html.join('')}</div>`;
   }
@@ -474,26 +475,28 @@ export class Menu {
     const trackTiles = () =>
       this.tiles(
         'track',
-        'menu-tracks',
-        TRACK_LIST.map((t) => ({ label: t.name })),
+        'menu-tracks menu-shots',
+        TRACK_LIST.map((t) => ({ label: t.name, id: t.id, img: preview('tracks', t.id) })),
         CUPS.map((cup) => ({ at: cup.tracks[0], label: cup.name.replace(/ Cup$/, '') })),
       );
     let title = STEP_TITLES[at];
     let body: string;
     if (at === 'mode') {
-      body = pickRow('mode', MODE_NAMES[c.mode], `<div class="menu-cup-tracks menu-mode-blurb">${esc(MODE_BLURBS[c.mode])}</div>`, this.tiles('mode', 'menu-modes', MODES.map((m) => ({ label: MODE_NAMES[m] }))));
+      body = pickRow('mode', MODE_NAMES[c.mode], `<div class="menu-cup-tracks menu-mode-blurb">${esc(MODE_BLURBS[c.mode])}</div>`, this.tiles('mode', 'menu-modes', MODES.map((m) => ({ label: MODE_NAMES[m], art: MODE_ICONS[m] }))));
     } else if (at === 'track') {
       if (c.mode === 'grandPrix') {
         title = 'PICK A CUP';
-        const cups = [...CUPS, ...(unlocks(progress()).randomCup ? [{ id: RANDOM_CUP_ID, name: RANDOM_CUP_NAME }] : [])];
-        const tiles = cups.map((cup) => ({ label: cup.name.replace(/ Cup$/, ''), badge: this.cupBadge(cup.id) }));
-        body = pickRow('track', chosenCup(c).name, `<div class="menu-cup-tracks">${chosenCup(c).tracks.map((t) => TRACK_LIST[t].name).join(' &middot; ')}</div>${this.trophyLine()}`, this.tiles('track', 'menu-cups', tiles));
+        // Each cup its four tracks' previews, two by two; the Random Cup a die.
+        const mosaic = (tracks: number[]) => `<span class="menu-tile-mosaic">${tracks.map((t) => `<img src="${preview('tracks', TRACK_LIST[t].id)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'" />`).join('')}</span>`;
+        const tiles = CUPS.map((cup) => ({ label: cup.name.replace(/ Cup$/, ''), art: mosaic(cup.tracks), badge: this.cupBadge(cup.id) }));
+        if (unlocks(progress()).randomCup) tiles.push({ label: 'Random', art: `<span class="menu-tile-icon">${RANDOM_CUP_ICON}</span>`, badge: this.cupBadge(RANDOM_CUP_ID) });
+        body = pickRow('track', chosenCup(c).name, `<div class="menu-cup-tracks">${chosenCup(c).tracks.map((t) => TRACK_LIST[t].name).join(' &middot; ')}</div>${this.trophyLine()}`, this.tiles('track', 'menu-cups menu-shots', tiles));
       } else if (c.mode === 'generator') {
         title = 'BUILD A TRACK';
         body = this.generatorRows(line);
       } else if (c.mode === 'skills') {
         title = 'PICK A GAME';
-        body = pickRow('skill', esc(SKILLS[c.skill].name), `<div class="menu-cup-tracks menu-mode-blurb">${esc(SKILLS[c.skill].intro)}</div>`, this.tiles('skill', 'menu-skills', SKILL_KINDS.map((k) => ({ label: SKILLS[k].name }))));
+        body = pickRow('skill', esc(SKILLS[c.skill].name), `<div class="menu-cup-tracks menu-mode-blurb">${esc(SKILLS[c.skill].intro)}</div>`, this.tiles('skill', 'menu-skills menu-shots', SKILL_KINDS.map((k) => ({ label: SKILLS[k].name, id: k, img: preview('skills', k) }))));
       } else if (c.mode === 'infinite') {
         const sw = c.switchEvery;
         const how =
@@ -654,6 +657,11 @@ export class Menu {
       line('length', 'Length', LENGTH_NAMES[g.params.length], '', true)
     );
   }
+}
+
+/** A preview shot in public/previews (taken by tools/previews.mjs). */
+function preview(kind: 'tracks' | 'skills', id: string): string {
+  return `previews/${kind}/${id}.jpg`;
 }
 
 /** A dice button inside a row's value: one tap rolls that row. */
