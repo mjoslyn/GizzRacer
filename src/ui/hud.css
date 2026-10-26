@@ -3718,15 +3718,16 @@ body:not(.split) .seat-hud {
   margin-top: 0;
 }
 
-/* A phone on its side: a longer line of smaller tiles, their pictures alone (the name's above). */
+/* A phone on its side: six to a line still, tiles big enough to tap, and the rest a scroll away (the hint above NEXT says so). */
 @media (max-height: 560px) {
   .menu-racers {
-    grid-template-columns: repeat(8, 1fr);
     gap: 5px;
   }
-  .menu .menu-racer span {
-    display: none;
-  }
+}
+
+/* Moved to with the arrows, a tile scrolls clear of the pinned Back and NEXT. */
+.menu .menu-racer {
+  scroll-margin: 8px 0 72px;
 }
 
 /* On a phone the racer screen stands alone, centred, with no gallery behind. */

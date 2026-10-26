@@ -291,6 +291,8 @@ export class Menu {
     this.choice.racer = racer;
     this.row = 0;
     this.render();
+    // Down the grid past the fold on a phone: the panel follows.
+    this.el.querySelector('.menu-racer.on')?.scrollIntoView({ block: 'nearest' });
     this.onChange(this.choice, 'racer');
   }
 
