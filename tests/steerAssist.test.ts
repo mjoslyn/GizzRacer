@@ -63,6 +63,30 @@ describe('smart steering', () => {
     expect(drive(onStraight(0), 1, true, 2).offRoad).toBe(true);
   });
 
+  it('turns a kart facing the wrong way round, whatever the stick says', () => {
+    // The straight runs up +z: facing down it (heading pi) is the wrong way.
+    const wrongBy = (s: KartState) => Math.abs(wrapAngle(s.heading));
+    const facingBack = (speed: number) => {
+      const s = createKartState(0, -20, Math.PI);
+      s.speed = speed;
+      return s;
+    };
+    // The stick let go, then held hard either way: turned round all the same.
+    for (const steer of [0, -1, 1]) {
+      const s = facingBack(params.topSpeed * 0.4);
+      // Most of the way round within the test road's width (it's narrow: off it, there's no road to steer by).
+      const run = drive(s, steer, true, 0.8);
+      expect(run.offRoad).toBe(false);
+      expect(wrongBy(s)).toBeLessThan(2.4);
+    }
+    // Without it the kart carries on the wrong way.
+    const raw = facingBack(params.topSpeed * 0.4);
+    drive(raw, 0, false, 0.5);
+    expect(wrongBy(raw)).toBeGreaterThan(3);
+    // Reversing isn't going the wrong way: left alone.
+    expect(assistSteer({ ...NEUTRAL_INPUT, steer: 0 }, facingBack(-4), track).steer).toBe(0);
+  });
+
   it('leaves a kart driving straight down the middle alone', () => {
     const s = onStraight(0);
     const road = track.roadFrame(s)!;

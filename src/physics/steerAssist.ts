@@ -1,4 +1,4 @@
-import { clamp, wrapAngle } from '../core/math';
+import { clamp, lerp, wrapAngle } from '../core/math';
 import type { InputFrame } from '../core/inputFrame';
 import type { RoadFrame } from '../tracks/track';
 import { STEER_EXPO, type KartState } from './kart';
@@ -12,6 +12,8 @@ import { STEER_EXPO, type KartState } from './kart';
  * The player can always steer through it, and a stick held toward an edge
  * is taken as meaning it: the correction fades with the stick and is gone
  * at full lock, so a track without a wall can still be left on purpose.
+ * The one thing it won't allow is the wrong way: a kart facing back the
+ * way the race came is turned round, whatever the stick says.
  */
 
 /** How hard the hand on the wheel is: a level for a keyboard or a stick, and a firmer one for touch, where steering is a thumb on glass. */
@@ -42,6 +44,12 @@ const STEER_DEADZONE = 0.12;
 const MIN_SPEED = 5;
 /** How far past the edge it looks for more road (past the curb). */
 const BEYOND = 2.5;
+/** Facing further than this from the way the race runs (rad, a little past square), the kart is going the wrong way, and is turned round... */
+const WRONG_WAY = 1.6;
+/** ...at least this much lock at first... */
+const WRONG_WAY_TURN = 0.3;
+/** ...and full lock from here (about 120 degrees). */
+const WRONG_WAY_FULL = 2.1;
 
 /** Where it steers: the road the kart is on, and whether there's road at a point (a shortcut peeling off, a junction). */
 export interface AssistEnv {
@@ -64,6 +72,16 @@ export function assistSteer(input: InputFrame, s: KartState, env: AssistEnv, lev
   const sideways = vx * -tz + vz * tx;
   let steer = input.steer;
 
+  // Facing back the way the race came: turned round the quicker way. The stick can turn it round faster, never
+  // the other way, and the further round it faces the harder it turns, to full lock. (Reversing out of a wall is
+  // the speed check above.)
+  const err = wrapAngle(s.heading - Math.atan2(tx, tz));
+  if (Math.abs(err) > WRONG_WAY) {
+    const round = Math.sign(err);
+    const least = lerp(WRONG_WAY_TURN, 1, clamp((Math.abs(err) - WRONG_WAY) / (WRONG_WAY_FULL - WRONG_WAY), 0, 1));
+    return { ...input, steer: round * Math.max(least, round * input.steer) };
+  }
+
   // Heading for the edge: steer back in.
   const ahead = road.lateral + sideways * level.lookAhead;
   const over = Math.abs(ahead) - (road.halfWidth - level.edgeMargin);
@@ -76,7 +94,6 @@ export function assistSteer(input: InputFrame, s: KartState, env: AssistEnv, lev
 
   // Stick let go, not drifting: ease the nose back in line with the road.
   if (Math.abs(input.steer) < STEER_DEADZONE && s.driftDir === 0) {
-    const err = wrapAngle(s.heading - Math.atan2(tx, tz));
     if (Math.abs(err) < level.alignRange) {
       const straight = 1 - clamp(Math.abs(road.curvature) / ALIGN_BEND, 0, 1);
       // Undo the stick's response curve (stepKart), so small corrections still turn.

@@ -70,7 +70,7 @@ No install and no account. It will always be free. **[The manual](https://www.gi
 - **Nonagon Infinity:** hop as it reaches you to ride over it. The warning's bar fills as it closes, and says HOP when it's time.
 - **Random racer:** press R on the picker, or the dice beside the racer. In Single Race, T (or the dice beside the track) picks a random track. The picker is one choice to a screen: mode, track or cup, racer, speed; Enter goes on, Backspace back, and the crumbs along the top jump anywhere.
 
-Smart Steering is on by default. It steers you back from edges and straightens you up out of turns, and you can always steer through it. On touch it holds on firmer, and the CPUs race a little slower. Turn it off under Settings > Steering.
+Smart Steering is on by default. It steers you back from edges and straightens you up out of turns, and you can always steer through it. The one thing it won't let you do is drive the wrong way: face back the way the race came and it turns you round. On touch it holds on firmer, and the CPUs race a little slower. Turn it off under Settings > Steering.
 
 **Hints ticker:** on the picker and over the flyover before a race, a line along the bottom scrolls through the controls (for keys or touch, whichever you're using), what every item does, and tips. Hover it to stop it.
 
