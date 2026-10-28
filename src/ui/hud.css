@@ -1685,6 +1685,15 @@ body:not([data-mode='menu']) .board {
   text-align: center;
 }
 
+/* The gradient-clipped title text doesn't paint inside the board's skewed scroll box (only its dark stroke shows): solid gold, outlined. */
+.board-title.hud-big {
+  background: none;
+  color: #ffd23a;
+  -webkit-text-stroke: 0;
+  text-shadow: -2px -2px 0 #3a0f45, 2px -2px 0 #3a0f45, -2px 2px 0 #3a0f45, 2px 2px 0 #3a0f45, 3px 3px 0 #ff7a00;
+  filter: none;
+}
+
 .board-tabs {
   display: flex;
   justify-content: center;
@@ -1695,7 +1704,8 @@ body:not([data-mode='menu']) .board {
 .board-tabs button {
   font-size: 12px;
   padding: 2px 10px;
-  opacity: 0.6;
+  color: #f4e8ff;
+  opacity: 0.85;
 }
 
 .board-tabs button.on {

@@ -176,7 +176,8 @@ export function bandroomFeature(animated: Animated): Feature {
     const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.5, 10, 8), window);
     bulb.position.y = 8.2;
     const halo = new THREE.Sprite(additive(glow, 0xffc080));
-    halo.scale.setScalar(5);
+    halo.scale.setScalar(2.6);
+    halo.material.opacity = 0.55;
     halo.position.y = 8.2;
     t.add(pole, bulb, halo);
     return place(t, x, z, rand);
