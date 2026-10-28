@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import * as tex from './textures';
 import { DESERT_SKY, type SkyColors } from './textures';
 
-export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism' | 'factory' | 'gamma' | 'carrion' | 'wah' | 'smog' | 'dome' | 'solar' | 'inferno' | 'mind' | 'notmind' | 'cellophane' | 'mindfuzz';
-export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static';
+export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism' | 'factory' | 'gamma' | 'carrion' | 'wah' | 'smog' | 'dome' | 'solar' | 'inferno' | 'mind' | 'notmind' | 'cellophane' | 'mindfuzz' | 'elbow' | 'muck' | 'boogie' | 'treesea';
+export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy';
 
 /** Everything that makes a track's world look like itself. */
 export interface Theme {
@@ -704,5 +704,83 @@ export const THEMES: Record<ThemeId, Theme> = {
     dust: 0x9a70c0,
     barrier: { map: tex.ampTexture, crawl: false },
     roadGlow: 0.22,
+  },
+  // Elbow: the band room on a Saturday night spilled out into the street, the Bended Elbow lit up over it, neon pink and blue on wet bitumen.
+  elbow: {
+    sky: { zenith: '#06040e', high: '#1a0a2a', low: '#4a1a4a', horizon: '#ff5a8a', below: '#3a1a2a', ground: '#1a1418', cloud: '120,60,120', clouds: 14, stars: { count: 160, color: '#ffe8f0' } },
+    fog: { color: 0x2a1428, near: 120, far: 680 },
+    hemi: { sky: 0xff90c0, ground: 0x1a1020, intensity: 1.3 },
+    sun: { color: 0xffd0e0, intensity: 1.6 },
+    ground: tex.pubStreetTexture,
+    groundTile: 24,
+    // Walls are brick, layered with gig posters.
+    cliff: tex.posterWallTexture,
+    decor: 'bandroom',
+    distant: { shape: 'city', color: 0x1a0a20 },
+    haze: 0.3,
+    duotone: [0x08000c, 0xd0205a, 0xfff0a0],
+    skyCycle: false,
+    dust: 0x8a6070,
+    barrier: { map: tex.posterWallTexture, crawl: false },
+    roadGlow: 0.18,
+    edgeLine: 0xffd040,
+  },
+  // Muckraker: Anglesea in the rain, on old VHS: wetlands and boardwalks, a golf course gone to mud, the power station's chimney over it.
+  muck: {
+    sky: { zenith: '#3a4248', high: '#5a646a', low: '#8a9298', horizon: '#b8bcb4', below: '#7a7a6a', ground: '#4a4a34', cloud: '150,156,160', clouds: 48 },
+    fog: { color: 0x8a9290, near: 110, far: 620 },
+    hemi: { sky: 0xc0c8cc, ground: 0x4a4430, intensity: 1.4 },
+    sun: { color: 0xe8ecf0, intensity: 1.5 },
+    ground: tex.wetlandTexture,
+    groundTile: 26,
+    // Walls are banks of mud.
+    cliff: tex.mudBankTexture,
+    decor: 'wetland',
+    distant: { shape: 'hill', color: 0x4a5a44 },
+    haze: 0.2,
+    // The VHS the video was shot on: washed-out teal shadows, muddy body, blown-out highlights.
+    duotone: [0x0a1a1a, 0x8a6a3a, 0xf0f0d8],
+    skyCycle: false,
+    dust: 0x6a5034,
+    barrier: { map: tex.mudBankTexture, crawl: false },
+    storm: true,
+    edgeLine: 0xf0e8c0,
+  },
+  // Cut Throat Boogie: the party, all night, a seventies boogie in the backyard: a lit dance floor for a road, mirror balls and fairy lights.
+  boogie: {
+    sky: { zenith: '#04020a', high: '#140a2a', low: '#2a1440', horizon: '#ff8a3a', below: '#2a1420', ground: '#101a12', cloud: '255,140,80', clouds: 10, stars: { count: 220, color: '#fff4d0' }, moon: '#fff0c0' },
+    fog: { color: 0x1a1024, near: 130, far: 700 },
+    hemi: { sky: 0xffb080, ground: 0x10181a, intensity: 1.3 },
+    sun: { color: 0xffe0c0, intensity: 1.5 },
+    ground: tex.partyLawnTexture,
+    groundTile: 22,
+    // Walls are seventies speaker cabinets.
+    cliff: tex.speakerWallTexture,
+    decor: 'party',
+    distant: { shape: 'hill', color: 0x0a0a14 },
+    haze: 0.3,
+    duotone: [0x0a0010, 0xff6a20, 0xfff0c0],
+    skyCycle: true,
+    dust: 0x806040,
+    barrier: { map: tex.speakerWallTexture, crawl: false },
+    roadGlow: 0.35,
+  },
+  // Sea of Trees: a forest so wide and even it's a sea, grown over old lava at the foot of a snow-capped mountain, moss on everything.
+  treesea: {
+    sky: { zenith: '#2a5a8a', high: '#5a8ab8', low: '#a8c8d8', horizon: '#e0ece8', below: '#8aa890', ground: '#2a4a2a', cloud: '240,244,248', clouds: 30 },
+    fog: { color: 0xa8c0b8, near: 150, far: 820 },
+    hemi: { sky: 0xd8ecff, ground: 0x2a4a24, intensity: 1.5 },
+    sun: { color: 0xfff4e0, intensity: 2.2 },
+    ground: tex.forestFloorTexture,
+    groundTile: 26,
+    // Walls are black lava rock, moss in the hollows.
+    cliff: tex.lavaRockTexture,
+    decor: 'canopy',
+    distant: { shape: 'mountain', color: 0x4a6a8a },
+    haze: 0.4,
+    duotone: [0x001a10, 0x3a8a4a, 0xf0fff0],
+    skyCycle: false,
+    dust: 0x4a6a34,
+    barrier: { map: tex.lavaRockTexture, crawl: false },
   },
 };

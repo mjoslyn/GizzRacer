@@ -4697,5 +4697,274 @@
    "start": 3.5,
    "gain": 6
   }
+ ],
+ "Elbow": [
+  {
+   "id": "kglw2011-12-31",
+   "file": "01 - Elbow.mp3",
+   "date": "2011-12-31",
+   "venue": "Esplanade Hotel",
+   "seconds": 203,
+   "start": 13.7,
+   "gain": 8
+  },
+  {
+   "id": "king-gizzard-the-lizard-wizard-live-from-studio-5-at-pbs-106.7fms-2013-drive",
+   "file": "02 Elbow.mp3",
+   "date": "2013-02-08",
+   "venue": "PBS 106.7 FM Studios",
+   "seconds": 157,
+   "start": 0,
+   "gain": 5.5
+  },
+  {
+   "id": "kglw2024-09-08.bandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live at Red Rocks Amphitheatre- Morrison- CO (9-8-24) (1)/King Gizzard & The Lizard Wizard - Live at Red Rocks Amphitheatre, Morrison, CO (9-8-24) - 06 Elbow (Live).mp3",
+   "date": "2024-09-08",
+   "venue": "Red Rocks Amphitheatre",
+   "seconds": 192,
+   "start": 0,
+   "gain": 1.5
+  }
+ ],
+ "Muckraker": [
+  {
+   "id": "king-gizzard-the-lizard-wizard-live-from-studio-5-at-pbs-106.7fms-2013-drive",
+   "file": "04 Muckraker.mp3",
+   "date": "2013-02-08",
+   "venue": "PBS 106.7 FM Studios",
+   "seconds": 177,
+   "start": 0,
+   "gain": 5.5
+  },
+  {
+   "id": "kglw2015-06-19",
+   "file": "07 - Muckraker.mp3",
+   "date": "2015-06-19",
+   "venue": "Bowery Ballroom",
+   "seconds": 220,
+   "start": 12.5,
+   "gain": 5
+  },
+  {
+   "id": "kglw2015-06-24.matrix.flac1644",
+   "file": "KingGizzard2015-06-24_nyctaper_t11.mp3",
+   "date": "2015-06-24",
+   "venue": "Baby's All Right",
+   "seconds": 195,
+   "start": 2,
+   "gain": 4.5
+  }
+ ],
+ "Cut Throat Boogie": [
+  {
+   "id": "king-gizzard-the-lizard-wizard-live-from-studio-5-at-pbs-106.7fms-2013-drive",
+   "file": "06 Cut Throat Boogie.mp3",
+   "date": "2013-02-08",
+   "venue": "PBS 106.7 FM Studios",
+   "seconds": 164,
+   "start": 0,
+   "gain": 5.5
+  },
+  {
+   "id": "kglw2015-09-12.sbd-mk41v.flac1644",
+   "file": "kglw2015-09-12pourhouse_acidjack-10.mp3",
+   "date": "2015-09-12",
+   "venue": "Pour House",
+   "seconds": 174,
+   "start": 0,
+   "gain": 4.5
+  },
+  {
+   "id": "kg2016-05-01",
+   "file": "12-Cut Throat Boogie (Live At Levitation '16).mp3",
+   "date": "2016-05-01",
+   "venue": "The Barracuda",
+   "seconds": 180,
+   "start": 0,
+   "gain": 0.5
+  },
+  {
+   "id": "kglw2018-12-01",
+   "file": "12-Cut Throat Boogie (Live at Gizzfest '18).mp3",
+   "date": "2018-12-01",
+   "venue": "Royal Melbourne Showgrounds",
+   "seconds": 187,
+   "start": 8.6,
+   "gain": 3
+  },
+  {
+   "id": "kglw2022-10-10.bootlegger",
+   "file": "67. Cut Throat Boogie (Live At Red Rocks '22).mp3",
+   "date": "2022-10-10",
+   "venue": "Red Rocks Amphitheatre",
+   "seconds": 182,
+   "start": 0,
+   "gain": 2
+  },
+  {
+   "id": "kg2022-11-02",
+   "file": "67. Cut Throat Boogie (Live At Red Rocks '22).mp3",
+   "date": "2022-11-02",
+   "venue": "Red Rocks Amphitheater",
+   "seconds": 182,
+   "start": 0,
+   "gain": 2
+  },
+  {
+   "id": "kglw2024-08-16.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live at Forest Hills Stadium, Queens, NY (8-16-24) - 03 Cut Throat Boogie (Live).mp3",
+   "date": "2024-08-16",
+   "venue": "Forest Hills Stadium, Queens, NY, USA",
+   "seconds": 367,
+   "start": 0,
+   "gain": 1
+  },
+  {
+   "id": "kglw2024-09-01.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live at Northerly Island- Chicago- IL (9-1-24)/King Gizzard & The Lizard Wizard - Live at Northerly Island, Chicago, IL (9-1-24) - 09 Cut Throat Boogie (Live).mp3",
+   "date": "2024-09-01",
+   "venue": "Northerly Island",
+   "seconds": 317,
+   "start": 0,
+   "gain": 1.5
+  },
+  {
+   "id": "kglw2024-11-04.bandcampbootlegger",
+   "file": "09 Cut Throat Boogie (Live in Stanford '24).mp3",
+   "date": "2024-11-04",
+   "venue": "Frost Amphitheater",
+   "seconds": 447,
+   "start": 0,
+   "gain": 2.5
+  },
+  {
+   "id": "kglw2025-05-25.SBD.flac",
+   "file": "King Gizzard & The Lizard Wizard - Live in Barcelona '25 - 09 Cut Throat Boogie (Live in Barcelona '25).mp3",
+   "date": "2025-05-25",
+   "venue": "Plaza Mayor de El Poble Espanyol",
+   "seconds": 533,
+   "start": 0,
+   "gain": 0.5
+  },
+  {
+   "id": "kglw2026-08-14.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live at Field of Vision II '26 - 19 Cut Throat Boogie (Live at Field of Vision II '26).mp3",
+   "date": "2026-08-14",
+   "venue": "Field of Vision II, Buena Vista, CO",
+   "seconds": 427,
+   "start": 0,
+   "gain": 2.5
+  },
+  {
+   "id": "kglw2026-08-16.Full-Three-Shows-discocape",
+   "file": "kglw2026-08-14-4ch_discocape_20.mp3",
+   "date": "2026-08-16",
+   "venue": "Meadow Creek",
+   "seconds": 563,
+   "start": 0,
+   "gain": 7
+  }
+ ],
+ "Sea of Trees": [
+  {
+   "id": "kglw2012-05-10.CAM",
+   "file": "03 Sea of Trees.mp3",
+   "date": "2012-05-10",
+   "venue": "Goodgod Small Club",
+   "seconds": 222,
+   "start": 0,
+   "gain": 5.5
+  },
+  {
+   "id": "king-gizzard-the-lizard-wizard-live-from-studio-5-at-pbs-106.7fms-2013-drive",
+   "file": "05 Sea Of Trees.mp3",
+   "date": "2013-02-08",
+   "venue": "PBS 106.7 FM Studios",
+   "seconds": 193,
+   "start": 12.7,
+   "gain": 5.5
+  },
+  {
+   "id": "kglw2018-06-16.sbd-ccm4u.flac1644",
+   "file": "KingGizzard2018-06-16_nyctaper_t19.mp3",
+   "date": "2018-06-16",
+   "venue": "Brooklyn Steel",
+   "seconds": 106,
+   "start": 0,
+   "gain": 9
+  },
+  {
+   "id": "kglw2020-02-21",
+   "file": "30 - Sea of Trees.mp3",
+   "date": "2020-02-21",
+   "venue": "The Croxton",
+   "seconds": 331,
+   "start": 0,
+   "gain": 8.5
+  },
+  {
+   "id": "kglw2022-04-28.ak50",
+   "file": "10-Sea of Trees.mp3",
+   "date": "2022-04-28",
+   "venue": "Bimbo's 365",
+   "seconds": 770,
+   "start": 0,
+   "gain": 14
+  },
+  {
+   "id": "kglw2022-10-10.bootlegger",
+   "file": "38. Sea Of Trees (Live At Red Rocks '22).mp3",
+   "date": "2022-10-10",
+   "venue": "Red Rocks Amphitheatre",
+   "seconds": 592,
+   "start": 0,
+   "gain": 6
+  },
+  {
+   "id": "kg2022-10-11",
+   "file": "38. Sea Of Trees (Live At Red Rocks '22).mp3",
+   "date": "2022-10-11",
+   "venue": "Red Rocks Amphitheater",
+   "seconds": 592,
+   "start": 0,
+   "gain": 6
+  },
+  {
+   "id": "kglw2024-05-16.KGLWOffenbach24",
+   "file": "08-Sea of Trees.mp3",
+   "date": "2024-05-16",
+   "venue": "Offenbach Stadthalle",
+   "seconds": 556,
+   "start": 0,
+   "gain": 8
+  },
+  {
+   "id": "kglw2024-09-05.bandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live at The Factory- St. Louis- MO (9-5-24) (1)/King Gizzard & The Lizard Wizard - Live at The Factory, St. Louis, MO (9-5-24) - 17 Sea of Trees (Live).mp3",
+   "date": "2024-09-05",
+   "venue": "The Factory",
+   "seconds": 429,
+   "start": 0,
+   "gain": 2
+  },
+  {
+   "id": "kglw2025-06-08.SBD.flac",
+   "file": "King Gizzard & The Lizard Wizard - Live in Bulgaria '25 - 10 Sea of Trees (Live in Bulgaria '25).mp3",
+   "date": "2025-06-08",
+   "venue": "Ancient Theatre",
+   "seconds": 383,
+   "start": 0,
+   "gain": 3
+  },
+  {
+   "id": "kglw2026-08-16.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live at Field of Vision II '26 - 02 Sea of Trees (Live at Field of Vision II '26).mp3",
+   "date": "2026-08-16",
+   "venue": "Field of Vision II, Buena Vista, CO",
+   "seconds": 1102,
+   "start": 0,
+   "gain": 3.5
+  }
  ]
 }

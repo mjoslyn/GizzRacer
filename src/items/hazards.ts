@@ -120,6 +120,10 @@ export const WAVE_SPIN = 1.0;
  * - the lane of a row of arrows that has no arrow in it, while the rest are lit, is a boost
  * - where two sheets of cellophane line up as they slide past each other, a boost
  * - a patch of fuzz driven through while its needle is in the gold is a boost
+ * - the half of the road an elbow isn't thrown across, as it's thrown, is a boost
+ * - the furrow a rake drags clean through the muck is a boost
+ * - a close shave past a swinging razor, inches from it, is a boost
+ * - hopped, a fallen tree is cleared for a boost; rammed on a boost it gives way and the boost runs on
  */
 /** A reward can't pay out again to the same kart for this long. */
 export const REWARD_COOLDOWN = 1.5;
@@ -146,8 +150,8 @@ export const WING_CHARGE = 1;
 /** Boost seconds gained per second skimming a black hole's pull on a boost. */
 export const GRAVITY_ASSIST = 0.8;
 const RAMPS = new Set<HazardKind>(['gliders', 'lavaBombs', 'meteors']);
-const RAMMABLE = new Set<HazardKind>(['stones', 'rollers', 'iceBlocks', 'hail', 'oilBombs', 'boulders', 'tumbleweeds', 'crystals', 'rats']);
-const HOPPABLE = new Set<HazardKind>(['waves', 'snakes', 'fish', 'goblins', 'jaws', 'rats']);
+const RAMMABLE = new Set<HazardKind>(['stones', 'rollers', 'iceBlocks', 'hail', 'oilBombs', 'boulders', 'tumbleweeds', 'crystals', 'rats', 'timber']);
+const HOPPABLE = new Set<HazardKind>(['waves', 'snakes', 'fish', 'goblins', 'jaws', 'rats', 'timber']);
 /** A geyser erupts for this share of its cycle, after its warning. */
 export const GEYSER_ERUPT = 0.18;
 const GEYSER_RADIUS = 2.8;
@@ -299,6 +303,49 @@ export const FUZZ_GOLD_BOOST = 0.9;
 export const FUZZ_SPIN = 1.1;
 export const FUZZ_SLOW = 0.7;
 
+/**
+ * Elbow cycle: the arm out of the wall at rest, cocking back (the warning:
+ * it shows the half of the road it'll come across), the elbow thrown across
+ * that half, and drawn back. "You know me better than to bend my elbow back."
+ */
+export const ELBOW_STAGES = { cock: 0.3, throw: 0.5, back: 0.7 } as const;
+/** How far along the road the arm reaches, either side of where it's thrown. */
+export const ELBOW_DEPTH = 1.5;
+/** Past it on the other half as it's thrown: a boost this long. Elbowed: spun out, and shoved across the road this hard (m/s). */
+export const ELBOW_BOOST = 0.8;
+export const ELBOW_SPIN = 1.0;
+export const ELBOW_SHOVE = 7;
+/**
+ * Muck cycle: wet road, a rake dragging along one lane (the warning: that's
+ * the furrow), the other lanes heaped with muck, drying away.
+ */
+export const RAKE_STAGES = { drag: 0.25, muck: 0.45, dry: 0.8 } as const;
+/** Four lanes across the road; the heaps are this long along it, either side. */
+export const RAKE_LANES = 4;
+export const RAKE_DEPTH = 1.8;
+/** Down the raked furrow: a boost this long. In the muck: this much of your speed kept, no spin. */
+export const RAKE_BOOST = 0.8;
+export const RAKE_SLOW = 0.55;
+/** A razor's blade, swinging across the road on its arm: its reach, and how close a shave counts (past the blade, inches from it). */
+export const RAZOR_RADIUS = 1.3;
+export const RAZOR_SHAVE = 1.4;
+/** A shave counts only at speed: a kart sat beside it isn't shaving past. */
+export const RAZOR_SHAVE_SPEED = 8;
+export const RAZOR_BOOST = 0.8;
+export const RAZOR_SPIN = 1.1;
+/** Timber cycle: a tree leaning out over the road (the warning), toppling, its trunk lying across the road, gone. */
+export const TIMBER_STAGES = { lean: 0.3, fall: 0.42, gone: 0.82 } as const;
+export const TIMBER_SPIN = 1.0;
+
+/** How far a tree has toppled at cycle stage `u`: 0 upright, a lean while it creaks, 1 lying across the road. */
+export function timberFall(u: number): number {
+  const T = TIMBER_STAGES;
+  if (u < T.lean) return 0;
+  if (u < T.fall) return 0.12 * Math.sin(((u - T.lean) / (T.fall - T.lean)) * Math.PI * 6) ** 2;
+  if (u < T.fall + 0.04) return ((u - T.fall) / 0.04) ** 2;
+  return u < T.gone ? 1 : 0;
+}
+
 /** Where a patch of fuzz's needle stands at cycle stage `u`: 0 at rest, the gold band from 0.55 to 0.8, the red above. */
 export function fuzzLevel(u: number): number {
   const F = FUZZ_STAGES;
@@ -367,11 +414,15 @@ const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds' | 'butterfli
   arrows: ARROW_SPIN,
   sheets: 0,
   fuzz: FUZZ_SPIN,
+  elbows: ELBOW_SPIN,
+  rakes: 0,
+  razors: RAZOR_SPIN,
+  timber: TIMBER_SPIN,
 };
 
 /** Kinds that fill the whole road across, on a rhythm: nothing to steer round, only to time. */
 export function isSheet(kind: HazardKind): boolean {
-  return kind === 'flameJets' || kind === 'dragonFire' || kind === 'lasers' || kind === 'waves' || kind === 'gusts' || kind === 'prisms' || kind === 'flares';
+  return kind === 'flameJets' || kind === 'dragonFire' || kind === 'lasers' || kind === 'waves' || kind === 'gusts' || kind === 'prisms' || kind === 'flares' || kind === 'timber';
 }
 
 /** Which of a prism beam's four colours it is showing at cycle stage `u` (3 is the fourth colour), and whether it is lit. */
@@ -742,6 +793,60 @@ export class HazardSystem {
           p.phase = u;
           break;
         }
+        case 'elbows': {
+          // An arm out of one wall: it cocks back, then throws its elbow across that half of the road. Which wall changes, but not so you can learn it.
+          const at = def.at[i];
+          const tt = t + 10 + (i * def.period) / def.at.length;
+          const cycle = Math.floor(tt / def.period);
+          const u = tt / def.period - cycle;
+          this.place(p, at, 0, 0);
+          p.radius = this.halfWidth(at) + 1;
+          p.side = Math.sin(cycle * 3.17 + i * 2.1) >= 0 ? 1 : -1;
+          p.active = u >= ELBOW_STAGES.throw && u < ELBOW_STAGES.back;
+          p.phase = u;
+          break;
+        }
+        case 'rakes': {
+          // Four lanes of muck: a rake drags one of them clean, a different one each time, and the rest heap up.
+          const at = def.at[i];
+          const tt = t + 10 + (i * def.period) / def.at.length;
+          const cycle = Math.floor(tt / def.period);
+          const u = tt / def.period - cycle;
+          this.place(p, at, 0, 0);
+          p.radius = this.halfWidth(at);
+          p.lane = Math.floor((((Math.sin(cycle * 19.19 + i * 47.11) * 24634.6345) % 1) + 1) % 1 * RAKE_LANES);
+          p.active = u >= RAKE_STAGES.muck && u < RAKE_STAGES.dry;
+          p.phase = u;
+          break;
+        }
+        case 'razors': {
+          // A cut-throat razor hung over the road, swinging edge to edge like a pendulum, slowest at the ends of its swing.
+          const at = def.at[i];
+          const u = ((((t + 10) / def.period + i * 0.31) % 1) + 1) % 1;
+          const reach = this.halfWidth(at) - 0.5;
+          const swing = Math.sin(u * Math.PI * 2);
+          this.place(p, at, reach * swing, 0);
+          p.radius = RAZOR_RADIUS;
+          // Which way it's swinging: toward the right (1) or the left.
+          p.side = Math.cos(u * Math.PI * 2) >= 0 ? 1 : -1;
+          p.gap = reach;
+          p.active = true;
+          p.phase = u;
+          break;
+        }
+        case 'timber': {
+          // A tree at one edge leans out over the road, creaks, and comes down right across it; the trunk lies there, then it's cleared.
+          const at = def.at[i];
+          const tt = t + 10 + (i * def.period) / def.at.length;
+          const cycle = Math.floor(tt / def.period);
+          const u = tt / def.period - cycle;
+          this.place(p, at, 0, 0);
+          p.radius = this.halfWidth(at) + 1;
+          p.side = (cycle + i) % 2 === 0 ? 1 : -1;
+          p.active = u >= TIMBER_STAGES.fall + 0.03 && u < TIMBER_STAGES.gone;
+          p.phase = u;
+          break;
+        }
         case 'dustDevils':
         case 'butterflies':
         case 'tornadoes':
@@ -879,6 +984,18 @@ export class HazardSystem {
         }
         if (p.kind === 'sheets') {
           this.cellophane(hit, p, s);
+          continue;
+        }
+        if (p.kind === 'elbows') {
+          this.elbow(hit, p, s);
+          continue;
+        }
+        if (p.kind === 'rakes') {
+          this.muck(hit, p, s);
+          continue;
+        }
+        if (p.kind === 'razors') {
+          this.razor(hit, p, s);
           continue;
         }
         if (p.kind === 'fuzz' && p.phase >= FUZZ_STAGES.gold && p.phase < FUZZ_STAGES.red) {
@@ -1102,6 +1219,30 @@ export class HazardSystem {
         }
         continue;
       }
+      if (p.kind === 'elbows') {
+        // From when it cocks back, the half it'll come across.
+        if (p.phase < ELBOW_STAGES.cock || p.phase >= ELBOW_STAGES.back) continue;
+        const fx = Math.sin(p.heading);
+        const fz = Math.cos(p.heading);
+        for (let l = 1.2; l < p.radius; l += 2.4) {
+          const lat = p.side * l;
+          out.push({ x: p.ax - fz * lat, z: p.az + fx * lat, r: 1.5, vx: 0, vz: 0 });
+        }
+        continue;
+      }
+      if (p.kind === 'rakes') {
+        // From when the rake drags: the three lanes it leaves to the muck.
+        if (p.phase < RAKE_STAGES.drag || p.phase >= RAKE_STAGES.dry) continue;
+        const fx = Math.sin(p.heading);
+        const fz = Math.cos(p.heading);
+        const w = (2 * p.radius) / RAKE_LANES;
+        for (let k = 0; k < RAKE_LANES; k++) {
+          if (k === p.lane) continue;
+          const lat = -p.radius + w * (k + 0.5);
+          out.push({ x: p.ax - fz * lat, z: p.az + fx * lat, r: w / 2, vx: 0, vz: 0 });
+        }
+        continue;
+      }
       if (p.kind === 'sheets') {
         // Each sheet where it is, moving across the road.
         if (!p.active) continue;
@@ -1259,6 +1400,71 @@ export class HazardSystem {
     this.cooldown.set(s, HIT_COOLDOWN);
     s.speed *= SHEET_SLOW;
     hit.push({ kart: s, by: p.kind });
+  }
+
+  /**
+   * An elbow thrown across half the road: in that half, elbowed, spun and
+   * shoved across; past it on the other half as it's thrown, a boost.
+   */
+  private elbow(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+    if (!p.active) return;
+    const fx = Math.sin(p.heading);
+    const fz = Math.cos(p.heading);
+    if (Math.abs((s.x - p.x) * fx + (s.z - p.z) * fz) > ELBOW_DEPTH + KART_RADIUS) return;
+    const lat = (s.x - p.x) * -fz + (s.z - p.z) * fx;
+    if (Math.abs(lat) > p.radius + KART_RADIUS) return;
+    if (lat * p.side < 0) {
+      this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, ELBOW_BOOST)));
+      return;
+    }
+    if (this.cooldown.has(s)) return;
+    this.cooldown.set(s, HIT_COOLDOWN);
+    if (spinOut(s, ELBOW_SPIN)) {
+      // Knocked away from the wall it came out of.
+      s.extX += fz * p.side * ELBOW_SHOVE;
+      s.extZ -= fx * p.side * ELBOW_SHOVE;
+      hit.push({ kart: s, by: p.kind });
+    }
+  }
+
+  /**
+   * Four lanes of muck: down the furrow the rake dragged clean, a boost;
+   * through the heaps either side, bogged down and slowed.
+   */
+  private muck(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+    if (!p.active) return;
+    const fx = Math.sin(p.heading);
+    const fz = Math.cos(p.heading);
+    if (Math.abs((s.x - p.x) * fx + (s.z - p.z) * fz) > RAKE_DEPTH + KART_RADIUS) return;
+    const lat = (s.x - p.x) * -fz + (s.z - p.z) * fx;
+    if (Math.abs(lat) > p.radius + KART_RADIUS) return;
+    const w = (2 * p.radius) / RAKE_LANES;
+    const lane = Math.max(0, Math.min(RAKE_LANES - 1, Math.floor((lat + p.radius) / w)));
+    if (lane === p.lane) {
+      this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, RAKE_BOOST)));
+      return;
+    }
+    if (this.cooldown.has(s)) return;
+    this.cooldown.set(s, HIT_COOLDOWN);
+    s.speed *= RAKE_SLOW;
+    hit.push({ kart: s, by: p.kind });
+  }
+
+  /**
+   * A swinging razor: touched, it cuts you and you spin; past it at speed,
+   * inches from the blade, a close shave and a boost.
+   */
+  private razor(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+    const d = this.distance(p, s);
+    if (d <= p.radius + KART_RADIUS) {
+      if (this.cooldown.has(s)) return;
+      this.cooldown.set(s, HIT_COOLDOWN);
+      if (spinOut(s, RAZOR_SPIN)) hit.push({ kart: s, by: p.kind });
+      return;
+    }
+    if (d <= p.radius + KART_RADIUS + RAZOR_SHAVE && Math.abs(s.speed) >= RAZOR_SHAVE_SPEED && !this.cooldown.has(s)) {
+      this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, RAZOR_BOOST)));
+    }
   }
 
   /** Pays a kart for using a hazard well, once in a while. */

@@ -488,6 +488,14 @@ export class Sfx {
       this.whoosh(0.4, 1400, 600, 0.25);
       this.tone(110, 0.4, 'sawtooth', 0.1, 90, 0, true);
     }
+    // An elbow is a thump; muck a squelch; a razor a ringing scrape; a falling tree a crack and a crash.
+    if (by === 'elbows') this.hit(0.3, 120, 0.6);
+    if (by === 'rakes') this.whoosh(0.4, 500, 200, 0.25);
+    if (by === 'razors') this.tone(3200, 0.25, 'sawtooth', 0.06, 5200);
+    if (by === 'timber') {
+      this.hit(0.2, 1400, 0.4);
+      this.whoosh(0.7, 900, 150, 0.3);
+    }
     // A wave breaking over you: a crash of white noise; a glider comes in with a whistle of wind.
     if (by === 'waves') this.whoosh(0.8, 2400, 300, 0.35);
     if (by === 'gliders') this.whoosh(0.5, 1800, 500, 0.2);

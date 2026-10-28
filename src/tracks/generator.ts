@@ -49,6 +49,10 @@ export const GEN_THEME_NAMES: Record<GenTheme, string> = {
   notmind: "I'm Not in Your Mind",
   cellophane: 'Cellophane',
   mindfuzz: "I'm in Your Mind Fuzz",
+  elbow: 'Elbow',
+  muck: 'Muckraker',
+  boogie: 'Cut Throat Boogie',
+  treesea: 'Sea of Trees',
 };
 export type GenLength = 'short' | 'medium' | 'long';
 export const GEN_LENGTHS: readonly GenLength[] = ['short', 'medium', 'long'];
@@ -534,6 +538,50 @@ const PALETTES: Record<GenTheme, Palette> = {
     tallWalls: 6,
     places: ['Overdrive', 'Feedback', 'Swirl', 'Amp', 'Distortion', 'Needle', 'Static', 'Wall of Sound', 'Fuzz'],
     music: { lap: 'im-in-your-mind-fuzz', finalLap: 'im-in-your-mind-fuzz-final-lap' },
+  },
+  elbow: {
+    surface: 'carpet',
+    deck: 'carpet',
+    alt: 'boards',
+    hazards: ['elbows'],
+    start: 'elbowGate',
+    landmarks: ['elbowGate'],
+    tallWalls: 6,
+    places: ['Big Shot', 'Elbow', 'Backstab', 'Band Room', 'Mosh', 'Hey Hey', 'Flange', 'Knuckle', 'Front Bar'],
+    music: { lap: 'elbow', finalLap: 'elbow-final-lap' },
+  },
+  muck: {
+    surface: 'muck',
+    deck: 'boards',
+    liquid: 'water',
+    hazards: ['rakes'],
+    start: 'rakeGate',
+    landmarks: ['rakeGate'],
+    tallWalls: 6,
+    places: ['Cobweb', 'Muck', 'Rake', 'Ant', 'Wetland', 'Fairway', 'Chimney', 'Boardwalk', 'Bog'],
+    music: { lap: 'muckraker', finalLap: 'muckraker-final-lap' },
+  },
+  boogie: {
+    surface: 'dancefloor',
+    deck: 'dancefloor',
+    alt: 'neon',
+    liquid: 'water',
+    hazards: ['razors'],
+    start: 'harmonicaGate',
+    landmarks: ['harmonicaGate'],
+    tallWalls: 6,
+    places: ['Boogie', 'Mono', 'Razor', 'Stitch', 'Party', 'Mirror Ball', 'Harmonica', 'Inches', 'Pool'],
+    music: { lap: 'cut-throat-boogie', finalLap: 'cut-throat-boogie-final-lap' },
+  },
+  treesea: {
+    surface: 'moss',
+    deck: 'boards',
+    hazards: ['timber'],
+    start: 'trunkGate',
+    landmarks: ['trunkGate'],
+    tallWalls: 6,
+    places: ['Canopy', 'Moss', 'Lava Tube', 'Swell', 'Root', 'Hollow', 'Jam', 'Tree Line', 'Underwater'],
+    music: { lap: 'sea-of-trees', finalLap: 'sea-of-trees-final-lap' },
   },
 };
 
@@ -1256,7 +1304,15 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
         break;
       case 'arrows':
       case 'fuzz':
+      case 'elbows':
+      case 'rakes':
         hazards.push({ kind, at: at(count - 1), period: 4.5 });
+        break;
+      case 'razors':
+        hazards.push({ kind, at: at(count - 1), period: 3.8 });
+        break;
+      case 'timber':
+        hazards.push({ kind, at: at(count - 1), period: 5 });
         break;
       case 'vines':
         hazards.push({ kind, at: at(count), period: 3.6 });

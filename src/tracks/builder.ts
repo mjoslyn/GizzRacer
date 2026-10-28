@@ -47,7 +47,15 @@ export type RoadSurface =
   /** Cellophane's road: sheets of coloured cellophane, crinkled and shining. */
   | 'film'
   /** I'm in Your Mind Fuzz's road: a carpet of fuzz, purple and green static in it. */
-  | 'fuzz';
+  | 'fuzz'
+  /** Elbow's road: the band room's sticky carpet, red and gold swirls worn down to the backing. */
+  | 'carpet'
+  /** Muckraker's road: muck, wet and raked into ridges, puddles in the ruts. */
+  | 'muck'
+  /** Cut Throat Boogie's road: a dance floor of lit squares. */
+  | 'dancefloor'
+  /** Sea of Trees' road: moss over old lava rock, roots across it. */
+  | 'moss';
 
 /**
  * Every road is built this much wider than its section says: the layouts

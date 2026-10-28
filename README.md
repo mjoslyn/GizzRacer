@@ -8,7 +8,8 @@ No install and no account. It will always be free. **[The manual](https://www.gi
 
 ## What's in it
 
-- **36 tracks in 9 cups**, one an album, in the order the albums came out, plus a Random Cup of four drawn from them
+- **40 tracks in 10 cups**, one an album, in the order the albums came out, plus a Random Cup of four drawn from them
+  - **12 Bar Bruise Cup:** the band's first album, in album order: Elbow, Muckraker, Cut Throat Boogie, Sea of Trees
   - **Mind Fuzz Cup:** the suite that opens I'm in Your Mind Fuzz, in order: I'm in Your Mind, I'm Not in Your Mind, Cellophane, I'm in Your Mind Fuzz
   - **Nonagon Infinity Cup:** Robot Stop, Gamma Knife, People-Vultures, Wah Wah
   - **Flying Microtonal Banana Cup:** Rattlesnake, Open Water, Sleep Drifter, Doom City, all in the cover's cobalt and banana yellow

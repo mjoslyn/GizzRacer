@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { ARROW_DEPTH, ARROW_LANES, ARROW_STAGES, EYE_DEPTH, EYE_HEIGHT, EYE_STAGES, FUZZ_RADIUS, SHEET_HALF, SHEET_STAGES, fuzzLevel } from '../items/hazards';
+import { ARROW_DEPTH, ARROW_LANES, ARROW_STAGES, ELBOW_DEPTH, ELBOW_STAGES, EYE_DEPTH, EYE_HEIGHT, EYE_STAGES, FUZZ_RADIUS, RAKE_DEPTH, RAKE_LANES, RAKE_STAGES, SHEET_HALF, SHEET_STAGES, TIMBER_STAGES, fuzzLevel, timberFall } from '../items/hazards';
 import { AIRLOCK_DEPTH, AIRLOCK_STAGES, BOULDER_STAGES, CRUSHER_STAGES, FLARE_CLEAR, FLARE_STAGES, RAT_LENGTH, RAT_STAGES, SMOG_RADIUS, SMOG_STAGES, flareHeight, GAMMA_EDGE, GAMMA_STAGES, GEYSER_ERUPT, GUST_STAGES, HOLE_CORE, JAWS_LUNGE, JET_STAGES, LIGHTNING_STRIKE, ROBOT_STAGES, VULTURE_STAGES, WAH_LIFT, WAH_STAGES, prismColour, type HazardPose } from '../items/hazards';
 import { goblinFigure } from './omnium';
 import { robotFigure, vultureFigure, wahPedalFigure } from './nonagon';
@@ -26,6 +26,8 @@ const DRAGON_HEAD_Y = 2.2;
 /** How much higher it hangs down a cut's wall from the rim, and its neck's segments. */
 const DRAGON_HANG = 2.6;
 const DRAGON_NECK = 5;
+/** How high over the road a razor's rod hangs from its gantry. */
+const RAZOR_PIVOT = 9;
 
 /** A kart as the items view draws around it: where it's shown this frame, and what it holds. */
 export interface ItemKartView {
@@ -588,6 +590,19 @@ export class HazardsView {
     fuzzDiscGeo.rotateX(-Math.PI / 2);
     const tuftGeo = new THREE.IcosahedronGeometry(0.45, 0);
     const meterMap = meterTexture();
+    const skinMat = new THREE.MeshLambertMaterial({ color: 0xe8b090 });
+    const sleeveMat = new THREE.MeshLambertMaterial({ color: 0x1a1a1a });
+    const heapGeo = new THREE.SphereGeometry(1, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2);
+    const muckMat = new THREE.MeshPhongMaterial({ color: 0x5a3a1e, shininess: 40, specular: 0x3a3a30, flatShading: true });
+    const muckStripGeo = new THREE.PlaneGeometry(1, RAKE_DEPTH * 2);
+    muckStripGeo.rotateX(-Math.PI / 2);
+    const rakeWood = new THREE.MeshLambertMaterial({ color: 0x8a6a40 });
+    const rakeMetal = new THREE.MeshPhongMaterial({ color: 0x8a9090, shininess: 80 });
+    const gantryMat = new THREE.MeshLambertMaterial({ color: 0x2a2a30 });
+    const bladeGeo = new THREE.BoxGeometry(0.08, 1.8, 2.6);
+    const bladeMat = new THREE.MeshPhongMaterial({ color: 0xd8dce4, shininess: 220, specular: 0xffffff });
+    const barkMat = new THREE.MeshLambertMaterial({ color: 0x5a4030 });
+    const leafMat = new THREE.MeshLambertMaterial({ color: 0x3a7a34, flatShading: true });
 
     for (const pose of hazards.poses) {
       const obj = new THREE.Group();
@@ -1119,6 +1134,110 @@ export class HazardsView {
           glow.position.y = 2.2;
           obj.add(glow);
           parts.push(sheets[0], sheets[1], rolls[0], rolls[1], glow);
+          break;
+        }
+        case 'elbows': {
+          // An arm out of the wall, the upper arm out into the road and the forearm bent right back along it: its elbow leads.
+          const shoulder = new THREE.Group();
+          shoulder.position.y = 1.4;
+          const reach = pose.radius;
+          const upper = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.7, reach * 0.62, 10), sleeveMat);
+          upper.position.y = (reach * 0.62) / 2;
+          const elbow = new THREE.Mesh(new THREE.SphereGeometry(0.75, 12, 8), skinMat);
+          elbow.position.y = reach * 0.62;
+          const fore = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.55, reach * 0.5, 10), skinMat);
+          fore.position.set(0.9, reach * 0.62 - (reach * 0.5) / 2, 0.6);
+          const fist = new THREE.Mesh(new THREE.SphereGeometry(0.7, 10, 8), skinMat);
+          fist.position.set(0.9, reach * 0.62 - reach * 0.5, 0.6);
+          shoulder.add(upper, elbow, fore, fist);
+          // Its half of the road, flashing red as it winds up; the other half gold as it's thrown.
+          const half = new THREE.PlaneGeometry(pose.radius, ELBOW_DEPTH * 2);
+          half.rotateX(-Math.PI / 2);
+          const danger = new THREE.Mesh(half, new THREE.MeshBasicMaterial({ color: 0xff2a4a, transparent: true, opacity: 0.5, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 }));
+          danger.position.y = 0.12;
+          const gold = new THREE.Mesh(half, goldMat);
+          gold.position.y = 0.12;
+          obj.add(shoulder, danger, gold);
+          parts.push(shoulder, danger, gold);
+          break;
+        }
+        case 'rakes': {
+          // Four lanes of muck heaped across the road, a strip under each, and the rake that drags one of them clean.
+          const w = (2 * pose.radius) / RAKE_LANES;
+          for (let k = 0; k < RAKE_LANES; k++) {
+            const heap = new THREE.Mesh(heapGeo, muckMat);
+            heap.scale.set(w * 0.48, 0.9, RAKE_DEPTH);
+            heap.position.set(pose.radius - w * (k + 0.5), 0, 0);
+            const strip = new THREE.Mesh(muckStripGeo, new THREE.MeshBasicMaterial({ color: 0x30ff80, transparent: true, opacity: 0.6, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 }));
+            strip.scale.x = w * 0.94;
+            strip.position.set(heap.position.x, 0.12, 0);
+            obj.add(heap, strip);
+            parts.push(heap, strip);
+          }
+          const rake = new THREE.Group();
+          const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 6, 6), rakeWood);
+          handle.rotation.x = -1.0;
+          handle.position.set(0, 2.6, -2.4);
+          const head = new THREE.Mesh(new THREE.BoxGeometry(w * 0.9, 0.25, 0.25), rakeMetal);
+          head.position.y = 0.5;
+          rake.add(handle, head);
+          for (let t = 0; t < 7; t++) {
+            const tine = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.6, 0.1), rakeMetal);
+            tine.position.set(-w * 0.42 + (t * w * 0.84) / 6, 0.2, 0);
+            rake.add(tine);
+          }
+          obj.add(rake);
+          parts.push(rake);
+          break;
+        }
+        case 'razors': {
+          // A cut-throat razor hung from a gantry over the road on a rod, swinging edge to edge.
+          const gantry = new THREE.Group();
+          const span = pose.gap + 1.5;
+          for (const side of [-1, 1]) {
+            const post = new THREE.Mesh(new THREE.BoxGeometry(0.5, RAZOR_PIVOT + 0.5, 0.5), gantryMat);
+            post.position.set(side * span, (RAZOR_PIVOT + 0.5) / 2, 0);
+            gantry.add(post);
+          }
+          const bar = new THREE.Mesh(new THREE.BoxGeometry(span * 2 + 0.5, 0.5, 0.5), gantryMat);
+          bar.position.y = RAZOR_PIVOT + 0.3;
+          gantry.add(bar);
+          const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 1, 6), gantryMat);
+          const razor = new THREE.Group();
+          const blade = new THREE.Mesh(bladeGeo, bladeMat);
+          blade.position.y = 1.3;
+          const edge = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.12, 2.6), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+          edge.position.y = 0.45;
+          const tang = new THREE.Mesh(new THREE.BoxGeometry(0.22, 2.4, 0.5), new THREE.MeshPhongMaterial({ color: 0x2a1a10, shininess: 80 }));
+          tang.position.set(0, 2.9, -1.1);
+          tang.rotation.x = 0.5;
+          razor.add(blade, edge, tang);
+          const glint = sprite(mindGlow, 0xffffff, 2);
+          glint.position.y = 1.3;
+          razor.add(glint);
+          obj.add(gantry, rod, razor);
+          parts.push(gantry, rod, razor, glint);
+          break;
+        }
+        case 'timber': {
+          // A tree at the road's edge: its trunk, as long as the road is wide, and its crown; it leans, creaks and comes down across the road.
+          const pivot = new THREE.Group();
+          const len = pose.radius * 2 + 1;
+          const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.75, len, 10), barkMat);
+          trunk.position.y = len / 2;
+          const crown = new THREE.Group();
+          for (let i = 0; i < 4; i++) {
+            const c = new THREE.Mesh(new THREE.IcosahedronGeometry(2.4 + (i % 2) * 0.8, 1), leafMat);
+            c.position.set(Math.sin(i * 2.1) * 1.6, len + Math.cos(i * 1.7) * 1.2, Math.cos(i * 2.1) * 1.6);
+            crown.add(c);
+          }
+          pivot.add(trunk, crown);
+          // Where it'll come down: a shadow across the road while it leans.
+          const shadow = new THREE.Mesh(new THREE.PlaneGeometry(len, 2.4), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.4, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 }));
+          shadow.rotation.x = -Math.PI / 2;
+          shadow.position.y = 0.12;
+          obj.add(pivot, shadow);
+          parts.push(pivot, shadow, crown);
           break;
         }
         case 'fuzz': {
@@ -1814,6 +1933,78 @@ export class HazardsView {
           const g = Math.abs(p.gap);
           glow.visible = p.active && g < SHEET_HALF;
           glow.scale.setScalar(4 + 6 * (1 - g / SHEET_HALF));
+          break;
+        }
+        case 'elbows': {
+          const [shoulder, danger, gold] = parts;
+          obj.rotation.y = p.heading;
+          const u = p.phase;
+          const E = ELBOW_STAGES;
+          // Out of the wall on its side (a lateral to the right is local -x), folded up at rest, wound back, then thrown flat across its half.
+          shoulder.position.x = -p.side * p.radius;
+          let angle = 0.15;
+          if (u >= E.cock && u < E.throw) angle = -0.35 - 0.1 * Math.sin(elapsed * 30);
+          else if (u >= E.throw && u < E.back) angle = Math.PI / 2 * Math.min(1, (u - E.throw) / 0.03);
+          else if (u >= E.back) angle = (Math.PI / 2) * Math.max(0, 1 - (u - E.back) / 0.12);
+          shoulder.rotation.z = -p.side * angle;
+          // The forearm folds back toward whichever wall it came from.
+          shoulder.scale.x = p.side;
+          danger.visible = (u >= E.cock && u < E.throw && Math.sin(elapsed * 18) > 0) || p.active;
+          danger.position.x = (-p.side * p.radius) / 2;
+          gold.visible = p.active;
+          gold.position.x = (p.side * p.radius) / 2;
+          break;
+        }
+        case 'rakes': {
+          obj.rotation.y = p.heading;
+          const u = p.phase;
+          const R = RAKE_STAGES;
+          const w = (2 * p.radius) / RAKE_LANES;
+          const heaped = u < R.drag ? 0 : u < R.muck ? (u - R.drag) / (R.muck - R.drag) : u < R.dry ? 1 : Math.max(0, 1 - (u - R.dry) / 0.1);
+          for (let k = 0; k < RAKE_LANES; k++) {
+            const heap = parts[k * 2];
+            const strip = parts[k * 2 + 1] as THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
+            const furrow = k === p.lane;
+            heap.visible = !furrow && heaped > 0.02;
+            heap.scale.y = 0.9 * heaped + Math.sin(elapsed * 4 + k) * 0.05 * heaped;
+            strip.visible = furrow && p.active;
+            strip.material.opacity = 0.45 + 0.25 * Math.sin(elapsed * 10);
+          }
+          const rake = parts[RAKE_LANES * 2];
+          rake.visible = u >= R.drag && u < R.dry;
+          rake.position.x = p.radius - w * (p.lane + 0.5);
+          // Dragged toward the karts coming through the furrow, then left lying at the end of it.
+          rake.position.z = u < R.muck ? RAKE_DEPTH * (1 - 2 * ((u - R.drag) / (R.muck - R.drag))) : -RAKE_DEPTH;
+          break;
+        }
+        case 'razors': {
+          const [gantry, rod, razor, glint] = parts;
+          obj.rotation.y = p.heading;
+          // The road's centre, where the rod hangs from, in the blade's frame: its lateral (to the right) is local -x, so the centre is local +lateral.
+          const lat = -(p.x - p.ax) * Math.cos(p.heading) + (p.z - p.az) * Math.sin(p.heading);
+          gantry.position.x = lat;
+          const dy = RAZOR_PIVOT - 2.6;
+          rod.position.set(lat / 2, 2.6 + dy / 2, 0);
+          rod.scale.y = Math.hypot(lat, dy);
+          rod.rotation.z = -Math.atan2(lat, dy);
+          razor.rotation.z = -Math.atan2(lat, dy) * 0.5;
+          // Edge-on as it swings, flashing as it passes the middle.
+          razor.rotation.y = Math.PI / 2;
+          glint.visible = Math.abs(lat) < 2;
+          break;
+        }
+        case 'timber': {
+          const [pivot, shadow] = parts;
+          obj.rotation.y = p.heading;
+          const u = p.phase;
+          const T = TIMBER_STAGES;
+          const fall = timberFall(u);
+          pivot.visible = u < T.gone;
+          // From its edge (a lateral to the right is local -x) over toward the other.
+          pivot.position.x = -p.side * (p.radius + 0.5);
+          pivot.rotation.z = -p.side * (u < T.fall ? fall : 0.12 + (Math.PI / 2 - 0.12) * fall);
+          shadow.visible = u >= T.lean && u < T.fall + 0.04;
+          (shadow as THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>).material.opacity = 0.25 + 0.2 * Math.sin(elapsed * 12);
           break;
         }
         case 'fuzz': {

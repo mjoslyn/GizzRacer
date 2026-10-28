@@ -2649,3 +2649,228 @@ export function meterTexture(): THREE.CanvasTexture {
   ctx.fillText('FUZZ', cx, H * 0.62);
   return finish(c, false);
 }
+
+// The 12 Bar Bruise Cup's worlds.
+
+/** Elbow's road: the band room's carpet, red and gold swirls, worn to the backing where the crowd stands, beer-dark stains. */
+export function carpetTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 4, 1501);
+  const wear = fbm(S, 2, 3, 1502);
+  paint(ctx, S, S, (x, y, i) => {
+    // A swirl repeat: paisley-ish curls of gold on oxblood, a green line round each.
+    const u = (x / S) * Math.PI * 8;
+    const v = (y / S) * Math.PI * 8;
+    const curl = Math.sin(u + Math.sin(v) * 1.6) * Math.cos(v + Math.sin(u * 0.5) * 1.3);
+    let col: RGB = curl > 0.55 ? [214, 160, 60] : curl > 0.42 ? [40, 90, 60] : [112, 22, 30];
+    col = shade(col, 0.8 + n[i] * 0.35);
+    // Worn through to the jute backing; stained dark in patches.
+    if (wear[i] > 0.7) col = mix(col, [120, 100, 76], Math.min(1, (wear[i] - 0.7) * 5));
+    if (wear[i] < 0.22) col = shade(col, 0.6);
+    return col;
+  });
+  return finish(c);
+}
+
+/** The street outside the band room at night: bitumen, wet, the neon pooling in it in pink and blue. */
+export function pubStreetTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 6, 5, 1511);
+  const puddle = fbm(S, 3, 3, 1512);
+  paint(ctx, S, S, (_x, _y, i) => {
+    const base = mix([26, 24, 30], [52, 48, 56], n[i]);
+    if (puddle[i] > 0.66) return mix(base, puddle[i] > 0.74 ? [255, 80, 160] : [60, 140, 255], 0.35);
+    return base;
+  });
+  return finish(c);
+}
+
+/** Backstab Alley's walls: brick behind the band room, layered with torn gig posters. */
+export function posterWallTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 8, 3, 1521);
+  paint(ctx, S, S, (x, y, i) => {
+    const row = Math.floor(y / 16);
+    const bx = (x + (row % 2) * 16) % 32;
+    const mortar = y % 16 < 2 || bx < 2;
+    return mortar ? [70, 66, 60] : shade(mix([110, 40, 30], [150, 64, 44], n[i]), 0.85 + (row % 3) * 0.05);
+  });
+  const rand = seededRandom(1522);
+  const inks = ['#ffe14d', '#ff4a8a', '#4ad0ff', '#f4f0e8', '#80ff60'];
+  for (let k = 0; k < 9; k++) {
+    const w = 40 + rand() * 50;
+    const h = w * 1.4;
+    const x = rand() * (S - w);
+    const y = rand() * (S - h);
+    ctx.save();
+    ctx.translate(x + w / 2, y + h / 2);
+    ctx.rotate((rand() - 0.5) * 0.2);
+    ctx.fillStyle = inks[k % inks.length];
+    ctx.fillRect(-w / 2, -h / 2, w, h);
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(-w / 2 + 4, -h / 2 + 6, w - 8, h * 0.18);
+    ctx.fillRect(-w / 2 + 4, h / 2 - h * 0.22, w * 0.6, h * 0.08);
+    // Torn off at a corner.
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.beginPath();
+    ctx.moveTo(w / 2, h / 2);
+    ctx.lineTo(w / 2 - w * 0.4, h / 2);
+    ctx.lineTo(w / 2, h / 2 - h * 0.3);
+    ctx.fill();
+    ctx.restore();
+  }
+  return finish(c);
+}
+
+/** Muckraker's road: wet muck raked into ridges along the road, puddles in the ruts. */
+export function muckTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 4, 1531);
+  const wet = fbm(S, 3, 3, 1532);
+  paint(ctx, S, S, (x, _y, i) => {
+    // Rake ridges run along the road (the texture's v), so they stripe across x.
+    const ridge = 0.5 + 0.5 * Math.sin((x / S) * Math.PI * 2 * 12 + n[i] * 2);
+    const mud = shade(mix([58, 40, 24], [104, 76, 46], n[i]), 0.75 + ridge * 0.35);
+    if (wet[i] > 0.68 && ridge < 0.4) return mix(mud, [120, 130, 136], 0.55);
+    return mud;
+  });
+  return finish(c);
+}
+
+/** The ground round Muckraker: Anglesea's wetlands in the rain, reeds, mud and standing water. */
+export function wetlandTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 5, 5, 1541);
+  const water = fbm(S, 3, 3, 1542);
+  const rand = seededRandom(1543);
+  paint(ctx, S, S, (_x, _y, i) => {
+    if (water[i] > 0.64) return mix([60, 78, 84], [104, 122, 128], (water[i] - 0.64) * 3);
+    if (water[i] > 0.56) return mix([58, 46, 30], [84, 66, 42], n[i]);
+    const reed = rand() > 0.9 ? 1.25 : 1;
+    return shade(mix([62, 80, 40], [112, 120, 62], n[i]), reed);
+  });
+  return finish(c);
+}
+
+/** The Muck Pit's walls: banks of mud, roots and stones through them, wet streaks down them. */
+export function mudBankTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 5, 4, 1551);
+  paint(ctx, S, S, (x, y, i) => {
+    const streak = 0.5 + 0.5 * Math.sin((x / S) * Math.PI * 2 * 9 + n[i] * 3);
+    const layer = Math.floor((y / S) * 6 + n[i] * 1.5) % 2;
+    return shade(mix([66, 46, 28], [98, 72, 44], n[i]), (layer ? 0.85 : 1) * (0.85 + streak * 0.2));
+  });
+  cracks(ctx, S, 14, 'rgba(40,26,14,0.7)', 2, 1552);
+  return finish(c);
+}
+
+/** Cut Throat Boogie's road: a dance floor of squares lit from under in party colours, chrome between them. */
+export function danceFloorTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const tiles = ['#ff3a8a', '#ffd040', '#40e0ff', '#a040ff', '#ff7a20', '#40ff90'];
+  const rand = seededRandom(1561);
+  const T = S / 4;
+  for (let y = 0; y < 4; y++) {
+    for (let x = 0; x < 4; x++) {
+      const g = ctx.createRadialGradient(x * T + T / 2, y * T + T / 2, 2, x * T + T / 2, y * T + T / 2, T * 0.7);
+      const col = tiles[Math.floor(rand() * tiles.length)];
+      g.addColorStop(0, '#ffffff');
+      g.addColorStop(0.25, col);
+      g.addColorStop(1, '#1a1020');
+      ctx.fillStyle = g;
+      ctx.fillRect(x * T, y * T, T, T);
+    }
+  }
+  ctx.strokeStyle = '#c8c8d0';
+  ctx.lineWidth = 3;
+  for (let k = 0; k <= 4; k++) {
+    ctx.beginPath();
+    ctx.moveTo(k * T, 0);
+    ctx.lineTo(k * T, S);
+    ctx.moveTo(0, k * T);
+    ctx.lineTo(S, k * T);
+    ctx.stroke();
+  }
+  return finish(c);
+}
+
+/** The backyard round the party, at night: lawn gone dark, pools of coloured light from the fairy lights. */
+export function partyLawnTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 6, 5, 1571);
+  const pools = fbm(S, 3, 3, 1572);
+  paint(ctx, S, S, (_x, _y, i) => {
+    const grass = mix([18, 34, 22], [40, 64, 36], n[i]);
+    if (pools[i] > 0.7) return mix(grass, pools[i] > 0.78 ? [255, 120, 200] : [255, 210, 90], 0.3);
+    return grass;
+  });
+  return finish(c);
+}
+
+/** Inches' walls: seventies speaker cabinets, walnut veneer round orange grille cloth. */
+export function speakerWallTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 3, 3, 1581);
+  paint(ctx, S, S, (x, y, i) => {
+    const lx = x % 128;
+    const ly = y % 128;
+    if (lx < 12 || lx > 116 || ly < 12 || ly > 116) {
+      const grain = 0.5 + 0.5 * Math.sin((y / S) * 80 + n[i] * 6);
+      return mix([70, 40, 20], [120, 74, 40], grain);
+    }
+    const weave = (x + y) % 4 < 2 ? 1 : 0.85;
+    return shade(mix([200, 100, 30], [236, 140, 50], n[i]), weave);
+  });
+  return finish(c);
+}
+
+/** Sea of Trees' road: moss grown over old lava rock, roots snaking across it. */
+export function mossRoadTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 5, 5, 1591);
+  const rock = fbm(S, 3, 3, 1592);
+  paint(ctx, S, S, (_x, _y, i) => {
+    if (rock[i] > 0.66) return mix([40, 38, 36], [70, 66, 60], n[i]);
+    return mix([46, 84, 34], [96, 136, 56], n[i]);
+  });
+  cracks(ctx, S, 10, 'rgba(70,46,26,0.85)', 4, 1593);
+  return finish(c);
+}
+
+/** The forest floor under the sea of trees: moss and leaf litter on black lava, ferns. */
+export function forestFloorTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 6, 5, 1601);
+  const lava = fbm(S, 3, 3, 1602);
+  paint(ctx, S, S, (_x, _y, i) => {
+    if (lava[i] > 0.7) return mix([26, 24, 24], [54, 50, 46], n[i]);
+    if (lava[i] < 0.3) return mix([70, 54, 30], [110, 86, 48], n[i]);
+    return mix([30, 64, 30], [70, 110, 46], n[i]);
+  });
+  return finish(c);
+}
+
+/** Underwater's walls: black lava rock, porous, moss in every hollow. */
+export function lavaRockTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 6, 4, 1611);
+  const pores = fbm(S, 12, 2, 1612);
+  paint(ctx, S, S, (_x, _y, i) => {
+    if (pores[i] < 0.3) return mix([40, 80, 34], [76, 120, 50], n[i]);
+    return shade(mix([30, 28, 28], [64, 60, 56], n[i]), pores[i] > 0.75 ? 0.6 : 1);
+  });
+  return finish(c);
+}

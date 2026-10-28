@@ -12,6 +12,7 @@ export interface TrackSong {
 const IDPLML = { album: 'Ice, Death, Planets, Lungs, Mushrooms and Lava', year: 2022 };
 const PDA = { album: 'PetroDragonic Apocalypse', year: 2023 };
 const FMB = { album: 'Flying Microtonal Banana', year: 2017 };
+const TBB = { album: '12 Bar Bruise', year: 2012 };
 
 export const TRACK_SONGS: Record<string, TrackSong> = {
   'robot-stop': { title: 'Robot Stop', album: 'Nonagon Infinity', year: 2016 },
@@ -50,6 +51,10 @@ export const TRACK_SONGS: Record<string, TrackSong> = {
   'im-not-in-your-mind': { title: "I'm Not in Your Mind", album: "I'm in Your Mind Fuzz", year: 2014 },
   cellophane: { title: 'Cellophane', album: "I'm in Your Mind Fuzz", year: 2014 },
   'im-in-your-mind-fuzz': { title: "I'm in Your Mind Fuzz", album: "I'm in Your Mind Fuzz", year: 2014 },
+  elbow: { title: 'Elbow', ...TBB },
+  muckraker: { title: 'Muckraker', ...TBB },
+  'cut-throat-boogie': { title: 'Cut Throat Boogie', ...TBB },
+  'sea-of-trees': { title: 'Sea of Trees', ...TBB },
 };
 
 /**

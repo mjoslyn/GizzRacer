@@ -74,6 +74,10 @@ const LIFE: Record<DecorKind, LifeSpec> = {
   neurons: { flock: { kind: 'orb', color: 0x80f0ff, count: 14, height: 16, size: 0.6, glow: true }, motes: { color: 0xff90d8, count: 340, size: 0.4, drift: 'float', glow: true } },
   opart: { flock: { kind: 'bird', color: 0x101014, count: 12, height: 20, size: 0.9 }, motes: { color: 0xffffff, count: 260, size: 0.45, drift: 'blow' } },
   panes: { flock: { kind: 'moth', color: 0xffd020, count: 12, height: 14, size: 0.8 }, motes: { color: 0xfff0ff, count: 300, size: 0.4, drift: 'float', glow: true } },
+  bandroom: { flock: { kind: 'bat', color: 0x1a0a1a, count: 10, height: 18, size: 0.9 }, motes: { color: 0xff90c0, count: 260, size: 0.4, drift: 'float', glow: true } },
+  wetland: { flock: { kind: 'bird', color: 0x2a2a2a, count: 14, height: 22, size: 1.0 }, motes: { color: 0xc8d0d8, count: 600, size: 0.3, drift: 'fall' } },
+  party: { flock: { kind: 'moth', color: 0xffd070, count: 14, height: 10, size: 0.7 }, motes: { color: 0xffc0f0, count: 360, size: 0.4, drift: 'float', glow: true } },
+  canopy: { flock: { kind: 'bird', color: 0x1a2a1a, count: 16, height: 26, size: 1.0 }, motes: { color: 0xc0f080, count: 340, size: 0.4, drift: 'fall' } },
   static: { flock: { kind: 'orb', color: 0x80ff90, count: 12, height: 18, size: 0.7, glow: true }, motes: { color: 0xc080ff, count: 460, size: 0.45, drift: 'float', glow: true } },
 };
 

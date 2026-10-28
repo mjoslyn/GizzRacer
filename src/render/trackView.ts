@@ -10,6 +10,7 @@ import { THEMES, type Theme } from './themes';
 import { CURB_WIDTH, atmosphere, roadPaint, trackDetail } from './trackDetail';
 import { colonyFeature, colonyGate, cosmosFeature, plainsFeature, rodGate, starGate, stormWeather, voidEye } from './apocalypse';
 import { alienSeaFeature, crystalGate, gardenFeature, goblinGate, jawsGate, keplerArch, magentaPeak, peaksFeature, shoreFeature } from './omnium';
+import { bandroomFeature, bentArm, canopyFeature, elbowGate, harmonicaGate, mirrorBall, partyFeature, powerStation, rakeGate, snowPeak, trunkGate, wetlandFeature } from './twelveBarBruise';
 import { arrowGate, cellophaneBloom, emptyHead, eyeGate, filmGate, fuzzGate, fuzzMeter, mindFace, neuronsFeature, opartFeature, panesFeature, staticFeature } from './mindfuzz';
 import { blightFeature, burningEarth, coronaFeature, domeGate, domesFeature, hellGate, pitFeature, ratsNest, richDome, shipGate, smogGate, theSun } from './infest';
 import { carcass, carrionGate, boneyardFeature, factoryGate, foundryFeature, gammaGate, gammaRing, pedalboardFeature, robotColossus, theatreFeature, wahGate, wahPedal } from './nonagon';
@@ -93,6 +94,10 @@ function materials(theme: Theme): Materials {
     opart: () => tex.stoneTexture([20, 20, 24], [230, 228, 222]),
     panes: () => tex.stoneTexture([90, 110, 160], [200, 220, 250]),
     static: () => tex.stoneTexture([30, 20, 44], [100, 70, 130]),
+    bandroom: () => tex.stoneTexture([40, 34, 38], [100, 90, 96]),
+    wetland: () => tex.stoneTexture([70, 62, 48], [130, 120, 100]),
+    party: () => tex.stoneTexture([40, 30, 40], [110, 90, 110]),
+    canopy: tex.lavaRockTexture,
   };
   const neon = banana ? tex.neonRoadTexture(tex.BANANA.neon) : tex.neonRoadTexture();
   const rainbow = banana ? tex.rainbowTexture(tex.BANANA.bands) : tex.rainbowTexture();
@@ -159,6 +164,16 @@ function materials(theme: Theme): Materials {
         const map = tex.fuzzRoadTexture();
         return bumpy(map, 0.12, { emissive: 0xffffff, emissiveMap: map, emissiveIntensity: 0.25 });
       })(),
+      carpet: (() => {
+        const map = tex.carpetTexture();
+        return bumpy(map, 0.08, { emissive: 0xffffff, emissiveMap: map, emissiveIntensity: 0.12 });
+      })(),
+      muck: new THREE.MeshPhongMaterial({ map: tex.muckTexture(), shininess: 40, specular: 0x4a4a40 }),
+      dancefloor: (() => {
+        const map = tex.danceFloorTexture();
+        return lambert(map, { emissive: 0xffffff, emissiveMap: map, emissiveIntensity: 0.6 });
+      })(),
+      moss: bumpy(tex.mossRoadTexture(), 0.1),
       cosmic: (() => {
         const map = tex.cosmicRoadTexture();
         return lambert(map, { emissive: 0xffffff, emissiveMap: map, emissiveIntensity: 0.55 });
@@ -295,6 +310,14 @@ export function buildTrackView(track: Track): TrackView {
     if (lm.kind === 'cellophaneBloom') group.add(cellophaneBloom(ribbon, s, lm.lateral ?? 0, animated));
     if (lm.kind === 'fuzzGate') group.add(fuzzGate(ribbon, s, animated));
     if (lm.kind === 'fuzzMeter') group.add(fuzzMeter(ribbon, s, lm.lateral ?? 0, animated));
+    if (lm.kind === 'elbowGate') group.add(elbowGate(ribbon, s, animated));
+    if (lm.kind === 'bentArm') group.add(bentArm(ribbon, s, lm.lateral ?? 0, animated));
+    if (lm.kind === 'rakeGate') group.add(rakeGate(ribbon, s, animated));
+    if (lm.kind === 'powerStation') group.add(powerStation(ribbon, s, lm.lateral ?? 0, animated));
+    if (lm.kind === 'harmonicaGate') group.add(harmonicaGate(ribbon, s, animated));
+    if (lm.kind === 'mirrorBall') group.add(mirrorBall(ribbon, s, lm.lateral ?? 0, animated));
+    if (lm.kind === 'trunkGate') group.add(trunkGate(ribbon, s, animated));
+    if (lm.kind === 'snowPeak') group.add(snowPeak(ribbon, s, lm.lateral ?? 0, animated));
     if (lm.kind === 'dragonFlight') {
       const d = dragonFlight(track.def.bounds);
       group.add(d.group);
@@ -1483,8 +1506,8 @@ function decor(track: Track, mats: Materials, theme: Theme, animated: ((time: nu
     track.def.pits.every((p) => !inPit({ ...p, halfWidth: p.halfWidth + 6, halfLength: p.halfLength + 6 }, x, z));
 
   const scale = densityScale();
-  const rockCount = Math.round(scale * ({ jungle: 120, city: 0, sky: 0, lagoon: 60, glacier: 140, wasteland: 150, colony: 170, plains: 60, cosmos: 0, isle: 90, airstrip: 40, grove: 90, sea: 70, peaks: 120, alienSea: 40, garden: 30, shore: 110, ruins: 160, clouds: 0, cytoplasm: 60, spectrum: 40, foundry: 60, theatre: 30, boneyard: 140, pedalboard: 20, blight: 120, domes: 90, corona: 0, pit: 160, neurons: 50, opart: 0, panes: 20, static: 60 }[theme.decor as string] ?? 220));
-  const featureCount = Math.round(scale * ({ jungle: 150, meadow: 110, lagoon: 120, glacier: 160, city: 90, sky: 90, wasteland: 110, colony: 110, plains: 140, cosmos: 110, isle: 140, airstrip: 110, grove: 170, sea: 120, peaks: 140, alienSea: 150, garden: 170, shore: 140, ruins: 120, clouds: 110, cytoplasm: 160, spectrum: 150, foundry: 150, theatre: 150, boneyard: 160, pedalboard: 160, blight: 150, domes: 140, corona: 160, pit: 160, neurons: 170, opart: 150, panes: 160, static: 170 }[theme.decor as string] ?? 70));
+  const rockCount = Math.round(scale * ({ jungle: 120, city: 0, sky: 0, lagoon: 60, glacier: 140, wasteland: 150, colony: 170, plains: 60, cosmos: 0, isle: 90, airstrip: 40, grove: 90, sea: 70, peaks: 120, alienSea: 40, garden: 30, shore: 110, ruins: 160, clouds: 0, cytoplasm: 60, spectrum: 40, foundry: 60, theatre: 30, boneyard: 140, pedalboard: 20, blight: 120, domes: 90, corona: 0, pit: 160, neurons: 50, opart: 0, panes: 20, static: 60, bandroom: 30, wetland: 60, party: 10, canopy: 90 }[theme.decor as string] ?? 220));
+  const featureCount = Math.round(scale * ({ jungle: 150, meadow: 110, lagoon: 120, glacier: 160, city: 90, sky: 90, wasteland: 110, colony: 110, plains: 140, cosmos: 110, isle: 140, airstrip: 110, grove: 170, sea: 120, peaks: 140, alienSea: 150, garden: 170, shore: 140, ruins: 120, clouds: 110, cytoplasm: 160, spectrum: 150, foundry: 150, theatre: 150, boneyard: 160, pedalboard: 160, blight: 150, domes: 140, corona: 160, pit: 160, neurons: 170, opart: 150, panes: 160, static: 170, bandroom: 160, wetland: 180, party: 160, canopy: 260 }[theme.decor as string] ?? 70));
   // Sky and void scenery floats at all heights; city towers need room off the road.
   const floating = theme.decor === 'sky' || theme.decor === 'cosmos' || theme.decor === 'clouds';
   const rocks = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 1), mats.rock, rockCount);
@@ -1594,6 +1617,14 @@ function featureBuilder(theme: Theme, mats: Materials, animated: ((time: number)
       return panesFeature(animated);
     case 'static':
       return staticFeature(animated);
+    case 'bandroom':
+      return bandroomFeature(animated);
+    case 'wetland':
+      return wetlandFeature(animated);
+    case 'party':
+      return partyFeature(animated);
+    case 'canopy':
+      return canopyFeature(animated);
     case 'lagoon': {
       const bark = lambert(0x9a7a52);
       const frond = lambert(0x3aa04a, { side: THREE.DoubleSide, flatShading: true });

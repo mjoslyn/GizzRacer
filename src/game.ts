@@ -1993,6 +1993,10 @@ const HIT_TEXT: Record<ItemKind | HazardKind, string> = {
   arrows: 'ZAPPED!',
   sheets: 'WRAPPED!',
   fuzz: 'CLIPPED!',
+  elbows: 'ELBOWED!',
+  rakes: 'MUCKED!',
+  razors: 'CUT!',
+  timber: 'TIMBER!',
 };
 
 /** What a hazard used well says: the ones that can help. */
@@ -2040,6 +2044,10 @@ const BONUS_TEXT: Record<HazardKind, string> = {
   arrows: 'NOT THERE!',
   sheets: 'LINED UP!',
   fuzz: 'RIDE THE FUZZ!',
+  elbows: 'EY EY EY!',
+  rakes: 'RAKED CLEAN!',
+  razors: 'INCHES!',
+  timber: 'OVER THE TOP!',
 };
 
 /** Takes a group out of the scene and frees what it built. */
