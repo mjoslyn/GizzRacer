@@ -1,44 +1,51 @@
 import { TrackBuilder, offsetPose, type Pose } from './builder';
 import type { BranchDef, TrackDef } from './track';
 
-const K = 1.12;
-const START: Pose = { x: -70 * K, z: 165 * K, h: Math.PI / 2 };
+const K = 0.96;
+const START: Pose = { x: -120 * K, z: -110 * K, h: Math.PI / 2 };
 const FINISH = 45;
 /** The Vanishing Bend: the shore road swings out round a tidal pool in three arcs of this radius and turn. */
-const POOL_R = 34;
+const POOL_R = 40;
 const POOL_TURN = 70;
-/** How high the road climbs onto the Wraith Cliffs. */
+/** How high the road climbs up the Wraith Cliffs, and the Wraith Bridge runs off the top. */
 const CLIFF_TOP = 15;
+/** The Wraith Cliffs' hairpins, switching back and forth up the middle of the island. */
+const SWITCH_R = 24;
 /** How deep Mist Hollow sinks below the shore. */
 const HOLLOW_DEPTH = 6;
 
 /**
  * Phantom Island (the Phantom Island Cup's opener): an island that comes
- * and goes in a sea mist at dusk. A sand road along the Tideline, ghost
- * lights drifting over the Ghost Light Flats (two kickers among them), a
- * climb up the Wraith Cliffs and a plunge off the top, a rail-less ruined
- * pier out over the water, a jump across the Phantom Gap, Mist Hollow sunk
- * 6 m into the island, and the Vanishing Bend swinging round a tidal pool,
+ * and goes in a sea mist at dusk, and a lap that never quite reaches it.
+ * The road spirals in round the island the way a boat circles land it
+ * can't make out: along the Tideline, up the Ghost Light Flats (two
+ * kickers, ghost lights drifting over the road), across the top through
+ * the Lantern Woods, down the far shore over a rail-less Ruined Pier and a
+ * jump across the Phantom Gap, then into the island along Mist Hollow, sunk
+ * 6 m. In the middle, the Wraith Cliffs: hairpins switching back and forth
+ * up an earth bank to 15 m. Off the top the Wraith Bridge flies straight
+ * back out over everything it spiralled in on, Mist Hollow and then the
+ * Tideline, and plunges off its end: the eternal return, back where you
+ * began. The Vanishing Bend swings round a tidal pool on the way home,
  * which Eternal Return, a narrow causeway with no rails, cuts straight
- * across. A ghost lighthouse on the point, the gate an arch that fades.
+ * across on the second lap. A ghost lighthouse on the point, the gate an
+ * arch that fades.
  */
 export function buildPhantomIsland(): TrackDef {
   const b = new TrackBuilder(START, 'Tideline', { halfWidth: 11, surface: 'sand' });
   b.scale = K;
-  b.straight(140).arc(50, 90);
+  b.straight(110).mark('tide').arc(70, 20).arc(70, -20).straight(60).arc(80, -90);
 
-  // Ghost lights drift across the flats, between two kickers.
+  // Spiralling in round the island: ghost lights drift across the flats, between two kickers.
   b.section('Ghost Light Flats', { halfWidth: 10, surface: 'sand' });
   b.mark('flats');
-  b.straight(40).mark('kick1').kicker().straight(30).mark('kick2').kicker().straight(30);
+  b.straight(40).mark('kick1').kicker().straight(30).mark('kick2').kicker().straight(40).arc(60, 25).arc(60, -25).straight(60);
+  b.arc(80, -90);
 
-  // Up the cliff in switchbacks on an earth bank, then off the top.
-  b.section('Wraith Cliffs', { halfWidth: 9, wallHeight: 1.2, surface: 'rock' });
-  b.mark('cliff');
-  b.arc(30, 90).straight(30).arc(24, -180).straight(30).arc(24, 180).mark('cliffTop').straight(70);
   b.section('Lantern Woods', { halfWidth: 9, surface: 'sand' });
   b.mark('woods');
-  b.arc(40, 90).straight(10).arc(32, 60).arc(32, -60);
+  b.straight(30).arc(36, 40).arc(36, -80).arc(36, 40).straight(60);
+  b.arc(80, -90);
 
   // The old pier, planks and nothing else, over the water.
   b.section('Ruined Pier', { halfWidth: 8, surface: 'boards' });
@@ -49,9 +56,28 @@ export function buildPhantomIsland(): TrackDef {
 
   b.section('Phantom Gap', { halfWidth: 9, wallHeight: 1.2, surface: 'rock' });
   b.mark('gapRun');
-  b.arc(36, -90).straight(10).mark('ramp').elevate(0).rise(18, 3);
+  b.straight(10).mark('ramp').elevate(0).rise(18, 3);
   b.gap(13, 30, 'water');
   b.elevate(0).straight(20);
+  b.arc(60, -90);
+
+  // Into the island, sunk in the mist.
+  b.section('Mist Hollow', { halfWidth: 9, wallHeight: 1.2, surface: 'rock' });
+  b.mark('hollow');
+  b.straight(150);
+  b.mark('hollowEnd');
+  b.arc(50, -90);
+
+  // Up the cliff in the middle in switchbacks on an earth bank, then straight back out over everything on a bridge, and off the end.
+  b.section('Wraith Cliffs', { halfWidth: 9, wallHeight: 1.2, surface: 'rock' });
+  b.mark('cliff');
+  b.straight(80).arc(SWITCH_R, -180).straight(40).arc(SWITCH_R, 180).straight(60).arc(SWITCH_R, -180);
+  b.mark('cliffTop');
+  b.section('Wraith Bridge', { halfWidth: 9, wallHeight: 1.2, surface: 'rock', bridge: true });
+  b.mark('wraith');
+  b.straight(150).arc(160, 12).arc(160, -12).straight(113);
+  b.mark('wraithEnd');
+  b.arc(50, 90);
 
   b.section('Vanishing Bend', { halfWidth: 9.5, surface: 'sand' });
   b.mark('bend');
@@ -64,16 +90,18 @@ export function buildPhantomIsland(): TrackDef {
   b.mark('finish');
   b.straight(FINISH);
 
-  // Heights, over the layout: dunes on the flats, the cliff and its plunge, a rise in the woods, Mist Hollow before the gap.
+  // Heights, over the layout: dunes on the shore, a rise in the woods, Mist Hollow sunk, the climb up the cliffs and the bridge off the top.
   const m = (name: string, d = 0) => b.marks[name].s + d * K;
-  b.profile(30, m('flats', -20), (u) => 3 * Math.sin(2 * Math.PI * u) ** 2);
-  ease(b, m('cliff'), 0, m('cliffTop'), CLIFF_TOP);
-  plunge(b, m('cliffTop'), CLIFF_TOP, m('cliffTop', 70), 0);
+  b.profile(m('tide'), m('flats', -20), (u) => 3 * Math.sin(2 * Math.PI * u) ** 2);
   ease(b, m('woods', 10), 0, m('woods', 35), 5);
   plunge(b, m('woods', 35), 5, m('woods', 60), 0);
   b.profile(m('woods', 70), m('woods', 160), (u) => 2.5 * Math.sin(Math.PI * u) ** 2);
-  ease(b, m('gapRun', 10), 0, m('gapRun', 30), -HOLLOW_DEPTH);
-  ease(b, m('gapRun', 30), -HOLLOW_DEPTH, m('ramp'), 0);
+  ease(b, m('hollow', 5), 0, m('hollow', 35), -HOLLOW_DEPTH);
+  b.profile(m('hollow', 35), m('hollowEnd', -35), () => -HOLLOW_DEPTH, 10);
+  ease(b, m('hollowEnd', -35), -HOLLOW_DEPTH, m('hollowEnd'), 0);
+  ease(b, m('cliff'), 0, m('cliffTop'), CLIFF_TOP);
+  b.profile(m('cliffTop'), m('wraithEnd', -30), () => CLIFF_TOP, 10);
+  plunge(b, m('wraithEnd', -30), CLIFF_TOP, m('wraithEnd', 50), 0);
   b.profile(m('returnTo', 40), m('finish', -10), (u) => 4 * Math.sin(Math.PI * u) ** 2);
 
   const main = b.finish(true);
@@ -90,7 +118,7 @@ export function buildPhantomIsland(): TrackDef {
       { s: at('flats', 100), length: 8, lateral: -3, halfWidth: 2.5 },
       { s: at('gapRun', 70), length: 8, lateral: 0, halfWidth: 2.5 },
     ],
-    checkpoints: ['flats', 'cliff', 'woods', 'pier', 'gapRun', 'bend'].map((k) => b.marks[k].s / main.length),
+    checkpoints: ['flats', 'woods', 'pier', 'gapRun', 'hollow', 'cliff', 'wraith', 'bend'].map((k) => b.marks[k].s / main.length),
     laps: 3,
     bounds: 440,
     landmarks: [

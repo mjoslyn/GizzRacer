@@ -164,6 +164,47 @@ describe.each(CASES.map((c) => [c.name, c] as const))('%s shortcut and kickers',
   });
 });
 
+/** How many times each lap crosses itself, the road over on a deck. */
+const CROSSINGS: { name: string; build: () => TrackDef; crossings: number }[] = [
+  // The Wraith Bridge back out over Mist Hollow and the Tideline.
+  { name: 'Phantom Island', build: buildPhantomIsland, crossings: 2 },
+  // The Holding Pattern over itself, the Clifftop Runway over the Prop Wash, the lower deck over the Main Runway.
+  { name: 'Deadstick', build: buildDeadstickDrop, crossings: 3 },
+  // The Root Knot over the road it came in on, and the root over the Heartwood Path.
+  { name: 'Panpsych', build: buildPanpsychGrove, crossings: 2 },
+  // Each breaker's curl over itself, and the road home over the trough between them.
+  { name: 'Sea of Doubt', build: buildSeaOfDoubt, crossings: 3 },
+];
+
+describe.each(CROSSINGS.map((c) => [c.name, c] as const))('%s: a tangled lap', (_name, c) => {
+  const def = c.build();
+  const track = new Track(def);
+  const main = track.main;
+  const sp = main.spline;
+
+  it('crosses itself, the road over on a deck well clear of the road under', () => {
+    // Pairs of points far apart along the lap whose roads overlap, gathered into crossings.
+    const found: { a: [number, number]; b: [number, number] }[] = [];
+    for (let i = 0; i < sp.count; i += 2) {
+      for (let j = i; j < sp.count; j += 2) {
+        const along = sp.dist[j] - sp.dist[i];
+        if (Math.min(along, sp.length - along) < 120) continue;
+        if (Math.hypot(sp.px[i] - sp.px[j], sp.pz[i] - sp.pz[j]) > main.halfWidth[i] + main.halfWidth[j]) continue;
+        const hi = main.heightAt(sp.dist[i]) > main.heightAt(sp.dist[j]) ? i : j;
+        expect(Math.abs(main.heightAt(sp.dist[i]) - main.heightAt(sp.dist[j]))).toBeGreaterThan(6);
+        expect(def.main.sections[main.sectionIndex[hi]].bridge, main.sectionName(hi)).toBe(true);
+        const [a, b] = [sp.dist[i], sp.dist[j]];
+        const f = found.find((f) => a > f.a[0] - 20 && a < f.a[1] + 20 && b > f.b[0] - 20 && b < f.b[1] + 20);
+        if (f) {
+          f.a = [Math.min(f.a[0], a), Math.max(f.a[1], a)];
+          f.b = [Math.min(f.b[0], b), Math.max(f.b[1], b)];
+        } else found.push({ a: [a, a], b: [b, b] });
+      }
+    }
+    expect(found).toHaveLength(c.crossings);
+  });
+});
+
 describe('Deadstick: off the end of the runway with no engine', () => {
   const def = buildDeadstickDrop();
   const track = new Track(def);
