@@ -3724,8 +3724,8 @@ body:not(.split) .seat-hud {
 /* An album's name across the track grid, over its four tracks. */
 .menu-tiles-group {
   grid-column: 1 / -1;
-  margin-top: 4px;
-  font-size: 11px;
+  margin-top: 6px;
+  font-size: 15px;
   letter-spacing: 2px;
   text-transform: uppercase;
   color: #fff27a;
@@ -3924,9 +3924,13 @@ body.coarse .menu[data-screen='racer'] {
   .menu-racers {
     grid-template-columns: repeat(3, 1fr);
   }
-  /* The tracks two to a line, so each shot is big enough to tell apart. */
-  .menu-tracks {
+  /* The tracks and the cups two to a line, so each shot is big enough to tell apart. */
+  .menu-tracks,
+  .menu-cups {
     grid-template-columns: repeat(2, 1fr);
+  }
+  .menu-tiles-group {
+    font-size: 18px;
   }
   .menu .menu-racers .menu-tile {
     aspect-ratio: 3 / 2;
@@ -3942,7 +3946,8 @@ body.coarse .menu[data-screen='racer'] {
   .menu .menu-shots .menu-tile > span:not(.menu-tile-mosaic):not(.menu-tile-icon) {
     font-size: 12px;
   }
-  .menu .menu-tracks .menu-tile > span:not(.menu-tile-mosaic):not(.menu-tile-icon) {
+  .menu .menu-tracks .menu-tile > span:not(.menu-tile-mosaic):not(.menu-tile-icon),
+  .menu .menu-cups .menu-tile > span:not(.menu-tile-mosaic):not(.menu-tile-icon) {
     font-size: 16px;
   }
 }
