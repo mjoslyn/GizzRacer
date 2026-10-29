@@ -76,7 +76,7 @@ describe('Crumbling Castle: the castle from the N64', () => {
   const names = def.main.sections.map((s) => s.name);
 
   it('goes in at the gate, down a hall of crushers, up the stair to the garden and down through the galleries and the dungeon', () => {
-    const order = ['Drawbridge', 'Moat Bridge', 'Thwomp Hall', 'Crooked Corridor', 'Great Hall', 'Grand Stair', 'Castle Garden', 'Lava Galleries', 'Dungeon', 'Lava Walk', 'The Leap'];
+    const order = ['Drawbridge', 'Moat Bridge', 'Thwomp Hall', 'Crooked Corridor', 'Great Hall', 'Grand Stair', 'Upper Floor', 'Castle Garden', 'Lava Galleries', 'Dungeon', 'Lava Walk', 'The Leap'];
     const at = order.map((n) => names.indexOf(n));
     expect(at.every((i) => i >= 0)).toBe(true);
     expect([...at].sort((a, b) => a - b)).toEqual(at);
@@ -92,6 +92,26 @@ describe('Crumbling Castle: the castle from the N64', () => {
     expect(track.main.heightAtBuilder((garden.from + garden.to) / 2)).toBeCloseTo(10, 1);
     const crushers = def.hazards.filter((h) => h.kind === 'crushers').flatMap((h) => ('at' in h ? h.at : []));
     expect(crushers.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it('is built in tiers: the upper floor over the Great Hall at the tower, the dungeon under both, and the stair turning over itself', () => {
+    const track = new Track(def);
+    const r = track.main;
+    const sp = r.spline;
+    const points = (name: string) => [...Array(sp.count).keys()].filter((i) => def.main.sections[r.sectionIndex[i]].name === name);
+    for (const [a, b] of [['Great Hall', 'Upper Floor'], ['Great Hall', 'Dungeon'], ['Upper Floor', 'Dungeon'], ['Grand Stair', 'Grand Stair']]) {
+      let near = { d: Infinity, dy: 0 };
+      for (const i of points(a)) {
+        for (const j of points(b)) {
+          const along = Math.abs(sp.dist[i] - sp.dist[j]);
+          if (Math.min(along, sp.length - along) < 120) continue;
+          const d = Math.hypot(sp.px[i] - sp.px[j], sp.pz[i] - sp.pz[j]);
+          if (d < near.d) near = { d, dy: Math.abs(r.heightAt(sp.dist[i]) - r.heightAt(sp.dist[j])) };
+        }
+      }
+      expect(near.d, `${a} x ${b}`).toBeLessThan(3);
+      expect(near.dy, `${a} x ${b}`).toBeGreaterThan(6);
+    }
   });
 });
 
