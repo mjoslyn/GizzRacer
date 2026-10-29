@@ -3,6 +3,8 @@ import type { BranchDef, TrackDef } from './track';
 
 const K = 1.1;
 const START: Pose = { x: -20 * K, z: 320 * K, h: Math.PI / 2 };
+/** A waypoint on the journey, in builder units. */
+const wp = (x: number, z: number, h: number): Pose => ({ x: x * K, z: z * K, h });
 const FINISH = 45;
 /** The Fiery Temper's hairpins, and the switchbacks up to the peaks. */
 const TEMPER_R = 24;
@@ -13,12 +15,9 @@ const PEAK = 13;
 const DEPTH = 6;
 const WALL = 6;
 /** The Razorback: a sharp ridge this high. */
-const RIDGE = 4;
+const RIDGE = 5;
 /** The House of Dust: two dunes this high on the way home. */
 const DUNE = 3;
-/** Killed the Bull: its horn, this long, round a tip this tight. */
-const HORN = 110;
-const HORN_R = 26;
 /** Thirteen Winds: thirteen bends. */
 const WINDS = 13;
 /** Swam the Flood: the main road swings out round the floodwater in three arcs of this radius and turn; the shortcut dives straight under it. */
@@ -75,23 +74,23 @@ export function buildGilgamesh(): TrackDef {
   b.arc(SWITCH_R, -180);
   b.straight(30);
   b.mark('summit');
-  // The light of a glorious photon: flying down off the top.
-  b.section('Glorious Photon', { halfWidth: 10.5, surface: 'mudbrick' });
+  // The light of a glorious photon: round off the top and flying down a viaduct right across the land.
+  b.section('Glorious Photon', { halfWidth: 10.5, wallHeight: 1.2, surface: 'mudbrick', bridge: true });
   b.mark('photon');
-  b.arc(60, 90);
-  b.arc(120, -20);
+  b.arc(40, 130);
+  b.turnTo(wp(-230, -170, Math.PI), 60);
   b.mark('photonEnd');
 
   b.section('Bone-Dried Swamplands', { halfWidth: 8.5, wallHeight: 1.2, surface: 'mudbrick' });
   b.mark('swamp');
   b.arc(30, 35).arc(30, -70).arc(30, 35);
   b.mark('swampEnd');
-  b.straight(10);
 
   // The scorpions guarding the pass, sunk between its walls; the plant of immortality and the snake.
   b.section('The Scorpion Pass', { halfWidth: 9, wallHeight: WALL, surface: 'mudbrick' });
   b.mark('pass');
-  b.straight(30).arc(70, 20).arc(70, -20).straight(20).arc(60, 110);
+  b.turnTo(wp(-90, -340, Math.PI / 2), 50);
+  b.straight(30).arc(70, 20).arc(70, -20);
   b.mark('passEnd');
   b.straight(10);
 
@@ -100,9 +99,12 @@ export function buildGilgamesh(): TrackDef {
   b.arc(36, -45).arc(36, 90).arc(36, -45);
   b.section('The Razorback', { halfWidth: 8.5, surface: 'mudbrick' });
   b.mark('ridge');
-  b.straight(50);
+  b.turnTo(wp(260, -200, 0), 50);
+  b.straight(30);
   b.mark('ridgeEnd');
 
+  // Thirteen winds, and back across the land beneath the photon's viaduct.
+  b.arc(40, -60);
   b.section('Thirteen Winds', { halfWidth: 9.5, wallHeight: 1.2, surface: 'mudbrick' });
   b.mark('winds');
   b.arc(28, 30);
@@ -110,16 +112,11 @@ export function buildGilgamesh(): TrackDef {
   b.arc(28, 30);
   b.mark('windsEnd');
 
-  // Killed the bull: out along its horn into the middle and back round its tip.
+  // Killed the bull: grappling with it, an S, and on round onto the west side.
   b.section('Killed the Bull', { halfWidth: 9.5, wallHeight: 1.2, surface: 'mudbrick' });
   b.mark('bull');
-  b.arc(30, 90);
-  b.straight(20);
-  b.arc(30, 90);
-  b.straight(HORN);
-  b.arc(HORN_R, -180);
-  b.straight(HORN);
-  b.arc(30, 90);
+  b.arc(36, 50).arc(36, -100).arc(36, 50);
+  b.turnTo(wp(-300, -60, 0), 40);
   b.mark('bullEnd');
 
   // Crossed the sea: a leap over the water.
@@ -153,12 +150,13 @@ export function buildGilgamesh(): TrackDef {
   const m = (name: string, d = 0) => b.marks[name].s + d * K;
   // Up to the peaks, and the photon flying down off the top.
   ease(b, m('peaks'), 0, m('summit'), PEAK);
-  plunge(b, m('summit'), PEAK, m('photonEnd'), 0);
+  b.profile(m('summit'), m('photon', 220), () => PEAK, 10);
+  plunge(b, m('photon', 220), PEAK, m('photonEnd'), 0);
   ease(b, m('pass', 5), 0, m('pass', 40), -DEPTH);
   b.profile(m('pass', 40), m('passEnd', -30), () => -DEPTH, 10);
   ease(b, m('passEnd', -30), -DEPTH, m('passEnd', 10), 0);
   // The razorback: up to a sharp ridge and down.
-  b.profile(m('ridge'), m('ridgeEnd'), (u) => RIDGE * (1 - Math.abs(2 * u - 1)) ** 1.5);
+  b.profile(m('ridgeEnd', -60), m('ridgeEnd'), (u) => RIDGE * (1 - Math.abs(2 * u - 1)) ** 1.5);
   // Dunes of dust on the way home.
   b.profile(m('dust'), m('finish', -10), (u) => DUNE * Math.sin(Math.PI * 2 * u) ** 2);
 
@@ -182,7 +180,7 @@ export function buildGilgamesh(): TrackDef {
     landmarks: [
       { kind: 'urukGate', ribbon: -1, s: 6 },
       { kind: 'urukGate', ribbon: -1, s: at('pass', -2) },
-      { kind: 'ziggurat', ribbon: -1, s: at('winds', 60), lateral: 150 },
+      { kind: 'ziggurat', ribbon: -1, s: at('bone', 20), lateral: 170 },
     ],
     itemBoxes: [
       { s: 80, count: 4 },
