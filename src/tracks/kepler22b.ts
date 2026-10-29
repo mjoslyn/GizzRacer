@@ -200,7 +200,7 @@ function plunge(b: TrackBuilder, s0: number, y0: number, s1: number, y1: number)
 
 /**
  * The Membrane: a narrow living causeway straight across the lagoon the
- * Habitable Zone swings round. It grows shut over the first lap.
+ * Habitable Zone swings round.
  */
 function buildMembrane(from: { s: number; pose: Pose }, to: { s: number; pose: Pose }) {
   const chord = Math.hypot(to.pose.x - from.pose.x, to.pose.z - from.pose.z);
