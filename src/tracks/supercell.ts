@@ -1,16 +1,35 @@
 import { TrackBuilder, offsetPose, type Pose } from './builder';
 import type { BranchDef, TrackDef } from './track';
 
-const K = 1.12;
-const START: Pose = { x: -70 * K, z: 165 * K, h: Math.PI / 2 };
+const K = 1.0;
+/** The storm's rotation: the road winds into it clockwise from this far out to this far in, through this many degrees, round this centre. */
+const C = { x: 80, z: 40 };
+const R0 = 220;
+const R1 = 55;
+const TURN = 450;
+const START: Pose = { x: (C.x - R0) * K, z: (C.z - 225) * K, h: 0 };
 const FINISH = 45;
 /** Downdraft: the road blows out round a flooded field in three arcs of this radius and turn. */
-const LEVEE_R = 34;
+const LEVEE_R = 38;
 const LEVEE_TURN = 70;
 /** The top of the trestle up round the silos. */
 const SILO_TOP = 16;
 /** How deep the Washout's gully runs below the creek. */
 const WASHOUT_DEPTH = 6;
+
+/** How far out the road winds round the storm, `f` degrees in. */
+const radius = (f: number) => R0 - ((R0 - R1) * f) / TURN;
+/** The pose `f` degrees into the storm's rotation (from due west, clockwise), heading on round it. */
+function vortex(f: number): Pose {
+  const phi = ((f - 90) * Math.PI) / 180;
+  const r = radius(f);
+  const dr = -((R0 - R1) * 180) / (TURN * Math.PI);
+  return {
+    x: (C.x + r * Math.sin(phi)) * K,
+    z: (C.z + r * Math.cos(phi)) * K,
+    h: Math.atan2(dr * Math.sin(phi) + r * Math.cos(phi), dr * Math.cos(phi) - r * Math.sin(phi)),
+  };
+}
 
 /**
  * Supercell (hard): prairie roads under a storm the size of a county, in
@@ -19,40 +38,51 @@ const WASHOUT_DEPTH = 6;
  * ring of warning closes, hail the size of boulders falls on the farm, a
  * creek has burst over the road, the bridge across it has no rails, and a
  * narrow levee (Converge) cuts straight across the flooded Downdraft.
- * The county road rolls over the prairie, a wooden trestle climbs 16 m up
- * round the silos and plunges back down, and past the creek the Washout
- * runs down a gully the flood has cut 6 m into the ground.
+ * The lap is the storm as the radar draws it, a hook echo: up the County
+ * Road and Tornado Alley (two kickers) into the storm, then round it
+ * clockwise and tightening, a turn and a quarter, through Hailstone Farm,
+ * over the Flooded Creek, down the Washout's gully (cut 6 m into the
+ * ground) and over its jump, round the Downdraft and in under the Wall
+ * Cloud to the eye. There the Silo Trestle climbs a loop round the silos
+ * to 16 m and runs straight out of the storm on its pillars, over the Wall
+ * Cloud and over Tornado Alley, and plunges; the Rear Flank swings back
+ * down the west side to the grid.
  */
 export function buildSupercell(): TrackDef {
   const b = new TrackBuilder(START, 'County Road', { halfWidth: 11, surface: 'wet' });
   b.scale = K;
-  b.straight(150).arc(48, 90);
+  /** On round the storm to `f` degrees in. */
+  const to = (f: number) => b.hermiteTo(vortex(f));
+  b.straight(85);
 
   // Flying cows: two kickers down the alley, among the tornadoes.
   b.section('Tornado Alley', { halfWidth: 10, surface: 'wet' });
   b.mark('alley');
-  b.straight(40).mark('kick1').kicker().straight(30).mark('kick2').kicker().straight(57.5);
-
-  // A trestle climbing round the silos, then the plunge.
-  b.section('Silo Hairpins', { halfWidth: 9, wallHeight: 1.2, surface: 'boards', bridge: true });
-  b.mark('silo');
-  b.arc(26, -180).straight(40).arc(26, 180).mark('siloTop').straight(80).arc(42, 90);
+  b.straight(25).mark('kick1').kicker().straight(30).mark('kick2').kicker().straight(15);
+  // Into the storm, winding round it clockwise and in.
+  to(0);
+  to(45);
+  to(90);
 
   b.section('Hailstone Farm', { halfWidth: 9, surface: 'wet' });
   b.mark('farm');
-  b.straight(80).arc(32, -70).arc(32, 70).straight(85);
+  to(100);
+  b.arc(45, -30).arc(45, 60).arc(45, -30);
+  to(155);
 
   b.section('Flooded Creek', { halfWidth: 8, surface: 'boards' });
   b.mark('creek');
   b.elevate(0).straight(10).elevate(1.5);
-  b.bridge(60, 30, 'water');
+  b.bridge(50, 30, 'water');
   b.elevate(1.5).straight(10).elevate(0);
+  to(210);
 
   b.section('Washout', { halfWidth: 9, wallHeight: 1.2, surface: 'rock' });
   b.mark('washout');
-  b.arc(36, 90).straight(10).mark('ramp').elevate(0).rise(18, 3);
+  b.arc(radius(215), 30).straight(20).mark('ramp').elevate(0).rise(18, 3);
   b.gap(13, 30, 'water');
-  b.elevate(0).straight(20);
+  b.elevate(0).straight(25);
+  to(295);
 
   b.section('Downdraft', { halfWidth: 9.5, surface: 'wet' });
   b.mark('down');
@@ -60,22 +90,40 @@ export function buildSupercell(): TrackDef {
   b.mark('leveeFrom');
   b.arc(LEVEE_R, -LEVEE_TURN).arc(LEVEE_R, 2 * LEVEE_TURN).arc(LEVEE_R, -LEVEE_TURN);
   b.mark('leveeTo');
-  b.turnTo(offsetPose(START, -FINISH * K), 38);
+  to(360);
+
+  b.section('Wall Cloud', { halfWidth: 9.5, surface: 'wet' });
+  b.mark('wall');
+  to(405);
+  to(TURN);
+
+  // In the eye: a trestle climbing round the silos, then straight out of the storm over the road that wound in, and the plunge.
+  b.section('Silo Trestle', { halfWidth: 9, wallHeight: 1.2, surface: 'boards', bridge: true });
+  b.mark('silo');
+  b.arc(30, 210);
+  b.mark('siloTop');
+  b.straight(230);
+  b.mark('siloEnd');
+
+  b.section('Rear Flank', { halfWidth: 10, surface: 'wet' });
+  b.mark('flank');
+  b.turnTo({ x: (C.x - R0 - 90) * K, z: (C.z + 40) * K, h: Math.PI }, 45);
+  b.arc(40, -40).arc(40, 80).arc(40, -40);
+  b.turnTo(offsetPose(START, -FINISH * K), 45);
   b.section('Finish Straight', { halfWidth: 11, surface: 'wet' });
   b.mark('finish');
   b.straight(FINISH);
 
-  // Heights, over the layout: prairie swells, the trestle, a hill on the farm, the gully below the creek.
+  // Heights, over the layout: a hill on the farm, the gully, the trestle over the storm, a swell on the way home.
   const m = (name: string, d = 0) => b.marks[name].s + d * K;
-  b.profile(30, m('alley', -20), (u) => 3.5 * Math.sin(2 * Math.PI * u) ** 2);
   ease(b, m('silo'), 0, m('siloTop'), SILO_TOP);
-  plunge(b, m('siloTop'), SILO_TOP, m('siloTop', 70), 0);
-  ease(b, m('farm', 10), 0, m('farm', 35), 5);
-  plunge(b, m('farm', 35), 5, m('farm', 60), 0);
-  b.profile(m('farm', 70), m('farm', 160), (u) => 2.5 * Math.sin(Math.PI * u) ** 2);
-  ease(b, m('washout', 10), 0, m('washout', 30), -WASHOUT_DEPTH);
+  b.profile(m('siloTop'), m('siloEnd'), () => SILO_TOP, 10);
+  plunge(b, m('siloEnd'), SILO_TOP, m('siloEnd', 70), 0);
+  ease(b, m('washout', 5), 0, m('washout', 30), -WASHOUT_DEPTH);
   ease(b, m('washout', 30), -WASHOUT_DEPTH, m('ramp'), 0);
-  b.profile(m('leveeTo', 40), m('finish', -10), (u) => 4 * Math.sin(Math.PI * u) ** 2);
+  ease(b, m('farm', 5), 0, m('farm', 30), 5);
+  plunge(b, m('farm', 30), 5, m('farm', 60), 0);
+  b.profile(m('siloEnd', 90), m('finish', -60), (u) => 4 * Math.sin(Math.PI * u) ** 2);
 
   const main = b.finish(true);
   const levee = buildLevee(b.marks.leveeFrom, b.marks.leveeTo);
@@ -89,9 +137,9 @@ export function buildSupercell(): TrackDef {
     boostPads: [
       { s: 40, length: 8, lateral: 0, halfWidth: 2.5 },
       { s: at('alley', 100), length: 8, lateral: 3, halfWidth: 2.5 },
-      { s: at('washout', 70), length: 8, lateral: 0, halfWidth: 2.5 },
+      { s: at('ramp', 2), length: 8, lateral: 0, halfWidth: 2.5 },
     ],
-    checkpoints: ['alley', 'silo', 'farm', 'creek', 'washout', 'down'].map((m) => b.marks[m].s / main.length),
+    checkpoints: ['alley', 'farm', 'creek', 'washout', 'down', 'wall', 'silo', 'flank'].map((m) => b.marks[m].s / main.length),
     laps: 3,
     bounds: 440,
     landmarks: [
@@ -100,7 +148,7 @@ export function buildSupercell(): TrackDef {
     ],
     itemBoxes: [
       { s: 75, count: 4 },
-      { s: at('alley', 20), count: 4 },
+      { s: at('alley', 90), count: 4 },
       { s: at('farm', 50), count: 3 },
       { s: at('washout', 15), count: 3 },
       { s: at('down', 45), count: 4 },
