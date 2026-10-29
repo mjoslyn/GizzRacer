@@ -3616,6 +3616,13 @@ body:not(.split) .seat-hud {
   text-shadow: 2px 2px 0 #3a0f45;
 }
 
+.party-cast-note {
+  font-size: 12px;
+  opacity: 0.75;
+  max-width: 360px;
+  text-shadow: 2px 2px 0 #3a0f45;
+}
+
 /* The speed screen's smaller choices (CPUs, VHS, Mirror, Sound and the rest), together under the Speed. */
 .menu-options {
   display: flex;

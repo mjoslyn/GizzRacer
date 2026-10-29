@@ -45,6 +45,8 @@ export function settingsText(s: PartySettings): { cup: string; engine: string; c
 
 /** Seconds from everyone ready to the race. */
 const START_WAIT = 2;
+/** Under the buttons: casting a tab streams it, which lags; a cable doesn't. */
+const CAST_NOTE = 'Casting to a TV is slow and laggy. For the smoothest race, connect your device to the TV with an HDMI cable.';
 /** A stick pushed this far is a press left or right. */
 const STICK_PRESS = 0.6;
 
@@ -351,6 +353,7 @@ export class PartyScreen {
           <div class="party-status">Casting: the race is on the TV. Join with a phone, or press A on a controller paired with this laptop.</div>
           <div class="party-phones">${this.phoneInfo}</div>
           <div class="party-nav"><button data-party="back">&lsaquo; back</button><button data-party="cast">Stop casting</button></div>
+          <div class="party-cast-note">${CAST_NOTE}</div>
         </div>`;
       if (html !== this.lastHtml) this.el.innerHTML = this.lastHtml = html;
       return;
@@ -370,6 +373,7 @@ export class PartyScreen {
           ${this.onCast ? `<button data-party="cast">${this.casting ? 'Stop casting' : 'Cast to TV'}</button>` : ''}
           <button class="party-go hud-big" data-party="go"${this.seats.length ? '' : ' disabled'}>RACE!</button>
         </div>
+        <div class="party-cast-note">${CAST_NOTE}</div>
         </div>
       </div>`;
     if (html === this.lastHtml) return;
