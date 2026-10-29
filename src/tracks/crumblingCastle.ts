@@ -57,8 +57,7 @@ const WALL = 6;
  * round the end of the wing and down into the Dungeon, sunk 8 m, back under
  * both floors in the tower; up again onto the Lava Walk with no rails, a
  * leap over the lava and the Moat Road round the south wing to the
- * drawbridge. The Breach cuts across the garden once its wall has crumbled:
- * from the second lap.
+ * drawbridge. The Breach cuts across the garden where its wall has crumbled.
  */
 export function buildCrumblingCastle(): TrackDef {
   const b = new TrackBuilder(START, 'Drawbridge', { halfWidth: 11, surface: 'flagstone' });
@@ -204,8 +203,7 @@ function plunge(b: TrackBuilder, s0: number, y0: number, s1: number, y1: number)
 
 /**
  * The Breach: where the garden wall has fallen, a path over the rubble and
- * a plank across the fountain's moat, straight across the bends. The wall
- * is still standing on the first lap.
+ * a plank across the fountain's moat, straight across the bends.
  */
 function buildBreach(from: { s: number; pose: Pose }, to: { s: number; pose: Pose }) {
   const chord = Math.hypot(to.pose.x - from.pose.x, to.pose.z - from.pose.z);
