@@ -1,45 +1,83 @@
 import { TrackBuilder, offsetPose, type Pose } from './builder';
 import type { BranchDef, TrackDef } from './track';
 
-const K = 1.12;
-const START: Pose = { x: -70 * K, z: -165 * K, h: Math.PI / 2 };
+const K = 0.9;
+const START: Pose = { x: 50 * K, z: 290 * K, h: Math.PI / 2 };
+const wp = (x: number, z: number, h: number): Pose => ({ x: x * K, z: z * K, h });
+/**
+ * The breakers: across the middle of the map the lap is a trochoid, the
+ * curve the water in a deep-sea wave runs along, drawn long enough to loop,
+ * so the road curls right over itself as a breaker does: this far along the
+ * sea for each radian of the wave, this high and low, its middle here, the
+ * road running west along it.
+ */
+const ROLL = 40;
+const SWELL = 88;
+const SEA_X = 80;
+const SEA_Z = 160;
+/** Where the trough between the curls is, for the road home to cross it. */
+const TROUGH_X = SEA_X - ROLL * Math.PI;
+/** A point on the wave at angle `t`, heading along it. */
+function wave(t: number): Pose {
+  const dx = -(ROLL - SWELL * Math.cos(t));
+  const dz = -SWELL * Math.sin(t);
+  return { x: (SEA_X - (ROLL * t - SWELL * Math.sin(t))) * K, z: (SEA_Z + SWELL * Math.cos(t)) * K, h: Math.atan2(dx, dz) };
+}
+const WAVE_STEP = Math.PI / 8;
+/** Waypoints along each curl, trough to trough, and along the whole wave: two curls. */
+const CURL_STEPS = 16;
+const WAVE_STEPS = 32;
 const FINISH = 45;
 /** The Sea of Doubt: the breakwater swings out round a whirlpool in three arcs of this radius and turn. */
-const POOL_R = 34;
+const POOL_R = 42;
 const POOL_TURN = 70;
-/** The top of the trestle out over the sea stacks. */
+/** How high each breaker's curl climbs, the Sea Stack Trestle and then Spacesick Swells, by the time it comes back over itself. */
 const TRESTLE = 18;
+const CREST = 10;
+/** The deck the road home takes over the trough between the curls. */
+const DECK = 12;
+/** The wave angle either side of a curl's middle where the road crosses itself. */
+const CROSS_T = 2;
 /** How deep the Undertow Cave runs under the rock. */
 const CAVE_DEPTH = 6;
 
 /**
  * Sea of Doubt (the Phantom Island Cup's finale): a causeway over a black
- * sea at night in a gale. Waves break right across the Undertow Causeway
- * on a rhythm (two kickers between them), a wooden trestle climbs 18 m out
- * round the sea stacks and plunges back down, Spacesick Swells rolls like
- * the sea under it, a rail-less bridge runs out past Lighthouse Rock, the
- * road ducks 6 m down through the Undertow Cave and jumps the breakwater,
- * and the last bend swings round a whirlpool, which Riptide, a plank walk
- * with no rails, cuts straight across. Lightning strikes all the way round;
- * the gate is the ribs of a wreck.
+ * sea at night in a gale, and a lap the sea has hold of. Along the top, the
+ * Breakwater and the Undertow Causeway, waves breaking right across it on a
+ * rhythm (two kickers between them), then round and into the breakers:
+ * across the middle of the map the road runs along a wave, a trochoid, and
+ * curls right over itself twice as it goes. The Sea Stack Trestle climbs
+ * round the first curl on a deck and comes back over itself 18 m up, then
+ * plunges into the trough; Spacesick Swells rolls up round the second and
+ * over itself at 10 m. Down the far side, a rail-less bridge out past
+ * Lighthouse Rock, the Undertow Cave sunk 6 m and a jump over the
+ * breakwater, the last bend round a whirlpool, which Riptide, a plank walk
+ * with no rails, cuts straight across; and home Over the Breakers, a deck
+ * straight up across the sea and over the trough between the curls.
+ * Lightning strikes all the way round; the gate is the ribs of a wreck.
  */
 export function buildSeaOfDoubt(): TrackDef {
   const b = new TrackBuilder(START, 'Breakwater', { halfWidth: 11, surface: 'wet' });
   b.scale = K;
-  b.straight(140).arc(50, -90);
+  b.straight(105);
 
   // Waves break across the causeway between two kickers.
   b.section('Undertow Causeway', { halfWidth: 10, surface: 'wet' });
   b.mark('causeway');
-  b.straight(40).mark('kick1').kicker().straight(30).mark('kick2').kicker().straight(30);
+  b.straight(40).mark('kick1').kicker().straight(30).mark('kick2').kicker().straight(48);
+  b.mark('causewayEnd');
+  b.turnTo(wave(-Math.PI), 90);
 
-  // A trestle out round the sea stacks, climbing, then the plunge.
+  // The breakers: the road rolls along the sea as a wave does, and curls right over itself, twice.
   b.section('Sea Stack Trestle', { halfWidth: 9, wallHeight: 1.2, surface: 'boards', bridge: true });
-  b.mark('trestle');
-  b.arc(30, -90).straight(20).spiral(44, 24, 200).mark('stacks').spiral(24, 44, -200).mark('trestleTop').straight(50);
-  b.section('Spacesick Swells', { halfWidth: 9.5, surface: 'wet' });
+  b.mark('trestle').mark('w0');
+  for (let k = 1; k <= CURL_STEPS; k++) b.hermiteTo(wave(-Math.PI + k * WAVE_STEP)).mark(`w${k}`);
+  b.section('Spacesick Swells', { halfWidth: 9.5, wallHeight: 1.2, surface: 'wet', bridge: true });
   b.mark('swells');
-  b.arc(40, -90).straight(10).arc(32, -60).arc(32, 60);
+  for (let k = CURL_STEPS + 1; k <= WAVE_STEPS; k++) b.hermiteTo(wave(-Math.PI + k * WAVE_STEP)).mark(`w${k}`);
+  b.mark('swellsEnd');
+  b.arc(50, -90);
 
   // Out past the lighthouse on a bridge with no rails.
   b.section('Lighthouse Rock', { halfWidth: 8, surface: 'boards' });
@@ -51,9 +89,10 @@ export function buildSeaOfDoubt(): TrackDef {
   // Down through the cave and over the breakwater.
   b.section('Undertow Cave', { halfWidth: 9, wallHeight: 1.2, surface: 'rock' });
   b.mark('cave');
-  b.arc(36, 90).straight(10).mark('ramp').elevate(0).rise(18, 3);
+  b.straight(70).mark('ramp').elevate(0).rise(18, 3);
   b.gap(13, 30, 'water');
   b.elevate(0).straight(20);
+  b.arc(50, -90);
 
   b.section('Sea of Doubt', { halfWidth: 9.5, surface: 'wet' });
   b.mark('doubt');
@@ -61,22 +100,39 @@ export function buildSeaOfDoubt(): TrackDef {
   b.mark('ripFrom');
   b.arc(POOL_R, POOL_TURN).arc(POOL_R, -2 * POOL_TURN).arc(POOL_R, POOL_TURN);
   b.mark('ripTo');
-  b.turnTo(offsetPose(START, -FINISH * K), 38);
+  b.straight(5);
+  // Home over the breakers: up across the sea on a deck, over the trough between the curls.
+  b.turnTo(wp(TROUGH_X, -100, 0), 50);
+  b.section('Over the Breakers', { halfWidth: 10, wallHeight: 1.2, surface: 'boards', bridge: true });
+  b.mark('over');
+  b.straight(300);
+  b.mark('overEnd');
+  b.turnTo(offsetPose(START, -FINISH * K), 50);
   b.section('Finish Straight', { halfWidth: 11, surface: 'wet' });
   b.mark('finish');
   b.straight(FINISH);
 
-  // Heights, over the layout: the trestle and its plunge, the swells, the cave.
+  // Heights, over the layout: swells on the causeway, each breaker climbing round its curl and over itself and plunging off, the cave.
   const m = (name: string, d = 0) => b.marks[name].s + d * K;
   b.profile(30, m('causeway', -20), (u) => 2 * Math.sin(2 * Math.PI * u) ** 2);
-  ease(b, m('trestle'), 0, m('trestleTop'), TRESTLE);
-  plunge(b, m('trestleTop'), TRESTLE, m('trestleTop', 75), 0);
-  ease(b, m('swells', 10), 0, m('swells', 35), 5);
-  plunge(b, m('swells', 35), 5, m('swells', 60), 0);
-  b.profile(m('swells', 70), m('rock', -10), (u) => 3 * Math.sin(Math.PI * u) ** 2);
-  ease(b, m('cave', 10), 0, m('cave', 30), -CAVE_DEPTH);
+  /** Arc length at wave angle `t`, between the waypoints laid every WAVE_STEP. */
+  const sOf = (t: number) => {
+    const at = Math.min(WAVE_STEPS, Math.max(0, (t + Math.PI) / WAVE_STEP));
+    const k = Math.min(WAVE_STEPS - 1, Math.floor(at));
+    const f = at - k;
+    return m(`w${k}`) + (m(`w${k + 1}`) - m(`w${k}`)) * f;
+  };
+  for (const [mid, top] of [[0, TRESTLE], [2 * Math.PI, CREST]]) {
+    ease(b, sOf(mid - CROSS_T - 0.2), 0, sOf(mid + CROSS_T), top);
+    b.profile(sOf(mid + CROSS_T), sOf(mid + CROSS_T + 0.3), () => top, 10);
+    plunge(b, sOf(mid + CROSS_T + 0.3), top, sOf(mid + Math.PI - 0.15), 0);
+  }
+  ease(b, m('over', 10), 0, m('over', 100), DECK);
+  b.profile(m('over', 100), m('over', 200), () => DECK, 10);
+  plunge(b, m('over', 200), DECK, m('overEnd'), 0);
+  ease(b, m('cave', 5), 0, m('cave', 30), -CAVE_DEPTH);
   ease(b, m('cave', 30), -CAVE_DEPTH, m('ramp'), 0);
-  b.profile(m('ripTo', 40), m('finish', -10), (u) => 4 * Math.sin(Math.PI * u) ** 2);
+  b.profile(m('ripTo', 15), m('over'), (u) => 3 * Math.sin(Math.PI * u) ** 2);
 
   const main = b.finish(true);
   const rip = buildRiptide(b.marks.ripFrom, b.marks.ripTo);
@@ -89,10 +145,10 @@ export function buildSeaOfDoubt(): TrackDef {
     pits: [...b.pits, ...rip.pits],
     boostPads: [
       { s: 40, length: 8, lateral: 0, halfWidth: 2.5 },
-      { s: at('trestleTop', 4), length: 8, lateral: 0, halfWidth: 2.5 },
+      { s: at('w14', 0), length: 8, lateral: 0, halfWidth: 2.5 },
       { s: at('cave', 70), length: 8, lateral: 0, halfWidth: 2.5 },
     ],
-    checkpoints: ['causeway', 'trestle', 'swells', 'rock', 'cave', 'doubt'].map((k) => b.marks[k].s / main.length),
+    checkpoints: ['causeway', 'trestle', 'w8', 'swells', 'w24', 'rock', 'cave', 'doubt', 'over'].map((k) => b.marks[k].s / main.length),
     laps: 3,
     bounds: 440,
     landmarks: [
@@ -110,7 +166,7 @@ export function buildSeaOfDoubt(): TrackDef {
     ],
     hazards: [
       { kind: 'waves', at: [at('causeway', 25), at('causeway', 60), at('causeway', 118)], period: 3.4 },
-      { kind: 'lightning', at: [100, 130, at('swells', 20), at('swells', 90), at('doubt', 15)], period: 4.5 },
+      { kind: 'lightning', at: [at('causeway', -70), at('causeway', -35), at('swells', 20), at('swells', 90), at('doubt', 15)], period: 4.5 },
     ],
     theme: 'doubt',
     music: { lap: 'sea-of-doubt', finalLap: 'sea-of-doubt-final-lap' },

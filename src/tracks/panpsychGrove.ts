@@ -1,64 +1,77 @@
 import { TrackBuilder, offsetPose, type Pose } from './builder';
 import type { BranchDef, TrackDef } from './track';
 
-const K = 1.12;
-const START: Pose = { x: 150 * K, z: -52 * K, h: Math.PI };
+const K = 1;
+const START: Pose = { x: -60 * K, z: -255 * K, h: 0 };
 const FINISH = 45;
 /** Silent Spirit: the path winds out round a still pond in three arcs of this radius and turn. */
-const POND_R = 34;
+const POND_R = 40;
 const POND_TURN = 70;
 /** The Root Knot's radius, round the World Tree. */
-const KNOT_R = 26;
-/** The top of the Root Knot, high in the canopy. */
+const KNOT_R = 29;
+/** The top of the Root Knot, high in the canopy, and the root it runs out along. */
 const CANOPY = 14;
 /** How deep Lichen Hollow sinks below the forest floor. */
 const HOLLOW_DEPTH = 6;
 
 /**
- * Panpsych (the Phantom Island Cup's third): a forest older than
- * anyone where everything is awake, after the song that says so. A dirt
- * path through the Heartwood, standing stones shuffling across the road
- * at Humming Stones (two kickers among them), the Root Knot: three
- * quarters of a turn round the trunk of the World Tree on a deck of living
- * roots, climbing into the canopy and crossing over the road it came in
- * on, then a plunge off
- * its end, logs swinging on vines down in Lichen Hollow, sunk 6 m into the
- * floor, a jump over Mossy Ford, and the path winding round a still pond
- * at Silent Spirit, which the Hollow Log, a fallen trunk with nothing either
- * side, crosses straight over. The trees are watching.
+ * Panpsych (the Phantom Island Cup's third): a forest older than anyone
+ * where everything is awake, after the song that says so. The lap is a
+ * tree, drawn on the forest floor: up the trunk, round the crown, down the
+ * trunk again and out along its roots. A dirt path up the Heartwood, out
+ * into the crown and up one side of it past the Humming Stones, standing
+ * stones shuffling across the road (two kickers among them); over the top
+ * through Lichen Hollow, sunk 6 m, logs swinging on vines; a jump over
+ * Mossy Ford coming down the other side, and back into the trunk through
+ * the Old Growth. At the foot of the trunk the Root Knot winds three
+ * quarters of a turn round the World Tree on a deck of living roots,
+ * climbing into the canopy and over the road it came in on, and runs on
+ * out along a root 14 m up, back over the Heartwood Path, to the Canopy
+ * Drop off its end. Last, the path winds round a still pond at Silent
+ * Spirit, which the Hollow Log, a fallen trunk with nothing either side,
+ * crosses straight over. The trees are watching.
  */
 export function buildPanpsychGrove(): TrackDef {
   const b = new TrackBuilder(START, 'Heartwood Path', { halfWidth: 10.5, surface: 'rock' });
   b.scale = K;
-  b.straight(140).arc(50, 90);
+  b.straight(190);
 
-  // Stones awake and wandering, between two kickers.
+  // Out into the crown, and up one side of it: stones awake and wandering, between two kickers.
+  b.arc(60, -45).straight(80).arc(60, 45);
   b.section('Humming Stones', { halfWidth: 10, surface: 'rock' });
   b.mark('stones');
   b.straight(40).mark('kick1').kicker().straight(30).mark('kick2').kicker().straight(100);
+  b.arc(100, 90);
+
+  // Over the top of the crown, down in the hollow, logs swinging across on vines.
+  b.section('Lichen Hollow', { halfWidth: 9, surface: 'rock' });
+  b.mark('hollow');
+  b.straight(70);
+  b.mark('hollowEnd');
+  b.arc(100, 90);
+
+  b.section('Mossy Ford', { halfWidth: 9, wallHeight: 1.2, surface: 'rock' });
+  b.mark('ford');
+  b.straight(20).mark('ramp').elevate(0).rise(18, 3);
+  b.gap(13, 30, 'water');
+  b.elevate(0).straight(20);
+
+  // Back into the trunk, gnarled, and down it.
+  b.section('Old Growth', { halfWidth: 9.5, surface: 'rock' });
+  b.mark('growth');
+  b.arc(60, 45).straight(80).arc(60, -45);
+  b.straight(60).arc(80, -15).arc(80, 30).arc(80, -15).straight(110);
 
   // Round the World Tree on a deck of roots, up into the canopy and over the road you came in on.
   b.section('Root Knot', { halfWidth: 9, wallHeight: 1.2, surface: 'boards', bridge: true });
   b.mark('roots');
   b.arc(KNOT_R, -270);
   b.mark('rootTop');
-  b.straight(160);
+  // Out along a root, high over the Heartwood Path.
+  b.straight(150).arc(100, 15).arc(100, -30).arc(100, 15).straight(85);
   b.section('Canopy Drop', { halfWidth: 9.5, surface: 'rock' });
   b.mark('drop');
-  b.arc(40, 90).straight(10);
-
-  // Down in the hollow, logs swinging across on vines.
-  b.section('Lichen Hollow', { halfWidth: 9, surface: 'rock' });
-  b.mark('hollow');
-  b.arc(32, 60).arc(32, -60).straight(15);
-  b.mark('hollowEnd');
-  b.straight(5);
-
-  b.section('Mossy Ford', { halfWidth: 9, wallHeight: 1.2, surface: 'rock' });
-  b.mark('ford');
-  b.arc(36, -90).straight(10).mark('ramp').elevate(0).rise(18, 3);
-  b.gap(13, 30, 'water');
-  b.elevate(0).straight(20);
+  b.straight(50).arc(40, -90).straight(100).arc(40, -90);
 
   b.section('Silent Spirit', { halfWidth: 9.5, surface: 'rock' });
   b.mark('spirit');
@@ -71,15 +84,16 @@ export function buildPanpsychGrove(): TrackDef {
   b.mark('finish');
   b.straight(FINISH);
 
-  // Heights, over the layout: roots underfoot, the climb into the canopy and the drop, the hollow.
+  // Heights, over the layout: roots underfoot, the hollow, the climb into the canopy and the drop.
   const m = (name: string, d = 0) => b.marks[name].s + d * K;
-  b.profile(30, m('stones', -20), (u) => 2.5 * Math.sin(3 * Math.PI * u) ** 2);
+  b.profile(120 * K, 185 * K, (u) => 2.5 * Math.sin(2 * Math.PI * u) ** 2);
+  ease(b, m('hollow', 5), 0, m('hollow', 30), -HOLLOW_DEPTH);
+  b.profile(m('hollow', 30), m('hollowEnd', -10), () => -HOLLOW_DEPTH, 10);
+  ease(b, m('hollowEnd', -10), -HOLLOW_DEPTH, m('hollowEnd', 40), 0);
   ease(b, m('roots'), 0, m('rootTop'), CANOPY);
-  // Level over the road below, then off the end of the roots.
-  b.profile(m('rootTop'), m('rootTop', 40), () => CANOPY, 10);
-  plunge(b, m('rootTop', 40), CANOPY, m('rootTop', 95), 0);
-  ease(b, m('hollow', 5), 0, m('hollow', 40), -HOLLOW_DEPTH);
-  ease(b, m('hollow', 40), -HOLLOW_DEPTH, m('hollowEnd', 10), 0);
+  // Level over the road below and the Heartwood Path, then off the end of the roots.
+  b.profile(m('rootTop'), m('drop', -20), () => CANOPY, 10);
+  plunge(b, m('drop', -20), CANOPY, m('drop', 55), 0);
   b.profile(m('logTo', 40), m('finish', -10), (u) => 3 * Math.sin(Math.PI * u) ** 2);
 
   const main = b.finish(true);
@@ -96,7 +110,7 @@ export function buildPanpsychGrove(): TrackDef {
       { s: at('rootTop', 30), length: 8, lateral: 0, halfWidth: 2.5 },
       { s: at('ford', 70), length: 8, lateral: 0, halfWidth: 2.5 },
     ],
-    checkpoints: ['stones', 'roots', 'drop', 'hollow', 'ford', 'spirit'].map((k) => b.marks[k].s / main.length),
+    checkpoints: ['stones', 'hollow', 'ford', 'growth', 'roots', 'drop', 'spirit'].map((k) => b.marks[k].s / main.length),
     laps: 3,
     bounds: 440,
     landmarks: [
