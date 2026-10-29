@@ -85,7 +85,7 @@ describe('Silver Cord Cup', () => {
     expect(new Set(all).size).toBe(all.length);
   });
 
-  it("is laid out after its song: Theia's two orbits tangled in tiers, Set's tornado, Chang'e's lyre on the Moon, Gilgamesh's thirteen winds", () => {
+  it("is laid out after its song: Theia's two orbits tangled in tiers, Set's tornado, Chang'e's knot on the Moon, Gilgamesh's thirteen winds", () => {
     const section = (def: TrackDef, name: string) => def.main.sections.find((s) => s.name === name)!;
     const theia = buildTheia();
     for (const n of ['The Glowing Thread', 'Higher Divine', 'Force of Destiny', 'Ticking Clock', 'Spiritual Rebirth', 'Fate Intertwined', 'The Impact', 'The Snap', 'Dance with Theia', 'Meet Our Maker', 'Mortal Coil', "Theia's Void", 'Gravitational Waves', 'Astral Beach']) expect(section(theia, n), n).toBeTruthy();
@@ -133,6 +133,10 @@ describe('Silver Cord Cup', () => {
     const lyre = section(moon, 'Lyre of Lightning');
     expect('at' in strings && strings.at.length).toBe(5);
     for (const s of 'at' in strings ? strings.at : []) expect(s > lyre.from && s < lyre.to).toBe(true);
+    // A trefoil knot: it crosses itself three times, one road over the other each time.
+    const knot = crossings(new Track(moon));
+    expect(knot.length).toBe(3);
+    for (const dy of knot) expect(dy).toBeGreaterThan(6);
 
     const gil = buildGilgamesh();
     for (const n of ['Walls of Uruk', 'Fiery Temper', 'Shamash Combat', 'A Prayer from the Peaks', 'Glorious Photon', 'Bone-Dried Swamplands', 'The Scorpion Pass', 'Gemstone Trees', 'The Razorback', 'Thirteen Winds', 'Killed the Bull', 'Crossed the Sea', 'The Flood', 'Land of Bone', 'House of Dust']) expect(section(gil, n), n).toBeTruthy();
@@ -436,6 +440,24 @@ describe('hazards that help when you use them', () => {
   });
 });
 
+/** Where the main road crosses itself: for each crossing, the least height between the two roads there. */
+function crossings(track: Track): number[] {
+  const sp = track.spline;
+  const found: { i: number; j: number; dy: number }[] = [];
+  for (let i = 0; i < sp.count; i += 4) {
+    for (let j = i; j < sp.count; j += 4) {
+      const along = sp.dist[j] - sp.dist[i];
+      if (Math.min(along, sp.length - along) < 120) continue;
+      if (Math.hypot(sp.px[i] - sp.px[j], sp.pz[i] - sp.pz[j]) > 4) continue;
+      const dy = Math.abs(track.main.heightAt(sp.dist[i]) - track.main.heightAt(sp.dist[j]));
+      const near = found.find((c) => Math.abs(sp.dist[c.i] - sp.dist[i]) < 60 && Math.abs(sp.dist[c.j] - sp.dist[j]) < 60);
+      if (near) near.dy = Math.min(near.dy, dy);
+      else found.push({ i, j, dy });
+    }
+  }
+  return found.map((c) => c.dy);
+}
+
 /** A kart sitting on a hazard's line across the road, `lateral` metres to the right of the hazard's pose. */
 function aside(p: HazardPose, lateral: number): KartState {
   const k = kartAt(p);
@@ -448,7 +470,7 @@ function aside(p: HazardPose, lateral: number): KartState {
 const HEIGHTS: { name: string; build: () => TrackDef; top: number; bottom: number }[] = [
   { name: 'Theia', build: buildTheia, top: 9, bottom: -5 },
   { name: 'Set', build: buildSet, top: 13, bottom: -5 },
-  { name: "Chang'e", build: buildChangE, top: 9, bottom: -5 },
+  { name: "Chang'e", build: buildChangE, top: 9, bottom: -7 },
   { name: 'Gilgamesh', build: buildGilgamesh, top: 12, bottom: -5 },
 ];
 

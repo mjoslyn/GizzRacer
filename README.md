@@ -18,7 +18,7 @@ No install and no account. It will always be free. **[The manual](https://www.gi
   - **Omnium Gatherum Cup:** Magenta Mountain, Kepler-22b, The Garden Goblin, Predator X
   - **Ice, Death, Planets, Lungs, Mushrooms and Lava Cup:** Ice V, Magma, Iron Lung, Gliese 710
   - **PetroDragonic Apocalypse Cup:** Motor Spirit, Supercell, Dragon, Flamethrower
-  - **Silver Cord Cup:** the synth album, in album order: Theia, Set, Chang'e, Gilgamesh, Theia and Gilgamesh tangling over themselves on bridges in tiers
+  - **Silver Cord Cup:** the synth album, in album order: Theia, Set, Chang'e, Gilgamesh, Theia, Chang'e (a trefoil knot) and Gilgamesh tangling over themselves on bridges in tiers
   - **Phantom Island Cup:** Phantom Island, Deadstick, Panpsych, Sea of Doubt
 - **Roller-coaster tracks:** climbs onto pillared decks, plunges you fly off, canyons sunk into the ground, and a causeway that dives under the lagoon
 - **Launchers and gliders:** a glowing ramp on the lip of every track's big jump (and on a long straight where there's no jump) throws you high, and a trick off it opens your glider, so the leap is a glide you can steer. Up climbs (trading speed for height), down dives (picking speed up)
