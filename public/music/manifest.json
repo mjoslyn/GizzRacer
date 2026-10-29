@@ -761,5 +761,61 @@
     "bars": 32,
     "loopSamples": 2919724,
     "sampleRate": 44100
+  },
+  "elbow-remix": {
+    "title": "elbow (remix)",
+    "bpm": 96,
+    "bars": 32,
+    "loopSamples": 3528000,
+    "sampleRate": 44100
+  },
+  "elbow-remix-final-lap": {
+    "title": "elbow (remix, final lap)",
+    "bpm": 104,
+    "bars": 32,
+    "loopSamples": 3256615,
+    "sampleRate": 44100
+  },
+  "muckraker-remix": {
+    "title": "muckraker (remix)",
+    "bpm": 129,
+    "bars": 32,
+    "loopSamples": 2625488,
+    "sampleRate": 44100
+  },
+  "muckraker-remix-final-lap": {
+    "title": "muckraker (remix, final lap)",
+    "bpm": 137,
+    "bars": 32,
+    "loopSamples": 2472175,
+    "sampleRate": 44100
+  },
+  "cut-throat-boogie-remix": {
+    "title": "cut throat boogie (remix)",
+    "bpm": 96,
+    "bars": 32,
+    "loopSamples": 3528000,
+    "sampleRate": 44100
+  },
+  "cut-throat-boogie-remix-final-lap": {
+    "title": "cut throat boogie (remix, final lap)",
+    "bpm": 104,
+    "bars": 32,
+    "loopSamples": 3256615,
+    "sampleRate": 44100
+  },
+  "sea-of-trees-remix": {
+    "title": "sea of trees (remix)",
+    "bpm": 123,
+    "bars": 32,
+    "loopSamples": 2753561,
+    "sampleRate": 44100
+  },
+  "sea-of-trees-remix-final-lap": {
+    "title": "sea of trees (remix, final lap)",
+    "bpm": 131,
+    "bars": 32,
+    "loopSamples": 2585405,
+    "sampleRate": 44100
   }
 }

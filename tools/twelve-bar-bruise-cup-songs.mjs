@@ -161,14 +161,15 @@ const ELBOW = {
 // bass on B1-A1-G#1-F#1-E1 (measured bar for bar at 16-23 s, and the tab's).
 // The intro rocks E-F# under a high riff on D#-B-C#-B; the verse is B for a
 // bar and E-F#-E-F# for a bar; the bridge holds B, E, B, then F# | E | A | B
-// ("Muckraker, oh muckraker"). Section map:
+// ("Muckraker, oh muckraker"). Most of the song sits on B, A and A# leaning
+// on it (the bass under the bridge goes B-A-A#-A-G). Section map:
 //   intro    1.7-14 s    E | F# under the high riff
 //   main    16.0-30 s    the main riff ("ooh"), the theremin on the chords
 //   verse   30.8-45 s    B | E F# E F#
 //   chorus  45.5-60 s    the main riff, "oh no, oh no"
 //   bridge  73.1-88 s    B | B | E | B, "aah"
 //   name    88.2-103 s   F# E | A B, "muckraker, oh muckraker"
-// then the main riff twice more as the payoff, ending on B.
+// then the verse again and the main riff as the payoff, ending on B.
 // Lap 129 bpm, final lap 137. A pick bass, the riff on a jangling garage
 // guitar, the theremin on a whistling Moog lead (ladder) with a slow
 // vibrato, voices for the chants, chip arp and chip lead; salamander drums.
@@ -188,8 +189,9 @@ const MUCK_T = {
     bass: { s: 'x.x.x.x.x.x.x.x. x.x.x.x.x.x.x.x.', n: each('B1', 8) + ' E1 E1 F#1 F#1 E1 E1 F#1 F#1' },
     gtr: power('X..x..x.X..x..x. X...X...X...X...', 'B2 B2 B2 B2 B2 B2 E2 F#2 E2 F#2'),
     lead: { s: '..x.x.x.x.x.X___ ..x.x.x.x.x.X___', n: 'F#4 F#4 F#4 E4 D#4 B3 B3 D#4 E4 D#4 C#4 B3' } },
-  bridge: { bars: 4, chords: ['B', 'B', 'E', 'B'], tones: ['B D# F#', 'B F# A', 'E G# B', 'B D# F#'],
-    bass: { s: rep('x.x.x.x.', 8), n: each('B1', 16) + ' ' + each('E2', 8) + ' ' + each('B1', 8) },
+  bridge: { bars: 4, chords: ['B', 'B', 'E', 'B'], tones: ['B A A#', 'B A A#', 'E G# B', 'B A A#'],
+    // The B vamp's bass, measured at 80-90 s: B, down to A, A#, A, and G before the next B.
+    bass: { s: rep('x___xxx____x___x', 4), n: 'B1 A1 A#1 A1 G1 A1 B1 A1 A#1 A1 G1 A1 E2 D2 D#2 D2 C2 D2 B1 A1 A#1 A1 G1 A1' },
     gtr: power(rep('X_______________', 4), 'B2 B2 E2 B2'),
     lead: { s: rep('X___x_X___x_x_x_', 4), n: 'F#4 E4 D#4 E4 D#4 C#4 B3' } },
   name: { bars: 2, chords: ['F#', 'A'], tones: ['F# A# C#', 'A B D#'],
@@ -222,8 +224,8 @@ const MUCKRAKER = {
     half: (final) => ({ kick: 'X.......X.......', snare: final ? '....X.......X...' : '........X.......', hat: 'x...x...x...x...' }),
   },
   fill: { kick: 'X.......X.......', snare: '....X...x.x.rrRR', hat: 'x.x.x.x.........', 'tom hi': '........x.......', 'tom lo': '..........x.....' },
-  order: ['intro', 'main', 'verse', 'chorus', 'bridge', 'name', 'main2', 'outro'],
-  finalOrder: ['chorus', 'verse', 'main2', 'bridge', 'name', 'chorus2', 'intro', 'main'],
+  order: ['intro', 'main', 'verse', 'chorus', 'bridge', 'name', 'verse2', 'outro'],
+  finalOrder: ['chorus', 'verse', 'bridge', 'main2', 'name', 'chorus2', 'verse2', 'main'],
   sections(final) {
     const T = MUCK_T;
     const s = (k, o = {}) => section(this, { name: k, ...T[k] }, { final, ...o });
@@ -236,6 +238,7 @@ const MUCKRAKER = {
       main: s('main', { use: { guitar: T.main.gtr } }),
       main2: s('main', { use: { guitar: T.main.gtr }, extra: { 'chip lead': oct(tile4(this, T.intro, 'riff'), 1) } }),
       verse: s('verse', { use: { guitar: T.verse.gtr } }),
+      verse2: s('verse', { use: { guitar: T.verse.gtr }, extra: { 'chip lead': oct(tile4(this, T.verse, 'lead'), 1) } }),
       chorus: s('main', { use: { guitar: T.main.gtr, lead: null }, extra: { vox: ohNo, ...(final ? { 'chip lead': oct(tile4(this, T.intro, 'riff'), 1) } : {}) } }),
       chorus2: s('main', { use: { guitar: T.main.gtr, lead: null }, extra: { vox: ohNo, 'chip lead': oct(tile4(this, T.intro, 'riff'), 1) } }),
       bridge: s('bridge', { drums: 'half', use: { guitar: T.bridge.gtr }, extra: { aah } }),
@@ -251,17 +254,15 @@ const MUCKRAKER = {
 // Measured (Live in Barcelona '25, the soundboard, 533 s): beats of 0.627 s
 // with the kick on every eighth inside them, a boogie at 192 in cut time;
 // written here as 96 bpm in sixteenths, like Elbow. Key: A, a one-chord
-// boogie (A7, the C natural against the C#: the blues), the IV on D, a turn
-// on B7 to D7, and at the end the chromatic slide from A# down onto A. The
-// bass holds A2 with G#2 and A#2 either side of it and walks D2-F#2-G2-G#2
-// up into the A (measured at 37-53 s); the guitar rocks E3-A3 and E3-C4 on
+// boogie (A7, the C natural against the C#: the blues), the IV on D, and at
+// the end the chromatic slide from A# down onto A. The bass holds A2 with
+// G#2 and A#2 either side of it and walks D2-F#2-G2-G#2 up into the A (measured at 37-53 s); the guitar rocks E3-A3 and E3-C4 on
 // the eighths and turns round on G3-F#3-F3-E3 (40 s); the harmonica plays
 // round C#5, D#5 and E5 (measured on the top line through the set). It was
 // mixed in dual mono: one section here splits the guitar hard left and the
 // harmonica hard right. Section map:
 //   boogie  15.0-40 s    the A boogie, the bass walking up into it
 //   four    52.8-58 s    D: the bass on D2, the riff A3-D4 and A3-F4
-//   turn   124.1-129 s   B7 | D7
 //   jam    240.0-270 s   the quiet A7 stretch, the harmonica on its own
 //   end    494.0-509 s   A# | A, the slide down
 // Lap 96 bpm, final lap 104. A Motown bass, the riff on a blues burn
@@ -278,10 +279,6 @@ const BOOGIE_T = {
     bass: { s: 'x.x.x.x.x.x.x.x. x.x.x.x.x.x.x.x.', n: 'D2 D3 D2 D3 D2 D3 D2 D3 A1 A2 A1 A2 A1 B1 C2 C#2' },
     riff: { s: 'x.x.x.x.x.x.x.x. x.x.x.x.x.x.x.x.', n: 'A3 D4 A3 F4 A3 D4 A3 F4 E3 A3 E3 C4 E3 A3 E3 C4' },
     lead: { s: 'x___x.x.x___x.x. x_x.x_..x.x.x___', n: 'F5 D5 C5 A4 C5 A4 D#5 E5 C#5 A4 C5 A4' } },
-  turn: { bars: 2, chords: ['B7', 'D7'], tones: ['B D# F#', 'D F# C'],
-    bass: { s: 'x.x.x.x.x.x.x.x. x.x.x.x.x.x.x.x.', n: 'B1 B2 B1 B2 B1 B2 B1 B2 D2 D3 D2 D3 D2 E2 F#2 G#2' },
-    riff: { s: 'x.x.x.x.x.x.x.x. x.x.x.x.x.x.x.x.', n: 'F#3 B3 F#3 D4 F#3 B3 F#3 D4 A3 D4 A3 F4 A3 D4 A3 F4' },
-    lead: { s: 'x_x_x_x_x.x.x___ x.x.x.x.x_x_x___', n: 'D#5 F#5 D#5 B4 D#5 B4 A4 C5 D5 C5 A4 F#4 A4 C5' } },
   end: { bars: 2, chords: ['A#7', 'A7'], tones: ['A# D F', 'A C# E'],
     bass: { s: 'x.x.x.x.x.x.x.x. x.x.x.x.x.x.x.x.', n: each('A#1 A#2', 4) + ' A1 A2 A1 A2 A1 A2 G2 G#2' },
     riff: { s: 'x.x.x.x.x.x.x.x. x.x.x.x.x.x.x.x.', n: 'F3 A#3 F3 C#4 F3 A#3 F3 C#4 E3 A3 E3 C4 E3 A3 E3 C4' },
@@ -289,7 +286,7 @@ const BOOGIE_T = {
 };
 
 const BOOGIE = {
-  meter: '4/4', spb: 16, rot: 0, bpm: 96, finalPlus: 8, mix: 0.68,
+  meter: '4/4', spb: 16, rot: 0, bpm: 96, finalPlus: 8, mix: 1,
   tracks: [
     ...kit('salamander', { pieces: ['kick', 'snare', 'hihat', 'openhat', 'crash', 'tom1', 'tom2', 'ride'] }),
     { name: 'bass', engine: 'dm:bass', preset: 'motown', params: { vol: 0.85 }, comp: { source: 'kick', threshold: -28, ratio: 4, release: 0.12 } },
@@ -312,8 +309,8 @@ const BOOGIE = {
     half: (final) => ({ kick: 'X.......X.......', snare: final ? '....X.......X...' : '........X.......', ride: 'x...x...x...x...' }),
   },
   fill: { kick: 'X.x.X.x.........', snare: '..X...X.x.x.rrRR', hat: 'x.x.x.x.........', ride: '', 'tom hi': '........x.......', 'tom lo': '..........x.....' },
-  order: ['boogie', 'boogie2', 'four', 'boogie3', 'turn', 'mono', 'jam', 'end'],
-  finalOrder: ['boogie2', 'four', 'turn', 'mono', 'boogie3', 'four2', 'jam', 'end'],
+  order: ['boogie', 'boogie2', 'four', 'boogie3', 'mono', 'four2', 'jam', 'end'],
+  finalOrder: ['boogie2', 'four', 'boogie3', 'mono', 'four2', 'boogie', 'jam', 'end'],
   sections(final) {
     const T = BOOGIE_T;
     const s = (k, o = {}) => section(this, { name: k, ...T[k] }, { final, ...o });
@@ -324,7 +321,6 @@ const BOOGIE = {
       boogie3: s('boogie', { drums: 'ride', extra: { 'chip lead': oct(tile4(this, T.boogie, 'riff'), 1) } }),
       four: s('four'),
       four2: s('four', { drums: 'ride', extra: { 'chip lead': oct(tile4(this, T.four, 'riff'), 1) } }),
-      turn: s('turn', { drums: 'ride' }),
       mono: s('boogie', { use: { guitar: null, lead: null }, extra: { 'guitar L': tile4(this, T.boogie, 'riff'), 'harp R': harpUp('boogie') } }),
       jam: s('boogie', { drums: 'half', use: { guitar: null } }),
       end: s('end', { extra: { 'chip lead': oct(tile4(this, T.end, 'riff'), 1) } }),

@@ -98,6 +98,10 @@ export const TRANSCRIBED: Record<string, { recording: string; release: string }>
   'im-not-in-your-mind': { recording: "I'm Not in Your Mind", release: "Live at The Caverns '23" },
   cellophane: { recording: 'Cellophane', release: "Live at The Caverns '23" },
   'im-in-your-mind-fuzz': { recording: "I'm in Your Mind Fuzz", release: "Live at The Caverns '23" },
+  elbow: { recording: 'Elbow', release: "Live at Red Rocks '24" },
+  muckraker: { recording: 'Muckraker', release: "Live from Studio 5 at PBS 106.7FM '13" },
+  'cut-throat-boogie': { recording: 'Cut Throat Boogie', release: "Live in Barcelona '25, the soundboard mix" },
+  'sea-of-trees': { recording: 'Sea of Trees', release: "Live At Red Rocks '22" },
 };
 
 const FINAL = '-final-lap';

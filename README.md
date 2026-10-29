@@ -84,7 +84,7 @@ On phones, turn the phone sideways. On iPhone, use Share, then Add to Home Scree
 ## Credits
 
 - GizzRacer is an unofficial fan game, made with love for King Gizzard & the Lizard Wizard and their fans
-- The music is written and remixed in [seqbaby](https://playseqbaby.com). The Polygondwanaland Cup, Polygondwanaland, Omnium Gatherum Cup, Phantom Island Cup, Nonagon Infinity Cup and title remixes are transcribed from the band's own recordings (Polygondwanaland and their live bootlegs), which King Gizzard & the Lizard Wizard released for anyone to use
+- The music is written and remixed in [seqbaby](https://playseqbaby.com). The Polygondwanaland Cup, Polygondwanaland, Omnium Gatherum Cup, Phantom Island Cup, Nonagon Infinity Cup, 12 Bar Bruise Cup and title remixes are transcribed from the band's own recordings (Polygondwanaland and their live bootlegs), which King Gizzard & the Lizard Wizard released for anyone to use
 - Lettering in Metal Mania by Open Window (SIL Open Font License, `public/fonts/OFL.txt`)
 - Built with [Three.js](https://threejs.org). Online play runs on [PartyKit](https://www.partykit.io) and Cloudflare.
 
