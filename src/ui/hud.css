@@ -3836,6 +3836,9 @@ body:not(.split) .seat-hud {
   overflow: hidden;
   align-items: flex-end;
   background: linear-gradient(180deg, #4a1a5a, #22082e);
+  /* Its own layer, so a phone scrolling the grid repaints the shot and its name together. */
+  isolation: isolate;
+  transform: translateZ(0);
 }
 
 .menu .menu-shots .menu-tile > img,
@@ -3875,10 +3878,14 @@ body:not(.split) .seat-hud {
 }
 
 .menu .menu-shots .menu-tile > span:not(.menu-tile-mosaic):not(.menu-tile-icon) {
-  position: relative;
-  width: 100%;
-  padding: 2px 3px;
-  font-size: 11px;
+  /* The name pinned along the foot, over the shot. */
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  padding: 3px 4px;
+  font-size: 15px;
   line-height: 1.15;
   background: rgba(20, 0, 30, 0.78);
   text-shadow: 1px 1px 0 #3a0f45;
@@ -3914,9 +3921,12 @@ body.coarse .menu[data-screen='racer'] {
     min-height: 36px;
     font-size: 13px;
   }
-  .menu-racers,
-  .menu-tracks {
+  .menu-racers {
     grid-template-columns: repeat(3, 1fr);
+  }
+  /* The tracks two to a line, so each shot is big enough to tell apart. */
+  .menu-tracks {
+    grid-template-columns: repeat(2, 1fr);
   }
   .menu .menu-racers .menu-tile {
     aspect-ratio: 3 / 2;
@@ -3930,7 +3940,10 @@ body.coarse .menu[data-screen='racer'] {
     height: 26px;
   }
   .menu .menu-shots .menu-tile > span:not(.menu-tile-mosaic):not(.menu-tile-icon) {
-    font-size: 10px;
+    font-size: 12px;
+  }
+  .menu .menu-tracks .menu-tile > span:not(.menu-tile-mosaic):not(.menu-tile-icon) {
+    font-size: 16px;
   }
 }
 
