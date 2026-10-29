@@ -55,6 +55,7 @@ export const TRACK_REVISIONS: Record<string, number> = {
   'panpsych-grove': 1,
   'sea-of-doubt': 1,
   'crumbling-castle': 1,
+  'volcano-fortress': 1,
 };
 
 /** A track's id for its records: with its revision, once it has one. */
