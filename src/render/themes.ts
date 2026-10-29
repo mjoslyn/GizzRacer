@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import * as tex from './textures';
 import { DESERT_SKY, type SkyColors } from './textures';
 
-export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism' | 'factory' | 'gamma' | 'carrion' | 'wah' | 'smog' | 'dome' | 'solar' | 'inferno' | 'mind' | 'notmind' | 'cellophane' | 'mindfuzz' | 'elbow' | 'muck' | 'boogie' | 'treesea';
-export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy';
+export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism' | 'factory' | 'gamma' | 'carrion' | 'wah' | 'smog' | 'dome' | 'solar' | 'inferno' | 'mind' | 'notmind' | 'cellophane' | 'mindfuzz' | 'elbow' | 'muck' | 'boogie' | 'treesea' | 'theia' | 'set' | 'change' | 'uruk';
+export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy' | 'hadean' | 'deshret' | 'moonpalace' | 'uruk';
 
 /** Everything that makes a track's world look like itself. */
 export interface Theme {
@@ -782,5 +782,81 @@ export const THEMES: Record<ThemeId, Theme> = {
     skyCycle: false,
     dust: 0x4a6a34,
     barrier: { map: tex.lavaRockTexture, crawl: false },
+  },
+  // Theia: the young Earth, a black crust over the magma ocean, under a vast and honeyed sky, the planet Theia coming on to hit it.
+  theia: {
+    sky: { zenith: '#0a0604', high: '#2a1406', low: '#9a5418', horizon: '#ffc860', below: '#6a2a10', ground: '#140a08', cloud: '255,190,110', clouds: 16, stars: { count: 200, color: '#fff0d0' } },
+    fog: { color: 0x5a3018, near: 140, far: 760 },
+    hemi: { sky: 0xffc880, ground: 0x2a0c06, intensity: 1.4 },
+    sun: { color: 0xffd8a0, intensity: 1.9 },
+    ground: tex.hadeanTexture,
+    groundTile: 24,
+    // Walls are glassy black crust, magma in the seams.
+    cliff: tex.crustWallTexture,
+    decor: 'hadean',
+    distant: { shape: 'volcano', color: 0x1a0c08 },
+    haze: 0.6,
+    duotone: [0x0a0400, 0xd06018, 0xfff0c0],
+    skyCycle: false,
+    dust: 0x6a5048,
+    barrier: { map: tex.crustWallTexture, crawl: false },
+    roadGlow: 0.2,
+    edgeLine: 0xe8f0ff,
+  },
+  // Set: the red land at the edge of day and night, the sun going down gold on one side and the moon up on the other.
+  set: {
+    sky: { zenith: '#0a0a34', high: '#262a78', low: '#c86a3a', horizon: '#ffd070', below: '#c06030', ground: '#6a2a14', cloud: '255,200,150', clouds: 12, stars: { count: 140, color: '#f0f0ff' }, moon: '#f4f4ff' },
+    fog: { color: 0xc07850, near: 160, far: 860 },
+    hemi: { sky: 0xffd0a0, ground: 0x8a3a1a, intensity: 1.5 },
+    sun: { color: 0xffd890, intensity: 2.3 },
+    ground: tex.redSandTexture,
+    groundTile: 20,
+    // Walls are a temple's, blocks of sandstone with a painted frieze.
+    cliff: tex.templeWallTexture,
+    decor: 'deshret',
+    distant: { shape: 'mesa', color: 0x5a2414 },
+    haze: 0.8,
+    duotone: [0x0a0420, 0xd05a20, 0xffe890],
+    skyCycle: false,
+    dust: 0xd08050,
+    barrier: { map: tex.templeWallTexture, crawl: false },
+  },
+  // Chang'e: the Moon, her palace amongst the stars, the white rabbit beside her, osmanthus in gold flower, lanterns floating in the bright night.
+  change: {
+    sky: { zenith: '#020208', high: '#070722', low: '#16163a', horizon: '#3a3a70', below: '#5a5a72', ground: '#8a8a96', cloud: '200,210,255', clouds: 6, stars: { count: 520, color: '#ffffff' } },
+    fog: { color: 0x1a1a34, near: 180, far: 900 },
+    hemi: { sky: 0xd8e0ff, ground: 0x4a4a5a, intensity: 1.5 },
+    sun: { color: 0xf0f4ff, intensity: 2.0 },
+    ground: tex.moonDustTexture,
+    groundTile: 26,
+    // Walls are white marble carved with clouds over a red lacquer band.
+    cliff: tex.cloudMarbleTexture,
+    decor: 'moonpalace',
+    distant: { shape: 'hill', color: 0x5a5a6a },
+    haze: 0.1,
+    duotone: [0x04041a, 0x30b080, 0xfff4d0],
+    skyCycle: false,
+    dust: 0xc8c8d0,
+    barrier: { map: tex.cloudMarbleTexture, crawl: false },
+    roadGlow: 0.15,
+  },
+  // Gilgamesh: Uruk and the road out of it, under heavens turned to darkness, the downpour coming: dry swamp, scorpions at the mountain, trees of gemstones.
+  uruk: {
+    sky: { zenith: '#16161e', high: '#2a2834', low: '#5a5058', horizon: '#c09468', below: '#806a50', ground: '#5a4a3a', cloud: '90,86,96', clouds: 52 },
+    fog: { color: 0x6a6058, near: 120, far: 680 },
+    hemi: { sky: 0xd8c8b0, ground: 0x4a3a2a, intensity: 1.4 },
+    sun: { color: 0xffe0b0, intensity: 1.7 },
+    ground: tex.drySwampTexture,
+    groundTile: 24,
+    // Walls are blue glazed brick, lions striding along them.
+    cliff: tex.glazedBrickTexture,
+    decor: 'uruk',
+    distant: { shape: 'mountain', color: 0x3a3440 },
+    haze: 0.3,
+    duotone: [0x0a0814, 0x2a60b0, 0xffd890],
+    skyCycle: false,
+    dust: 0xa89478,
+    barrier: { map: tex.glazedBrickTexture, crawl: false },
+    storm: true,
   },
 };

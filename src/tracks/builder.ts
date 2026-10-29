@@ -55,7 +55,15 @@ export type RoadSurface =
   /** Cut Throat Boogie's road: a dance floor of lit squares. */
   | 'dancefloor'
   /** Sea of Trees' road: moss over old lava rock, roots across it. */
-  | 'moss';
+  | 'moss'
+  /** Theia's road: the silver cord, strands of silver braided and glowing. */
+  | 'silver'
+  /** Set's road: sandstone slabs carved with hieroglyphs. */
+  | 'hieroglyph'
+  /** Chang'e's road: polished jade, inlaid with gold. */
+  | 'jade'
+  /** Gilgamesh's road: Uruk's baked brick, stamped with cuneiform. */
+  | 'mudbrick';
 
 /**
  * Every road is built this much wider than its section says: the layouts

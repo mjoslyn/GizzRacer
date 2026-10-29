@@ -53,6 +53,10 @@ export const GEN_THEME_NAMES: Record<GenTheme, string> = {
   muck: 'Muckraker',
   boogie: 'Cut Throat Boogie',
   treesea: 'Sea of Trees',
+  theia: 'Theia',
+  set: 'Set',
+  change: "Chang'e",
+  uruk: 'Gilgamesh',
 };
 export type GenLength = 'short' | 'medium' | 'long';
 export const GEN_LENGTHS: readonly GenLength[] = ['short', 'medium', 'long'];
@@ -582,6 +586,52 @@ const PALETTES: Record<GenTheme, Palette> = {
     tallWalls: 6,
     places: ['Canopy', 'Moss', 'Lava Tube', 'Swell', 'Root', 'Hollow', 'Jam', 'Tree Line', 'Underwater'],
     music: { lap: 'sea-of-trees', finalLap: 'sea-of-trees-final-lap' },
+  },
+  theia: {
+    surface: 'silver',
+    deck: 'silver',
+    alt: 'brimstone',
+    liquid: 'lava',
+    hazards: ['cords'],
+    start: 'cordGate',
+    landmarks: ['cordGate'],
+    tallWalls: 6,
+    places: ['Theia', 'Silver Cord', 'Impact', 'Snap', 'Maker', 'Mortal Coil', 'Honeyed Sky', 'Astral Beach', 'Cosmic Foam'],
+    music: { lap: 'theia', finalLap: 'theia-final-lap' },
+  },
+  set: {
+    surface: 'hieroglyph',
+    deck: 'hieroglyph',
+    alt: 'sand',
+    hazards: ['sunMoon'],
+    start: 'setGate',
+    landmarks: ['setGate'],
+    tallWalls: 6,
+    places: ['Jackal', 'Snake', 'Tornado', 'Tomb', 'Duality', 'Sandstorm', 'Moonbeam', 'Hieroglyph', 'Reset'],
+    music: { lap: 'set', finalLap: 'set-final-lap' },
+  },
+  change: {
+    surface: 'jade',
+    deck: 'jade',
+    alt: 'regolith',
+    hazards: ['strings'],
+    start: 'jadePortal',
+    landmarks: ['jadePortal'],
+    tallWalls: 6,
+    places: ['Jade', 'Moon-Sea', 'Lyre', 'White Rabbit', 'Elixir', 'Moonbeam', 'Palace', 'Bright Night', 'Ten Suns'],
+    music: { lap: 'change', finalLap: 'change-final-lap' },
+  },
+  uruk: {
+    surface: 'mudbrick',
+    deck: 'mudbrick',
+    alt: 'sand',
+    liquid: 'water',
+    hazards: ['serpents'],
+    start: 'urukGate',
+    landmarks: ['urukGate'],
+    tallWalls: 6,
+    places: ['Uruk', 'Shamash', 'Scorpion', 'Cedar', 'Flood', 'Razorback', 'Bull', 'Thirteen Winds', 'House of Dust'],
+    music: { lap: 'gilgamesh', finalLap: 'gilgamesh-final-lap' },
   },
 };
 
@@ -1313,6 +1363,15 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
         break;
       case 'timber':
         hazards.push({ kind, at: at(count - 1), period: 5 });
+        break;
+      case 'cords':
+      case 'sunMoon':
+      case 'serpents':
+        hazards.push({ kind, at: at(count - 1), period: 4.4 });
+        break;
+      case 'strings':
+        // A run of strings down the stretch, plucked one after another.
+        hazards.push({ kind, at: at(count + 2), period: 4.4 });
         break;
       case 'vines':
         hazards.push({ kind, at: at(count), period: 3.6 });

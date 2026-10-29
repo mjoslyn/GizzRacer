@@ -88,12 +88,22 @@ function cleanTitle(title) {
     .trim();
 }
 
+/**
+ * Songs whose name only differs from another of the band's by its
+ * apostrophe: Chang'e (The Silver Cord) is not Change (Changes), so a file
+ * is only Chang'e when its title says so.
+ */
+const APOSTROPHE = new Set(["Chang'e"]);
+
 /** The song titles a track is: a medley ("Robot Stop / Big Fig Wasp") is each of them. */
 function songsIn(title) {
   return cleanTitle(title)
     .replace(/\s*-?>+\s*$/, '')
     .split(/\s*(?:\/|->|>|\+)\s*/)
-    .map((s) => WANT.get(norm(s)))
+    .map((s) => {
+      const song = WANT.get(norm(s));
+      return song && APOSTROPHE.has(song) && !/['’]/.test(s) ? undefined : song;
+    })
     .filter(Boolean);
 }
 

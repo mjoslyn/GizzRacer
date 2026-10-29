@@ -1997,6 +1997,10 @@ const HIT_TEXT: Record<ItemKind | HazardKind, string> = {
   rakes: 'MUCKED!',
   razors: 'CUT!',
   timber: 'TIMBER!',
+  cords: 'SNAPPED!',
+  sunMoon: 'SCORCHED!',
+  strings: '2500 VOLTS!',
+  serpents: 'BITTEN!',
 };
 
 /** What a hazard used well says: the ones that can help. */
@@ -2048,6 +2052,10 @@ const BONUS_TEXT: Record<HazardKind, string> = {
   rakes: 'RAKED CLEAN!',
   razors: 'INCHES!',
   timber: 'OVER THE TOP!',
+  cords: 'SLINGSHOT!',
+  sunMoon: 'MOONBEAM!',
+  strings: 'ON WINGS OF SONG!',
+  serpents: 'IMMORTAL!',
 };
 
 /** Takes a group out of the scene and frees what it built. */

@@ -496,6 +496,14 @@ export class Sfx {
       this.hit(0.2, 1400, 0.4);
       this.whoosh(0.7, 900, 150, 0.3);
     }
+    // A cord snaps with a twang; the sun scorches with a roar; a lightning string cracks; a snake hisses.
+    if (by === 'cords') this.tone(880, 0.3, 'triangle', 0.08, 220);
+    if (by === 'sunMoon') this.whoosh(0.5, 700, 200, 0.3);
+    if (by === 'strings') {
+      this.hit(0.1, 3000, 0.4);
+      this.tone(2500, 0.2, 'square', 0.05, 1200);
+    }
+    if (by === 'serpents') this.whoosh(0.4, 5200, 3800, 0.2);
     // A wave breaking over you: a crash of white noise; a glider comes in with a whistle of wind.
     if (by === 'waves') this.whoosh(0.8, 2400, 300, 0.35);
     if (by === 'gliders') this.whoosh(0.5, 1800, 500, 0.2);

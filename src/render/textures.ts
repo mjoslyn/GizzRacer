@@ -2874,3 +2874,283 @@ export function lavaRockTexture(): THREE.CanvasTexture {
   });
   return finish(c);
 }
+
+// The Silver Cord Cup's worlds.
+
+/** Theia's road: the silver cord, strands of silver braided along the road, glowing where they cross. */
+export function silverCordTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 3, 1701);
+  paint(ctx, S, S, (x, y, i) => {
+    // Three strands twisting along the road (y), each a sine across it.
+    let lit = 0;
+    for (let k = 0; k < 3; k++) {
+      const centre = S / 2 + Math.sin((y / S) * Math.PI * 4 + (k * Math.PI * 2) / 3) * S * 0.36;
+      const d = Math.abs(x - centre);
+      lit = Math.max(lit, Math.max(0, 1 - d / 26));
+    }
+    const base = mix([120, 126, 140], [176, 182, 196], n[i]);
+    // Fine fibres along each strand.
+    const fibre = 0.9 + 0.1 * Math.sin(x * 1.7 + y * 0.4);
+    return shade(mix(base, [236, 242, 255], lit * 0.85), fibre);
+  });
+  return finish(c);
+}
+
+/** The young Earth round Theia: a black crust cooling over the magma ocean, glowing through every crack. */
+export function hadeanTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 6, 5, 1711);
+  const melt = fbm(S, 3, 4, 1712);
+  paint(ctx, S, S, (_x, _y, i) => {
+    if (melt[i] > 0.68) return mix([255, 120, 20], [255, 210, 90], Math.min(1, (melt[i] - 0.68) * 5));
+    if (melt[i] > 0.62) return mix([120, 30, 10], [220, 70, 10], (melt[i] - 0.62) * 16);
+    return mix([20, 18, 22], [56, 50, 54], n[i]);
+  });
+  cracks(ctx, S, 26, 'rgba(255,110,30,0.85)', 2, 1713);
+  return finish(c);
+}
+
+/** Theia's walls: glassy black crust, folded where it cooled, magma glowing in the seams. */
+export function crustWallTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 5, 4, 1721);
+  paint(ctx, S, S, (x, y, i) => {
+    const fold = 0.5 + 0.5 * Math.sin((y / S) * Math.PI * 10 + n[i] * 4 + x * 0.02);
+    return shade(mix([18, 16, 22], [62, 58, 70], n[i]), 0.7 + fold * 0.45);
+  });
+  cracks(ctx, S, 12, 'rgba(255,120,40,0.9)', 2, 1722);
+  return finish(c);
+}
+
+/** Set's road: sandstone slabs carved with hieroglyphs, worn smooth down the middle. */
+export function hieroglyphTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 5, 4, 1731);
+  paint(ctx, S, S, (x, y, i) => {
+    const seam = x % 128 < 3 || y % 64 < 3;
+    if (seam) return [120, 84, 50];
+    return mix([196, 150, 96], [232, 196, 140], n[i]);
+  });
+  // Rows of glyphs cut into each slab: eyes, ankhs, birds, the Set animal's squared ears.
+  const rand = seededRandom(1732);
+  ctx.fillStyle = 'rgba(110,70,36,0.75)';
+  ctx.strokeStyle = 'rgba(110,70,36,0.75)';
+  ctx.lineWidth = 3;
+  for (let gy = 10; gy < S; gy += 32) {
+    for (let gx = 12; gx < S; gx += 30) {
+      const kind = Math.floor(rand() * 4);
+      ctx.beginPath();
+      if (kind === 0) {
+        // An eye.
+        ctx.ellipse(gx + 8, gy + 8, 8, 4, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillRect(gx + 6, gy + 6, 4, 4);
+      } else if (kind === 1) {
+        // An ankh.
+        ctx.ellipse(gx + 8, gy + 4, 4, 5, 0, 0, Math.PI * 2);
+        ctx.moveTo(gx + 8, gy + 9);
+        ctx.lineTo(gx + 8, gy + 20);
+        ctx.moveTo(gx + 2, gy + 11);
+        ctx.lineTo(gx + 14, gy + 11);
+        ctx.stroke();
+      } else if (kind === 2) {
+        // A bird.
+        ctx.moveTo(gx, gy + 16);
+        ctx.lineTo(gx + 8, gy + 4);
+        ctx.lineTo(gx + 16, gy + 10);
+        ctx.lineTo(gx + 8, gy + 18);
+        ctx.closePath();
+        ctx.fill();
+      } else {
+        // The Set animal's head: a long snout and squared ears.
+        ctx.moveTo(gx, gy + 14);
+        ctx.lineTo(gx + 14, gy + 12);
+        ctx.lineTo(gx + 10, gy + 8);
+        ctx.lineTo(gx + 10, gy);
+        ctx.lineTo(gx + 14, gy);
+        ctx.stroke();
+      }
+    }
+  }
+  return finish(c);
+}
+
+/** The red land, Set's desert: red sand in ripples, darker where the wind has scoured it. */
+export function redSandTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 5, 5, 1741);
+  paint(ctx, S, S, (x, y, i) => {
+    const ripple = 0.5 + 0.5 * Math.sin((x + y * 0.4) * 0.18 + n[i] * 6);
+    return shade(mix([150, 60, 34], [214, 112, 64], n[i]), 0.86 + ripple * 0.18);
+  });
+  return finish(c);
+}
+
+/** Set's walls: temple walls of sandstone blocks, a band of painted glyphs along them. */
+export function templeWallTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 6, 3, 1751);
+  paint(ctx, S, S, (x, y, i) => {
+    const row = Math.floor(y / 32);
+    const bx = (x + (row % 2) * 32) % 64;
+    if (y % 32 < 2 || bx < 2) return [130, 96, 60];
+    if (row === 3) return mix([30, 80, 140], [50, 110, 170], n[i]);
+    return mix([200, 156, 100], [228, 190, 136], n[i]);
+  });
+  // A frieze: red and gold glyphs on the blue band.
+  const rand = seededRandom(1752);
+  for (let x = 6; x < S; x += 22) {
+    ctx.fillStyle = rand() > 0.5 ? '#e8b030' : '#c03a20';
+    ctx.fillRect(x, 100, 10, 22);
+    ctx.fillStyle = '#f4e6c0';
+    ctx.fillRect(x + 3, 104, 4, 4);
+  }
+  return finish(c);
+}
+
+/** Chang'e's road: polished jade, clouded green, inlaid with gold lines in a fret. */
+export function jadeTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 5, 1761);
+  const cloud = fbm(S, 2, 3, 1762);
+  paint(ctx, S, S, (x, y, i) => {
+    // A key fret in gold at each slab's edge.
+    const lx = x % 128;
+    const ly = y % 128;
+    const edge = lx < 6 || ly < 6;
+    const fret = (lx > 12 && lx < 18 && ly > 12 && ly < 60) || (ly > 12 && ly < 18 && lx > 12 && lx < 60);
+    if (edge || fret) return [222, 180, 70];
+    return shade(mix([40, 130, 90], [150, 220, 170], cloud[i] * 0.7 + n[i] * 0.3), 0.85 + n[i] * 0.25);
+  });
+  return finish(c);
+}
+
+/** The Moon, round Chang'e's palace: pale grey dust, small craters, the odd silver glint. */
+export function moonDustTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 6, 5, 1771);
+  paint(ctx, S, S, (_x, _y, i) => mix([150, 150, 160], [214, 214, 222], n[i]));
+  const rand = seededRandom(1772);
+  for (let k = 0; k < 60; k++) {
+    const x = rand() * S;
+    const y = rand() * S;
+    const r = 3 + rand() * 18;
+    wrapStroke(ctx, S, () => {
+      ctx.fillStyle = 'rgba(90,90,104,0.35)';
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(240,240,250,0.5)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(x - 1, y - 1, r, Math.PI * 0.9, Math.PI * 1.7);
+      ctx.stroke();
+    });
+  }
+  return finish(c);
+}
+
+/** Chang'e's walls: white marble carved with clouds, a red lacquer band at the foot. */
+export function cloudMarbleTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 4, 4, 1781);
+  paint(ctx, S, S, (x, y, i) => {
+    if (y > 216) return mix([150, 24, 30], [190, 40, 40], n[i]);
+    if (y > 208) return [222, 180, 70];
+    const vein = Math.abs(Math.sin(x * 0.03 + n[i] * 8)) < 0.05 ? 0.85 : 1;
+    return shade(mix([224, 226, 232], [250, 250, 252], n[i]), vein);
+  });
+  // Carved cloud scrolls.
+  ctx.strokeStyle = 'rgba(150,160,190,0.7)';
+  ctx.lineWidth = 3;
+  for (let x = 20; x < S; x += 64) {
+    for (const y of [60, 150]) {
+      ctx.beginPath();
+      ctx.arc(x, y, 14, Math.PI, Math.PI * 2.6);
+      ctx.arc(x + 22, y + 4, 9, Math.PI * 1.2, Math.PI * 2.8);
+      ctx.stroke();
+    }
+  }
+  return finish(c);
+}
+
+/** Gilgamesh's road: Uruk's baked bricks, laid in courses, a cuneiform stamp on every one. */
+export function mudbrickTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 6, 4, 1791);
+  paint(ctx, S, S, (x, y, i) => {
+    const row = Math.floor(y / 32);
+    const bx = (x + (row % 2) * 32) % 64;
+    if (y % 32 < 3 || bx < 3) return [110, 84, 56];
+    return shade(mix([176, 120, 72], [210, 158, 104], n[i]), 0.9 + (row % 3) * 0.05);
+  });
+  // A stamp of wedges on each brick.
+  ctx.fillStyle = 'rgba(100,64,36,0.7)';
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 4; col++) {
+      const x = col * 64 + (row % 2) * 32 + 20;
+      const y = row * 32 + 12;
+      for (let w = 0; w < 4; w++) {
+        const wx = (x + w * 6) % S;
+        ctx.beginPath();
+        ctx.moveTo(wx, y);
+        ctx.lineTo(wx + 4, y);
+        ctx.lineTo(wx + 2, y + 8);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+  }
+  return finish(c);
+}
+
+/** The bone-dry swampland Gilgamesh walks: cracked grey mud, dead reeds, bleached bone. */
+export function drySwampTexture(): THREE.CanvasTexture {
+  const S = 512;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 6, 5, 1801);
+  const reeds = fbm(S, 3, 3, 1802);
+  paint(ctx, S, S, (_x, _y, i) => {
+    if (reeds[i] > 0.66) return mix([130, 112, 70], [176, 154, 100], n[i]);
+    return mix([112, 104, 92], [160, 150, 132], n[i]);
+  });
+  cracks(ctx, S, 40, 'rgba(60,50,40,0.75)', 2, 1803);
+  return finish(c);
+}
+
+/** Uruk's walls: blue glazed brick, a lion striding in gold along each course. */
+export function glazedBrickTexture(): THREE.CanvasTexture {
+  const S = 256;
+  const [c, ctx] = canvas(S);
+  const n = fbm(S, 5, 3, 1811);
+  paint(ctx, S, S, (x, y, i) => {
+    const row = Math.floor(y / 16);
+    const bx = (x + (row % 2) * 16) % 32;
+    if (y % 16 < 2 || bx < 2) return [200, 190, 160];
+    return mix([20, 60, 150], [50, 100, 190], n[i]);
+  });
+  // A lion in gold, striding: body, legs, head and mane, tail.
+  ctx.fillStyle = '#e0b040';
+  const lion = (x: number, y: number) => {
+    ctx.fillRect(x, y, 70, 22);
+    for (const lx of [4, 20, 46, 62]) ctx.fillRect(x + lx, y + 22, 6, 18);
+    ctx.beginPath();
+    ctx.arc(x + 78, y + 4, 14, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(x - 18, y + 2, 20, 4);
+  };
+  lion(40, 60);
+  lion(150, 170);
+  return finish(c);
+}

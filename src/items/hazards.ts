@@ -28,10 +28,11 @@ export interface HazardPose {
   /**
    * An airlock's opening: half the width between its two doors, centred on
    * the pose. Cellophane: how far each sheet is from the pose, signed (the
-   * first sheet is at -gap, the second at +gap). 0 for the rest.
+   * first sheet is at -gap, the second at +gap). The sun: its lateral (the
+   * moon is at -gap). The plant of immortality: its lateral. 0 for the rest.
    */
   gap: number;
-  /** A row of arrows: the lane with no arrow in it, 0 (leftmost) to 3. -1 for the rest. */
+  /** A row of arrows: the lane with no arrow in it, 0 (leftmost) to 3. The plant of immortality: 1 while it's growing there to be had, else 0. -1 for the rest. */
   lane: number;
   /**
    * Kind-specific: boulder cycle stage (0..1), tumbleweed bounce height,
@@ -124,6 +125,10 @@ export const WAVE_SPIN = 1.0;
  * - the furrow a rake drags clean through the muck is a boost
  * - a close shave past a swinging razor, inches from it, is a boost
  * - hopped, a fallen tree is cleared for a boost; rammed on a boost it gives way and the boost runs on
+ * - a silver cord stretched taut across the road slings you on, a boost
+ * - the moon rolling across the road is a moonbeam to drive through, a boost
+ * - a lightning string still humming after it's plucked is a boost
+ * - the plant of immortality, reached before the snake eats it, is a long boost; the snake hopped, a boost
  */
 /** A reward can't pay out again to the same kart for this long. */
 export const REWARD_COOLDOWN = 1.5;
@@ -337,6 +342,55 @@ export const RAZOR_SPIN = 1.1;
 export const TIMBER_STAGES = { lean: 0.3, fall: 0.42, gone: 0.82 } as const;
 export const TIMBER_SPIN = 1.0;
 
+/**
+ * Silver cord cycle: stretched taut across the road and glowing (drive
+ * through and it slings you on), fraying (the warning), snapping, its two
+ * ends lashing back across the road to the walls, then spun anew. "And when
+ * Theia it did impact, the silver cord did snap as well."
+ */
+export const CORD_STAGES = { fray: 0.5, snap: 0.66, lash: 0.74, spun: 0.9 } as const;
+/** How far along the road the cord's touch reaches either side of it. */
+export const CORD_DEPTH = 1.6;
+/** Through it while it's taut: a boost this long. Lashed: spun out. */
+export const CORD_BOOST = 0.9;
+export const CORD_SPIN = 1.0;
+/** The sun and the moon, Set's two eyes, rolling across the road past each other: their size. */
+export const SUN_RADIUS = 2.2;
+/** Through the moon: a moonbeam boost this long. Touch the sun: scorched, spun and slowed. */
+export const MOON_BOOST = 0.8;
+export const SUN_SPIN = 1.0;
+export const SUN_SLOW = 0.7;
+/**
+ * Lightning string cycle, each string of Chang'e's lyre in turn: dark, a
+ * tremble (the warning), the pluck (a bolt right across the road, 2500
+ * volts), then humming, glowing, before it fades.
+ */
+export const STRING_STAGES = { tremble: 0.16, pluck: 0.26, hum: 0.33, fade: 0.62 } as const;
+/** The strings are plucked one after another along the road, each this share of the period after the one before: an arpeggio to ride. */
+export const STRING_LAG = 0.08;
+export const STRING_DEPTH = 1.2;
+export const STRING_BOOST = 0.7;
+export const STRING_SPIN = 1.0;
+export const STRING_SLOW = 0.75;
+/**
+ * The plant of immortality and the snake, Gilgamesh's: the plant grows up
+ * through the road, the snake slides out from one edge and across toward
+ * it, eats it, and goes on over the far edge.
+ */
+export const SERPENT_STAGES = { sprout: 0.12, slither: 0.24, gone: 0.86 } as const;
+export const PLANT_RADIUS = 1.4;
+/** Reached before the snake gets it: immortality, of a sort, a long boost. Bitten: spun out. */
+export const PLANT_BOOST = 1.3;
+export const SERPENT_SPIN = 1.0;
+export const SERPENT_RADIUS = 0.8;
+export const SERPENT_LENGTH = 4.5;
+
+/** Where the snake's head is across the road at cycle stage `u`, from -1 (the edge it comes from) to 1 (the far edge); outside that it's off the road. */
+export function serpentAcross(u: number): number {
+  const S = SERPENT_STAGES;
+  return -1.3 + (2.6 * (u - S.slither)) / (S.gone - S.slither);
+}
+
 /** How far a tree has toppled at cycle stage `u`: 0 upright, a lean while it creaks, 1 lying across the road. */
 export function timberFall(u: number): number {
   const T = TIMBER_STAGES;
@@ -418,11 +472,15 @@ const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds' | 'butterfli
   rakes: 0,
   razors: RAZOR_SPIN,
   timber: TIMBER_SPIN,
+  cords: CORD_SPIN,
+  sunMoon: SUN_SPIN,
+  strings: STRING_SPIN,
+  serpents: SERPENT_SPIN,
 };
 
 /** Kinds that fill the whole road across, on a rhythm: nothing to steer round, only to time. */
 export function isSheet(kind: HazardKind): boolean {
-  return kind === 'flameJets' || kind === 'dragonFire' || kind === 'lasers' || kind === 'waves' || kind === 'gusts' || kind === 'prisms' || kind === 'flares' || kind === 'timber';
+  return kind === 'flameJets' || kind === 'dragonFire' || kind === 'lasers' || kind === 'waves' || kind === 'gusts' || kind === 'prisms' || kind === 'flares' || kind === 'timber' || kind === 'cords' || kind === 'strings';
 }
 
 /** Which of a prism beam's four colours it is showing at cycle stage `u` (3 is the fourth colour), and whether it is lit. */
@@ -847,6 +905,65 @@ export class HazardSystem {
           p.phase = u;
           break;
         }
+        case 'cords': {
+          // A silver cord across the road: taut, fraying, snapping and lashing back to the walls, spun anew.
+          const at = def.at[i];
+          const u = ((((t + 10) / def.period + i * 0.37) % 1) + 1) % 1;
+          this.place(p, at, 0, 0);
+          p.radius = this.halfWidth(at) + 0.5;
+          p.active = u >= CORD_STAGES.snap && u < CORD_STAGES.lash;
+          p.phase = u;
+          break;
+        }
+        case 'sunMoon': {
+          // The sun and the moon rolling across the road, one each way, passing in the middle: an eclipse.
+          const at = def.at[i];
+          const u = ((((t + 10) / def.period + i * 0.29) % 1) + 1) % 1;
+          const reach = this.halfWidth(at) + 1;
+          const dir = i % 2 === 0 ? 1 : -1;
+          const lat = dir * reach * Math.sin(u * Math.PI * 2);
+          this.place(p, at, lat, 0);
+          p.radius = SUN_RADIUS;
+          p.gap = lat;
+          p.side = dir * (Math.cos(u * Math.PI * 2) >= 0 ? 1 : -1);
+          p.active = true;
+          p.phase = u;
+          break;
+        }
+        case 'strings': {
+          // One string of the lyre: plucked in turn after the one before it, a bolt across the road, then humming.
+          const at = def.at[i];
+          const u = ((((t + 10) / def.period - i * STRING_LAG) % 1) + 1) % 1;
+          this.place(p, at, 0, 0);
+          p.radius = this.halfWidth(at) + 0.5;
+          p.active = u >= STRING_STAGES.pluck && u < STRING_STAGES.hum;
+          p.phase = u;
+          break;
+        }
+        case 'serpents': {
+          // The plant of immortality grows up through the road; the snake comes for it from one edge, eats it, and goes on over the other.
+          const at = def.at[i];
+          const tt = t + 10 + (i * def.period) / def.at.length;
+          const cycle = Math.floor(tt / def.period);
+          const u = tt / def.period - cycle;
+          const hw = this.halfWidth(at);
+          const dir = (cycle + i) % 2 === 0 ? 1 : -1;
+          // Where the plant grows: somewhere across the road, not at the very edge.
+          const plant = (hw - 2.5) * Math.sin(cycle * 2.39 + i * 1.3);
+          const across = serpentAcross(u);
+          const head = dir * across * (hw + 1);
+          this.place(p, at, head, 0);
+          // Facing across the road the way it slithers (a lateral to the right is -x in the road's frame).
+          p.heading -= (dir * Math.PI) / 2;
+          p.radius = SERPENT_RADIUS;
+          p.side = dir;
+          p.gap = plant;
+          // The plant is there from when it sprouts until the snake's head reaches it.
+          p.lane = u >= SERPENT_STAGES.sprout && dir * head < dir * plant ? 1 : 0;
+          p.active = u >= SERPENT_STAGES.slither && u < SERPENT_STAGES.gone;
+          p.phase = u;
+          break;
+        }
         case 'dustDevils':
         case 'butterflies':
         case 'tornadoes':
@@ -996,6 +1113,22 @@ export class HazardSystem {
         }
         if (p.kind === 'razors') {
           this.razor(hit, p, s);
+          continue;
+        }
+        if (p.kind === 'cords') {
+          this.cord(hit, p, s);
+          continue;
+        }
+        if (p.kind === 'sunMoon') {
+          this.sunAndMoon(hit, p, s);
+          continue;
+        }
+        if (p.kind === 'strings') {
+          this.lyreString(hit, p, s);
+          continue;
+        }
+        if (p.kind === 'serpents') {
+          this.serpent(hit, p, s);
           continue;
         }
         if (p.kind === 'fuzz' && p.phase >= FUZZ_STAGES.gold && p.phase < FUZZ_STAGES.red) {
@@ -1243,6 +1376,19 @@ export class HazardSystem {
         }
         continue;
       }
+      if (p.kind === 'sunMoon') {
+        // The sun, rolling across: the moon is there to drive into.
+        out.push({ x: p.x, z: p.z, r: p.radius, vx: p.vx, vz: p.vz });
+        continue;
+      }
+      if (p.kind === 'serpents') {
+        // The snake and the body trailing it, while it's on the road.
+        if (!p.active) continue;
+        const bx = -Math.sin(p.heading) * SERPENT_LENGTH * 0.5;
+        const bz = -Math.cos(p.heading) * SERPENT_LENGTH * 0.5;
+        out.push({ x: p.x + bx, z: p.z + bz, r: SERPENT_LENGTH * 0.5 + p.radius, vx: p.vx, vz: p.vz });
+        continue;
+      }
       if (p.kind === 'sheets') {
         // Each sheet where it is, moving across the road.
         if (!p.active) continue;
@@ -1467,6 +1613,91 @@ export class HazardSystem {
     }
   }
 
+  /**
+   * A silver cord across the road: through it while it's taut, it slings
+   * you on; caught as it snaps and lashes back, you spin.
+   */
+  private cord(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+    const fx = Math.sin(p.heading);
+    const fz = Math.cos(p.heading);
+    if (Math.abs((s.x - p.x) * fx + (s.z - p.z) * fz) > CORD_DEPTH + KART_RADIUS) return;
+    if (Math.abs((s.x - p.x) * -fz + (s.z - p.z) * fx) > p.radius + KART_RADIUS) return;
+    if (p.phase < CORD_STAGES.fray) {
+      this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, CORD_BOOST)));
+      return;
+    }
+    if (!p.active || this.cooldown.has(s)) return;
+    this.cooldown.set(s, HIT_COOLDOWN);
+    if (spinOut(s, CORD_SPIN)) hit.push({ kart: s, by: p.kind });
+  }
+
+  /**
+   * The sun and the moon rolling across the road: touch the sun and you're
+   * scorched and spun; through the moon, a moonbeam boost. Where they pass,
+   * the moon covers the sun.
+   */
+  private sunAndMoon(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+    const fx = Math.sin(p.heading);
+    const fz = Math.cos(p.heading);
+    const mx = p.ax - fz * -p.gap;
+    const mz = p.az + fx * -p.gap;
+    const r = p.radius + KART_RADIUS;
+    if (Math.hypot(s.x - mx, s.z - mz) <= r) {
+      this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, MOON_BOOST)));
+      return;
+    }
+    if (this.distance(p, s) > r || this.cooldown.has(s)) return;
+    this.cooldown.set(s, HIT_COOLDOWN);
+    if (spinOut(s, SUN_SPIN)) {
+      s.speed *= SUN_SLOW;
+      hit.push({ kart: s, by: p.kind });
+    }
+  }
+
+  /** A lightning string: plucked as you cross it, a bolt that spins you; still humming after, a boost. */
+  private lyreString(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+    const fx = Math.sin(p.heading);
+    const fz = Math.cos(p.heading);
+    if (Math.abs((s.x - p.x) * fx + (s.z - p.z) * fz) > STRING_DEPTH + KART_RADIUS) return;
+    if (Math.abs((s.x - p.x) * -fz + (s.z - p.z) * fx) > p.radius + KART_RADIUS) return;
+    if (p.phase >= STRING_STAGES.hum && p.phase < STRING_STAGES.fade) {
+      this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, STRING_BOOST)));
+      return;
+    }
+    if (!p.active || this.cooldown.has(s)) return;
+    this.cooldown.set(s, HIT_COOLDOWN);
+    if (spinOut(s, STRING_SPIN)) {
+      s.speed *= STRING_SLOW;
+      hit.push({ kart: s, by: p.kind });
+    }
+  }
+
+  /**
+   * The plant of immortality and the snake: reach the plant before the
+   * snake eats it, a long boost; the snake bites what it touches, unless
+   * it's hopped.
+   */
+  private serpent(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+    if (p.lane === 1) {
+      // The plant, `gap` to the right of the road's centre (the snake faces across the road, so the road's heading is a quarter turn from its own).
+      const road = p.heading + (p.side * Math.PI) / 2;
+      const px = p.ax - Math.cos(road) * p.gap;
+      const pz = p.az + Math.sin(road) * p.gap;
+      if (Math.hypot(s.x - px, s.z - pz) <= PLANT_RADIUS + KART_RADIUS) {
+        this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, PLANT_BOOST)));
+        return;
+      }
+    }
+    if (!p.active || this.distance(p, s) > p.radius + KART_RADIUS) return;
+    if (!s.grounded || s.hopAge < HOP_WINDOW) {
+      this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, HOP_BOOST)));
+      return;
+    }
+    if (this.cooldown.has(s)) return;
+    this.cooldown.set(s, HIT_COOLDOWN);
+    if (spinOut(s, SERPENT_SPIN)) hit.push({ kart: s, by: p.kind });
+  }
+
   /** Pays a kart for using a hazard well, once in a while. */
   private reward(hit: { kart: KartState; by: HazardKind; good?: boolean }[], s: KartState, by: HazardKind, pay: () => void): void {
     if (this.rewarded.has(s)) return;
@@ -1506,12 +1737,12 @@ export class HazardSystem {
       // Inside the sheet counts as touching; the radius is the half-width.
       return along < JET_DEPTH + KART_RADIUS ? across - KART_RADIUS : Infinity;
     }
-    if (p.kind !== 'snakes' && p.kind !== 'rats') return Math.hypot(s.x - p.x, s.z - p.z);
+    if (p.kind !== 'snakes' && p.kind !== 'rats' && p.kind !== 'serpents') return Math.hypot(s.x - p.x, s.z - p.z);
     const bx = -Math.sin(p.heading);
     const bz = -Math.cos(p.heading);
     const dx = s.x - p.x;
     const dz = s.z - p.z;
-    const along = Math.max(0, Math.min(p.kind === 'rats' ? RAT_LENGTH : SNAKE_LENGTH, dx * bx + dz * bz));
+    const along = Math.max(0, Math.min(p.kind === 'rats' ? RAT_LENGTH : p.kind === 'serpents' ? SERPENT_LENGTH : SNAKE_LENGTH, dx * bx + dz * bz));
     return Math.hypot(dx - bx * along, dz - bz * along);
   }
 

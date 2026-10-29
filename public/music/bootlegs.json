@@ -4016,7 +4016,7 @@
    "date": "2017-03-31",
    "venue": "Webster Hall",
    "seconds": 349,
-   "start": 22.0,
+   "start": 22,
    "gain": 1
   },
   {
@@ -4025,7 +4025,7 @@
    "date": "2019-07-12",
    "venue": "Thebarton Theatre",
    "seconds": 484,
-   "start": 4.0,
+   "start": 4,
    "gain": 0.5
   },
   {
@@ -4034,7 +4034,7 @@
    "date": "2021-04-22",
    "venue": "The Enmore Theatre",
    "seconds": 339,
-   "start": 3.0,
+   "start": 3,
    "gain": -3.5
   },
   {
@@ -4171,7 +4171,7 @@
    "date": "2019-07-12",
    "venue": "Thebarton Theatre",
    "seconds": 197,
-   "start": 26.0,
+   "start": 26,
    "gain": 3.5
   },
   {
@@ -4364,7 +4364,7 @@
    "date": "2026-08-21",
    "venue": "Forest Hills Stadium",
    "seconds": 622,
-   "start": 17.0,
+   "start": 17,
    "gain": 2.5
   }
  ],
@@ -4375,7 +4375,7 @@
    "date": "2023-06-07",
    "venue": "Red Rocks Amphitheatre",
    "seconds": 456,
-   "start": 3.0,
+   "start": 3,
    "gain": -1
   },
   {
@@ -4640,7 +4640,7 @@
    "date": "2024-05-29",
    "venue": "The Civic Hall",
    "seconds": 628,
-   "start": 19.0,
+   "start": 19,
    "gain": 10
   },
   {
@@ -4658,7 +4658,7 @@
    "date": "2024-11-02",
    "venue": "Rady Shell",
    "seconds": 655,
-   "start": 28.0,
+   "start": 28,
    "gain": 8.5
   },
   {
@@ -4947,6 +4947,392 @@
    "start": 3.5,
    "end": 1015.5,
    "gain": 3.5
+  }
+ ],
+ "Theia": [
+  {
+   "id": "kglw2024-08-20.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live at Thompson's Point, Portland, ME (8-20-24) - 01 Theia (Live).mp3",
+   "date": "2024-08-20",
+   "venue": "Thompson's Point",
+   "seconds": 725,
+   "start": 6.3,
+   "gain": 9
+  },
+  {
+   "id": "kglw2024-08-28.bandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live at Brown's Island- Richmond- VA (8-28-24) 2/King Gizzard & The Lizard Wizard - Live at Brown's Island, Richmond, VA (8-28-24) - 02 Theia (Live).mp3",
+   "date": "2024-08-28",
+   "venue": "Brown's Island",
+   "seconds": 862,
+   "start": 98.8,
+   "gain": 1
+  },
+  {
+   "id": "kglw2024-09-03.bandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live at Minneapolis Armory- Minneapolis- MN (9-3-24) 2/King Gizzard & The Lizard Wizard - Live at Minneapolis Armory, Minneapolis, MN (9-3-24) - 13 Theia (Live).mp3",
+   "date": "2024-09-03",
+   "venue": "Minneapolis Armory",
+   "seconds": 743,
+   "start": 0,
+   "gain": 7.5
+  },
+  {
+   "id": "kglw2024-11-02.bandcampbootlegger",
+   "file": "16 Theia (Live in San Diego '24).mp3",
+   "date": "2024-11-02",
+   "venue": "Rady Shell",
+   "seconds": 590,
+   "start": 0,
+   "gain": 6.5
+  },
+  {
+   "id": "kglw2024-11-06.bandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live in San Francisco '24 (1)/King Gizzard & The Lizard Wizard - Live in San Francisco '24 - 01 Theia (Live in San Francisco '24).mp3",
+   "date": "2024-11-06",
+   "venue": "The Regency Ballroom",
+   "seconds": 1069,
+   "start": 51,
+   "gain": 7
+  },
+  {
+   "id": "kglw2024-11-16.bandcampbootleg",
+   "file": "King Gizzard & The Lizard Wizard - Live in Houston '24 - 11 Theia (Live in Houston '24).mp3",
+   "date": "2024-11-16",
+   "venue": "White Oak Music Hall",
+   "seconds": 652,
+   "start": 0,
+   "gain": 2.5
+  },
+  {
+   "id": "kglw2025-05-24.SBD.flac",
+   "file": "King Gizzard & The Lizard Wizard - Live in Barcelona '25 - 03 Theia (Live in Barcelona '25).mp3",
+   "date": "2025-05-24",
+   "venue": "Plaza Mayor de El Poble Espanyol",
+   "seconds": 552,
+   "start": 9.3,
+   "gain": 5
+  },
+  {
+   "id": "kglw2025-06-06.SBD.flac",
+   "file": "King Gizzard & The Lizard Wizard - Live in Athens '25 - 41 Theia (Live in Athens '25).mp3",
+   "date": "2025-06-06",
+   "venue": "Lycabettus Theatre",
+   "seconds": 897,
+   "start": 40.8,
+   "gain": 5
+  },
+  {
+   "id": "kglw2025-08-06.ravinia",
+   "file": "12 Theia.mp3",
+   "date": "2025-08-06",
+   "venue": "Ravinia Festival",
+   "seconds": 1148,
+   "start": 0,
+   "gain": 14
+  },
+  {
+   "id": "kglw2025-10-31.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live in Manchester '25 - 01 Theia (Live in Manchester '25).mp3",
+   "date": "2025-10-31",
+   "venue": "Aviva Studios, Manchester, England, UK",
+   "seconds": 1286,
+   "start": 35.6,
+   "gain": 5
+  },
+  {
+   "id": "kglw2025-11-11.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live In Prague '25 - 02 Theia (Live In Prague '25).mp3",
+   "date": "2025-11-11",
+   "venue": "SaSaZu, Prague, Czech Republic",
+   "seconds": 1587,
+   "start": 0,
+   "gain": 4.5
+  },
+  {
+   "id": "kglw2026-08-21.Bootsy",
+   "file": "0.1 Theia.mp3",
+   "date": "2026-08-21",
+   "venue": "Forest Hills Stadium",
+   "seconds": 476,
+   "start": 0,
+   "gain": 15
+  }
+ ],
+ "Set": [
+  {
+   "id": "kglw2024-08-21.bandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live at Budweiser Stage, Toronto, ON (8-21-24) - 16 Set (Live).mp3",
+   "date": "2024-08-21",
+   "venue": "Budweiser Stage",
+   "seconds": 572,
+   "start": 0,
+   "gain": 2.5
+  },
+  {
+   "id": "kglw2024-09-01.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live at Northerly Island- Chicago- IL (9-1-24)/King Gizzard & The Lizard Wizard - Live at Northerly Island, Chicago, IL (9-1-24) - 27 Set (Live).mp3",
+   "date": "2024-09-01",
+   "venue": "Northerly Island",
+   "seconds": 1178,
+   "start": 64.3,
+   "gain": 2
+  },
+  {
+   "id": "kglw2024-09-09.lateshowbandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live at Red Rocks Amphitheatre LATE- Morrison- CO (9-9-24) (1)/King Gizzard & The Lizard Wizard - Live at Red Rocks Amphitheatre LATE, Morrison, CO (9-9-24) - 18 Set (Live).mp3",
+   "date": "2024-09-09",
+   "venue": "Red Rocks Amphitheatre",
+   "seconds": 686,
+   "start": 0,
+   "gain": 5
+  },
+  {
+   "id": "kglw2024-11-03.bandcampbootlegger",
+   "file": "11 Set (Live in Paso Robles '24).mp3",
+   "date": "2024-11-03",
+   "venue": "Vina Robles Amphitheatre",
+   "seconds": 770,
+   "start": 0,
+   "gain": 3
+  },
+  {
+   "id": "kglw2024-11-06.bandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live in San Francisco '24 (1)/King Gizzard & The Lizard Wizard - Live in San Francisco '24 - 03 Set (Live in San Francisco '24).mp3",
+   "date": "2024-11-06",
+   "venue": "The Regency Ballroom",
+   "seconds": 1037,
+   "start": 0,
+   "gain": 5
+  },
+  {
+   "id": "kglw2024-11-12.bandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live in Oklahoma City '24 - 10 Set (Live in Oklahoma City '24).mp3",
+   "date": "2024-11-12",
+   "venue": "The Criterion",
+   "seconds": 668,
+   "start": 0,
+   "gain": 1.5
+  },
+  {
+   "id": "kglw2020-11-20.bandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live in St. Augustine '24 - 14 Set (Live in St. Augustine '24).mp3",
+   "date": "2024-11-20",
+   "venue": "St. Augustine Amphitheatre",
+   "seconds": 792,
+   "start": 0,
+   "gain": 5
+  },
+  {
+   "id": "kglw2025-06-05.SBD.flac",
+   "file": "King Gizzard & The Lizard Wizard - Live in Athens '25 - 33 Set (Live in Athens '25).mp3",
+   "date": "2025-06-05",
+   "venue": "Lycabettus Theatre",
+   "seconds": 1131,
+   "start": 0,
+   "gain": 3
+  },
+  {
+   "id": "kglw2025-08-02.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live in New York City '25 -Rock Night- - 09 Set (Live in New York City '25).mp3",
+   "date": "2025-08-02",
+   "venue": "Forest Hills Stadium",
+   "seconds": 455,
+   "start": 0,
+   "gain": 1
+  },
+  {
+   "id": "kglw2025-10-24.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Ravin' in Melbourne '25 - 04 Set (Ravin' in Melbourne '25).mp3",
+   "date": "2025-10-24",
+   "venue": "Fed Square, Naarm (Melbourne), VIC, Australia",
+   "seconds": 1238,
+   "start": 0,
+   "gain": 6.5
+  },
+  {
+   "id": "kglw2025-11-10.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live in Berlin '25 - 08 Set (Live in Berlin '25).mp3",
+   "date": "2025-11-10",
+   "venue": "Columbiahalle, Berlin, Germany",
+   "seconds": 901,
+   "start": 0,
+   "gain": 2.5
+  },
+  {
+   "id": "kglw2026-08-23",
+   "file": "kglw2026-08-23t01.mp3",
+   "date": "2026-08-23",
+   "venue": "Under The K Bridge",
+   "seconds": 1822,
+   "start": 0,
+   "gain": 17
+  }
+ ],
+ "Chang'e": [
+  {
+   "id": "kglw2024-08-31.bandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live at Ascend Amphitheater- Nashville- TN (8-31-24) 2/King Gizzard & The Lizard Wizard - Live at Ascend Amphitheater, Nashville, TN (8-31-24) - 17 Chang'e (Live).mp3",
+   "date": "2024-08-31",
+   "venue": "Ascend Amphitheater",
+   "seconds": 706,
+   "start": 4.5,
+   "gain": 8.5
+  },
+  {
+   "id": "kglw2024-09-04.bandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live at Miller High Life Theatre- Milwaukee- WI (9-4-24)/King Gizzard & The Lizard Wizard - Live at Miller High Life Theatre, Milwaukee, WI (9-4-24) - 08 Chang'e (Live).mp3",
+   "date": "2024-09-04",
+   "venue": "Miller High Life Theatre",
+   "seconds": 598,
+   "start": 9.5,
+   "gain": 7.5
+  },
+  {
+   "id": "kglw2024-09-08.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live at Red Rocks Amphitheatre, Morrison, CO (9-8-24) - 14 Chang'e (Live).mp3",
+   "date": "2024-09-08",
+   "venue": "Red Rocks Ampitheatre",
+   "seconds": 472,
+   "start": 0,
+   "gain": 8
+  },
+  {
+   "id": "kglw2024-11-02.bandcampbootlegger",
+   "file": "02 Chang'e (Live in San Diego '24).mp3",
+   "date": "2024-11-02",
+   "venue": "Rady Shell",
+   "seconds": 392,
+   "start": 0,
+   "gain": 4.5
+  },
+  {
+   "id": "kglw2024-11-06.bandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live in San Francisco '24 (1)/King Gizzard & The Lizard Wizard - Live in San Francisco '24 - 04 Chang'e (Live in San Francisco '24).mp3",
+   "date": "2024-11-06",
+   "venue": "The Regency Ballroom",
+   "seconds": 613,
+   "start": 12.8,
+   "gain": 4
+  },
+  {
+   "id": "kglw2025-06-04.SBD.flac",
+   "file": "King Gizzard & The Lizard Wizard - Live in Athens '25 - 10 Chang'e (Live in Athens '25).mp3",
+   "date": "2025-06-04",
+   "venue": "Lycabettus Theatre",
+   "seconds": 1165,
+   "start": 38.2,
+   "gain": 4
+  }
+ ],
+ "Gilgamesh": [
+  {
+   "id": "kglw2024-08-27.bandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live at The Dell Music Center- Philadelphia- PA (8-27-24) 2/King Gizzard & The Lizard Wizard - Live at The Dell Music Center, Philadelphia, PA (8-27-24) - 18 Gilgamesh (Live).mp3",
+   "date": "2024-08-27",
+   "venue": "The Dell Music Center",
+   "seconds": 469,
+   "start": 9,
+   "gain": 4
+  },
+  {
+   "id": "kglw2024-09-06.bandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live at The Astro Amphitheater- Omaha- NE (9-6-24) (1)/King Gizzard & The Lizard Wizard - Live at The Astro Amphitheater, Omaha, NE (9-6-24) - 08 Gilgamesh (Live).mp3",
+   "date": "2024-09-06",
+   "venue": "The Astro Amphitheater",
+   "seconds": 704,
+   "start": 0,
+   "gain": 7.5
+  },
+  {
+   "id": "kglw2024-09-09.lateshowbandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live at Red Rocks Amphitheatre LATE- Morrison- CO (9-9-24) (1)/King Gizzard & The Lizard Wizard - Live at Red Rocks Amphitheatre LATE, Morrison, CO (9-9-24) - 17 Gilgamesh (Live).mp3",
+   "date": "2024-09-09",
+   "venue": "Red Rocks Amphitheatre",
+   "seconds": 505,
+   "start": 0,
+   "gain": 5
+  },
+  {
+   "id": "kglw2024-11-10.bandcampbootleg",
+   "file": "King Gizzard & The Lizard Wizard - Live in Albuquerque '24 - 15 Gilgamesh (Live in Albuquerque '24).mp3",
+   "date": "2024-11-10",
+   "venue": "Revel Entertainment Center",
+   "seconds": 596,
+   "start": 0,
+   "gain": 2.5
+  },
+  {
+   "id": "kglw2024-11-21.bandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live in Miami '24 - 09 Gilgamesh (Live in Miami '24).mp3",
+   "date": "2024-11-21",
+   "venue": "Factory Town",
+   "seconds": 675,
+   "start": 0,
+   "gain": 7.5
+  },
+  {
+   "id": "kglw2024-05-23.SBD.flac",
+   "file": "King Gizzard & The Lizard Wizard - Live in Barcelona '25 - 08 Gilgamesh (Live in Barcelona '25).mp3",
+   "date": "2025-05-23",
+   "venue": "Plaza Mayor de El Poble Espanyol",
+   "seconds": 1221,
+   "start": 0,
+   "gain": 2.5
+  },
+  {
+   "id": "kglw2025-08-15.SBD.wav",
+   "file": "King Gizzard & The Lizard Wizard - Live at Field of Vision '25 - 10 Gilgamesh (Live at Field of Vision '25).mp3",
+   "date": "2025-08-15",
+   "venue": "Field of Vision at Meadow Creek",
+   "seconds": 628,
+   "start": 0,
+   "gain": 0
+  },
+  {
+   "id": "kglw2025-10-24.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Ravin' in Melbourne '25 - 03 Gilgamesh (Ravin' in Melbourne '25).mp3",
+   "date": "2025-10-24",
+   "venue": "Fed Square, Naarm (Melbourne), VIC, Australia",
+   "seconds": 720,
+   "start": 0,
+   "gain": 2.5
+  },
+  {
+   "id": "kglw2025-11-10.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live in Berlin '25 - 07 Gilgamesh (Live in Berlin '25).mp3",
+   "date": "2025-11-10",
+   "venue": "Columbiahalle, Berlin, Germany",
+   "seconds": 1098,
+   "start": 0,
+   "gain": -1.5
+  },
+  {
+   "id": "kglw2025-11-15.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live In Gothenburg '25 - 05 Gilgamesh (Live In Gothenburg '25).mp3",
+   "date": "2025-11-15",
+   "venue": "Filmstudion, Gothenburg, Sweden",
+   "seconds": 906,
+   "start": 0,
+   "gain": 1.5
+  },
+  {
+   "id": "kglw2026-08-16.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live at Field of Vision II '26 - 14 Gilgamesh (Live at Field of Vision II '26).mp3",
+   "date": "2026-08-16",
+   "venue": "Field of Vision II, Buena Vista, CO",
+   "seconds": 625,
+   "start": 0,
+   "gain": 3
+  },
+  {
+   "id": "kglw2026-10-18.h1n.flac16",
+   "file": "kglw2026-10-18t03.mp3",
+   "date": "2026-10-18",
+   "venue": "carpark opposite Croxton Park Hotel",
+   "seconds": 299,
+   "start": 7.5,
+   "gain": 14
   }
  ]
 }

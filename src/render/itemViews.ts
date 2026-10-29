@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { ARROW_DEPTH, ARROW_LANES, ARROW_STAGES, ELBOW_DEPTH, ELBOW_STAGES, EYE_DEPTH, EYE_HEIGHT, EYE_STAGES, FUZZ_RADIUS, RAKE_DEPTH, RAKE_LANES, RAKE_STAGES, SHEET_HALF, SHEET_STAGES, TIMBER_STAGES, fuzzLevel, timberFall } from '../items/hazards';
+import { CORD_STAGES, SERPENT_LENGTH, SERPENT_STAGES, STRING_STAGES, ARROW_DEPTH, ARROW_LANES, ARROW_STAGES, ELBOW_DEPTH, ELBOW_STAGES, EYE_DEPTH, EYE_HEIGHT, EYE_STAGES, FUZZ_RADIUS, RAKE_DEPTH, RAKE_LANES, RAKE_STAGES, SHEET_HALF, SHEET_STAGES, TIMBER_STAGES, fuzzLevel, timberFall } from '../items/hazards';
 import { AIRLOCK_DEPTH, AIRLOCK_STAGES, BOULDER_STAGES, CRUSHER_STAGES, FLARE_CLEAR, FLARE_STAGES, RAT_LENGTH, RAT_STAGES, SMOG_RADIUS, SMOG_STAGES, flareHeight, GAMMA_EDGE, GAMMA_STAGES, GEYSER_ERUPT, GUST_STAGES, HOLE_CORE, JAWS_LUNGE, JET_STAGES, LIGHTNING_STRIKE, ROBOT_STAGES, VULTURE_STAGES, WAH_LIFT, WAH_STAGES, prismColour, type HazardPose } from '../items/hazards';
 import { goblinFigure } from './omnium';
 import { robotFigure, vultureFigure, wahPedalFigure } from './nonagon';
@@ -602,6 +602,17 @@ export class HazardsView {
     const bladeGeo = new THREE.BoxGeometry(0.08, 1.8, 2.6);
     const bladeMat = new THREE.MeshPhongMaterial({ color: 0xd8dce4, shininess: 220, specular: 0xffffff });
     const barkMat = new THREE.MeshLambertMaterial({ color: 0x5a4030 });
+    const cordMat = new THREE.MeshLambertMaterial({ color: 0xe8f0ff, emissive: 0xc8d8ff, emissiveIntensity: 1 });
+    const cordGlass = new THREE.MeshPhongMaterial({ color: 0x14121a, shininess: 140, specular: 0xffffff });
+    const silverGlow = glowTexture('rgba(255,255,255,1)', 'rgba(180,200,255,0)');
+    const sunMat = new THREE.MeshLambertMaterial({ color: 0xffc030, emissive: 0xffa020, emissiveIntensity: 1 });
+    const moonMat = new THREE.MeshLambertMaterial({ color: 0xe8ecff, emissive: 0xb0c0ff, emissiveIntensity: 0.8 });
+    const sunGlow = glowTexture('rgba(255,220,120,1)', 'rgba(255,120,0,0)');
+    const moonGlow = glowTexture('rgba(230,240,255,1)', 'rgba(120,160,255,0)');
+    const pegMat = new THREE.MeshPhongMaterial({ color: 0xe0b040, shininess: 120, specular: 0xffffff });
+    const scaleMat = new THREE.MeshPhongMaterial({ color: 0x4a7a2a, emissive: 0x1a2a08, shininess: 80, specular: 0xd0d080, flatShading: true });
+    const plantMat = new THREE.MeshLambertMaterial({ color: 0x60ffb0, emissive: 0x30c080, emissiveIntensity: 0.9 });
+    const stemMat = new THREE.MeshLambertMaterial({ color: 0x2a8a3a });
     const leafMat = new THREE.MeshLambertMaterial({ color: 0x3a7a34, flatShading: true });
 
     for (const pose of hazards.poses) {
@@ -1217,6 +1228,114 @@ export class HazardsView {
           razor.add(glint);
           obj.add(gantry, rod, razor);
           parts.push(gantry, rod, razor, glint);
+          break;
+        }
+        case 'cords': {
+          // A silver cord across the road at a kart's height, between two spires of black glass; each half hangs from its own spire, to lash back when it snaps.
+          const R = pose.radius;
+          const halves: THREE.Object3D[] = [];
+          for (const side of [-1, 1]) {
+            const spire = new THREE.Mesh(new THREE.ConeGeometry(0.9, 6, 5), cordGlass);
+            spire.position.set(side * (R + 0.6), 3, 0);
+            obj.add(spire);
+            const pivot = new THREE.Group();
+            pivot.position.set(side * R, 1.3, 0);
+            const geo = new THREE.CylinderGeometry(0.09, 0.09, R, 6);
+            geo.rotateZ(Math.PI / 2);
+            geo.translate((-side * R) / 2, 0, 0);
+            pivot.add(new THREE.Mesh(geo, cordMat));
+            obj.add(pivot);
+            halves.push(pivot);
+          }
+          const shine = sprite(silverGlow, 0xd8e4ff, 3);
+          shine.position.y = 1.3;
+          obj.add(shine);
+          parts.push(halves[0], halves[1], shine);
+          break;
+        }
+        case 'sunMoon': {
+          // The sun and the moon, discs standing on their rims like wheels, rolling across the road past each other.
+          const R = pose.radius;
+          const disc = new THREE.CylinderGeometry(R, R, 0.5, 32);
+          disc.rotateX(Math.PI / 2);
+          const sun = new THREE.Group();
+          sun.add(new THREE.Mesh(disc, sunMat));
+          for (let k = 0; k < 12; k++) {
+            const ray = new THREE.Mesh(new THREE.ConeGeometry(0.3, 1.1, 4), sunMat);
+            const a = (k / 12) * Math.PI * 2;
+            ray.position.set(Math.cos(a) * (R + 0.4), Math.sin(a) * (R + 0.4), 0);
+            ray.rotation.z = a - Math.PI / 2;
+            sun.add(ray);
+          }
+          sun.add(sprite(sunGlow, 0xffc040, R * 4));
+          const moon = new THREE.Group();
+          moon.add(new THREE.Mesh(disc, moonMat));
+          // Its dark seas.
+          for (let k = 0; k < 4; k++) {
+            const sea = new THREE.Mesh(new THREE.CircleGeometry(0.4 + k * 0.12, 12), new THREE.MeshBasicMaterial({ color: 0xa0a8c8 }));
+            sea.position.set(Math.cos(k * 1.9) * R * 0.45, Math.sin(k * 1.9) * R * 0.45, 0.26);
+            moon.add(sea);
+          }
+          moon.add(sprite(moonGlow, 0xd0e0ff, R * 3.5));
+          obj.add(sun, moon);
+          parts.push(sun, moon);
+          break;
+        }
+        case 'strings': {
+          // A string of the lyre across the road, made of lightning, between two gold pegs: segments that jump about when it's plucked and hum in a standing wave after.
+          const R = pose.radius;
+          for (const side of [-1, 1]) {
+            const peg = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.45, 3, 10), pegMat);
+            peg.position.set(side * (R + 0.4), 1.5, 0);
+            obj.add(peg);
+          }
+          const bolt = new THREE.Group();
+          const n = 14;
+          // Its own colour: each string is at its own stage.
+          const lightning = new THREE.MeshBasicMaterial({ color: 0x405060 });
+          for (let k = 0; k < n; k++) {
+            const seg = new THREE.Mesh(new THREE.BoxGeometry((2 * R) / n + 0.1, 0.12, 0.12), lightning);
+            seg.position.set(-R + ((k + 0.5) * 2 * R) / n, 1.4, 0);
+            bolt.add(seg);
+          }
+          const hum = sprite(silverGlow, 0x80ffe0, 2 * R);
+          hum.scale.set(2 * R, 3, 1);
+          hum.position.y = 1.4;
+          obj.add(bolt, hum);
+          parts.push(bolt, hum);
+          break;
+        }
+        case 'serpents': {
+          // The snake: a head and a body of segments trailing it. The plant of immortality: a stem and a glowing flower, placed on the road each frame.
+          const body = new THREE.Group();
+          const n = 9;
+          for (let k = 0; k < n; k++) {
+            const seg = new THREE.Mesh(new THREE.SphereGeometry(0.55 - k * 0.03, 10, 8), scaleMat);
+            seg.scale.set(1, 0.7, 1.3);
+            seg.position.set(0, 0.4, -k * (SERPENT_LENGTH / n));
+            body.add(seg);
+          }
+          for (const side of [-1, 1]) {
+            const eye = new THREE.Mesh(new THREE.SphereGeometry(0.1, 6, 4), new THREE.MeshBasicMaterial({ color: 0xffd020 }));
+            eye.position.set(side * 0.25, 0.65, 0.35);
+            body.add(eye);
+          }
+          const plant = new THREE.Group();
+          const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.12, 1.6, 6), stemMat);
+          stem.position.y = 0.8;
+          plant.add(stem);
+          for (let k = 0; k < 6; k++) {
+            const petal = new THREE.Mesh(new THREE.SphereGeometry(0.35, 8, 6), plantMat);
+            petal.scale.set(0.6, 0.3, 1.2);
+            const a = (k / 6) * Math.PI * 2;
+            petal.position.set(Math.cos(a) * 0.4, 1.7, Math.sin(a) * 0.4);
+            petal.rotation.y = -a;
+            plant.add(petal);
+          }
+          plant.add(sprite(silverGlow, 0x60ffb0, 3.5));
+          (plant.children[plant.children.length - 1] as THREE.Sprite).position.y = 1.6;
+          obj.add(body, plant);
+          parts.push(body, plant);
           break;
         }
         case 'timber': {
@@ -1991,6 +2110,95 @@ export class HazardsView {
           // Edge-on as it swings, flashing as it passes the middle.
           razor.rotation.y = Math.PI / 2;
           glint.visible = Math.abs(lat) < 2;
+          break;
+        }
+        case 'cords': {
+          const [a, b, shine] = parts;
+          obj.rotation.y = p.heading;
+          const u = p.phase;
+          const C = CORD_STAGES;
+          const R = p.radius;
+          const taut = u < C.snap;
+          for (const [k, half] of [a, b].entries()) {
+            const side = k === 0 ? -1 : 1;
+            half.visible = u < C.lash || u >= C.spun;
+            half.scale.set(1, 1, 1);
+            half.rotation.set(0, 0, 0);
+            if (taut) {
+              // Taut and humming; fraying, it shudders.
+              const fray = u >= C.fray;
+              half.position.y = 1.3 + (fray ? Math.sin(elapsed * 60 + k) * 0.12 : Math.sin(elapsed * 25) * 0.02);
+            } else if (u < C.lash) {
+              // Snapped: each end lashes back round toward its own spire.
+              const w = (u - C.snap) / (C.lash - C.snap);
+              half.rotation.y = side * w * Math.PI * 0.9;
+            } else {
+              // Spun anew from both spires.
+              const g = (u - C.spun) / (1 - C.spun);
+              half.scale.set(Math.max(0.01, g), 1, 1);
+            }
+            half.position.x = side * R;
+          }
+          shine.visible = taut;
+          const fray = u >= C.fray && taut;
+          (shine as THREE.Sprite).material.opacity = fray ? (Math.sin(elapsed * 40) > 0 ? 0.9 : 0.1) : 0.6;
+          shine.scale.set(2 * R, 1.6, 1);
+          break;
+        }
+        case 'sunMoon': {
+          const [sun, moon] = parts;
+          obj.rotation.y = p.heading;
+          const R = p.radius;
+          // The sun at the pose; the moon the other side of the road's centre (a lateral to the right is local -x).
+          sun.position.set(0, R, 0);
+          moon.position.set(2 * p.gap, R, 0);
+          // Rolling: the sun one way, the moon the other.
+          sun.rotation.z = p.gap / R;
+          moon.rotation.z = -p.gap / R;
+          break;
+        }
+        case 'strings': {
+          const [bolt, hum] = parts;
+          obj.rotation.y = p.heading;
+          const u = p.phase;
+          const S = STRING_STAGES;
+          const n = bolt.children.length;
+          const plucked = u >= S.pluck && u < S.hum;
+          const humming = u >= S.hum && u < S.fade;
+          const trembling = u >= S.tremble && u < S.pluck;
+          bolt.children.forEach((seg, k) => {
+            const x = (k + 0.5) / n;
+            let y = 1.4;
+            if (plucked) y += (Math.sin(elapsed * 97 + k * 7.3) + Math.sin(elapsed * 61 + k * 3.1)) * 0.3;
+            else if (humming) y += Math.sin(x * Math.PI) * Math.sin(elapsed * 45) * 0.35 * (1 - (u - S.hum) / (S.fade - S.hum));
+            else if (trembling) y += Math.sin(x * Math.PI) * Math.sin(elapsed * 80) * 0.06;
+            seg.position.y = y;
+          });
+          (bolt.children[0] as THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>).material.color.setHex(plucked ? 0xffffff : humming ? 0x80ffd0 : trembling ? 0x6aa0c0 : 0x405060);
+          hum.visible = plucked || humming;
+          (hum as THREE.Sprite).material.opacity = plucked ? 1 : 0.6;
+          break;
+        }
+        case 'serpents': {
+          const [body, plant] = parts;
+          obj.rotation.y = p.heading;
+          const u = p.phase;
+          body.visible = p.active;
+          body.children.forEach((seg, k) => {
+            if (k < body.children.length - 2) seg.position.x = Math.sin(elapsed * 8 - k * 0.9) * 0.35 * Math.min(1, k / 2);
+          });
+          plant.visible = p.lane === 1;
+          if (plant.visible) {
+            // The plant where it grows: `gap` to the right of the road's centre, in this object's frame.
+            const road = p.heading + (p.side * Math.PI) / 2;
+            const dx = p.ax - Math.cos(road) * p.gap - p.x;
+            const dz = p.az + Math.sin(road) * p.gap - p.z;
+            const c = Math.cos(p.heading);
+            const s = Math.sin(p.heading);
+            plant.position.set(dx * c - dz * s, 0, dx * s + dz * c);
+            plant.scale.setScalar(Math.min(1, (u - SERPENT_STAGES.sprout) / 0.08));
+            plant.rotation.y = elapsed;
+          }
           break;
         }
         case 'timber': {

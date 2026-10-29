@@ -40,6 +40,10 @@ import { buildElbow } from './elbow';
 import { buildMuckraker } from './muckraker';
 import { buildCutThroatBoogie } from './cutThroatBoogie';
 import { buildSeaOfTrees } from './seaOfTrees';
+import { buildTheia } from './theia';
+import { buildSet } from './set';
+import { buildChangE } from './changE';
+import { buildGilgamesh } from './gilgamesh';
 
 /** Every track the picker offers, in cup order, each with its layout extras laid in (enrich.ts). */
 /** The tracks as drawn, before enrich.ts (tests and tools). */
@@ -80,6 +84,10 @@ export const RAW_TRACK_LIST: { id: string; name: string; build: () => TrackDef }
   { id: 'supercell', name: 'Supercell', build: buildSupercell },
   { id: 'petrodragonic-apocalypse', name: 'Dragon', build: buildPetrodragonicApocalypse },
   { id: 'hell-on-mars', name: 'Flamethrower', build: buildHellOnMars },
+  { id: 'theia', name: 'Theia', build: buildTheia },
+  { id: 'set', name: 'Set', build: buildSet },
+  { id: 'chang-e', name: "Chang'e", build: buildChangE },
+  { id: 'gilgamesh', name: 'Gilgamesh', build: buildGilgamesh },
   { id: 'phantom-island', name: 'Phantom Island', build: buildPhantomIsland },
   { id: 'deadstick-drop', name: 'Deadstick', build: buildDeadstickDrop },
   { id: 'panpsych-grove', name: 'Panpsych', build: buildPanpsychGrove },
@@ -109,7 +117,9 @@ export const CUPS: { id: string; name: string; tracks: number[] }[] = [
   // PetroDragonic Apocalypse (2023), in album order: the speedway, the storm, the oil-field dragons, and Mars on fire.
   { id: 'petrodragonic-apocalypse', name: 'PetroDragonic Apocalypse Cup', tracks: [32, 33, 34, 35] },
   // Phantom Island (2025): the island in the mist, the plane with no engine, the forest that's awake, and the sea at night.
-  { id: 'phantom-island', name: 'Phantom Island Cup', tracks: [36, 37, 38, 39] },
+  // The Silver Cord (October 2023), in album order: the young Earth and the planet that hits it, the god in the red land, the goddess on the Moon, and the hero's road out of Uruk.
+  { id: 'silver-cord', name: 'Silver Cord Cup', tracks: [36, 37, 38, 39] },
+  { id: 'phantom-island', name: 'Phantom Island Cup', tracks: [40, 41, 42, 43] },
 ];
 
 /** Cups that were retired when every cup became an album's, and the album cup that took most of each one's tracks: progress.ts carries their trophies over. */

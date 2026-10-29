@@ -77,6 +77,10 @@ const LIFE: Record<DecorKind, LifeSpec> = {
   bandroom: { flock: { kind: 'bat', color: 0x1a0a1a, count: 10, height: 18, size: 0.9 }, motes: { color: 0xff90c0, count: 260, size: 0.4, drift: 'float', glow: true } },
   wetland: { flock: { kind: 'bird', color: 0x2a2a2a, count: 14, height: 22, size: 1.0 }, motes: { color: 0xc8d0d8, count: 600, size: 0.3, drift: 'fall' } },
   party: { flock: { kind: 'moth', color: 0xffd070, count: 14, height: 10, size: 0.7 }, motes: { color: 0xffc0f0, count: 360, size: 0.4, drift: 'float', glow: true } },
+  hadean: { flock: { kind: 'orb', color: 0xe8f0ff, count: 14, height: 22, size: 0.7, glow: true }, motes: { color: 0xff9a40, count: 400, size: 0.45, drift: 'rise', glow: true } },
+  deshret: { flock: { kind: 'vulture', color: 0x1a1008, count: 8, height: 28, size: 1.5 }, motes: { color: 0xe8a070, count: 420, size: 0.5, drift: 'blow' } },
+  moonpalace: { flock: { kind: 'orb', color: 0xff5a30, count: 16, height: 14, size: 0.8, glow: true }, motes: { color: 0xffe080, count: 300, size: 0.35, drift: 'float', glow: true } },
+  uruk: { flock: { kind: 'bird', color: 0x2a2a30, count: 12, height: 24, size: 1.0 }, motes: { color: 0xc8c0b0, count: 300, size: 0.4, drift: 'blow' } },
   canopy: { flock: { kind: 'bird', color: 0x1a2a1a, count: 16, height: 26, size: 1.0 }, motes: { color: 0xc0f080, count: 340, size: 0.4, drift: 'fall' } },
   static: { flock: { kind: 'orb', color: 0x80ff90, count: 12, height: 18, size: 0.7, glow: true }, motes: { color: 0xc080ff, count: 460, size: 0.45, drift: 'float', glow: true } },
 };

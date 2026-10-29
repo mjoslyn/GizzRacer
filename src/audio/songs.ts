@@ -13,6 +13,7 @@ const IDPLML = { album: 'Ice, Death, Planets, Lungs, Mushrooms and Lava', year: 
 const PDA = { album: 'PetroDragonic Apocalypse', year: 2023 };
 const FMB = { album: 'Flying Microtonal Banana', year: 2017 };
 const TBB = { album: '12 Bar Bruise', year: 2012 };
+const TSC = { album: 'The Silver Cord', year: 2023 };
 
 export const TRACK_SONGS: Record<string, TrackSong> = {
   'robot-stop': { title: 'Robot Stop', album: 'Nonagon Infinity', year: 2016 },
@@ -55,6 +56,10 @@ export const TRACK_SONGS: Record<string, TrackSong> = {
   muckraker: { title: 'Muckraker', ...TBB },
   'cut-throat-boogie': { title: 'Cut Throat Boogie', ...TBB },
   'sea-of-trees': { title: 'Sea of Trees', ...TBB },
+  theia: { title: 'Theia', ...TSC },
+  set: { title: 'Set', ...TSC },
+  'chang-e': { title: "Chang'e", ...TSC },
+  gilgamesh: { title: 'Gilgamesh', ...TSC },
 };
 
 /**

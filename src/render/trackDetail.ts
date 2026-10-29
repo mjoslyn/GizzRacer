@@ -297,6 +297,34 @@ const STYLES: Record<DecorKind, DetailStyle> = {
     boards: { words: ['SEA OF TREES', 'UNDERWATER', 'JAM', 'UNFOLD'], bg: ['#1a3a24', '#4a8a4a'], fg: '#f0fff0' },
     crowd: true,
   },
+  hadean: {
+    edge: { kind: 'torch', height: 1.6, spacing: 14, color: 0x1a1618, stripe: 0xc8d0e0 },
+    light: 0xe8f0ff,
+    cover: { shape: 'pebble', colors: [0x1a1618, 0x2a2428, 0xff6a20, 0x3a3034], count: 1100 },
+    boards: { words: ['THEIA', 'MEET OUR MAKER', 'DANCE WITH THEIA', 'THE SILVER CORD'], bg: ['#140a08', '#3a1a0a'], fg: '#ffd890' },
+    crowd: true,
+  },
+  deshret: {
+    edge: { kind: 'torch', height: 2.2, spacing: 16, color: 0xc8a070, stripe: 0x2a5aa0 },
+    light: 0xffb040,
+    cover: { shape: 'pebble', colors: [0xb05a30, 0xd08050, 0x8a3a20, 0xe8c080], count: 1200 },
+    boards: { words: ['SLAY THE MIGHTY SET', 'RESET', 'GOD OF DUALITY', 'HIEROGLYPHIC'], bg: ['#1a2a6a', '#c05a20'], fg: '#ffe090' },
+    crowd: true,
+  },
+  moonpalace: {
+    edge: { kind: 'lamp', height: 2.6, spacing: 14, color: 0xb02020, stripe: 0xe0b040 },
+    light: 0xff6a40,
+    cover: { shape: 'crystal', colors: [0x40c090, 0xe0e4f0, 0xffd060, 0x80f0c0], count: 900 },
+    boards: { words: ["CHANG'E", 'THE VOYAGER', 'SAILING THE MOON-SEA', 'PALACE AMONGST STARS'], bg: ['#0a0a2a', '#8a1a20'], fg: '#ffe8a0' },
+    crowd: true,
+  },
+  uruk: {
+    edge: { kind: 'torch', height: 1.8, spacing: 15, color: 0x8a6a48, stripe: 0x2a5aa0 },
+    light: 0xffa040,
+    cover: { shape: 'tuft', colors: [0x8a7a50, 0xa89060, 0x6a6048, 0x40c0e0], count: 1300 },
+    boards: { words: ['GILGAMESH', 'HEAR MY NAME', 'HOUSE OF DUST', 'FOR IMMORTALITY'], bg: ['#1a2a5a', '#6a4a2a'], fg: '#ffd890' },
+    crowd: true,
+  },
   sky: {
     edge: { kind: 'star', height: 1.4, spacing: 14, color: 0xffe8a0, stripe: 0xffffff },
     light: 0xfff0ff,
@@ -379,7 +407,7 @@ export function roadPaint(ribbon: Ribbon, decor: DecorKind, edgeLine?: number, e
     line[i] = -Math.max(-0.55, Math.min(0.55, (sum / 25) * 14));
   }
   const paintable = new Set(['asphalt']);
-  const wearable = new Set(['asphalt', 'salt', 'rock', 'sand', 'boards', 'regolith', 'wet', 'paving', 'reef', 'flagstone', 'membrane', 'steel', 'scorched', 'fret', 'tar', 'gilded', 'heatshield', 'brimstone', 'neural', 'film', 'fuzz', 'carpet', 'muck', 'moss']);
+  const wearable = new Set(['asphalt', 'salt', 'rock', 'sand', 'boards', 'regolith', 'wet', 'paving', 'reef', 'flagstone', 'membrane', 'steel', 'scorched', 'fret', 'tar', 'gilded', 'heatshield', 'brimstone', 'neural', 'film', 'fuzz', 'carpet', 'muck', 'moss', 'hieroglyph', 'mudbrick']);
   for (let i = 0; i < segs; i++) {
     const j = (i + 1) % n;
     const sMid = (sp.dist[i] + (j === 0 ? sp.length : sp.dist[j])) / 2;
