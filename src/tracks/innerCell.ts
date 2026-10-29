@@ -3,11 +3,33 @@ import type { BranchDef, TrackDef } from './track';
 
 const K = 1.12;
 const DEG = Math.PI / 180;
-const START: Pose = { x: -100 * K, z: -130 * K, h: 100 * DEG };
+/** A point in the cell, in builder units, the cell's middle at (CX, CZ). */
+const CX = -60;
+const CZ = -50;
+const wp = (x: number, z: number, h: number): Pose => ({ x: (x - CX) * K, z: (z - CZ) * K, h });
+const START: Pose = wp(170, -200, 0);
 const FINISH = 45;
-/** The cell's near end and its shoulders bend round on arcs of this radius; the far end closes the lap on arcs of the other. */
-const LOBE_R = 120;
-const FAR_R = 90;
+/**
+ * The mitochondrion's folds (its cristae): three legs back and forth
+ * across the middle of the cell at these heights on the map, from this far
+ * east, with hairpins of this radius between them.
+ */
+const FOLD_Z = [90, 26, -38];
+const FOLD_EAST = 40;
+const FOLD_R = 32;
+/** The Endoplasmic Loop's turns, where it starts back north over the folds, and how high it runs. */
+const LOOP_R = 45;
+const LOOP_X = -20;
+const LOOP_Z = -170;
+const LOOP_TOP = 13;
+/** The north side of the cell, the west and the south. */
+const TOP_Z = 220;
+const RIM_X = -300;
+const SOUTH_Z = -368;
+/** How deep the Lysosome Sink runs. */
+const SINK_DEPTH = 6;
+/** The Golgi's stacked membranes either side. */
+const GOLGI_WALL = 4;
 /**
  * The Nuclear Rim: the membrane pinched in round the nucleus, a broad bowl of
  * this radius between two tighter shoulders of the next; each shoulder turns
@@ -16,81 +38,97 @@ const FAR_R = 90;
 const RIM_R = 131;
 const RIM_SHOULDER = 45;
 const RIM_TURN = 50;
-/** The Endoplasmic Loop's radius, how far round it turns, and how high it climbs. */
-const LOOP_R = 21;
-const LOOP_TURN = 330;
-const LOOP_TOP = 13;
-/** How deep the Lysosome Sink runs. */
-const SINK_DEPTH = 6;
-/** The Golgi's stacked membranes either side. */
-const GOLGI_WALL = 4;
 
 /**
  * Inner Cell (the Polygondwanaland Cup's third), after the song: a road
- * through a living cell, seen from the size of a ribosome. The lap is the
- * cell itself, a fat kidney bean with its membrane pinched in on one side.
- * Through the Membrane Pass (two kickers) along its round back, down the
- * Cytoplasm Stream, where vesicles drift across, round the Mitochondria
- * Esses at the near end and up the Endoplasmic Loop, most of a turn out
- * past the end and over the road it came in on. Jinks through the stacked
- * membranes of the Golgi, the Lysosome Sink 6 m down, and the Nuclear Rim
- * curving in round the nucleus where the membrane is pinched, which the
- * Nuclear Pore cuts straight across. Then a jump over a pool of cytoplasm
- * and round the far end home.
+ * through a living cell, seen from the size of a ribosome. The lap goes
+ * round the inside of the cell's membrane and through its organelles. Up
+ * the Membrane Pass (two kickers) along the cell's east side and on up the
+ * Cytoplasm Stream, where vesicles drift across; then into the
+ * mitochondrion, the Mitochondria Esses folding back and forth across the
+ * middle of the cell like its cristae, three folds and two hairpins, an S
+ * down each. The Endoplasmic Loop turns a full circle up the reticulum to
+ * 13 m, round under the folds and back north over all three of them, and
+ * flies off the top. Along the north through the Golgi Switchbacks between
+ * stacked membranes, round onto the Nuclear Rim down the west side, curving
+ * in round the nucleus, which the Nuclear Pore cuts straight across; the
+ * Lysosome Sink 6 m down, and back east along the south over the Ribosome
+ * Jump, a pool of cytoplasm, home. The lap is long, so a race is two of
+ * them.
  */
 export function buildInnerCell(): TrackDef {
   const b = new TrackBuilder(START, 'Membrane Pass', { halfWidth: 11, surface: 'membrane' });
   b.scale = K;
   b.straight(40).mark('kick1').kicker().straight(30).mark('kick2').kicker().straight(30);
 
+  // Up the east side of the cell on the stream.
   b.section('Cytoplasm Stream', { halfWidth: 10, surface: 'membrane' });
   b.mark('stream');
-  b.arc(260, -30);
+  b.arc(120, 20).arc(120, -40).arc(120, 20);
   b.mark('streamEnd');
+  b.turnTo(wp(FOLD_EAST, FOLD_Z[0], -90 * DEG), 40);
+
+  // The mitochondrion's folds: back and forth across the middle of the cell, an S down each.
   b.section('Mitochondria Esses', { halfWidth: 9.5, wallHeight: 1.2, surface: 'membrane' });
   b.mark('esses');
-  b.arc(LOBE_R, -50).arc(40, 20).arc(40, -40).arc(40, 20).arc(LOBE_R, -50);
+  fold(b);
+  b.arc(FOLD_R, -180);
+  fold(b);
+  b.arc(FOLD_R, 180);
+  fold(b);
+  b.mark('essesEnd');
 
-  // Most of a turn up the reticulum and over the road below.
+  // A full turn up the reticulum and back north over every fold, and off the top.
   b.section('Endoplasmic Loop', { halfWidth: 9, wallHeight: 1.2, surface: 'membrane', bridge: true });
   b.mark('loop');
-  b.arc(LOOP_R, LOOP_TURN);
+  b.turnTo(wp(LOOP_X, LOOP_Z, 0), LOOP_R);
+  b.mark('loopUp');
+  b.arc(200, 15).arc(200, -30).arc(200, 15);
   b.mark('loopTop');
-  b.straight(45);
+  b.turnTo(wp(LOOP_X - LOOP_R, TOP_Z, -90 * DEG), LOOP_R);
+  b.mark('loopEnd');
 
+  // Along the north of the cell between the stacked membranes.
   b.section('Golgi Switchbacks', { halfWidth: 8.5, wallHeight: GOLGI_WALL, surface: 'membrane' });
   b.mark('golgi');
   b.straight(10).arc(25, 35).arc(25, -70).arc(25, 35).straight(10);
-  b.section('Lysosome Sink', { halfWidth: 9, wallHeight: GOLGI_WALL, surface: 'membrane' });
-  b.mark('sink');
-  b.arc(LOBE_R, -30);
-  b.mark('sinkEnd');
-  b.straight(10);
 
+  // Round and down the west side, curving in round the nucleus.
   b.section('Nuclear Rim', { halfWidth: 9.5, surface: 'membrane' });
   b.mark('rim');
+  b.turnTo(wp(RIM_X, TOP_Z - 100, 180 * DEG), 90);
   b.straight(5);
   b.mark('poreFrom');
   b.arc(RIM_SHOULDER, -RIM_TURN).arc(RIM_R, 2 * RIM_TURN).arc(RIM_SHOULDER, -RIM_TURN);
   b.mark('poreTo');
+  b.straight(10);
+  b.section('Lysosome Sink', { halfWidth: 9, wallHeight: GOLGI_WALL, surface: 'membrane' });
+  b.mark('sink');
+  b.arc(200, -15).arc(200, 15);
+  b.mark('sinkEnd');
+  b.straight(10);
 
+  // Back east along the south of the cell.
   b.section('Ribosome Jump', { halfWidth: 9, wallHeight: 1.2, surface: 'membrane' });
   b.mark('jump');
-  b.arc(LOBE_R, -20).straight(10).mark('ramp').elevate(0).rise(18, 3);
+  b.arc(90, -90);
+  b.straight(10).mark('ramp').elevate(0).rise(18, 3);
   b.gap(13, 30, 'water');
   b.elevate(0).straight(20);
   b.mark('jumpEnd');
-  b.turnTo(offsetPose(START, -FINISH * K), FAR_R);
+  b.arc(80, -25).arc(80, 50).arc(80, -25);
+  b.turnTo(wp(80, SOUTH_Z, 90 * DEG), 90);
+  b.turnTo(offsetPose(START, -FINISH * K), 90);
   b.section('Finish Straight', { halfWidth: 11, surface: 'membrane' });
   b.mark('finish');
   b.straight(FINISH);
 
-  // Heights, over the layout: swells in the stream, up the loop and off it, the sink.
+  // Heights, over the layout: swells in the stream, up the loop and over the folds, off the top, the sink.
   const m = (name: string, d = 0) => b.marks[name].s + d * K;
   b.profile(m('stream', 60), m('streamEnd', -5), (u) => 2.5 * Math.sin(2 * Math.PI * u) ** 2);
-  ease(b, m('loop'), 0, m('loopTop'), LOOP_TOP);
-  b.profile(m('loopTop'), m('loopTop', 40), () => LOOP_TOP, 10);
-  plunge(b, m('loopTop', 40), LOOP_TOP, m('loopTop', 95), 0);
+  ease(b, m('loop', 20), 0, m('loopUp'), LOOP_TOP);
+  b.profile(m('loopUp'), m('loopTop', 85), () => LOOP_TOP, 10);
+  plunge(b, m('loopTop', 85), LOOP_TOP, m('loopTop', 165), 0);
   ease(b, m('sink', 10), 0, m('sink', 50), -SINK_DEPTH);
   ease(b, m('sink', 50), -SINK_DEPTH, m('sinkEnd', 10), 0);
   b.profile(m('jumpEnd', 10), m('finish', -10), (u) => 3 * Math.sin(Math.PI * u) ** 2);
@@ -106,11 +144,12 @@ export function buildInnerCell(): TrackDef {
     pits: [...b.pits, ...pore.pits],
     boostPads: [
       { s: 40, length: 8, lateral: 0, halfWidth: 2.5 },
-      { s: at('loopTop', 30), length: 8, lateral: 0, halfWidth: 2.5 },
-      { s: at('jump', 70), length: 8, lateral: 0, halfWidth: 2.5 },
+      { s: at('loopUp', 30), length: 8, lateral: 0, halfWidth: 2.5 },
+      { s: at('jump', 40), length: 8, lateral: 0, halfWidth: 2.5 },
     ],
-    checkpoints: ['stream', 'esses', 'loop', 'golgi', 'sink', 'rim', 'jump'].map((k) => b.marks[k].s / main.length),
-    laps: 3,
+    checkpoints: ['stream', 'esses', 'loop', 'golgi', 'rim', 'sink', 'jump'].map((k) => b.marks[k].s / main.length),
+    // A long way round the cell: two laps of it are a race.
+    laps: 2,
     bounds: 440,
     landmarks: [
       { kind: 'cellGate', ribbon: -1, s: 6 },
@@ -121,7 +160,7 @@ export function buildInnerCell(): TrackDef {
       { s: 75, count: 4 },
       { s: at('stream', 20), count: 4 },
       { s: at('esses', 60), count: 3 },
-      { s: at('jump', 50), count: 3 },
+      { s: at('loopTop', 20), count: 3 },
       { s: at('rim', 45), count: 4 },
       { s: pore.boxes, count: 1, ribbon: 0, double: true },
     ],
@@ -132,6 +171,11 @@ export function buildInnerCell(): TrackDef {
     theme: 'cell',
     music: { lap: 'inner-cell', finalLap: 'inner-cell-final-lap' },
   };
+}
+
+/** One of the mitochondrion's folds: across the cell from one hairpin to the next, with an S in the middle. */
+function fold(b: TrackBuilder): void {
+  b.straight(12).arc(90, 18).arc(90, -36).arc(90, 18).straight(12);
 }
 
 /** Eases the road's height from y0 at arc length s0 to y1 at s1. */
