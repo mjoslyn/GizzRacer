@@ -18,7 +18,9 @@
 // tools/render-soundtrack.mjs reads from seqbaby-seed's people.mjs (the
 // gizzracer person's songs). `bars` is one pass of the chain in bars of
 // pattern 0's meter (every song here keeps one meter throughout), and build()
-// returns the session window.seqbaby.applySet loads. Import it from a seed
+// returns the session window.seqbaby.applySet loads. The score helpers are
+// exported for the other cups' remixes written the same way
+// (tools/twelve-bar-bruise-cup-songs.mjs). Import it from a seed
 // checkout's people.mjs as `songs: [...otherSongs, ...SONGS]`; the renderer
 // sets SEQBABY_DIR before it imports people.mjs, and songBuilder.js is loaded
 // from there.
@@ -51,12 +53,12 @@ const sb = await import(pathToFileURL(path.join(SEQBABY_DIR, 'public/js/songBuil
 // ---------------------------------------------------------------------------
 
 const RATCHET = { r: ['x', 2], R: ['X', 3], q: ['x', 4] };
-const words = (v) => (Array.isArray(v) ? v : String(v).trim().split(/\s+/)).map((x) => (x === '-' ? null : x));
+export const words = (v) => (Array.isArray(v) ? v : String(v).trim().split(/\s+/)).map((x) => (x === '-' ? null : x));
 const tokens = (s) => String(s).replace(/[\s|]/g, '').split('');
 /** Repeat a step string (or anything) n times. */
-const rep = (s, n) => Array(n).fill(s).join(' ');
+export const rep = (s, n) => Array(n).fill(s).join(' ');
 
-function compose({ bpm, meter = '4/4', mix = 1, tracks, sections }) {
+export function compose({ bpm, meter = '4/4', mix = 1, tracks, sections }) {
   const [num, den] = meter.split('/').map(Number);
   const spb = (num * 16) / den;
   const song = sb.newSong({ bpm });
@@ -149,14 +151,14 @@ function compose({ bpm, meter = '4/4', mix = 1, tracks, sections }) {
 }
 
 /** Bars of one chain pass, for the cue's loop length. */
-const barsOf = (sections) => sections.reduce((n, s) => n + s.bars, 0);
+export const barsOf = (sections) => sections.reduce((n, s) => n + s.bars, 0);
 
 /** Notes moved by `semis` semitones: tr('A2 C3', 12) -> [A3, C4]. */
-const tr = (notes, semis) => words(notes).map((x) => (x == null ? null : sb.toMidi(x) + semis));
+export const tr = (notes, semis) => words(notes).map((x) => (x == null ? null : sb.toMidi(x) + semis));
 
 /** Drum parts for a section: `groove` per piece for every bar but the last, `fill` for the last
  *  (a piece missing from the fill keeps its groove; '' rests), and a crash on the one. */
-function beat(bars, spb, groove, fill = {}, { crash = true } = {}) {
+export function beat(bars, spb, groove, fill = {}, { crash = true } = {}) {
   const rest = '.'.repeat(spb);
   const out = {};
   for (const k of new Set([...Object.keys(groove), ...Object.keys(fill)])) {
@@ -173,20 +175,20 @@ function beat(bars, spb, groove, fill = {}, { crash = true } = {}) {
 // ---------------------------------------------------------------------------
 
 /** A sampler drum kit, one track per piece. */
-function kit(name, { vol = {}, pieces = ['kick', 'snare', 'hihat', 'openhat', 'crash', 'tom1', 'tom2'], tune = {} } = {}) {
+export function kit(name, { vol = {}, pieces = ['kick', 'snare', 'hihat', 'openhat', 'crash', 'tom1', 'tom2'], tune = {} } = {}) {
   const base = { kick: 0.9, snare: 0.8, hihat: 0.85, openhat: 0.55, crash: 0.7, tom1: 0.6, tom2: 0.65, ride: 0.55, rim: 0.6 };
   const names = { kick: 'kick', snare: 'snare', hihat: 'hat', openhat: 'open hat', crash: 'crash', tom1: 'tom hi', tom2: 'tom lo', ride: 'ride', rim: 'rim' };
   return pieces.map((p) => ({ name: names[p], engine: 'sampler', sample: `${name}/${p}`, drum: true, params: { vol: vol[p] ?? base[p] }, ...(tune[p] ? { note: tune[p] } : {}) }));
 }
 
 /** The fx bus every melodic part sends to: a room and a dotted-eighth echo. */
-const verbBus = (decay = 2.4, wet = 0.32, delay = 0.18) => ({
+export const verbBus = (decay = 2.4, wet = 0.32, delay = 0.18) => ({
   name: 'verb', engine: 'bus',
   fx: { delay: { sync: true, div: 0.75, fbk: 0.32, wet: delay }, reverb: { decay, wet } },
 });
 
 /** An 8-bit pulse: snarl with only its pulse oscillator, through a bit crusher. */
-const chip = (name, { vol = 0.45, pw = 0.5, bits = 8, out = 'verb', cutoff = 0.55 } = {}) => ({
+export const chip = (name, { vol = 0.45, pw = 0.5, bits = 8, out = 'verb', cutoff = 0.55 } = {}) => ({
   name, engine: 'dm:snarl', out,
   params: { vol, harm: 0, timb: pw, osc1: 0, osc2: 0.9, osc3: 0, osc4: 0, ultra: 0, fm: 0, metal: 0 },
   filter: { cutoff },
@@ -418,7 +420,7 @@ const isHit = (c) => !'._-'.includes(c);
 const hits = (s) => tokens(s).filter(isHit).length;
 
 /** Rotate a phrase to start `k` steps later (so the bar line falls on the band's downbeat), notes and all. */
-function rotate(part, k) {
+export function rotate(part, k) {
   if (!part || !k) return part;
   const tok = tokens(part.s);
   const n = words(part.n);
@@ -428,7 +430,7 @@ function rotate(part, k) {
 }
 
 /** Move a line by octaves. */
-const oct = (part, n) => (part ? { s: part.s, n: tr(part.n, 12 * n) } : null);
+export const oct = (part, n) => (part ? { s: part.s, n: tr(part.n, 12 * n) } : null);
 
 /**
  * One four-bar section from a transcribed phrase. `song` holds the meter's
@@ -438,7 +440,7 @@ const oct = (part, n) => (part ? { s: part.s, n: tr(part.n, 12 * n) } : null);
  * tones); `extra` adds or
  * overrides parts.
  */
-function section(song, phrase, { final = false, use = {}, extra = {}, drums = 'groove', crash = true } = {}) {
+export function section(song, phrase, { final = false, use = {}, extra = {}, drums = 'groove', crash = true } = {}) {
   const { spb, rot = 0, rowBars = 1 } = song;
   const bars = 4;
   const tile = (p) => (p && hits(p.s) ? { s: rep(p.s, bars / (phrase.bars * rowBars)), n: p.n } : null);
@@ -473,7 +475,7 @@ function section(song, phrase, { final = false, use = {}, extra = {}, drums = 'g
 }
 
 /** The lap and final-lap scores of one song: `order` / `finalOrder` name its sections in playing order. */
-function scoreOf(song, final) {
+export function scoreOf(song, final) {
   const order = final ? song.finalOrder : song.order;
   return {
     bpm: final ? song.bpm + song.finalPlus : song.bpm,
@@ -547,7 +549,7 @@ const POLYGONDWANALAND = {
 };
 
 /** A transcribed line rotated and tiled over four bars, for a part `section` does not place itself. */
-function tile4(song, phrase, k) {
+export function tile4(song, phrase, k) {
   const p = rotate(phrase[k], song.rot || 0);
   return p && hits(p.s) ? { s: rep(p.s, 4 / (phrase.bars * (song.rowBars || 1))), n: p.n } : null;
 }
@@ -750,7 +752,7 @@ const TETRACHROMACY = {
 
 // ---------------------------------------------------------------------------
 
-function cue(title, id, song) {
+export function cue(title, id, song) {
   return [false, true].map((final) => {
     const score = scoreOf(song, final);
     return {

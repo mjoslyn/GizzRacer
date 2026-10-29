@@ -22,10 +22,20 @@ const PER_SONG = 12;
 const CONCURRENCY = 8;
 const OUT = new URL('../public/music/bootlegs.json', import.meta.url);
 const SHOWS_OUT = new URL('../public/music/shows.json', import.meta.url);
-/** Start points and gains already found (tools/bootleg-starts.mjs), kept across a re-run. */
+/**
+ * Recordings left out: ones the Archive won't serve, and duplicates of
+ * recordings already in (the same release filed under another date).
+ */
+const SKIP = new Set([
+  "kglw2025-06-08.SBD.flac/King Gizzard & The Lizard Wizard - Live in Bulgaria '25 - 10 Sea of Trees (Live in Bulgaria '25).mp3",
+  "kg2022-10-11/38. Sea Of Trees (Live At Red Rocks '22).mp3",
+  "kg2022-11-02/67. Cut Throat Boogie (Live At Red Rocks '22).mp3",
+  'kglw2026-08-16.Full-Three-Shows-discocape/kglw2026-08-14-4ch_discocape_20.mp3',
+]);
+/** Start points and gains already found (tools/bootleg-starts.mjs), and ends (tools/live-edges.py), kept across a re-run. */
 const known = new Map();
 try {
-  for (const recs of Object.values(JSON.parse(readFileSync(OUT, 'utf8')))) for (const r of recs) if (r.start !== undefined) known.set(`${r.id}/${r.file}`, { start: r.start, gain: r.gain });
+  for (const recs of Object.values(JSON.parse(readFileSync(OUT, 'utf8')))) for (const r of recs) if (r.start !== undefined) known.set(`${r.id}/${r.file}`, { start: r.start, ...(r.end !== undefined ? { end: r.end } : {}), gain: r.gain });
 } catch {
   // First run.
 }
@@ -113,13 +123,13 @@ async function scan(show) {
   // A show worth playing whole: a real set, not a one-song snippet.
   if (mp3s.length >= 4 && date && !playable.has(date)) playable.set(date, { id: show.identifier, date, venue });
   for (const f of meta.files) {
-    if (f.format !== 'VBR MP3') continue;
+    if (f.format !== 'VBR MP3' || SKIP.has(`${show.identifier}/${f.name}`)) continue;
     const title = f.title ?? f.name.replace(/\.mp3$/i, '').replace(/^[\dds]+[-_. ]+/i, '');
     for (const song of songsIn(title)) {
       const byDate = found.get(song);
       if (byDate.has(date)) continue;
       const rec = { id: show.identifier, file: f.name, date, venue, seconds: seconds(f.length) };
-      // Where its music starts and its gain, if tools/bootleg-starts.mjs already worked them out.
+      // Where its music starts and ends and its gain, if they were already worked out.
       const read = known.get(`${rec.id}/${rec.file}`);
       byDate.set(date, read ? { ...rec, ...read } : rec);
     }
