@@ -1,8 +1,8 @@
 import { TrackBuilder, offsetPose, type Pose } from './builder';
 import type { BranchDef, TrackDef } from './track';
 
-const K = 1.2;
-const START: Pose = { x: -262 * K, z: -40 * K, h: Math.PI / 2 };
+const K = 1.16;
+const START: Pose = { x: -258 * K, z: -40 * K, h: Math.PI / 2 };
 const FINISH = 45;
 /** Dual Mono: the right channel swings out round the speaker stacks in three arcs of this radius and turn; the left runs straight. */
 const MONO_R = 40;
@@ -25,26 +25,35 @@ const CREST = 9;
  * party, all night: a seventies boogie in a backyard, a lit dance floor for
  * a road, mirror balls, lava lamps and fairy lights, harmonica on the
  * gates. The lap is an open cut-throat razor: down Boogie Straight (two
- * kickers) along the handle, and Set Sail ("buckle me in"), a leap over
- * the pool, round the Pivot where the blade folds, and back along the
- * blade's spine through Dual Mono, where the road splits in two, the right
- * channel swinging out round speaker stacks and the left channel straight
- * through, narrow and unrailed. Then Inches, sunk 6 m between walls of
- * speakers, cut-throat razors swinging across the road (a close shave is a
- * boost); the Stitch-Up, zigzag after zigzag; and the Blade Edge, one long
- * curve round the tip and home.
+ * kickers) along the underside of the handle and the Shuffle, two dance
+ * steps out and back, then Set Sail ("buckle me in"), a leap over the pool
+ * at the pivot; the Blade Edge swelling up its belly and dropping off to the
+ * Tip, and back along the blade's spine through Dual Mono, where the road
+ * splits in two, the right channel swinging out round speaker stacks and
+ * the left channel straight through, narrow and unrailed. Then Inches, sunk
+ * 6 m between walls of speakers, the Jugular Bend an S through it,
+ * cut-throat razors swinging across the road (a close shave is a boost);
+ * the Stitch-Up, stitch after stitch along the top of the handle, and round
+ * the Handle End home.
  */
 export function buildCutThroatBoogie(): TrackDef {
   const b = new TrackBuilder(START, 'Boogie Straight', { halfWidth: 11, surface: 'dancefloor' });
   b.scale = K;
   // Along the underside of the handle.
-  b.straight(40).mark('kick1').kicker().straight(34).mark('kick2').kicker().straight(110);
+  b.straight(40).mark('kick1').kicker().straight(34).mark('kick2').kicker().straight(30);
+  // The Shuffle: dance steps across the floor, left and right and back.
+  b.section('The Shuffle', { halfWidth: 10, wallHeight: 1.2, surface: 'dancefloor' });
+  b.mark('shuffle');
+  // Two steps out and back, away from the top of the handle.
+  for (let k = 0; k < 2; k++) b.arc(24, 40).arc(24, -80).arc(24, 40);
+  b.section('Off the Floor', { halfWidth: 10.5, surface: 'dancefloor' });
+  b.straight(10);
 
   // Set Sail: over the pool, at the pivot.
   b.section('Set Sail', { halfWidth: 9, wallHeight: 1.2, surface: 'dancefloor' });
   b.mark('sail');
   b.straight(20).mark('ramp').elevate(0).rise(18, 3);
-  b.gap(13, 30, 'water');
+  b.gap(13, 20, 'water');
   b.elevate(0).straight(25);
   b.mark('landed');
 
@@ -68,16 +77,17 @@ export function buildCutThroatBoogie(): TrackDef {
   // Inches: the narrow back of the pivot, sunk between walls of speakers.
   b.section('Inches', { halfWidth: 9, wallHeight: WALL, surface: 'dancefloor' });
   b.mark('inches');
-  b.arc(80, 20).straight(60).arc(80, -20).straight(40);
+  // The Jugular Bend: an S between the speakers, the razors swinging across it.
+  b.straight(10).arc(45, 40).arc(45, -80).arc(45, 40).arc(50, 30).straight(10).arc(50, -30);
   b.mark('inchesEnd');
   b.straight(10);
 
   // Along the top of the handle, stitched.
   b.section('The Stitch-Up', { halfWidth: 10, wallHeight: 1.2, surface: 'dancefloor' });
   b.mark('stitch');
-  b.arc(STITCH_R, -STITCH_TURN / 2);
-  for (let k = 0; k < 4; k++) b.arc(STITCH_R, k % 2 ? -STITCH_TURN : STITCH_TURN);
-  b.arc(STITCH_R, STITCH_TURN / 2);
+  // Stitch after stitch along the top of the handle, each one out and back.
+  b.straight(20);
+  for (let k = 0; k < 2; k++) b.arc(STITCH_R, STITCH_TURN / 2).arc(STITCH_R, -STITCH_TURN).arc(STITCH_R, STITCH_TURN / 2);
   b.section('Handle End', { halfWidth: 10.5, surface: 'dancefloor' });
   b.mark('handle');
   b.straight(40);

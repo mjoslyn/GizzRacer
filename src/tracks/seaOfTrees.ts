@@ -14,6 +14,8 @@ const WALL = 6;
 /** The Jam swings out round a hollow in three arcs of this radius and turn. */
 const JAM_R = 38;
 const JAM_TURN = 70;
+/** How high the roots heave the road on the way home. */
+const ROOTS = 5;
 
 /**
  * Sea of Trees (the 12 Bar Bruise Cup's finale), after the album's
@@ -22,19 +24,27 @@ const JAM_TURN = 70;
  * growing out of old lava, moss over everything and caves under it. The
  * song feels underwater, its head sinking like a stone; it was first
  * called "Jam", and it ends suddenly because the band ran out of tape. The
- * lap: down the Tree Line (two kickers) and up onto the Canopy, the road
+ * lap: down the Tree Line (two kickers) and the Forest Path's esses between
+ * the trunks, and up onto the Canopy, the road
  * laid over the treetops, rolling over six swells like a sea; Unfold, a
  * bend that opens out as it goes; then Sinking Like a Stone, a plunge down
  * through the leaves, and Underwater, sunk 8 m in the green dark between
- * walls of lava rock, trees toppling across the road. Up the Lava Tube,
- * round the Jam, swinging out round a hollow (the Rope Bridge strings
- * straight across it, no rails, on the final lap only), and Out of Tape,
- * home. Trees come down on the Canopy too.
+ * walls of lava rock, swaying round the roots, trees toppling across the
+ * road. Up the Lava Tube, round the Jam, swinging out round a hollow (the
+ * Rope Bridge strings straight across it, no rails, on the final lap only),
+ * the Tape Hiss wavering like a tape running slow, the Root Gully leap, and
+ * Out of Tape, home over the roots. Trees come down on the Canopy too.
  */
 export function buildSeaOfTrees(): TrackDef {
   const b = new TrackBuilder(START, 'The Tree Line', { halfWidth: 11, surface: 'moss' });
   b.scale = K;
-  b.straight(40).mark('kick1').kicker().straight(34).mark('kick2').kicker().straight(130);
+  b.straight(40).mark('kick1').kicker().straight(34).mark('kick2').kicker().straight(40);
+  // The Forest Path: esses between the trunks.
+  b.section('Forest Path', { halfWidth: 9.5, wallHeight: 1.2, surface: 'moss' });
+  b.mark('path');
+  b.arc(32, 40).arc(32, -80).arc(32, 80).arc(32, -40);
+  b.section('Edge of the Trees', { halfWidth: 10.5, surface: 'moss' });
+  b.straight(10);
   b.arc(50, -90);
 
   // Up on the treetops, rolling over the swells.
@@ -56,7 +66,8 @@ export function buildSeaOfTrees(): TrackDef {
   b.straight(70);
   b.section('Underwater', { halfWidth: 9, wallHeight: WALL, surface: 'moss' });
   b.mark('under');
-  b.straight(230);
+  // Swaying round the roots in the green dark.
+  b.straight(30).arc(60, 35).arc(60, -70).arc(60, 35).straight(40);
   b.mark('underEnd');
   b.section('Lava Tube', { halfWidth: 9.5, wallHeight: WALL, surface: 'moss' });
   b.mark('tube');
@@ -70,7 +81,20 @@ export function buildSeaOfTrees(): TrackDef {
   b.mark('bridgeFrom');
   b.arc(JAM_R, JAM_TURN).arc(JAM_R, -2 * JAM_TURN).arc(JAM_R, JAM_TURN);
   b.mark('bridgeTo');
-  b.straight(40);
+  b.straight(15);
+  // Tape Hiss: the road wavering like a tape running slow.
+  b.section('Tape Hiss', { halfWidth: 10, surface: 'moss' });
+  b.mark('hiss');
+  b.arc(40, 30).arc(40, -60).arc(40, 60).arc(40, -30);
+  b.mark('hissEnd');
+
+  // The Root Gully: a leap over a cleft in the old lava, roots hanging into it.
+  b.section('Root Gully', { halfWidth: 9, wallHeight: 1.2, surface: 'moss' });
+  b.mark('gully');
+  b.straight(15).mark('ramp').elevate(0).rise(18, 3);
+  b.gap(12, 20);
+  b.elevate(0).straight(15);
+  b.mark('gullyEnd');
 
   b.section('Out of Tape', { halfWidth: 11, surface: 'moss' });
   b.mark('tape');
@@ -89,6 +113,9 @@ export function buildSeaOfTrees(): TrackDef {
   plunge(b, m('sink'), CANOPY, m('under', 30), -DEPTH);
   b.profile(m('under', 30), m('underEnd'), () => -DEPTH, 10);
   ease(b, m('underEnd'), -DEPTH, m('tubeEnd', 20), 0);
+
+  // Out of Tape rolls over the roots, two humps and a crest to fly off.
+  b.profile(m('gullyEnd', 20), m('finish', -30), (u) => ROOTS * Math.sin(Math.PI * 2 * u) ** 2);
 
   const main = b.finish(true);
   const rope = buildRopeBridge(b.marks.bridgeFrom, b.marks.bridgeTo);

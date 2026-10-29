@@ -2,7 +2,7 @@ import { TrackBuilder, offsetPose, type Pose } from './builder';
 import type { BranchDef, TrackDef } from './track';
 
 const K = 1.1;
-const START: Pose = { x: -150 * K, z: -120 * K, h: Math.PI / 2 };
+const START: Pose = { x: -92 * K, z: -120 * K, h: Math.PI / 2 };
 const FINISH = 45;
 /** The rake's head: three tines the road runs out and back along, a hairpin of this radius at each tip, this long. */
 const TINE_R = 15;
@@ -16,6 +16,8 @@ const WALL = 6;
 /** The Power Station Climb: a full turn round the chimney, and the top of it. */
 const CLIMB_R = 30;
 const CLIMB_TOP = 14;
+/** How high the dunes on the Handle rise. */
+const DUNE = 4;
 
 /**
  * Muckraker (the 12 Bar Bruise Cup's second), after the album's second
@@ -25,11 +27,14 @@ const CLIMB_TOP = 14;
  * Reserve's wetlands and golfing by the old power station, so the world is
  * Anglesea in the rain on tape: wetlands, reeds and boardwalks, a golf
  * course gone to mud, the power station's chimney over it all. The lap is
- * a rake: from Cobweb Straight (two kickers) down the Handle, then through
+ * a rake: from Cobweb Straight (two kickers) down the Handle, an S over two
+ * dunes, then through
  * its head, out and back along three tines, hairpin after hairpin, raking
  * the muck. Into the Muck Pit, sunk 6 m between walls of mud, a rake
- * dragging one clean furrow through four lanes of muck; across the
- * Coogoorah Boardwalk over the wetland, no rails; the Ant Trail, narrow;
+ * dragging one clean furrow through four lanes of muck, the road an S
+ * between the banks; zigzagging across the Coogoorah Boardwalk over the
+ * wetland, no rails; the River Leap over the Anglesea River; the Ant Trail,
+ * narrow;
  * then the Fairway swinging out round a pond, which the Water Hazard jumps
  * straight across from lap 2; a full turn up round the chimney and over the
  * road below, and the Tempo Change, the song speeding up and slowing down,
@@ -38,11 +43,16 @@ const CLIMB_TOP = 14;
 export function buildMuckraker(): TrackDef {
   const b = new TrackBuilder(START, 'Cobweb Straight', { halfWidth: 11, surface: 'muck' });
   b.scale = K;
-  b.straight(40).mark('kick1').kicker().straight(34).mark('kick2').kicker().straight(40);
+  b.straight(34).mark('kick1').kicker().straight(26).mark('kick2').kicker().straight(40);
 
   b.section('The Handle', { halfWidth: 10, surface: 'muck' });
   b.mark('handle');
-  b.straight(110);
+  b.straight(30);
+  // Over the dunes behind the beach: an S, rising and falling.
+  b.mark('dunes');
+  b.arc(30, 30).arc(30, -60).arc(30, 30);
+  b.mark('dunesEnd');
+  b.straight(10);
 
   // The rake's head: out along each tine and back, a hairpin at every tip.
   b.section('The Tines', { halfWidth: 9, wallHeight: 1.2, surface: 'muck' });
@@ -69,14 +79,24 @@ export function buildMuckraker(): TrackDef {
 
   b.section('Muck Pit', { halfWidth: 9, wallHeight: WALL, surface: 'muck' });
   b.mark('pit');
-  b.straight(140);
+  // The rake's drag through the muck: an S between the banks.
+  b.straight(20).arc(70, 25).arc(70, -50).arc(70, 25);
   b.mark('pitEnd');
   b.straight(10);
 
   b.section('Coogoorah Boardwalk', { halfWidth: 9, surface: 'boards', bridge: true });
   b.mark('boardwalk');
-  b.straight(90);
+  // Zigzagging over the wetland, as Coogoorah's boardwalks do.
+  b.arc(22, 40).arc(22, -80).arc(22, 80).arc(22, -40);
   b.mark('boardwalkEnd');
+
+  // Over the Anglesea River where it runs out of the wetland.
+  b.section('River Leap', { halfWidth: 9, wallHeight: 1.2, surface: 'boards' });
+  b.mark('river');
+  b.straight(15).mark('ramp').elevate(0).rise(18, 3);
+  b.gap(12, 20, 'water');
+  b.elevate(0).straight(15);
+  b.mark('landed');
 
   b.section('Ant Trail', { halfWidth: 8, wallHeight: 1.2, surface: 'muck' });
   b.mark('ants');
@@ -100,6 +120,8 @@ export function buildMuckraker(): TrackDef {
   b.straight(FINISH);
 
   const m = (name: string, d = 0) => b.marks[name].s + d * K;
+  // Two dunes over the S on the Handle.
+  b.profile(m('dunes'), m('dunesEnd'), (u) => DUNE * Math.sin(Math.PI * 2 * u) ** 2);
   ease(b, m('pit', 100), -DEPTH, m('pitEnd', 10), 0);
   b.profile(m('climb'), m('climbTop'), (u) => CLIMB_TOP * u);
   b.profile(m('climbTop'), m('pit'), () => CLIMB_TOP, 10);
@@ -128,7 +150,7 @@ export function buildMuckraker(): TrackDef {
       { kind: 'powerStation', ribbon: -1, s: at('pit', 20), lateral: 130 },
     ],
     itemBoxes: [
-      { s: 75, count: 4 },
+      { s: 62, count: 4 },
       { s: at('drop', 20), count: 4 },
       { s: at('tinesEnd', 0), count: 3 },
       { s: at('boardwalk', 80), count: 3 },

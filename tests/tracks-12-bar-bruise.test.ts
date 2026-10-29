@@ -90,13 +90,13 @@ describe('12 Bar Bruise Cup', () => {
     const elbow = buildElbow();
     for (const n of ['Big Shot Straight', 'The Bended Elbow', 'The Forearm', 'The Fist', 'Backstab Alley', 'Hey Hey Esses', 'The Flange']) expect(section(elbow, n), n).toBeTruthy();
     const muck = buildMuckraker();
-    for (const n of ['Cobweb Straight', 'The Handle', 'The Tines', 'Power Station Climb', 'Muck Pit', 'Coogoorah Boardwalk', 'Ant Trail', 'The Fairway']) expect(section(muck, n), n).toBeTruthy();
+    for (const n of ['Cobweb Straight', 'The Handle', 'The Tines', 'Power Station Climb', 'Muck Pit', 'Coogoorah Boardwalk', 'River Leap', 'Ant Trail', 'The Fairway']) expect(section(muck, n), n).toBeTruthy();
     const boogie = buildCutThroatBoogie();
-    for (const n of ['Boogie Straight', 'Set Sail', 'The Blade Edge', 'The Tip', 'Dual Mono', 'Inches', 'The Stitch-Up']) expect(section(boogie, n), n).toBeTruthy();
+    for (const n of ['Boogie Straight', 'The Shuffle', 'Set Sail', 'The Blade Edge', 'The Tip', 'Dual Mono', 'Inches', 'The Stitch-Up']) expect(section(boogie, n), n).toBeTruthy();
     // Dual Mono: a left channel there every lap, as well as the right.
     expect(boogie.branches.find((b) => b.name === 'Left Channel')!.openOn).toBeUndefined();
     const trees = buildSeaOfTrees();
-    for (const n of ['The Tree Line', 'The Canopy', 'Unfold', 'Sinking Like a Stone', 'Underwater', 'Lava Tube', 'The Jam', 'Out of Tape']) expect(section(trees, n), n).toBeTruthy();
+    for (const n of ['The Tree Line', 'Forest Path', 'The Canopy', 'Unfold', 'Sinking Like a Stone', 'Underwater', 'Lava Tube', 'The Jam', 'Tape Hiss', 'Root Gully', 'Out of Tape']) expect(section(trees, n), n).toBeTruthy();
     // The canopy rolls: it rises and falls over its swells, up on the treetops.
     const track = new Track(trees);
     const canopy = section(trees, 'The Canopy')!;
