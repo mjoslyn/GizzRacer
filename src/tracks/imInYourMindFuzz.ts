@@ -1,22 +1,29 @@
 import { TrackBuilder, offsetPose, type Pose } from './builder';
 import type { BranchDef, TrackDef } from './track';
 
-const K = 1.12;
-const START: Pose = { x: -93 * K, z: -158 * K, h: -Math.PI / 2 };
+const K = 1.0;
+/** A waypoint on the swirl, in builder units. */
+const wp = (x: number, z: number, h: number): Pose => ({ x: x * K, z: z * K, h });
+const START: Pose = wp(240, -110, 0);
 const FINISH = 45;
+/** The radius of each quarter turn of the swirl, round the outside and then the inner turn. */
+const TURNS = [170, 110, 170, 100, 80];
+/** The Swirl at the eye: a coil this tight, turning this far, from the bottom of the Fuzz Pit up to the top. */
+const SWIRL_R = 40;
+const SWIRL_TURN = 528;
+const SWIRL_TOP = 14;
+/** How far down the far side the Wall of Sound takes to fall from the top to the ground. */
+const DROP = 80;
+/** How deep the Fuzz Pit is sunk: further down than any other cut in the cup. */
+const DEPTH = 8;
 /** The Needle Bend: the road swings out round a great meter in three arcs of this radius and turn. */
 const BEND_R = 34;
 const BEND_TURN = 70;
-/** The Swirl's radius, and the top of it. */
-const SWIRL_R = 22;
-const SWIRL_TOP = 14;
-/** How deep the Fuzz Pit is sunk: further down than any other cut in the cup. */
-const DEPTH = 8;
 /** The speaker stacks walling Amp Alley. */
 const WALL = 6;
-/** The square wave along the top: how tall each clipped tooth stands, and how wide its top and the gap after it. */
-const TOOTH_H = 40;
-const TOOTH_W = 45;
+/** The square wave: how tall each clipped tooth stands, and how wide its top and the gap after it. */
+const TOOTH_H = 30;
+const TOOTH_W = 36;
 /** The radius of each right-angled corner of the square wave. */
 const CORNER_R = 14;
 
@@ -24,83 +31,100 @@ const CORNER_R = 14;
  * I'm in Your Mind Fuzz (the Mind Fuzz Cup's finale), after the song the
  * suite ends on, the first one again with the fuzz turned up: a world gone
  * to static, purple and green, fuzz growing on everything, the album's
- * swirl turning in the sky. The lap is a long loop whose top run is a
- * square wave, the fuzz clipping a wave flat: three teeth, each straight
- * up, across and straight down. Down Overdrive Straight (two kickers) along
- * the bottom under a gate of amp stacks, round Feedback Bend and up the
- * left side, a full turn up the Swirl, over its own start, and the Wall of
- * Sound off the top. Then the square wave itself, Amp Alley, right angle
- * after right angle between speaker stacks 6 m tall, and down the right
- * side into the Fuzz Pit, sunk 8 m, patches of fuzz pulsing on the road in
- * both and the eye from the start of the suite opening over the pit again.
- * Round the last corner the Distortion Leap, and the Needle Bend swinging
- * out round a meter along the bottom, which Into the Red cuts straight
- * across on the final lap only.
+ * swirl turning in the sky. The lap is that swirl: it winds in round the
+ * outside, sinks into the Fuzz Pit on its inner turn, coils up out of the
+ * pit at the eye and flies straight out over its own turns. Up Overdrive
+ * Straight (two kickers) under a gate of amp stacks and round Feedback
+ * Bend; across the top, Amp Alley is a square wave, the fuzz clipping a
+ * wave flat: two teeth, each straight up, across and straight down,
+ * between speaker stacks 6 m tall. Fuzz Wire round the far side, the
+ * Distortion Leap, and the Needle Bend swinging out round a meter along
+ * the bottom, which Into the Red cuts straight across on the final lap
+ * only. Then Static, and the inner turn sunk 8 m in the Fuzz Pit, patches
+ * of fuzz pulsing on the road in both walled stretches and the eye from
+ * the start of the suite opening over the pit again. At the eye the Swirl
+ * coils up out of the pit, a turn and a half to 14 m, over itself; the
+ * Wall of Sound flies off the top straight out over the pit and Overdrive
+ * Straight, and drops away down the far side into the Feedback Loop, round
+ * and back onto the straight.
  */
 export function buildImInYourMindFuzz(): TrackDef {
   const b = new TrackBuilder(START, 'Overdrive Straight', { halfWidth: 11, surface: 'fuzz' });
   b.scale = K;
-  b.straight(40).mark('kick1').kicker().straight(30).mark('kick2').kicker().straight(50);
+  b.straight(25).mark('kick1').kicker().straight(25).mark('kick2').kicker().straight(70);
 
+  // Round the outside of the swirl, winding in.
   b.section('Feedback Bend', { halfWidth: 9.5, wallHeight: 1.2, surface: 'fuzz' });
   b.mark('feedback');
-  b.arc(40, 90).straight(10);
-
-  // A full turn up the album's swirl and over the road it started on.
-  b.section('The Swirl', { halfWidth: 9.5, wallHeight: 1.2, surface: 'fuzz', bridge: true });
-  b.mark('swirl');
-  b.arc(SWIRL_R, -360);
-  b.mark('swirlTop');
-  b.section('Wall of Sound', { halfWidth: 10, surface: 'fuzz' });
-  b.mark('wall');
-  // A shade away from the swirl it just climbed, so the two roads keep clear of each other.
-  b.arc(90, 10).straight(110).arc(90, -10);
-  b.arc(40, 90).straight(10);
-
-  // The square wave: up, across, down, across, three times over, between speaker stacks.
+  b.arc(TURNS[0], -90);
+  // The square wave, clipped teeth standing out of the swirl, between speaker stacks.
   b.section('Amp Alley', { halfWidth: 9, wallHeight: WALL, surface: 'fuzz' });
   b.mark('amps');
-  for (let tooth = 0; tooth < 3; tooth++) {
+  b.straight(15);
+  for (let tooth = 0; tooth < 2; tooth++) {
     if (tooth) b.straight(TOOTH_W);
-    b.arc(CORNER_R, -90).straight(TOOTH_H).arc(CORNER_R, 90).straight(TOOTH_W).arc(CORNER_R, 90).straight(TOOTH_H).arc(CORNER_R, -90);
+    b.arc(CORNER_R, 90).straight(TOOTH_H).arc(CORNER_R, -90).straight(TOOTH_W).arc(CORNER_R, -90).straight(TOOTH_H).arc(CORNER_R, 90);
   }
+  b.straight(15);
   b.mark('ampsEnd');
-  b.straight(10);
-
   b.section('Fuzz Wire', { halfWidth: 9.5, wallHeight: 1.2, surface: 'fuzz' });
-  b.arc(40, 90).straight(10);
-  b.section('The Fuzz Pit', { halfWidth: 9, wallHeight: WALL, surface: 'fuzz' });
-  b.mark('pit');
-  b.straight(134);
-  b.mark('pitEnd');
-  b.straight(10);
+  b.mark('wire');
+  b.arc(TURNS[1], -90);
+  b.straight(15);
 
   b.section('Distortion Leap', { halfWidth: 9, wallHeight: 1.2, surface: 'fuzz' });
   b.mark('leap');
-  b.arc(36, 90).straight(10).mark('ramp').elevate(0).rise(18, 3);
+  b.straight(10).mark('ramp').elevate(0).rise(18, 3);
   b.gap(13, 30);
   b.elevate(0).straight(20);
+  b.mark('leapEnd');
+  b.arc(TURNS[2], -90);
 
   b.section('Needle Bend', { halfWidth: 9.5, surface: 'fuzz' });
   b.mark('bend');
   b.straight(5);
   b.mark('redFrom');
-  b.arc(BEND_R, -BEND_TURN).arc(BEND_R, 2 * BEND_TURN).arc(BEND_R, -BEND_TURN);
+  b.arc(BEND_R, BEND_TURN).arc(BEND_R, -2 * BEND_TURN).arc(BEND_R, BEND_TURN);
   b.mark('redTo');
   b.straight(5);
-  b.turnTo(offsetPose(START, -FINISH * K), 38);
+
+  // The inner turn, down into the Fuzz Pit.
+  b.section('Static', { halfWidth: 9.5, wallHeight: 1.2, surface: 'fuzz' });
+  b.mark('static');
+  b.arc(TURNS[3], -45);
+  b.section('The Fuzz Pit', { halfWidth: 9, wallHeight: WALL, surface: 'fuzz' });
+  b.mark('pit');
+  b.arc(TURNS[3], -45);
+  b.straight(80);
+  b.arc(TURNS[4], -90);
+  b.mark('pitEnd');
+
+  // The Swirl: a coil at the eye, up out of the pit to the top.
+  b.section('The Swirl', { halfWidth: 9.5, wallHeight: 1.2, surface: 'fuzz', bridge: true });
+  b.mark('swirl');
+  b.arc(SWIRL_R, -SWIRL_TURN);
+  b.mark('swirlTop');
+  // The Wall of Sound: off the top of the swirl and out over its turns, and down.
+  b.section('Wall of Sound', { halfWidth: 10, wallHeight: 1.2, surface: 'fuzz', bridge: true });
+  b.mark('wall');
+  b.turnTo(wp(305, -30, Math.PI), 35);
+  b.mark('wallEnd');
+  b.straight(DROP);
+  // Feedback Loop: round on itself and back onto the straight.
+  b.section('Feedback Loop', { halfWidth: 10.5, wallHeight: 1.2, surface: 'fuzz' });
+  b.mark('loop');
+  b.turnTo(offsetPose(START, -FINISH * K), 33);
   b.section('Finish Straight', { halfWidth: 11, surface: 'fuzz' });
   b.mark('finish');
   b.straight(FINISH);
 
-  // Heights, over the layout: up the swirl and off the top, down into the pit.
+  // Heights, over the layout: down into the pit, up the swirl out of it, along the top and off the far side.
   const m = (name: string, d = 0) => b.marks[name].s + d * K;
-  b.profile(m('swirl'), m('swirlTop'), (u) => SWIRL_TOP * u);
-  b.profile(m('swirlTop'), m('wall', 30), () => SWIRL_TOP, 10);
-  plunge(b, m('wall', 30), SWIRL_TOP, m('wall', 100), 0);
   ease(b, m('pit', 5), 0, m('pit', 45), -DEPTH);
-  ease(b, m('pit', 95), -DEPTH, m('pitEnd', 10), 0);
-  b.profile(m('redTo', 10), m('finish', -5), (u) => 3 * Math.sin(Math.PI * u) ** 2);
+  b.profile(m('pit', 45), m('pitEnd'), () => -DEPTH, 10);
+  b.profile(m('swirl'), m('swirlTop'), (u) => -DEPTH + (SWIRL_TOP + DEPTH) * u);
+  b.profile(m('swirlTop'), m('wallEnd'), () => SWIRL_TOP, 10);
+  plunge(b, m('wallEnd'), SWIRL_TOP, m('loop'), 0);
 
   const main = b.finish(true);
   const red = buildIntoTheRed(b.marks.redFrom, b.marks.redTo);
@@ -116,13 +140,13 @@ export function buildImInYourMindFuzz(): TrackDef {
       { s: at('wall', 110), length: 8, lateral: 0, halfWidth: 2.5 },
       { s: at('leap', 70), length: 8, lateral: 0, halfWidth: 2.5 },
     ],
-    checkpoints: ['feedback', 'swirl', 'wall', 'amps', 'pit', 'leap', 'bend'].map((k) => b.marks[k].s / main.length),
+    checkpoints: ['feedback', 'amps', 'wire', 'leap', 'bend', 'pit', 'swirl', 'wall'].map((k) => b.marks[k].s / main.length),
     laps: 3,
     bounds: 440,
     landmarks: [
       { kind: 'fuzzGate', ribbon: -1, s: 6 },
       { kind: 'fuzzGate', ribbon: -1, s: at('amps', -2) },
-      { kind: 'fuzzMeter', ribbon: -1, s: at('wall', 60), lateral: -120 },
+      { kind: 'fuzzMeter', ribbon: -1, s: at('leap', -20), lateral: 150 },
     ],
     itemBoxes: [
       { s: 75, count: 4 },
@@ -133,7 +157,7 @@ export function buildImInYourMindFuzz(): TrackDef {
       { s: red.boxes, count: 1, ribbon: 0, double: true },
     ],
     hazards: [
-      { kind: 'fuzz', at: [at('amps', 41), at('amps', 360), at('amps', 680)], period: 4.2 },
+      { kind: 'fuzz', at: [at('amps', 40), at('amps', 200), at('amps', 380)], period: 4.2 },
       { kind: 'fuzz', at: [at('pit', 25), at('pit', 105)], period: 4.6 },
       { kind: 'eyes', at: [at('pit', 70)], period: 5 },
     ],
