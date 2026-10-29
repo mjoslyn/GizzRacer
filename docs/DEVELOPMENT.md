@@ -30,9 +30,9 @@ Milestones 1 to 7 are in (driving feel, the Rattlesnake greybox, CPU racers, ite
 - Magma (`src/tracks/volcanoFortress.ts`): lava switchbacks, a walled basalt fortress behind two gatehouses with flame jets across the road, a rail-less bridge over a lava lake, and lava bombs on the open plains
 - Polygondwanaland (`src/tracks/polygondwanalandJungle.ts`): vine hairpins with logs swinging across the road, a river jump, stone ruins behind a temple gate with polygon boulders rolling across, and a waterfall
 - The Microtonal Cup, a second circuit sized for about 1:45 a race at 150cc:
-  - Fishing for Fishies (`src/tracks/fishiesLagoon.ts`): a sand road over a turquoise lagoon, a plank causeway with fish leaping over it, reef esses, a pier jump, a lighthouse
+  - Fishing for Fishies (`src/tracks/fishiesLagoon.ts`): a sand road over a turquoise lagoon, the lap a whirlpool (a spiral drawn in to its eye, and the pier climbing out of it over its own road and the beach), a causeway diving under the water with fish leaping across the road, reef esses, a pier jump, a lighthouse on a hairpin headland
   - Ice V (`src/tracks/iceVGlacier.ts`): sheet ice that slides karts wide through the turns, an icicle chicane, a crevasse jump, four hairpins between walls, ice blocks skating across a frozen lake
-  - Cyboogie (`src/tracks/cyboogieCity.ts`): Han-Tyumi's neon downtown at night, a walled alley of right angles, an elevated freeway, laser gates firing on a rhythm
+  - Cyboogie (`src/tracks/cyboogieCity.ts`): Han-Tyumi's neon downtown at night, the lap a motorway interchange tied in three tiers (a cloverleaf over its own ramp, the freeway over the alley, a helix down under the freeway), a walled alley staircase of right angles, laser gates firing on a rhythm
   - Catching Smoke (`src/tracks/butterflySkyway.ts`): a rainbow road in the sky with nothing below it, butterfly swarms that buffet karts, a star leap, chrysalis hairpins
   - Each has its own theme, scenery, landmark and seqbaby song (a final-lap cut for the Skyway). Loops close with a turn-straight-turn (Dubins) path, `TrackBuilder.turnTo`
 - The Apocalypse Cup, four hard ends of the world, each with its own theme, scenery, landmark, hazards and a pair of songs:
