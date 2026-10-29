@@ -28,17 +28,17 @@ Milestones 1 to 7 are in (driving feel, the Rattlesnake greybox, CPU racers, ite
 - Track model: turtle-style builder (`src/tracks/builder.ts`), ribbons with per-section width, walls, surface and elevation, jump gaps over pits, branch shortcuts (`src/tracks/track.ts`)
 - Mr. Beat (`src/tracks/infiniteLoopSpeedway.ts`): a figure-8 on green hills; the two long straights cross in the middle, one flying over the other on an overpass on pillars
 - Magma (`src/tracks/volcanoFortress.ts`): lava switchbacks, a walled basalt fortress behind two gatehouses with flame jets across the road, a rail-less bridge over a lava lake, and lava bombs on the open plains
-- Polygondwanaland (`src/tracks/polygondwanalandJungle.ts`): vine hairpins with logs swinging across the road, a river jump, stone ruins behind a temple gate with polygon boulders rolling across, and a waterfall
+- Polygondwanaland (`src/tracks/polygondwanalandJungle.ts`): a pair of lungs, the bronchus under both lanes of the windpipe, vine hairpins with logs swinging across the road, a river jump, stone ruins behind a temple gate with polygon boulders rolling across, and a waterfall
 - The Microtonal Cup, a second circuit sized for about 1:45 a race at 150cc:
   - Fishing for Fishies (`src/tracks/fishiesLagoon.ts`): a sand road over a turquoise lagoon, a plank causeway with fish leaping over it, reef esses, a pier jump, a lighthouse
-  - Ice V (`src/tracks/iceVGlacier.ts`): sheet ice that slides karts wide through the turns, an icicle chicane, a crevasse jump, four hairpins between walls, ice blocks skating across a frozen lake
+  - Ice V (`src/tracks/iceVGlacier.ts`): the glacier's tongue on a deck across the map, the thaw road and the canyon passing under it, sheet ice that slides karts wide through the turns, an icicle chicane, a crevasse jump, four hairpins between walls, ice blocks skating across a frozen lake
   - Cyboogie (`src/tracks/cyboogieCity.ts`): Han-Tyumi's neon downtown at night, a walled alley of right angles, an elevated freeway, laser gates firing on a rhythm
   - Catching Smoke (`src/tracks/butterflySkyway.ts`): a rainbow road in the sky with nothing below it, butterfly swarms that buffet karts, a star leap, chrysalis hairpins
   - Each has its own theme, scenery, landmark and seqbaby song (a final-lap cut for the Skyway). Loops close with a turn-straight-turn (Dubins) path, `TrackBuilder.turnTo`
 - The Apocalypse Cup, four hard ends of the world, each with its own theme, scenery, landmark, hazards and a pair of songs:
   - Mars for the Rich (`src/tracks/hellOnMars.ts`): a burning colony on the red planet, an airlock gate, a leap over a lava rift, meteors raining down, dust devils on the crater rim, the Rats' Nest
   - Supercell (`src/tracks/supercell.ts`): prairie roads in a storm with rain and lightning flashes, tornadoes that fling karts aside, lightning strikes that warn first, boulder-sized hail, a rail-less bridge over a flooded creek
-  - The Lord of Lightning (`src/tracks/murderOfTheUniverse.ts`): a road of starlight over the void, black holes that drag karts in, lightning, a leap over nothing, floating asteroids, cyborg heads and watching eyes
+  - The Lord of Lightning (`src/tracks/murderOfTheUniverse.ts`): a road of starlight over the void going round the star twice, a helix over itself and an inner orbit passing under its own way in, black holes that drag karts in, lightning, a leap over nothing, floating asteroids, cyborg heads and watching eyes
   - Scenery and landmarks for these three are in `src/render/apocalypse.ts`
 - Dragon (`src/tracks/petrodragonicApocalypse.ts`), the Apocalypse Cup's finale: a burning oil field under a black sky, oil slicks that slide like ice, dragons breathing fire across a walled gullet, burning crude raining down, a jump over a moat of burning oil, a rail-less bridge over an oil lake, a dragon skull for a start gate and a dragon circling overhead
 - The Phantom Island Cup, after the 2025 album, four new worlds with their own landmark, scenery, hazard and a pair of songs (scenery and landmarks in `src/render/phantom.ts`):
