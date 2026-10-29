@@ -21,7 +21,8 @@ describe('layout extras', () => {
     }
     expect(touched).toBeGreaterThanOrEqual(22);
     expect(humps).toBeGreaterThanOrEqual(10);
-    expect(slaloms).toBeGreaterThanOrEqual(4);
+    // A slalom stands in where no hump fits; since the tangled relays nearly every track takes a hump.
+    expect(slaloms).toBeGreaterThanOrEqual(1);
     expect(pads).toBeGreaterThanOrEqual(30);
   });
 

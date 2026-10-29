@@ -26,17 +26,34 @@ export const TRIAL_LAPS = 1;
  * bump does the same for every track at once).
  */
 export const TRACK_REVISIONS: Record<string, number> = {
-  // Relaid out so no two tracks share a shape.
-  'robot-stop': 1,
-  'people-vultures': 1,
-  'wah-wah': 1,
-  'kepler-22b': 1,
-  'predator-x': 1,
-  'inner-cell': 1,
+  // Relaid out so no two tracks share a shape (1), and all but Planet B and Hell then as tangled laps in tiers (2).
+  'robot-stop': 2,
+  'people-vultures': 2,
+  'wah-wah': 2,
+  'kepler-22b': 2,
+  'predator-x': 2,
+  'inner-cell': 2,
   'planet-b': 1,
-  'mars-for-the-rich': 1,
-  'perihelion': 1,
+  'mars-for-the-rich': 2,
+  'perihelion': 2,
   'hell': 1,
+  // Relaid as tangled laps in tiers, crossing over and under themselves.
+  'sea-of-trees': 1,
+  'im-in-your-mind-fuzz': 1,
+  'fishies-lagoon': 1,
+  'cyboogie-city': 1,
+  'tetrachromacy': 1,
+  'magenta-mountain': 1,
+  'ice-v-glacier': 1,
+  'polygondwanaland-jungle': 1,
+  'murder-of-the-universe': 1,
+  'supercell': 1,
+  'petrodragonic-apocalypse': 1,
+  'hell-on-mars': 1,
+  'phantom-island': 1,
+  'deadstick-drop': 1,
+  'panpsych-grove': 1,
+  'sea-of-doubt': 1,
 };
 
 /** A track's id for its records: with its revision, once it has one. */
