@@ -1,17 +1,55 @@
 import { TrackBuilder, offsetPose, type Pose } from './builder';
 import type { BranchDef, TrackDef } from './track';
 
-const K = 1.1;
-const START: Pose = { x: -170 * K, z: -210 * K, h: Math.PI / 2 };
+const K = 1.05;
+/**
+ * The lap is a storm: the road spirals in round its eye, here, from this far
+ * out to this close, and after the tornado is flung back out round it,
+ * crossing over the spiral in.
+ */
+const EYE = { x: -5, z: 55 };
+const OUTER = 360;
+const INNER = 95;
+/** The spiral out keeps this close round the eye, then is flung out this far, across the spiral in. */
+const CLOSE = 150;
+const WIDE = 300;
+const DEG = Math.PI / 180;
+/** A point on the spiral in, `phi` radians round from the start, heading along it. */
+function inward(phi: number): Pose {
+  return spiral(phi, (u) => OUTER - (OUTER - INNER) * u);
+}
+/** A point on the spiral out, `psi` radians round from the eye: close round the eye, flung out across the spiral in, then round the edge of the storm. */
+function outward(psi: number): Pose {
+  const smooth = (t: number) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t));
+  return spiral(psi, (u) => INNER + (CLOSE - INNER) * smooth(u / 0.42) + (WIDE - CLOSE) * smooth((u - 0.44) / 0.22) + (OUTER - WIDE) * smooth((u - 0.66) / 0.34));
+}
+/** A point `a` radians anticlockwise round the eye from due south, at radius r(a / 2pi), heading along the curve. */
+function spiral(a: number, r: (u: number) => number): Pose {
+  const at = (t: number) => {
+    const th = -Math.PI / 2 + t;
+    const rr = r(t / (2 * Math.PI));
+    return { x: (EYE.x + rr * Math.cos(th)) * K, z: (EYE.z + rr * Math.sin(th)) * K };
+  };
+  const p = at(a);
+  const q = at(a + 1e-4);
+  const o = at(a - 1e-4);
+  return { x: p.x, z: p.z, h: Math.atan2(q.x - o.x, q.z - o.z) };
+}
+const START: Pose = { ...inward(0), h: Math.PI / 2 };
 const FINISH = 45;
 /** The Snout of a Jackal: out along the snout and back round its tip, a hairpin this tight. */
-const SNOUT = 80;
-const SNOUT_R = 24;
+const SNOUT = 130;
+const SNOUT_R = 28;
 /** The Tail of a Snake: this many bends, slithering. */
 const TAIL = 5;
 /** The Tornado: a full turn round the eye of the storm, climbing this high, over the road below. */
 const TORNADO_R = 46;
-const TORNADO_TOP = 14;
+const TORNADO_TOP = 16;
+/** Thrown Around: still this high where it crosses back over the spiral in. */
+const THROWN = 10;
+/** The desert's dunes and the storm's gusts: swells this high. */
+const DUNE = 2;
+const GUST = 3;
 /** Moonbeams: a crest this high. */
 const MOON = 6;
 /** How deep Slay the Mighty Set is sunk, and its walls. */
@@ -31,58 +69,82 @@ const CONFLICT_TURN = 70;
  * Set"; eighty years of conflict with Horus; love letter death threats
  * written in the tomb; hieroglyphic. The world is the red land at the edge
  * of day and night, the sun going down one side and the moon up the other,
- * obelisks and the god's statues, a colossus of Set sat in the sand. The
- * lap: Through the Desert (two kickers), out along the Snout of a Jackal
- * and back round its tip, the Tail of a Snake slithering, Moonbeams over a
- * crest and the Quantum Foam, the Tornado (a full turn climbing to 14 m,
- * over the road below) and Thrown Around off the top of it, Bones Did
- * Shatter (a leap over a ravine), Slay the Mighty Set sunk 6 m between
- * temple walls, his eyes, the sun and the moon, rolling across the road;
- * Day into Night, squeezed narrow; Eighty Years of Conflict, swinging out;
- * and Hieroglyphic home. Shortcut: the Tomb, straight through a pyramid
- * under Eighty Years of Conflict, unsealed from lap 2.
+ * obelisks and the god's statues, a colossus of Set sat in the sand in the
+ * eye of the storm. The lap is the storm, chaos wound round its eye: in
+ * along one spiral, a full turn up the tornado, and thrown back out along
+ * another that crosses over it. Through the Desert (two kickers, then
+ * dunes) sweeping up the south-east; the Snout of a Jackal, out along it
+ * toward the eye and back round its tip, under the road thrown out of the
+ * tornado; the Tail of a Snake slithering up the east side, the jackal's
+ * head and the snake's tail together; Moonbeams over a crest and the
+ * Quantum Foam bubbling across the top; the Storm, its gusts rolling the
+ * road as it winds in down the west to the eye; the Tornado, a full turn
+ * climbing to 16 m over its own road in; Thrown Around, flung out of the
+ * top on a deck, back over the snout, round the eye and out across the
+ * spiral in over the Quantum Foam, and off a crest; Bones Did Shatter (a
+ * leap over a ravine); Slay the Mighty Set sunk 6 m between temple walls
+ * down the west side, his eyes, the sun and the moon, rolling across the
+ * road; Day into Night, squeezed narrow; Eighty Years of Conflict, swinging
+ * out; and Hieroglyphic home. Shortcut: the Tomb, straight through a
+ * pyramid inside Eighty Years of Conflict, unsealed from lap 2. The lap is
+ * long, so a race is two of them.
  */
 export function buildSet(): TrackDef {
   const b = new TrackBuilder(START, 'Through the Desert', { halfWidth: 11, surface: 'hieroglyph' });
   b.scale = K;
-  b.straight(30).mark('kick1').kicker().straight(30).mark('kick2').kicker().straight(30);
+  const inTo = (deg: number) => b.hermiteTo(inward(deg * DEG));
+  const outTo = (deg: number) => b.hermiteTo(outward(deg * DEG));
+  b.straight(30).mark('kick1').kicker().straight(30).mark('kick2').kicker().straight(10);
+  // The spiral in, round the edge of the storm.
+  inTo(35);
+  inTo(65);
 
-  // Out along the jackal's long snout and back round its tip.
+  // Out along the jackal's long snout, in toward the eye of the storm, and back round its tip.
   b.section('Snout of a Jackal', { halfWidth: 9.5, wallHeight: 1.2, surface: 'hieroglyph' });
   b.mark('snout');
-  b.arc(40, 90);
+  b.arc(40, -90);
   b.straight(SNOUT);
-  b.arc(SNOUT_R, -180);
+  b.arc(SNOUT_R, 180);
   b.straight(SNOUT);
   b.mark('snoutEnd');
-  b.arc(40, 90);
+  b.arc(40, -90);
 
   b.section('Tail of a Snake', { halfWidth: 9.5, wallHeight: 1.2, surface: 'hieroglyph' });
   b.mark('tail');
+  inTo(115);
   b.arc(30, 30);
   for (let k = 0; k < TAIL - 2; k++) b.arc(30, k % 2 ? 60 : -60);
   b.arc(30, 30);
   b.mark('tailEnd');
+  inTo(150);
 
   b.section('Moonbeams', { halfWidth: 10.5, surface: 'hieroglyph' });
   b.mark('moon');
-  b.arc(90, -60);
+  inTo(170);
   b.mark('moonEnd');
   b.section('Quantum Foam', { halfWidth: 10.5, surface: 'hieroglyph' });
   b.mark('foam');
-  b.straight(60);
+  inTo(195);
+  inTo(225);
   b.mark('foamEnd');
 
-  // The Tornado: lifted high, round the eye of the storm and over the road coming in.
+  // Winding in to the eye, and lifted up the tornado: a full turn climbing over the road in.
+  b.section('The Storm', { halfWidth: 10, wallHeight: 1.2, surface: 'hieroglyph' });
+  b.mark('storm');
+  for (let d = 255; d < 360; d += 30) inTo(d);
+  inTo(360);
   b.section('The Tornado', { halfWidth: 9.5, wallHeight: 1.2, surface: 'hieroglyph', bridge: true });
   b.mark('tornado');
   b.arc(TORNADO_R, -360);
   b.mark('tornadoTop');
-  b.straight(15);
-  b.section('Thrown Around', { halfWidth: 10, wallHeight: 1.2, surface: 'hieroglyph' });
+  b.straight(10);
+  // Thrown out of the top on a deck: back over the snout, round the eye, and out over the spiral in.
+  b.section('Thrown Around', { halfWidth: 10, wallHeight: 1.2, surface: 'hieroglyph', bridge: true });
   b.mark('thrown');
-  b.arc(40, 30).arc(40, -60);
-  b.straight(20);
+  for (let d = 30; d <= 210; d += 30) outTo(d);
+  b.mark('over');
+  outTo(225);
+  b.mark('thrownEnd');
 
   // His bones did shatter: a leap over a ravine.
   b.section('Bones Did Shatter', { halfWidth: 9, wallHeight: 1.2, surface: 'hieroglyph' });
@@ -91,12 +153,14 @@ export function buildSet(): TrackDef {
   b.gap(12, 20);
   b.elevate(0).straight(15);
   b.mark('bonesEnd');
-  b.arc(50, -90);
+  // The spiral out, round the edge of the storm and home.
+  outTo(245);
 
   // Slay the mighty Set: sunk between temple walls, his eyes rolling across.
   b.section('Slay the Mighty Set', { halfWidth: 9, wallHeight: WALL, surface: 'hieroglyph' });
   b.mark('slay');
-  b.straight(40).arc(70, 25).arc(70, -50).arc(70, 25).straight(40);
+  outTo(265);
+  outTo(285);
   b.mark('slayEnd');
   b.straight(10);
 
@@ -105,7 +169,7 @@ export function buildSet(): TrackDef {
   b.mark('squeeze');
   b.arc(26, -45).arc(26, 90).arc(26, -45);
   b.mark('squeezeEnd');
-  b.straight(30);
+  outTo(312);
 
   b.section('Eighty Years of Conflict', { halfWidth: 10.5, surface: 'hieroglyph' });
   b.mark('conflict');
@@ -113,25 +177,27 @@ export function buildSet(): TrackDef {
   b.mark('tombFrom');
   b.arc(CONFLICT_R, CONFLICT_TURN).arc(CONFLICT_R, -2 * CONFLICT_TURN).arc(CONFLICT_R, CONFLICT_TURN);
   b.mark('tombTo');
-  b.straight(20);
-  b.arc(50, -90);
 
-  // Hieroglyphic: down the west side and round onto the finish.
   b.section('Hieroglyphic', { halfWidth: 11, surface: 'hieroglyph' });
   b.mark('glyph');
-  b.turnTo(offsetPose(START, -FINISH * K), 50);
+  b.hermiteTo(offsetPose(START, -FINISH * K));
   b.section('Finish Straight', { halfWidth: 11, surface: 'hieroglyph' });
   b.mark('finish');
   b.straight(FINISH);
 
   const m = (name: string, d = 0) => b.marks[name].s + d * K;
+  // Dunes through the desert, and gusts of the storm rolling the road on the way in to the eye.
+  b.profile(m('kick2', 30), m('snout', -20), (u) => DUNE * Math.sin(Math.PI * 3 * u) ** 2);
+  b.profile(m('storm', 20), m('storm', 320), (u) => GUST * Math.sin(Math.PI * 2 * u) ** 2);
   // A crest under the moon; the quantum foam bubbling the road.
   b.profile(m('moon'), m('moonEnd'), (u) => MOON * Math.sin(Math.PI * u) ** 2);
-  b.profile(m('foam'), m('foamEnd'), (u) => 1.6 * Math.sin(Math.PI * 3 * u) ** 2);
-  // Up round the tornado, and thrown off the top of it.
+  b.profile(m('foam'), m('foamEnd'), (u) => 1.6 * Math.sin(Math.PI * 4 * u) ** 2);
+  // Up round the tornado, thrown off the top of it and held high over the spiral in, then off a crest.
   b.profile(m('tornado'), m('tornadoTop'), (u) => TORNADO_TOP * u);
-  b.profile(m('tornadoTop'), m('thrown', 25), () => TORNADO_TOP, 10);
-  plunge(b, m('thrown', 25), TORNADO_TOP, m('bones', 10), 0);
+  b.profile(m('tornadoTop'), m('thrown', 60), () => TORNADO_TOP, 10);
+  ease(b, m('thrown', 60), TORNADO_TOP, m('over', -60), THROWN);
+  b.profile(m('over', -60), m('over', 15), () => THROWN, 10);
+  plunge(b, m('over', 15), THROWN, m('bones', 5), 0);
   ease(b, m('slay', 5), 0, m('slay', 40), -DEPTH);
   b.profile(m('slay', 40), m('slayEnd', -30), () => -DEPTH, 10);
   ease(b, m('slayEnd', -30), -DEPTH, m('slayEnd', 10), 0);
@@ -150,13 +216,13 @@ export function buildSet(): TrackDef {
       { s: at('tailEnd', 5), length: 8, lateral: 0, halfWidth: 2.5 },
       { s: at('squeezeEnd', 5), length: 8, lateral: 0, halfWidth: 2.5 },
     ],
-    checkpoints: ['snout', 'tail', 'moon', 'tornado', 'bones', 'slay', 'squeeze', 'conflict'].map((k) => b.marks[k].s / main.length),
-    laps: 3,
+    checkpoints: ['snout', 'tail', 'moon', 'storm', 'tornado', 'thrown', 'bones', 'slay', 'squeeze', 'conflict'].map((k) => b.marks[k].s / main.length),
+    laps: 2,
     bounds: 440,
     landmarks: [
       { kind: 'setGate', ribbon: -1, s: 6 },
       { kind: 'setGate', ribbon: -1, s: at('slay', -2) },
-      { kind: 'setColossus', ribbon: -1, s: at('foam', 20), lateral: -150 },
+      { kind: 'setColossus', ribbon: -1, s: at('storm', 20), lateral: 120 },
     ],
     itemBoxes: [
       { s: 80, count: 4 },
