@@ -23,10 +23,14 @@ const CONCURRENCY = 8;
 const OUT = new URL('../public/music/bootlegs.json', import.meta.url);
 const SHOWS_OUT = new URL('../public/music/shows.json', import.meta.url);
 /**
- * Recordings left out: ones the Archive won't serve, and duplicates of
- * recordings already in (the same release filed under another date).
+ * Recordings left out: ones the Archive won't serve, duplicates of
+ * recordings already in (the same release filed under another date), and
+ * show openers whose music starts more than 100 s in (past the crowd and
+ * the tuning), later than a start may be.
  */
 const SKIP = new Set([
+  "kglw2024-08-20.SBD/King Gizzard & The Lizard Wizard - Live at Thompson's Point, Portland, ME (8-20-24) - 01 Theia (Live).mp3",
+  "kglw2025-10-31.SBD/King Gizzard & The Lizard Wizard - Live in Manchester '25 - 01 Theia (Live in Manchester '25).mp3",
   "kglw2025-06-08.SBD.flac/King Gizzard & The Lizard Wizard - Live in Bulgaria '25 - 10 Sea of Trees (Live in Bulgaria '25).mp3",
   "kg2022-10-11/38. Sea Of Trees (Live At Red Rocks '22).mp3",
   "kg2022-11-02/67. Cut Throat Boogie (Live At Red Rocks '22).mp3",

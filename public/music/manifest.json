@@ -817,5 +817,61 @@
     "bars": 32,
     "loopSamples": 2585405,
     "sampleRate": 44100
+  },
+  "theia-remix": {
+    "title": "theia (remix)",
+    "bpm": 143.6,
+    "bars": 32,
+    "loopSamples": 2358552,
+    "sampleRate": 44100
+  },
+  "theia-remix-final-lap": {
+    "title": "theia (remix, final lap)",
+    "bpm": 151.6,
+    "bars": 32,
+    "loopSamples": 2234090,
+    "sampleRate": 44100
+  },
+  "set-remix": {
+    "title": "set (remix)",
+    "bpm": 129.2,
+    "bars": 32,
+    "loopSamples": 2621424,
+    "sampleRate": 44100
+  },
+  "set-remix-final-lap": {
+    "title": "set (remix, final lap)",
+    "bpm": 137.2,
+    "bars": 32,
+    "loopSamples": 2468571,
+    "sampleRate": 44100
+  },
+  "chang-e-remix": {
+    "title": "chang'e (remix)",
+    "bpm": 161.5,
+    "bars": 32,
+    "loopSamples": 2097139,
+    "sampleRate": 44100
+  },
+  "chang-e-remix-final-lap": {
+    "title": "chang'e (remix, final lap)",
+    "bpm": 169.5,
+    "bars": 32,
+    "loopSamples": 1998159,
+    "sampleRate": 44100
+  },
+  "gilgamesh-remix": {
+    "title": "gilgamesh (remix)",
+    "bpm": 143.6,
+    "bars": 32,
+    "loopSamples": 2358552,
+    "sampleRate": 44100
+  },
+  "gilgamesh-remix-final-lap": {
+    "title": "gilgamesh (remix, final lap)",
+    "bpm": 151.6,
+    "bars": 32,
+    "loopSamples": 2234090,
+    "sampleRate": 44100
   }
 }

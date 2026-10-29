@@ -284,7 +284,7 @@ describe.each(CASES.map((c) => [c.name, c] as const))('%s shortcut and kickers',
 
 /** The shortcuts that are only there on some laps, and what they are on the others. */
 const LAP_ROADS: { name: string; build: () => TrackDef; branch: string; open: LapContext; shut: LapContext; shutIs: 'fall' }[] = [
-  { name: 'Theia', build: buildTheia, branch: 'The Silver Cord', open: { lap: 1, lastLap: false }, shut: { lap: 3, lastLap: true }, shutIs: 'fall' },
+  { name: 'Theia', build: buildTheia, branch: 'The Silver Cord', open: { lap: 1, lastLap: false }, shut: { lap: 2, lastLap: true }, shutIs: 'fall' },
   { name: 'Set', build: buildSet, branch: 'The Tomb', open: { lap: 2, lastLap: false }, shut: { lap: 1, lastLap: false }, shutIs: 'fall' },
   { name: "Chang'e", build: buildChangE, branch: 'Riding on Moonbeams', open: { lap: 3, lastLap: true }, shut: { lap: 2, lastLap: false }, shutIs: 'fall' },
 ];

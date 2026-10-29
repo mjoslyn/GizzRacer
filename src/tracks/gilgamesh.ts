@@ -175,7 +175,8 @@ export function buildGilgamesh(): TrackDef {
       { s: at('windsEnd', 2), length: 8, lateral: 0, halfWidth: 2.5 },
     ],
     checkpoints: ['temper', 'shamash', 'peaks', 'photon', 'swamp', 'pass', 'gems', 'winds', 'bull', 'flood', 'bone'].map((k) => b.marks[k].s / main.length),
-    laps: 3,
+    // A long journey: two laps of it are a race.
+    laps: 2,
     bounds: 440,
     landmarks: [
       { kind: 'urukGate', ribbon: -1, s: 6 },

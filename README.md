@@ -8,7 +8,7 @@ No install and no account. It will always be free. **[The manual](https://www.gi
 
 ## What's in it
 
-- **40 tracks in 10 cups**, one an album, in the order the albums came out, plus a Random Cup of four drawn from them
+- **44 tracks in 11 cups**, one an album, in the order the albums came out, plus a Random Cup of four drawn from them
   - **12 Bar Bruise Cup:** the band's first album, in album order: Elbow, Muckraker, Cut Throat Boogie, Sea of Trees
   - **Mind Fuzz Cup:** the suite that opens I'm in Your Mind Fuzz, in order: I'm in Your Mind, I'm Not in Your Mind, Cellophane, I'm in Your Mind Fuzz
   - **Nonagon Infinity Cup:** Robot Stop, Gamma Knife, People-Vultures, Wah Wah
@@ -18,6 +18,7 @@ No install and no account. It will always be free. **[The manual](https://www.gi
   - **Omnium Gatherum Cup:** Magenta Mountain, Kepler-22b, The Garden Goblin, Predator X
   - **Ice, Death, Planets, Lungs, Mushrooms and Lava Cup:** Ice V, Magma, Iron Lung, Gliese 710
   - **PetroDragonic Apocalypse Cup:** Motor Spirit, Supercell, Dragon, Flamethrower
+  - **Silver Cord Cup:** the synth album, in album order: Theia, Set, Chang'e, Gilgamesh, Theia and Gilgamesh tangling over themselves on bridges in tiers
   - **Phantom Island Cup:** Phantom Island, Deadstick, Panpsych, Sea of Doubt
 - **Roller-coaster tracks:** climbs onto pillared decks, plunges you fly off, canyons sunk into the ground, and a causeway that dives under the lagoon
 - **Launchers and gliders:** a glowing ramp on the lip of every track's big jump (and on a long straight where there's no jump) throws you high, and a trick off it opens your glider, so the leap is a glide you can steer. Up climbs (trading speed for height), down dives (picking speed up)
@@ -84,7 +85,7 @@ On phones, turn the phone sideways. On iPhone, use Share, then Add to Home Scree
 ## Credits
 
 - GizzRacer is an unofficial fan game, made with love for King Gizzard & the Lizard Wizard and their fans
-- The music is written and remixed in [seqbaby](https://playseqbaby.com). The Polygondwanaland Cup, Polygondwanaland, Omnium Gatherum Cup, Phantom Island Cup, Nonagon Infinity Cup, 12 Bar Bruise Cup and title remixes are transcribed from the band's own recordings (Polygondwanaland and their live bootlegs), which King Gizzard & the Lizard Wizard released for anyone to use
+- The music is written and remixed in [seqbaby](https://playseqbaby.com). The Polygondwanaland Cup, Polygondwanaland, Omnium Gatherum Cup, Phantom Island Cup, Nonagon Infinity Cup, 12 Bar Bruise Cup, Silver Cord Cup and title remixes are transcribed from the band's own recordings (Polygondwanaland and their live bootlegs), which King Gizzard & the Lizard Wizard released for anyone to use
 - Lettering in Metal Mania by Open Window (SIL Open Font License, `public/fonts/OFL.txt`)
 - Built with [Three.js](https://threejs.org). Online play runs on [PartyKit](https://www.partykit.io) and Cloudflare.
 

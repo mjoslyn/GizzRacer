@@ -107,6 +107,10 @@ export const TRANSCRIBED: Record<string, { recording: string; release: string }>
   muckraker: { recording: 'Muckraker', release: "Live from Studio 5 at PBS 106.7FM '13" },
   'cut-throat-boogie': { recording: 'Cut Throat Boogie', release: "Live in Barcelona '25, the soundboard mix" },
   'sea-of-trees': { recording: 'Sea of Trees', release: "Live At Red Rocks '22" },
+  theia: { recording: 'Theia', release: "Live in Barcelona '25, the soundboard mix" },
+  set: { recording: 'Set', release: "Live in New York City '25 (Rock Night), the soundboard mix" },
+  'chang-e': { recording: "Chang'e", release: "Live at Red Rocks '24, the soundboard mix" },
+  gilgamesh: { recording: 'Gilgamesh', release: "Live at Field of Vision '25, the soundboard mix" },
 };
 
 const FINAL = '-final-lap';

@@ -42,6 +42,7 @@ const WAVE = 3;
  * Gravitational Waves and the Astral Beach home. Shortcut: the silver cord
  * itself, a bridge immortal and unspoken, straight across the magma lake
  * the first orbit swings round; it snaps on the final lap, and it's gone.
+ * The lap is long, so a race is two of them.
  */
 export function buildTheia(): TrackDef {
   const b = new TrackBuilder(START, 'The Glowing Thread', { halfWidth: 11, surface: 'silver' });
@@ -157,7 +158,8 @@ export function buildTheia(): TrackDef {
       { s: at('coilEnd', 5), length: 8, lateral: 0, halfWidth: 2.5 },
     ],
     checkpoints: ['divine', 'clock', 'rebirth', 'fate', 'impact', 'dance', 'coil', 'void', 'waves'].map((k) => b.marks[k].s / main.length),
-    laps: 3,
+    // A long lap, the orbits tangled: two laps of it are a race.
+    laps: 2,
     bounds: 440,
     landmarks: [
       { kind: 'cordGate', ribbon: -1, s: 6 },
@@ -208,6 +210,6 @@ function buildSilverCord(from: { s: number; pose: Pose }, to: { s: number; pose:
   b.elevate(1).straight(12).elevate(0);
   b.section('The Silver Cord', { halfWidth: 6, surface: 'silver' });
   b.straight(chord - b.s);
-  const branch: BranchDef = { name: 'The Silver Cord', mainFrom: from.s, mainTo: to.s, ...b.finish(false), openOn: [1, 2], shut: { kind: 'vanish' } };
+  const branch: BranchDef = { name: 'The Silver Cord', mainFrom: from.s, mainTo: to.s, ...b.finish(false), openOn: [1], shut: { kind: 'vanish' } };
   return { branch, pits: b.pits, boxes };
 }

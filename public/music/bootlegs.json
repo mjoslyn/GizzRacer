@@ -4951,22 +4951,14 @@
  ],
  "Theia": [
   {
-   "id": "kglw2024-08-20.SBD",
-   "file": "King Gizzard & The Lizard Wizard - Live at Thompson's Point, Portland, ME (8-20-24) - 01 Theia (Live).mp3",
-   "date": "2024-08-20",
-   "venue": "Thompson's Point",
-   "seconds": 725,
-   "start": 6.3,
-   "gain": 9
-  },
-  {
    "id": "kglw2024-08-28.bandcampbootlegger",
    "file": "King Gizzard & The Lizard Wizard - Live at Brown's Island- Richmond- VA (8-28-24) 2/King Gizzard & The Lizard Wizard - Live at Brown's Island, Richmond, VA (8-28-24) - 02 Theia (Live).mp3",
    "date": "2024-08-28",
    "venue": "Brown's Island",
    "seconds": 862,
-   "start": 98.8,
-   "gain": 1
+   "start": 11.5,
+   "gain": 1,
+   "end": 747.5
   },
   {
    "id": "kglw2024-09-03.bandcampbootlegger",
@@ -4992,7 +4984,7 @@
    "date": "2024-11-06",
    "venue": "The Regency Ballroom",
    "seconds": 1069,
-   "start": 51,
+   "start": 66.5,
    "gain": 7
   },
   {
@@ -5001,8 +4993,9 @@
    "date": "2024-11-16",
    "venue": "White Oak Music Hall",
    "seconds": 652,
-   "start": 0,
-   "gain": 2.5
+   "start": 2.5,
+   "gain": 2.5,
+   "end": 648.5
   },
   {
    "id": "kglw2025-05-24.SBD.flac",
@@ -5010,8 +5003,9 @@
    "date": "2025-05-24",
    "venue": "Plaza Mayor de El Poble Espanyol",
    "seconds": 552,
-   "start": 9.3,
-   "gain": 5
+   "start": 8.5,
+   "gain": 5,
+   "end": 539.5
   },
   {
    "id": "kglw2025-06-06.SBD.flac",
@@ -5019,8 +5013,9 @@
    "date": "2025-06-06",
    "venue": "Lycabettus Theatre",
    "seconds": 897,
-   "start": 40.8,
-   "gain": 5
+   "start": 21.5,
+   "gain": 5,
+   "end": 834.5
   },
   {
    "id": "kglw2025-08-06.ravinia",
@@ -5029,16 +5024,8 @@
    "venue": "Ravinia Festival",
    "seconds": 1148,
    "start": 0,
-   "gain": 14
-  },
-  {
-   "id": "kglw2025-10-31.SBD",
-   "file": "King Gizzard & The Lizard Wizard - Live in Manchester '25 - 01 Theia (Live in Manchester '25).mp3",
-   "date": "2025-10-31",
-   "venue": "Aviva Studios, Manchester, England, UK",
-   "seconds": 1286,
-   "start": 35.6,
-   "gain": 5
+   "gain": 14,
+   "end": 955.5
   },
   {
    "id": "kglw2025-11-11.SBD",
@@ -5046,8 +5033,9 @@
    "date": "2025-11-11",
    "venue": "SaSaZu, Prague, Czech Republic",
    "seconds": 1587,
-   "start": 0,
-   "gain": 4.5
+   "start": 97.5,
+   "gain": 4.5,
+   "end": 1555.5
   },
   {
    "id": "kglw2026-08-21.Bootsy",
@@ -5066,8 +5054,9 @@
    "date": "2024-08-21",
    "venue": "Budweiser Stage",
    "seconds": 572,
-   "start": 0,
-   "gain": 2.5
+   "start": 14.5,
+   "gain": 2.5,
+   "end": 469.5
   },
   {
    "id": "kglw2024-09-01.SBD",
@@ -5075,8 +5064,9 @@
    "date": "2024-09-01",
    "venue": "Northerly Island",
    "seconds": 1178,
-   "start": 64.3,
-   "gain": 2
+   "start": 8.5,
+   "gain": 2,
+   "end": 1102.5
   },
   {
    "id": "kglw2024-09-09.lateshowbandcampbootlegger",
@@ -5085,7 +5075,8 @@
    "venue": "Red Rocks Amphitheatre",
    "seconds": 686,
    "start": 0,
-   "gain": 5
+   "gain": 5,
+   "end": 672.5
   },
   {
    "id": "kglw2024-11-03.bandcampbootlegger",
@@ -5094,7 +5085,8 @@
    "venue": "Vina Robles Amphitheatre",
    "seconds": 770,
    "start": 0,
-   "gain": 3
+   "gain": 3,
+   "end": 750.5
   },
   {
    "id": "kglw2024-11-06.bandcampbootlegger",
@@ -5102,8 +5094,9 @@
    "date": "2024-11-06",
    "venue": "The Regency Ballroom",
    "seconds": 1037,
-   "start": 0,
-   "gain": 5
+   "start": 25.5,
+   "gain": 5,
+   "end": 1023.5
   },
   {
    "id": "kglw2024-11-12.bandcampbootlegger",
@@ -5112,7 +5105,8 @@
    "venue": "The Criterion",
    "seconds": 668,
    "start": 0,
-   "gain": 1.5
+   "gain": 1.5,
+   "end": 665.5
   },
   {
    "id": "kglw2020-11-20.bandcampbootlegger",
@@ -5121,7 +5115,8 @@
    "venue": "St. Augustine Amphitheatre",
    "seconds": 792,
    "start": 0,
-   "gain": 5
+   "gain": 5,
+   "end": 681.5
   },
   {
    "id": "kglw2025-06-05.SBD.flac",
@@ -5130,7 +5125,8 @@
    "venue": "Lycabettus Theatre",
    "seconds": 1131,
    "start": 0,
-   "gain": 3
+   "gain": 3,
+   "end": 1072.5
   },
   {
    "id": "kglw2025-08-02.SBD",
@@ -5138,8 +5134,9 @@
    "date": "2025-08-02",
    "venue": "Forest Hills Stadium",
    "seconds": 455,
-   "start": 0,
-   "gain": 1
+   "start": 1.5,
+   "gain": 1,
+   "end": 422.5
   },
   {
    "id": "kglw2025-10-24.SBD",
@@ -5148,7 +5145,8 @@
    "venue": "Fed Square, Naarm (Melbourne), VIC, Australia",
    "seconds": 1238,
    "start": 0,
-   "gain": 6.5
+   "gain": 6.5,
+   "end": 1211.5
   },
   {
    "id": "kglw2025-11-10.SBD",
@@ -5165,8 +5163,9 @@
    "date": "2026-08-23",
    "venue": "Under The K Bridge",
    "seconds": 1822,
-   "start": 0,
-   "gain": 17
+   "start": 67.5,
+   "gain": 17,
+   "end": 1757.5
   }
  ],
  "Chang'e": [
@@ -5176,7 +5175,7 @@
    "date": "2024-08-31",
    "venue": "Ascend Amphitheater",
    "seconds": 706,
-   "start": 4.5,
+   "start": 3.5,
    "gain": 8.5
   },
   {
@@ -5185,8 +5184,9 @@
    "date": "2024-09-04",
    "venue": "Miller High Life Theatre",
    "seconds": 598,
-   "start": 9.5,
-   "gain": 7.5
+   "start": 7.5,
+   "gain": 7.5,
+   "end": 549.5
   },
   {
    "id": "kglw2024-09-08.SBD",
@@ -5194,7 +5194,7 @@
    "date": "2024-09-08",
    "venue": "Red Rocks Ampitheatre",
    "seconds": 472,
-   "start": 0,
+   "start": 23.5,
    "gain": 8
   },
   {
@@ -5204,7 +5204,8 @@
    "venue": "Rady Shell",
    "seconds": 392,
    "start": 0,
-   "gain": 4.5
+   "gain": 4.5,
+   "end": 298.5
   },
   {
    "id": "kglw2024-11-06.bandcampbootlegger",
@@ -5212,8 +5213,9 @@
    "date": "2024-11-06",
    "venue": "The Regency Ballroom",
    "seconds": 613,
-   "start": 12.8,
-   "gain": 4
+   "start": 0,
+   "gain": 4,
+   "end": 599.5
   },
   {
    "id": "kglw2025-06-04.SBD.flac",
@@ -5221,8 +5223,9 @@
    "date": "2025-06-04",
    "venue": "Lycabettus Theatre",
    "seconds": 1165,
-   "start": 38.2,
-   "gain": 4
+   "start": 1.5,
+   "gain": 4,
+   "end": 1106.5
   }
  ],
  "Gilgamesh": [
@@ -5232,7 +5235,7 @@
    "date": "2024-08-27",
    "venue": "The Dell Music Center",
    "seconds": 469,
-   "start": 9,
+   "start": 0,
    "gain": 4
   },
   {
@@ -5259,8 +5262,9 @@
    "date": "2024-11-10",
    "venue": "Revel Entertainment Center",
    "seconds": 596,
-   "start": 0,
-   "gain": 2.5
+   "start": 12.5,
+   "gain": 2.5,
+   "end": 550.5
   },
   {
    "id": "kglw2024-11-21.bandcampbootlegger",
@@ -5269,7 +5273,8 @@
    "venue": "Factory Town",
    "seconds": 675,
    "start": 0,
-   "gain": 7.5
+   "gain": 7.5,
+   "end": 656.5
   },
   {
    "id": "kglw2024-05-23.SBD.flac",
@@ -5278,7 +5283,8 @@
    "venue": "Plaza Mayor de El Poble Espanyol",
    "seconds": 1221,
    "start": 0,
-   "gain": 2.5
+   "gain": 2.5,
+   "end": 1208.5
   },
   {
    "id": "kglw2025-08-15.SBD.wav",
@@ -5296,7 +5302,8 @@
    "venue": "Fed Square, Naarm (Melbourne), VIC, Australia",
    "seconds": 720,
    "start": 0,
-   "gain": 2.5
+   "gain": 2.5,
+   "end": 710.5
   },
   {
    "id": "kglw2025-11-10.SBD",
@@ -5305,7 +5312,8 @@
    "venue": "Columbiahalle, Berlin, Germany",
    "seconds": 1098,
    "start": 0,
-   "gain": -1.5
+   "gain": -1.5,
+   "end": 1067.5
   },
   {
    "id": "kglw2025-11-15.SBD",
@@ -5314,7 +5322,8 @@
    "venue": "Filmstudion, Gothenburg, Sweden",
    "seconds": 906,
    "start": 0,
-   "gain": 1.5
+   "gain": 1.5,
+   "end": 903.5
   },
   {
    "id": "kglw2026-08-16.SBD",
@@ -5323,7 +5332,8 @@
    "venue": "Field of Vision II, Buena Vista, CO",
    "seconds": 625,
    "start": 0,
-   "gain": 3
+   "gain": 3,
+   "end": 559.5
   },
   {
    "id": "kglw2026-10-18.h1n.flac16",
@@ -5331,8 +5341,9 @@
    "date": "2026-10-18",
    "venue": "carpark opposite Croxton Park Hotel",
    "seconds": 299,
-   "start": 7.5,
-   "gain": 14
+   "start": 4.5,
+   "gain": 14,
+   "end": 271.5
   }
  ]
 }

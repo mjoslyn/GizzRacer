@@ -2905,11 +2905,11 @@ export function hadeanTexture(): THREE.CanvasTexture {
   const n = fbm(S, 6, 5, 1711);
   const melt = fbm(S, 3, 4, 1712);
   paint(ctx, S, S, (_x, _y, i) => {
-    if (melt[i] > 0.68) return mix([255, 120, 20], [255, 210, 90], Math.min(1, (melt[i] - 0.68) * 5));
-    if (melt[i] > 0.62) return mix([120, 30, 10], [220, 70, 10], (melt[i] - 0.62) * 16);
+    if (melt[i] > 0.76) return mix([255, 120, 20], [255, 210, 90], Math.min(1, (melt[i] - 0.76) * 5));
+    if (melt[i] > 0.71) return mix([120, 30, 10], [220, 70, 10], (melt[i] - 0.71) * 20);
     return mix([20, 18, 22], [56, 50, 54], n[i]);
   });
-  cracks(ctx, S, 26, 'rgba(255,110,30,0.85)', 2, 1713);
+  cracks(ctx, S, 14, 'rgba(255,110,30,0.85)', 2, 1713);
   return finish(c);
 }
 
