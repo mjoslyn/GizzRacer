@@ -76,6 +76,8 @@ export interface LiveRecording {
   seconds: number;
   /** Seconds in that the music starts, past the band talking (audio/talk.ts); 0 or absent from the top. */
   start?: number;
+  /** Seconds in that the music ends, before the applause and the banter (tools/live-edges.py); absent: to the end of the file. */
+  end?: number;
   /** The gain (dB) that brings it to the remixes' loudness (audio/talk.ts `gainFor`); absent when not measured. */
   gain?: number;
 }
@@ -346,8 +348,17 @@ export class MusicPlayer {
     const audio = new Audio();
     audio.crossOrigin = 'anonymous';
     const from = opts.start ?? rec.start ?? 0;
+    const until = rec.end !== undefined && rec.end > from ? rec.end : 0;
     // Looping without the talk: round to where the music starts, not the top; or on to whatever setLiveEnd asks.
-    audio.loop = !opts.onEnded && from === 0 && !this.liveEnd;
+    audio.loop = !opts.onEnded && from === 0 && !this.liveEnd && !until;
+    // Where the music ends, before the applause: as if the file ended there.
+    if (until) {
+      audio.addEventListener('timeupdate', () => {
+        if (audio.currentTime < until || audio.paused) return;
+        audio.pause();
+        audio.dispatchEvent(new Event('ended'));
+      });
+    }
     if (!opts.onEnded) {
       audio.addEventListener('ended', () => {
         if (this.current?.el === audio && this.liveEnd) return this.liveEnd();

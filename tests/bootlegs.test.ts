@@ -55,6 +55,11 @@ describe('live bootlegs', () => {
           expect(r.start, song).toBeGreaterThanOrEqual(0);
           expect(r.start, song).toBeLessThan(Math.min(100, r.seconds || 100));
         }
+        // Where the music ends, before the applause: after where it starts, inside the recording.
+        if (r.end !== undefined) {
+          expect(r.end, song).toBeGreaterThan((r.start ?? 0) + 30);
+          expect(r.end, song).toBeLessThan(r.seconds);
+        }
       }
     }
   });

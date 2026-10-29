@@ -4705,7 +4705,8 @@
    "date": "2011-12-31",
    "venue": "Esplanade Hotel",
    "seconds": 203,
-   "start": 13.7,
+   "start": 18.5,
+   "end": 194.5,
    "gain": 8
   },
   {
@@ -4714,7 +4715,8 @@
    "date": "2013-02-08",
    "venue": "PBS 106.7 FM Studios",
    "seconds": 157,
-   "start": 0,
+   "start": 14.5,
+   "end": 146.5,
    "gain": 5.5
   },
   {
@@ -4724,6 +4726,7 @@
    "venue": "Red Rocks Amphitheatre",
    "seconds": 192,
    "start": 0,
+   "end": 184.5,
    "gain": 1.5
   }
  ],
@@ -4734,7 +4737,8 @@
    "date": "2013-02-08",
    "venue": "PBS 106.7 FM Studios",
    "seconds": 177,
-   "start": 0,
+   "start": 11.5,
+   "end": 175.5,
    "gain": 5.5
   },
   {
@@ -4743,7 +4747,8 @@
    "date": "2015-06-19",
    "venue": "Bowery Ballroom",
    "seconds": 220,
-   "start": 12.5,
+   "start": 15.5,
+   "end": 170.5,
    "gain": 5
   },
   {
@@ -4752,7 +4757,8 @@
    "date": "2015-06-24",
    "venue": "Baby's All Right",
    "seconds": 195,
-   "start": 2,
+   "start": 3.5,
+   "end": 166.5,
    "gain": 4.5
   }
  ],
@@ -4763,7 +4769,7 @@
    "date": "2013-02-08",
    "venue": "PBS 106.7 FM Studios",
    "seconds": 164,
-   "start": 0,
+   "start": 14.5,
    "gain": 5.5
   },
   {
@@ -4772,7 +4778,8 @@
    "date": "2015-09-12",
    "venue": "Pour House",
    "seconds": 174,
-   "start": 0,
+   "start": 9.5,
+   "end": 160.5,
    "gain": 4.5
   },
   {
@@ -4781,7 +4788,8 @@
    "date": "2016-05-01",
    "venue": "The Barracuda",
    "seconds": 180,
-   "start": 0,
+   "start": 8.5,
+   "end": 156.5,
    "gain": 0.5
   },
   {
@@ -4790,7 +4798,8 @@
    "date": "2018-12-01",
    "venue": "Royal Melbourne Showgrounds",
    "seconds": 187,
-   "start": 8.6,
+   "start": 8.5,
+   "end": 162.5,
    "gain": 3
   },
   {
@@ -4799,16 +4808,8 @@
    "date": "2022-10-10",
    "venue": "Red Rocks Amphitheatre",
    "seconds": 182,
-   "start": 0,
-   "gain": 2
-  },
-  {
-   "id": "kg2022-11-02",
-   "file": "67. Cut Throat Boogie (Live At Red Rocks '22).mp3",
-   "date": "2022-11-02",
-   "venue": "Red Rocks Amphitheater",
-   "seconds": 182,
-   "start": 0,
+   "start": 42.5,
+   "end": 178.5,
    "gain": 2
   },
   {
@@ -4818,6 +4819,7 @@
    "venue": "Forest Hills Stadium, Queens, NY, USA",
    "seconds": 367,
    "start": 0,
+   "end": 348.5,
    "gain": 1
   },
   {
@@ -4827,6 +4829,7 @@
    "venue": "Northerly Island",
    "seconds": 317,
    "start": 0,
+   "end": 273.5,
    "gain": 1.5
   },
   {
@@ -4835,7 +4838,7 @@
    "date": "2024-11-04",
    "venue": "Frost Amphitheater",
    "seconds": 447,
-   "start": 0,
+   "start": 8.5,
    "gain": 2.5
   },
   {
@@ -4844,7 +4847,7 @@
    "date": "2025-05-25",
    "venue": "Plaza Mayor de El Poble Espanyol",
    "seconds": 533,
-   "start": 0,
+   "start": 13.5,
    "gain": 0.5
   },
   {
@@ -4855,15 +4858,6 @@
    "seconds": 427,
    "start": 0,
    "gain": 2.5
-  },
-  {
-   "id": "kglw2026-08-16.Full-Three-Shows-discocape",
-   "file": "kglw2026-08-14-4ch_discocape_20.mp3",
-   "date": "2026-08-16",
-   "venue": "Meadow Creek",
-   "seconds": 563,
-   "start": 0,
-   "gain": 7
   }
  ],
  "Sea of Trees": [
@@ -4874,6 +4868,7 @@
    "venue": "Goodgod Small Club",
    "seconds": 222,
    "start": 0,
+   "end": 181.5,
    "gain": 5.5
   },
   {
@@ -4882,7 +4877,8 @@
    "date": "2013-02-08",
    "venue": "PBS 106.7 FM Studios",
    "seconds": 193,
-   "start": 12.7,
+   "start": 14.5,
+   "end": 185.5,
    "gain": 5.5
   },
   {
@@ -4901,6 +4897,7 @@
    "venue": "The Croxton",
    "seconds": 331,
    "start": 0,
+   "end": 287.5,
    "gain": 8.5
   },
   {
@@ -4909,7 +4906,8 @@
    "date": "2022-04-28",
    "venue": "Bimbo's 365",
    "seconds": 770,
-   "start": 0,
+   "start": 28.5,
+   "end": 709.5,
    "gain": 14
   },
   {
@@ -4918,16 +4916,7 @@
    "date": "2022-10-10",
    "venue": "Red Rocks Amphitheatre",
    "seconds": 592,
-   "start": 0,
-   "gain": 6
-  },
-  {
-   "id": "kg2022-10-11",
-   "file": "38. Sea Of Trees (Live At Red Rocks '22).mp3",
-   "date": "2022-10-11",
-   "venue": "Red Rocks Amphitheater",
-   "seconds": 592,
-   "start": 0,
+   "start": 18.5,
    "gain": 6
   },
   {
@@ -4937,6 +4926,7 @@
    "venue": "Offenbach Stadthalle",
    "seconds": 556,
    "start": 0,
+   "end": 480.5,
    "gain": 8
   },
   {
@@ -4949,21 +4939,13 @@
    "gain": 2
   },
   {
-   "id": "kglw2025-06-08.SBD.flac",
-   "file": "King Gizzard & The Lizard Wizard - Live in Bulgaria '25 - 10 Sea of Trees (Live in Bulgaria '25).mp3",
-   "date": "2025-06-08",
-   "venue": "Ancient Theatre",
-   "seconds": 383,
-   "start": 0,
-   "gain": 3
-  },
-  {
    "id": "kglw2026-08-16.SBD",
    "file": "King Gizzard & The Lizard Wizard - Live at Field of Vision II '26 - 02 Sea of Trees (Live at Field of Vision II '26).mp3",
    "date": "2026-08-16",
    "venue": "Field of Vision II, Buena Vista, CO",
    "seconds": 1102,
-   "start": 0,
+   "start": 3.5,
+   "end": 1015.5,
    "gain": 3.5
   }
  ]
