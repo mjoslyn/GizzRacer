@@ -3893,9 +3893,9 @@ body:not(.split) .seat-hud {
 }
 
 /* On a phone the grid screens stand alone, centred; the racer screen with no gallery behind. */
-body.coarse .menu[data-step='mode'],
-body.coarse .menu[data-step='track'],
-body.coarse .menu[data-step='racer'] {
+body.coarse .menu[data-screen='mode'],
+body.coarse .menu[data-screen='track'],
+body.coarse .menu[data-screen='racer'] {
   justify-content: center;
   padding-left: 8px;
   padding-right: 8px;

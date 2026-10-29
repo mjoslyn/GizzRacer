@@ -578,7 +578,7 @@ export class Menu {
     const crumbs = steps
       .map((s, i) => `<button class="menu-crumb${i === this.step ? ' on' : ''}${i > this.step ? ' todo' : ''}" data-step="${i}"><small>${i + 1}</small> ${esc(this.crumb(s))}</button>`)
       .join('<span class="menu-crumb-sep">&rsaquo;</span>');
-    this.el.dataset.step = at;
+    this.el.dataset.screen = at;
     this.el.innerHTML = `
       <div class="menu-panel">
         <div class="menu-crumbs">${crumbs}</div>
