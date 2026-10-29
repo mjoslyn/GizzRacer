@@ -85,7 +85,7 @@ describe('Silver Cord Cup', () => {
     expect(new Set(all).size).toBe(all.length);
   });
 
-  it("is laid out after its song: Theia's two orbits tangled in tiers, Set's tornado, Chang'e's knot on the Moon, Gilgamesh's thirteen winds", () => {
+  it("is laid out after its song: Theia's two orbits tangled in tiers, Set's storm spiralling in to its tornado, Chang'e's knot on the Moon, Gilgamesh's thirteen winds", () => {
     const section = (def: TrackDef, name: string) => def.main.sections.find((s) => s.name === name)!;
     const theia = buildTheia();
     for (const n of ['The Glowing Thread', 'Higher Divine', 'Force of Destiny', 'Ticking Clock', 'Spiritual Rebirth', 'Fate Intertwined', 'The Impact', 'The Snap', 'Dance with Theia', 'Meet Our Maker', 'Mortal Coil', "Theia's Void", 'Gravitational Waves', 'Astral Beach']) expect(section(theia, n), n).toBeTruthy();
@@ -116,13 +116,18 @@ describe('Silver Cord Cup', () => {
     expect(over('Fate Intertwined', 'The Glowing Thread')).toBeGreaterThan(6);
 
     const set = buildSet();
-    for (const n of ['Through the Desert', 'Snout of a Jackal', 'Tail of a Snake', 'Moonbeams', 'Quantum Foam', 'The Tornado', 'Thrown Around', 'Bones Did Shatter', 'Slay the Mighty Set', 'Day into Night', 'Eighty Years of Conflict', 'Hieroglyphic']) expect(section(set, n), n).toBeTruthy();
-    // Lifted him high: the tornado climbs a full turn, to 14 m.
+    for (const n of ['Through the Desert', 'Snout of a Jackal', 'Tail of a Snake', 'Moonbeams', 'Quantum Foam', 'The Storm', 'The Tornado', 'Thrown Around', 'Bones Did Shatter', 'Slay the Mighty Set', 'Day into Night', 'Eighty Years of Conflict', 'Hieroglyphic']) expect(section(set, n), n).toBeTruthy();
+    // Lifted him high: the tornado climbs a full turn, to 16 m.
     const st = new Track(set);
     const tornado = section(set, 'The Tornado');
     expect(st.main.heightAtBuilder(tornado.to - 5)).toBeGreaterThan(12);
     // Day squeezed into night: the narrowest road on the lap.
     expect(Math.min(...set.main.sections.map((s) => s.halfWidth))).toBe(section(set, 'Day into Night').halfWidth);
+    // A storm: the road spirals in to the tornado, climbs a full turn over its own road in, and is thrown
+    // back out over the Snout of a Jackal and the spiral in, one road over the other each time.
+    const storm = crossings(st);
+    expect(storm.length).toBeGreaterThanOrEqual(3);
+    for (const dy of storm) expect(dy).toBeGreaterThan(6);
 
     const moon = buildChangE();
     for (const n of ['Ten Suns', 'Scorching Sands', 'Cerebral Asteroids', 'The Jade Portal', 'Float in the Bright Night', 'Lyre of Lightning', 'Sailing the Moon-Sea', 'Astral Planes', 'Palace Amongst Stars', 'White Rabbit', 'Eclipse', 'Lonely Moon']) expect(section(moon, n), n).toBeTruthy();
