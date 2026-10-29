@@ -102,6 +102,36 @@ describe('Robot Stop: the factory where the line stops', () => {
   });
 });
 
+/** Where each lap runs into itself: a section that crosses over another (or over itself, further along), and the one below it. */
+const TIERS: { name: string; build: () => TrackDef; crossings: [string, string][] }[] = [
+  { name: 'Robot Stop', build: buildRobotStop, crossings: [['Loosen Up', 'Assembly Line'], ['Conveyor Climb', 'Smelter Trench'], ['Conveyor Climb', 'Conveyor Climb']] },
+  { name: 'People-Vultures', build: buildPeopleVultures, crossings: [['Thermal Spiral', 'Scavenger Bend'], ['Thermal Spiral', 'Thermal Spiral'], ['Thermal Spiral', 'Bone Gully']] },
+  { name: 'Wah Wah', build: buildWahWah, crossings: [['Fuzz Bridge', 'Heel Down Bend'], ['The Sweep', 'Filter Trench']] },
+];
+
+describe.each(TIERS.map((c) => [c.name, c] as const))('%s runs into itself', (_name, c) => {
+  const def = c.build();
+  const track = new Track(def);
+  const sp = track.spline;
+  const sectionAt = (i: number) => def.main.sections.find((q) => { const b = track.main.toBuilder(sp.dist[i]); return b >= q.from && b <= q.to; });
+
+  it.each(c.crossings)('%s crosses over %s on a deck more than 6 m above it', (over, under) => {
+    let best = -Infinity;
+    for (let i = 0; i < sp.count; i += 2) {
+      const top = sectionAt(i);
+      if (top?.name !== over) continue;
+      for (let j = 0; j < sp.count; j += 2) {
+        const along = Math.abs(sp.dist[i] - sp.dist[j]);
+        if (Math.min(along, sp.length - along) < 120 || sectionAt(j)?.name !== under) continue;
+        const gap = Math.hypot(sp.px[i] - sp.px[j], sp.pz[i] - sp.pz[j]) - track.main.halfWidth[i] - track.main.halfWidth[j];
+        if (gap < 0) best = Math.max(best, track.main.heightAt(sp.dist[i]) - track.main.heightAt(sp.dist[j]));
+      }
+    }
+    expect(best).toBeGreaterThan(6);
+    expect(def.main.sections.find((q) => q.name === over)!.bridge).toBe(true);
+  });
+});
+
 const first = RACERS[0];
 
 describe.each(CASES.map((c) => [c.name, c] as const))('%s shortcut and kickers', (_name, c) => {
