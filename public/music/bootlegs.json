@@ -5771,5 +5771,286 @@
    "end": 681.5,
    "gain": 10.5
   }
+ ],
+ "Altered Beast I / Alter Me I": [
+  {
+   "id": "kglw2018-06-07.mysteryjack",
+   "file": "09 Alter Me I.mp3",
+   "date": "2018-06-07",
+   "venue": "Monk's Bar",
+   "seconds": 131,
+   "start": 0,
+   "gain": 11.5,
+   "then": {
+    "file": "10 Altered Beast I.mp3",
+    "seconds": 128,
+    "end": 126.5
+   }
+  },
+  {
+   "id": "kglw2018-06-18.SchoepsMK41.Burns.Flac24",
+   "file": "kinggizzard2018-06-18t05_24bit.mp3",
+   "date": "2018-06-18",
+   "venue": "Union Transfer",
+   "seconds": 36,
+   "start": 0,
+   "gain": 6,
+   "then": {
+    "file": "kinggizzard2018-06-18t06_24bit.mp3",
+    "seconds": 124
+   }
+  },
+  {
+   "id": "kglw2018-06-20.ca14.flac1644",
+   "file": "08-Alter Me I.mp3",
+   "date": "2018-06-20",
+   "venue": "Variety Playhouse",
+   "seconds": 39,
+   "start": 0,
+   "gain": 6.5,
+   "then": {
+    "file": "09-Altered Beast I.mp3",
+    "seconds": 185,
+    "end": 122.5
+   }
+  },
+  {
+   "id": "kglw2022-10-05",
+   "file": "KingGizzard2022-10-05t12 - Altered Beast I.mp3",
+   "date": "2022-10-05",
+   "venue": "PNE Forum",
+   "seconds": 199,
+   "start": 0,
+   "gain": 7,
+   "then": {
+    "file": "KingGizzard2022-10-05t13 - Alter Me I.mp3",
+    "seconds": 139
+   }
+  },
+  {
+   "id": "kglw2022-10-10.bootlegger",
+   "file": "47. Altered Beast I (Live At Red Rocks '22).mp3",
+   "date": "2022-10-10",
+   "venue": "Red Rocks Amphitheatre",
+   "seconds": 142,
+   "start": 7.5,
+   "gain": 2,
+   "then": {
+    "file": "48. Alter Me I (Live At Red Rocks '22).mp3",
+    "seconds": 54
+   }
+  },
+  {
+   "id": "kglw2022-10-28",
+   "file": "kglw2022-10-28 16-Altered Beast I.mp3",
+   "date": "2022-10-28",
+   "venue": "Stubb's BBQ Waller Creek Amphitheater",
+   "seconds": 148,
+   "start": 7.5,
+   "gain": 7,
+   "then": {
+    "file": "kglw2022-10-28 17-Alter Me I.mp3",
+    "seconds": 44
+   }
+  },
+  {
+   "id": "kglw2023-06-16.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live at Remlinger Farms '23 - 15 Altered Beast I (Live at Remlinger Farms '23).mp3",
+   "date": "2023-06-16",
+   "venue": "Remlinger Farms",
+   "seconds": 142,
+   "start": 7.5,
+   "gain": -2.5,
+   "then": {
+    "file": "King Gizzard & The Lizard Wizard - Live at Remlinger Farms '23 - 16 Alter Me I (Live at Remlinger Farms '23).mp3",
+    "seconds": 44
+   }
+  },
+  {
+   "id": "kglw2025-06-04.SBD.flac",
+   "file": "King Gizzard & The Lizard Wizard - Live in Athens '25 - 05 Altered Beast I (Live in Athens '25).mp3",
+   "date": "2025-06-04",
+   "venue": "Lycabettus Theatre",
+   "seconds": 151,
+   "start": 16.5,
+   "gain": 0.5,
+   "then": {
+    "file": "King Gizzard & The Lizard Wizard - Live in Athens '25 - 06 Alter Me I (Live in Athens '25).mp3",
+    "seconds": 129
+   }
+  },
+  {
+   "id": "kglw2025-12-13.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Rockin' in Melbourne '25 - 02 Altered Beast I (Live In Melbourne '25).mp3",
+   "date": "2025-12-13",
+   "venue": "Sidney Myer Music Bowl, Melbourne, VIC, Australia",
+   "seconds": 207,
+   "start": 12.5,
+   "gain": -1,
+   "then": {
+    "file": "King Gizzard & The Lizard Wizard - Rockin' in Melbourne '25 - 03 Alter Me I (Live In Melbourne '25).mp3",
+    "seconds": 64
+   }
+  },
+  {
+   "id": "kglw2026-08-21.birds",
+   "file": "07-Altered Beast I _.mp3",
+   "date": "2026-08-21",
+   "venue": "Forest Hills Stadium",
+   "seconds": 222,
+   "start": 0,
+   "gain": 10,
+   "then": {
+    "file": "08-Alter Me I _.mp3",
+    "seconds": 182
+   }
+  }
+ ],
+ "Altered Beast II / Alter Me II": [
+  {
+   "id": "kglw2017-03-31",
+   "file": "11-Altered Beast II _.mp3",
+   "date": "2017-03-31",
+   "venue": "Webster Hall",
+   "seconds": 244,
+   "start": 6.5,
+   "gain": 1,
+   "then": {
+    "file": "12-Alter Me II _.mp3",
+    "seconds": 102
+   }
+  },
+  {
+   "id": "kglw2017-09-27.mysteryjack",
+   "file": "14 Altered Beast II.mp3",
+   "date": "2017-09-27",
+   "venue": "Variety Playhouse",
+   "seconds": 241,
+   "start": 0,
+   "gain": 7,
+   "then": {
+    "file": "15 Alter Me II.mp3",
+    "seconds": 92
+   }
+  },
+  {
+   "id": "kglw2017-09-28.mysteryjack",
+   "file": "14 Altered Beast II.mp3",
+   "date": "2017-09-28",
+   "venue": "One Eyed Jacks",
+   "seconds": 247,
+   "start": 9.5,
+   "gain": 6,
+   "then": {
+    "file": "15 Alter Me II.mp3",
+    "seconds": 102
+   }
+  },
+  {
+   "id": "kglw2017-10-07.mysteryjack",
+   "file": "14 Altered Beast II.mp3",
+   "date": "2017-10-07",
+   "venue": "Neurolux- Boise, ID",
+   "seconds": 239,
+   "start": 9.5,
+   "gain": 9.5,
+   "then": {
+    "file": "15 Alter Me II.mp3",
+    "seconds": 92
+   }
+  },
+  {
+   "id": "kglw2017-10-12.ccm4.flac1644",
+   "file": "kglw2017-10-12t14.mp3",
+   "date": "2017-10-12",
+   "venue": "The Fillmore",
+   "seconds": 232,
+   "start": 0,
+   "gain": 4,
+   "then": {
+    "file": "kglw2017-10-12t15.mp3",
+    "seconds": 82
+   }
+  },
+  {
+   "id": "kglw2022-10-10.bootlegger",
+   "file": "49. Altered Beast II (Live At Red Rocks '22).mp3",
+   "date": "2022-10-10",
+   "venue": "Red Rocks Amphitheatre",
+   "seconds": 274,
+   "start": 24.5,
+   "gain": 3,
+   "then": {
+    "file": "50. Alter Me II (Live At Red Rocks '22).mp3",
+    "seconds": 53
+   }
+  },
+  {
+   "id": "kglw2025-12-13.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Rockin' in Melbourne '25 - 04 Altered Beast II (Live In Melbourne '25).mp3",
+   "date": "2025-12-13",
+   "venue": "Sidney Myer Music Bowl, Melbourne, VIC, Australia",
+   "seconds": 255,
+   "start": 0,
+   "gain": -1.5,
+   "then": {
+    "file": "King Gizzard & The Lizard Wizard - Rockin' in Melbourne '25 - 05 Alter Me II (Live In Melbourne '25).mp3",
+    "seconds": 111
+   }
+  },
+  {
+   "id": "kglw2026-08-15.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live at Field of Vision II '26 - 17 Altered Beast II (Live at Field of Vision II '26).mp3",
+   "date": "2026-08-15",
+   "venue": "Field of Vision II, Buena Vista, CO",
+   "seconds": 257,
+   "start": 3.5,
+   "gain": 3,
+   "then": {
+    "file": "King Gizzard & The Lizard Wizard - Live at Field of Vision II '26 - 18 Alter Me II (Live at Field of Vision II '26).mp3",
+    "seconds": 295
+   }
+  }
+ ],
+ "Altered Beast III / Alter Me III": [
+  {
+   "id": "kglw2017-09-27.mysteryjack",
+   "file": "16 Altered Beast III.mp3",
+   "date": "2017-09-27",
+   "venue": "Variety Playhouse",
+   "seconds": 135,
+   "start": 6.5,
+   "gain": 6.5,
+   "then": {
+    "file": "17 Alter Me III.mp3",
+    "seconds": 70
+   }
+  },
+  {
+   "id": "kglw2017-09-28.mysteryjack",
+   "file": "16 Altered Beast III.mp3",
+   "date": "2017-09-28",
+   "venue": "One Eyed Jacks",
+   "seconds": 149,
+   "start": 6.5,
+   "gain": 6,
+   "then": {
+    "file": "17 Alter Me III.mp3",
+    "seconds": 60
+   }
+  },
+  {
+   "id": "kglw2017-10-12.ccm4.flac1644",
+   "file": "kglw2017-10-12t16.mp3",
+   "date": "2017-10-12",
+   "venue": "The Fillmore",
+   "seconds": 162,
+   "start": 0,
+   "gain": 4.5,
+   "then": {
+    "file": "kglw2017-10-12t17.mp3",
+    "seconds": 55
+   }
+  }
  ]
 }

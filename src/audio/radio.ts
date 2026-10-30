@@ -110,9 +110,20 @@ export class LiveRadio {
     const rec = pool[Math.floor(this.rand() * pool.length)];
     if (this.now && this.now.mode !== 'show') this.history.push({ rec: this.now.rec, title: this.now.title, mode: this.now.mode });
     this.now = { rec, title: song, mode };
-    this.music.playLive(rec, this.fallback);
+    if (rec.then) this.playPair(rec, t);
+    else this.music.playLive(rec, this.fallback);
     this.changed();
     return true;
+  }
+
+  /** Two songs the band played back to back: the first, straight on into the second, and round again. */
+  private playPair(rec: LiveRecording, t: number): void {
+    const then = rec.then!;
+    const second: LiveRecording = { ...rec, file: then.file, seconds: then.seconds, start: 0, end: then.end, then: undefined };
+    const first = (): void => {
+      if (t === this.ticket) this.music.playLive(rec, this.fallback, { onEnded: () => t === this.ticket && this.music.playLive(second, this.fallback, { gain: rec.gain, onEnded: first }) });
+    };
+    first();
   }
 
   /** Random song: a live recording of any song in the catalogue, a different one from what's playing. */

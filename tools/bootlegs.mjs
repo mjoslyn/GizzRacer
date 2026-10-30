@@ -37,11 +37,16 @@ const SKIP = new Set([
   'kglw2026-08-16.Full-Three-Shows-discocape/kglw2026-08-14-4ch_discocape_20.mp3',
   "kg2022-11-02/76. Head On'Pill (Live At Red Rocks '22).mp3",
   "kg2022-11-02/83. Let Me Mend The Past (Live At Red Rocks '22).mp3",
+  "kg2022-10-11/47. Altered Beast I (Live At Red Rocks '22).mp3",
+  "kg2022-10-11/49. Altered Beast II (Live At Red Rocks '22).mp3",
+  'kglw2026-08-16.Full-Three-Shows-discocape/kglw2026-08-15-4ch-discocape_18.mp3',
+  "kglw2025-06-08.SBD.flac/King Gizzard & The Lizard Wizard - Live in Bulgaria '25 - 11 Altered Beast III (Live in Bulgaria '25).mp3",
 ]);
 /** Start points and gains already found (tools/bootleg-starts.mjs), and ends (tools/live-edges.py), kept across a re-run. */
 const known = new Map();
 try {
-  for (const recs of Object.values(JSON.parse(readFileSync(OUT, 'utf8')))) for (const r of recs) if (r.start !== undefined) known.set(`${r.id}/${r.file}`, { start: r.start, ...(r.end !== undefined ? { end: r.end } : {}), gain: r.gain });
+  for (const recs of Object.values(JSON.parse(readFileSync(OUT, 'utf8'))))
+    for (const r of recs) if (r.start !== undefined) known.set(`${r.id}/${r.file}${r.then ? `>${r.then.file}` : ''}`, { start: r.start, ...(r.end !== undefined ? { end: r.end } : {}), gain: r.gain, ...(r.then ? { then: r.then } : {}) });
 } catch {
   // First run.
 }
@@ -52,6 +57,14 @@ const SONGS = [...new Set([...songsSrc.matchAll(/title: '((?:[^'\\]|\\.)*)'|titl
 /** Letters and digits only, and no leading "the" ("Lord of Lightning" is The Lord of Lightning). */
 const norm = (s) => s.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]/g, '').replace(/^the/, '');
 const WANT = new Map(SONGS.map((t) => [norm(t), t]));
+/**
+ * Tracks that are two songs (TrackSong.also), which the band play one into
+ * the other: their pairs, played back to back at a show, are kept under
+ * "first / second" with the second file as the recording's `then`, so the
+ * two play through together.
+ */
+const PAIRS = [...songsSrc.matchAll(/title: '((?:[^'\\]|\\.)*)'[^\n}]*also: '((?:[^'\\]|\\.)*)'/g)].map((m) => [m[1], m[2]].map((s) => s.replace(/\\'/g, "'")));
+for (const pair of PAIRS) for (const s of pair) if (!WANT.has(norm(s))) WANT.set(norm(s), s);
 /** Other names a song goes by on tapers' set lists: the closer of Float Along is mostly just "Fill Your Lungs" live. */
 const ALIASES = { 'Fill Your Lungs': 'Float Along – Fill Your Lungs' };
 for (const [alias, song] of Object.entries(ALIASES)) if (SONGS.includes(song)) WANT.set(norm(alias), song);
@@ -128,7 +141,7 @@ shows.sort((a, b) => Number(/sbd/i.test(b.identifier + b.source)) - Number(/sbd/
 console.log(`${shows.length} shows; looking for ${SONGS.length} songs`);
 
 /** song title -> date -> recording */
-const found = new Map(SONGS.map((t) => [t, new Map()]));
+const found = new Map([...SONGS, ...PAIRS.map((p) => p.join(' / '))].map((t) => [t, new Map()]));
 /** date -> show with MP3s, the first (best) one per date. */
 const playable = new Map();
 let done = 0;
@@ -141,9 +154,24 @@ async function scan(show) {
   const mp3s = meta.files.filter((f) => f.format === 'VBR MP3');
   // A show worth playing whole: a real set, not a one-song snippet.
   if (mp3s.length >= 4 && date && !playable.has(date)) playable.set(date, { id: show.identifier, date, venue });
+  const titleOf = (f) => f.title ?? f.name.replace(/\.mp3$/i, '').replace(/^[\dds]+[-_. ]+/i, '');
+  // A pair played back to back: the first song's file, the second's straight after it in the set.
+  const inOrder = mp3s.filter((f) => !SKIP.has(`${show.identifier}/${f.name}`)).sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+  for (let i = 0; i + 1 < inOrder.length; i++) {
+    const [a, b] = [songsIn(titleOf(inOrder[i])), songsIn(titleOf(inOrder[i + 1]))];
+    for (const pair of PAIRS) {
+      if (a.length !== 1 || b.length !== 1 || !((a[0] === pair[0] && b[0] === pair[1]) || (a[0] === pair[1] && b[0] === pair[0]))) continue;
+      const byDate = found.get(pair.join(' / '));
+      if (byDate.has(date)) continue;
+      const [f, g] = [inOrder[i], inOrder[i + 1]];
+      const rec = { id: show.identifier, file: f.name, date, venue, seconds: seconds(f.length), then: { file: g.name, seconds: seconds(g.length) } };
+      const read = known.get(`${rec.id}/${rec.file}>${g.name}`);
+      byDate.set(date, read ? { ...rec, ...read } : rec);
+    }
+  }
   for (const f of meta.files) {
     if (f.format !== 'VBR MP3' || SKIP.has(`${show.identifier}/${f.name}`)) continue;
-    const title = f.title ?? f.name.replace(/\.mp3$/i, '').replace(/^[\dds]+[-_. ]+/i, '');
+    const title = titleOf(f);
     for (const song of songsIn(title)) {
       const byDate = found.get(song);
       if (byDate.has(date)) continue;
@@ -167,7 +195,7 @@ await Promise.all(
 const out = {};
 for (const [song, byDate] of found) {
   // Long enough to be the song, not a snippet; spread evenly across the dates.
-  const all = [...byDate.values()].filter((r) => r.seconds === 0 || r.seconds >= 90).sort((a, b) => a.date.localeCompare(b.date));
+  const all = [...byDate.values()].filter((r) => r.seconds === 0 || r.seconds >= 90 || r.then).sort((a, b) => a.date.localeCompare(b.date));
   const pick = all.length <= PER_SONG ? all : Array.from({ length: PER_SONG }, (_, k) => all[Math.floor(((k + 0.5) * all.length) / PER_SONG)]);
   if (pick.length) out[song] = pick;
   console.log(`${song}: ${all.length} recorded, ${pick.length} kept`);

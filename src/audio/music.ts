@@ -80,6 +80,13 @@ export interface LiveRecording {
   end?: number;
   /** The gain (dB) that brings it to the remixes' loudness (audio/talk.ts `gainFor`); absent when not measured. */
   gain?: number;
+  /**
+   * The song the band played straight after it, the next file in the same
+   * show, for a track that is two songs (an Altered Beast and its Alter Me):
+   * it plays on from the first, from its top, at the same gain, and the pair
+   * loops. Its `end` as the recording's own.
+   */
+  then?: { file: string; seconds: number; end?: number };
 }
 
 /** Where a live recording streams from. */

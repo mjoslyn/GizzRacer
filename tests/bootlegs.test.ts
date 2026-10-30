@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { liveUrl, type LiveRecording } from '../src/audio/music';
-import { STORY_BOSS_SONGS, STORY_SONGS, TRACK_SONGS } from '../src/audio/songs';
+import { STORY_BOSS_SONGS, STORY_SONGS, TRACK_SONGS, songTitles } from '../src/audio/songs';
 import { ACTS } from '../src/core/story';
 
 import bootlegs from '../public/music/bootlegs.json';
@@ -9,7 +9,7 @@ const catalogue = bootlegs as Record<string, LiveRecording[]>;
 
 describe('live bootlegs', () => {
   it("are keyed by the tracks' songs (and story mode's), and most songs have some", () => {
-    const songs = new Set([...Object.values(TRACK_SONGS), ...STORY_SONGS.flat()].map((s) => s.title));
+    const songs = new Set([...Object.values(TRACK_SONGS).map(songTitles), ...[...Object.values(TRACK_SONGS), ...STORY_SONGS.flat()].map((s) => s.title)]);
     for (const song of Object.keys(catalogue)) expect(songs.has(song), song).toBe(true);
   });
 
@@ -60,6 +60,19 @@ describe('live bootlegs', () => {
           expect(r.end, song).toBeGreaterThan((r.start ?? 0) + 30);
           expect(r.end, song).toBeLessThan(r.seconds);
         }
+      }
+    }
+  });
+
+  it('a track that is two songs has them back to back at shows: the second the next file in the same show, ending inside it', () => {
+    for (const s of Object.values(TRACK_SONGS).filter((x) => x.also)) {
+      const pairs = catalogue[songTitles(s)] ?? [];
+      expect(pairs.length, songTitles(s)).toBeGreaterThan(0);
+      for (const r of pairs) {
+        expect(r.then, r.date).toBeDefined();
+        expect(r.then!.file, r.date).toMatch(/\.mp3$/i);
+        expect(r.then!.file, r.date).not.toBe(r.file);
+        if (r.then!.end !== undefined) expect(r.then!.end, r.date).toBeLessThan(r.then!.seconds);
       }
     }
   });

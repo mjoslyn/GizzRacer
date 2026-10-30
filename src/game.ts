@@ -10,7 +10,7 @@ import { chosenShow, setShows } from './audio/shows';
 import { MiniPlayer } from './ui/miniPlayer';
 import { HintsTicker } from './ui/hints';
 import { Sfx } from './audio/sfx';
-import { DEADSTICK_CUE, STORY_BOSS_SONGS, STORY_SONGS, TRACK_SONGS, remixCues } from './audio/songs';
+import { DEADSTICK_CUE, STORY_BOSS_SONGS, STORY_SONGS, TRACK_SONGS, remixCues, songTitles } from './audio/songs';
 import { GHOST_HZ, GHOST_OVERRUN, GhostRecorder, decodeGhost, encodeGhost, ghostPose, type GhostRun } from './core/ghost';
 import { identity } from './net/identity';
 import { TRIAL_LAPS, recordId } from './net/runCheck';
@@ -2240,8 +2240,8 @@ function ensureSet(): void {
  */
 function raceSongs(): string[] {
   const song = TRACK_SONGS[track.def.id];
-  // A track that is two songs plays either, the first choice at random.
-  const own = song ? (song.also ? (Math.random() < 0.5 ? [song.title, song.also] : [song.also, song.title]) : [song.title]) : [];
+  // A track that is two songs plays them as the band did, back to back at one show; else either, at random.
+  const own = song ? (song.also ? [songTitles(song), ...(Math.random() < 0.5 ? [song.title, song.also] : [song.also, song.title])] : [song.title]) : [];
   const r = story?.race;
   if (!r) return own;
   const list = (STORY_SONGS[r.act] ?? []).map((s) => s.title);

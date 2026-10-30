@@ -169,4 +169,24 @@ describe('live soundtrack', () => {
     expect(radio.playing).toBe(null);
     expect(calls).toHaveLength(0);
   });
+
+  it('two songs the band played back to back: the first, straight on into the second at the same gain, and round again', async () => {
+    const pair: LiveRecording = { ...rec('kglw2017-09-27', '14 Altered Beast II.mp3'), start: 4, gain: 6, then: { file: '15 Alter Me II.mp3', seconds: 92, end: 88 } };
+    stubFetch({ 'bootlegs.json': { 'Altered Beast II / Alter Me II': [pair], Magma: [rec('a', 'a.mp3')] } });
+    const { music, last } = fakeMusic();
+    const radio = new LiveRadio(music, () => 0);
+    expect(await radio.playSong('Altered Beast II / Alter Me II', ['remix'])).toBe(true);
+    expect(last().live?.file).toBe('14 Altered Beast II.mp3');
+    last().opts!.onEnded!();
+    const second = last();
+    expect(second.live).toMatchObject({ id: 'kglw2017-09-27', file: '15 Alter Me II.mp3', seconds: 92, start: 0, end: 88 });
+    expect(second.opts!.gain).toBe(6);
+    second.opts!.onEnded!();
+    expect(last().live?.file).toBe('14 Altered Beast II.mp3');
+    // A new song asked for stops the pair going round.
+    const before = last();
+    await radio.playSong('Magma', ['remix']);
+    before.opts!.onEnded!();
+    expect(last().live?.file).toBe('a.mp3');
+  });
 });
