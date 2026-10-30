@@ -8,6 +8,7 @@ import { PRESENT_WRAPS, presentFigure, santaFigure } from './godIsCalling';
 import { pillFigure, posePill } from './headOnPill';
 import { arrowGeometry, eyeFigure } from './mindfuzz';
 import { cameraParts, poseCameras } from './mendThePast';
+import { cutleryParts, poseCutlery } from './alteredBeastII';
 import { BOX_RESPAWN, SHIELD_ITEMS, WAVE_RANGE, type ItemHolder, type ItemSystem } from '../items/items';
 import type { KartState } from '../physics/kart';
 import type { HazardSystem } from '../items/hazards';
@@ -1378,6 +1379,10 @@ export class HazardsView {
           parts.push(pill);
           break;
         }
+        case 'cutlery':
+          // The beast's knife and fork in its paws, reaching down out of the sky.
+          parts.push(...cutleryParts(obj));
+          break;
         case 'bubbles': {
           // A great breath of air: a shining skin round it and a highlight; the froth on the road where it's coming up; a ring of spray as it bursts.
           const R = pose.radius;
@@ -2307,6 +2312,9 @@ export class HazardsView {
           posePill(parts[0], p, elapsed);
           break;
         }
+        case 'cutlery':
+          poseCutlery(obj, parts, p, elapsed);
+          break;
         case 'bubbles': {
           const [ball, froth, spray] = parts;
           const u = p.phase;

@@ -2006,6 +2006,7 @@ const HIT_TEXT: Record<ItemKind | HazardKind, string> = {
   cameras: 'SEEN!',
   presents: 'SACKED!',
   pills: 'THE WRONG PILL!',
+  cutlery: 'CARVED UP!',
   bubbles: 'POP!',
 };
 
@@ -2065,6 +2066,7 @@ const BONUS_TEXT: Record<HazardKind, string> = {
   cameras: 'OFF CAMERA!',
   presents: 'MERRY CHRISTMAS!',
   pills: 'THE RIGHT PILL!',
+  cutlery: 'THREADED THE CUTLERY!',
   bubbles: 'FLOAT ALONG!',
 };
 
