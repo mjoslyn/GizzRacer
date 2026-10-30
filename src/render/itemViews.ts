@@ -9,6 +9,7 @@ import { pillFigure, posePill } from './headOnPill';
 import { arrowGeometry, eyeFigure } from './mindfuzz';
 import { cameraParts, poseCameras } from './mendThePast';
 import { cutleryParts, poseCutlery } from './alteredBeastII';
+import { fangParts, poseFangs } from './alteredBeastIII';
 import { BOX_RESPAWN, SHIELD_ITEMS, WAVE_RANGE, type ItemHolder, type ItemSystem } from '../items/items';
 import type { KartState } from '../physics/kart';
 import type { HazardSystem } from '../items/hazards';
@@ -1372,6 +1373,10 @@ export class HazardsView {
           // Two cameras up on the hall's walls, their beams of light down onto the road.
           parts.push(...cameraParts(obj));
           break;
+        case 'fangs':
+          // A jaw of nine pearl fangs across the road, five down from a beam of gum and four up out of the road.
+          parts.push(...fangParts(obj, pose.radius));
+          break;
         case 'pills': {
           // A giant capsule, two-tone, tumbling end over end across the road: the right pill or the wrong one.
           const pill = pillFigure(pose.radius);
@@ -2314,6 +2319,9 @@ export class HazardsView {
         }
         case 'cutlery':
           poseCutlery(obj, parts, p, elapsed);
+          break;
+        case 'fangs':
+          poseFangs(obj, parts, p, elapsed);
           break;
         case 'bubbles': {
           const [ball, froth, spray] = parts;

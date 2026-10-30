@@ -713,12 +713,11 @@ const PALETTES: Record<GenTheme, Palette> = {
   altered: {
     surface: 'fur',
     deck: 'fur',
-    alt: 'sand',
-    hazards: ['sunMoon'],
-    start: 'setGate',
-    landmarks: ['setGate'],
+    hazards: ['fangs'],
+    start: 'fangGate',
+    landmarks: ['fangGate'],
     tallWalls: 6,
-    places: ['Jackal', 'Snake', 'Tornado', 'Tomb', 'Duality', 'Sandstorm', 'Moonbeam', 'Hieroglyph', 'Reset'],
+    places: ['Hiding Place', 'Peep', 'Angels', 'Altered World', 'White Teeth', 'Beastly', 'Pearl Fangs', 'Reborn', 'Nucleus'],
     music: { lap: 'altered-beast-iii', finalLap: 'altered-beast-iii-final-lap' },
   },
   hollow: {
@@ -1488,6 +1487,10 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
         break;
       case 'vines':
         hazards.push({ kind, at: at(count), period: 3.6 });
+        break;
+      case 'fangs':
+        // A run of jaws down the stretch, each snapping shut a beat after the one before.
+        hazards.push({ kind, at: at(count + 1), period: 4.6 });
         break;
     }
     return true;

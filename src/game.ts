@@ -2008,6 +2008,7 @@ const HIT_TEXT: Record<ItemKind | HazardKind, string> = {
   pills: 'THE WRONG PILL!',
   cutlery: 'CARVED UP!',
   bubbles: 'POP!',
+  fangs: 'DEFORMED!',
 };
 
 /** What a hazard used well says: the ones that can help. */
@@ -2068,6 +2069,7 @@ const BONUS_TEXT: Record<HazardKind, string> = {
   pills: 'THE RIGHT PILL!',
   cutlery: 'THREADED THE CUTLERY!',
   bubbles: 'FLOAT ALONG!',
+  fangs: 'ALTER ME!',
 };
 
 /** Takes a group out of the scene and frees what it built. */
