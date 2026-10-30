@@ -2237,13 +2237,15 @@ function ensureSet(): void {
  * on), then the track's own.
  */
 function raceSongs(): string[] {
-  const own = TRACK_SONGS[track.def.id]?.title;
+  const song = TRACK_SONGS[track.def.id];
+  // A track that is two songs plays either, the first choice at random.
+  const own = song ? (song.also ? (Math.random() < 0.5 ? [song.title, song.also] : [song.also, song.title]) : [song.title]) : [];
   const r = story?.race;
-  if (!r) return own ? [own] : [];
+  if (!r) return own;
   const list = (STORY_SONGS[r.act] ?? []).map((s) => s.title);
   const lead = r.boss ? [STORY_BOSS_SONGS[r.act]] : [];
   const chapter = [...lead, ...list.map((_, i) => list[(r.index + i) % list.length])];
-  return [...new Set([...chapter, ...(own ? [own] : [])].filter(Boolean))];
+  return [...new Set([...chapter, ...own].filter(Boolean))];
 }
 
 /** The Deadstick Landing flies to the game's own Deadstick remix, never a live recording or a set. */

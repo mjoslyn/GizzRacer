@@ -1,4 +1,4 @@
-import { STORY_SONGS, TRACK_SONGS, TRANSCRIBED } from '../audio/songs';
+import { STORY_SONGS, TRACK_SONGS, TRANSCRIBED, songTitles } from '../audio/songs';
 import { ACTS } from '../core/story';
 import { CUPS, TRACK_LIST } from '../tracks/index';
 
@@ -13,7 +13,7 @@ export function creditsHtml(): string {
         const song = TRACK_SONGS[t.id];
         if (!song) return '';
         const sampled = TRANSCRIBED[t.id] ? '<span class="credits-tag">from their recording</span>' : '';
-        return `<li><span class="credits-track">${esc(t.name)}</span><span class="credits-song">${esc(song.title)} <small>${esc(song.album)}, ${song.year}</small>${sampled}</span></li>`;
+        return `<li><span class="credits-track">${esc(t.name)}</span><span class="credits-song">${esc(songTitles(song))} <small>${esc(song.album)}, ${song.year}</small>${sampled}</span></li>`;
       })
       .join('');
     return `<div class="settings-group">${esc(cup.name)}</div><ul class="credits-list">${rows}</ul>`;

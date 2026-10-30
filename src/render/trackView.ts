@@ -197,6 +197,11 @@ function materials(theme: Theme): Materials {
       // God Is Calling Me Back Home's street, its white line down the middle.
       bitumen: bumpy(bitumenTexture(), 0.08),
       florals: bumpy(floralCarpetTexture(), 0.1),
+      // The Altered Beast Cup's roads (placeholders until each track's world is built).
+      crust: bumpy(tex.sandTexture(), 0.06),
+      butcher: bumpy(tex.carpetTexture(), 0.1),
+      fur: bumpy(tex.carpetTexture(), 0.1),
+      bone: bumpy(tex.sandTexture(), 0.06),
       gravel: bumpy(tex.sandTexture(), 0.06),
       cosmic: (() => {
         const map = tex.cosmicRoadTexture();

@@ -71,7 +71,15 @@ export type RoadSurface =
   /** Let Me Mend the Past's road: nan's floral carpet. */
   | 'florals'
   /** Float Along's road: a country road's pale gravel. */
-  | 'gravel';
+  | 'gravel'
+  /** Altered Beast I's road: the new world's dry crusted mud, cracked. */
+  | 'crust'
+  /** Altered Beast II's road: a butcher's block, scored by knives. */
+  | 'butcher'
+  /** Altered Beast III's road: the beast's fur, combed. */
+  | 'fur'
+  /** Altered Beast IV's road: bone, bleached and hollow. */
+  | 'bone';
 
 /**
  * Every road is built this much wider than its section says: the layouts

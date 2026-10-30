@@ -42,6 +42,10 @@ import { buildHeadOnPill } from './headOnPill';
 import { buildGodIsCalling } from './godIsCalling';
 import { buildMendThePast } from './mendThePast';
 import { buildFloatAlong } from './floatAlong';
+import { buildAlteredBeastI } from './alteredBeastI';
+import { buildAlteredBeastII } from './alteredBeastII';
+import { buildAlteredBeastIII } from './alteredBeastIII';
+import { buildAlteredBeastIV } from './alteredBeastIV';
 import { buildCutThroatBoogie } from './cutThroatBoogie';
 import { buildSeaOfTrees } from './seaOfTrees';
 import { buildTheia } from './theia';
@@ -72,6 +76,10 @@ export const RAW_TRACK_LIST: { id: string; name: string; build: () => TrackDef }
   { id: 'fishies-lagoon', name: 'Open Water', build: buildFishiesLagoon },
   { id: 'butterfly-skyway', name: 'Sleep Drifter', build: buildButterflySkyway },
   { id: 'cyboogie-city', name: 'Doom City', build: buildCyboogieCity },
+  { id: 'altered-beast-i', name: 'Altered Beast I', build: buildAlteredBeastI },
+  { id: 'altered-beast-ii', name: 'Altered Beast II', build: buildAlteredBeastII },
+  { id: 'altered-beast-iii', name: 'Altered Beast III', build: buildAlteredBeastIII },
+  { id: 'altered-beast-iv', name: 'Altered Beast IV', build: buildAlteredBeastIV },
   { id: 'crumbling-castle', name: 'Crumbling Castle', build: buildCrumblingCastle },
   { id: 'castle-in-the-air', name: 'The Castle in the Air', build: buildCastleInTheAir },
   { id: 'inner-cell', name: 'Inner Cell', build: buildInnerCell },
@@ -116,20 +124,22 @@ export const CUPS: { id: string; name: string; tracks: number[] }[] = [
   { id: 'nonagon-infinity', name: 'Nonagon Infinity Cup', tracks: [12, 13, 14, 15] },
   // Flying Microtonal Banana (February 2017), in album order, all in the cover's blue and yellow: the desert, the lagoon, the road through the sky, and the city at night.
   { id: 'flying-microtonal-banana', name: 'Flying Microtonal Banana Cup', tracks: [16, 17, 18, 19] },
+  // Murder of the Universe (June 2017): The Tale of the Altered Beast, the suite it opens with, each Altered Beast run into the Alter Me after it. The new world, the foe, the altered world, and the hollow.
+  { id: 'altered-beast', name: 'Altered Beast Cup', tracks: [20, 21, 22, 23] },
   // Polygondwanaland (November 2017), in album order: the castle falling down, the castle on the clouds, the inside of a cell, and the fourth colour.
-  { id: 'polygondwanaland', name: 'Polygondwanaland Cup', tracks: [20, 21, 22, 23] },
+  { id: 'polygondwanaland', name: 'Polygondwanaland Cup', tracks: [24, 25, 26, 27] },
   // Infest the Rats' Nest (2019), in album order: the burning Earth, the rich's colony on Mars, the ship falling at the sun, and down into Hell.
-  { id: 'infest-the-rats-nest', name: "Infest the Rats' Nest Cup", tracks: [24, 25, 26, 27] },
+  { id: 'infest-the-rats-nest', name: "Infest the Rats' Nest Cup", tracks: [28, 29, 30, 31] },
   // Omnium Gatherum (April 2022): the pink mountain, the ocean planet, the goblin's garden, and the pliosaur.
-  { id: 'omnium-gatherum', name: 'Omnium Gatherum Cup', tracks: [28, 29, 30, 31] },
+  { id: 'omnium-gatherum', name: 'Omnium Gatherum Cup', tracks: [32, 33, 34, 35] },
   // Ice, Death, Planets, Lungs, Mushrooms and Lava (October 2022), in album order: the glacier, the volcano, the jungle (the planet's lungs) overgrown with mushrooms, and the road of starlight.
-  { id: 'ice-death-planets', name: 'Ice, Death, Planets, Lungs, Mushrooms and Lava Cup', tracks: [32, 33, 34, 35] },
+  { id: 'ice-death-planets', name: 'Ice, Death, Planets, Lungs, Mushrooms and Lava Cup', tracks: [36, 37, 38, 39] },
   // PetroDragonic Apocalypse (2023), in album order: the speedway, the storm, the oil-field dragons, and Mars on fire.
-  { id: 'petrodragonic-apocalypse', name: 'PetroDragonic Apocalypse Cup', tracks: [36, 37, 38, 39] },
+  { id: 'petrodragonic-apocalypse', name: 'PetroDragonic Apocalypse Cup', tracks: [40, 41, 42, 43] },
   // The Silver Cord (October 2023), in album order: the young Earth and the planet that hits it, the god in the red land, the goddess on the Moon, and the hero's road out of Uruk.
-  { id: 'silver-cord', name: 'Silver Cord Cup', tracks: [40, 41, 42, 43] },
+  { id: 'silver-cord', name: 'Silver Cord Cup', tracks: [44, 45, 46, 47] },
   // Phantom Island (2025): the island in the mist, the plane with no engine, the forest that's awake, and the sea at night.
-  { id: 'phantom-island', name: 'Phantom Island Cup', tracks: [44, 45, 46, 47] },
+  { id: 'phantom-island', name: 'Phantom Island Cup', tracks: [48, 49, 50, 51] },
 ];
 
 /** Cups that were retired when every cup became an album's, and the album cup that took most of each one's tracks: progress.ts carries their trophies over. */

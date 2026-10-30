@@ -7,6 +7,13 @@ export interface TrackSong {
   title: string;
   album: string;
   year: number;
+  /** A second song the track is (the Altered Beast Cup's each run an Altered Beast into its Alter Me): Track song plays either. */
+  also?: string;
+}
+
+/** A track's song or songs, as the credits name them. */
+export function songTitles(song: TrackSong): string {
+  return song.also ? `${song.title} / ${song.also}` : song.title;
 }
 
 const IDPLML = { album: 'Ice, Death, Planets, Lungs, Mushrooms and Lava', year: 2022 };
@@ -15,6 +22,7 @@ const FMB = { album: 'Flying Microtonal Banana', year: 2017 };
 const TBB = { album: '12 Bar Bruise', year: 2012 };
 const TSC = { album: 'The Silver Cord', year: 2023 };
 const FAFYL = { album: 'Float Along – Fill Your Lungs', year: 2013 };
+const MOTU = { album: 'Murder of the Universe', year: 2017 };
 
 export const TRACK_SONGS: Record<string, TrackSong> = {
   'robot-stop': { title: 'Robot Stop', album: 'Nonagon Infinity', year: 2016 },
@@ -65,6 +73,10 @@ export const TRACK_SONGS: Record<string, TrackSong> = {
   'god-is-calling': { title: 'God Is Calling Me Back Home', ...FAFYL },
   'mend-the-past': { title: 'Let Me Mend the Past', ...FAFYL },
   'float-along': { title: 'Float Along – Fill Your Lungs', ...FAFYL },
+  'altered-beast-i': { title: 'Altered Beast I', ...MOTU, also: 'Alter Me I' },
+  'altered-beast-ii': { title: 'Altered Beast II', ...MOTU, also: 'Alter Me II' },
+  'altered-beast-iii': { title: 'Altered Beast III', ...MOTU, also: 'Alter Me III' },
+  'altered-beast-iv': { title: 'Altered Beast IV', ...MOTU },
 };
 
 /**
@@ -139,7 +151,6 @@ export function remixCues(cue: string): string[] {
  * only two the band play, so Vomit Coffin (from Chapter III) is its second
  * race's, leaving The Balrog to the duel.
  */
-const MOTU = { album: 'Murder of the Universe', year: 2017 };
 export const STORY_SONGS: readonly (readonly TrackSong[])[] = [
   [
     { title: 'Altered Beast I', ...MOTU },
