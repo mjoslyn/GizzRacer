@@ -2010,6 +2010,7 @@ const HIT_TEXT: Record<ItemKind | HazardKind, string> = {
   bubbles: 'POP!',
   fangs: 'DEFORMED!',
   stomps: 'STUCK!',
+  void: 'EMPTINESS!',
 };
 
 /** What a hazard used well says: the ones that can help. */
@@ -2072,6 +2073,7 @@ const BONUS_TEXT: Record<HazardKind, string> = {
   bubbles: 'FLOAT ALONG!',
   fangs: 'ALTER ME!',
   stomps: 'ALTER ME!',
+  void: 'NEVER!',
 };
 
 /** Takes a group out of the scene and frees what it built. */

@@ -11,6 +11,7 @@ import { cameraParts, poseCameras } from './mendThePast';
 import { cutleryParts, poseCutlery } from './alteredBeastII';
 import { fangParts, poseFangs } from './alteredBeastIII';
 import { poseStomp, stompParts } from './alteredBeastI';
+import { hollowParts, poseHollow } from './alteredBeastIV';
 import { BOX_RESPAWN, SHIELD_ITEMS, WAVE_RANGE, type ItemHolder, type ItemSystem } from '../items/items';
 import type { KartState } from '../physics/kart';
 import type { HazardSystem } from '../items/hazards';
@@ -1416,6 +1417,10 @@ export class HazardsView {
           parts.push(ball, froth, spray);
           break;
         }
+        case 'void':
+          // A hollow in the road: a crack, then a dark hollow yawning open, bone round its lip.
+          parts.push(...hollowParts(obj));
+          break;
         case 'timber': {
           // A tree at the road's edge: its trunk, as long as the road is wide, and its crown; it leans, creaks and comes down across the road.
           const pivot = new THREE.Group();
@@ -2284,6 +2289,9 @@ export class HazardsView {
           break;
         case 'cameras':
           poseCameras(obj, parts, p, elapsed);
+          break;
+        case 'void':
+          poseHollow(obj, parts, p, elapsed);
           break;
         case 'presents': {
           const [present, lid, inside, shadow, roofs, santa, arm] = parts;
