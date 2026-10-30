@@ -135,6 +135,7 @@ export const WAVE_SPIN = 1.0;
  * - a present that lands open is a gift: a boost, and an item if your hands are empty; a shut one rammed on a boost bursts and the boost runs on
  * - the right pill tumbling across the road (its colour shows which) is a boost to drive through
  * - a breath of air caught as it rises up through the road floats you up, and you come down on a boost
+ * - a jaw of nine pearl fangs driven through as it opens again after a bite is a boost
  */
 /** A reward can't pay out again to the same kart for this long. */
 export const REWARD_COOLDOWN = 1.5;
@@ -481,6 +482,38 @@ export function pillAcross(u: number): number {
   return -1.25 + (2.5 * u) / PILL_STAGES.across;
 }
 
+/**
+ * Altered Beast III's jaws, nine pearl fangs each, five hung from the
+ * upper jaw over the road and four up out of the road between them: wide
+ * open, baring (the warning, the fangs creeping toward each other), the
+ * snap (shut right across the road: it bites), then opening again (drive
+ * through the gap as it opens, a boost) and wide. Down the gullet each jaw
+ * snaps this share of the period after the one before: a rhythm to ride.
+ */
+export const FANG_STAGES = { bare: 0.42, snap: 0.58, open: 0.72, wide: 0.86 } as const;
+export const FANG_LAG = 0.12;
+/** How far along the road the jaw's bite reaches either side of its line. */
+export const FANG_DEPTH = 1.4;
+export const FANG_BOOST = 0.8;
+export const FANG_SPIN = 1.1;
+/** How shut the jaw is while it bares its fangs, before the snap. */
+export const FANG_CREEP = 0.35;
+/** How high the upper jaw hangs over the road, wide open. */
+export const FANG_HEIGHT = 7;
+
+/** How shut a jaw is at cycle stage `u`: 0 wide open, 1 shut (the fangs meeting). */
+export function fangBite(u: number): number {
+  const F = FANG_STAGES;
+  if (u < F.bare || u >= F.wide) return 0;
+  if (u < F.snap) {
+    const k = (u - F.bare) / (F.snap - F.bare);
+    // Creeping, and the last instant the snap.
+    return k < 0.85 ? FANG_CREEP * (k / 0.85) ** 2 : FANG_CREEP + (1 - FANG_CREEP) * ((k - 0.85) / 0.15);
+  }
+  if (u < F.open) return 1;
+  return 1 - (u - F.open) / (F.wide - F.open);
+}
+
 /** Where the snake's head is across the road at cycle stage `u`, from -1 (the edge it comes from) to 1 (the far edge); outside that it's off the road. */
 export function serpentAcross(u: number): number {
   const S = SERPENT_STAGES;
@@ -600,11 +633,12 @@ const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds' | 'butterfli
   presents: PRESENT_SPIN,
   pills: PILL_SPIN,
   bubbles: 0,
+  fangs: FANG_SPIN,
 };
 
 /** Kinds that fill the whole road across, on a rhythm: nothing to steer round, only to time. */
 export function isSheet(kind: HazardKind): boolean {
-  return kind === 'flameJets' || kind === 'dragonFire' || kind === 'lasers' || kind === 'waves' || kind === 'gusts' || kind === 'prisms' || kind === 'flares' || kind === 'timber' || kind === 'cords' || kind === 'strings';
+  return kind === 'flameJets' || kind === 'dragonFire' || kind === 'lasers' || kind === 'waves' || kind === 'gusts' || kind === 'prisms' || kind === 'flares' || kind === 'timber' || kind === 'cords' || kind === 'strings' || kind === 'fangs';
 }
 
 /** Which of a prism beam's four colours it is showing at cycle stage `u` (3 is the fourth colour), and whether it is lit. */
@@ -1064,6 +1098,16 @@ export class HazardSystem {
           p.phase = u;
           break;
         }
+        case 'fangs': {
+          // A jaw across the road, snapping shut in turn after the one before it down the gullet, then opening.
+          const at = def.at[i];
+          const u = ((((t + 10) / def.period - i * FANG_LAG) % 1) + 1) % 1;
+          this.place(p, at, 0, 0);
+          p.radius = this.halfWidth(at) + 0.5;
+          p.active = u >= FANG_STAGES.snap && u < FANG_STAGES.open;
+          p.phase = u;
+          break;
+        }
         case 'serpents': {
           // The plant of immortality grows up through the road; the snake comes for it from one edge, eats it, and goes on over the other.
           const at = def.at[i];
@@ -1322,6 +1366,10 @@ export class HazardSystem {
         }
         if (p.kind === 'serpents') {
           this.serpent(hit, p, s);
+          continue;
+        }
+        if (p.kind === 'fangs') {
+          this.fang(hit, p, s);
           continue;
         }
         if (p.kind === 'cameras') {
@@ -1901,6 +1949,24 @@ export class HazardSystem {
       s.speed *= STRING_SLOW;
       hit.push({ kart: s, by: p.kind });
     }
+  }
+
+  /**
+   * A jaw of nine pearl fangs: shut, it bites (spun out); driven through
+   * as it opens again, through the gap between its fangs, a boost.
+   */
+  private fang(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+    const fx = Math.sin(p.heading);
+    const fz = Math.cos(p.heading);
+    if (Math.abs((s.x - p.x) * fx + (s.z - p.z) * fz) > FANG_DEPTH + KART_RADIUS) return;
+    if (Math.abs((s.x - p.x) * -fz + (s.z - p.z) * fx) > p.radius + KART_RADIUS) return;
+    if (p.phase >= FANG_STAGES.open && p.phase < FANG_STAGES.wide) {
+      this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, FANG_BOOST)));
+      return;
+    }
+    if (!p.active || this.cooldown.has(s)) return;
+    this.cooldown.set(s, HIT_COOLDOWN);
+    if (spinOut(s, FANG_SPIN)) hit.push({ kart: s, by: p.kind });
   }
 
   /**
