@@ -873,5 +873,61 @@
     "bars": 32,
     "loopSamples": 2234090,
     "sampleRate": 44100
+  },
+  "head-on-pill-remix": {
+    "title": "head on/pill (remix)",
+    "bpm": 102,
+    "bars": 32,
+    "loopSamples": 2490353,
+    "sampleRate": 44100
+  },
+  "head-on-pill-remix-final-lap": {
+    "title": "head on/pill (remix, final lap)",
+    "bpm": 110,
+    "bars": 32,
+    "loopSamples": 2309236,
+    "sampleRate": 44100
+  },
+  "god-is-calling-remix": {
+    "title": "god is calling me back home (remix)",
+    "bpm": 129.6,
+    "bars": 32,
+    "loopSamples": 2613333,
+    "sampleRate": 44100
+  },
+  "god-is-calling-remix-final-lap": {
+    "title": "god is calling me back home (remix, final lap)",
+    "bpm": 137.6,
+    "bars": 32,
+    "loopSamples": 2461395,
+    "sampleRate": 44100
+  },
+  "mend-the-past-remix": {
+    "title": "let me mend the past (remix)",
+    "bpm": 101,
+    "bars": 32,
+    "loopSamples": 3353347,
+    "sampleRate": 44100
+  },
+  "mend-the-past-remix-final-lap": {
+    "title": "let me mend the past (remix, final lap)",
+    "bpm": 109,
+    "bars": 32,
+    "loopSamples": 3107229,
+    "sampleRate": 44100
+  },
+  "float-along-remix": {
+    "title": "float along (remix)",
+    "bpm": 142.5,
+    "bars": 32,
+    "loopSamples": 2970947,
+    "sampleRate": 44100
+  },
+  "float-along-remix-final-lap": {
+    "title": "float along (remix, final lap)",
+    "bpm": 150.5,
+    "bars": 32,
+    "loopSamples": 2813023,
+    "sampleRate": 44100
   }
 }

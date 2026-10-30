@@ -128,6 +128,10 @@ export const TRANSCRIBED: Record<string, { recording: string; release: string }>
   set: { recording: 'Set', release: "Live in New York City '25 (Rock Night), the soundboard mix" },
   'chang-e': { recording: "Chang'e", release: "Live at Red Rocks '24, the soundboard mix" },
   gilgamesh: { recording: 'Gilgamesh', release: "Live at Field of Vision '25, the soundboard mix" },
+  'head-on-pill': { recording: 'Head On/Pill', release: "Live at Field of Vision II '26, the soundboard mix" },
+  'god-is-calling': { recording: 'God Is Calling Me Back Home', release: "Live in Bulgaria '25, the soundboard mix" },
+  'mend-the-past': { recording: 'Let Me Mend the Past', release: "Live in Lithuania '25, the soundboard mix" },
+  'float-along': { recording: 'Float Along – Fill Your Lungs', release: "Live at Field of Vision '25, the soundboard mix" },
 };
 
 const FINAL = '-final-lap';
