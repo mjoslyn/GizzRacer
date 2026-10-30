@@ -84,6 +84,7 @@ const LIFE: Record<DecorKind, LifeSpec> = {
   nanshouse: { flock: { kind: 'moth', color: 0xe8d8b0, count: 14, height: 16, size: 0.8 }, motes: { color: 0xffe8c0, count: 420, size: 0.3, drift: 'float', glow: true } },
   // Cockatoos screeching over the rooftops, and Christmas beetles in the warm dusk.
   suburb: { flock: { kind: 'bird', color: 0xf4f4f0, count: 14, height: 22, size: 1.0 }, motes: { color: 0xffe0a0, count: 220, size: 0.35, drift: 'float', glow: true } },
+  headtrip: { flock: { kind: 'orb', color: 0xff70d0, count: 14, height: 18, size: 0.8, glow: true }, motes: { color: 0xffa0ff, count: 380, size: 0.45, drift: 'float', glow: true } },
   canopy: { flock: { kind: 'bird', color: 0x1a2a1a, count: 16, height: 26, size: 1.0 }, motes: { color: 0xc0f080, count: 340, size: 0.4, drift: 'fall' } },
   static: { flock: { kind: 'orb', color: 0x80ff90, count: 12, height: 18, size: 0.7, glow: true }, motes: { color: 0xc080ff, count: 460, size: 0.45, drift: 'float', glow: true } },
 };

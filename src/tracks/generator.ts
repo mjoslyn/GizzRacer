@@ -640,12 +640,12 @@ const PALETTES: Record<GenTheme, Palette> = {
   headon: {
     surface: 'paisley',
     deck: 'paisley',
-    alt: 'sand',
-    hazards: ['sunMoon'],
-    start: 'setGate',
-    landmarks: ['setGate'],
+    liquid: 'oil',
+    hazards: ['pills'],
+    start: 'sitarGate',
+    landmarks: ['sitarGate'],
     tallWalls: 6,
-    places: ['Jackal', 'Snake', 'Tornado', 'Tomb', 'Duality', 'Sandstorm', 'Moonbeam', 'Hieroglyph', 'Reset'],
+    places: ['Just Yesterday', 'Legs', 'Eyes', 'Head On', 'Screw', 'Black Cup', 'Black Enemy', 'Wrong Pill', 'Pond Scum'],
     music: { lap: 'head-on-pill', finalLap: 'head-on-pill-final-lap' },
   },
   godcall: {
@@ -1417,6 +1417,7 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
       case 'cords':
       case 'sunMoon':
       case 'serpents':
+      case 'pills':
         hazards.push({ kind, at: at(count - 1), period: 4.4 });
         break;
       case 'cameras':

@@ -325,6 +325,13 @@ const STYLES: Record<DecorKind, DetailStyle> = {
     boards: { words: ['GILGAMESH', 'HEAR MY NAME', 'HOUSE OF DUST', 'FOR IMMORTALITY'], bg: ['#1a2a5a', '#6a4a2a'], fg: '#ffd890' },
     crowd: true,
   },
+  headtrip: {
+    edge: { kind: 'lamp', height: 2.4, spacing: 14, color: 0x3a1048, stripe: 0xffa030 },
+    light: 0xff70c8,
+    cover: { shape: 'crystal', colors: [0xff5ab0, 0xffb030, 0x40e0c0, 0xa050ff], count: 1100 },
+    boards: { words: ['HEAD ON', 'I ATE THE WRONG PILL', 'SCREW MY HEAD ON', 'HOLD ME UP STRAIGHT'], bg: ['#3a0a4a', '#ff6a20'], fg: '#fff0a0' },
+    crowd: true,
+  },
   nanshouse: {
     edge: { kind: 'lamp', height: 2.4, spacing: 15, color: 0xb08a40, stripe: 0xeee4d0 },
     light: 0xffc880,

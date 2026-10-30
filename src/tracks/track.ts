@@ -64,7 +64,7 @@ export function branchOpen(def: BranchDef, ctx?: LapContext): boolean {
 }
 
 export interface Landmark {
-  kind: 'skeletonArch' | 'fangs' | 'fortressGate' | 'templeGate' | 'waterfall' | 'gantry' | 'lighthouse' | 'iceArch' | 'neonArch' | 'rainbowArch' | 'mushroomArch' | 'starGate' | 'dragonGate' | 'dragonFlight' | 'colonyGate' | 'rodGate' | 'voidEye' | 'phantomArch' | 'runwayGate' | 'treeGate' | 'wreckGate' | 'worldTree' | 'crystalGate' | 'magentaPeak' | 'keplerArch' | 'goblinGate' | 'jawsGate' | 'castleGate' | 'castleKeep' | 'cloudGate' | 'airCastle' | 'skyTower' | 'cellGate' | 'nucleus' | 'prismGate' | 'prismEye' | 'factoryGate' | 'robotColossus' | 'gammaGate' | 'gammaRing' | 'carrionGate' | 'carcass' | 'wahGate' | 'wahPedal' | 'smogGate' | 'burningEarth' | 'domeGate' | 'richDome' | 'shipGate' | 'theSun' | 'hellGate' | 'ratsNest' | 'eyeGate' | 'mindFace' | 'arrowGate' | 'emptyHead' | 'filmGate' | 'cellophaneBloom' | 'fuzzGate' | 'fuzzMeter' | 'elbowGate' | 'bentArm' | 'rakeGate' | 'powerStation' | 'harmonicaGate' | 'mirrorBall' | 'trunkGate' | 'snowPeak' | 'cordGate' | 'theiaPlanet' | 'setGate' | 'setColossus' | 'jadePortal' | 'moonPalace' | 'urukGate' | 'ziggurat' | 'lockedDoor' | 'teacups' | 'heavenGate' | 'hillHouse';
+  kind: 'skeletonArch' | 'fangs' | 'fortressGate' | 'templeGate' | 'waterfall' | 'gantry' | 'lighthouse' | 'iceArch' | 'neonArch' | 'rainbowArch' | 'mushroomArch' | 'starGate' | 'dragonGate' | 'dragonFlight' | 'colonyGate' | 'rodGate' | 'voidEye' | 'phantomArch' | 'runwayGate' | 'treeGate' | 'wreckGate' | 'worldTree' | 'crystalGate' | 'magentaPeak' | 'keplerArch' | 'goblinGate' | 'jawsGate' | 'castleGate' | 'castleKeep' | 'cloudGate' | 'airCastle' | 'skyTower' | 'cellGate' | 'nucleus' | 'prismGate' | 'prismEye' | 'factoryGate' | 'robotColossus' | 'gammaGate' | 'gammaRing' | 'carrionGate' | 'carcass' | 'wahGate' | 'wahPedal' | 'smogGate' | 'burningEarth' | 'domeGate' | 'richDome' | 'shipGate' | 'theSun' | 'hellGate' | 'ratsNest' | 'eyeGate' | 'mindFace' | 'arrowGate' | 'emptyHead' | 'filmGate' | 'cellophaneBloom' | 'fuzzGate' | 'fuzzMeter' | 'elbowGate' | 'bentArm' | 'rakeGate' | 'powerStation' | 'harmonicaGate' | 'mirrorBall' | 'trunkGate' | 'snowPeak' | 'cordGate' | 'theiaPlanet' | 'setGate' | 'setColossus' | 'jadePortal' | 'moonPalace' | 'urukGate' | 'ziggurat' | 'lockedDoor' | 'teacups' | 'heavenGate' | 'hillHouse' | 'sitarGate' | 'blackCup' | 'lostLegs' | 'pillTube';
   ribbon: number; // -1 = main, else branch index
   s: number; // builder units
   /** Metres to the right of the road (left if negative), for a landmark that stands off it. */
@@ -219,7 +219,9 @@ export type HazardDef =
   /** Let Me Mend the Past: two surveillance cameras up on the hall's walls, panning their beams across the road together, a gap between them. */
   | { kind: 'cameras'; at: number[]; period: number }
   /** God Is Calling Me Back Home: Santa's presents tossed off the roof, bouncing across the road; one that lands open is a gift. */
-  | { kind: 'presents'; at: number[]; period: number };
+  | { kind: 'presents'; at: number[]; period: number }
+  /** Head On/Pill: giant two-tone capsules tumbling across the road, the right pill and the wrong one. */
+  | { kind: 'pills'; at: number[]; period: number };
 
 export interface StartSlot {
   x: number;

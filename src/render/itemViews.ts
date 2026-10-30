@@ -5,6 +5,7 @@ import { goblinFigure } from './omnium';
 import { robotFigure, vultureFigure, wahPedalFigure } from './nonagon';
 import { ratFigure } from './infest';
 import { PRESENT_WRAPS, presentFigure, santaFigure } from './godIsCalling';
+import { pillFigure, posePill } from './headOnPill';
 import { arrowGeometry, eyeFigure } from './mindfuzz';
 import { cameraParts, poseCameras } from './mendThePast';
 import { BOX_RESPAWN, SHIELD_ITEMS, WAVE_RANGE, type ItemHolder, type ItemSystem } from '../items/items';
@@ -1368,6 +1369,13 @@ export class HazardsView {
           // Two cameras up on the hall's walls, their beams of light down onto the road.
           parts.push(...cameraParts(obj));
           break;
+        case 'pills': {
+          // A giant capsule, two-tone, tumbling end over end across the road: the right pill or the wrong one.
+          const pill = pillFigure(pose.radius);
+          obj.add(pill);
+          parts.push(pill);
+          break;
+        }
         case 'timber': {
           // A tree at the road's edge: its trunk, as long as the road is wide, and its crown; it leans, creaks and comes down across the road.
           const pivot = new THREE.Group();
@@ -2268,6 +2276,10 @@ export class HazardsView {
           shadow.visible = present.visible && u >= P.toss && Math.abs(lat) < hw;
           shadow.position.set(-lat, 0.06, 0);
           shadow.scale.setScalar(2.6 - Math.min(1.4, lift * 0.2));
+          break;
+        }
+        case 'pills': {
+          posePill(parts[0], p, elapsed);
           break;
         }
         case 'timber': {
