@@ -35,6 +35,8 @@ const SKIP = new Set([
   "kg2022-10-11/38. Sea Of Trees (Live At Red Rocks '22).mp3",
   "kg2022-11-02/67. Cut Throat Boogie (Live At Red Rocks '22).mp3",
   'kglw2026-08-16.Full-Three-Shows-discocape/kglw2026-08-14-4ch_discocape_20.mp3',
+  "kg2022-11-02/76. Head On'Pill (Live At Red Rocks '22).mp3",
+  "kg2022-11-02/83. Let Me Mend The Past (Live At Red Rocks '22).mp3",
 ]);
 /** Start points and gains already found (tools/bootleg-starts.mjs), and ends (tools/live-edges.py), kept across a re-run. */
 const known = new Map();
