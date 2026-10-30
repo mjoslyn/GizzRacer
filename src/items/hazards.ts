@@ -129,6 +129,7 @@ export const WAVE_SPIN = 1.0;
  * - the moon rolling across the road is a moonbeam to drive through, a boost
  * - a lightning string still humming after it's plucked is a boost
  * - the plant of immortality, reached before the snake eats it, is a long boost; the snake hopped, a boost
+ * - slipped through the gap between two surveillance cameras' beams, unseen, a boost
  */
 /** A reward can't pay out again to the same kart for this long. */
 export const REWARD_COOLDOWN = 1.5;
@@ -384,6 +385,26 @@ export const PLANT_BOOST = 1.3;
 export const SERPENT_SPIN = 1.0;
 export const SERPENT_RADIUS = 0.8;
 export const SERPENT_LENGTH = 4.5;
+/**
+ * Surveillance cameras up on the hall's walls, Let Me Mend the Past's: one
+ * on each wall, panning their beams across the road together and back, a
+ * gap kept between the two. Caught in a beam, a flash, you're seen and
+ * slowed; slipped through the gap between them, unseen, a boost.
+ */
+export const CAMERA_RADIUS = 2.2;
+/** How far apart the two beams fall, centre to centre: the gap between them is this less a beam. */
+export const CAMERA_GAP = 9;
+/** How far along the road the gap counts, either side of the beams' line. */
+export const CAMERA_DEPTH = 1.2;
+export const CAMERA_BOOST = 0.8;
+export const CAMERA_SLOW = 0.6;
+/** How high up the walls the cameras are mounted, over the road. */
+export const CAMERA_HEIGHT = 5.5;
+
+/** Where the gap between the beams is across the road at cycle stage `u`, from -1 (as far left as it pans) to 1: slowest at the ends of the pan, as a camera turns. */
+export function cameraPan(u: number): number {
+  return Math.sin(u * Math.PI * 2);
+}
 
 /** Where the snake's head is across the road at cycle stage `u`, from -1 (the edge it comes from) to 1 (the far edge); outside that it's off the road. */
 export function serpentAcross(u: number): number {
@@ -476,6 +497,7 @@ const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds' | 'butterfli
   sunMoon: SUN_SPIN,
   strings: STRING_SPIN,
   serpents: SERPENT_SPIN,
+  cameras: 0,
 };
 
 /** Kinds that fill the whole road across, on a rhythm: nothing to steer round, only to time. */
@@ -964,6 +986,20 @@ export class HazardSystem {
           p.phase = u;
           break;
         }
+        case 'cameras': {
+          // Two cameras up on the walls panning their beams across the road together, a gap between them. The pose is the left beam's spot; `gap` the gap's lateral.
+          const at = def.at[i];
+          const u = ((((t + 10) / def.period + i * 0.37) % 1) + 1) % 1;
+          const hw = this.halfWidth(at);
+          const mid = (hw - CAMERA_GAP / 2 - CAMERA_RADIUS) * cameraPan(u);
+          this.place(p, at, mid - CAMERA_GAP / 2, 0);
+          p.radius = hw;
+          p.gap = mid;
+          p.side = Math.cos(u * Math.PI * 2) >= 0 ? 1 : -1;
+          p.active = true;
+          p.phase = u;
+          break;
+        }
         case 'dustDevils':
         case 'butterflies':
         case 'tornadoes':
@@ -1129,6 +1165,10 @@ export class HazardSystem {
         }
         if (p.kind === 'serpents') {
           this.serpent(hit, p, s);
+          continue;
+        }
+        if (p.kind === 'cameras') {
+          this.camera(hit, p, s);
           continue;
         }
         if (p.kind === 'fuzz' && p.phase >= FUZZ_STAGES.gold && p.phase < FUZZ_STAGES.red) {
@@ -1379,6 +1419,16 @@ export class HazardSystem {
       if (p.kind === 'sunMoon') {
         // The sun, rolling across: the moon is there to drive into.
         out.push({ x: p.x, z: p.z, r: p.radius, vx: p.vx, vz: p.vz });
+        continue;
+      }
+      if (p.kind === 'cameras') {
+        // The two beams' spots, panning across.
+        const fx = Math.sin(p.heading);
+        const fz = Math.cos(p.heading);
+        for (const side of [-1, 1]) {
+          const lat = p.gap + (side * CAMERA_GAP) / 2;
+          out.push({ x: p.ax - fz * lat, z: p.az + fx * lat, r: CAMERA_RADIUS, vx: p.vx, vz: p.vz });
+        }
         continue;
       }
       if (p.kind === 'serpents') {
@@ -1696,6 +1746,29 @@ export class HazardSystem {
     if (this.cooldown.has(s)) return;
     this.cooldown.set(s, HIT_COOLDOWN);
     if (spinOut(s, SERPENT_SPIN)) hit.push({ kart: s, by: p.kind });
+  }
+
+  /**
+   * Two surveillance cameras' beams: caught in either, seen and slowed;
+   * through the gap between them as they pan, clear of both, a boost.
+   */
+  private camera(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+    const fx = Math.sin(p.heading);
+    const fz = Math.cos(p.heading);
+    const along = (s.x - p.ax) * fx + (s.z - p.az) * fz;
+    if (Math.abs(along) > CAMERA_RADIUS + KART_RADIUS) return;
+    const lat = (s.x - p.ax) * -fz + (s.z - p.az) * fx;
+    for (const side of [-1, 1]) {
+      if (Math.hypot(along, lat - p.gap - (side * CAMERA_GAP) / 2) > CAMERA_RADIUS + KART_RADIUS) continue;
+      if (this.cooldown.has(s)) return;
+      this.cooldown.set(s, HIT_COOLDOWN);
+      s.speed *= CAMERA_SLOW;
+      hit.push({ kart: s, by: p.kind });
+      return;
+    }
+    if (Math.abs(along) <= CAMERA_DEPTH && Math.abs(lat - p.gap) <= CAMERA_GAP / 2 - CAMERA_RADIUS - KART_RADIUS) {
+      this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, CAMERA_BOOST)));
+    }
   }
 
   /** Pays a kart for using a hazard well, once in a while. */

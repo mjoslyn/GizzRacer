@@ -2001,6 +2001,7 @@ const HIT_TEXT: Record<ItemKind | HazardKind, string> = {
   sunMoon: 'SCORCHED!',
   strings: '2500 VOLTS!',
   serpents: 'BITTEN!',
+  cameras: 'SEEN!',
 };
 
 /** What a hazard used well says: the ones that can help. */
@@ -2056,6 +2057,7 @@ const BONUS_TEXT: Record<HazardKind, string> = {
   sunMoon: 'MOONBEAM!',
   strings: 'ON WINGS OF SONG!',
   serpents: 'IMMORTAL!',
+  cameras: 'OFF CAMERA!',
 };
 
 /** Takes a group out of the scene and frees what it built. */

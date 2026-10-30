@@ -10,6 +10,10 @@ let anisotropy = 1;
 export function setTextureAnisotropy(value: number): void {
   anisotropy = value;
 }
+/** The anisotropy textures are made with, for modules that paint their own. */
+export function textureAnisotropy(): number {
+  return anisotropy;
+}
 
 type RGB = [number, number, number];
 

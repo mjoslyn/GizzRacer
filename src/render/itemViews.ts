@@ -5,6 +5,7 @@ import { goblinFigure } from './omnium';
 import { robotFigure, vultureFigure, wahPedalFigure } from './nonagon';
 import { ratFigure } from './infest';
 import { arrowGeometry, eyeFigure } from './mindfuzz';
+import { cameraParts, poseCameras } from './mendThePast';
 import { BOX_RESPAWN, SHIELD_ITEMS, WAVE_RANGE, type ItemHolder, type ItemSystem } from '../items/items';
 import type { KartState } from '../physics/kart';
 import type { HazardSystem } from '../items/hazards';
@@ -1338,6 +1339,10 @@ export class HazardsView {
           parts.push(body, plant);
           break;
         }
+        case 'cameras':
+          // Two cameras up on the hall's walls, their beams of light down onto the road.
+          parts.push(...cameraParts(obj));
+          break;
         case 'timber': {
           // A tree at the road's edge: its trunk, as long as the road is wide, and its crown; it leans, creaks and comes down across the road.
           const pivot = new THREE.Group();
@@ -2201,6 +2206,9 @@ export class HazardsView {
           }
           break;
         }
+        case 'cameras':
+          poseCameras(obj, parts, p, elapsed);
+          break;
         case 'timber': {
           const [pivot, shadow] = parts;
           obj.rotation.y = p.heading;

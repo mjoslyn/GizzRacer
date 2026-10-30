@@ -662,12 +662,13 @@ const PALETTES: Record<GenTheme, Palette> = {
   nan: {
     surface: 'florals',
     deck: 'florals',
-    alt: 'sand',
-    hazards: ['sunMoon'],
-    start: 'setGate',
-    landmarks: ['setGate'],
+    alt: 'boards',
+    liquid: 'water',
+    hazards: ['cameras'],
+    start: 'lockedDoor',
+    landmarks: ['lockedDoor'],
     tallWalls: 6,
-    places: ['Jackal', 'Snake', 'Tornado', 'Tomb', 'Duality', 'Sandstorm', 'Moonbeam', 'Hieroglyph', 'Reset'],
+    places: ['Mask', 'Locks', 'Hallway', 'Teacup', 'Nan', 'Doily', 'Surveillance', 'Ends Meet', 'Last Time'],
     music: { lap: 'mend-the-past', finalLap: 'mend-the-past-final-lap' },
   },
   float: {
@@ -1416,6 +1417,9 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
       case 'sunMoon':
       case 'serpents':
         hazards.push({ kind, at: at(count - 1), period: 4.4 });
+        break;
+      case 'cameras':
+        hazards.push({ kind, at: at(count - 1), period: 4.8 });
         break;
       case 'strings':
         // A run of strings down the stretch, plucked one after another.
