@@ -504,6 +504,11 @@ export class Sfx {
       this.tone(2500, 0.2, 'square', 0.05, 1200);
     }
     if (by === 'serpents') this.whoosh(0.4, 5200, 3800, 0.2);
+    // A present comes down on you with a thump and a jingle of bells.
+    if (by === 'presents') {
+      this.hit(0.25, 260, 0.5);
+      this.tone(2640, 0.4, 'triangle', 0.06, 2200);
+    }
     // A wave breaking over you: a crash of white noise; a glider comes in with a whistle of wind.
     if (by === 'waves') this.whoosh(0.8, 2400, 300, 0.35);
     if (by === 'gliders') this.whoosh(0.5, 1800, 500, 0.2);

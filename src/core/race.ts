@@ -337,6 +337,8 @@ export class Race {
       for (const h of this.hazards.collide(local, dt)) {
         const kart = this.karts.find((k) => k.state === h.kart)!;
         this.events.push(h.good ? { type: 'bonus', kart, by: h.by } : { type: 'hit', kart, by: h.by });
+        // An open present is a gift: an item too, if there's room for one.
+        if (h.gift && !this.remoteItems) this.items.gift(kart, this.karts, this.events);
       }
     }
     return events;

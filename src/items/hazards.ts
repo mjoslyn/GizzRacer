@@ -29,10 +29,12 @@ export interface HazardPose {
    * An airlock's opening: half the width between its two doors, centred on
    * the pose. Cellophane: how far each sheet is from the pose, signed (the
    * first sheet is at -gap, the second at +gap). The sun: its lateral (the
-   * moon is at -gap). The plant of immortality: its lateral. 0 for the rest.
+   * moon is at -gap). The plant of immortality: its lateral. Santa's
+   * presents: the lateral of the roof's edge he throws them from. 0 for the
+   * rest.
    */
   gap: number;
-  /** A row of arrows: the lane with no arrow in it, 0 (leftmost) to 3. The plant of immortality: 1 while it's growing there to be had, else 0. -1 for the rest. */
+  /** A row of arrows: the lane with no arrow in it, 0 (leftmost) to 3. The plant of immortality: 1 while it's growing there to be had, else 0. A present: 1 once it has landed open, a gift. -1 for the rest. */
   lane: number;
   /**
    * Kind-specific: boulder cycle stage (0..1), tumbleweed bounce height,
@@ -129,6 +131,7 @@ export const WAVE_SPIN = 1.0;
  * - the moon rolling across the road is a moonbeam to drive through, a boost
  * - a lightning string still humming after it's plucked is a boost
  * - the plant of immortality, reached before the snake eats it, is a long boost; the snake hopped, a boost
+ * - a present that lands open is a gift: a boost, and an item if your hands are empty; a shut one rammed on a boost bursts and the boost runs on
  */
 /** A reward can't pay out again to the same kart for this long. */
 export const REWARD_COOLDOWN = 1.5;
@@ -385,6 +388,50 @@ export const SERPENT_SPIN = 1.0;
 export const SERPENT_RADIUS = 0.8;
 export const SERPENT_LENGTH = 4.5;
 
+/**
+ * Santa's presents, God Is Calling Me Back Home's: Santa up at the edge of
+ * the road with a present (the warning, its shadow on the road where it'll
+ * land), the toss, bouncing across the road, sitting where it came to rest,
+ * gone. Some land open, the lid off: a gift.
+ */
+export const PRESENT_STAGES = { toss: 0.28, land: 0.4, rest: 0.6, gone: 0.88 } as const;
+export const PRESENT_RADIUS = 1.2;
+/** Santa throws from this high over the ground beside the road (higher over a road sunk in a cut), at this far past its edge; a present bounces this high off its first landing, and lower off the next. */
+export const PRESENT_ROOF = 7;
+export const PRESENT_EDGE = 2;
+export const PRESENT_BOUNCE = 2.4;
+/** One present in this many lands open. */
+export const PRESENT_OPEN = 3;
+/** Lower than this over the road, it hits. */
+export const PRESENT_REACH = 1.4;
+/** An open present: a boost this long (and an item, Race gives it). A shut one: spun out. */
+export const PRESENT_BOOST = 0.9;
+export const PRESENT_SPIN = 1.0;
+
+/**
+ * Where a present is at cycle stage `u`: how far across the road from the
+ * edge it's thrown from to where it comes to rest (0 to 1), and how high
+ * over the road, thrown from `roof` over it; null before the toss and once
+ * it's gone.
+ */
+export function presentFlight(u: number, roof = PRESENT_ROOF): { across: number; lift: number } | null {
+  const P = PRESENT_STAGES;
+  if (u < P.toss || u >= P.gone) return null;
+  // The toss: from the roof's edge to its first landing, a fall.
+  if (u < P.land) {
+    const k = (u - P.toss) / (P.land - P.toss);
+    return { across: 0.55 * k, lift: roof * (1 - k * k) + 2 * k * (1 - k) };
+  }
+  // Two bounces, each lower, on across the road to where it rests.
+  if (u < P.rest) {
+    const k = (u - P.land) / (P.rest - P.land);
+    const first = k < 0.6;
+    const b = first ? k / 0.6 : (k - 0.6) / 0.4;
+    return { across: 0.55 + 0.45 * k, lift: (first ? PRESENT_BOUNCE : PRESENT_BOUNCE * 0.35) * 4 * b * (1 - b) };
+  }
+  return { across: 1, lift: 0 };
+}
+
 /** Where the snake's head is across the road at cycle stage `u`, from -1 (the edge it comes from) to 1 (the far edge); outside that it's off the road. */
 export function serpentAcross(u: number): number {
   const S = SERPENT_STAGES;
@@ -476,6 +523,7 @@ const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds' | 'butterfli
   sunMoon: SUN_SPIN,
   strings: STRING_SPIN,
   serpents: SERPENT_SPIN,
+  presents: PRESENT_SPIN,
 };
 
 /** Kinds that fill the whole road across, on a rhythm: nothing to steer round, only to time. */
@@ -964,6 +1012,30 @@ export class HazardSystem {
           p.phase = u;
           break;
         }
+        case 'presents': {
+          // Santa at one edge of the road tosses a present across it; it bounces, comes to rest, and is gone. Which edge, where it rests and whether it lands open change, but not so you can learn them.
+          const at = def.at[i];
+          const tt = t + 10 + (i * def.period) / def.at.length;
+          const cycle = Math.floor(tt / def.period);
+          const u = tt / def.period - cycle;
+          const hw = this.halfWidth(at);
+          const side = (cycle + i) % 2 === 0 ? 1 : -1;
+          const from = side * (hw + PRESENT_EDGE);
+          const rest = (hw - 2.5) * Math.sin(cycle * 2.39 + i * 1.3);
+          // Santa's roof stands on the ground beside the road: over a road sunk in a cut, that much higher.
+          this.place(p, at, from, 0);
+          const roof = PRESENT_ROOF + Math.max(0, -p.ground);
+          const f = presentFlight(u, roof);
+          // Before the toss it's up in Santa's hands at the edge; after, gone.
+          this.place(p, at, f ? from + (rest - from) * f.across : from, f ? f.lift : roof);
+          p.radius = PRESENT_RADIUS;
+          p.side = side;
+          p.gap = from;
+          p.lane = u >= PRESENT_STAGES.land && u < PRESENT_STAGES.gone && Math.floor(Math.abs(Math.sin(cycle * 12.9898 + i * 78.233) * 43758.5453)) % PRESENT_OPEN === 0 ? 1 : 0;
+          p.active = !!f && f.lift < PRESENT_REACH;
+          p.phase = u;
+          break;
+        }
         case 'dustDevils':
         case 'butterflies':
         case 'tornadoes':
@@ -1067,8 +1139,8 @@ export class HazardSystem {
    * (spun or slowed) and by what; `good` marks a hazard used well, which
    * helps rather than hurts (see the reward rules above).
    */
-  collide(karts: readonly KartState[], dt: number): { kart: KartState; by: HazardKind; good?: boolean }[] {
-    const hit: { kart: KartState; by: HazardKind; good?: boolean }[] = [];
+  collide(karts: readonly KartState[], dt: number): { kart: KartState; by: HazardKind; good?: boolean; gift?: boolean }[] {
+    const hit: { kart: KartState; by: HazardKind; good?: boolean; gift?: boolean }[] = [];
     for (const map of [this.cooldown, this.rewarded]) {
       for (const [k, v] of map) {
         if (v - dt <= 0) map.delete(k);
@@ -1129,6 +1201,10 @@ export class HazardSystem {
         }
         if (p.kind === 'serpents') {
           this.serpent(hit, p, s);
+          continue;
+        }
+        if (p.kind === 'presents') {
+          this.present(hit, p, s);
           continue;
         }
         if (p.kind === 'fuzz' && p.phase >= FUZZ_STAGES.gold && p.phase < FUZZ_STAGES.red) {
@@ -1387,6 +1463,12 @@ export class HazardSystem {
         const bx = -Math.sin(p.heading) * SERPENT_LENGTH * 0.5;
         const bz = -Math.cos(p.heading) * SERPENT_LENGTH * 0.5;
         out.push({ x: p.x + bx, z: p.z + bz, r: SERPENT_LENGTH * 0.5 + p.radius, vx: p.vx, vz: p.vz });
+        continue;
+      }
+      if (p.kind === 'presents') {
+        // A shut present on the road, or about to come down on it; an open one is there to drive into.
+        if (p.lane === 1 || !p.active) continue;
+        out.push({ x: p.x, z: p.z, r: p.radius, vx: p.vx, vz: p.vz });
         continue;
       }
       if (p.kind === 'sheets') {
@@ -1696,6 +1778,27 @@ export class HazardSystem {
     if (this.cooldown.has(s)) return;
     this.cooldown.set(s, HIT_COOLDOWN);
     if (spinOut(s, SERPENT_SPIN)) hit.push({ kart: s, by: p.kind });
+  }
+
+  /**
+   * Santa's present: landed open, a gift (a boost here, and an item from the
+   * race); shut, it spins you, unless you ram it on a boost and it bursts.
+   */
+  private present(hit: { kart: KartState; by: HazardKind; good?: boolean; gift?: boolean }[], p: HazardPose, s: KartState): void {
+    if (!p.active || this.distance(p, s) > p.radius + KART_RADIUS) return;
+    if (p.lane === 1) {
+      const before = hit.length;
+      this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, PRESENT_BOOST)));
+      if (hit.length > before) hit[before].gift = true;
+      return;
+    }
+    if (s.boostTime > 0) {
+      this.reward(hit, s, p.kind, () => (s.boostTime += RAM_BOOST));
+      return;
+    }
+    if (this.cooldown.has(s)) return;
+    this.cooldown.set(s, HIT_COOLDOWN);
+    if (spinOut(s, PRESENT_SPIN)) hit.push({ kart: s, by: p.kind });
   }
 
   /** Pays a kart for using a hazard well, once in a while. */

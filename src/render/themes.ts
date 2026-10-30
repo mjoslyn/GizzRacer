@@ -1,9 +1,10 @@
 import * as THREE from 'three';
 import * as tex from './textures';
 import { DESERT_SKY, type SkyColors } from './textures';
+import { lawnTexture, palingTexture, picketTexture } from './godIsCalling';
 
 export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism' | 'factory' | 'gamma' | 'carrion' | 'wah' | 'smog' | 'dome' | 'solar' | 'inferno' | 'mind' | 'notmind' | 'cellophane' | 'mindfuzz' | 'elbow' | 'muck' | 'boogie' | 'treesea' | 'theia' | 'set' | 'change' | 'uruk' | 'headon' | 'godcall' | 'nan' | 'float';
-export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy' | 'hadean' | 'deshret' | 'moonpalace' | 'uruk';
+export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy' | 'hadean' | 'deshret' | 'moonpalace' | 'uruk' | 'suburb';
 
 /** Everything that makes a track's world look like itself. */
 export interface Theme {
@@ -877,23 +878,25 @@ export const THEMES: Record<ThemeId, Theme> = {
     dust: 0xd08050,
     barrier: { map: tex.templeWallTexture, crawl: false },
   },
-  // God Is Calling Me Back Home: (placeholder, Set's look until its world is built).
+  // God Is Calling Me Back Home: an Australian suburb on a hill at Christmas, high summer at dusk, fairy lights coming on, and the sky opening with light.
   godcall: {
-    sky: { zenith: '#0a0a34', high: '#262a78', low: '#c86a3a', horizon: '#ffd070', below: '#c06030', ground: '#6a2a14', cloud: '255,200,150', clouds: 12, stars: { count: 140, color: '#f0f0ff' }, moon: '#f4f4ff' },
-    fog: { color: 0xc07850, near: 160, far: 860 },
-    hemi: { sky: 0xffd0a0, ground: 0x8a3a1a, intensity: 1.5 },
-    sun: { color: 0xffd890, intensity: 2.3 },
-    ground: tex.redSandTexture,
-    groundTile: 20,
-    // Walls are a temple's, blocks of sandstone with a painted frieze.
-    cliff: tex.templeWallTexture,
-    decor: 'deshret',
-    distant: { shape: 'mesa', color: 0x5a2414 },
-    haze: 0.8,
-    duotone: [0x0a0420, 0xd05a20, 0xffe890],
+    sky: { zenith: '#16205a', high: '#3a4a9a', low: '#e8907a', horizon: '#ffd89a', below: '#a88a5a', ground: '#4a5a2a', cloud: '255,196,176', clouds: 22, stars: { count: 70, color: '#fff8e8' } },
+    fog: { color: 0xd0a090, near: 170, far: 840 },
+    hemi: { sky: 0xffdcc8, ground: 0x4a5a2a, intensity: 1.5 },
+    sun: { color: 0xffd4a8, intensity: 2.1 },
+    ground: lawnTexture,
+    groundTile: 22,
+    // Walls are the back fences, grey palings.
+    cliff: palingTexture,
+    decor: 'suburb',
+    distant: { shape: 'hill', color: 0x3a4a6a },
+    haze: 0.4,
+    duotone: [0x0a0a24, 0xd03a2a, 0xfff0b0],
     skyCycle: false,
-    dust: 0xd08050,
-    barrier: { map: tex.templeWallTexture, crawl: false },
+    dust: 0xb8a070,
+    barrier: { map: picketTexture, crawl: false },
+    edgeLine: 0xf4f2e8,
+    edgeWidth: 0.3,
   },
   // Let Me Mend the Past: (placeholder, Set's look until its world is built).
   nan: {
