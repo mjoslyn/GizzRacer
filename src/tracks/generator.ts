@@ -651,12 +651,13 @@ const PALETTES: Record<GenTheme, Palette> = {
   godcall: {
     surface: 'bitumen',
     deck: 'bitumen',
-    alt: 'sand',
-    hazards: ['sunMoon'],
-    start: 'setGate',
-    landmarks: ['setGate'],
+    alt: 'asphalt',
+    liquid: 'water',
+    hazards: ['presents'],
+    start: 'heavenGate',
+    landmarks: ['heavenGate'],
     tallWalls: 6,
-    places: ['Jackal', 'Snake', 'Tornado', 'Tomb', 'Duality', 'Sandstorm', 'Moonbeam', 'Hieroglyph', 'Reset'],
+    places: ['Hilltop', 'Santa', 'Sack', 'Blade', 'Axe', 'Flunk', 'Tinsel', 'Weatherboard', 'Back Home'],
     music: { lap: 'god-is-calling', finalLap: 'god-is-calling-final-lap' },
   },
   nan: {
@@ -1419,6 +1420,9 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
         hazards.push({ kind, at: at(count - 1), period: 4.4 });
         break;
       case 'cameras':
+        hazards.push({ kind, at: at(count - 1), period: 4.8 });
+        break;
+      case 'presents':
         hazards.push({ kind, at: at(count - 1), period: 4.8 });
         break;
       case 'strings':

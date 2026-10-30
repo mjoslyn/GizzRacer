@@ -2002,6 +2002,7 @@ const HIT_TEXT: Record<ItemKind | HazardKind, string> = {
   strings: '2500 VOLTS!',
   serpents: 'BITTEN!',
   cameras: 'SEEN!',
+  presents: 'SACKED!',
 };
 
 /** What a hazard used well says: the ones that can help. */
@@ -2058,6 +2059,7 @@ const BONUS_TEXT: Record<HazardKind, string> = {
   strings: 'ON WINGS OF SONG!',
   serpents: 'IMMORTAL!',
   cameras: 'OFF CAMERA!',
+  presents: 'MERRY CHRISTMAS!',
 };
 
 /** Takes a group out of the scene and frees what it built. */

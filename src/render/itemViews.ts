@@ -1,9 +1,10 @@
 import * as THREE from 'three';
-import { CORD_STAGES, SERPENT_LENGTH, SERPENT_STAGES, STRING_STAGES, ARROW_DEPTH, ARROW_LANES, ARROW_STAGES, ELBOW_DEPTH, ELBOW_STAGES, EYE_DEPTH, EYE_HEIGHT, EYE_STAGES, FUZZ_RADIUS, RAKE_DEPTH, RAKE_LANES, RAKE_STAGES, SHEET_HALF, SHEET_STAGES, TIMBER_STAGES, fuzzLevel, timberFall } from '../items/hazards';
+import { PRESENT_EDGE, PRESENT_ROOF, PRESENT_STAGES, CORD_STAGES, SERPENT_LENGTH, SERPENT_STAGES, STRING_STAGES, ARROW_DEPTH, ARROW_LANES, ARROW_STAGES, ELBOW_DEPTH, ELBOW_STAGES, EYE_DEPTH, EYE_HEIGHT, EYE_STAGES, FUZZ_RADIUS, RAKE_DEPTH, RAKE_LANES, RAKE_STAGES, SHEET_HALF, SHEET_STAGES, TIMBER_STAGES, fuzzLevel, timberFall } from '../items/hazards';
 import { AIRLOCK_DEPTH, AIRLOCK_STAGES, BOULDER_STAGES, CRUSHER_STAGES, FLARE_CLEAR, FLARE_STAGES, RAT_LENGTH, RAT_STAGES, SMOG_RADIUS, SMOG_STAGES, flareHeight, GAMMA_EDGE, GAMMA_STAGES, GEYSER_ERUPT, GUST_STAGES, HOLE_CORE, JAWS_LUNGE, JET_STAGES, LIGHTNING_STRIKE, ROBOT_STAGES, VULTURE_STAGES, WAH_LIFT, WAH_STAGES, prismColour, type HazardPose } from '../items/hazards';
 import { goblinFigure } from './omnium';
 import { robotFigure, vultureFigure, wahPedalFigure } from './nonagon';
 import { ratFigure } from './infest';
+import { PRESENT_WRAPS, presentFigure, santaFigure } from './godIsCalling';
 import { arrowGeometry, eyeFigure } from './mindfuzz';
 import { cameraParts, poseCameras } from './mendThePast';
 import { BOX_RESPAWN, SHIELD_ITEMS, WAVE_RANGE, type ItemHolder, type ItemSystem } from '../items/items';
@@ -615,6 +616,10 @@ export class HazardsView {
     const plantMat = new THREE.MeshLambertMaterial({ color: 0x60ffb0, emissive: 0x30c080, emissiveIntensity: 0.9 });
     const stemMat = new THREE.MeshLambertMaterial({ color: 0x2a8a3a });
     const leafMat = new THREE.MeshLambertMaterial({ color: 0x3a7a34, flatShading: true });
+    const roofHouse = new THREE.MeshLambertMaterial({ color: 0xf0e4c8 });
+    const roofIron = new THREE.MeshLambertMaterial({ color: 0xa83a2a, flatShading: true });
+    const presentShadow = new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, opacity: 0.5, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 });
+    let presents = 0;
 
     for (const pose of hazards.poses) {
       const obj = new THREE.Group();
@@ -1337,6 +1342,26 @@ export class HazardsView {
           (plant.children[plant.children.length - 1] as THREE.Sprite).position.y = 1.6;
           obj.add(body, plant);
           parts.push(body, plant);
+          break;
+        }
+        case 'presents': {
+          // Santa's present, wrapped, its lid ready to come off; its shadow on the road under it; and Santa up on a roof at the road's edge, a house each side, to throw it.
+          const present = presentFigure(1.7, PRESENT_WRAPS[presents++ % PRESENT_WRAPS.length]);
+          const shadow = new THREE.Mesh(warnGeo, presentShadow);
+          const roofs = new THREE.Group();
+          for (let k = 0; k < 2; k++) {
+            const house = new THREE.Group();
+            const walls = new THREE.Mesh(new THREE.BoxGeometry(3, PRESENT_ROOF - 1.5, 5), roofHouse);
+            walls.position.y = (PRESENT_ROOF - 1.5) / 2;
+            const roof = new THREE.Mesh(new THREE.ConeGeometry(3.4, 1.6, 4), roofIron);
+            roof.rotation.y = Math.PI / 4;
+            roof.position.y = PRESENT_ROOF - 0.7;
+            house.add(walls, roof);
+            roofs.add(house);
+          }
+          const santa = santaFigure();
+          obj.add(present.group, shadow, roofs, santa.group);
+          parts.push(present.group, present.lid, present.inside, shadow, roofs, santa.group, santa.arm);
           break;
         }
         case 'cameras':
@@ -2209,6 +2234,42 @@ export class HazardsView {
         case 'cameras':
           poseCameras(obj, parts, p, elapsed);
           break;
+        case 'presents': {
+          const [present, lid, inside, shadow, roofs, santa, arm] = parts;
+          const u = p.phase;
+          const P = PRESENT_STAGES;
+          // In the road's frame, from its centre: a lateral to the right is local -x.
+          obj.position.set(p.ax, p.ground, p.az);
+          obj.rotation.y = p.heading;
+          const hw = Math.abs(p.gap) - PRESENT_EDGE;
+          const side = Math.sign(p.gap) || 1;
+          // The houses stand on the ground beside the road, up at the top of a cut's walls.
+          const base = Math.max(0, -p.ground);
+          roofs.children.forEach((h, k) => h.position.set((k ? 1 : -1) * (hw + 3.5), base, 0));
+          // Santa on the roof of the side he throws from, facing the road: winding up with it, then the throw.
+          santa.position.set(-side * (hw + 3.1), base + PRESENT_ROOF - 0.7, 0);
+          santa.rotation.y = (side * Math.PI) / 2;
+          arm.rotation.z = u < P.toss ? -1.2 - 1.4 * (u / P.toss) : u < P.toss + 0.05 ? -2.6 + 2.6 * ((u - P.toss) / 0.05) : -0.2;
+          const lat = -(p.x - p.ax) * Math.cos(p.heading) + (p.z - p.az) * Math.sin(p.heading);
+          const lift = p.y - p.ground;
+          present.visible = u < P.gone;
+          present.position.set(-lat, lift, 0);
+          // Tumbling through the air, still once it's down.
+          const flying = u >= P.toss && u < P.rest;
+          present.rotation.set(flying ? u * 23 : 0, flying ? u * 17 : 0.4, 0);
+          // Landed open: the lid flies off and the gift glows inside.
+          const open = p.lane === 1;
+          const off = open ? Math.min(1, (u - P.land) / 0.08) : 0;
+          lid.position.set(off * 1.2, 1.36 + off * 2.2 * (1 - off * 0.6), 0);
+          lid.rotation.set(0, 0, off * 1.9);
+          lid.visible = !open || off < 1;
+          inside.visible = open;
+          (inside as THREE.Sprite).material.opacity = 0.6 + 0.4 * Math.sin(elapsed * 8);
+          shadow.visible = present.visible && u >= P.toss && Math.abs(lat) < hw;
+          shadow.position.set(-lat, 0.06, 0);
+          shadow.scale.setScalar(2.6 - Math.min(1.4, lift * 0.2));
+          break;
+        }
         case 'timber': {
           const [pivot, shadow] = parts;
           obj.rotation.y = p.heading;

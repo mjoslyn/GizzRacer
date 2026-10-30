@@ -397,6 +397,15 @@ export class ItemSystem {
     }
   }
 
+  /** A gift off the road (an open present): an item, as a box gives, if `k` has none. */
+  gift(k: ItemHolder, karts: readonly ItemHolder[], events: ItemEvent[]): void {
+    if (k.item) return;
+    k.item = this.roll(k, karts);
+    k.rolling = ROULETTE;
+    k.held = 0;
+    events.push({ type: 'pickup', kart: k });
+  }
+
   /** An item for `k`: never a second Nonagon Infinity while one is out, nor the same thing twice from one box. */
   private roll(k: ItemHolder, karts: readonly ItemHolder[], not: ItemKind | null = null): ItemKind {
     const busy = this.surge || not === 'gizzardWave' ? 'gizzardWave' : null;
