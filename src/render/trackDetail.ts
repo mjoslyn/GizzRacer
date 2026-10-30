@@ -325,6 +325,12 @@ const STYLES: Record<DecorKind, DetailStyle> = {
     boards: { words: ['GILGAMESH', 'HEAR MY NAME', 'HOUSE OF DUST', 'FOR IMMORTALITY'], bg: ['#1a2a5a', '#6a4a2a'], fg: '#ffd890' },
     crowd: true,
   },
+  paddock: {
+    edge: { kind: 'fence', height: 1.2, spacing: 10, color: 0x8a8070, stripe: 0xd8d0c0 },
+    cover: { shape: 'tuft', colors: [0xc8a850, 0xa88a40, 0xe0c870, 0x7a8a40], count: 1600 },
+    boards: { words: ['FLOAT ALONG', 'FILL YOUR LUNGS', 'BREATHE', 'A DEEP BREATH'], bg: ['#2a5a9a', '#c89a3a'], fg: '#fff6e0' },
+    crowd: true,
+  },
   sky: {
     edge: { kind: 'star', height: 1.4, spacing: 14, color: 0xffe8a0, stripe: 0xffffff },
     light: 0xfff0ff,
@@ -407,7 +413,7 @@ export function roadPaint(ribbon: Ribbon, decor: DecorKind, edgeLine?: number, e
     line[i] = -Math.max(-0.55, Math.min(0.55, (sum / 25) * 14));
   }
   const paintable = new Set(['asphalt']);
-  const wearable = new Set(['asphalt', 'salt', 'rock', 'sand', 'boards', 'regolith', 'wet', 'paving', 'reef', 'flagstone', 'membrane', 'steel', 'scorched', 'fret', 'tar', 'gilded', 'heatshield', 'brimstone', 'neural', 'film', 'fuzz', 'carpet', 'muck', 'moss', 'hieroglyph', 'mudbrick']);
+  const wearable = new Set(['asphalt', 'salt', 'rock', 'sand', 'boards', 'regolith', 'wet', 'paving', 'reef', 'flagstone', 'membrane', 'steel', 'scorched', 'fret', 'tar', 'gilded', 'heatshield', 'brimstone', 'neural', 'film', 'fuzz', 'carpet', 'muck', 'moss', 'hieroglyph', 'mudbrick', 'gravel']);
   for (let i = 0; i < segs; i++) {
     const j = (i + 1) % n;
     const sMid = (sp.dist[i] + (j === 0 ? sp.length : sp.dist[j])) / 2;

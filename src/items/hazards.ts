@@ -129,6 +129,7 @@ export const WAVE_SPIN = 1.0;
  * - the moon rolling across the road is a moonbeam to drive through, a boost
  * - a lightning string still humming after it's plucked is a boost
  * - the plant of immortality, reached before the snake eats it, is a long boost; the snake hopped, a boost
+ * - a breath of air caught as it rises up through the road floats you up, and you come down on a boost
  */
 /** A reward can't pay out again to the same kart for this long. */
 export const REWARD_COOLDOWN = 1.5;
@@ -391,6 +392,30 @@ export function serpentAcross(u: number): number {
   return -1.3 + (2.6 * (u - S.slither)) / (S.gone - S.slither);
 }
 
+/**
+ * Float Along's great breaths of air, on a five-beat bar as the song is in
+ * 5/4: the road froths where one is coming up (beats one and two), it
+ * swells up out of the road and rises (three and four), and bursts on the
+ * fifth. "Float along and fill your lungs."
+ */
+export const BUBBLE_STAGES = { rise: 0.4, burst: 0.8, gone: 0.9 } as const;
+export const BUBBLE_RADIUS = 2.6;
+/** How high it rises off the road before it bursts. */
+export const BUBBLE_HEIGHT = 3.2;
+/** Caught as it rises, it floats you up this fast, a trick to come down on (a boost). Driven into as it bursts, it knocks you aside this hard, and slows you. */
+export const BUBBLE_LIFT = 12;
+export const BUBBLE_SHOVE = 14;
+export const BUBBLE_SLOW = 0.8;
+/** A burst reaches this much past the bubble. */
+export const BUBBLE_BURST = 1.6;
+
+/** How far a bubble has risen off the road at cycle stage `u`: on the road while it froths, up as it swells, gone once it has burst. */
+export function bubbleRise(u: number): number {
+  const B = BUBBLE_STAGES;
+  if (u < B.rise || u >= B.gone) return 0;
+  return BUBBLE_HEIGHT * Math.min(1, (u - B.rise) / (B.burst - B.rise));
+}
+
 /** How far a tree has toppled at cycle stage `u`: 0 upright, a lean while it creaks, 1 lying across the road. */
 export function timberFall(u: number): number {
   const T = TIMBER_STAGES;
@@ -476,6 +501,7 @@ const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds' | 'butterfli
   sunMoon: SUN_SPIN,
   strings: STRING_SPIN,
   serpents: SERPENT_SPIN,
+  bubbles: 0,
 };
 
 /** Kinds that fill the whole road across, on a rhythm: nothing to steer round, only to time. */
@@ -964,6 +990,20 @@ export class HazardSystem {
           p.phase = u;
           break;
         }
+        case 'bubbles': {
+          // A breath of air coming up through the road, somewhere across it, each a beat after the one before.
+          const at = def.at[i];
+          const tt = t + 10 + (i * def.period) / 5;
+          const cycle = Math.floor(tt / def.period);
+          const u = tt / def.period - cycle;
+          const lat = this.halfWidth(at) * 0.55 * Math.sin(cycle * 2.39 + i * 1.7);
+          this.place(p, at, lat, bubbleRise(u));
+          p.radius = BUBBLE_RADIUS;
+          // Harm only as it bursts; rising, it's there to be caught.
+          p.active = u >= BUBBLE_STAGES.burst && u < BUBBLE_STAGES.gone;
+          p.phase = u;
+          break;
+        }
         case 'dustDevils':
         case 'butterflies':
         case 'tornadoes':
@@ -1129,6 +1169,10 @@ export class HazardSystem {
         }
         if (p.kind === 'serpents') {
           this.serpent(hit, p, s);
+          continue;
+        }
+        if (p.kind === 'bubbles') {
+          this.bubble(hit, p, s);
           continue;
         }
         if (p.kind === 'fuzz' && p.phase >= FUZZ_STAGES.gold && p.phase < FUZZ_STAGES.red) {
@@ -1387,6 +1431,12 @@ export class HazardSystem {
         const bx = -Math.sin(p.heading) * SERPENT_LENGTH * 0.5;
         const bz = -Math.cos(p.heading) * SERPENT_LENGTH * 0.5;
         out.push({ x: p.x + bx, z: p.z + bz, r: SERPENT_LENGTH * 0.5 + p.radius, vx: p.vx, vz: p.vz });
+        continue;
+      }
+      if (p.kind === 'bubbles') {
+        // From just before it bursts: as far as the burst reaches.
+        if (p.phase < BUBBLE_STAGES.burst - 0.1 || p.phase >= BUBBLE_STAGES.gone) continue;
+        out.push({ x: p.x, z: p.z, r: p.radius * BUBBLE_BURST, vx: 0, vz: 0 });
         continue;
       }
       if (p.kind === 'sheets') {
@@ -1696,6 +1746,32 @@ export class HazardSystem {
     if (this.cooldown.has(s)) return;
     this.cooldown.set(s, HIT_COOLDOWN);
     if (spinOut(s, SERPENT_SPIN)) hit.push({ kart: s, by: p.kind });
+  }
+
+  /**
+   * A breath of air: caught as it rises, it floats you up and you come down
+   * on a boost; driven into as it bursts, it knocks you aside.
+   */
+  private bubble(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+    const d = Math.hypot(s.x - p.x, s.z - p.z);
+    if (p.phase >= BUBBLE_STAGES.rise && p.phase < BUBBLE_STAGES.burst) {
+      if (d > p.radius + KART_RADIUS) return;
+      this.reward(hit, s, p.kind, () => {
+        launch(s, BUBBLE_LIFT);
+        s.trick = true;
+      });
+      return;
+    }
+    if (!p.active || d > p.radius * BUBBLE_BURST + KART_RADIUS || this.cooldown.has(s)) return;
+    this.cooldown.set(s, HIT_COOLDOWN);
+    // Away from where it burst, across the road.
+    const rx = -Math.cos(p.heading);
+    const rz = Math.sin(p.heading);
+    const side = (s.x - p.x) * rx + (s.z - p.z) * rz >= 0 ? 1 : -1;
+    s.extX += rx * side * BUBBLE_SHOVE;
+    s.extZ += rz * side * BUBBLE_SHOVE;
+    s.speed *= BUBBLE_SLOW;
+    hit.push({ kart: s, by: p.kind });
   }
 
   /** Pays a kart for using a hazard well, once in a while. */

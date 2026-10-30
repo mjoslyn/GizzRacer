@@ -504,6 +504,11 @@ export class Sfx {
       this.tone(2500, 0.2, 'square', 0.05, 1200);
     }
     if (by === 'serpents') this.whoosh(0.4, 5200, 3800, 0.2);
+    // A breath of air bursting: a wet pop and a bloop.
+    if (by === 'bubbles') {
+      this.hit(0.08, 1800, 0.35);
+      this.tone(320, 0.25, 'sine', 0.1, 900);
+    }
     // A wave breaking over you: a crash of white noise; a glider comes in with a whistle of wind.
     if (by === 'waves') this.whoosh(0.8, 2400, 300, 0.35);
     if (by === 'gliders') this.whoosh(0.5, 1800, 500, 0.2);

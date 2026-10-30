@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { CORD_STAGES, SERPENT_LENGTH, SERPENT_STAGES, STRING_STAGES, ARROW_DEPTH, ARROW_LANES, ARROW_STAGES, ELBOW_DEPTH, ELBOW_STAGES, EYE_DEPTH, EYE_HEIGHT, EYE_STAGES, FUZZ_RADIUS, RAKE_DEPTH, RAKE_LANES, RAKE_STAGES, SHEET_HALF, SHEET_STAGES, TIMBER_STAGES, fuzzLevel, timberFall } from '../items/hazards';
+import { BUBBLE_STAGES, CORD_STAGES, SERPENT_LENGTH, SERPENT_STAGES, STRING_STAGES, ARROW_DEPTH, ARROW_LANES, ARROW_STAGES, ELBOW_DEPTH, ELBOW_STAGES, EYE_DEPTH, EYE_HEIGHT, EYE_STAGES, FUZZ_RADIUS, RAKE_DEPTH, RAKE_LANES, RAKE_STAGES, SHEET_HALF, SHEET_STAGES, TIMBER_STAGES, fuzzLevel, timberFall } from '../items/hazards';
 import { AIRLOCK_DEPTH, AIRLOCK_STAGES, BOULDER_STAGES, CRUSHER_STAGES, FLARE_CLEAR, FLARE_STAGES, RAT_LENGTH, RAT_STAGES, SMOG_RADIUS, SMOG_STAGES, flareHeight, GAMMA_EDGE, GAMMA_STAGES, GEYSER_ERUPT, GUST_STAGES, HOLE_CORE, JAWS_LUNGE, JET_STAGES, LIGHTNING_STRIKE, ROBOT_STAGES, VULTURE_STAGES, WAH_LIFT, WAH_STAGES, prismColour, type HazardPose } from '../items/hazards';
 import { goblinFigure } from './omnium';
 import { robotFigure, vultureFigure, wahPedalFigure } from './nonagon';
@@ -614,6 +614,8 @@ export class HazardsView {
     const plantMat = new THREE.MeshLambertMaterial({ color: 0x60ffb0, emissive: 0x30c080, emissiveIntensity: 0.9 });
     const stemMat = new THREE.MeshLambertMaterial({ color: 0x2a8a3a });
     const leafMat = new THREE.MeshLambertMaterial({ color: 0x3a7a34, flatShading: true });
+    const breathMat = new THREE.MeshPhongMaterial({ color: 0xe0f4ff, emissive: 0x4a7898, transparent: true, opacity: 0.38, shininess: 220, specular: 0xffffff, depthWrite: false });
+    const frothMat = new THREE.MeshBasicMaterial({ color: 0xf4fbff, transparent: true, opacity: 0.85, depthWrite: false });
 
     for (const pose of hazards.poses) {
       const obj = new THREE.Group();
@@ -1336,6 +1338,29 @@ export class HazardsView {
           (plant.children[plant.children.length - 1] as THREE.Sprite).position.y = 1.6;
           obj.add(body, plant);
           parts.push(body, plant);
+          break;
+        }
+        case 'bubbles': {
+          // A great breath of air: a shining skin round it and a highlight; the froth on the road where it's coming up; a ring of spray as it bursts.
+          const R = pose.radius;
+          const ball = new THREE.Mesh(new THREE.SphereGeometry(R, 24, 16), breathMat);
+          const glint = new THREE.Mesh(new THREE.SphereGeometry(R * 0.2, 10, 8), frothMat);
+          glint.position.set(-R * 0.4, R * 0.45, R * 0.55);
+          glint.scale.set(1, 0.6, 1);
+          ball.add(glint);
+          const froth = new THREE.Group();
+          for (let k = 0; k < 11; k++) {
+            const a = k * 2.4;
+            const d = R * (0.2 + ((k * 0.37) % 1) * 0.8);
+            const fleck = new THREE.Mesh(new THREE.CircleGeometry(0.25 + ((k * 0.61) % 1) * 0.35, 10), frothMat);
+            fleck.rotation.x = -Math.PI / 2;
+            fleck.position.set(Math.cos(a) * d, 0, Math.sin(a) * d);
+            froth.add(fleck);
+          }
+          const spray = new THREE.Mesh(new THREE.RingGeometry(R * 0.85, R * 1.1, 32), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8, side: THREE.DoubleSide, depthWrite: false }));
+          spray.rotation.x = -Math.PI / 2;
+          obj.add(ball, froth, spray);
+          parts.push(ball, froth, spray);
           break;
         }
         case 'timber': {
@@ -2198,6 +2223,29 @@ export class HazardsView {
             plant.position.set(dx * c - dz * s, 0, dx * s + dz * c);
             plant.scale.setScalar(Math.min(1, (u - SERPENT_STAGES.sprout) / 0.08));
             plant.rotation.y = elapsed;
+          }
+          break;
+        }
+        case 'bubbles': {
+          const [ball, froth, spray] = parts;
+          const u = p.phase;
+          const B = BUBBLE_STAGES;
+          const R = p.radius;
+          const lift = p.y - p.ground;
+          // Frothing on the road for two beats, swelling up out of it and rising for two, and bursting on the fifth.
+          froth.visible = u < B.rise + 0.1;
+          froth.position.y = -lift + 0.06;
+          froth.children.forEach((f, k) => f.scale.setScalar(0.6 + 0.4 * Math.abs(Math.sin(elapsed * 9 + k * 1.3)) * Math.min(1, u / 0.2 + 0.2)));
+          const grow = Math.min(1, Math.max(0, (u - B.rise + 0.12) / 0.14));
+          ball.visible = grow > 0 && u < B.burst;
+          ball.scale.set(grow * (1 + Math.sin(elapsed * 7) * 0.04), grow * (1 - Math.sin(elapsed * 7) * 0.04), grow);
+          ball.position.y = R * grow;
+          spray.visible = u >= B.burst && u < B.gone;
+          if (spray.visible) {
+            const w = (u - B.burst) / (B.gone - B.burst);
+            spray.position.y = R;
+            spray.scale.setScalar(1 + w * 1.6);
+            (spray as THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>).material.opacity = 0.8 * (1 - w);
           }
           break;
         }
