@@ -5345,5 +5345,307 @@
    "gain": 14,
    "end": 271.5
   }
+ ],
+ "Head On/Pill": [
+  {
+   "id": "kglw2014-05-02",
+   "file": "08-Head On Pill (Live at Levitation '14).mp3",
+   "date": "2014-05-02",
+   "venue": "Carson Creek Ranch",
+   "seconds": 1008
+  },
+  {
+   "id": "kglw2014-10-13.multitrack.flac",
+   "file": "KingGizzard2014-10-13_nyctaper_t09.mp3",
+   "date": "2014-10-13",
+   "venue": "Babys All Right",
+   "seconds": 915
+  },
+  {
+   "id": "kglw2014-10-31.nyctaper.matrix.flac16",
+   "file": "KingGizzard2014-10-31_nyctaper_t01.mp3",
+   "date": "2014-10-31",
+   "venue": "338 Moffat",
+   "seconds": 1115
+  },
+  {
+   "id": "kglw2018-06-07.aud.flac.norm.16.44",
+   "file": "08  Head On Pill.mp3",
+   "date": "2018-06-07",
+   "venue": "Monks Bar",
+   "seconds": 1518
+  },
+  {
+   "id": "kglw2018-06-16.sbd-ccm4u.flac1644",
+   "file": "KingGizzard2018-06-16_nyctaper_t17.mp3",
+   "date": "2018-06-16",
+   "venue": "Brooklyn Steel",
+   "seconds": 703
+  },
+  {
+   "id": "kglw2019-07-12",
+   "file": "18. Head On-Pill.mp3",
+   "date": "2019-07-12",
+   "venue": "Thebarton Theatre",
+   "seconds": 1783
+  },
+  {
+   "id": "kglw2022-10-10.bootlegger",
+   "file": "76. Head On'Pill (Live At Red Rocks '22).mp3",
+   "date": "2022-10-10",
+   "venue": "Red Rocks Amphitheatre",
+   "seconds": 821
+  },
+  {
+   "id": "kg2022-11-02",
+   "file": "76. Head On'Pill (Live At Red Rocks '22).mp3",
+   "date": "2022-11-02",
+   "venue": "Red Rocks Amphitheater",
+   "seconds": 821
+  },
+  {
+   "id": "kglw2023-08-21.aud1",
+   "file": "KGLW_2023-08-21_AUD_t02_Head On.Pill.mp3",
+   "date": "2023-08-21",
+   "venue": "Tonhalle",
+   "seconds": 1496
+  },
+  {
+   "id": "kglw2024-09-01.ToraTapesMX",
+   "file": "28 - Head On-Pill.mp3",
+   "date": "2024-09-01",
+   "venue": "Northerly Island",
+   "seconds": 1004
+  },
+  {
+   "id": "kglw2026-08-15.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live at Field of Vision II '26 - 23 Head On Pill (Live at Field of Vision II '26).mp3",
+   "date": "2026-08-15",
+   "venue": "Field of Vision II, Buena Vista, CO",
+   "seconds": 756
+  },
+  {
+   "id": "kglw2026-08-16.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live at Field of Vision II '26 - 01 Pill (Continued) (Live at Field of Vision II '26).mp3",
+   "date": "2026-08-16",
+   "venue": "Field of Vision II, Buena Vista, CO",
+   "seconds": 947
+  }
+ ],
+ "God Is Calling Me Back Home": [
+  {
+   "id": "kglw2013-11-13.3RRR",
+   "file": "09-God is Calling Me Back Home.mp3",
+   "date": "2013-11-13",
+   "venue": "Triple R Performance Space",
+   "seconds": 271
+  },
+  {
+   "id": "kglw2014-10-26.multitrack.flac",
+   "file": "KingGizzard2014-10-26_nyctaper_t08.mp3",
+   "date": "2014-10-26",
+   "venue": "Babys All Right",
+   "seconds": 165
+  },
+  {
+   "id": "kglw2024-09-04.bandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live at Miller High Life Theatre- Milwaukee- WI (9-4-24)/King Gizzard & The Lizard Wizard - Live at Miller High Life Theatre, Milwaukee, WI (9-4-24) - 05 God Is Calling Me Back Home (Live).mp3",
+   "date": "2024-09-04",
+   "venue": "Miller High Life Theatre",
+   "seconds": 333
+  },
+  {
+   "id": "kglw2024-09-09.earlyshowbandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live at Red Rocks Amphitheatre EARLY- Morrison- CO (9-9-24) (1)/King Gizzard & The Lizard Wizard - Live at Red Rocks Amphitheatre EARLY, Morrison, CO (9-9-24) - 12 God Is Calling Me Back Home (Live).mp3",
+   "date": "2024-09-09",
+   "venue": "Red Rocks Amphitheatre",
+   "seconds": 232
+  },
+  {
+   "id": "kglw2024-11-02.bandcampbootlegger",
+   "file": "13 God Is Calling Me Back Home (Live in San Diego '24).mp3",
+   "date": "2024-11-02",
+   "venue": "Rady Shell",
+   "seconds": 332
+  },
+  {
+   "id": "kglw2025-06-10.SBD.flac",
+   "file": "King Gizzard & The Lizard Wizard - Live in Bulgaria '25 - 34 God Is Calling Me Back Home (Live in Bulgaria '25).mp3",
+   "date": "2025-06-10",
+   "venue": "Ancient Theatre",
+   "seconds": 358
+  }
+ ],
+ "Let Me Mend the Past": [
+  {
+   "id": "kglw2013-11-13.3RRR",
+   "file": "07-Let Me Mend The Past.mp3",
+   "date": "2013-11-13",
+   "venue": "Triple R Performance Space",
+   "seconds": 274
+  },
+  {
+   "id": "kglw2020-02-21",
+   "file": "24 - Let Me Mend The Past.mp3",
+   "date": "2020-02-21",
+   "venue": "The Croxton",
+   "seconds": 237
+  },
+  {
+   "id": "kglw2021-12-19",
+   "file": "06. Let Me Mend The Past (Live In Brisbane '21).mp3",
+   "date": "2021-12-19",
+   "venue": "The Princess Theatre",
+   "seconds": 244
+  },
+  {
+   "id": "kglw2022-10-10.bootlegger",
+   "file": "83. Let Me Mend The Past (Live At Red Rocks '22).mp3",
+   "date": "2022-10-10",
+   "venue": "Red Rocks Amphitheatre",
+   "seconds": 196
+  },
+  {
+   "id": "kg2022-11-02",
+   "file": "83. Let Me Mend The Past (Live At Red Rocks '22).mp3",
+   "date": "2022-11-02",
+   "venue": "Red Rocks Amphitheater",
+   "seconds": 196
+  },
+  {
+   "id": "kglw2024-06-04.FLAC.bootleggermix",
+   "file": "King Gizzard & The Lizard Wizard - Live at The Caverns '23 - 09 Let Me Mend The Past (Live at The Caverns '23).mp3",
+   "date": "2023-06-04",
+   "venue": "The Caverns Above Ground Ampitheatre",
+   "seconds": 258
+  },
+  {
+   "id": "kglw2024-05-31.dankski",
+   "file": "kglw2024.05.31t05.mp3",
+   "date": "2024-05-31",
+   "venue": "Brighton Dome",
+   "seconds": 224
+  },
+  {
+   "id": "kglw2024-09-09.earlyshowbandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live at Red Rocks Amphitheatre EARLY- Morrison- CO (9-9-24) (1)/King Gizzard & The Lizard Wizard - Live at Red Rocks Amphitheatre EARLY, Morrison, CO (9-9-24) - 08 Let Me Mend The Past (Live).mp3",
+   "date": "2024-09-09",
+   "venue": "Red Rocks Amphitheatre",
+   "seconds": 243
+  },
+  {
+   "id": "kglw2024-11-16.bandcampbootleg",
+   "file": "King Gizzard & The Lizard Wizard - Live in Houston '24 - 10 Let Me Mend The Past (Live in Houston '24).mp3",
+   "date": "2024-11-16",
+   "venue": "White Oak Music Hall",
+   "seconds": 213
+  },
+  {
+   "id": "kglw2025-05-30.SBD.flac.bootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live in Lithuania '25 - 07 Let Me Mend The Past (Live in Lithuania '25).mp3",
+   "date": "2025-05-30",
+   "venue": "Lukiškės Prison 2.0",
+   "seconds": 184
+  },
+  {
+   "id": "kglw2025-12-07.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live in Brisbane '25 - 14 Let Me Mend The Past (Live In Brisbane '25).mp3",
+   "date": "2025-12-07",
+   "venue": "Fortitude Music Hall, Brisbane, QLD, Australia",
+   "seconds": 325
+  },
+  {
+   "id": "kglw2026-08-16.Full-Three-Shows-discocape",
+   "file": "kglw2026-08-14-4ch_discocape_16.mp3",
+   "date": "2026-08-16",
+   "venue": "Meadow Creek",
+   "seconds": 256
+  }
+ ],
+ "Float Along – Fill Your Lungs": [
+  {
+   "id": "kglw2019-10-09",
+   "file": "17 Float Along - Fill Your Lungs (Live In Brussels '19).mp3",
+   "date": "2019-10-09",
+   "venue": "Ancienne Belgique",
+   "seconds": 731
+  },
+  {
+   "id": "kglw2020-02-21",
+   "file": "34 - Float Along - Fill Your Lungs.mp3",
+   "date": "2020-02-21",
+   "venue": "The Croxton",
+   "seconds": 734
+  },
+  {
+   "id": "kglw2022-09-30.aud2.flac24",
+   "file": "kgatlw-2022-09-30-desert-daze-aud2-24bit-t14-float-along.mp3",
+   "date": "2022-09-30",
+   "venue": "Desert Daze",
+   "seconds": 763
+  },
+  {
+   "id": "kglw2022-10-15.daank",
+   "file": "kglw2022.10.15t15.mp3",
+   "date": "2022-10-15",
+   "venue": "Radius",
+   "seconds": 924
+  },
+  {
+   "id": "kg2022-11-02",
+   "file": "86. Float Along - Fill Your Lungs (Live At Red Rocks '22).mp3",
+   "date": "2022-11-02",
+   "venue": "Red Rocks Amphitheater",
+   "seconds": 554
+  },
+  {
+   "id": "kglw2023-03-09.daank",
+   "file": "17 Float Along - Fill Your Lungs.mp3",
+   "date": "2023-03-09",
+   "venue": "Den Grå Hal",
+   "seconds": 984
+  },
+  {
+   "id": "kglw2024-03-18",
+   "file": "kglw2024-03-18-hi8_15.mp3",
+   "date": "2024-03-18",
+   "venue": "Teatro Vorterix",
+   "seconds": 963
+  },
+  {
+   "id": "kglw2024-05-22.Hamburg24",
+   "file": "02 - Float Along – Fill Your Lungs.mp3",
+   "date": "2024-05-22",
+   "venue": "Stadtpark Open Air",
+   "seconds": 1002
+  },
+  {
+   "id": "kglw2024-08-19.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live at Suffolk Downs, Boston, MA (8-19-24) - 17 Float Along - Fill Your Lungs (Live).mp3",
+   "date": "2024-08-19",
+   "venue": "The Stage at Suffolk Downs",
+   "seconds": 902
+  },
+  {
+   "id": "kglw2024-09-09.lateshowbandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live at Red Rocks Amphitheatre LATE- Morrison- CO (9-9-24) (1)/King Gizzard & The Lizard Wizard - Live at Red Rocks Amphitheatre LATE, Morrison, CO (9-9-24) - 19 Float Along - Fill Your Lungs (Live).mp3",
+   "date": "2024-09-09",
+   "venue": "Red Rocks Amphitheatre",
+   "seconds": 644
+  },
+  {
+   "id": "kglw2024-11-21.bandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live in Miami '24 - 06 Float Along - Fill Your Lungs (Live in Miami '24).mp3",
+   "date": "2024-11-21",
+   "venue": "Factory Town",
+   "seconds": 758
+  },
+  {
+   "id": "kglw2025-08-17.SBD.wav",
+   "file": "King Gizzard & The Lizard Wizard - Live at Field of Vision '25 - 68 Float Along - Fill Your Lungs (Live at Field of Vision '25).mp3",
+   "date": "2025-08-17",
+   "venue": "Field of Vision at Meadow Creek",
+   "seconds": 713
+  }
  ]
 }

@@ -50,6 +50,9 @@ const SONGS = [...new Set([...songsSrc.matchAll(/title: '((?:[^'\\]|\\.)*)'|titl
 /** Letters and digits only, and no leading "the" ("Lord of Lightning" is The Lord of Lightning). */
 const norm = (s) => s.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]/g, '').replace(/^the/, '');
 const WANT = new Map(SONGS.map((t) => [norm(t), t]));
+/** Other names a song goes by on tapers' set lists: the closer of Float Along is mostly just "Fill Your Lungs" live. */
+const ALIASES = { 'Fill Your Lungs': 'Float Along – Fill Your Lungs' };
+for (const [alias, song] of Object.entries(ALIASES)) if (SONGS.includes(song)) WANT.set(norm(alias), song);
 
 async function json(url, tries = 4) {
   for (let i = 0; ; i++) {
