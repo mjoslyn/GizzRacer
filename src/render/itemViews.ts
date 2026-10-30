@@ -10,6 +10,7 @@ import { arrowGeometry, eyeFigure } from './mindfuzz';
 import { cameraParts, poseCameras } from './mendThePast';
 import { cutleryParts, poseCutlery } from './alteredBeastII';
 import { fangParts, poseFangs } from './alteredBeastIII';
+import { poseStomp, stompParts } from './alteredBeastI';
 import { BOX_RESPAWN, SHIELD_ITEMS, WAVE_RANGE, type ItemHolder, type ItemSystem } from '../items/items';
 import type { KartState } from '../physics/kart';
 import type { HazardSystem } from '../items/hazards';
@@ -1377,6 +1378,10 @@ export class HazardsView {
           // A jaw of nine pearl fangs across the road, five down from a beam of gum and four up out of the road.
           parts.push(...fangParts(obj, pose.radius));
           break;
+        case 'stomps':
+          // The altered beast's foot, raised over the road and coming down.
+          parts.push(...stompParts(obj));
+          break;
         case 'pills': {
           // A giant capsule, two-tone, tumbling end over end across the road: the right pill or the wrong one.
           const pill = pillFigure(pose.radius);
@@ -2274,6 +2279,9 @@ export class HazardsView {
           }
           break;
         }
+        case 'stomps':
+          poseStomp(obj, parts, p, elapsed);
+          break;
         case 'cameras':
           poseCameras(obj, parts, p, elapsed);
           break;

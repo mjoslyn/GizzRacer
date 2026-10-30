@@ -7,9 +7,10 @@ import { dyeGroundTexture, wallpaperTexture as flockedWallpaperTexture } from '.
 import { damBankTexture, fenceTexture, paddockTexture } from './floatAlong';
 import { cleaverTexture, larderWallTexture, tableclothTexture } from './alteredBeastII';
 import { fleshTexture, muscleTexture, teethTexture } from './alteredBeastIII';
+import { mudWallTexture, mudflatTexture, rubbleTexture } from './alteredBeastI';
 
 export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism' | 'factory' | 'gamma' | 'carrion' | 'wah' | 'smog' | 'dome' | 'solar' | 'inferno' | 'mind' | 'notmind' | 'cellophane' | 'mindfuzz' | 'elbow' | 'muck' | 'boogie' | 'treesea' | 'theia' | 'set' | 'change' | 'uruk' | 'headon' | 'godcall' | 'nan' | 'float' | 'newworld' | 'foe' | 'altered' | 'hollow';
-export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy' | 'hadean' | 'deshret' | 'moonpalace' | 'uruk' | 'nanshouse' | 'suburb' | 'headtrip' | 'paddock' | 'den' | 'alteredworld';
+export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy' | 'hadean' | 'deshret' | 'moonpalace' | 'uruk' | 'nanshouse' | 'suburb' | 'headtrip' | 'paddock' | 'den' | 'alteredworld' | 'mudflat';
 
 /** Everything that makes a track's world look like itself. */
 export interface Theme {
@@ -941,23 +942,23 @@ export const THEMES: Record<ThemeId, Theme> = {
     dust: 0xd8c8a0,
     barrier: { map: fenceTexture, crawl: false },
   },
-  // Altered Beast I: (placeholder, Set's look until its world is built).
+  // Altered Beast I: a new world where the old one had been, cracked mud flats under a bruised dusk after the cataclysm, the mushroom cloud still standing on the horizon.
   newworld: {
-    sky: { zenith: '#0a0a34', high: '#262a78', low: '#c86a3a', horizon: '#ffd070', below: '#c06030', ground: '#6a2a14', cloud: '255,200,150', clouds: 12, stars: { count: 140, color: '#f0f0ff' }, moon: '#f4f4ff' },
-    fog: { color: 0xc07850, near: 160, far: 860 },
-    hemi: { sky: 0xffd0a0, ground: 0x8a3a1a, intensity: 1.5 },
-    sun: { color: 0xffd890, intensity: 2.3 },
-    ground: tex.redSandTexture,
-    groundTile: 20,
-    // Walls are a temple's, blocks of sandstone with a painted frieze.
-    cliff: tex.templeWallTexture,
-    decor: 'deshret',
-    distant: { shape: 'mesa', color: 0x5a2414 },
-    haze: 0.8,
-    duotone: [0x0a0420, 0xd05a20, 0xffe890],
+    sky: { zenith: '#1e1a2e', high: '#4a3a52', low: '#a8665a', horizon: '#e8a46a', below: '#8a6a4a', ground: '#4a3a2a', cloud: '200,170,160', clouds: 26, stars: { count: 40, color: '#f0e8e0' } },
+    fog: { color: 0x9a7a68, near: 150, far: 820 },
+    hemi: { sky: 0xe8c8b0, ground: 0x5a4434, intensity: 1.5 },
+    sun: { color: 0xffc890, intensity: 2.2 },
+    ground: mudflatTexture,
+    groundTile: 24,
+    // Walls are mud laid down in bands and cracked, the beast's claws raked across them.
+    cliff: mudWallTexture,
+    decor: 'mudflat',
+    distant: { shape: 'hill', color: 0x4a3a40 },
+    haze: 0.5,
+    duotone: [0x140c10, 0xb0603a, 0xf8e0b0],
     skyCycle: false,
-    dust: 0xd08050,
-    barrier: { map: tex.templeWallTexture, crawl: false },
+    dust: 0xc8b090,
+    barrier: { map: rubbleTexture, crawl: false },
   },
   // Altered Beast II: the beast's den, its table laid, the karts the size of a meal on it: a blood-red dusk through the smoke of its candles, its crags dark on the horizon; meat and bone for the duotone.
   foe: {

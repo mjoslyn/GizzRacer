@@ -366,6 +366,13 @@ const STYLES: Record<DecorKind, DetailStyle> = {
     boards: { words: ['ALTERED BEAST', 'ALTER ME', 'I SEE YOU', 'NINE PEARL FANGS'], bg: ['#3a0a18', '#6a1a3a'], fg: '#fff0e0' },
     crowd: false,
   },
+  // Broken posts of the old world's fences; nobody watching: forsaken, all alone.
+  mudflat: {
+    edge: { kind: 'fence', height: 1.0, spacing: 13, color: 0x4a3a2e, stripe: 0x8a7462 },
+    cover: { shape: 'tuft', colors: [0x7a8a40, 0x9aa050, 0xb0a060, 0x5a6a30, 0xe8d84a], count: 1500 },
+    boards: { words: ['A NEW WORLD', 'ALTER ME', 'I THINK I SEE', 'ALTERED BEAST'], bg: ['#2a1c18', '#6a3a24'], fg: '#f0dcb0' },
+    crowd: false,
+  },
   sky: {
     edge: { kind: 'star', height: 1.4, spacing: 14, color: 0xffe8a0, stripe: 0xffffff },
     light: 0xfff0ff,
@@ -448,7 +455,7 @@ export function roadPaint(ribbon: Ribbon, decor: DecorKind, edgeLine?: number, e
     line[i] = -Math.max(-0.55, Math.min(0.55, (sum / 25) * 14));
   }
   const paintable = new Set(['asphalt']);
-  const wearable = new Set(['asphalt', 'salt', 'rock', 'sand', 'boards', 'regolith', 'wet', 'paving', 'reef', 'flagstone', 'membrane', 'steel', 'scorched', 'fret', 'tar', 'gilded', 'heatshield', 'brimstone', 'neural', 'film', 'fuzz', 'carpet', 'muck', 'moss', 'hieroglyph', 'mudbrick', 'florals', 'bitumen', 'gravel', 'butcherfur', 'bitumen', 'gravel']);
+  const wearable = new Set(['asphalt', 'salt', 'rock', 'sand', 'boards', 'regolith', 'wet', 'paving', 'reef', 'flagstone', 'membrane', 'steel', 'scorched', 'fret', 'tar', 'gilded', 'heatshield', 'brimstone', 'neural', 'film', 'fuzz', 'carpet', 'muck', 'moss', 'hieroglyph', 'mudbrick', 'florals', 'bitumen', 'gravel', 'butcherfur', 'bitumen', 'gravel', 'crust']);
   for (let i = 0; i < segs; i++) {
     const j = (i + 1) % n;
     const sMid = (sp.dist[i] + (j === 0 ? sp.length : sp.dist[j])) / 2;

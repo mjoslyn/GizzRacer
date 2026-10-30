@@ -534,6 +534,11 @@ export class Sfx {
       this.hit(0.12, 600, 0.55);
       this.tone(95, 0.5, 'sawtooth', 0.1, 60, 0, true);
     }
+    // The beast's footfall: a thud that shakes the ground, and the crack of the earth giving.
+    if (by === 'stomps') {
+      this.hit(0.7, 60, 0.9);
+      this.tone(48, 0.9, 'sine', 0.16, 30);
+    }
     // A wave breaking over you: a crash of white noise; a glider comes in with a whistle of wind.
     if (by === 'waves') this.whoosh(0.8, 2400, 300, 0.35);
     if (by === 'gliders') this.whoosh(0.5, 1800, 500, 0.2);

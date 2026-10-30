@@ -31,8 +31,9 @@ export interface HazardPose {
    * first sheet is at -gap, the second at +gap). The sun: its lateral (the
    * moon is at -gap). The plant of immortality: its lateral. Santa's
    * presents: the lateral of the roof's edge he throws them from. The
-   * beast's knife and fork: the fork's lateral (the knife is the pose). 0
-   * for the rest.
+   * beast's knife and fork: the fork's lateral (the knife is the pose). A
+   * beast's footfall: how far its shockwave's ring has run out from the foot.
+   * 0 for the rest.
    */
   gap: number;
   /** A row of arrows: the lane with no arrow in it, 0 (leftmost) to 3. The plant of immortality: 1 while it's growing there to be had, else 0. A present: 1 once it has landed open, a gift. -1 for the rest. */
@@ -138,6 +139,7 @@ export const WAVE_SPIN = 1.0;
  * - threaded through between the beast's knife and fork as they pull apart, a boost
  * - a breath of air caught as it rises up through the road floats you up, and you come down on a boost
  * - a jaw of nine pearl fangs driven through as it opens again after a bite is a boost
+ * - hopped as it passes, the ring of a beast's footfall running across the road is a boost
  */
 /** A reward can't pay out again to the same kart for this long. */
 export const REWARD_COOLDOWN = 1.5;
@@ -619,6 +621,45 @@ export function bubbleRise(u: number): number {
   return BUBBLE_HEIGHT * Math.min(1, (u - B.rise) / (B.burst - B.rise));
 }
 
+/**
+ * The altered beast's footfalls, Altered Beast I's: a foot raised high
+ * over the road (its shadow on it the warning: there it'll come down), the
+ * stamp, and from where it lands a shockwave ringing out across the road
+ * while it stands there; then it lifts away. "You feel his rhythm as he
+ * tramples the earth": the footfalls down a stretch land one after another,
+ * left foot and right, the far ones first, coming closer.
+ */
+export const STOMP_STAGES = { fall: 0.3, land: 0.36, gone: 0.62, lift: 0.8 } as const;
+/** The foot: how big it is, and how high it's raised. */
+export const STOMP_FOOT = 3.2;
+export const STOMP_HANG = 14;
+/** Each footfall down a stretch comes down this share of the period after the one beyond it. */
+export const STOMP_LAG = 0.18;
+/** How deep the shockwave's ring is, along the ground. */
+export const STOMP_BAND = 1.4;
+/** Caught by the ring your feet are stuck to the terrain: this much of your speed kept. Hopped as it passes: a boost this long. Under the foot as it lands: trampled, spun out. */
+export const STOMP_SLOW = 0.55;
+export const STOMP_BOOST = 0.8;
+export const STOMP_SPIN = 1.1;
+/** Either side of the stamp, this share of the period: what's under the foot is trampled. */
+export const STOMP_CRUSH = 0.03;
+
+/** How high the foot is over the road at cycle stage `u`: raised, coming down, planted, lifting away. */
+export function stompLift(u: number): number {
+  const S = STOMP_STAGES;
+  if (u < S.fall) return STOMP_HANG;
+  if (u < S.land) return STOMP_HANG * (1 - ((u - S.fall) / (S.land - S.fall)) ** 2);
+  if (u < S.lift) return 0;
+  return STOMP_HANG * Math.min(1, ((u - S.lift) / (1 - S.lift)) * 1.4);
+}
+
+/** How far the shockwave's ring has run out from the foot at cycle stage `u`, `reach` when it's gone; 0 when there's none. */
+export function stompRing(u: number, reach: number): number {
+  const S = STOMP_STAGES;
+  if (u < S.land || u >= S.gone) return 0;
+  return STOMP_FOOT + (reach - STOMP_FOOT) * Math.sqrt((u - S.land) / (S.gone - S.land));
+}
+
 /** How far a tree has toppled at cycle stage `u`: 0 upright, a lean while it creaks, 1 lying across the road. */
 export function timberFall(u: number): number {
   const T = TIMBER_STAGES;
@@ -710,6 +751,7 @@ const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds' | 'butterfli
   cutlery: CUTLERY_SPIN,
   bubbles: 0,
   fangs: FANG_SPIN,
+  stomps: STOMP_SPIN,
 };
 
 /** Kinds that fill the whole road across, on a rhythm: nothing to steer round, only to time. */
@@ -1289,6 +1331,24 @@ export class HazardSystem {
           p.phase = u;
           break;
         }
+        case 'stomps': {
+          // A footfall: the foot comes down on one side of the road or the other, left foot and right, and its ring runs out across it.
+          const at = def.at[i];
+          const tt = (t + 10) / def.period + i * STOMP_LAG;
+          const cycle = Math.floor(tt);
+          const u = tt - cycle;
+          const hw = this.halfWidth(at);
+          const side = (cycle + i) % 2 === 0 ? 1 : -1;
+          const lat = side * hw * 0.45;
+          this.place(p, at, lat, stompLift(u));
+          p.radius = STOMP_FOOT;
+          p.side = side;
+          // The ring runs out until it's past the far edge of the road.
+          p.gap = stompRing(u, hw + Math.abs(lat) + 3);
+          p.active = p.gap > 0;
+          p.phase = u;
+          break;
+        }
         case 'dustDevils':
         case 'butterflies':
         case 'tornadoes':
@@ -1478,6 +1538,10 @@ export class HazardSystem {
         }
         if (p.kind === 'bubbles') {
           this.bubble(hit, p, s);
+          continue;
+        }
+        if (p.kind === 'stomps') {
+          this.stomp(hit, p, s);
           continue;
         }
         if (p.kind === 'fuzz' && p.phase >= FUZZ_STAGES.gold && p.phase < FUZZ_STAGES.red) {
@@ -1761,6 +1825,12 @@ export class HazardSystem {
         const fz = Math.cos(p.heading);
         out.push({ x: p.ax - fz * p.gap, z: p.az + fx * p.gap, r: FORK_RADIUS, vx: 0, vz: 0 });
         for (const d of [-1, 0, 1]) out.push({ x: p.x + fx * d * (KNIFE_LENGTH / 3), z: p.z + fz * d * (KNIFE_LENGTH / 3), r: KNIFE_LENGTH / 4, vx: p.vx, vz: p.vz });
+        continue;
+      }
+      if (p.kind === 'stomps') {
+        // The foot, from just before it comes down until it lifts away; the ring runs right across the road, nothing to steer round.
+        if (p.phase < STOMP_STAGES.fall - 0.12 || p.phase >= STOMP_STAGES.lift) continue;
+        out.push({ x: p.x, z: p.z, r: p.radius, vx: 0, vz: 0 });
         continue;
       }
       if (p.kind === 'bubbles') {
@@ -2207,6 +2277,36 @@ export class HazardSystem {
     s.extX += rx * side * BUBBLE_SHOVE;
     s.extZ += rz * side * BUBBLE_SHOVE;
     s.speed *= BUBBLE_SLOW;
+    hit.push({ kart: s, by: p.kind });
+  }
+
+  /**
+   * A beast's footfall: under the foot as it stamps, trampled; planted, a
+   * foot to drive round. Its ring running out across the road: caught on
+   * the ground, your feet stick to the terrain and you're slowed; hopped as
+   * it passes, a boost.
+   */
+  private stomp(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+    const S = STOMP_STAGES;
+    const d = Math.hypot(s.x - p.x, s.z - p.z);
+    if (d <= p.radius + KART_RADIUS && p.phase >= S.land - STOMP_CRUSH && p.phase < S.lift) {
+      if (p.phase >= S.land + STOMP_CRUSH) {
+        this.pushOut(p, s);
+        return;
+      }
+      if (this.cooldown.has(s)) return;
+      this.cooldown.set(s, HIT_COOLDOWN);
+      if (spinOut(s, STOMP_SPIN)) hit.push({ kart: s, by: p.kind });
+      return;
+    }
+    if (!p.active || Math.abs(d - p.gap) > STOMP_BAND / 2 + KART_RADIUS) return;
+    if (!s.grounded || s.hopAge < HOP_WINDOW) {
+      this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, STOMP_BOOST)));
+      return;
+    }
+    if (this.cooldown.has(s)) return;
+    this.cooldown.set(s, HIT_COOLDOWN);
+    s.speed *= STOMP_SLOW;
     hit.push({ kart: s, by: p.kind });
   }
 
