@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 import * as tex from './textures';
 import { DESERT_SKY, type SkyColors } from './textures';
-import { floorboardsTexture, skirtingTexture, wallpaperTexture } from './mendThePast';
+import { floorboardsTexture, skirtingTexture, wallpaperTexture as nanWallpaperTexture } from './mendThePast';
 import { lawnTexture, palingTexture, picketTexture } from './godIsCalling';
-import { dyeGroundTexture, wallpaperTexture } from './headOnPill';
+import { dyeGroundTexture, wallpaperTexture as flockedWallpaperTexture } from './headOnPill';
 
 export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism' | 'factory' | 'gamma' | 'carrion' | 'wah' | 'smog' | 'dome' | 'solar' | 'inferno' | 'mind' | 'notmind' | 'cellophane' | 'mindfuzz' | 'elbow' | 'muck' | 'boogie' | 'treesea' | 'theia' | 'set' | 'change' | 'uruk' | 'headon' | 'godcall' | 'nan' | 'float';
 export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy' | 'hadean' | 'deshret' | 'moonpalace' | 'uruk' | 'nanshouse' | 'suburb' | 'headtrip';
@@ -872,14 +872,14 @@ export const THEMES: Record<ThemeId, Theme> = {
     ground: dyeGroundTexture,
     groundTile: 34,
     // Walls are sixties flocked wallpaper.
-    cliff: wallpaperTexture,
+    cliff: flockedWallpaperTexture,
     decor: 'headtrip',
     distant: { shape: 'hill', color: 0x3a0a4a },
     haze: 0.5,
     duotone: [0x12002a, 0xd0306a, 0xffd070],
     skyCycle: true,
     dust: 0xc080b0,
-    barrier: { map: wallpaperTexture, crawl: false },
+    barrier: { map: flockedWallpaperTexture, crawl: false },
   },
   // God Is Calling Me Back Home: an Australian suburb on a hill at Christmas, high summer at dusk, fairy lights coming on, and the sky opening with light.
   godcall: {
@@ -910,7 +910,7 @@ export const THEMES: Record<ThemeId, Theme> = {
     ground: floorboardsTexture,
     groundTile: 18,
     // Walls are nan's: striped wallpaper over a dado rail, a skirting board along the floor.
-    cliff: wallpaperTexture,
+    cliff: nanWallpaperTexture,
     decor: 'nanshouse',
     // Wardrobes and dressers, dark against the lamplight.
     distant: { shape: 'city', color: 0x2a1810 },
