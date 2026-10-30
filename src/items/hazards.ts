@@ -135,6 +135,7 @@ export const WAVE_SPIN = 1.0;
  * - a present that lands open is a gift: a boost, and an item if your hands are empty; a shut one rammed on a boost bursts and the boost runs on
  * - the right pill tumbling across the road (its colour shows which) is a boost to drive through
  * - a breath of air caught as it rises up through the road floats you up, and you come down on a boost
+ * - skirting the rim of a hollow in the road as it closes, it slings you on, a boost
  */
 /** A reward can't pay out again to the same kart for this long. */
 export const REWARD_COOLDOWN = 1.5;
@@ -511,6 +512,33 @@ export function bubbleRise(u: number): number {
   return BUBBLE_HEIGHT * Math.min(1, (u - B.rise) / (B.burst - B.rise));
 }
 
+/**
+ * Altered Beast IV's hollows, the void the beast feels within: a crack in
+ * the road, yawning open into a dark hollow, open a while, closing again.
+ * They go in a row on the song's eleven-beat bar (eleven sixteenths, three
+ * and three and three and two): each opens three sixteenths after the one
+ * before, the last two after that. Over one while it's open, it drags you
+ * down, slowed; skirting its rim as it closes, it slings you on.
+ */
+export const VOID_STAGES = { yawn: 0.3, open: 0.42, close: 0.7, shut: 0.86 } as const;
+export const VOID_RADIUS = 3.4;
+/** The rim, either side of the hollow's edge as it closes: skirt it and it slings you on. */
+export const VOID_RIM = 1.2;
+/** Dragged down: you keep this share of your speed; slung on the rim, a boost this long. */
+export const VOID_SLOW = 0.55;
+export const VOID_SLING = 0.9;
+/** Where each of a row's hollows opens in the bar, in sixteenths of it: on three and three and three and two. */
+export const VOID_BEATS = [0, 3, 6, 9] as const;
+
+/** How wide a hollow is open at cycle stage `u`: shut (a crack) at first, yawning open, open, then closing again to nothing. */
+export function voidRadius(u: number): number {
+  const V = VOID_STAGES;
+  if (u < V.yawn || u >= V.shut) return 0;
+  if (u < V.open) return (VOID_RADIUS * (u - V.yawn)) / (V.open - V.yawn);
+  if (u < V.close) return VOID_RADIUS;
+  return VOID_RADIUS * (1 - (u - V.close) / (V.shut - V.close));
+}
+
 /** How far a tree has toppled at cycle stage `u`: 0 upright, a lean while it creaks, 1 lying across the road. */
 export function timberFall(u: number): number {
   const T = TIMBER_STAGES;
@@ -600,6 +628,7 @@ const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds' | 'butterfli
   presents: PRESENT_SPIN,
   pills: PILL_SPIN,
   bubbles: 0,
+  void: 0,
 };
 
 /** Kinds that fill the whole road across, on a rhythm: nothing to steer round, only to time. */
@@ -1157,6 +1186,20 @@ export class HazardSystem {
           p.phase = u;
           break;
         }
+        case 'void': {
+          // A hollow in the road, somewhere across it, each in the row opening on its beat of the eleven.
+          const at = def.at[i];
+          const tt = (t + 10) / def.period - VOID_BEATS[i % VOID_BEATS.length] / 11;
+          const cycle = Math.floor(tt);
+          const u = tt - cycle;
+          const lat = this.halfWidth(at) * 0.5 * Math.sin(cycle * 2.39 + i * 1.9);
+          this.place(p, at, lat, 0);
+          p.radius = VOID_RADIUS;
+          // Dragging from when it yawns open until it starts to close; closing, its rim slings.
+          p.active = u >= VOID_STAGES.yawn && u < VOID_STAGES.close;
+          p.phase = u;
+          break;
+        }
         case 'dustDevils':
         case 'butterflies':
         case 'tornadoes':
@@ -1338,6 +1381,10 @@ export class HazardSystem {
         }
         if (p.kind === 'bubbles') {
           this.bubble(hit, p, s);
+          continue;
+        }
+        if (p.kind === 'void') {
+          this.hollow(hit, p, s);
           continue;
         }
         if (p.kind === 'fuzz' && p.phase >= FUZZ_STAGES.gold && p.phase < FUZZ_STAGES.red) {
@@ -1618,6 +1665,12 @@ export class HazardSystem {
         // From just before it bursts: as far as the burst reaches.
         if (p.phase < BUBBLE_STAGES.burst - 0.1 || p.phase >= BUBBLE_STAGES.gone) continue;
         out.push({ x: p.x, z: p.z, r: p.radius * BUBBLE_BURST, vx: 0, vz: 0 });
+        continue;
+      }
+      if (p.kind === 'void') {
+        // From just before it yawns open until it closes: the whole hollow.
+        if (p.phase < VOID_STAGES.yawn - 0.1 || p.phase >= VOID_STAGES.close) continue;
+        out.push({ x: p.x, z: p.z, r: p.radius, vx: 0, vz: 0 });
         continue;
       }
       if (p.kind === 'sheets') {
@@ -2014,6 +2067,24 @@ export class HazardSystem {
     s.extX += rx * side * BUBBLE_SHOVE;
     s.extZ += rz * side * BUBBLE_SHOVE;
     s.speed *= BUBBLE_SLOW;
+    hit.push({ kart: s, by: p.kind });
+  }
+
+  /**
+   * A hollow in the road: over it while it's open, it drags you down,
+   * slowed; on its rim as it closes, it slings you on, a boost.
+   */
+  private hollow(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+    const r = voidRadius(p.phase);
+    if (r <= 0) return;
+    const d = Math.hypot(s.x - p.x, s.z - p.z);
+    if (p.phase >= VOID_STAGES.close) {
+      if (Math.abs(d - r) <= VOID_RIM + KART_RADIUS) this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, VOID_SLING)));
+      return;
+    }
+    if (d > r || this.cooldown.has(s)) return;
+    this.cooldown.set(s, HIT_COOLDOWN);
+    s.speed *= VOID_SLOW;
     hit.push({ kart: s, by: p.kind });
   }
 

@@ -724,12 +724,12 @@ const PALETTES: Record<GenTheme, Palette> = {
   hollow: {
     surface: 'bone',
     deck: 'bone',
-    alt: 'sand',
-    hazards: ['sunMoon'],
-    start: 'setGate',
-    landmarks: ['setGate'],
+    alt: 'rock',
+    hazards: ['void'],
+    start: 'culDeSac',
+    landmarks: ['culDeSac', 'ribcage'],
     tallWalls: 6,
-    places: ['Jackal', 'Snake', 'Tornado', 'Tomb', 'Duality', 'Sandstorm', 'Moonbeam', 'Hieroglyph', 'Reset'],
+    places: ['Hollow', 'Void', 'Canyon', 'Cul-de-Sac', 'Ribcage', 'Sport', 'Savage', 'Never', 'Hell and Back'],
     music: { lap: 'altered-beast-iv', finalLap: 'altered-beast-iv-final-lap' },
   },
 };
@@ -1478,6 +1478,10 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
       case 'bubbles':
         // A run of breaths of air up through the road, each a beat after the one before.
         hazards.push({ kind, at: at(count + 1), period: 4.5 });
+        break;
+      case 'void':
+        // A row of hollows in the road, opening one after another on the eleven-beat bar.
+        hazards.push({ kind, at: at(count + 1), period: 4.4 });
         break;
       case 'strings':
         // A run of strings down the stretch, plucked one after another.

@@ -524,6 +524,11 @@ export class Sfx {
       this.hit(0.08, 1800, 0.35);
       this.tone(320, 0.25, 'sine', 0.1, 900);
     }
+    // Dragged down into a hollow: a deep, empty fall, and the wind across its mouth.
+    if (by === 'void') {
+      this.tone(110, 0.9, 'sine', 0.14, 30);
+      this.whoosh(0.7, 900, 200, 0.18);
+    }
     // A wave breaking over you: a crash of white noise; a glider comes in with a whistle of wind.
     if (by === 'waves') this.whoosh(0.8, 2400, 300, 0.35);
     if (by === 'gliders') this.whoosh(0.5, 1800, 500, 0.2);

@@ -5,9 +5,10 @@ import { floorboardsTexture, skirtingTexture, wallpaperTexture as nanWallpaperTe
 import { lawnTexture, palingTexture, picketTexture } from './godIsCalling';
 import { dyeGroundTexture, wallpaperTexture as flockedWallpaperTexture } from './headOnPill';
 import { damBankTexture, fenceTexture, paddockTexture } from './floatAlong';
+import { ashTexture, sinewTexture, vertebraeTexture } from './alteredBeastIV';
 
 export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism' | 'factory' | 'gamma' | 'carrion' | 'wah' | 'smog' | 'dome' | 'solar' | 'inferno' | 'mind' | 'notmind' | 'cellophane' | 'mindfuzz' | 'elbow' | 'muck' | 'boogie' | 'treesea' | 'theia' | 'set' | 'change' | 'uruk' | 'headon' | 'godcall' | 'nan' | 'float' | 'newworld' | 'foe' | 'altered' | 'hollow';
-export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy' | 'hadean' | 'deshret' | 'moonpalace' | 'uruk' | 'nanshouse' | 'suburb' | 'headtrip' | 'paddock';
+export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy' | 'hadean' | 'deshret' | 'moonpalace' | 'uruk' | 'nanshouse' | 'suburb' | 'headtrip' | 'paddock' | 'hollowness';
 
 /** Everything that makes a track's world look like itself. */
 export interface Theme {
@@ -993,22 +994,22 @@ export const THEMES: Record<ThemeId, Theme> = {
     dust: 0xd08050,
     barrier: { map: tex.templeWallTexture, crawl: false },
   },
-  // Altered Beast IV: (placeholder, Set's look until its world is built).
+  // Altered Beast IV: inside the beast that feels nothing, hollowness all round: ash and bone under a numb grey sky, the colour drained out of all of it but the red of the canyon in its chest.
   hollow: {
-    sky: { zenith: '#0a0a34', high: '#262a78', low: '#c86a3a', horizon: '#ffd070', below: '#c06030', ground: '#6a2a14', cloud: '255,200,150', clouds: 12, stars: { count: 140, color: '#f0f0ff' }, moon: '#f4f4ff' },
-    fog: { color: 0xc07850, near: 160, far: 860 },
-    hemi: { sky: 0xffd0a0, ground: 0x8a3a1a, intensity: 1.5 },
-    sun: { color: 0xffd890, intensity: 2.3 },
-    ground: tex.redSandTexture,
-    groundTile: 20,
-    // Walls are a temple's, blocks of sandstone with a painted frieze.
-    cliff: tex.templeWallTexture,
-    decor: 'deshret',
-    distant: { shape: 'mesa', color: 0x5a2414 },
-    haze: 0.8,
-    duotone: [0x0a0420, 0xd05a20, 0xffe890],
+    sky: { zenith: '#0e0c12', high: '#2a2630', low: '#5e5258', horizon: '#b8a09c', below: '#6a5c5a', ground: '#3a3234', cloud: '160,144,148', clouds: 18, stars: { count: 50, color: '#d8d0d0' }, moon: '#e8e0d8' },
+    fog: { color: 0x6e6064, near: 130, far: 780 },
+    hemi: { sky: 0xdcd0d0, ground: 0x3a2a2c, intensity: 1.35 },
+    sun: { color: 0xf0dcd4, intensity: 2.0 },
+    ground: ashTexture,
+    groundTile: 18,
+    // Walls are the canyon's in the chest: red sinew in bands, gristle between.
+    cliff: sinewTexture,
+    decor: 'hollowness',
+    distant: { shape: 'mountain', color: 0x2c2428 },
+    haze: 0.2,
+    duotone: [0x060408, 0x8a2228, 0xf0e4d0],
     skyCycle: false,
-    dust: 0xd08050,
-    barrier: { map: tex.templeWallTexture, crawl: false },
+    dust: 0xb0a6a2,
+    barrier: { map: vertebraeTexture, crawl: false },
   },
 };
