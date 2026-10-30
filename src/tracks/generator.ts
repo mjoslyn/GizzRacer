@@ -678,13 +678,14 @@ const PALETTES: Record<GenTheme, Palette> = {
   },
   float: {
     surface: 'gravel',
-    deck: 'gravel',
-    alt: 'sand',
-    hazards: ['sunMoon'],
-    start: 'setGate',
-    landmarks: ['setGate'],
+    deck: 'boards',
+    alt: 'rock',
+    liquid: 'water',
+    hazards: ['bubbles'],
+    start: 'oldFord',
+    landmarks: ['oldFord'],
     tallWalls: 6,
-    places: ['Jackal', 'Snake', 'Tornado', 'Tomb', 'Duality', 'Sandstorm', 'Moonbeam', 'Hieroglyph', 'Reset'],
+    places: ['Old Ford', 'Barn', 'Carpet Shades', 'Paper Folds', 'Coffee Mug', 'Deep Breath', 'Dam', 'Paddock', 'Lungs'],
     music: { lap: 'float-along', finalLap: 'float-along-final-lap' },
   },
   newworld: {
@@ -1473,6 +1474,10 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
         break;
       case 'presents':
         hazards.push({ kind, at: at(count - 1), period: 4.8 });
+        break;
+      case 'bubbles':
+        // A run of breaths of air up through the road, each a beat after the one before.
+        hazards.push({ kind, at: at(count + 1), period: 4.5 });
         break;
       case 'strings':
         // A run of strings down the stretch, plucked one after another.

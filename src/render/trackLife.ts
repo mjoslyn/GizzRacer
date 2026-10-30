@@ -80,6 +80,7 @@ const LIFE: Record<DecorKind, LifeSpec> = {
   hadean: { flock: { kind: 'orb', color: 0xe8f0ff, count: 14, height: 22, size: 0.7, glow: true }, motes: { color: 0xff9a40, count: 400, size: 0.45, drift: 'rise', glow: true } },
   deshret: { flock: { kind: 'vulture', color: 0x1a1008, count: 8, height: 28, size: 1.5 }, motes: { color: 0xe8a070, count: 420, size: 0.5, drift: 'blow' } },
   moonpalace: { flock: { kind: 'orb', color: 0xff5a30, count: 16, height: 14, size: 0.8, glow: true }, motes: { color: 0xffe080, count: 300, size: 0.35, drift: 'float', glow: true } },
+  paddock: { flock: { kind: 'bird', color: 0xe890a8, count: 16, height: 18, size: 0.9 }, motes: { color: 0xfff8e8, count: 320, size: 0.45, drift: 'float' } },
   uruk: { flock: { kind: 'bird', color: 0x2a2a30, count: 12, height: 24, size: 1.0 }, motes: { color: 0xc8c0b0, count: 300, size: 0.4, drift: 'blow' } },
   nanshouse: { flock: { kind: 'moth', color: 0xe8d8b0, count: 14, height: 16, size: 0.8 }, motes: { color: 0xffe8c0, count: 420, size: 0.3, drift: 'float', glow: true } },
   // Cockatoos screeching over the rooftops, and Christmas beetles in the warm dusk.

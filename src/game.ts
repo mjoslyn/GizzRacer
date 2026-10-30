@@ -2006,6 +2006,7 @@ const HIT_TEXT: Record<ItemKind | HazardKind, string> = {
   cameras: 'SEEN!',
   presents: 'SACKED!',
   pills: 'THE WRONG PILL!',
+  bubbles: 'POP!',
 };
 
 /** What a hazard used well says: the ones that can help. */
@@ -2064,6 +2065,7 @@ const BONUS_TEXT: Record<HazardKind, string> = {
   cameras: 'OFF CAMERA!',
   presents: 'MERRY CHRISTMAS!',
   pills: 'THE RIGHT PILL!',
+  bubbles: 'FLOAT ALONG!',
 };
 
 /** Takes a group out of the scene and frees what it built. */
