@@ -14,6 +14,8 @@ export interface PostFxParams {
   box?: number;
   /** Under water, 0..1: blue-green, rippling, with caustic light. */
   water?: number;
+  /** After the wrong pill (Head On/Pill), 0..1: the screen swims, swirling round its middle, the colours running. */
+  swim?: number;
   /** The duotone's shadows, body and highlights (the track theme's `duotone`). */
   palette?: readonly [number, number, number];
 }
@@ -36,6 +38,7 @@ uniform float uVhs;
 uniform float uDuo;
 uniform float uBox;
 uniform float uWater;
+uniform float uSwim;
 uniform vec3 uDuoDark;
 uniform vec3 uDuoMid;
 uniform vec3 uDuoHigh;
@@ -59,6 +62,15 @@ void main() {
     float w = sin(uv.y * 140.0 + uTime * 7.0) * 0.6 + sin(uv.y * 63.0 - uTime * 4.3 + uv.x * 24.0) * 0.4;
     float v = sin(uv.x * 90.0 + uTime * 5.1) * 0.5;
     uv += vec2(w, v * 0.5) * 0.0024 * uHaze * band;
+  }
+
+  // The wrong pill: the picture swirls round its middle and swims.
+  if (uSwim > 0.0) {
+    vec2 c = (uv - 0.5) * vec2(uAspect, 1.0);
+    float a = uSwim * 0.4 * sin(uTime * 1.6) * (1.0 - smoothstep(0.0, 0.9, length(c)));
+    c = mat2(cos(a), -sin(a), sin(a), cos(a)) * c;
+    uv = 0.5 + c / vec2(uAspect, 1.0);
+    uv += vec2(sin(uv.y * 9.0 + uTime * 3.1), cos(uv.x * 7.0 + uTime * 2.3)) * 0.012 * uSwim;
   }
 
   // Under water everything wavers.
@@ -95,6 +107,8 @@ void main() {
     float edge = smoothstep(0.5 - pulse * 0.08, 0.85, r);
     col.rgb = mix(col.rgb, kc, edge * uKaleido * (0.45 + 0.55 * pulse));
   }
+
+  if (uSwim > 0.0) col.rgb = mix(col.rgb, col.rgb * hue(fract(uv.x * 0.5 + uv.y * 0.3 + uTime * 0.2)) * 1.6, 0.35 * uSwim);
 
   if (uWater > 0.0) {
     // Light filtered blue-green, darker with depth down the screen, and the dance of caustics.
@@ -156,6 +170,7 @@ export class PostFx {
           uDuo: { value: 0 },
           uBox: { value: 0 },
           uWater: { value: 0 },
+          uSwim: { value: 0 },
           uDuoDark: { value: new THREE.Color(0x0a0002) },
           uDuoMid: { value: new THREE.Color(0xc00410) },
           uDuoHigh: { value: new THREE.Color(0xf0c020) },
@@ -174,7 +189,8 @@ export class PostFx {
     const duo = p.duo ?? 0;
     const box = p.box ?? 0;
     const water = p.water ?? 0;
-    if (p.haze < 0.01 && p.kaleido < 0.01 && vhs < 0.01 && duo < 0.01 && box < 0.01 && water < 0.01) {
+    const swim = p.swim ?? 0;
+    if (p.haze < 0.01 && p.kaleido < 0.01 && vhs < 0.01 && duo < 0.01 && box < 0.01 && water < 0.01 && swim < 0.01) {
       r.render(scene, camera);
       return;
     }
@@ -197,6 +213,7 @@ export class PostFx {
     u.uDuo.value = duo;
     u.uBox.value = box;
     u.uWater.value = water;
+    u.uSwim.value = swim;
     if (p.palette) {
       (u.uDuoDark.value as THREE.Color).setHex(p.palette[0]);
       (u.uDuoMid.value as THREE.Color).setHex(p.palette[1]);

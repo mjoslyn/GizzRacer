@@ -129,6 +129,7 @@ export const WAVE_SPIN = 1.0;
  * - the moon rolling across the road is a moonbeam to drive through, a boost
  * - a lightning string still humming after it's plucked is a boost
  * - the plant of immortality, reached before the snake eats it, is a long boost; the snake hopped, a boost
+ * - the right pill tumbling across the road (its colour shows which) is a boost to drive through
  */
 /** A reward can't pay out again to the same kart for this long. */
 export const REWARD_COOLDOWN = 1.5;
@@ -385,6 +386,32 @@ export const SERPENT_SPIN = 1.0;
 export const SERPENT_RADIUS = 0.8;
 export const SERPENT_LENGTH = 4.5;
 
+/**
+ * Head On/Pill's capsules, giant and two-tone, tumbling end over end across
+ * the road on a rhythm, one edge to the other and back the next time. Each
+ * crossing is either the right pill or the wrong one, and its colours show
+ * which: through the right one, a boost; "I ate the wrong pill": spun out,
+ * and for a while after the steering (and the screen) swims.
+ */
+export const PILL_STAGES = { across: 0.78 } as const;
+export const PILL_RADIUS = 2.1;
+/** How far each capsule's crossing is behind the one before it along the road, as a share of the period: a rhythm. */
+export const PILL_LAG = 0.21;
+export const PILL_BOOST = 0.9;
+export const PILL_SPIN = 1.0;
+/** After the wrong pill: this long of the steering swimming. */
+export const PILL_SWIM = 3;
+
+/** Whether the capsule crossing at slot `i` on cycle `cycle` is the right pill: about half of them are. */
+export function rightPill(cycle: number, i: number): boolean {
+  return (((Math.sin(cycle * 12.9898 + i * 78.233) * 43758.5453) % 1) + 1) % 1 < 0.5;
+}
+
+/** Where a capsule is across the road at cycle stage `u`, from -1 (the edge it comes from) to 1 (the far edge); outside that it's off the road. */
+export function pillAcross(u: number): number {
+  return -1.25 + (2.5 * u) / PILL_STAGES.across;
+}
+
 /** Where the snake's head is across the road at cycle stage `u`, from -1 (the edge it comes from) to 1 (the far edge); outside that it's off the road. */
 export function serpentAcross(u: number): number {
   const S = SERPENT_STAGES;
@@ -476,6 +503,7 @@ const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds' | 'butterfli
   sunMoon: SUN_SPIN,
   strings: STRING_SPIN,
   serpents: SERPENT_SPIN,
+  pills: PILL_SPIN,
 };
 
 /** Kinds that fill the whole road across, on a rhythm: nothing to steer round, only to time. */
@@ -964,6 +992,23 @@ export class HazardSystem {
           p.phase = u;
           break;
         }
+        case 'pills': {
+          // A capsule tumbling across the road, the right pill or the wrong one, the next crossing coming back.
+          const at = def.at[i];
+          const tt = (t + 10) / def.period - i * PILL_LAG;
+          const cycle = Math.floor(tt);
+          const u = tt - cycle;
+          const hw = this.halfWidth(at);
+          const dir = (cycle + i) % 2 === 0 ? 1 : -1;
+          const across = u < PILL_STAGES.across ? pillAcross(u) : 1.25;
+          this.place(p, at, dir * across * (hw + 3), PILL_RADIUS * 0.75);
+          p.radius = PILL_RADIUS;
+          p.side = dir;
+          p.lane = rightPill(cycle, i) ? 1 : 0;
+          p.active = u < PILL_STAGES.across && Math.abs(across) < 1.1;
+          p.phase = u;
+          break;
+        }
         case 'dustDevils':
         case 'butterflies':
         case 'tornadoes':
@@ -1129,6 +1174,10 @@ export class HazardSystem {
         }
         if (p.kind === 'serpents') {
           this.serpent(hit, p, s);
+          continue;
+        }
+        if (p.kind === 'pills') {
+          this.pill(hit, p, s);
           continue;
         }
         if (p.kind === 'fuzz' && p.phase >= FUZZ_STAGES.gold && p.phase < FUZZ_STAGES.red) {
@@ -1696,6 +1745,24 @@ export class HazardSystem {
     if (this.cooldown.has(s)) return;
     this.cooldown.set(s, HIT_COOLDOWN);
     if (spinOut(s, SERPENT_SPIN)) hit.push({ kart: s, by: p.kind });
+  }
+
+  /**
+   * A capsule tumbling across the road: through the right pill, a boost;
+   * the wrong one spins you out, and the steering swims for a while after.
+   */
+  private pill(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+    if (!p.active || Math.hypot(s.x - p.x, s.z - p.z) > p.radius + KART_RADIUS) return;
+    if (p.lane === 1) {
+      this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, PILL_BOOST)));
+      return;
+    }
+    if (this.cooldown.has(s)) return;
+    this.cooldown.set(s, HIT_COOLDOWN);
+    if (spinOut(s, PILL_SPIN)) {
+      s.wobbleTime = PILL_SWIM;
+      hit.push({ kart: s, by: p.kind });
+    }
   }
 
   /** Pays a kart for using a hazard well, once in a while. */

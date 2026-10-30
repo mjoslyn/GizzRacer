@@ -4,6 +4,7 @@ import { AIRLOCK_DEPTH, AIRLOCK_STAGES, BOULDER_STAGES, CRUSHER_STAGES, FLARE_CL
 import { goblinFigure } from './omnium';
 import { robotFigure, vultureFigure, wahPedalFigure } from './nonagon';
 import { ratFigure } from './infest';
+import { pillFigure, posePill } from './headOnPill';
 import { arrowGeometry, eyeFigure } from './mindfuzz';
 import { BOX_RESPAWN, SHIELD_ITEMS, WAVE_RANGE, type ItemHolder, type ItemSystem } from '../items/items';
 import type { KartState } from '../physics/kart';
@@ -1338,6 +1339,13 @@ export class HazardsView {
           parts.push(body, plant);
           break;
         }
+        case 'pills': {
+          // A giant capsule, two-tone, tumbling end over end across the road: the right pill or the wrong one.
+          const pill = pillFigure(pose.radius);
+          obj.add(pill);
+          parts.push(pill);
+          break;
+        }
         case 'timber': {
           // A tree at the road's edge: its trunk, as long as the road is wide, and its crown; it leans, creaks and comes down across the road.
           const pivot = new THREE.Group();
@@ -2199,6 +2207,10 @@ export class HazardsView {
             plant.scale.setScalar(Math.min(1, (u - SERPENT_STAGES.sprout) / 0.08));
             plant.rotation.y = elapsed;
           }
+          break;
+        }
+        case 'pills': {
+          posePill(parts[0], p, elapsed);
           break;
         }
         case 'timber': {
