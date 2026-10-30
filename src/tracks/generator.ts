@@ -702,12 +702,12 @@ const PALETTES: Record<GenTheme, Palette> = {
   foe: {
     surface: 'butcher',
     deck: 'butcher',
-    alt: 'sand',
-    hazards: ['sunMoon'],
-    start: 'setGate',
-    landmarks: ['setGate'],
+    alt: 'boards',
+    hazards: ['cutlery'],
+    start: 'catapultGate',
+    landmarks: ['catapultGate'],
     tallWalls: 6,
-    places: ['Jackal', 'Snake', 'Tornado', 'Tomb', 'Duality', 'Sandstorm', 'Moonbeam', 'Hieroglyph', 'Reset'],
+    places: ['Foe', 'Sabre', 'Catapult', 'Food Chain', 'Crusty Bread', 'Malevolence', 'Golden Wolf', 'Caribou', 'Butcher'],
     music: { lap: 'altered-beast-ii', finalLap: 'altered-beast-ii-final-lap' },
   },
   altered: {
@@ -1474,6 +1474,9 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
         break;
       case 'presents':
         hazards.push({ kind, at: at(count - 1), period: 4.8 });
+        break;
+      case 'cutlery':
+        hazards.push({ kind, at: at(count - 1), period: 4.6 });
         break;
       case 'bubbles':
         // A run of breaths of air up through the road, each a beat after the one before.

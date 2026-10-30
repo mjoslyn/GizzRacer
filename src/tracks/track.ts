@@ -64,7 +64,7 @@ export function branchOpen(def: BranchDef, ctx?: LapContext): boolean {
 }
 
 export interface Landmark {
-  kind: 'skeletonArch' | 'fangs' | 'fortressGate' | 'templeGate' | 'waterfall' | 'gantry' | 'lighthouse' | 'iceArch' | 'neonArch' | 'rainbowArch' | 'mushroomArch' | 'starGate' | 'dragonGate' | 'dragonFlight' | 'colonyGate' | 'rodGate' | 'voidEye' | 'phantomArch' | 'runwayGate' | 'treeGate' | 'wreckGate' | 'worldTree' | 'crystalGate' | 'magentaPeak' | 'keplerArch' | 'goblinGate' | 'jawsGate' | 'castleGate' | 'castleKeep' | 'cloudGate' | 'airCastle' | 'skyTower' | 'cellGate' | 'nucleus' | 'prismGate' | 'prismEye' | 'factoryGate' | 'robotColossus' | 'gammaGate' | 'gammaRing' | 'carrionGate' | 'carcass' | 'wahGate' | 'wahPedal' | 'smogGate' | 'burningEarth' | 'domeGate' | 'richDome' | 'shipGate' | 'theSun' | 'hellGate' | 'ratsNest' | 'eyeGate' | 'mindFace' | 'arrowGate' | 'emptyHead' | 'filmGate' | 'cellophaneBloom' | 'fuzzGate' | 'fuzzMeter' | 'elbowGate' | 'bentArm' | 'rakeGate' | 'powerStation' | 'harmonicaGate' | 'mirrorBall' | 'trunkGate' | 'snowPeak' | 'cordGate' | 'theiaPlanet' | 'setGate' | 'setColossus' | 'jadePortal' | 'moonPalace' | 'urukGate' | 'ziggurat' | 'lockedDoor' | 'teacups' | 'heavenGate' | 'hillHouse' | 'sitarGate' | 'blackCup' | 'lostLegs' | 'pillTube' | 'oldFord' | 'faceCloud' | 'farmDam';
+  kind: 'skeletonArch' | 'fangs' | 'fortressGate' | 'templeGate' | 'waterfall' | 'gantry' | 'lighthouse' | 'iceArch' | 'neonArch' | 'rainbowArch' | 'mushroomArch' | 'starGate' | 'dragonGate' | 'dragonFlight' | 'colonyGate' | 'rodGate' | 'voidEye' | 'phantomArch' | 'runwayGate' | 'treeGate' | 'wreckGate' | 'worldTree' | 'crystalGate' | 'magentaPeak' | 'keplerArch' | 'goblinGate' | 'jawsGate' | 'castleGate' | 'castleKeep' | 'cloudGate' | 'airCastle' | 'skyTower' | 'cellGate' | 'nucleus' | 'prismGate' | 'prismEye' | 'factoryGate' | 'robotColossus' | 'gammaGate' | 'gammaRing' | 'carrionGate' | 'carcass' | 'wahGate' | 'wahPedal' | 'smogGate' | 'burningEarth' | 'domeGate' | 'richDome' | 'shipGate' | 'theSun' | 'hellGate' | 'ratsNest' | 'eyeGate' | 'mindFace' | 'arrowGate' | 'emptyHead' | 'filmGate' | 'cellophaneBloom' | 'fuzzGate' | 'fuzzMeter' | 'elbowGate' | 'bentArm' | 'rakeGate' | 'powerStation' | 'harmonicaGate' | 'mirrorBall' | 'trunkGate' | 'snowPeak' | 'cordGate' | 'theiaPlanet' | 'setGate' | 'setColossus' | 'jadePortal' | 'moonPalace' | 'urukGate' | 'ziggurat' | 'lockedDoor' | 'teacups' | 'heavenGate' | 'hillHouse' | 'sitarGate' | 'blackCup' | 'lostLegs' | 'pillTube' | 'oldFord' | 'faceCloud' | 'farmDam' | 'catapultGate' | 'monsterPlate';
   ribbon: number; // -1 = main, else branch index
   s: number; // builder units
   /** Metres to the right of the road (left if negative), for a landmark that stands off it. */
@@ -222,6 +222,8 @@ export type HazardDef =
   | { kind: 'presents'; at: number[]; period: number }
   /** Head On/Pill: giant two-tone capsules tumbling across the road, the right pill and the wrong one. */
   | { kind: 'pills'; at: number[]; period: number }
+  /** Altered Beast II: the beast's knife and fork, down into the road together and pulled apart to the edges, the hands swapped each time. */
+  | { kind: 'cutlery'; at: number[]; period: number }
   /** Float Along: great breaths of air rising up through the road on a five-beat rhythm, floating you up, bursting. */
   | { kind: 'bubbles'; at: number[]; period: number };
 

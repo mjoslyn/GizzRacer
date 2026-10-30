@@ -30,8 +30,9 @@ export interface HazardPose {
    * the pose. Cellophane: how far each sheet is from the pose, signed (the
    * first sheet is at -gap, the second at +gap). The sun: its lateral (the
    * moon is at -gap). The plant of immortality: its lateral. Santa's
-   * presents: the lateral of the roof's edge he throws them from. 0 for the
-   * rest.
+   * presents: the lateral of the roof's edge he throws them from. The
+   * beast's knife and fork: the fork's lateral (the knife is the pose). 0
+   * for the rest.
    */
   gap: number;
   /** A row of arrows: the lane with no arrow in it, 0 (leftmost) to 3. The plant of immortality: 1 while it's growing there to be had, else 0. A present: 1 once it has landed open, a gift. -1 for the rest. */
@@ -134,6 +135,7 @@ export const WAVE_SPIN = 1.0;
  * - slipped through the gap between two surveillance cameras' beams, unseen, a boost
  * - a present that lands open is a gift: a boost, and an item if your hands are empty; a shut one rammed on a boost bursts and the boost runs on
  * - the right pill tumbling across the road (its colour shows which) is a boost to drive through
+ * - threaded through between the beast's knife and fork as they pull apart, a boost
  * - a breath of air caught as it rises up through the road floats you up, and you come down on a boost
  */
 /** A reward can't pay out again to the same kart for this long. */
@@ -481,6 +483,79 @@ export function pillAcross(u: number): number {
   return -1.25 + (2.5 * u) / PILL_STAGES.across;
 }
 
+/**
+ * Altered Beast II's knife and fork, the beast's two hands ("my left hand
+ * is a knife and my right is a fork"): they hang over the road, come down
+ * into it together (the fork's stab, the knife's blade beside it), and
+ * pull apart to the edges as a butcher pulls pork, the knife slicing
+ * across one way and the fork dragging the other; up again, and the next
+ * time they come down somewhere else, the hands swapped. Caught by either,
+ * you spin; threaded through between them as they part, a boost.
+ */
+export const CUTLERY_STAGES = { stab: 0.22, pull: 0.34, lift: 0.7, gone: 0.8 } as const;
+/** The knife's blade lies along the road, this long, this thick either side of its edge. */
+export const KNIFE_LENGTH = 4.4;
+export const KNIFE_RADIUS = 0.5;
+/** The fork's tines, stabbed into the road. */
+export const FORK_RADIUS = 1.3;
+/** How far apart the two come down, centre to centre. */
+export const CUTLERY_CLOSE = 3.6;
+/** Threaded between them while they're no further apart than this, centre to centre, and within this far of their line along the road: a boost. */
+export const CUTLERY_THREAD = 12;
+export const CUTLERY_DEPTH = 1.6;
+export const CUTLERY_BOOST = 0.8;
+export const CUTLERY_SPIN = 1.0;
+/** How high over the road they hang, raised. */
+export const CUTLERY_HEIGHT = 7;
+
+/** How far the knife and fork have pulled apart at cycle stage `u`: 0 together where they came down, 1 out at the road's edges (and lifted away from there). */
+export function cutleryApart(u: number): number {
+  const C = CUTLERY_STAGES;
+  if (u < C.pull) return 0;
+  const w = Math.min(1, (u - C.pull) / (C.lift - C.pull - 0.1));
+  return w * w * (3 - 2 * w);
+}
+
+/** Where the knife and fork are across the road (laterals, right of the centre) at race time `t` for a station `i` on a road `hw` wide each side, with a cycle `period` long. */
+export function cutleryAcross(t: number, period: number, i: number, hw: number): { knife: number; fork: number; side: number; u: number } {
+  const tt = (t + 10) / period + i * 0.37;
+  const cycle = Math.floor(tt);
+  const u = tt - cycle;
+  // Where they come down, and which side the knife pulls to: the hands swap each time.
+  const down = (c: number) => ({ mid: (hw - CUTLERY_CLOSE - 2) * 0.6 * Math.sin(c * 2.39 + i * 1.3), side: (c + i) % 2 === 0 ? 1 : -1 });
+  const { mid, side } = down(cycle);
+  if (u >= CUTLERY_STAGES.gone) {
+    // Up in the air, swinging back over the road to where they come down next, passing each other.
+    const next = down(cycle + 1);
+    const w = (u - CUTLERY_STAGES.gone) / (1 - CUTLERY_STAGES.gone);
+    const e = w * w * (3 - 2 * w);
+    return {
+      knife: side * (hw + 1) + (next.mid + (next.side * CUTLERY_CLOSE) / 2 - side * (hw + 1)) * e,
+      fork: -side * (hw + 1) + (next.mid - (next.side * CUTLERY_CLOSE) / 2 + side * (hw + 1)) * e,
+      side,
+      u,
+    };
+  }
+  // From the middle where they come down to just past the edges.
+  const apart = cutleryApart(u);
+  return {
+    knife: mid + side * (CUTLERY_CLOSE / 2 + (hw + 1 - side * mid - CUTLERY_CLOSE / 2) * apart),
+    fork: mid - side * (CUTLERY_CLOSE / 2 + (hw + 1 + side * mid - CUTLERY_CLOSE / 2) * apart),
+    side,
+    u,
+  };
+}
+
+/** How high the knife and fork are over the road at cycle stage `u`: hanging, coming down, in the road, and lifted away. */
+export function cutleryLift(u: number): number {
+  const C = CUTLERY_STAGES;
+  if (u < C.stab - 0.08) return CUTLERY_HEIGHT;
+  if (u < C.stab) return CUTLERY_HEIGHT * ((C.stab - u) / 0.08) ** 2;
+  if (u < C.lift) return 0;
+  if (u < C.gone) return CUTLERY_HEIGHT * Math.sin(((u - C.lift) / (C.gone - C.lift)) * (Math.PI / 2));
+  return CUTLERY_HEIGHT;
+}
+
 /** Where the snake's head is across the road at cycle stage `u`, from -1 (the edge it comes from) to 1 (the far edge); outside that it's off the road. */
 export function serpentAcross(u: number): number {
   const S = SERPENT_STAGES;
@@ -599,6 +674,7 @@ const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds' | 'butterfli
   cameras: 0,
   presents: PRESENT_SPIN,
   pills: PILL_SPIN,
+  cutlery: CUTLERY_SPIN,
   bubbles: 0,
 };
 
@@ -1143,6 +1219,18 @@ export class HazardSystem {
           p.phase = u;
           break;
         }
+        case 'cutlery': {
+          // The beast's knife and fork: down into the road together somewhere across it, pulled apart to the edges, lifted; the hands swap each time. The pose is the knife; `gap` the fork's lateral, `side` the side the knife pulls to.
+          const at = def.at[i];
+          const { knife, fork, side, u } = cutleryAcross(t, def.period, i, this.halfWidth(at));
+          this.place(p, at, knife, cutleryLift(u));
+          p.radius = KNIFE_RADIUS;
+          p.gap = fork;
+          p.side = side;
+          p.active = u >= CUTLERY_STAGES.stab && u < CUTLERY_STAGES.lift;
+          p.phase = u;
+          break;
+        }
         case 'bubbles': {
           // A breath of air coming up through the road, somewhere across it, each a beat after the one before.
           const at = def.at[i];
@@ -1334,6 +1422,10 @@ export class HazardSystem {
         }
         if (p.kind === 'pills') {
           this.pill(hit, p, s);
+          continue;
+        }
+        if (p.kind === 'cutlery') {
+          this.cutlery(hit, p, s);
           continue;
         }
         if (p.kind === 'bubbles') {
@@ -1612,6 +1704,15 @@ export class HazardSystem {
         // A shut present on the road, or about to come down on it; an open one is there to drive into.
         if (p.lane === 1 || !p.active) continue;
         out.push({ x: p.x, z: p.z, r: p.radius, vx: p.vx, vz: p.vz });
+        continue;
+      }
+      if (p.kind === 'cutlery') {
+        // From just before they come down until they're lifted: the fork, and the knife's blade along the road.
+        if (p.phase < CUTLERY_STAGES.stab - 0.08 || p.phase >= CUTLERY_STAGES.lift) continue;
+        const fx = Math.sin(p.heading);
+        const fz = Math.cos(p.heading);
+        out.push({ x: p.ax - fz * p.gap, z: p.az + fx * p.gap, r: FORK_RADIUS, vx: 0, vz: 0 });
+        for (const d of [-1, 0, 1]) out.push({ x: p.x + fx * d * (KNIFE_LENGTH / 3), z: p.z + fz * d * (KNIFE_LENGTH / 3), r: KNIFE_LENGTH / 4, vx: p.vx, vz: p.vz });
         continue;
       }
       if (p.kind === 'bubbles') {
@@ -1989,6 +2090,32 @@ export class HazardSystem {
       s.wobbleTime = PILL_SWIM;
       hit.push({ kart: s, by: p.kind });
     }
+  }
+
+  /**
+   * The beast's knife and fork, down in the road: the knife's blade along
+   * it or the fork's tines, and you spin; threaded through between them as
+   * they pull apart, while they're still close, a boost.
+   */
+  private cutlery(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+    if (!p.active) return;
+    const fx = Math.sin(p.heading);
+    const fz = Math.cos(p.heading);
+    const along = (s.x - p.ax) * fx + (s.z - p.az) * fz;
+    const lat = (s.x - p.ax) * -fz + (s.z - p.az) * fx;
+    const knife = (p.x - p.ax) * -fz + (p.z - p.az) * fx;
+    const blade = Math.hypot(Math.max(0, Math.abs(along) - KNIFE_LENGTH / 2), lat - knife) <= KNIFE_RADIUS + KART_RADIUS;
+    const tines = Math.hypot(along, lat - p.gap) <= FORK_RADIUS + KART_RADIUS;
+    if (blade || tines) {
+      if (this.cooldown.has(s)) return;
+      this.cooldown.set(s, HIT_COOLDOWN);
+      if (spinOut(s, CUTLERY_SPIN)) hit.push({ kart: s, by: p.kind });
+      return;
+    }
+    if (p.phase < CUTLERY_STAGES.pull || Math.abs(knife - p.gap) > CUTLERY_THREAD || Math.abs(along) > CUTLERY_DEPTH) return;
+    const lo = Math.min(knife, p.gap);
+    const hi = Math.max(knife, p.gap);
+    if (lat > lo && lat < hi) this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, CUTLERY_BOOST)));
   }
 
   /**

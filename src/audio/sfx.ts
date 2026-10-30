@@ -519,6 +519,11 @@ export class Sfx {
       this.tone(660, 1.1, 'sawtooth', 0.07, 150);
       this.tone(990, 1.1, 'triangle', 0.05, 230, 0.08);
     }
+    // Carved up by the beast's cutlery: the knife's ring on the block and the fork's thunk.
+    if (by === 'cutlery') {
+      this.tone(3200, 0.35, 'triangle', 0.06, 2400);
+      this.hit(0.12, 600, 0.45);
+    }
     // A breath of air bursting: a wet pop and a bloop.
     if (by === 'bubbles') {
       this.hit(0.08, 1800, 0.35);
