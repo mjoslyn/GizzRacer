@@ -2007,6 +2007,7 @@ const HIT_TEXT: Record<ItemKind | HazardKind, string> = {
   presents: 'SACKED!',
   pills: 'THE WRONG PILL!',
   bubbles: 'POP!',
+  stomps: 'STUCK!',
 };
 
 /** What a hazard used well says: the ones that can help. */
@@ -2066,6 +2067,7 @@ const BONUS_TEXT: Record<HazardKind, string> = {
   presents: 'MERRY CHRISTMAS!',
   pills: 'THE RIGHT PILL!',
   bubbles: 'FLOAT ALONG!',
+  stomps: 'ALTER ME!',
 };
 
 /** Takes a group out of the scene and frees what it built. */

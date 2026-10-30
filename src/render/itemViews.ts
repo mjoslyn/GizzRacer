@@ -8,6 +8,7 @@ import { PRESENT_WRAPS, presentFigure, santaFigure } from './godIsCalling';
 import { pillFigure, posePill } from './headOnPill';
 import { arrowGeometry, eyeFigure } from './mindfuzz';
 import { cameraParts, poseCameras } from './mendThePast';
+import { poseStomp, stompParts } from './alteredBeastI';
 import { BOX_RESPAWN, SHIELD_ITEMS, WAVE_RANGE, type ItemHolder, type ItemSystem } from '../items/items';
 import type { KartState } from '../physics/kart';
 import type { HazardSystem } from '../items/hazards';
@@ -1371,6 +1372,10 @@ export class HazardsView {
           // Two cameras up on the hall's walls, their beams of light down onto the road.
           parts.push(...cameraParts(obj));
           break;
+        case 'stomps':
+          // The altered beast's foot, raised over the road and coming down.
+          parts.push(...stompParts(obj));
+          break;
         case 'pills': {
           // A giant capsule, two-tone, tumbling end over end across the road: the right pill or the wrong one.
           const pill = pillFigure(pose.radius);
@@ -2264,6 +2269,9 @@ export class HazardsView {
           }
           break;
         }
+        case 'stomps':
+          poseStomp(obj, parts, p, elapsed);
+          break;
         case 'cameras':
           poseCameras(obj, parts, p, elapsed);
           break;

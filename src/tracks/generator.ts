@@ -691,12 +691,13 @@ const PALETTES: Record<GenTheme, Palette> = {
   newworld: {
     surface: 'crust',
     deck: 'crust',
-    alt: 'sand',
-    hazards: ['sunMoon'],
-    start: 'setGate',
-    landmarks: ['setGate'],
+    alt: 'rock',
+    liquid: 'water',
+    hazards: ['stomps'],
+    start: 'newWorldGate',
+    landmarks: ['newWorldGate'],
     tallWalls: 6,
-    places: ['Jackal', 'Snake', 'Tornado', 'Tomb', 'Duality', 'Sandstorm', 'Moonbeam', 'Hieroglyph', 'Reset'],
+    places: ['New World', 'Dust', 'Mushroom Cloud', 'Meadow', 'Lone Tree', 'Creek', 'Dreams', 'Unsteady Gait', 'Stone'],
     music: { lap: 'altered-beast-i', finalLap: 'altered-beast-i-final-lap' },
   },
   foe: {
@@ -1474,6 +1475,10 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
         break;
       case 'presents':
         hazards.push({ kind, at: at(count - 1), period: 4.8 });
+        break;
+      case 'stomps':
+        // A run of the beast's footfalls, coming closer.
+        hazards.push({ kind, at: at(count), period: 4.4 });
         break;
       case 'bubbles':
         // A run of breaths of air up through the road, each a beat after the one before.
