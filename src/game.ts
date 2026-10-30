@@ -175,7 +175,7 @@ let mode: Mode = 'title';
 
 let choice: MenuChoice = {
   mode: 'grandPrix',
-  track: 4,
+  track: 8,
   cup: 0,
   randomTracks: randomCupTracks(),
   gen: { slot: -1, params: { seed: newSeed(), theme: 'lagoon', complexity: 3, length: 'medium' } },

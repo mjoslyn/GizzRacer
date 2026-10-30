@@ -54,7 +54,7 @@ describe("Infest the Rats' Nest Cup", () => {
   it('is four new tracks in album order, each with its own world and a lap and a final-lap song', () => {
     const cup = CUPS.find((c) => c.name === "Infest the Rats' Nest Cup")!;
     expect(cup.id).toBe('infest-the-rats-nest');
-    expect(cup.tracks).toEqual([20, 21, 22, 23]);
+    expect(cup.tracks).toEqual([24, 25, 26, 27]);
     const defs = cup.tracks.map((t) => TRACK_LIST[t].build());
     expect(defs.map((d) => d.id)).toEqual(IDS);
     expect(cup.tracks.map((t) => TRACK_LIST[t].name)).toEqual(['Planet B', 'Mars for the Rich', 'Perihelion', 'Hell']);

@@ -186,6 +186,11 @@ function materials(theme: Theme): Materials {
       hieroglyph: bumpy(tex.hieroglyphTexture(), 0.12),
       jade: new THREE.MeshPhongMaterial({ map: tex.jadeTexture(), shininess: 110, specular: 0xd0fff0 }),
       mudbrick: bumpy(tex.mudbrickTexture(), 0.1),
+      // The Float Along Cup's roads (placeholders until each track's world is built).
+      paisley: bumpy(tex.carpetTexture(), 0.1),
+      bitumen: bumpy(tex.asphaltTexture(), 0.08),
+      florals: bumpy(tex.carpetTexture(), 0.1),
+      gravel: bumpy(tex.sandTexture(), 0.06),
       cosmic: (() => {
         const map = tex.cosmicRoadTexture();
         return lambert(map, { emissive: 0xffffff, emissiveMap: map, emissiveIntensity: 0.55 });

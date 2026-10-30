@@ -95,7 +95,7 @@ export interface TrackDef {
   itemBoxes: ItemBoxRow[];
   hazards: HazardDef[];
   /** Visual theme (render/themes.ts). */
-  theme: 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism' | 'factory' | 'gamma' | 'carrion' | 'wah' | 'smog' | 'dome' | 'solar' | 'inferno' | 'mind' | 'notmind' | 'cellophane' | 'mindfuzz' | 'elbow' | 'muck' | 'boogie' | 'treesea' | 'theia' | 'set' | 'change' | 'uruk';
+  theme: 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism' | 'factory' | 'gamma' | 'carrion' | 'wah' | 'smog' | 'dome' | 'solar' | 'inferno' | 'mind' | 'notmind' | 'cellophane' | 'mindfuzz' | 'elbow' | 'muck' | 'boogie' | 'treesea' | 'theia' | 'set' | 'change' | 'uruk' | 'headon' | 'godcall' | 'nan' | 'float';
   /** No ground: off the road is a long drop (the sky track). */
   abyss?: boolean;
   /** Music cues (public/music/<cue>.mp3): one for the race, one for the final lap. */

@@ -63,7 +63,15 @@ export type RoadSurface =
   /** Chang'e's road: polished jade, inlaid with gold. */
   | 'jade'
   /** Gilgamesh's road: Uruk's baked brick, stamped with cuneiform. */
-  | 'mudbrick';
+  | 'mudbrick'
+  /** Head On/Pill's road: paisley, swirling dye. */
+  | 'paisley'
+  /** God Is Calling Me Back Home's road: a suburban street's bitumen, a white line down it. */
+  | 'bitumen'
+  /** Let Me Mend the Past's road: nan's floral carpet. */
+  | 'florals'
+  /** Float Along's road: a country road's pale gravel. */
+  | 'gravel';
 
 /**
  * Every road is built this much wider than its section says: the layouts

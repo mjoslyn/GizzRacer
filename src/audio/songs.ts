@@ -14,6 +14,7 @@ const PDA = { album: 'PetroDragonic Apocalypse', year: 2023 };
 const FMB = { album: 'Flying Microtonal Banana', year: 2017 };
 const TBB = { album: '12 Bar Bruise', year: 2012 };
 const TSC = { album: 'The Silver Cord', year: 2023 };
+const FAFYL = { album: 'Float Along – Fill Your Lungs', year: 2013 };
 
 export const TRACK_SONGS: Record<string, TrackSong> = {
   'robot-stop': { title: 'Robot Stop', album: 'Nonagon Infinity', year: 2016 },
@@ -60,6 +61,10 @@ export const TRACK_SONGS: Record<string, TrackSong> = {
   set: { title: 'Set', ...TSC },
   'chang-e': { title: "Chang'e", ...TSC },
   gilgamesh: { title: 'Gilgamesh', ...TSC },
+  'head-on-pill': { title: 'Head On/Pill', ...FAFYL },
+  'god-is-calling': { title: 'God Is Calling Me Back Home', ...FAFYL },
+  'mend-the-past': { title: 'Let Me Mend the Past', ...FAFYL },
+  'float-along': { title: 'Float Along – Fill Your Lungs', ...FAFYL },
 };
 
 /**
