@@ -1,9 +1,10 @@
 import * as THREE from 'three';
 import * as tex from './textures';
 import { DESERT_SKY, type SkyColors } from './textures';
+import { floorboardsTexture, skirtingTexture, wallpaperTexture } from './mendThePast';
 
 export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism' | 'factory' | 'gamma' | 'carrion' | 'wah' | 'smog' | 'dome' | 'solar' | 'inferno' | 'mind' | 'notmind' | 'cellophane' | 'mindfuzz' | 'elbow' | 'muck' | 'boogie' | 'treesea' | 'theia' | 'set' | 'change' | 'uruk' | 'headon' | 'godcall' | 'nan' | 'float';
-export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy' | 'hadean' | 'deshret' | 'moonpalace' | 'uruk';
+export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy' | 'hadean' | 'deshret' | 'moonpalace' | 'uruk' | 'nanshouse';
 
 /** Everything that makes a track's world look like itself. */
 export interface Theme {
@@ -895,23 +896,24 @@ export const THEMES: Record<ThemeId, Theme> = {
     dust: 0xd08050,
     barrier: { map: tex.templeWallTexture, crawl: false },
   },
-  // Let Me Mend the Past: (placeholder, Set's look until its world is built).
+  // Let Me Mend the Past: inside nan's house of an evening, the karts tiny in it: the lamps lit, the ceiling dim above, floorboards, wallpaper, the furniture looming on the horizon; old family photos' sepia for the duotone.
   nan: {
-    sky: { zenith: '#0a0a34', high: '#262a78', low: '#c86a3a', horizon: '#ffd070', below: '#c06030', ground: '#6a2a14', cloud: '255,200,150', clouds: 12, stars: { count: 140, color: '#f0f0ff' }, moon: '#f4f4ff' },
-    fog: { color: 0xc07850, near: 160, far: 860 },
-    hemi: { sky: 0xffd0a0, ground: 0x8a3a1a, intensity: 1.5 },
-    sun: { color: 0xffd890, intensity: 2.3 },
-    ground: tex.redSandTexture,
-    groundTile: 20,
-    // Walls are a temple's, blocks of sandstone with a painted frieze.
-    cliff: tex.templeWallTexture,
-    decor: 'deshret',
-    distant: { shape: 'mesa', color: 0x5a2414 },
-    haze: 0.8,
-    duotone: [0x0a0420, 0xd05a20, 0xffe890],
+    sky: { zenith: '#1a100c', high: '#3a2418', low: '#7a4a2c', horizon: '#e8b070', below: '#8a5a34', ground: '#5a3a20', cloud: '255,220,170', clouds: 0 },
+    fog: { color: 0x6a4630, near: 160, far: 760 },
+    hemi: { sky: 0xffe0b0, ground: 0x6a4024, intensity: 1.5 },
+    sun: { color: 0xffd8a0, intensity: 1.9 },
+    ground: floorboardsTexture,
+    groundTile: 18,
+    // Walls are nan's: striped wallpaper over a dado rail, a skirting board along the floor.
+    cliff: wallpaperTexture,
+    decor: 'nanshouse',
+    // Wardrobes and dressers, dark against the lamplight.
+    distant: { shape: 'city', color: 0x2a1810 },
+    haze: 0,
+    duotone: [0x1a0c06, 0xb0703a, 0xfff0c8],
     skyCycle: false,
-    dust: 0xd08050,
-    barrier: { map: tex.templeWallTexture, crawl: false },
+    dust: 0xd8c8a8,
+    barrier: { map: skirtingTexture, crawl: false },
   },
   // Float Along: (placeholder, Set's look until its world is built).
   float: {
