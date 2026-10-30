@@ -929,5 +929,61 @@
     "bars": 32,
     "loopSamples": 2813023,
     "sampleRate": 44100
+  },
+  "altered-beast-i-remix": {
+    "title": "altered beast i (remix)",
+    "bpm": 103.4,
+    "bars": 34,
+    "loopSamples": 3480232,
+    "sampleRate": 44100
+  },
+  "altered-beast-i-remix-final-lap": {
+    "title": "altered beast i (remix, final lap)",
+    "bpm": 111.4,
+    "bars": 33,
+    "loopSamples": 3135296,
+    "sampleRate": 44100
+  },
+  "altered-beast-ii-remix": {
+    "title": "altered beast ii (remix)",
+    "bpm": 212,
+    "bars": 46,
+    "loopSamples": 2296528,
+    "sampleRate": 44100
+  },
+  "altered-beast-ii-remix-final-lap": {
+    "title": "altered beast ii (remix, final lap)",
+    "bpm": 222,
+    "bars": 46,
+    "loopSamples": 2193081,
+    "sampleRate": 44100
+  },
+  "altered-beast-iii-remix": {
+    "title": "altered beast iii (remix)",
+    "bpm": 104.3,
+    "bars": 36,
+    "loopSamples": 3653154,
+    "sampleRate": 44100
+  },
+  "altered-beast-iii-remix-final-lap": {
+    "title": "altered beast iii (remix, final lap)",
+    "bpm": 112.3,
+    "bars": 36,
+    "loopSamples": 3392912,
+    "sampleRate": 44100
+  },
+  "altered-beast-iv-remix": {
+    "title": "altered beast iv (remix)",
+    "bpm": 108.6,
+    "bars": 31,
+    "loopSamples": 3021215,
+    "sampleRate": 44100
+  },
+  "altered-beast-iv-remix-final-lap": {
+    "title": "altered beast iv (remix, final lap)",
+    "bpm": 116.6,
+    "bars": 31,
+    "loopSamples": 2813928,
+    "sampleRate": 44100
   }
 }

@@ -132,6 +132,10 @@ export const TRANSCRIBED: Record<string, { recording: string; release: string }>
   'god-is-calling': { recording: 'God Is Calling Me Back Home', release: "Live in Bulgaria '25, the soundboard mix" },
   'mend-the-past': { recording: 'Let Me Mend the Past', release: "Live in Lithuania '25, the soundboard mix" },
   'float-along': { recording: 'Float Along – Fill Your Lungs', release: "Live at Field of Vision '25, the soundboard mix" },
+  'altered-beast-i': { recording: 'Altered Beast I / Alter Me I', release: "Rockin' in Melbourne '25, the soundboard mix" },
+  'altered-beast-ii': { recording: 'Altered Beast II / Alter Me II', release: "Rockin' in Melbourne '25, the soundboard mix" },
+  'altered-beast-iii': { recording: 'Altered Beast III / Alter Me III', release: 'Live at The Fillmore, San Francisco, 2017-10-12, an audience recording' },
+  'altered-beast-iv': { recording: 'Altered Beast IV', release: "Live at Field of Vision II '26, the soundboard mix" },
 };
 
 const FINAL = '-final-lap';
