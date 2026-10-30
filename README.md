@@ -8,11 +8,13 @@ No install and no account. It will always be free. **[The manual](https://www.gi
 
 ## What's in it
 
-- **44 tracks in 11 cups**, one an album, in the order the albums came out, plus a Random Cup of four drawn from them
+- **52 tracks in 13 cups**, one an album, in the order the albums came out, plus a Random Cup of four drawn from them
   - **12 Bar Bruise Cup:** the band's first album, in album order: Elbow, Muckraker, Cut Throat Boogie, Sea of Trees
+  - **Float Along – Fill Your Lungs Cup:** the third album, in album order: Head On/Pill, God Is Calling Me Back Home, Let Me Mend the Past, Float Along (a cinquefoil knot in 5/4)
   - **Mind Fuzz Cup:** the suite that opens I'm in Your Mind Fuzz, in order: I'm in Your Mind, I'm Not in Your Mind, Cellophane, I'm in Your Mind Fuzz
   - **Nonagon Infinity Cup:** Robot Stop, Gamma Knife, People-Vultures, Wah Wah
   - **Flying Microtonal Banana Cup:** Rattlesnake, Open Water, Sleep Drifter, Doom City, all in the cover's cobalt and banana yellow
+  - **Altered Beast Cup:** the suite that opens Murder of the Universe, each Altered Beast run into its Alter Me: Altered Beast I, II, III and IV (III the beast's DNA, a double helix); Track song plays the two back to back from one show
   - **Polygondwanaland Cup:** Crumbling Castle (on the N64 castle's layout), The Castle in the Air, Inner Cell, Tetrachromacy
   - **Infest the Rats' Nest Cup:** Planet B, Mars for the Rich, Perihelion, Hell
   - **Omnium Gatherum Cup:** Magenta Mountain, Kepler-22b, The Garden Goblin, Predator X
@@ -85,7 +87,7 @@ On phones, turn the phone sideways. On iPhone, use Share, then Add to Home Scree
 ## Credits
 
 - GizzRacer is an unofficial fan game, made with love for King Gizzard & the Lizard Wizard and their fans
-- The music is written and remixed in [seqbaby](https://playseqbaby.com). The Polygondwanaland Cup, Polygondwanaland, Omnium Gatherum Cup, Phantom Island Cup, Nonagon Infinity Cup, 12 Bar Bruise Cup, Silver Cord Cup and title remixes are transcribed from the band's own recordings (Polygondwanaland and their live bootlegs), which King Gizzard & the Lizard Wizard released for anyone to use
+- The music is written and remixed in [seqbaby](https://playseqbaby.com). The Polygondwanaland Cup, Polygondwanaland, Omnium Gatherum Cup, Phantom Island Cup, Nonagon Infinity Cup, 12 Bar Bruise Cup, Silver Cord Cup, Float Along – Fill Your Lungs Cup, Altered Beast Cup and title remixes are transcribed from the band's own recordings (Polygondwanaland and their live bootlegs), which King Gizzard & the Lizard Wizard released for anyone to use
 - Lettering in Metal Mania by Open Window (SIL Open Font License, `public/fonts/OFL.txt`)
 - Built with [Three.js](https://threejs.org). Online play runs on [PartyKit](https://www.partykit.io) and Cloudflare.
 
