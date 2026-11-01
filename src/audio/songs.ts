@@ -141,6 +141,10 @@ export const TRANSCRIBED: Record<string, { recording: string; release: string }>
   'altered-beast-ii': { recording: 'Altered Beast II / Alter Me II', release: "Rockin' in Melbourne '25, the soundboard mix" },
   'altered-beast-iii': { recording: 'Altered Beast III / Alter Me III', release: 'Live at The Fillmore, San Francisco, 2017-10-12, an audience recording' },
   'altered-beast-iv': { recording: 'Altered Beast IV', release: "Live at Field of Vision II '26, the soundboard mix" },
+  'alien-metal': { recording: 'Alien Metal', release: "Live at Field of Vision II '26, the soundboard mix" },
+  'kill-for-the-steel': { recording: 'Kill for the Steel', release: "Live at Field of Vision II '26, the soundboard mix" },
+  'level-5': { recording: 'Level 5', release: "Live at Field of Vision II '26, the soundboard mix" },
+  'rapid-alpha-decay': { recording: 'Rapid Alpha Decay', release: "Live at Field of Vision II '26, the soundboard mix" },
 };
 
 const FINAL = '-final-lap';
