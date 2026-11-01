@@ -1063,7 +1063,7 @@ export const THEMES: Record<ThemeId, Theme> = {
   },
   // Level 5: the cup's one night over a city of driverless cars at the end of the world, black steel under the alien stars, its motorway white and its lights the cold electric blue, the city's glow low on the horizon.
   autonomy: {
-    sky: { zenith: '#020308', high: '#070b22', low: '#10204e', horizon: '#3a7ac0', below: '#0c1636', ground: '#070a18', cloud: '48,68,120', clouds: 8, stars: { count: 300, color: '#d8ecff' }, moon: '#c8ffa8' },
+    sky: { zenith: '#020308', high: '#070b22', low: '#10204e', horizon: '#3a7ac0', below: '#0c1636', ground: '#070a18', cloud: '48,68,120', clouds: 8, stars: { count: 300, color: '#d8ecff' }, moon: '#c0ff98' },
     fog: { color: 0x0e1a3c, near: 140, far: 780 },
     hemi: { sky: 0xa0bcff, ground: 0x0c1230, intensity: 1.4 },
     sun: { color: 0xd8e6ff, intensity: 1.8 },
