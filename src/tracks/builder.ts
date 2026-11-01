@@ -87,7 +87,15 @@ export type RoadSurface =
   /** Level 5's road: a self-driving lane, white and blue, its markings for the machines. */
   | 'lane'
   /** Rapid Alpha Decay's road: lead shielding plates, riveted. */
-  | 'lead';
+  | 'lead'
+  /** Muddy Water's road: a red-brown clay track down to the river, baked hard and cracked by the sun. */
+  | 'clay'
+  /** The Great Chain of Being's road: stone from the bottom link of the chain, the minerals. */
+  | 'strata'
+  /** All Is Known's road: a circuit board, its traces lit. */
+  | 'circuit'
+  /** The Wheel's road: a record's groove, black vinyl. */
+  | 'groove';
 
 /**
  * Every road is built this much wider than its section says: the layouts

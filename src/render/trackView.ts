@@ -231,6 +231,11 @@ function materials(theme: Theme): Materials {
       lane: bumpy(laneRoadTexture(), 0.06),
       // Rapid Alpha Decay's: lead shielding plates, riveted, green leaking through the seams.
       lead: bumpy(leadRoadTexture(), 0.1),
+      // The Gumboot Soup Cup's roads (placeholders until each track's world is built).
+      clay: bumpy(tex.asphaltTexture(), 0.08),
+      strata: bumpy(tex.asphaltTexture(), 0.08),
+      circuit: bumpy(tex.asphaltTexture(), 0.08),
+      groove: bumpy(tex.asphaltTexture(), 0.08),
       gravel: bumpy(gravelTexture(), 0.1),
       cosmic: (() => {
         const map = tex.cosmicRoadTexture();

@@ -50,6 +50,10 @@ import { buildAlienMetal } from './alienMetal';
 import { buildKillForTheSteel } from './killForTheSteel';
 import { buildLevel5 } from './level5';
 import { buildRapidAlphaDecay } from './rapidAlphaDecay';
+import { buildMuddyWater } from './muddyWater';
+import { buildGreatChainOfBeing } from './greatChainOfBeing';
+import { buildAllIsKnown } from './allIsKnown';
+import { buildTheWheel } from './theWheel';
 import { buildCutThroatBoogie } from './cutThroatBoogie';
 import { buildSeaOfTrees } from './seaOfTrees';
 import { buildTheia } from './theia';
@@ -88,6 +92,10 @@ export const RAW_TRACK_LIST: { id: string; name: string; build: () => TrackDef }
   { id: 'castle-in-the-air', name: 'The Castle in the Air', build: buildCastleInTheAir },
   { id: 'inner-cell', name: 'Inner Cell', build: buildInnerCell },
   { id: 'tetrachromacy', name: 'Tetrachromacy', build: buildTetrachromacy },
+  { id: 'muddy-water', name: 'Muddy Water', build: buildMuddyWater },
+  { id: 'great-chain-of-being', name: 'The Great Chain of Being', build: buildGreatChainOfBeing },
+  { id: 'all-is-known', name: 'All Is Known', build: buildAllIsKnown },
+  { id: 'the-wheel', name: 'The Wheel', build: buildTheWheel },
   { id: 'planet-b', name: 'Planet B', build: buildPlanetB },
   { id: 'mars-for-the-rich', name: 'Mars for the Rich', build: buildMarsForTheRich },
   { id: 'perihelion', name: 'Perihelion', build: buildPerihelion },
@@ -136,20 +144,22 @@ export const CUPS: { id: string; name: string; tracks: number[] }[] = [
   { id: 'altered-beast', name: 'Altered Beast Cup', tracks: [20, 21, 22, 23] },
   // Polygondwanaland (November 2017), in album order: the castle falling down, the castle on the clouds, the inside of a cell, and the fourth colour.
   { id: 'polygondwanaland', name: 'Polygondwanaland Cup', tracks: [24, 25, 26, 27] },
+  // Gumboot Soup (December 2017), in album order, the four songs the band play most: the hot beach and the cool river, the rock climbing the chain of being, the machine that knows everything, and the wheel that steers us into our future.
+  { id: 'gumboot-soup', name: 'Gumboot Soup Cup', tracks: [28, 29, 30, 31] },
   // Infest the Rats' Nest (2019), in album order: the burning Earth, the rich's colony on Mars, the ship falling at the sun, and down into Hell.
-  { id: 'infest-the-rats-nest', name: "Infest the Rats' Nest Cup", tracks: [28, 29, 30, 31] },
+  { id: 'infest-the-rats-nest', name: "Infest the Rats' Nest Cup", tracks: [32, 33, 34, 35] },
   // Omnium Gatherum (April 2022): the pink mountain, the ocean planet, the goblin's garden, and the pliosaur.
-  { id: 'omnium-gatherum', name: 'Omnium Gatherum Cup', tracks: [32, 33, 34, 35] },
+  { id: 'omnium-gatherum', name: 'Omnium Gatherum Cup', tracks: [36, 37, 38, 39] },
   // Ice, Death, Planets, Lungs, Mushrooms and Lava (October 2022), in album order: the glacier, the volcano, the jungle (the planet's lungs) overgrown with mushrooms, and the road of starlight.
-  { id: 'ice-death-planets', name: 'Ice, Death, Planets, Lungs, Mushrooms and Lava Cup', tracks: [36, 37, 38, 39] },
+  { id: 'ice-death-planets', name: 'Ice, Death, Planets, Lungs, Mushrooms and Lava Cup', tracks: [40, 41, 42, 43] },
   // PetroDragonic Apocalypse (2023), in album order: the speedway, the storm, the oil-field dragons, and Mars on fire.
-  { id: 'petrodragonic-apocalypse', name: 'PetroDragonic Apocalypse Cup', tracks: [40, 41, 42, 43] },
+  { id: 'petrodragonic-apocalypse', name: 'PetroDragonic Apocalypse Cup', tracks: [44, 45, 46, 47] },
   // The Silver Cord (October 2023), in album order: the young Earth and the planet that hits it, the god in the red land, the goddess on the Moon, and the hero's road out of Uruk.
-  { id: 'silver-cord', name: 'Silver Cord Cup', tracks: [44, 45, 46, 47] },
+  { id: 'silver-cord', name: 'Silver Cord Cup', tracks: [48, 49, 50, 51] },
   // Phantom Island (2025): the island in the mist, the plane with no engine, the forest that's awake, and the sea at night.
-  { id: 'phantom-island', name: 'Phantom Island Cup', tracks: [48, 49, 50, 51] },
+  { id: 'phantom-island', name: 'Phantom Island Cup', tracks: [52, 53, 54, 55] },
   // Alien Metal (August 2026), the EDM record in one tempo and key that loops back on itself: the life of the metal round one circuit. Forged by the astral blacksmith, fought over, built into the machines, and burnt down to energy in the core, whose finish runs into the forge's start.
-  { id: 'alien-metal', name: 'Alien Metal Cup', tracks: [52, 53, 54, 55] },
+  { id: 'alien-metal', name: 'Alien Metal Cup', tracks: [56, 57, 58, 59] },
 ];
 
 /** Cups that were retired when every cup became an album's, and the album cup that took most of each one's tracks: progress.ts carries their trophies over. */

@@ -24,6 +24,7 @@ const TSC = { album: 'The Silver Cord', year: 2023 };
 const FAFYL = { album: 'Float Along – Fill Your Lungs', year: 2013 };
 const MOTU = { album: 'Murder of the Universe', year: 2017 };
 const AM = { album: 'Alien Metal', year: 2026 };
+const GS = { album: 'Gumboot Soup', year: 2017 };
 
 export const TRACK_SONGS: Record<string, TrackSong> = {
   'robot-stop': { title: 'Robot Stop', album: 'Nonagon Infinity', year: 2016 },
@@ -82,6 +83,10 @@ export const TRACK_SONGS: Record<string, TrackSong> = {
   'kill-for-the-steel': { title: 'Kill for the Steel', ...AM },
   'level-5': { title: 'Level 5', ...AM },
   'rapid-alpha-decay': { title: 'Rapid Alpha Decay', ...AM },
+  'muddy-water': { title: 'Muddy Water', ...GS },
+  'great-chain-of-being': { title: 'The Great Chain of Being', ...GS },
+  'all-is-known': { title: 'All Is Known', ...GS },
+  'the-wheel': { title: 'The Wheel', ...GS },
 };
 
 /**
