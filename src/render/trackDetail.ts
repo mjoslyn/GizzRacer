@@ -389,6 +389,14 @@ const STYLES: Record<DecorKind, DetailStyle> = {
     boards: { words: ['NO LOVE NO PAIN', "I DON'T FEEL ANYTHING", 'NEVER!', 'ALTERED BEAST'], bg: ['#141214', '#5a1418'], fg: '#e8e0d0' },
     crowd: false,
   },
+  // Rapid Alpha Decay: hazard poles along the road, green lamps on them; nobody watching in the core.
+  reactor: {
+    edge: { kind: 'pole', height: 1.6, spacing: 14, color: 0xf0c010, stripe: 0x141414 },
+    light: 0x7aff4a,
+    cover: { shape: 'pebble', colors: [0x2a2e30, 0x4a5054, 0x6a7078, 0x7aff4a], count: 1100 },
+    boards: { words: ['RAPID ALPHA DECAY', 'KEEPER OF THE ENERGY', 'CLIMB THE WALLS', 'ENERGY AND HEAT'], bg: ['#0a120c', '#c09a08'], fg: '#a0ff70' },
+    crowd: false,
+  },
   // The forge's own fires along the road, nobody out here among the stars but the smith: cinders, slag and stardust.
   forge: {
     edge: { kind: 'torch', height: 1.5, spacing: 16, color: 0x1a1a22, stripe: 0x3a3a48 },

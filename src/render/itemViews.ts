@@ -15,6 +15,7 @@ import { hollowParts, poseHollow } from './alteredBeastIV';
 import { magnetParts, poseMagnet } from './killForTheSteel';
 import { hammerParts, poseHammer } from './alienMetal';
 import { podParts, posePod } from './level5';
+import { alphaParts, poseAlphas } from './rapidAlphaDecay';
 import { BOX_RESPAWN, SHIELD_ITEMS, WAVE_RANGE, type ItemHolder, type ItemSystem } from '../items/items';
 import type { KartState } from '../physics/kart';
 import type { HazardSystem } from '../items/hazards';
@@ -1436,6 +1437,10 @@ export class HazardsView {
           // A driverless pod, nobody in it, its blinkers and its slipstream; pixels while it materialises.
           parts.push(...podParts(obj));
           break;
+        case 'alphas':
+          // A burst of alpha particles out of the nucleus across the road, and the static wave behind it.
+          parts.push(...alphaParts(obj));
+          break;
         case 'timber': {
           // A tree at the road's edge: its trunk, as long as the road is wide, and its crown; it leans, creaks and comes down across the road.
           const pivot = new THREE.Group();
@@ -2316,6 +2321,9 @@ export class HazardsView {
           break;
         case 'autopilot':
           posePod(obj, parts, p, elapsed);
+          break;
+        case 'alphas':
+          poseAlphas(obj, parts, p, elapsed);
           break;
         case 'presents': {
           const [present, lid, inside, shadow, roofs, santa, arm] = parts;

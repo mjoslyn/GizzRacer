@@ -562,6 +562,12 @@ export class Sfx {
       this.tone(1320, 0.18, 'sine', 0.07, undefined, 0.12);
       this.tone(990, 0.3, 'sine', 0.07, undefined, 0.3);
     }
+    // Hit by an alpha: a geiger counter's crackle, and the zap of it going through you.
+    if (by === 'alphas') {
+      for (let k = 0; k < 7; k++) this.tone(2600 + ((k * 1700) % 2600), 0.02, 'square', 0.05, undefined, k * 0.045 + (k % 3) * 0.013);
+      this.hit(0.3, 7000, 0.3);
+      this.tone(1400, 0.3, 'square', 0.06, 180);
+    }
     // A wave breaking over you: a crash of white noise; a glider comes in with a whistle of wind.
     if (by === 'waves') this.whoosh(0.8, 2400, 300, 0.35);
     if (by === 'gliders') this.whoosh(0.5, 1800, 500, 0.2);

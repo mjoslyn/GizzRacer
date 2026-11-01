@@ -12,9 +12,10 @@ import { ashTexture, sinewTexture, vertebraeTexture } from './alteredBeastIV';
 import { benchWallTexture, regolithTexture, steelBarrierTexture } from './killForTheSteel';
 import { forgeFloorTexture, forgeRailTexture, forgeWallTexture } from './alienMetal';
 import { barrierTexture as motorwayBarrierTexture, concreteTexture, tarmacTexture } from './level5';
+import { hazardBandTexture, leadBrickTexture, reactorFloorTexture } from './rapidAlphaDecay';
 
 export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism' | 'factory' | 'gamma' | 'carrion' | 'wah' | 'smog' | 'dome' | 'solar' | 'inferno' | 'mind' | 'notmind' | 'cellophane' | 'mindfuzz' | 'elbow' | 'muck' | 'boogie' | 'treesea' | 'theia' | 'set' | 'change' | 'uruk' | 'headon' | 'godcall' | 'nan' | 'float' | 'newworld' | 'foe' | 'altered' | 'hollow' | 'forge' | 'steelwar' | 'autonomy' | 'reactor';
-export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy' | 'hadean' | 'deshret' | 'moonpalace' | 'uruk' | 'nanshouse' | 'suburb' | 'headtrip' | 'paddock' | 'den' | 'alteredworld' | 'mudflat' | 'hollowness' | 'openCut' | 'forge' | 'driverless';
+export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy' | 'hadean' | 'deshret' | 'moonpalace' | 'uruk' | 'nanshouse' | 'suburb' | 'headtrip' | 'paddock' | 'den' | 'alteredworld' | 'mudflat' | 'hollowness' | 'openCut' | 'forge' | 'driverless' | 'reactor';
 
 /** Everything that makes a track's world look like itself. */
 export interface Theme {
@@ -1079,22 +1080,24 @@ export const THEMES: Record<ThemeId, Theme> = {
     barrier: { map: motorwayBarrierTexture, crawl: false },
     roadGlow: 0.15,
   },
-  // Rapid Alpha Decay: (placeholder, Set's look until its world is built).
+  // Rapid Alpha Decay: where the metal ends, burnt down to energy in a reactor's core, under the cup's one night of alien stars and its sick green moon; the core lights the horizon the same green.
   reactor: {
-    sky: { zenith: '#0a0a34', high: '#262a78', low: '#c86a3a', horizon: '#ffd070', below: '#c06030', ground: '#6a2a14', cloud: '255,200,150', clouds: 12, stars: { count: 140, color: '#f0f0ff' }, moon: '#f4f4ff' },
-    fog: { color: 0xc07850, near: 160, far: 860 },
-    hemi: { sky: 0xffd0a0, ground: 0x8a3a1a, intensity: 1.5 },
-    sun: { color: 0xffd890, intensity: 2.3 },
-    ground: tex.redSandTexture,
-    groundTile: 20,
-    // Walls are a temple's, blocks of sandstone with a painted frieze.
-    cliff: tex.templeWallTexture,
-    decor: 'deshret',
-    distant: { shape: 'mesa', color: 0x5a2414 },
-    haze: 0.8,
-    duotone: [0x0a0420, 0xd05a20, 0xffe890],
+    sky: { zenith: '#020308', high: '#080e22', low: '#14302a', horizon: '#5ab84a', below: '#1a3a22', ground: '#0a120c', cloud: '120,200,140', clouds: 8, stars: { count: 300, color: '#d8ecff' }, moon: '#c0ff98' },
+    fog: { color: 0x14281c, near: 130, far: 760 },
+    hemi: { sky: 0x9ad8ff, ground: 0x1a3a18, intensity: 1.35 },
+    sun: { color: 0xd0ffc0, intensity: 1.8 },
+    ground: reactorFloorTexture,
+    groundTile: 22,
+    // Walls are lead bricks, stacked.
+    cliff: leadBrickTexture,
+    decor: 'reactor',
+    distant: { shape: 'city', color: 0x0a1410 },
+    haze: 0.3,
+    duotone: [0x020604, 0x38b040, 0xd8ffc0],
     skyCycle: false,
-    dust: 0xd08050,
-    barrier: { map: tex.templeWallTexture, crawl: false },
+    dust: 0x4a5a4a,
+    barrier: { map: hazardBandTexture, crawl: false },
+    roadGlow: 0.18,
+    edgeLine: 0x7aff4a,
   },
 };

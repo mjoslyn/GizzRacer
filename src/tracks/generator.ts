@@ -773,12 +773,13 @@ const PALETTES: Record<GenTheme, Palette> = {
   reactor: {
     surface: 'lead',
     deck: 'lead',
-    alt: 'sand',
-    hazards: ['sunMoon'],
-    start: 'setGate',
-    landmarks: ['setGate'],
+    alt: 'steel',
+    liquid: 'water',
+    hazards: ['alphas'],
+    start: 'reactorGate',
+    landmarks: ['reactorGate', 'atomNucleus'],
     tallWalls: 6,
-    places: ['Jackal', 'Snake', 'Tornado', 'Tomb', 'Duality', 'Sandstorm', 'Moonbeam', 'Hieroglyph', 'Reset'],
+    places: ['Walls', 'Rapid Flame', 'Alpha', 'Lead', 'Metallic', 'Jumpstart', 'Static', 'Transcend', 'Keeper', 'Energy and Heat'],
     music: { lap: 'rapid-alpha-decay', finalLap: 'rapid-alpha-decay-final-lap' },
   },
 };
@@ -1561,6 +1562,9 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
       case 'fangs':
         // A run of jaws down the stretch, each snapping shut a beat after the one before.
         hazards.push({ kind, at: at(count + 1), period: 4.6 });
+        break;
+      case 'alphas':
+        hazards.push({ kind, at: at(count - 1), period: 4.6 });
         break;
     }
     return true;

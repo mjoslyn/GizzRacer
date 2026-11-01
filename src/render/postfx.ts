@@ -16,6 +16,8 @@ export interface PostFxParams {
   water?: number;
   /** After the wrong pill (Head On/Pill), 0..1: the screen swims, swirling round its middle, the colours running. */
   swim?: number;
+  /** Hit by an alpha (Rapid Alpha Decay), 0..1: the screen crackles with static, torn lines and snow, a sick green. */
+  crackle?: number;
   /** The duotone's shadows, body and highlights (the track theme's `duotone`). */
   palette?: readonly [number, number, number];
 }
@@ -39,6 +41,7 @@ uniform float uDuo;
 uniform float uBox;
 uniform float uWater;
 uniform float uSwim;
+uniform float uCrackle;
 uniform vec3 uDuoDark;
 uniform vec3 uDuoMid;
 uniform vec3 uDuoHigh;
@@ -71,6 +74,13 @@ void main() {
     c = mat2(cos(a), -sin(a), sin(a), cos(a)) * c;
     uv = 0.5 + c / vec2(uAspect, 1.0);
     uv += vec2(sin(uv.y * 9.0 + uTime * 3.1), cos(uv.x * 7.0 + uTime * 2.3)) * 0.012 * uSwim;
+  }
+
+  // Hit by an alpha: lines of the picture torn sideways, flickering.
+  if (uCrackle > 0.0) {
+    float band = floor(uv.y * 60.0);
+    float tear = step(0.82, hash(vec2(band, floor(uTime * 24.0))));
+    uv.x += (hash(vec2(band, floor(uTime * 30.0) + 7.0)) - 0.5) * 0.08 * tear * uCrackle;
   }
 
   // Under water everything wavers.
@@ -133,6 +143,12 @@ void main() {
     col.rgb *= 1.0 - uVhs * 0.14 * scan;
     col.rgb += (hash(gl_FragCoord.xy + fract(uTime) * 91.0) - 0.5) * 0.05 * uVhs;
   }
+  // Static: snow over the picture, and a sick green flicker through it.
+  if (uCrackle > 0.0) {
+    float snow = hash(floor(gl_FragCoord.xy / 2.0) + floor(uTime * 40.0) * 13.0);
+    float flick = 0.6 + 0.4 * step(0.5, hash(vec2(floor(uTime * 18.0), 3.0)));
+    col.rgb = mix(col.rgb, vec3(snow) * vec3(0.7, 1.0, 0.6), 0.55 * uCrackle * flick);
+  }
   // Letterbox bars, like the tape the video was shot on.
   if (uBox > 0.0 && abs(vUv.y - 0.5) > 0.5 - uBox * 0.11) col.rgb = vec3(0.0);
 
@@ -171,6 +187,7 @@ export class PostFx {
           uBox: { value: 0 },
           uWater: { value: 0 },
           uSwim: { value: 0 },
+          uCrackle: { value: 0 },
           uDuoDark: { value: new THREE.Color(0x0a0002) },
           uDuoMid: { value: new THREE.Color(0xc00410) },
           uDuoHigh: { value: new THREE.Color(0xf0c020) },
@@ -190,7 +207,8 @@ export class PostFx {
     const box = p.box ?? 0;
     const water = p.water ?? 0;
     const swim = p.swim ?? 0;
-    if (p.haze < 0.01 && p.kaleido < 0.01 && vhs < 0.01 && duo < 0.01 && box < 0.01 && water < 0.01 && swim < 0.01) {
+    const crackle = p.crackle ?? 0;
+    if (p.haze < 0.01 && p.kaleido < 0.01 && vhs < 0.01 && duo < 0.01 && box < 0.01 && water < 0.01 && swim < 0.01 && crackle < 0.01) {
       r.render(scene, camera);
       return;
     }
@@ -214,6 +232,7 @@ export class PostFx {
     u.uBox.value = box;
     u.uWater.value = water;
     u.uSwim.value = swim;
+    u.uCrackle.value = crackle;
     if (p.palette) {
       (u.uDuoDark.value as THREE.Color).setHex(p.palette[0]);
       (u.uDuoMid.value as THREE.Color).setHex(p.palette[1]);
