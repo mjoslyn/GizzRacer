@@ -23,6 +23,7 @@ const TBB = { album: '12 Bar Bruise', year: 2012 };
 const TSC = { album: 'The Silver Cord', year: 2023 };
 const FAFYL = { album: 'Float Along – Fill Your Lungs', year: 2013 };
 const MOTU = { album: 'Murder of the Universe', year: 2017 };
+const AM = { album: 'Alien Metal', year: 2026 };
 
 export const TRACK_SONGS: Record<string, TrackSong> = {
   'robot-stop': { title: 'Robot Stop', album: 'Nonagon Infinity', year: 2016 },
@@ -77,6 +78,10 @@ export const TRACK_SONGS: Record<string, TrackSong> = {
   'altered-beast-ii': { title: 'Altered Beast II', ...MOTU, also: 'Alter Me II' },
   'altered-beast-iii': { title: 'Altered Beast III', ...MOTU, also: 'Alter Me III' },
   'altered-beast-iv': { title: 'Altered Beast IV', ...MOTU },
+  'alien-metal': { title: 'Alien Metal', ...AM },
+  'kill-for-the-steel': { title: 'Kill for the Steel', ...AM },
+  'level-5': { title: 'Level 5', ...AM },
+  'rapid-alpha-decay': { title: 'Rapid Alpha Decay', ...AM },
 };
 
 /**

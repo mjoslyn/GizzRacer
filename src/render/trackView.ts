@@ -214,6 +214,11 @@ function materials(theme: Theme): Materials {
       // Altered Beast III's: the beast's fur, combed.
       fur: bumpy(furRoadTexture(), 0.14),
       bone: bumpy(boneRoadTexture(), 0.1),
+      // The Alien Metal Cup's roads (placeholders until each track's world is built).
+      anvil: bumpy(tex.asphaltTexture(), 0.08),
+      ore: bumpy(tex.sandTexture(), 0.06),
+      lane: bumpy(tex.asphaltTexture(), 0.08),
+      lead: bumpy(tex.asphaltTexture(), 0.08),
       gravel: bumpy(gravelTexture(), 0.1),
       cosmic: (() => {
         const map = tex.cosmicRoadTexture();

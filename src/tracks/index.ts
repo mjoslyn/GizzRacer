@@ -46,6 +46,10 @@ import { buildAlteredBeastI } from './alteredBeastI';
 import { buildAlteredBeastII } from './alteredBeastII';
 import { buildAlteredBeastIII } from './alteredBeastIII';
 import { buildAlteredBeastIV } from './alteredBeastIV';
+import { buildAlienMetal } from './alienMetal';
+import { buildKillForTheSteel } from './killForTheSteel';
+import { buildLevel5 } from './level5';
+import { buildRapidAlphaDecay } from './rapidAlphaDecay';
 import { buildCutThroatBoogie } from './cutThroatBoogie';
 import { buildSeaOfTrees } from './seaOfTrees';
 import { buildTheia } from './theia';
@@ -108,6 +112,10 @@ export const RAW_TRACK_LIST: { id: string; name: string; build: () => TrackDef }
   { id: 'deadstick-drop', name: 'Deadstick', build: buildDeadstickDrop },
   { id: 'panpsych-grove', name: 'Panpsych', build: buildPanpsychGrove },
   { id: 'sea-of-doubt', name: 'Sea of Doubt', build: buildSeaOfDoubt },
+  { id: 'alien-metal', name: 'Alien Metal', build: buildAlienMetal },
+  { id: 'kill-for-the-steel', name: 'Kill for the Steel', build: buildKillForTheSteel },
+  { id: 'level-5', name: 'Level 5', build: buildLevel5 },
+  { id: 'rapid-alpha-decay', name: 'Rapid Alpha Decay', build: buildRapidAlphaDecay },
 ];
 
 export const TRACK_LIST: { id: string; name: string; build: () => TrackDef }[] = RAW_TRACK_LIST.map((t) => ({ ...t, build: () => enrichTrack(t.build()) }));
@@ -140,6 +148,8 @@ export const CUPS: { id: string; name: string; tracks: number[] }[] = [
   { id: 'silver-cord', name: 'Silver Cord Cup', tracks: [44, 45, 46, 47] },
   // Phantom Island (2025): the island in the mist, the plane with no engine, the forest that's awake, and the sea at night.
   { id: 'phantom-island', name: 'Phantom Island Cup', tracks: [48, 49, 50, 51] },
+  // Alien Metal (August 2026), the EDM record in one tempo and key that loops back on itself: the life of the metal round one circuit. Forged by the astral blacksmith, fought over, built into the machines, and burnt down to energy in the core, whose finish runs into the forge's start.
+  { id: 'alien-metal', name: 'Alien Metal Cup', tracks: [52, 53, 54, 55] },
 ];
 
 /** Cups that were retired when every cup became an album's, and the album cup that took most of each one's tracks: progress.ts carries their trophies over. */

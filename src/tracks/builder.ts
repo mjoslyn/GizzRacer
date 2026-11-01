@@ -79,7 +79,15 @@ export type RoadSurface =
   /** Altered Beast III's road: the beast's fur, combed. */
   | 'fur'
   /** Altered Beast IV's road: bone, bleached and hollow. */
-  | 'bone';
+  | 'bone'
+  /** Alien Metal's road: forged steel plates on the astral blacksmith's anvil, still glowing at the seams. */
+  | 'anvil'
+  /** Kill for the Steel's road: a mine haul road of crushed ore, steel glinting in it. */
+  | 'ore'
+  /** Level 5's road: a self-driving lane, white and blue, its markings for the machines. */
+  | 'lane'
+  /** Rapid Alpha Decay's road: lead shielding plates, riveted. */
+  | 'lead';
 
 /**
  * Every road is built this much wider than its section says: the layouts

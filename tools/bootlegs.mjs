@@ -40,6 +40,10 @@ const SKIP = new Set([
   "kg2022-10-11/47. Altered Beast I (Live At Red Rocks '22).mp3",
   "kg2022-10-11/49. Altered Beast II (Live At Red Rocks '22).mp3",
   'kglw2026-08-16.Full-Three-Shows-discocape/kglw2026-08-15-4ch-discocape_18.mp3',
+  'kglw2026-08-16.Full-Three-Shows-discocape/kglw2026-08-15-4ch-discocape_15.mp3',
+  'kglw2026-08-16.Full-Three-Shows-discocape/kglw2026-08-15-4ch-discocape_16.mp3',
+  'kglw2026-08-16.Full-Three-Shows-discocape/kglw2026-08-14-4ch_discocape_14.mp3',
+  'kglw2026-08-16.Full-Three-Shows-discocape/kglw2026-08-14-4ch_discocape_15.mp3',
   "kglw2025-06-08.SBD.flac/King Gizzard & The Lizard Wizard - Live in Bulgaria '25 - 11 Altered Beast III (Live in Bulgaria '25).mp3",
 ]);
 /** Start points and gains already found (tools/bootleg-starts.mjs), and ends (tools/live-edges.py), kept across a re-run. */
