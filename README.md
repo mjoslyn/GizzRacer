@@ -8,7 +8,7 @@ No install and no account. It will always be free. **[The manual](https://www.gi
 
 ## What's in it
 
-- **52 tracks in 13 cups**, one an album, in the order the albums came out, plus a Random Cup of four drawn from them
+- **56 tracks in 14 cups**, one an album, in the order the albums came out, plus a Random Cup of four drawn from them
   - **12 Bar Bruise Cup:** the band's first album, in album order: Elbow, Muckraker, Cut Throat Boogie, Sea of Trees
   - **Float Along – Fill Your Lungs Cup:** the third album, in album order: Head On/Pill, God Is Calling Me Back Home, Let Me Mend the Past, Float Along (a cinquefoil knot in 5/4)
   - **Mind Fuzz Cup:** the suite that opens I'm in Your Mind Fuzz, in order: I'm in Your Mind, I'm Not in Your Mind, Cellophane, I'm in Your Mind Fuzz
@@ -22,6 +22,7 @@ No install and no account. It will always be free. **[The manual](https://www.gi
   - **PetroDragonic Apocalypse Cup:** Motor Spirit, Supercell, Dragon, Flamethrower
   - **Silver Cord Cup:** the synth album, in album order: Theia, Set, Chang'e, Gilgamesh, all four tangling over themselves on bridges in tiers (Set a storm spiralling in to its tornado and thrown back out, Chang'e a trefoil knot)
   - **Phantom Island Cup:** Phantom Island, Deadstick, Panpsych, Sea of Doubt
+  - **Alien Metal Cup:** the 2026 EDM record, a concept cup round the life of one piece of alien metal: Alien Metal (the astral blacksmith's forge, a Möbius strip), Kill for the Steel (an open-cut mine), Level 5 (a multi-storey car park of driverless cars), Rapid Alpha Decay (a reactor's core, an atom)
 - **Roller-coaster tracks:** climbs onto pillared decks, plunges you fly off, canyons sunk into the ground, and a causeway that dives under the lagoon
 - **Launchers and gliders:** a glowing ramp on the lip of every track's big jump (and on a long straight where there's no jump) throws you high, and a trick off it opens your glider, so the leap is a glide you can steer. Up climbs (trading speed for height), down dives (picking speed up)
 - **Rhythm humps, apex pads and slaloms:** a sharp crest on the long straights to fly off, a boost pad on the inside of the big hairpins for the tight line, and a slalom of three pads across the straights of the hillier tracks
