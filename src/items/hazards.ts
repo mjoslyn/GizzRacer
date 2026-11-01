@@ -141,6 +141,7 @@ export const WAVE_SPIN = 1.0;
  * - a jaw of nine pearl fangs driven through as it opens again after a bite is a boost
  * - hopped as it passes, the ring of a beast's footfall running across the road is a boost
  * - skirting the rim of a hollow in the road as it closes, it slings you on, a boost
+ * - through the static wave crackling across the road in a burst of alphas' wake, a jumpstart: a boost
  */
 /** A reward can't pay out again to the same kart for this long. */
 export const REWARD_COOLDOWN = 1.5;
@@ -688,6 +689,43 @@ export function voidRadius(u: number): number {
   return VOID_RADIUS * (1 - (u - V.close) / (V.shut - V.close));
 }
 
+/**
+ * Rapid Alpha Decay's alpha particles, two protons and two neutrons each,
+ * fired out of the nucleus as it decays: a glow at the edge of the road
+ * they'll come from (the warning), then the burst, three of them streaking
+ * right across the road one behind another, and in their wake the static
+ * wave, crackling across the whole road a moment before it fades. Hit by
+ * an alpha, you spin, and your screen crackles with static; through the
+ * static wave behind a burst, a jumpstart, a boost.
+ */
+export const ALPHA_STAGES = { fire: 0.28, wake: 0.55, gone: 0.72 } as const;
+export const ALPHA_COUNT = 3;
+export const ALPHA_RADIUS = 1.3;
+/** How far apart a burst's alphas fly, one behind another across the road. */
+export const ALPHA_GAP = 5;
+/** How high over the road they fly. */
+export const ALPHA_LIFT = 1.2;
+/** How far along the road the static wave reaches either side of the alphas' line. */
+export const ALPHA_DEPTH = 1.6;
+export const ALPHA_BOOST = 1.0;
+export const ALPHA_SPIN = 1.0;
+/** Hit: this long of static crackling on the screen. */
+export const ALPHA_STATIC = 1.5;
+
+/**
+ * Where a burst's alpha `k` (0 leads) is across the road at cycle stage
+ * `u`, as a lateral from the road's centre measured toward the edge they're
+ * fired from, for a road `reach` wide either side: from beyond that edge,
+ * right across, to beyond the other; null outside the burst.
+ */
+export function alphaAcross(u: number, k: number, reach: number): number | null {
+  const A = ALPHA_STAGES;
+  if (u < A.fire || u >= A.wake) return null;
+  const f = (u - A.fire) / (A.wake - A.fire);
+  const from = reach + ALPHA_RADIUS * 2;
+  return from - (2 * from + (ALPHA_COUNT - 1) * ALPHA_GAP) * f + k * ALPHA_GAP;
+}
+
 /** How far a tree has toppled at cycle stage `u`: 0 upright, a lean while it creaks, 1 lying across the road. */
 export function timberFall(u: number): number {
   const T = TIMBER_STAGES;
@@ -781,6 +819,7 @@ const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds' | 'butterfli
   fangs: FANG_SPIN,
   stomps: STOMP_SPIN,
   void: 0,
+  alphas: ALPHA_SPIN,
 };
 
 /** Kinds that fill the whole road across, on a rhythm: nothing to steer round, only to time. */
@@ -1392,6 +1431,33 @@ export class HazardSystem {
           p.phase = u;
           break;
         }
+        case 'alphas': {
+          // A burst out of the nucleus, from the edge of the road nearer it, right across; the static wave in its wake.
+          const at = def.at[i];
+          const tt = (t + 10) / def.period + i * 0.29;
+          const cycle = Math.floor(tt);
+          const u = tt - cycle;
+          const reach = this.halfWidth(at) + 1;
+          this.place(p, at, 0, 0);
+          let side = (cycle + i) % 2 === 0 ? 1 : -1;
+          if (def.from) {
+            // The nucleus's side of the road: a lateral to the right is (-cos h, sin h).
+            const right = (def.from.x - p.ax) * -Math.cos(p.heading) + (def.from.z - p.az) * Math.sin(p.heading);
+            side = right >= 0 ? 1 : -1;
+          }
+          const lead = alphaAcross(u, 0, reach);
+          if (lead !== null) this.place(p, at, side * lead, ALPHA_LIFT);
+          else this.place(p, at, side * reach, ALPHA_LIFT);
+          p.radius = reach;
+          p.side = side;
+          p.gap = side * (lead ?? reach);
+          // On the road while any of the three is still crossing it.
+          const last = alphaAcross(u, ALPHA_COUNT - 1, reach);
+          p.active = lead !== null && last !== null && lead < reach + ALPHA_RADIUS && last > -reach - ALPHA_RADIUS;
+          p.lane = u >= ALPHA_STAGES.wake && u < ALPHA_STAGES.gone ? 1 : 0;
+          p.phase = u;
+          break;
+        }
         case 'dustDevils':
         case 'butterflies':
         case 'tornadoes':
@@ -1589,6 +1655,10 @@ export class HazardSystem {
         }
         if (p.kind === 'void') {
           this.hollow(hit, p, s);
+          continue;
+        }
+        if (p.kind === 'alphas') {
+          this.alpha(hit, p, s);
           continue;
         }
         if (p.kind === 'fuzz' && p.phase >= FUZZ_STAGES.gold && p.phase < FUZZ_STAGES.red) {
@@ -1884,6 +1954,19 @@ export class HazardSystem {
         // From just before it bursts: as far as the burst reaches.
         if (p.phase < BUBBLE_STAGES.burst - 0.1 || p.phase >= BUBBLE_STAGES.gone) continue;
         out.push({ x: p.x, z: p.z, r: p.radius * BUBBLE_BURST, vx: 0, vz: 0 });
+        continue;
+      }
+      if (p.kind === 'alphas') {
+        // From just before the burst until the last of it is across: each alpha, streaking over the road.
+        if (p.phase < ALPHA_STAGES.fire - 0.06 || p.phase >= ALPHA_STAGES.wake) continue;
+        const fx = Math.sin(p.heading);
+        const fz = Math.cos(p.heading);
+        const { def } = this.slots[k];
+        const speed = (2 * (p.radius + 2 * ALPHA_RADIUS) + (ALPHA_COUNT - 1) * ALPHA_GAP) / ((ALPHA_STAGES.wake - ALPHA_STAGES.fire) * ('period' in def ? def.period : 5));
+        for (let n = 0; n < ALPHA_COUNT; n++) {
+          const lat = p.side * (alphaAcross(Math.max(p.phase, ALPHA_STAGES.fire), n, p.radius) ?? 0);
+          out.push({ x: p.ax - fz * lat, z: p.az + fx * lat, r: ALPHA_RADIUS, vx: fz * p.side * speed, vz: -fx * p.side * speed });
+        }
         continue;
       }
       if (p.kind === 'void') {
@@ -2379,6 +2462,30 @@ export class HazardSystem {
     this.cooldown.set(s, HIT_COOLDOWN);
     s.speed *= VOID_SLOW;
     hit.push({ kart: s, by: p.kind });
+  }
+
+  /**
+   * A burst of alphas across the road: hit by one, spun, the screen full of
+   * static (game.ts); through the static wave in their wake, a jumpstart.
+   */
+  private alpha(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+    const fx = Math.sin(p.heading);
+    const fz = Math.cos(p.heading);
+    const along = (s.x - p.ax) * fx + (s.z - p.az) * fz;
+    const lat = (s.x - p.ax) * -fz + (s.z - p.az) * fx;
+    if (p.lane === 1) {
+      if (Math.abs(along) <= ALPHA_DEPTH + KART_RADIUS && Math.abs(lat) <= p.radius) this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, ALPHA_BOOST)));
+      return;
+    }
+    if (!p.active || Math.abs(along) > ALPHA_RADIUS + KART_RADIUS) return;
+    for (let n = 0; n < ALPHA_COUNT; n++) {
+      const a = alphaAcross(p.phase, n, p.radius);
+      if (a === null || Math.hypot(along, lat - p.side * a) > ALPHA_RADIUS + KART_RADIUS) continue;
+      if (this.cooldown.has(s)) return;
+      this.cooldown.set(s, HIT_COOLDOWN);
+      if (spinOut(s, ALPHA_SPIN)) hit.push({ kart: s, by: p.kind });
+      return;
+    }
   }
 
   /** Pays a kart for using a hazard well, once in a while. */

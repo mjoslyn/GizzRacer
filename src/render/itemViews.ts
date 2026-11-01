@@ -12,6 +12,7 @@ import { cutleryParts, poseCutlery } from './alteredBeastII';
 import { fangParts, poseFangs } from './alteredBeastIII';
 import { poseStomp, stompParts } from './alteredBeastI';
 import { hollowParts, poseHollow } from './alteredBeastIV';
+import { alphaParts, poseAlphas } from './rapidAlphaDecay';
 import { BOX_RESPAWN, SHIELD_ITEMS, WAVE_RANGE, type ItemHolder, type ItemSystem } from '../items/items';
 import type { KartState } from '../physics/kart';
 import type { HazardSystem } from '../items/hazards';
@@ -1421,6 +1422,10 @@ export class HazardsView {
           // A hollow in the road: a crack, then a dark hollow yawning open, bone round its lip.
           parts.push(...hollowParts(obj));
           break;
+        case 'alphas':
+          // A burst of alpha particles out of the nucleus across the road, and the static wave behind it.
+          parts.push(...alphaParts(obj));
+          break;
         case 'timber': {
           // A tree at the road's edge: its trunk, as long as the road is wide, and its crown; it leans, creaks and comes down across the road.
           const pivot = new THREE.Group();
@@ -2292,6 +2297,9 @@ export class HazardsView {
           break;
         case 'void':
           poseHollow(obj, parts, p, elapsed);
+          break;
+        case 'alphas':
+          poseAlphas(obj, parts, p, elapsed);
           break;
         case 'presents': {
           const [present, lid, inside, shadow, roofs, santa, arm] = parts;
