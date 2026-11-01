@@ -6052,5 +6052,108 @@
     "seconds": 55
    }
   }
+ ],
+ "Alien Metal": [
+  {
+   "id": "kglw2026-08-15.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live at Field of Vision II '26 - 14 Alien Metal (Live at Field of Vision II '26).mp3",
+   "date": "2026-08-15",
+   "venue": "Field of Vision II, Buena Vista, CO",
+   "seconds": 790,
+   "start": 36.5,
+   "gain": 5.5
+  },
+  {
+   "id": "kglw2026-08-22",
+   "file": "kglw2026-08-22t08.mp3",
+   "date": "2026-08-22",
+   "venue": "Forest Hills Stadium",
+   "seconds": 851,
+   "start": 0,
+   "end": 803.5,
+   "gain": 10
+  },
+  {
+   "id": "kglw2026-10-17.h1n.flac24",
+   "file": "kglw2026-10-17t11.mp3",
+   "date": "2026-10-17",
+   "venue": "carpark opposite Croxton Park Hotel",
+   "seconds": 595,
+   "start": 0,
+   "end": 564.5,
+   "gain": 17
+  }
+ ],
+ "Kill for the Steel": [
+  {
+   "id": "kglw2026-08-15.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live at Field of Vision II '26 - 15 Kill for the Steel (Live at Field of Vision II '26).mp3",
+   "date": "2026-08-15",
+   "venue": "Field of Vision II, Buena Vista, CO",
+   "seconds": 563,
+   "start": 0,
+   "end": 468.5,
+   "gain": 3.5
+  },
+  {
+   "id": "kglw2026-08-23.Birds",
+   "file": "02-Kill for the Steel.mp3",
+   "date": "2026-08-23",
+   "venue": "Under the 'K' Bridge",
+   "seconds": 798,
+   "start": 66,
+   "end": 779.5,
+   "gain": 17
+  }
+ ],
+ "Level 5": [
+  {
+   "id": "kglw2026-08-14.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live at Field of Vision II '26 - 13 Level 5 (Live at Field of Vision II '26).mp3",
+   "date": "2026-08-14",
+   "venue": "Field of Vision II, Buena Vista, CO",
+   "seconds": 539,
+   "start": 58.5,
+   "gain": 6.5
+  },
+  {
+   "id": "kglw2026-08-22",
+   "file": "kglw2026-08-22t06.mp3",
+   "date": "2026-08-22",
+   "venue": "Forest Hills Stadium",
+   "seconds": 1022,
+   "start": 42,
+   "gain": 14
+  },
+  {
+   "id": "kglw2026-10-18.h1n.flac24",
+   "file": "kglw2026-10-18t04.mp3",
+   "date": "2026-10-18",
+   "venue": "carpark opposite Croxton Park Hotel",
+   "seconds": 868,
+   "start": 31.5,
+   "gain": 14
+  }
+ ],
+ "Rapid Alpha Decay": [
+  {
+   "id": "kglw2026-08-14.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live at Field of Vision II '26 - 14 Rapid Alpha Decay (Live at Field of Vision II '26).mp3",
+   "date": "2026-08-14",
+   "venue": "Field of Vision II, Buena Vista, CO",
+   "seconds": 739,
+   "start": 0,
+   "end": 645.5,
+   "gain": 5
+  },
+  {
+   "id": "kglw2026-08-22",
+   "file": "kglw2026-08-22t07.mp3",
+   "date": "2026-08-22",
+   "venue": "Forest Hills Stadium",
+   "seconds": 776,
+   "start": 62.5,
+   "gain": 6.5
+  }
  ]
 }
