@@ -11,9 +11,10 @@ import { mudWallTexture, mudflatTexture, rubbleTexture } from './alteredBeastI';
 import { ashTexture, sinewTexture, vertebraeTexture } from './alteredBeastIV';
 import { benchWallTexture, regolithTexture, steelBarrierTexture } from './killForTheSteel';
 import { forgeFloorTexture, forgeRailTexture, forgeWallTexture } from './alienMetal';
+import { barrierTexture as motorwayBarrierTexture, concreteTexture, tarmacTexture } from './level5';
 
 export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism' | 'factory' | 'gamma' | 'carrion' | 'wah' | 'smog' | 'dome' | 'solar' | 'inferno' | 'mind' | 'notmind' | 'cellophane' | 'mindfuzz' | 'elbow' | 'muck' | 'boogie' | 'treesea' | 'theia' | 'set' | 'change' | 'uruk' | 'headon' | 'godcall' | 'nan' | 'float' | 'newworld' | 'foe' | 'altered' | 'hollow' | 'forge' | 'steelwar' | 'autonomy' | 'reactor';
-export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy' | 'hadean' | 'deshret' | 'moonpalace' | 'uruk' | 'nanshouse' | 'suburb' | 'headtrip' | 'paddock' | 'den' | 'alteredworld' | 'mudflat' | 'hollowness' | 'openCut' | 'forge';
+export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy' | 'hadean' | 'deshret' | 'moonpalace' | 'uruk' | 'nanshouse' | 'suburb' | 'headtrip' | 'paddock' | 'den' | 'alteredworld' | 'mudflat' | 'hollowness' | 'openCut' | 'forge' | 'driverless';
 
 /** Everything that makes a track's world look like itself. */
 export interface Theme {
@@ -1059,23 +1060,24 @@ export const THEMES: Record<ThemeId, Theme> = {
     roadGlow: 0.2,
     edgeLine: 0xff8a2a,
   },
-  // Level 5: (placeholder, Set's look until its world is built).
+  // Level 5: the cup's one night over a city of driverless cars at the end of the world, black steel under the alien stars, its motorway white and its lights the cold electric blue, the city's glow low on the horizon.
   autonomy: {
-    sky: { zenith: '#0a0a34', high: '#262a78', low: '#c86a3a', horizon: '#ffd070', below: '#c06030', ground: '#6a2a14', cloud: '255,200,150', clouds: 12, stars: { count: 140, color: '#f0f0ff' }, moon: '#f4f4ff' },
-    fog: { color: 0xc07850, near: 160, far: 860 },
-    hemi: { sky: 0xffd0a0, ground: 0x8a3a1a, intensity: 1.5 },
-    sun: { color: 0xffd890, intensity: 2.3 },
-    ground: tex.redSandTexture,
-    groundTile: 20,
-    // Walls are a temple's, blocks of sandstone with a painted frieze.
-    cliff: tex.templeWallTexture,
-    decor: 'deshret',
-    distant: { shape: 'mesa', color: 0x5a2414 },
-    haze: 0.8,
-    duotone: [0x0a0420, 0xd05a20, 0xffe890],
+    sky: { zenith: '#020308', high: '#070b22', low: '#10204e', horizon: '#3a7ac0', below: '#0c1636', ground: '#070a18', cloud: '48,68,120', clouds: 8, stars: { count: 300, color: '#d8ecff' }, moon: '#c8ffa8' },
+    fog: { color: 0x0e1a3c, near: 140, far: 780 },
+    hemi: { sky: 0xa0bcff, ground: 0x0c1230, intensity: 1.4 },
+    sun: { color: 0xd8e6ff, intensity: 1.8 },
+    ground: tarmacTexture,
+    groundTile: 24,
+    // Walls are the cutting's and the car park's: precast concrete, a strip of blue light along each course.
+    cliff: concreteTexture,
+    decor: 'driverless',
+    distant: { shape: 'city', color: 0x0a1230 },
+    haze: 0,
+    duotone: [0x02040c, 0x1a6ad8, 0xe8f6ff],
     skyCycle: false,
-    dust: 0xd08050,
-    barrier: { map: tex.templeWallTexture, crawl: false },
+    dust: 0x8a96b0,
+    barrier: { map: motorwayBarrierTexture, crawl: false },
+    roadGlow: 0.15,
   },
   // Rapid Alpha Decay: (placeholder, Set's look until its world is built).
   reactor: {

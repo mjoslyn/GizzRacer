@@ -2013,6 +2013,7 @@ const HIT_TEXT: Record<ItemKind | HazardKind, string> = {
   void: 'EMPTINESS!',
   magnets: 'BAD LUCK!',
   hammer: 'FLATTENED!',
+  autopilot: 'NO DRIVER!',
 };
 
 /** What a hazard used well says: the ones that can help. */
@@ -2078,6 +2079,7 @@ const BONUS_TEXT: Record<HazardKind, string> = {
   void: 'NEVER!',
   magnets: 'KILL FOR THE STEEL!',
   hammer: 'GIMME A FIX!',
+  autopilot: 'SLIPSTREAM!',
 };
 
 /** Takes a group out of the scene and frees what it built. */
