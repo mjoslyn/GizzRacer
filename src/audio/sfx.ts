@@ -544,6 +544,12 @@ export class Sfx {
       this.tone(110, 0.9, 'sine', 0.14, 30);
       this.whoosh(0.7, 900, 200, 0.18);
     }
+    // Into the back of a driverless pod: a crunch, and its two-tone chime, unbothered, the way a machine says sorry.
+    if (by === 'autopilot') {
+      this.hit(0.2, 900, 0.45);
+      this.tone(1320, 0.18, 'sine', 0.07, undefined, 0.12);
+      this.tone(990, 0.3, 'sine', 0.07, undefined, 0.3);
+    }
     // A wave breaking over you: a crash of white noise; a glider comes in with a whistle of wind.
     if (by === 'waves') this.whoosh(0.8, 2400, 300, 0.35);
     if (by === 'gliders') this.whoosh(0.5, 1800, 500, 0.2);

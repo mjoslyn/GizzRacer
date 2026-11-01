@@ -373,6 +373,14 @@ const STYLES: Record<DecorKind, DetailStyle> = {
     boards: { words: ['A NEW WORLD', 'ALTER ME', 'I THINK I SEE', 'ALTERED BEAST'], bg: ['#2a1c18', '#6a3a24'], fg: '#f0dcb0' },
     crowd: false,
   },
+  // The motorway's cold blue lamps, signs for the machines, and nobody left to watch.
+  driverless: {
+    edge: { kind: 'lamp', height: 6.5, spacing: 24, color: 0xd8dce4, stripe: 0x2a80ff },
+    light: 0x9ad0ff,
+    cover: { shape: 'pebble', colors: [0x2a2e38, 0x3a404c, 0x1a1e26, 0x6a7488], count: 700 },
+    boards: { words: ['LEVEL 5', 'AUTONOMY', 'NO DRIVER', 'TRUST IN AUTONOMY', 'EXPIRY'], bg: ['#0a1430', '#12306e'], fg: '#e8f2ff' },
+    crowd: false,
+  },
   // A dead-end street's lamps in a world with nobody in it: no crowd, chips of bone in the ash.
   hollowness: {
     edge: { kind: 'lamp', height: 4.6, spacing: 26, color: 0x2a282c, stripe: 0x1a181c },
@@ -463,7 +471,7 @@ export function roadPaint(ribbon: Ribbon, decor: DecorKind, edgeLine?: number, e
     line[i] = -Math.max(-0.55, Math.min(0.55, (sum / 25) * 14));
   }
   const paintable = new Set(['asphalt']);
-  const wearable = new Set(['asphalt', 'salt', 'rock', 'sand', 'boards', 'regolith', 'wet', 'paving', 'reef', 'flagstone', 'membrane', 'steel', 'scorched', 'fret', 'tar', 'gilded', 'heatshield', 'brimstone', 'neural', 'film', 'fuzz', 'carpet', 'muck', 'moss', 'hieroglyph', 'mudbrick', 'florals', 'bitumen', 'gravel', 'butcherfur', 'bitumen', 'gravel', 'crust', 'bone']);
+  const wearable = new Set(['asphalt', 'salt', 'rock', 'sand', 'boards', 'regolith', 'wet', 'paving', 'reef', 'flagstone', 'membrane', 'steel', 'scorched', 'fret', 'tar', 'gilded', 'heatshield', 'brimstone', 'neural', 'film', 'fuzz', 'carpet', 'muck', 'moss', 'hieroglyph', 'mudbrick', 'florals', 'bitumen', 'gravel', 'butcherfur', 'bitumen', 'gravel', 'crust', 'bone', 'lane']);
   for (let i = 0; i < segs; i++) {
     const j = (i + 1) % n;
     const sMid = (sp.dist[i] + (j === 0 ? sp.length : sp.dist[j])) / 2;

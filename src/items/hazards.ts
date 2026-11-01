@@ -141,6 +141,7 @@ export const WAVE_SPIN = 1.0;
  * - a jaw of nine pearl fangs driven through as it opens again after a bite is a boost
  * - hopped as it passes, the ring of a beast's footfall running across the road is a boost
  * - skirting the rim of a hollow in the road as it closes, it slings you on, a boost
+ * - tucked in behind a driverless pod, in its slipstream, it tows you on, a boost
  */
 /** A reward can't pay out again to the same kart for this long. */
 export const REWARD_COOLDOWN = 1.5;
@@ -688,6 +689,63 @@ export function voidRadius(u: number): number {
   return VOID_RADIUS * (1 - (u - V.close) / (V.shut - V.close));
 }
 
+/**
+ * Level 5's driverless pods, level five autonomy: white pods cruising the
+ * lanes at one steady speed, nose to tail in platoons of three. Each keeps
+ * to its lane until the rhythm says change: the lead pod blinks, moves over
+ * a lane, and the others follow it one after another. They materialise out
+ * of pixels where their stretch begins and dematerialise where it ends.
+ * Hit one, spun; tuck in behind one, in its slipstream, and it tows you on.
+ */
+export const AUTOPILOT_SPEED = 15;
+export const AUTOPILOT_PLATOON = 3;
+/** Nose to tail: a platoon's pods this far apart, centre to centre. */
+export const AUTOPILOT_GAP = 7;
+/** A pod's body: half its length and half its width. */
+export const AUTOPILOT_HALF_LENGTH = 2.2;
+export const AUTOPILOT_HALF_WIDTH = 1.1;
+/** The road is painted in four lanes; a pod keeps to one. */
+export const AUTOPILOT_LANES = 4;
+/** Each lane change: moving over in the first part of a period, the blinker from late in the one before. */
+export const AUTOPILOT_STAGES = { shift: 0.22, blink: 0.7 } as const;
+/** Each pod in a platoon changes lane this share of a period after the one ahead of it. */
+export const AUTOPILOT_FOLLOW = 0.08;
+/** The lanes a platoon keeps to, a period each: across the road and back. */
+export const AUTOPILOT_ROUTE = [1, 2, 3, 2, 1, 0] as const;
+/** This close to either end of their stretch they're still pixels, harmless. */
+export const AUTOPILOT_FADE = 8;
+/** The slipstream: behind a pod's tail, back this far, and this far either side of its middle. */
+export const AUTOPILOT_DRAFT = 10;
+export const AUTOPILOT_DRAFT_WIDTH = 1.4;
+/** Hit, spun; towed on in the slipstream, a boost this long. */
+export const AUTOPILOT_SPIN = 1.0;
+export const AUTOPILOT_TOW = 0.9;
+
+/** The lateral of lane `lane` (0 to 3, across the road) on a road of half width `hw`. */
+export function autopilotLane(lane: number, hw: number): number {
+  return (lane - (AUTOPILOT_LANES - 1) / 2) * ((2 * hw) / AUTOPILOT_LANES);
+}
+
+/**
+ * Where pod `i` of `count` is at race time `t` on a stretch `length`
+ * long: how far along it, the lane it's leaving, the one it's in or moving
+ * into and the one after, how far over it has moved (0 to 1), and its
+ * stage of the period.
+ */
+export function autopilotPod(t: number, period: number, i: number, count: number, length: number): { along: number; from: number; lane: number; next: number; shift: number; u: number } {
+  const mod = (a: number, n: number) => ((a % n) + n) % n;
+  const platoon = Math.floor(i / AUTOPILOT_PLATOON);
+  const j = i % AUTOPILOT_PLATOON;
+  const platoons = Math.ceil(count / AUTOPILOT_PLATOON);
+  const along = mod((t + 10) * AUTOPILOT_SPEED + (platoon * length) / platoons - j * AUTOPILOT_GAP, length);
+  const tt = (t + 10) / period - j * AUTOPILOT_FOLLOW + platoon * 0.5;
+  const cycle = Math.floor(tt);
+  const u = tt - cycle;
+  const route = (c: number) => AUTOPILOT_ROUTE[mod(c + platoon * 3, AUTOPILOT_ROUTE.length)];
+  const x = Math.min(1, u / AUTOPILOT_STAGES.shift);
+  return { along, from: route(cycle - 1), lane: route(cycle), next: route(cycle + 1), shift: x * x * (3 - 2 * x), u };
+}
+
 /** How far a tree has toppled at cycle stage `u`: 0 upright, a lean while it creaks, 1 lying across the road. */
 export function timberFall(u: number): number {
   const T = TIMBER_STAGES;
@@ -781,6 +839,7 @@ const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds' | 'butterfli
   fangs: FANG_SPIN,
   stomps: STOMP_SPIN,
   void: 0,
+  autopilot: AUTOPILOT_SPIN,
 };
 
 /** Kinds that fill the whole road across, on a rhythm: nothing to steer round, only to time. */
@@ -1392,6 +1451,30 @@ export class HazardSystem {
           p.phase = u;
           break;
         }
+        case 'autopilot': {
+          // A driverless pod cruising its stretch, in its lane, nose to tail with the rest of its platoon.
+          const length = def.to - def.from;
+          const pod = autopilotPod(t, def.period, i, def.count, length);
+          const s = def.from + pod.along;
+          const hw = this.halfWidth(s);
+          const a = autopilotLane(pod.from, hw);
+          const b = autopilotLane(pod.lane, hw);
+          this.place(p, s, a + (b - a) * pod.shift, 0);
+          // Nosing over into the lane as it moves (a lateral to the right is a turn to the right, -h).
+          if (pod.u < AUTOPILOT_STAGES.shift) {
+            const x = pod.u / AUTOPILOT_STAGES.shift;
+            p.heading -= Math.atan(((b - a) * 6 * x * (1 - x)) / (AUTOPILOT_STAGES.shift * def.period * AUTOPILOT_SPEED));
+          }
+          p.radius = AUTOPILOT_HALF_WIDTH;
+          p.lane = pod.lane;
+          // The blinker: toward the lane it's moving into, and late in the period toward the next.
+          p.side = pod.u < AUTOPILOT_STAGES.shift ? Math.sign(pod.lane - pod.from) : pod.u >= AUTOPILOT_STAGES.blink ? Math.sign(pod.next - pod.lane) : 0;
+          // Materialised: 0 (pixels) at either end of the stretch, 1 a little way in.
+          p.gap = Math.max(0, Math.min(1, pod.along / AUTOPILOT_FADE, (length - pod.along) / AUTOPILOT_FADE));
+          p.active = p.gap >= 1;
+          p.phase = pod.u;
+          break;
+        }
         case 'dustDevils':
         case 'butterflies':
         case 'tornadoes':
@@ -1589,6 +1672,10 @@ export class HazardSystem {
         }
         if (p.kind === 'void') {
           this.hollow(hit, p, s);
+          continue;
+        }
+        if (p.kind === 'autopilot') {
+          this.pod(hit, p, s);
           continue;
         }
         if (p.kind === 'fuzz' && p.phase >= FUZZ_STAGES.gold && p.phase < FUZZ_STAGES.red) {
@@ -1890,6 +1977,14 @@ export class HazardSystem {
         // From just before it yawns open until it closes: the whole hollow.
         if (p.phase < VOID_STAGES.yawn - 0.1 || p.phase >= VOID_STAGES.close) continue;
         out.push({ x: p.x, z: p.z, r: p.radius, vx: 0, vz: 0 });
+        continue;
+      }
+      if (p.kind === 'autopilot') {
+        // A pod, nose and tail, moving on down its lane.
+        if (!p.active) continue;
+        const fx = Math.sin(p.heading);
+        const fz = Math.cos(p.heading);
+        for (const d of [-1.1, 1.1]) out.push({ x: p.x + fx * d, z: p.z + fz * d, r: 1.5, vx: p.vx, vz: p.vz });
         continue;
       }
       if (p.kind === 'sheets') {
@@ -2379,6 +2474,31 @@ export class HazardSystem {
     this.cooldown.set(s, HIT_COOLDOWN);
     s.speed *= VOID_SLOW;
     hit.push({ kart: s, by: p.kind });
+  }
+
+  /**
+   * A driverless pod: driven into, it spins you out; tucked in behind it,
+   * in its lane and going its way faster than it does, its slipstream tows
+   * you on, a boost.
+   */
+  private pod(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+    if (!p.active) return;
+    const fx = Math.sin(p.heading);
+    const fz = Math.cos(p.heading);
+    const dx = s.x - p.x;
+    const dz = s.z - p.z;
+    const along = dx * fx + dz * fz;
+    const across = dx * -fz + dz * fx;
+    if (Math.abs(along) <= AUTOPILOT_HALF_LENGTH + KART_RADIUS && Math.abs(across) <= AUTOPILOT_HALF_WIDTH + KART_RADIUS) {
+      if (this.cooldown.has(s)) return;
+      this.cooldown.set(s, HIT_COOLDOWN);
+      if (spinOut(s, AUTOPILOT_SPIN)) hit.push({ kart: s, by: p.kind });
+      return;
+    }
+    const behind = -along - AUTOPILOT_HALF_LENGTH;
+    if (behind <= 0 || behind > AUTOPILOT_DRAFT || Math.abs(across) > AUTOPILOT_DRAFT_WIDTH) return;
+    if (s.speed <= AUTOPILOT_SPEED || Math.cos(s.heading - p.heading) < 0.9 || this.cooldown.has(s)) return;
+    this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, AUTOPILOT_TOW)));
   }
 
   /** Pays a kart for using a hazard well, once in a while. */

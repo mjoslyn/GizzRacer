@@ -761,12 +761,12 @@ const PALETTES: Record<GenTheme, Palette> = {
   autonomy: {
     surface: 'lane',
     deck: 'lane',
-    alt: 'sand',
-    hazards: ['sunMoon'],
-    start: 'setGate',
-    landmarks: ['setGate'],
+    alt: 'steel',
+    hazards: ['autopilot'],
+    start: 'carParkGate',
+    landmarks: ['carParkGate', 'deadSky'],
     tallWalls: 6,
-    places: ['Jackal', 'Snake', 'Tornado', 'Tomb', 'Duality', 'Sandstorm', 'Moonbeam', 'Hieroglyph', 'Reset'],
+    places: ['Level Five', 'Autonomy', 'Expiry', 'Windscreen', 'Mortician', 'Incision', 'Sulphur', 'Rebellion', 'Blind Faith'],
     music: { lap: 'level-5', finalLap: 'level-5-final-lap' },
   },
   reactor: {
@@ -1537,6 +1537,10 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
       case 'void':
         // A row of hollows in the road, opening one after another on the eleven-beat bar.
         hazards.push({ kind, at: at(count + 1), period: 4.4 });
+        break;
+      case 'autopilot':
+        // A platoon of driverless pods down the stretch's lanes.
+        hazards.push({ kind, from, to, count: 3, period: 4.4 });
         break;
       case 'strings':
         // A run of strings down the stretch, plucked one after another.
