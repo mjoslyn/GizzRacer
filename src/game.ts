@@ -2012,6 +2012,7 @@ const HIT_TEXT: Record<ItemKind | HazardKind, string> = {
   stomps: 'STUCK!',
   void: 'EMPTINESS!',
   magnets: 'BAD LUCK!',
+  hammer: 'FLATTENED!',
 };
 
 /** What a hazard used well says: the ones that can help. */
@@ -2076,6 +2077,7 @@ const BONUS_TEXT: Record<HazardKind, string> = {
   stomps: 'ALTER ME!',
   void: 'NEVER!',
   magnets: 'KILL FOR THE STEEL!',
+  hammer: 'GIMME A FIX!',
 };
 
 /** Takes a group out of the scene and frees what it built. */

@@ -64,7 +64,7 @@ export function branchOpen(def: BranchDef, ctx?: LapContext): boolean {
 }
 
 export interface Landmark {
-  kind: 'skeletonArch' | 'fangs' | 'fortressGate' | 'templeGate' | 'waterfall' | 'gantry' | 'lighthouse' | 'iceArch' | 'neonArch' | 'rainbowArch' | 'mushroomArch' | 'starGate' | 'dragonGate' | 'dragonFlight' | 'colonyGate' | 'rodGate' | 'voidEye' | 'phantomArch' | 'runwayGate' | 'treeGate' | 'wreckGate' | 'worldTree' | 'crystalGate' | 'magentaPeak' | 'keplerArch' | 'goblinGate' | 'jawsGate' | 'castleGate' | 'castleKeep' | 'cloudGate' | 'airCastle' | 'skyTower' | 'cellGate' | 'nucleus' | 'prismGate' | 'prismEye' | 'factoryGate' | 'robotColossus' | 'gammaGate' | 'gammaRing' | 'carrionGate' | 'carcass' | 'wahGate' | 'wahPedal' | 'smogGate' | 'burningEarth' | 'domeGate' | 'richDome' | 'shipGate' | 'theSun' | 'hellGate' | 'ratsNest' | 'eyeGate' | 'mindFace' | 'arrowGate' | 'emptyHead' | 'filmGate' | 'cellophaneBloom' | 'fuzzGate' | 'fuzzMeter' | 'elbowGate' | 'bentArm' | 'rakeGate' | 'powerStation' | 'harmonicaGate' | 'mirrorBall' | 'trunkGate' | 'snowPeak' | 'cordGate' | 'theiaPlanet' | 'setGate' | 'setColossus' | 'jadePortal' | 'moonPalace' | 'urukGate' | 'ziggurat' | 'lockedDoor' | 'teacups' | 'heavenGate' | 'hillHouse' | 'sitarGate' | 'blackCup' | 'lostLegs' | 'pillTube' | 'oldFord' | 'faceCloud' | 'farmDam' | 'catapultGate' | 'monsterPlate' | 'fangGate' | 'weepingAngels' | 'basePair' | 'beastTree' | 'newWorldGate' | 'mushroomCloud' | 'culDeSac' | 'ribcage' | 'hellmouth' | 'steelGate' | 'mineRig';
+  kind: 'skeletonArch' | 'fangs' | 'fortressGate' | 'templeGate' | 'waterfall' | 'gantry' | 'lighthouse' | 'iceArch' | 'neonArch' | 'rainbowArch' | 'mushroomArch' | 'starGate' | 'dragonGate' | 'dragonFlight' | 'colonyGate' | 'rodGate' | 'voidEye' | 'phantomArch' | 'runwayGate' | 'treeGate' | 'wreckGate' | 'worldTree' | 'crystalGate' | 'magentaPeak' | 'keplerArch' | 'goblinGate' | 'jawsGate' | 'castleGate' | 'castleKeep' | 'cloudGate' | 'airCastle' | 'skyTower' | 'cellGate' | 'nucleus' | 'prismGate' | 'prismEye' | 'factoryGate' | 'robotColossus' | 'gammaGate' | 'gammaRing' | 'carrionGate' | 'carcass' | 'wahGate' | 'wahPedal' | 'smogGate' | 'burningEarth' | 'domeGate' | 'richDome' | 'shipGate' | 'theSun' | 'hellGate' | 'ratsNest' | 'eyeGate' | 'mindFace' | 'arrowGate' | 'emptyHead' | 'filmGate' | 'cellophaneBloom' | 'fuzzGate' | 'fuzzMeter' | 'elbowGate' | 'bentArm' | 'rakeGate' | 'powerStation' | 'harmonicaGate' | 'mirrorBall' | 'trunkGate' | 'snowPeak' | 'cordGate' | 'theiaPlanet' | 'setGate' | 'setColossus' | 'jadePortal' | 'moonPalace' | 'urukGate' | 'ziggurat' | 'lockedDoor' | 'teacups' | 'heavenGate' | 'hillHouse' | 'sitarGate' | 'blackCup' | 'lostLegs' | 'pillTube' | 'oldFord' | 'faceCloud' | 'farmDam' | 'catapultGate' | 'monsterPlate' | 'fangGate' | 'weepingAngels' | 'basePair' | 'beastTree' | 'newWorldGate' | 'mushroomCloud' | 'culDeSac' | 'ribcage' | 'hellmouth' | 'steelGate' | 'mineRig' | 'anvilGate' | 'astralBlacksmith' | 'mobiusStrip';
   ribbon: number; // -1 = main, else branch index
   s: number; // builder units
   /** Metres to the right of the road (left if negative), for a landmark that stands off it. */
@@ -235,7 +235,9 @@ export type HazardDef =
   /** Altered Beast IV: dark hollows yawning open in the road on an eleven-beat rhythm, dragging you down, and closing again. */
   | { kind: 'void'; at: number[]; period: number }
   /** Kill for the Steel: electromagnet cranes swinging their magnets across the road, switched on as they sweep, dragging you with them, and flinging you as they switch off. */
-  | { kind: 'magnets'; at: number[]; period: number };
+  | { kind: 'magnets'; at: number[]; period: number }
+  /** Alien Metal: the astral blacksmith's hammer coming down on the road on the beat, a shower of sparks flying off the strike. */
+  | { kind: 'hammer'; at: number[]; period: number };
 
 export interface StartSlot {
   x: number;

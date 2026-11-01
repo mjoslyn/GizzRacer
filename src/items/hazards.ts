@@ -33,6 +33,7 @@ export interface HazardPose {
    * presents: the lateral of the roof's edge he throws them from. The
    * beast's knife and fork: the fork's lateral (the knife is the pose). A
    * beast's footfall: how far its shockwave's ring has run out from the foot.
+   * The astral blacksmith's hammer: how far its sparks fly, while they do.
    * A crane's magnet: the road's half-width under its gantry. 0 for the rest.
    */
   gap: number;
@@ -142,6 +143,7 @@ export const WAVE_SPIN = 1.0;
  * - hopped as it passes, the ring of a beast's footfall running across the road is a boost
  * - skirting the rim of a hollow in the road as it closes, it slings you on, a boost
  * - under a crane's magnet as it switches off, it flings you on, a boost
+ * - driven through the shower of sparks off the astral blacksmith's hammer, just after it strikes, a fix: a boost
  */
 /** A reward can't pay out again to the same kart for this long. */
 export const REWARD_COOLDOWN = 1.5;
@@ -720,6 +722,46 @@ export function magnetSwing(u: number): number {
   return v < span ? Math.cos((Math.PI * v) / span) : -Math.cos((Math.PI * (v - span)) / (1 - span));
 }
 
+/**
+ * The astral blacksmith's hammer, Alien Metal's: raised high over the
+ * road (its shadow there, the warning), it comes down on the beat with a
+ * clang, rests a beat on the road where it struck, and lifts away; a
+ * shower of sparks flies off the strike. The album runs at 143 beats a
+ * minute, a cycle is two bars of it, and the hammers down a stretch
+ * strike a beat apart, as a smith's do. Under it as it lands: flattened.
+ * Through the sparks just after: "astral blacksmith, won't you gimme a
+ * fix", a boost.
+ */
+export const HAMMER_BEAT = 60 / 143;
+export const HAMMER_BEATS = 8;
+export const HAMMER_PERIOD = HAMMER_BEATS * HAMMER_BEAT;
+/** Stages of a cycle: coming down from `fall`, striking at `land` (beat four), resting there until `lift`, the sparks flying until `sparks`. */
+export const HAMMER_STAGES = { fall: 0.42, land: 0.5, lift: 0.625, sparks: 0.8 } as const;
+/** The hammer's face, and how high it's raised over the road. */
+export const HAMMER_FACE = 3.4;
+export const HAMMER_HANG = 13;
+/** The sparks fly out this far from the middle of the strike. */
+export const HAMMER_SPARKS = 8;
+/** Either side of the strike, this share of the period: what's under the face is flattened. */
+export const HAMMER_CRUSH = 0.025;
+export const HAMMER_SPIN = 1.2;
+/** Through the sparks: a fix, a boost this long. */
+export const HAMMER_FIX = 1.0;
+
+/** How high the hammer's face is over the road at cycle stage `u`: raised, coming down (faster and faster), resting where it struck, lifting away. */
+export function hammerLift(u: number): number {
+  const H = HAMMER_STAGES;
+  if (u < H.fall) return HAMMER_HANG * Math.min(1, 0.55 + u / H.fall);
+  if (u < H.land) return HAMMER_HANG * (1 - ((u - H.fall) / (H.land - H.fall)) ** 2);
+  if (u < H.lift) return 0;
+  return HAMMER_HANG * Math.min(0.55, ((u - H.lift) / (1 - H.lift)) * 1.2);
+}
+
+/** Whether the sparks are flying off the strike at cycle stage `u`. */
+export function hammerSparking(u: number): boolean {
+  return u >= HAMMER_STAGES.land && u < HAMMER_STAGES.sparks;
+}
+
 /** How far a tree has toppled at cycle stage `u`: 0 upright, a lean while it creaks, 1 lying across the road. */
 export function timberFall(u: number): number {
   const T = TIMBER_STAGES;
@@ -814,6 +856,7 @@ const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds' | 'butterfli
   stomps: STOMP_SPIN,
   void: 0,
   magnets: 0,
+  hammer: HAMMER_SPIN,
 };
 
 /** Kinds that fill the whole road across, on a rhythm: nothing to steer round, only to time. */
@@ -1439,6 +1482,22 @@ export class HazardSystem {
           p.phase = u;
           break;
         }
+        case 'hammer': {
+          // A hammer coming down a beat after the one before it down the stretch, on one side of the road and then the other.
+          const at = def.at[i];
+          const tt = (t + 10) / def.period - i / HAMMER_BEATS;
+          const cycle = Math.floor(tt);
+          const u = tt - cycle;
+          const side = (cycle + i) % 2 === 0 ? 1 : -1;
+          this.place(p, at, side * this.halfWidth(at) * 0.4, hammerLift(u));
+          p.radius = HAMMER_FACE;
+          p.side = side;
+          p.gap = hammerSparking(u) ? HAMMER_SPARKS : 0;
+          // From the instant it strikes until it lifts: there to be flattened by, and then to drive round.
+          p.active = u >= HAMMER_STAGES.land - HAMMER_CRUSH && u < HAMMER_STAGES.lift;
+          p.phase = u;
+          break;
+        }
         case 'dustDevils':
         case 'butterflies':
         case 'tornadoes':
@@ -1640,6 +1699,10 @@ export class HazardSystem {
         }
         if (p.kind === 'magnets') {
           this.magnet(hit, p, s, dt);
+          continue;
+        }
+        if (p.kind === 'hammer') {
+          this.hammer(hit, p, s);
           continue;
         }
         if (p.kind === 'fuzz' && p.phase >= FUZZ_STAGES.gold && p.phase < FUZZ_STAGES.red) {
@@ -1946,6 +2009,12 @@ export class HazardSystem {
       if (p.kind === 'void') {
         // From just before it yawns open until it closes: the whole hollow.
         if (p.phase < VOID_STAGES.yawn - 0.1 || p.phase >= VOID_STAGES.close) continue;
+        out.push({ x: p.x, z: p.z, r: p.radius, vx: 0, vz: 0 });
+        continue;
+      }
+      if (p.kind === 'hammer') {
+        // The face, from a little before it comes down until it lifts; the sparks after are there to be driven through.
+        if (p.phase < HAMMER_STAGES.fall - 0.1 || p.phase >= HAMMER_STAGES.lift) continue;
         out.push({ x: p.x, z: p.z, r: p.radius, vx: 0, vz: 0 });
         continue;
       }
@@ -2461,6 +2530,27 @@ export class HazardSystem {
     if (this.cooldown.has(s)) return;
     this.cooldown.set(s, HIT_COOLDOWN);
     hit.push({ kart: s, by: p.kind });
+  }
+
+  /**
+   * The astral blacksmith's hammer: under its face as it strikes,
+   * flattened, spun out; resting on the road, a block to drive round.
+   * Through the shower of sparks off the strike, a fix: a boost.
+   */
+  private hammer(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+    const H = HAMMER_STAGES;
+    const d = Math.hypot(s.x - p.x, s.z - p.z);
+    if (p.active && d <= p.radius + KART_RADIUS) {
+      if (p.phase >= H.land + HAMMER_CRUSH) {
+        this.pushOut(p, s);
+        return;
+      }
+      if (this.cooldown.has(s)) return;
+      this.cooldown.set(s, HIT_COOLDOWN);
+      if (spinOut(s, HAMMER_SPIN)) hit.push({ kart: s, by: p.kind });
+      return;
+    }
+    if (p.gap > 0 && d <= p.gap + KART_RADIUS) this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, HAMMER_FIX)));
   }
 
   /** Pays a kart for using a hazard well, once in a while. */

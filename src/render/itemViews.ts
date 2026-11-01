@@ -13,6 +13,7 @@ import { fangParts, poseFangs } from './alteredBeastIII';
 import { poseStomp, stompParts } from './alteredBeastI';
 import { hollowParts, poseHollow } from './alteredBeastIV';
 import { magnetParts, poseMagnet } from './killForTheSteel';
+import { hammerParts, poseHammer } from './alienMetal';
 import { BOX_RESPAWN, SHIELD_ITEMS, WAVE_RANGE, type ItemHolder, type ItemSystem } from '../items/items';
 import type { KartState } from '../physics/kart';
 import type { HazardSystem } from '../items/hazards';
@@ -1426,6 +1427,10 @@ export class HazardsView {
           // A crane's gantry over the road, its trolley carrying the magnet across on its chains.
           parts.push(...magnetParts(obj, pose.gap));
           break;
+        case 'hammer':
+          // The astral blacksmith's hammer, raised over the road and coming down, and the sparks off it.
+          parts.push(...hammerParts(obj));
+          break;
         case 'timber': {
           // A tree at the road's edge: its trunk, as long as the road is wide, and its crown; it leans, creaks and comes down across the road.
           const pivot = new THREE.Group();
@@ -2300,6 +2305,9 @@ export class HazardsView {
           break;
         case 'magnets':
           poseMagnet(obj, parts, p, elapsed);
+          break;
+        case 'hammer':
+          poseHammer(obj, parts, p, elapsed);
           break;
         case 'presents': {
           const [present, lid, inside, shadow, roofs, santa, arm] = parts;
