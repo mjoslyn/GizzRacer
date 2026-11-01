@@ -6060,7 +6060,7 @@
    "date": "2026-08-15",
    "venue": "Field of Vision II, Buena Vista, CO",
    "seconds": 790,
-   "start": 36.5,
+   "start": 60.1,
    "gain": 5.5
   },
   {
@@ -6069,7 +6069,7 @@
    "date": "2026-08-22",
    "venue": "Forest Hills Stadium",
    "seconds": 851,
-   "start": 0,
+   "start": 38.1,
    "end": 803.5,
    "gain": 10
   },
@@ -6079,7 +6079,7 @@
    "date": "2026-10-17",
    "venue": "carpark opposite Croxton Park Hotel",
    "seconds": 595,
-   "start": 0,
+   "start": 69.5,
    "end": 564.5,
    "gain": 17
   }
@@ -6122,7 +6122,7 @@
    "date": "2026-08-22",
    "venue": "Forest Hills Stadium",
    "seconds": 1022,
-   "start": 42,
+   "start": 102,
    "gain": 14
   },
   {
@@ -6131,7 +6131,7 @@
    "date": "2026-10-18",
    "venue": "carpark opposite Croxton Park Hotel",
    "seconds": 868,
-   "start": 31.5,
+   "start": 61.3,
    "gain": 14
   }
  ],
@@ -6152,7 +6152,7 @@
    "date": "2026-08-22",
    "venue": "Forest Hills Stadium",
    "seconds": 776,
-   "start": 62.5,
+   "start": 4.7,
    "gain": 6.5
   }
  ]

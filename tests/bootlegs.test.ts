@@ -53,7 +53,8 @@ describe('live bootlegs', () => {
         }
         if (r.start !== undefined) {
           expect(r.start, song).toBeGreaterThanOrEqual(0);
-          expect(r.start, song).toBeLessThan(Math.min(100, r.seconds || 100));
+          // Picked by ear, a start can sit past a long tuning-up, but never past two and a half minutes.
+          expect(r.start, song).toBeLessThan(Math.min(150, r.seconds || 150));
         }
         // Where the music ends, before the applause: after where it starts, inside the recording.
         if (r.end !== undefined) {
