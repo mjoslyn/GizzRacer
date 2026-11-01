@@ -23,7 +23,7 @@ export interface HazardPose {
   vz: number;
   /** Can hit karts right now. */
   active: boolean;
-  /** Which way across the road it goes, 1 (to the right) or -1: a gust's direction. 0 when it doesn't matter. */
+  /** Which way across the road it goes, 1 (to the right) or -1: a gust's direction; a crane's magnet, the edge it switches on at. 0 when it doesn't matter. */
   side: number;
   /**
    * An airlock's opening: half the width between its two doors, centred on
@@ -33,7 +33,7 @@ export interface HazardPose {
    * presents: the lateral of the roof's edge he throws them from. The
    * beast's knife and fork: the fork's lateral (the knife is the pose). A
    * beast's footfall: how far its shockwave's ring has run out from the foot.
-   * 0 for the rest.
+   * A crane's magnet: the road's half-width under its gantry. 0 for the rest.
    */
   gap: number;
   /** A row of arrows: the lane with no arrow in it, 0 (leftmost) to 3. The plant of immortality: 1 while it's growing there to be had, else 0. A present: 1 once it has landed open, a gift. -1 for the rest. */
@@ -141,6 +141,7 @@ export const WAVE_SPIN = 1.0;
  * - a jaw of nine pearl fangs driven through as it opens again after a bite is a boost
  * - hopped as it passes, the ring of a beast's footfall running across the road is a boost
  * - skirting the rim of a hollow in the road as it closes, it slings you on, a boost
+ * - under a crane's magnet as it switches off, it flings you on, a boost
  */
 /** A reward can't pay out again to the same kart for this long. */
 export const REWARD_COOLDOWN = 1.5;
@@ -688,6 +689,37 @@ export function voidRadius(u: number): number {
   return VOID_RADIUS * (1 - (u - V.close) / (V.shut - V.close));
 }
 
+/**
+ * Kill for the Steel's electromagnet cranes: a magnet hung from a gantry
+ * over the road, swinging across it from one edge to the other and back.
+ * Dark as it swings back; charging at the edge (the warning: it hums and
+ * sparks); switched on as it sweeps across the road, its field dragging any
+ * kart under it, steel and all, along with it and off its line; switched
+ * off at the far edge, flinging what it held. Down a row, each crane sweeps
+ * the other way from the one before, a beat behind it.
+ */
+export const MAGNET_STAGES = { charge: 0.15, on: 0.3, off: 0.78, flung: 0.86 } as const;
+/** How far either side of the road's middle the magnet swings, as a share of the road's half-width; how high it hangs. */
+export const MAGNET_SWING = 0.8;
+export const MAGNET_HANG = 5;
+/** The field's reach round the magnet, along the ground. */
+export const MAGNET_FIELD = 6;
+/** Held in the field: pulled toward the magnet this hard (m/s^2), and this share of your speed kept a second. */
+export const MAGNET_PULL = 40;
+export const MAGNET_GRIP = 0.45;
+/** Under it as it switches off: flung on, a boost this long. */
+export const MAGNET_FLING = 1.0;
+/** Each crane down a row swings this share of the period behind the one before. */
+export const MAGNET_LAG = 0.27;
+
+/** Where a crane's magnet is across the road at cycle stage `u`, as a share of its swing: 1 at the edge it switches on at, sweeping across to -1 as it switches off, and swinging back dark. */
+export function magnetSwing(u: number): number {
+  const M = MAGNET_STAGES;
+  const span = M.off - M.on;
+  const v = (((u - M.on) % 1) + 1) % 1;
+  return v < span ? Math.cos((Math.PI * v) / span) : -Math.cos((Math.PI * (v - span)) / (1 - span));
+}
+
 /** How far a tree has toppled at cycle stage `u`: 0 upright, a lean while it creaks, 1 lying across the road. */
 export function timberFall(u: number): number {
   const T = TIMBER_STAGES;
@@ -781,6 +813,7 @@ const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds' | 'butterfli
   fangs: FANG_SPIN,
   stomps: STOMP_SPIN,
   void: 0,
+  magnets: 0,
 };
 
 /** Kinds that fill the whole road across, on a rhythm: nothing to steer round, only to time. */
@@ -1392,6 +1425,20 @@ export class HazardSystem {
           p.phase = u;
           break;
         }
+        case 'magnets': {
+          // A crane's magnet swinging across the road on its gantry, each down the row the other way from the one before.
+          const at = def.at[i];
+          const u = ((((t + 10) / def.period - i * MAGNET_LAG) % 1) + 1) % 1;
+          const side = i % 2 ? -1 : 1;
+          const hw = this.halfWidth(at);
+          this.place(p, at, side * hw * MAGNET_SWING * magnetSwing(u), MAGNET_HANG);
+          p.radius = MAGNET_FIELD;
+          p.gap = hw;
+          p.side = side;
+          p.active = u >= MAGNET_STAGES.on && u < MAGNET_STAGES.off;
+          p.phase = u;
+          break;
+        }
         case 'dustDevils':
         case 'butterflies':
         case 'tornadoes':
@@ -1589,6 +1636,10 @@ export class HazardSystem {
         }
         if (p.kind === 'void') {
           this.hollow(hit, p, s);
+          continue;
+        }
+        if (p.kind === 'magnets') {
+          this.magnet(hit, p, s, dt);
           continue;
         }
         if (p.kind === 'fuzz' && p.phase >= FUZZ_STAGES.gold && p.phase < FUZZ_STAGES.red) {
@@ -1884,6 +1935,12 @@ export class HazardSystem {
         // From just before it bursts: as far as the burst reaches.
         if (p.phase < BUBBLE_STAGES.burst - 0.1 || p.phase >= BUBBLE_STAGES.gone) continue;
         out.push({ x: p.x, z: p.z, r: p.radius * BUBBLE_BURST, vx: 0, vz: 0 });
+        continue;
+      }
+      if (p.kind === 'magnets') {
+        // From when it starts to charge until it switches off: its field, sweeping across the road.
+        if (p.phase < MAGNET_STAGES.charge || p.phase >= MAGNET_STAGES.off) continue;
+        out.push({ x: p.x, z: p.z, r: p.radius, vx: p.vx, vz: p.vz });
         continue;
       }
       if (p.kind === 'void') {
@@ -2378,6 +2435,31 @@ export class HazardSystem {
     if (d > r || this.cooldown.has(s)) return;
     this.cooldown.set(s, HIT_COOLDOWN);
     s.speed *= VOID_SLOW;
+    hit.push({ kart: s, by: p.kind });
+  }
+
+  /**
+   * A crane's magnet: switched on, its field drags a kart under it toward
+   * it, steel and all, and holds it back; under it as it switches off, the
+   * kart is flung on, a boost.
+   */
+  private magnet(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState, dt: number): void {
+    const dx = p.x - s.x;
+    const dz = p.z - s.z;
+    const d = Math.hypot(dx, dz);
+    if (d > p.radius + KART_RADIUS) return;
+    if (p.phase >= MAGNET_STAGES.off && p.phase < MAGNET_STAGES.flung) {
+      this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, MAGNET_FLING)));
+      return;
+    }
+    if (!p.active) return;
+    if (d > 0.5) {
+      s.extX += (dx / d) * MAGNET_PULL * dt;
+      s.extZ += (dz / d) * MAGNET_PULL * dt;
+    }
+    s.speed *= MAGNET_GRIP ** dt;
+    if (this.cooldown.has(s)) return;
+    this.cooldown.set(s, HIT_COOLDOWN);
     hit.push({ kart: s, by: p.kind });
   }
 

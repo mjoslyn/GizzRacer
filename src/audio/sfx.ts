@@ -544,6 +544,12 @@ export class Sfx {
       this.tone(110, 0.9, 'sine', 0.14, 30);
       this.whoosh(0.7, 900, 200, 0.18);
     }
+    // Caught by a crane's magnet: the clang of your kart's steel hitting the field, and its mains hum.
+    if (by === 'magnets') {
+      this.hit(0.15, 2600, 0.4);
+      this.tone(55, 0.8, 'sawtooth', 0.1, 50, 0, true);
+      this.tone(110, 0.8, 'square', 0.04, 100);
+    }
     // A wave breaking over you: a crash of white noise; a glider comes in with a whistle of wind.
     if (by === 'waves') this.whoosh(0.8, 2400, 300, 0.35);
     if (by === 'gliders') this.whoosh(0.5, 1800, 500, 0.2);

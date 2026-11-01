@@ -381,6 +381,14 @@ const STYLES: Record<DecorKind, DetailStyle> = {
     boards: { words: ['NO LOVE NO PAIN', "I DON'T FEEL ANYTHING", 'NEVER!', 'ALTERED BEAST'], bg: ['#141214', '#5a1418'], fg: '#e8e0d0' },
     crowd: false,
   },
+  // A haul road's marker posts, amber lamps on them in the night; chips of ore and steel; the miners watching from the benches.
+  openCut: {
+    edge: { kind: 'lamp', height: 2.2, spacing: 18, color: 0x22262c, stripe: 0xf0b420 },
+    light: 0xff9a3a,
+    cover: { shape: 'pebble', colors: [0x2a2a30, 0x4a4a52, 0x6a3424, 0x8a4a2a, 0xc8dcff], count: 1300 },
+    boards: { words: ['KILL FOR THE STEEL', "WE DON'T WISH DEATH", 'NO ILL WILL', 'LEVEL FIVE'], bg: ['#16181e', '#5a2410'], fg: '#ffb020' },
+    crowd: true,
+  },
   sky: {
     edge: { kind: 'star', height: 1.4, spacing: 14, color: 0xffe8a0, stripe: 0xffffff },
     light: 0xfff0ff,
@@ -463,7 +471,7 @@ export function roadPaint(ribbon: Ribbon, decor: DecorKind, edgeLine?: number, e
     line[i] = -Math.max(-0.55, Math.min(0.55, (sum / 25) * 14));
   }
   const paintable = new Set(['asphalt']);
-  const wearable = new Set(['asphalt', 'salt', 'rock', 'sand', 'boards', 'regolith', 'wet', 'paving', 'reef', 'flagstone', 'membrane', 'steel', 'scorched', 'fret', 'tar', 'gilded', 'heatshield', 'brimstone', 'neural', 'film', 'fuzz', 'carpet', 'muck', 'moss', 'hieroglyph', 'mudbrick', 'florals', 'bitumen', 'gravel', 'butcherfur', 'bitumen', 'gravel', 'crust', 'bone']);
+  const wearable = new Set(['asphalt', 'salt', 'rock', 'sand', 'boards', 'regolith', 'wet', 'paving', 'reef', 'flagstone', 'membrane', 'steel', 'scorched', 'fret', 'tar', 'gilded', 'heatshield', 'brimstone', 'neural', 'film', 'fuzz', 'carpet', 'muck', 'moss', 'hieroglyph', 'mudbrick', 'florals', 'bitumen', 'gravel', 'butcherfur', 'bitumen', 'gravel', 'crust', 'bone', 'ore']);
   for (let i = 0; i < segs; i++) {
     const j = (i + 1) % n;
     const sMid = (sp.dist[i] + (j === 0 ? sp.length : sp.dist[j])) / 2;

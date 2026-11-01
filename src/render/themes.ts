@@ -9,9 +9,10 @@ import { cleaverTexture, larderWallTexture, tableclothTexture } from './alteredB
 import { fleshTexture, muscleTexture, teethTexture } from './alteredBeastIII';
 import { mudWallTexture, mudflatTexture, rubbleTexture } from './alteredBeastI';
 import { ashTexture, sinewTexture, vertebraeTexture } from './alteredBeastIV';
+import { benchWallTexture, regolithTexture, steelBarrierTexture } from './killForTheSteel';
 
 export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism' | 'factory' | 'gamma' | 'carrion' | 'wah' | 'smog' | 'dome' | 'solar' | 'inferno' | 'mind' | 'notmind' | 'cellophane' | 'mindfuzz' | 'elbow' | 'muck' | 'boogie' | 'treesea' | 'theia' | 'set' | 'change' | 'uruk' | 'headon' | 'godcall' | 'nan' | 'float' | 'newworld' | 'foe' | 'altered' | 'hollow' | 'forge' | 'steelwar' | 'autonomy' | 'reactor';
-export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy' | 'hadean' | 'deshret' | 'moonpalace' | 'uruk' | 'nanshouse' | 'suburb' | 'headtrip' | 'paddock' | 'den' | 'alteredworld' | 'mudflat' | 'hollowness';
+export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy' | 'hadean' | 'deshret' | 'moonpalace' | 'uruk' | 'nanshouse' | 'suburb' | 'headtrip' | 'paddock' | 'den' | 'alteredworld' | 'mudflat' | 'hollowness' | 'openCut';
 
 /** Everything that makes a track's world look like itself. */
 export interface Theme {
@@ -1034,23 +1035,26 @@ export const THEMES: Record<ThemeId, Theme> = {
     dust: 0xd08050,
     barrier: { map: tex.templeWallTexture, crawl: false },
   },
-  // Kill for the Steel: (placeholder, Set's look until its world is built).
+  // Kill for the Steel: an open-cut mine on an alien moon, under the cup's one night of alien stars and its sick green moon; the rigs' lights glow rust red off the horizon over the spoil heaps.
   steelwar: {
-    sky: { zenith: '#0a0a34', high: '#262a78', low: '#c86a3a', horizon: '#ffd070', below: '#c06030', ground: '#6a2a14', cloud: '255,200,150', clouds: 12, stars: { count: 140, color: '#f0f0ff' }, moon: '#f4f4ff' },
-    fog: { color: 0xc07850, near: 160, far: 860 },
-    hemi: { sky: 0xffd0a0, ground: 0x8a3a1a, intensity: 1.5 },
-    sun: { color: 0xffd890, intensity: 2.3 },
-    ground: tex.redSandTexture,
-    groundTile: 20,
-    // Walls are a temple's, blocks of sandstone with a painted frieze.
-    cliff: tex.templeWallTexture,
-    decor: 'deshret',
-    distant: { shape: 'mesa', color: 0x5a2414 },
-    haze: 0.8,
-    duotone: [0x0a0420, 0xd05a20, 0xffe890],
+    sky: { zenith: '#020308', high: '#090d26', low: '#1a1c3a', horizon: '#8a3a26', below: '#2a1a18', ground: '#0c0a0c', cloud: '64,70,110', clouds: 6, stars: { count: 300, color: '#d8ecff' }, moon: '#c0ff98' },
+    fog: { color: 0x1e2232, near: 140, far: 760 },
+    hemi: { sky: 0x8a9ac8, ground: 0x3a2a24, intensity: 1.35 },
+    sun: { color: 0xc0d0ff, intensity: 1.7 },
+    ground: regolithTexture,
+    groundTile: 22,
+    // Walls are the pit's benched rock, strata of slate and iron, blast holes drilled along each ledge.
+    cliff: benchWallTexture,
+    decor: 'openCut',
+    // The mine's spoil heaps on the horizon, flat-topped.
+    distant: { shape: 'mesa', color: 0x1a1a22 },
+    haze: 0.15,
+    duotone: [0x04060c, 0xd0601c, 0xa8e8ff],
     skyCycle: false,
-    dust: 0xd08050,
-    barrier: { map: tex.templeWallTexture, crawl: false },
+    dust: 0x6a6268,
+    barrier: { map: steelBarrierTexture, crawl: false },
+    roadGlow: 0.2,
+    edgeLine: 0xff8a2a,
   },
   // Level 5: (placeholder, Set's look until its world is built).
   autonomy: {

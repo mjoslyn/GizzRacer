@@ -750,12 +750,12 @@ const PALETTES: Record<GenTheme, Palette> = {
   steelwar: {
     surface: 'ore',
     deck: 'ore',
-    alt: 'sand',
-    hazards: ['sunMoon'],
-    start: 'setGate',
-    landmarks: ['setGate'],
+    alt: 'rock',
+    hazards: ['magnets'],
+    start: 'steelGate',
+    landmarks: ['steelGate'],
     tallWalls: 6,
-    places: ['Jackal', 'Snake', 'Tornado', 'Tomb', 'Duality', 'Sandstorm', 'Moonbeam', 'Hieroglyph', 'Reset'],
+    places: ['Death', 'Upon You', 'Bad Luck', 'Ill Will', 'Steel', 'Level Five', 'Terrace', 'Conveyor', 'Pit'],
     music: { lap: 'kill-for-the-steel', finalLap: 'kill-for-the-steel-final-lap' },
   },
   autonomy: {
@@ -1537,6 +1537,10 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
       case 'void':
         // A row of hollows in the road, opening one after another on the eleven-beat bar.
         hazards.push({ kind, at: at(count + 1), period: 4.4 });
+        break;
+      case 'magnets':
+        // A row of cranes swinging their magnets across the road, each the other way from the one before.
+        hazards.push({ kind, at: at(count), period: 4.6 });
         break;
       case 'strings':
         // A run of strings down the stretch, plucked one after another.
