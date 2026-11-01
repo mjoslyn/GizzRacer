@@ -85,6 +85,8 @@ const LIFE: Record<DecorKind, LifeSpec> = {
   paddock: { flock: { kind: 'bird', color: 0xe890a8, count: 16, height: 18, size: 0.9 }, motes: { color: 0xfff8e8, count: 320, size: 0.45, drift: 'float' } },
   // A few carrion birds circling high over the beast, and ash falling.
   hollowness: { flock: { kind: 'vulture', color: 0x141012, count: 6, height: 34, size: 1.6 }, motes: { color: 0xc8c0bc, count: 380, size: 0.5, drift: 'fall' } },
+  // Sparks of cold light drifting over the forge, and embers rising off it.
+  forge: { flock: { kind: 'orb', color: 0x8ad8ff, count: 12, height: 20, size: 0.6, glow: true }, motes: { color: 0xffa040, count: 420, size: 0.35, drift: 'rise', glow: true } },
   uruk: { flock: { kind: 'bird', color: 0x2a2a30, count: 12, height: 24, size: 1.0 }, motes: { color: 0xc8c0b0, count: 300, size: 0.4, drift: 'blow' } },
   den: { flock: { kind: 'bat', color: 0x1a0806, count: 14, height: 22, size: 1.1 }, motes: { color: 0xffa050, count: 320, size: 0.4, drift: 'rise', glow: true } },
   nanshouse: { flock: { kind: 'moth', color: 0xe8d8b0, count: 14, height: 16, size: 0.8 }, motes: { color: 0xffe8c0, count: 420, size: 0.3, drift: 'float', glow: true } },

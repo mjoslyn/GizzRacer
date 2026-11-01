@@ -9,9 +9,10 @@ import { cleaverTexture, larderWallTexture, tableclothTexture } from './alteredB
 import { fleshTexture, muscleTexture, teethTexture } from './alteredBeastIII';
 import { mudWallTexture, mudflatTexture, rubbleTexture } from './alteredBeastI';
 import { ashTexture, sinewTexture, vertebraeTexture } from './alteredBeastIV';
+import { forgeFloorTexture, forgeRailTexture, forgeWallTexture } from './alienMetal';
 
 export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism' | 'factory' | 'gamma' | 'carrion' | 'wah' | 'smog' | 'dome' | 'solar' | 'inferno' | 'mind' | 'notmind' | 'cellophane' | 'mindfuzz' | 'elbow' | 'muck' | 'boogie' | 'treesea' | 'theia' | 'set' | 'change' | 'uruk' | 'headon' | 'godcall' | 'nan' | 'float' | 'newworld' | 'foe' | 'altered' | 'hollow' | 'forge' | 'steelwar' | 'autonomy' | 'reactor';
-export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy' | 'hadean' | 'deshret' | 'moonpalace' | 'uruk' | 'nanshouse' | 'suburb' | 'headtrip' | 'paddock' | 'den' | 'alteredworld' | 'mudflat' | 'hollowness';
+export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy' | 'hadean' | 'deshret' | 'moonpalace' | 'uruk' | 'nanshouse' | 'suburb' | 'headtrip' | 'paddock' | 'den' | 'alteredworld' | 'mudflat' | 'hollowness' | 'forge';
 
 /** Everything that makes a track's world look like itself. */
 export interface Theme {
@@ -1016,23 +1017,25 @@ export const THEMES: Record<ThemeId, Theme> = {
     dust: 0xb0a6a2,
     barrier: { map: vertebraeTexture, crawl: false },
   },
-  // Alien Metal: (placeholder, Set's look until its world is built).
+  // Alien Metal: the astral blacksmith's forge floating among the stars. The Alien Metal Cup's one night over all four of its worlds: black steel, molten orange, cold electric blue, the alien moon a sick green; here the forge's orange glows up off the horizon.
   forge: {
-    sky: { zenith: '#0a0a34', high: '#262a78', low: '#c86a3a', horizon: '#ffd070', below: '#c06030', ground: '#6a2a14', cloud: '255,200,150', clouds: 12, stars: { count: 140, color: '#f0f0ff' }, moon: '#f4f4ff' },
-    fog: { color: 0xc07850, near: 160, far: 860 },
-    hemi: { sky: 0xffd0a0, ground: 0x8a3a1a, intensity: 1.5 },
-    sun: { color: 0xffd890, intensity: 2.3 },
-    ground: tex.redSandTexture,
-    groundTile: 20,
-    // Walls are a temple's, blocks of sandstone with a painted frieze.
-    cliff: tex.templeWallTexture,
-    decor: 'deshret',
-    distant: { shape: 'mesa', color: 0x5a2414 },
-    haze: 0.8,
-    duotone: [0x0a0420, 0xd05a20, 0xffe890],
+    sky: { zenith: '#020308', high: '#0a0c28', low: '#1c1a48', horizon: '#d8601e', below: '#3a1a10', ground: '#08060a', cloud: '90,120,210', clouds: 10, stars: { count: 300, color: '#d8ecff' }, moon: '#c0ff98' },
+    fog: { color: 0x1a1024, near: 150, far: 780 },
+    hemi: { sky: 0x8aa8ff, ground: 0xff7a2a, intensity: 1.25 },
+    sun: { color: 0xffc890, intensity: 1.8 },
+    ground: forgeFloorTexture,
+    groundTile: 22,
+    // Walls are the forge's, riveted iron tinted with the heat's colours.
+    cliff: forgeWallTexture,
+    decor: 'forge',
+    distant: { shape: 'cloud', color: 0x120e24 },
+    haze: 0.5,
+    duotone: [0x05030c, 0xe0601c, 0xbfe8ff],
     skyCycle: false,
-    dust: 0xd08050,
-    barrier: { map: tex.templeWallTexture, crawl: false },
+    dust: 0x5a4a5a,
+    barrier: { map: forgeRailTexture, crawl: false },
+    roadGlow: 0.15,
+    edgeLine: 0x8ae0ff,
   },
   // Kill for the Steel: (placeholder, Set's look until its world is built).
   steelwar: {

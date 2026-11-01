@@ -381,6 +381,14 @@ const STYLES: Record<DecorKind, DetailStyle> = {
     boards: { words: ['NO LOVE NO PAIN', "I DON'T FEEL ANYTHING", 'NEVER!', 'ALTERED BEAST'], bg: ['#141214', '#5a1418'], fg: '#e8e0d0' },
     crowd: false,
   },
+  // The forge's own fires along the road, nobody out here among the stars but the smith: cinders, slag and stardust.
+  forge: {
+    edge: { kind: 'torch', height: 1.5, spacing: 16, color: 0x1a1a22, stripe: 0x3a3a48 },
+    light: 0xff8a2a,
+    cover: { shape: 'pebble', colors: [0x14141a, 0x2a2a34, 0xff6a1a, 0x8ad8ff], count: 1200 },
+    boards: { words: ['ALIEN METAL', 'WATER, FIRE', 'CLOUDS AND ICE', 'GIMME A FIX'], bg: ['#08060c', '#3a1606'], fg: '#ffb050' },
+    crowd: false,
+  },
   sky: {
     edge: { kind: 'star', height: 1.4, spacing: 14, color: 0xffe8a0, stripe: 0xffffff },
     light: 0xfff0ff,

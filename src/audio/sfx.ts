@@ -544,6 +544,12 @@ export class Sfx {
       this.tone(110, 0.9, 'sine', 0.14, 30);
       this.whoosh(0.7, 900, 200, 0.18);
     }
+    // Flattened by the astral blacksmith's hammer: the anvil's ring, two bright partials over it, and a dull thud under.
+    if (by === 'hammer') {
+      this.tone(1480, 0.9, 'triangle', 0.08, 1440);
+      this.tone(3720, 0.5, 'sine', 0.04, 3650);
+      this.hit(0.25, 140, 0.6);
+    }
     // A wave breaking over you: a crash of white noise; a glider comes in with a whistle of wind.
     if (by === 'waves') this.whoosh(0.8, 2400, 300, 0.35);
     if (by === 'gliders') this.whoosh(0.5, 1800, 500, 0.2);

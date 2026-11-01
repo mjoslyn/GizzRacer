@@ -739,12 +739,13 @@ const PALETTES: Record<GenTheme, Palette> = {
   forge: {
     surface: 'anvil',
     deck: 'anvil',
-    alt: 'sand',
-    hazards: ['sunMoon'],
-    start: 'setGate',
-    landmarks: ['setGate'],
+    alt: 'steel',
+    liquid: 'water',
+    hazards: ['hammer'],
+    start: 'anvilGate',
+    landmarks: ['anvilGate'],
     tallWalls: 6,
-    places: ['Jackal', 'Snake', 'Tornado', 'Tomb', 'Duality', 'Sandstorm', 'Moonbeam', 'Hieroglyph', 'Reset'],
+    places: ['Water', 'Fire', 'Clouds', 'Ice', 'Slipstream', 'Summer Breeze', 'Rebirth', 'Blacksmith', 'Secret', 'Stars'],
     music: { lap: 'alien-metal', finalLap: 'alien-metal-final-lap' },
   },
   steelwar: {
@@ -1537,6 +1538,10 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
       case 'void':
         // A row of hollows in the road, opening one after another on the eleven-beat bar.
         hazards.push({ kind, at: at(count + 1), period: 4.4 });
+        break;
+      case 'hammer':
+        // A row of the astral blacksmith's hammers, striking a beat apart: two bars at the album's 143 beats a minute.
+        hazards.push({ kind, at: at(count), period: (8 * 60) / 143 });
         break;
       case 'strings':
         // A run of strings down the stretch, plucked one after another.
