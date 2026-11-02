@@ -289,8 +289,10 @@ const fx = { haze: 0, kaleido: 0, vhs: 0, duo: 0, box: 0, bite: 0, water: 0, swi
 
 /** The world's own fog, and the close blue-green of being under water, blended. */
 const SEA_FOG = new THREE.Color(0x0a5a6a);
+/** Under muddy water (a world with a `murk`), the fog closes in brown instead. */
+const murkFog = new THREE.Color();
 const airFog = { color: new THREE.Color(), near: 0, far: 0, known: false };
-function underwaterFog(amount: number): void {
+function underwaterFog(amount: number, murk?: number): void {
   const fog = scene.fog as THREE.Fog | null;
   if (!fog) return;
   if (!airFog.known || amount === 0) {
@@ -300,7 +302,7 @@ function underwaterFog(amount: number): void {
     airFog.known = true;
     if (amount === 0) return;
   }
-  fog.color.copy(airFog.color).lerp(SEA_FOG, amount);
+  fog.color.copy(airFog.color).lerp(murk === undefined ? SEA_FOG : murkFog.setHex(murk).multiplyScalar(0.6), amount);
   fog.near = airFog.near + (4 - airFog.near) * amount;
   fog.far = airFog.far + (70 - airFog.far) * amount;
 }
@@ -2017,6 +2019,7 @@ const HIT_TEXT: Record<ItemKind | HazardKind, string> = {
   hammer: 'FLATTENED!',
   autopilot: 'NO DRIVER!',
   alphas: 'ALPHA DECAY!',
+  sharks: 'SHARK BITE!',
 };
 
 /** What a hazard used well says: the ones that can help. */
@@ -2084,6 +2087,7 @@ const BONUS_TEXT: Record<HazardKind, string> = {
   hammer: 'GIMME A FIX!',
   autopilot: 'SLIPSTREAM!',
   alphas: 'JUMPSTART MY HEART!',
+  sharks: "I'M NOT A BUOY!",
 };
 
 /** Takes a group out of the scene and frees what it built. */
@@ -2606,14 +2610,14 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
   fx.water += ((submerged ? 1 : 0) - fx.water) * damp(6, frameDt);
   fx.swim = Math.max(0, fx.swim - frameDt / PILL_SWIM);
   fx.crackle = Math.max(0, fx.crackle - frameDt / ALPHA_STATIC);
-  underwaterFog(fx.water);
+  underwaterFog(fx.water, theme.murk);
   music.setMuffle(fx.water);
   if (drawGallery(frameDt)) return;
   // A skill game covers the screen: the world behind it holds still rather than spend the frame.
   if (mode === 'skill') return;
   if (splitView) return renderSplit(theme.skyCycle ? Math.PI * 2 * skyTurn : 0, drawn);
   const beat = music.beatPhase();
-  postFx.render(scene, camera, { haze: fx.haze, kaleido: fx.kaleido, beat: beat >= 0 ? beat : (elapsed * 2.4) % 1, time: elapsed, vhs: fx.vhs, duo: fx.duo, box: fx.box, palette: theme.duotone, water: fx.water, swim: fx.swim, crackle: fx.crackle });
+  postFx.render(scene, camera, { haze: fx.haze, kaleido: fx.kaleido, beat: beat >= 0 ? beat : (elapsed * 2.4) % 1, time: elapsed, vhs: fx.vhs, duo: fx.duo, box: fx.box, palette: theme.duotone, water: fx.water, murk: theme.murk, swim: fx.swim, crackle: fx.crackle });
 });
 
 /** The podium's extra line: the trophy and what it unlocked. */

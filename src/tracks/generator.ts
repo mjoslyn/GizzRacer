@@ -790,11 +790,12 @@ const PALETTES: Record<GenTheme, Palette> = {
     surface: 'clay',
     deck: 'clay',
     alt: 'sand',
-    hazards: ['sunMoon'],
-    start: 'setGate',
-    landmarks: ['setGate'],
+    liquid: 'water',
+    hazards: ['sharks'],
+    start: 'flagsGate',
+    landmarks: ['flagsGate', 'sharkCopter'],
     tallWalls: 6,
-    places: ['Jackal', 'Snake', 'Tornado', 'Tomb', 'Duality', 'Sandstorm', 'Moonbeam', 'Hieroglyph', 'Reset'],
+    places: ['Shark Bait', 'Heat Stroke', 'Amber Coals', 'Salty Spray', 'Buoy', 'Muddy Water', 'Hungry Fishes', 'Willow', 'Driftwood', 'Muscle Men'],
     music: { lap: 'muddy-water', finalLap: 'muddy-water-final-lap' },
   },
   scala: {
@@ -1613,6 +1614,10 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
         break;
       case 'alphas':
         hazards.push({ kind, at: at(count - 1), period: 4.6 });
+        break;
+      case 'sharks':
+        // Sharks coming across the stretch one after another, each from the edge it circled off.
+        hazards.push({ kind, at: at(count), period: 5.2 });
         break;
     }
     return true;

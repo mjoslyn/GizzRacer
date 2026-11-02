@@ -14,6 +14,8 @@ export interface PostFxParams {
   box?: number;
   /** Under water, 0..1: blue-green, rippling, with caustic light. */
   water?: number;
+  /** Muddy water: the colour the light turns under it, instead of blue-green. */
+  murk?: number;
   /** After the wrong pill (Head On/Pill), 0..1: the screen swims, swirling round its middle, the colours running. */
   swim?: number;
   /** Hit by an alpha (Rapid Alpha Decay), 0..1: the screen crackles with static, torn lines and snow, a sick green. */
@@ -40,6 +42,7 @@ uniform float uVhs;
 uniform float uDuo;
 uniform float uBox;
 uniform float uWater;
+uniform vec3 uSeaTint;
 uniform float uSwim;
 uniform float uCrackle;
 uniform vec3 uDuoDark;
@@ -122,7 +125,7 @@ void main() {
 
   if (uWater > 0.0) {
     // Light filtered blue-green, darker with depth down the screen, and the dance of caustics.
-    vec3 sea = col.rgb * vec3(0.3, 0.8, 0.95) + vec3(0.0, 0.03, 0.05);
+    vec3 sea = col.rgb * uSeaTint + uSeaTint * vec3(0.0, 0.04, 0.05);
     sea *= mix(1.05, 0.6, 1.0 - uv.y);
     float c = sin(uv.x * 38.0 + uTime * 1.9) + sin(uv.y * 31.0 - uTime * 1.4) + sin((uv.x + uv.y) * 27.0 + uTime * 2.3);
     sea += vec3(0.6, 0.9, 1.0) * pow(max(c / 3.0, 0.0), 6.0) * 0.18;
@@ -186,6 +189,7 @@ export class PostFx {
           uDuo: { value: 0 },
           uBox: { value: 0 },
           uWater: { value: 0 },
+          uSeaTint: { value: new THREE.Vector3(0.3, 0.8, 0.95) },
           uSwim: { value: 0 },
           uCrackle: { value: 0 },
           uDuoDark: { value: new THREE.Color(0x0a0002) },
@@ -231,6 +235,14 @@ export class PostFx {
     u.uDuo.value = duo;
     u.uBox.value = box;
     u.uWater.value = water;
+    // Blue-green under the sea; under muddy water, its own brown, as bright as the sea's at its brightest.
+    const tint = u.uSeaTint.value as THREE.Vector3;
+    if (p.murk === undefined) tint.set(0.3, 0.8, 0.95);
+    else {
+      const c = new THREE.Color(p.murk);
+      const top = Math.max(c.r, c.g, c.b) || 1;
+      tint.set((c.r / top) * 0.9, (c.g / top) * 0.9, (c.b / top) * 0.9);
+    }
     u.uSwim.value = swim;
     u.uCrackle.value = crackle;
     if (p.palette) {

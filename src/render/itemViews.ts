@@ -16,6 +16,7 @@ import { magnetParts, poseMagnet } from './killForTheSteel';
 import { hammerParts, poseHammer } from './alienMetal';
 import { podParts, posePod } from './level5';
 import { alphaParts, poseAlphas } from './rapidAlphaDecay';
+import { poseShark, sharkParts } from './muddyWater';
 import { BOX_RESPAWN, SHIELD_ITEMS, WAVE_RANGE, type ItemHolder, type ItemSystem } from '../items/items';
 import type { KartState } from '../physics/kart';
 import type { HazardSystem } from '../items/hazards';
@@ -1441,6 +1442,10 @@ export class HazardsView {
           // A burst of alpha particles out of the nucleus across the road, and the static wave behind it.
           parts.push(...alphaParts(obj));
           break;
+        case 'sharks':
+          // A shark: its fin circling in the shallows, then the whole of it cutting across the road, jaws up, its wake behind.
+          parts.push(...sharkParts(obj));
+          break;
         case 'timber': {
           // A tree at the road's edge: its trunk, as long as the road is wide, and its crown; it leans, creaks and comes down across the road.
           const pivot = new THREE.Group();
@@ -2324,6 +2329,9 @@ export class HazardsView {
           break;
         case 'alphas':
           poseAlphas(obj, parts, p, elapsed);
+          break;
+        case 'sharks':
+          poseShark(obj, parts, p, elapsed);
           break;
         case 'presents': {
           const [present, lid, inside, shadow, roofs, santa, arm] = parts;

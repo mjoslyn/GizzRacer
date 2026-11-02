@@ -91,6 +91,8 @@ const LIFE: Record<DecorKind, LifeSpec> = {
   // Sparks of cold light drifting over the forge, and embers rising off it.
   forge: { flock: { kind: 'orb', color: 0x8ad8ff, count: 12, height: 20, size: 0.6, glow: true }, motes: { color: 0xffa040, count: 420, size: 0.35, drift: 'rise', glow: true } },
   // Stray electrons wheeling over the core, and sparks of radiation rising off the floor.
+  // Gulls wheeling over the beach, and the heat's dust blowing off the sand.
+  summer: { flock: { kind: 'gull', color: 0xf8f8f4, count: 14, height: 20, size: 1.1 }, motes: { color: 0xfff0d0, count: 240, size: 0.45, drift: 'blow' } },
   reactor: { flock: { kind: 'orb', color: 0x80d8ff, count: 14, height: 22, size: 0.6, glow: true }, motes: { color: 0x9aff6a, count: 420, size: 0.4, drift: 'rise', glow: true } },
   uruk: { flock: { kind: 'bird', color: 0x2a2a30, count: 12, height: 24, size: 1.0 }, motes: { color: 0xc8c0b0, count: 300, size: 0.4, drift: 'blow' } },
   den: { flock: { kind: 'bat', color: 0x1a0806, count: 14, height: 22, size: 1.1 }, motes: { color: 0xffa050, count: 320, size: 0.4, drift: 'rise', glow: true } },
