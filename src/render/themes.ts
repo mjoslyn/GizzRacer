@@ -13,9 +13,10 @@ import { benchWallTexture, regolithTexture, steelBarrierTexture } from './killFo
 import { forgeFloorTexture, forgeRailTexture, forgeWallTexture } from './alienMetal';
 import { barrierTexture as motorwayBarrierTexture, concreteTexture, tarmacTexture } from './level5';
 import { hazardBandTexture, leadBrickTexture, reactorFloorTexture } from './rapidAlphaDecay';
+import { chainBarrierTexture, scalaGroundTexture, strataWallTexture } from './greatChainOfBeing';
 
 export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism' | 'factory' | 'gamma' | 'carrion' | 'wah' | 'smog' | 'dome' | 'solar' | 'inferno' | 'mind' | 'notmind' | 'cellophane' | 'mindfuzz' | 'elbow' | 'muck' | 'boogie' | 'treesea' | 'theia' | 'set' | 'change' | 'uruk' | 'headon' | 'godcall' | 'nan' | 'float' | 'newworld' | 'foe' | 'altered' | 'hollow' | 'forge' | 'steelwar' | 'autonomy' | 'reactor' | 'muddy' | 'scala' | 'network' | 'wheel';
-export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy' | 'hadean' | 'deshret' | 'moonpalace' | 'uruk' | 'nanshouse' | 'suburb' | 'headtrip' | 'paddock' | 'den' | 'alteredworld' | 'mudflat' | 'hollowness' | 'openCut' | 'forge' | 'driverless' | 'reactor';
+export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy' | 'hadean' | 'deshret' | 'moonpalace' | 'uruk' | 'nanshouse' | 'suburb' | 'headtrip' | 'paddock' | 'den' | 'alteredworld' | 'mudflat' | 'hollowness' | 'openCut' | 'forge' | 'driverless' | 'reactor' | 'scala';
 
 /** Everything that makes a track's world look like itself. */
 export interface Theme {
@@ -1118,23 +1119,24 @@ export const THEMES: Record<ThemeId, Theme> = {
     dust: 0xd08050,
     barrier: { map: tex.templeWallTexture, crawl: false },
   },
-  // The Great Chain of Being: (placeholder, Set's look until its world is built).
+  // The Great Chain of Being: the ladder of all things at dusk, heavy and slow, the sky bruised purple over a band of fire low down, smoke drifting across it from the burning church, the light the fires' and the last of the sun's.
   scala: {
-    sky: { zenith: '#0a0a34', high: '#262a78', low: '#c86a3a', horizon: '#ffd070', below: '#c06030', ground: '#6a2a14', cloud: '255,200,150', clouds: 12, stars: { count: 140, color: '#f0f0ff' }, moon: '#f4f4ff' },
-    fog: { color: 0xc07850, near: 160, far: 860 },
-    hemi: { sky: 0xffd0a0, ground: 0x8a3a1a, intensity: 1.5 },
-    sun: { color: 0xffd890, intensity: 2.3 },
-    ground: tex.redSandTexture,
+    sky: { zenith: '#140a16', high: '#2e1624', low: '#7a3220', horizon: '#e0702c', below: '#46201a', ground: '#1e100c', cloud: '74,46,44', clouds: 24, stars: { count: 50, color: '#ffd8b8' } },
+    fog: { color: 0x52281c, near: 110, far: 660 },
+    hemi: { sky: 0xffb07a, ground: 0x2e160e, intensity: 1.45 },
+    sun: { color: 0xffa060, intensity: 2.1 },
+    ground: scalaGroundTexture,
     groundTile: 20,
-    // Walls are a temple's, blocks of sandstone with a painted frieze.
-    cliff: tex.templeWallTexture,
-    decor: 'deshret',
-    distant: { shape: 'mesa', color: 0x5a2414 },
-    haze: 0.8,
-    duotone: [0x0a0420, 0xd05a20, 0xffe890],
+    // Walls are the quarry's: strata of every colour of the chain's bottom link, a seam of precious stones in them.
+    cliff: strataWallTexture,
+    decor: 'scala',
+    distant: { shape: 'mountain', color: 0x26140f },
+    haze: 0.45,
+    duotone: [0x0c0406, 0xc8501c, 0xffdc98],
     skyCycle: false,
-    dust: 0xd08050,
-    barrier: { map: tex.templeWallTexture, crawl: false },
+    dust: 0x7a6658,
+    barrier: { map: chainBarrierTexture, crawl: false },
+    roadGlow: 0.08,
   },
   // All Is Known: (placeholder, Set's look until its world is built).
   network: {

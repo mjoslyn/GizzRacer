@@ -2017,6 +2017,7 @@ const HIT_TEXT: Record<ItemKind | HazardKind, string> = {
   hammer: 'FLATTENED!',
   autopilot: 'NO DRIVER!',
   alphas: 'ALPHA DECAY!',
+  rockyMeteors: 'PUSHED DOWN!',
 };
 
 /** What a hazard used well says: the ones that can help. */
@@ -2084,6 +2085,7 @@ const BONUS_TEXT: Record<HazardKind, string> = {
   hammer: 'GIMME A FIX!',
   autopilot: 'SLIPSTREAM!',
   alphas: 'JUMPSTART MY HEART!',
+  rockyMeteors: 'TRANSCEND!',
 };
 
 /** Takes a group out of the scene and frees what it built. */
