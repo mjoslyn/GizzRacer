@@ -112,12 +112,15 @@ const AMBER_HEX = 0xffb060;
 const LILAC_HEX = 0xb8a0ff;
 
 /**
- * The road: a record's groove, black vinyl. The texture spans half the
- * road (its u across, its v along): fine grooves running along the road,
- * each wiggling with the music cut into it, louder in some stretches than
- * others; a smooth band of land down the edge of it (the road's edges and
- * its middle), as between the tracks on a record; a sheen of the dusk
- * across the grooves, with a faint rainbow in it; dust and a scratch.
+ * The road: a record's groove, vinyl catching the last of the light. The
+ * texture spans half the road (its u across, its v along): fine grooves
+ * running along the road, each wiggling with the music cut into it, louder
+ * in some stretches than others, their ridges lit a cool silver-grey
+ * against the dark between them; a smooth, glossy band of land down the
+ * edge of it (the road's edges and, lit brightest, its middle), as between
+ * the tracks on a record; a broad sheen of the dusk across the grooves,
+ * with a faint rainbow in it; dust and a scratch. Lit, it stands well
+ * clear of the warm, dark moor either side.
  */
 export function grooveRoadTexture(): THREE.CanvasTexture {
   const S = 256;
@@ -126,19 +129,19 @@ export function grooveRoadTexture(): THREE.CanvasTexture {
   const fine = fbm(S, 32, 2, 6102);
   paint(ctx, S, S, (x, y, i) => {
     const u = x / S;
-    const black: RGB = [13, 12, 17];
-    // The land: smooth and glossy, no groove in it.
+    const black: RGB = [34, 36, 50];
+    // The land: smooth and glossy, no groove in it; the road's middle (u near 1) lit brightest.
     const land = Math.min(u, 1 - u);
-    if (land < 0.05) return mix(black, [44, 40, 52], 0.35 + 0.25 * Math.sin(y * 0.05 + fine[i] * 2));
+    if (land < 0.06) return mix([128, 128, 154], [182, 180, 204], (u > 0.5 ? 0.75 : 0.35) + 0.2 * Math.sin(y * 0.05 + fine[i] * 2));
     // The groove: a ridge every few texels, wiggling with how loud the music is here.
     const amp = 0.4 + 2.6 * loud[(y * S + ((x * 13) % S)) % (S * S)];
     const phase = (x + amp * Math.sin(y * 0.55 + x * 0.21)) / 3.2;
     const ridge = 0.5 + 0.5 * Math.cos(phase * Math.PI * 2);
     // The sheen: a broad soft band of the dusk across the grooves, a rainbow at its edge.
-    const sheen = Math.exp(-(((u - 0.36) / 0.11) ** 2));
     const rainbow: RGB = [120 + 80 * Math.sin(u * 40), 90 + 70 * Math.sin(u * 40 + 2.1), 140 + 90 * Math.sin(u * 40 + 4.2)];
-    const lit = mix([30, 27, 38], mix([92, 84, 104], rainbow, 0.25), sheen);
-    return mix(black, lit, ridge * (0.45 + 0.55 * sheen) * (0.85 + fine[i] * 0.3));
+    const sheen = Math.max(Math.exp(-(((u - 0.36) / 0.13) ** 2)), 0.8 * Math.exp(-(((u - 0.8) / 0.1) ** 2)));
+    const lit = mix([108, 110, 138], mix([190, 188, 218], rainbow, 0.2), sheen);
+    return mix(black, lit, ridge * (0.55 + 0.45 * sheen) * (0.85 + fine[i] * 0.3));
   });
   const rand = seededRandom(6103);
   // Dust on the record.
@@ -156,23 +159,23 @@ export function grooveRoadTexture(): THREE.CanvasTexture {
   return finish(c);
 }
 
-/** The ground: a moor at dusk, peat and heather and dark grass, the heather's flowers gone grey-mauve in the failing light. */
+/** The ground: a moor at dusk, peat and heather and dark grass, warm rose and umber in the glow, the heather's flowers mauve in the failing light. */
 export function heathTexture(): THREE.CanvasTexture {
   const S = 512;
   const [c, ctx] = canvas(S);
   const n = fbm(S, 8, 5, 6111);
   const patch = fbm(S, 4, 3, 6112);
   paint(ctx, S, S, (_x, _y, i) => {
-    const peat: RGB = [26, 20, 24];
-    const heather: RGB = [64, 40, 58];
-    const grass: RGB = [44, 50, 44];
+    const peat: RGB = [58, 36, 34];
+    const heather: RGB = [112, 62, 78];
+    const grass: RGB = [86, 80, 50];
     const base = patch[i] > 0.55 ? mix(heather, grass, Math.min(1, (patch[i] - 0.55) * 5)) : mix(peat, heather, patch[i] / 0.55);
     return shade(base, 0.75 + n[i] * 0.5);
   });
   const rand = seededRandom(6113);
   for (let k = 0; k < 7000; k++) {
     const r = rand();
-    ctx.fillStyle = r < 0.35 ? 'rgba(150,104,150,0.45)' : r < 0.7 ? 'rgba(96,110,86,0.4)' : 'rgba(10,8,12,0.5)';
+    ctx.fillStyle = r < 0.35 ? 'rgba(196,120,160,0.45)' : r < 0.7 ? 'rgba(130,128,80,0.4)' : 'rgba(30,18,20,0.5)';
     ctx.fillRect(rand() * S, rand() * S, 1.5, r < 0.35 ? 1.5 : 3);
   }
   return finish(c);
@@ -183,7 +186,7 @@ export function duskStoneTexture(): THREE.CanvasTexture {
   const S = 256;
   const [c, ctx] = canvas(S);
   const n = fbm(S, 8, 4, 6121);
-  paint(ctx, S, S, (_x, y, i) => shade(mix([50, 44, 56], [92, 82, 96], n[i]), 0.85 + 0.15 * (y / S)));
+  paint(ctx, S, S, (_x, y, i) => shade(mix([76, 64, 80], [128, 114, 128], n[i]), 0.85 + 0.15 * (y / S)));
   const rand = seededRandom(6122);
   const course = 32;
   ctx.strokeStyle = 'rgba(12,10,14,0.9)';
@@ -214,7 +217,7 @@ export function duskStoneTexture(): THREE.CanvasTexture {
   return finish(c);
 }
 
-/** The barrier: a ship's rail, varnished teak planks, a brass band along the top and brass studs. */
+/** The barrier: a ship's rail, varnished teak planks catching the lamplight, a broad brass band along the top and brass studs. */
 export function railTexture(): THREE.CanvasTexture {
   const W = 128;
   const H = 64;
@@ -222,14 +225,14 @@ export function railTexture(): THREE.CanvasTexture {
   const n = fbm(W, 8, 3, 6131);
   paint(ctx, W, H, (x, y, i) => {
     const grain = 0.85 + 0.15 * Math.sin(y * 1.7 + n[i] * 9 + x * 0.04);
-    return shade(mix([96, 54, 28], [150, 92, 50], n[i]), grain * (0.75 + 0.25 * (1 - y / H)));
+    return shade(mix([150, 90, 48], [206, 140, 80], n[i]), grain * (0.8 + 0.2 * (1 - y / H)));
   });
   ctx.fillStyle = 'rgba(20,10,6,0.8)';
   for (const y of [H * 0.38, H * 0.7]) ctx.fillRect(0, y, W, 1.5);
-  ctx.fillStyle = css([206, 166, 84]);
-  ctx.fillRect(0, 0, W, H * 0.14);
-  ctx.fillStyle = css([255, 226, 150], 0.8);
-  ctx.fillRect(0, H * 0.03, W, 1.5);
+  ctx.fillStyle = css([236, 196, 104]);
+  ctx.fillRect(0, 0, W, H * 0.24);
+  ctx.fillStyle = css([255, 240, 180], 0.9);
+  ctx.fillRect(0, H * 0.05, W, 2.5);
   for (const x of [W * 0.25, W * 0.75]) {
     ctx.fillStyle = css([220, 180, 96]);
     ctx.beginPath();
