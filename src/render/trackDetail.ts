@@ -397,6 +397,13 @@ const STYLES: Record<DecorKind, DetailStyle> = {
     boards: { words: ['ALL IS KNOWN', 'SUPERSEDE', 'CONNECTED TO THE NETWORK', 'STEEL BONE', 'DIGITISE'], bg: ['#020507', '#06303a'], fg: '#7af4ff' },
     crowd: false,
   },
+  // Muddy Water: the lifesavers' red and yellow poles along the road, a crowd on the sand, dry grass and shells by the road.
+  summer: {
+    edge: { kind: 'pole', height: 1.4, spacing: 12, color: 0xffd21a, stripe: 0xd8202a },
+    cover: { shape: 'tuft', colors: [0xd8c070, 0xb8a060, 0xe8d8a0, 0x8a9a5a, 0xf4ecd8], count: 1500 },
+    boards: { words: ['MUDDY WATER', 'SWIM BETWEEN THE FLAGS', 'SHARK ALARM', 'SLIP SLOP SLAP', 'NO BOTTLED WATER'], bg: ['#d8202a', '#ffd21a', '#1a6ad8'], fg: '#ffffff' },
+    crowd: true,
+  },
   // Rapid Alpha Decay: hazard poles along the road, green lamps on them; nobody watching in the core.
   reactor: {
     edge: { kind: 'pole', height: 1.6, spacing: 14, color: 0xf0c010, stripe: 0x141414 },
@@ -503,7 +510,7 @@ export function roadPaint(ribbon: Ribbon, decor: DecorKind, edgeLine?: number, e
     line[i] = -Math.max(-0.55, Math.min(0.55, (sum / 25) * 14));
   }
   const paintable = new Set(['asphalt']);
-  const wearable = new Set(['asphalt', 'salt', 'rock', 'sand', 'boards', 'regolith', 'wet', 'paving', 'reef', 'flagstone', 'membrane', 'steel', 'scorched', 'fret', 'tar', 'gilded', 'heatshield', 'brimstone', 'neural', 'film', 'fuzz', 'carpet', 'muck', 'moss', 'hieroglyph', 'mudbrick', 'florals', 'bitumen', 'gravel', 'butcherfur', 'bitumen', 'gravel', 'crust', 'bone', 'ore', 'lane']);
+  const wearable = new Set(['asphalt', 'salt', 'rock', 'sand', 'boards', 'regolith', 'wet', 'paving', 'reef', 'flagstone', 'membrane', 'steel', 'scorched', 'fret', 'tar', 'gilded', 'heatshield', 'brimstone', 'neural', 'film', 'fuzz', 'carpet', 'muck', 'moss', 'hieroglyph', 'mudbrick', 'florals', 'bitumen', 'gravel', 'butcherfur', 'bitumen', 'gravel', 'crust', 'bone', 'ore', 'lane', 'clay']);
   for (let i = 0; i < segs; i++) {
     const j = (i + 1) % n;
     const sMid = (sp.dist[i] + (j === 0 ? sp.length : sp.dist[j])) / 2;

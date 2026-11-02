@@ -147,6 +147,7 @@ export const WAVE_SPIN = 1.0;
  * - tucked in behind a driverless pod, in its slipstream, it tows you on, a boost
  * - through the static wave crackling across the road in a burst of alphas' wake, a jumpstart: a boost
  * - tucked into the clean wake just behind a street sweeper as it crosses, the road it has this moment swept, a boost
+ * - slipped past just behind a shark as it cuts across the shallows, through its wake, a boost
  */
 /** A reward can't pay out again to the same kart for this long. */
 export const REWARD_COOLDOWN = 1.5;
@@ -896,6 +897,71 @@ export function alphaAcross(u: number, k: number, reach: number): number | null 
   return from - (2 * from + (ALPHA_COUNT - 1) * ALPHA_GAP) * f + k * ALPHA_GAP;
 }
 
+/**
+ * Muddy Water's sharks, shark bait and shark bite: a fin circling in the
+ * shallows off one edge of the causeway (the warning: that's the side it
+ * comes from), then the run, the shark cutting right across the road on a
+ * slant, its jaws up out of the water as it crosses the middle, and on into
+ * the water the other side, its wake trailing over the road behind it; then
+ * it goes under, and comes back circling on the side it went to. Driven
+ * into, it bites: spun. Slipped past just behind it, through its wake, a
+ * boost.
+ */
+export const SHARK_STAGES = { run: 0.56, ashore: 0.8, calm: 0.94 } as const;
+/** It circles this far out, off the road's edge, and starts its run this far off it. */
+export const SHARK_CIRCLE = 5;
+export const SHARK_OUT = 4;
+/** How far along the road its run slants, from one side to the other. */
+export const SHARK_SLANT = 9;
+/** Its body, from the fin: the head this far ahead, the tail this far behind, this thick either side. */
+export const SHARK_HEAD = 2;
+export const SHARK_TAIL = 2.6;
+export const SHARK_RADIUS = 0.9;
+/** Its wake: this far back behind its tail, this wide either side of its line. */
+export const SHARK_WAKE = 9;
+export const SHARK_WAKE_WIDTH = 2.4;
+export const SHARK_SPIN = 1.1;
+export const SHARK_BOOST = 1.0;
+
+/**
+ * Where a shark is at cycle stage `u` of its period, in the road's frame at
+ * its station: `along` the road (metres ahead), `lateral` (to the right)
+ * and the way it's swimming (`da`, `dl`, a unit vector in that frame);
+ * whether it's running (on its line across, or swimming on beyond) and how
+ * far along that line it is (`f`, 0 where it sets off, 1 off the far side);
+ * `side` is the way across it goes (1 to the right), `drift` the way along.
+ * The road is `reach` wide either side of its centre.
+ */
+export function sharkCourse(u: number, cycle: number, i: number, reach: number): { along: number; lateral: number; da: number; dl: number; running: boolean; f: number; side: number; drift: number; under: boolean } {
+  const S = SHARK_STAGES;
+  const side = (cycle + i) % 2 === 0 ? 1 : -1;
+  const drift = (Math.floor(cycle / 2) + i) % 2 === 0 ? 1 : -1;
+  const R = reach + SHARK_OUT;
+  const a0 = -drift * SHARK_SLANT * 0.5;
+  // Across: 2R; along: the slant. Its heading along that line.
+  const len = Math.hypot(2 * R, SHARK_SLANT);
+  const da = (drift * SHARK_SLANT) / len;
+  const dl = (side * 2 * R) / len;
+  if (u >= S.run) {
+    const f = (u - S.run) / (S.ashore - S.run);
+    return { along: a0 + drift * SHARK_SLANT * f, lateral: side * (-R + 2 * R * f), da, dl, running: u < S.calm, f, side, drift, under: u >= S.calm };
+  }
+  // Circling off the edge it will come from, twice round, ending where its run starts.
+  const psi = 4 * Math.PI * (u / S.run);
+  const c = SHARK_CIRCLE;
+  return {
+    along: a0 + drift * c * Math.sin(psi),
+    lateral: side * (-(R + c) + c * Math.cos(psi)),
+    da: drift * Math.cos(psi),
+    dl: -side * Math.sin(psi),
+    running: false,
+    f: 0,
+    side,
+    drift,
+    under: false,
+  };
+}
+
 /** How far a tree has toppled at cycle stage `u`: 0 upright, a lean while it creaks, 1 lying across the road. */
 export function timberFall(u: number): number {
   const T = TIMBER_STAGES;
@@ -994,6 +1060,7 @@ const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds' | 'butterfli
   autopilot: AUTOPILOT_SPIN,
   alphas: ALPHA_SPIN,
   sweepers: SWEEP_SPIN,
+  sharks: SHARK_SPIN,
 };
 
 /** Kinds that fill the whole road across, on a rhythm: nothing to steer round, only to time. */
@@ -1704,6 +1771,27 @@ export class HazardSystem {
           p.phase = u;
           break;
         }
+        case 'sharks': {
+          // A fin circling off one edge, then the shark cutting right across the road on a slant, and on.
+          const at = def.at[i];
+          const tt = (t + 10) / def.period + i * 0.37;
+          const cycle = Math.floor(tt);
+          const u = tt - cycle;
+          const reach = this.halfWidth(at);
+          const c = sharkCourse(u, cycle, i, reach);
+          this.place(p, at + c.along, c.lateral, c.under ? -1.5 : 0);
+          // Its heading: the road's, turned toward the way it's swimming (a lateral to the right is a turn to the right, -h).
+          p.heading -= Math.atan2(c.dl, c.da);
+          p.radius = SHARK_RADIUS;
+          p.side = c.side;
+          p.gap = c.lateral;
+          // On the road while any of it is: biting distance.
+          p.active = c.running && c.f <= 1 && Math.abs(c.lateral) <= reach + SHARK_HEAD + SHARK_RADIUS;
+          // Its wake, trailing over the road behind it, while it runs.
+          p.lane = c.running ? 1 : 0;
+          p.phase = u;
+          break;
+        }
         case 'dustDevils':
         case 'butterflies':
         case 'tornadoes':
@@ -1913,6 +2001,10 @@ export class HazardSystem {
         }
         if (p.kind === 'autopilot') {
           this.pod(hit, p, s);
+          continue;
+        }
+        if (p.kind === 'sharks') {
+          this.shark(hit, p, s);
           continue;
         }
         if (p.kind === 'alphas') {
@@ -2260,6 +2352,14 @@ export class HazardSystem {
         // The face, from a little before it comes down until it lifts; the sparks after are there to be driven through.
         if (p.phase < HAMMER_STAGES.fall - 0.1 || p.phase >= HAMMER_STAGES.lift) continue;
         out.push({ x: p.x, z: p.z, r: p.radius, vx: 0, vz: 0 });
+        continue;
+      }
+      if (p.kind === 'sharks') {
+        // A shark on its run, head to tail, crossing the road.
+        if (!p.active) continue;
+        const fx = Math.sin(p.heading);
+        const fz = Math.cos(p.heading);
+        for (const d of [SHARK_HEAD, 0, -SHARK_TAIL]) out.push({ x: p.x + fx * d, z: p.z + fz * d, r: 1.4, vx: p.vx, vz: p.vz });
         continue;
       }
       if (p.kind === 'autopilot') {
@@ -2828,6 +2928,32 @@ export class HazardSystem {
     if (behind <= 0 || behind > AUTOPILOT_DRAFT || Math.abs(across) > AUTOPILOT_DRAFT_WIDTH) return;
     if (s.speed <= AUTOPILOT_SPEED || Math.cos(s.heading - p.heading) < 0.9 || this.cooldown.has(s)) return;
     this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, AUTOPILOT_TOW)));
+  }
+
+  /**
+   * A shark cutting across the shallows: driven into, head to tail, it
+   * bites, spun; slipped past just behind it, through its wake, a boost.
+   */
+  private shark(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+    if (p.lane !== 1) return;
+    const fx = Math.sin(p.heading);
+    const fz = Math.cos(p.heading);
+    const along = (s.x - p.x) * fx + (s.z - p.z) * fz;
+    const across = Math.abs((s.x - p.x) * -fz + (s.z - p.z) * fx);
+    // Its body: a segment from tail to head.
+    if (p.active && along >= -SHARK_TAIL - SHARK_RADIUS - KART_RADIUS && along <= SHARK_HEAD + SHARK_RADIUS + KART_RADIUS) {
+      const d = Math.hypot(Math.max(0, Math.abs(along - (SHARK_HEAD - SHARK_TAIL) / 2) - (SHARK_HEAD + SHARK_TAIL) / 2), across);
+      if (d <= SHARK_RADIUS + KART_RADIUS) {
+        if (this.cooldown.has(s)) return;
+        this.cooldown.set(s, HIT_COOLDOWN);
+        if (spinOut(s, SHARK_SPIN)) hit.push({ kart: s, by: p.kind });
+        return;
+      }
+    }
+    // Its wake: behind the tail, along its line.
+    const behind = -along - SHARK_TAIL - SHARK_RADIUS;
+    if (behind < 0 || behind > SHARK_WAKE || across > SHARK_WAKE_WIDTH || s.speed < 8 || this.cooldown.has(s)) return;
+    this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, SHARK_BOOST)));
   }
 
   /**

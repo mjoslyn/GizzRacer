@@ -574,6 +574,13 @@ export class Sfx {
       this.hit(0.18, 1200, 0.35);
       for (let k = 0; k < 8; k++) this.tone(1760 - k * 160 + (k % 2) * 520, 0.04, 'square', 0.045, undefined, 0.08 + k * 0.05);
     }
+    // Bitten by a shark: the splash as it comes up, the crunch of its jaws, and two low notes a semitone apart, the way sharks sound in films.
+    if (by === 'sharks') {
+      this.whoosh(0.45, 2800, 600, 0.3);
+      this.hit(0.14, 700, 0.5);
+      this.tone(82, 0.22, 'sawtooth', 0.1, undefined, 0.1, true);
+      this.tone(87, 0.3, 'sawtooth', 0.1, undefined, 0.36, true);
+    }
     // A wave breaking over you: a crash of white noise; a glider comes in with a whistle of wind.
     if (by === 'waves') this.whoosh(0.8, 2400, 300, 0.35);
     if (by === 'gliders') this.whoosh(0.5, 1800, 500, 0.2);

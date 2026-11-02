@@ -17,6 +17,7 @@ import { hammerParts, poseHammer } from './alienMetal';
 import { podParts, posePod } from './level5';
 import { alphaParts, poseAlphas } from './rapidAlphaDecay';
 import { poseSweeper, sweeperParts } from './allIsKnown';
+import { poseShark, sharkParts } from './muddyWater';
 import { BOX_RESPAWN, SHIELD_ITEMS, WAVE_RANGE, type ItemHolder, type ItemSystem } from '../items/items';
 import type { KartState } from '../physics/kart';
 import type { HazardSystem } from '../items/hazards';
@@ -1446,6 +1447,10 @@ export class HazardsView {
           // A street sweeper with nobody in it, its brushes and scanner, and the clean wake behind it.
           parts.push(...sweeperParts(obj));
           break;
+        case 'sharks':
+          // A shark: its fin circling in the shallows, then the whole of it cutting across the road, jaws up, its wake behind.
+          parts.push(...sharkParts(obj));
+          break;
         case 'timber': {
           // A tree at the road's edge: its trunk, as long as the road is wide, and its crown; it leans, creaks and comes down across the road.
           const pivot = new THREE.Group();
@@ -2332,6 +2337,9 @@ export class HazardsView {
           break;
         case 'sweepers':
           poseSweeper(obj, parts, p, elapsed);
+          break;
+        case 'sharks':
+          poseShark(obj, parts, p, elapsed);
           break;
         case 'presents': {
           const [present, lid, inside, shadow, roofs, santa, arm] = parts;
