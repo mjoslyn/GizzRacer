@@ -1168,10 +1168,11 @@ export const THEMES: Record<ThemeId, Theme> = {
   },
   // The Wheel: the cup's finale, dusk going into night over a dark moor, a somber jazz light, violet overhead and the last amber low down where the future glows on the horizon; the first stars out, a moon rising, lamplight.
   wheel: {
-    sky: { zenith: '#07061a', high: '#1e1640', low: '#5a3466', horizon: '#f0a058', below: '#6a3048', ground: '#1a1220', cloud: '110,72,110', clouds: 10, stars: { count: 200, color: '#ffe8c8' }, moon: '#fff0d8' },
-    fog: { color: 0x2e2040, near: 150, far: 820 },
-    hemi: { sky: 0xb8a0e0, ground: 0x2a1a24, intensity: 1.35 },
-    sun: { color: 0xffb070, intensity: 1.7 },
+    sky: { zenith: '#0c0a24', high: '#2a1e52', low: '#74447a', horizon: '#f6ae62', below: '#8a4a5a', ground: '#3a2632', cloud: '130,88,128', clouds: 10, stars: { count: 200, color: '#ffe8c8' }, moon: '#fff0d8' },
+    // A violet dusk haze, pushed well back so the road ahead and the shapes beyond it read.
+    fog: { color: 0x54406a, near: 220, far: 1000 },
+    hemi: { sky: 0xd0bcf4, ground: 0x6a4450, intensity: 1.9 },
+    sun: { color: 0xffc282, intensity: 2.3 },
     ground: heathTexture,
     groundTile: 22,
     // Walls are the cut's and the world's edge: dark dusk stone, moss low down.
@@ -1184,9 +1185,9 @@ export const THEMES: Record<ThemeId, Theme> = {
     skyCycle: false,
     dust: 0x6a5a6a,
     barrier: { map: wheelRailTexture, crawl: false },
-    // A black road on a dark moor: it glows a little with its own sheen, and an amber line runs down each edge.
-    roadGlow: 0.14,
-    edgeLine: 0xffb060,
-    edgeWidth: 0.4,
+    // A silvery groove on a dark, warm moor: it glows with its own sheen, so it reads far ahead and down in the cut, and a broad amber line runs down each edge.
+    roadGlow: 0.2,
+    edgeLine: 0xffc470,
+    edgeWidth: 0.9,
   },
 };

@@ -422,9 +422,9 @@ const STYLES: Record<DecorKind, DetailStyle> = {
   },
   // The Wheel: old iron street lamps along the moor road, lit for nobody, everyone asleep; heather, and the lamplight in it.
   slumber: {
-    edge: { kind: 'lamp', height: 4.8, spacing: 26, color: 0x1e1a22, stripe: 0xc8a050 },
+    edge: { kind: 'lamp', height: 4.8, spacing: 18, color: 0x2a242c, stripe: 0xe0b860 },
     light: 0xffb060,
-    cover: { shape: 'tuft', colors: [0x3a2434, 0x5a3a52, 0x2e3a2c, 0x8a6a8a], count: 1400 },
+    cover: { shape: 'tuft', colors: [0x6a3a48, 0x9a5a78, 0x6a6440, 0xc08ab0], count: 1400 },
     boards: { words: ['THE WHEEL', 'INTO OUR FUTURE', 'A BETTER THESIS', 'WAKE UP', 'GUMBOOT SOUP'], bg: ['#1a1028', '#2a1630'], fg: '#ffc070' },
     crowd: false,
   },
