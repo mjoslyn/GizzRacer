@@ -95,7 +95,15 @@ export type RoadSurface =
   /** All Is Known's road: a circuit board, its traces lit. */
   | 'circuit'
   /** The Wheel's road: a record's groove, black vinyl. */
-  | 'groove';
+  | 'groove'
+  /** Straws in the Wind's road: a farm track through the flower fields, straw blown across it. */
+  | 'farmtrack'
+  /** Cyboogie's road: graphene lattice over the cyborg's pistons and pumps. */
+  | 'graphene'
+  /** The Grim Reaper's road: cinders, ash and scorched dirt. */
+  | 'cinder'
+  /** Gaia's road: the Earth's own skin, soil and rock. */
+  | 'earth';
 
 /**
  * Every road is built this much wider than its section says: the layouts

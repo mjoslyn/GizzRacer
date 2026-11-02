@@ -25,6 +25,9 @@ const FAFYL = { album: 'Float Along – Fill Your Lungs', year: 2013 };
 const MOTU = { album: 'Murder of the Universe', year: 2017 };
 const AM = { album: 'Alien Metal', year: 2026 };
 const GS = { album: 'Gumboot Soup', year: 2017 };
+const KG = { album: 'K.G.', year: 2020 };
+const FFF = { album: 'Fishing for Fishies', year: 2019 };
+const OG = { album: 'Omnium Gatherum', year: 2022 };
 
 export const TRACK_SONGS: Record<string, TrackSong> = {
   'robot-stop': { title: 'Robot Stop', album: 'Nonagon Infinity', year: 2016 },
@@ -87,6 +90,10 @@ export const TRACK_SONGS: Record<string, TrackSong> = {
   'great-chain-of-being': { title: 'The Great Chain of Being', ...GS },
   'all-is-known': { title: 'All Is Known', ...GS },
   'the-wheel': { title: 'The Wheel', ...GS },
+  'straws-in-the-wind': { title: 'Straws in the Wind', ...KG },
+  'cyboogie': { title: 'Cyboogie', ...FFF },
+  'the-grim-reaper': { title: 'The Grim Reaper', ...OG },
+  'gaia': { title: 'Gaia', ...OG },
 };
 
 /**

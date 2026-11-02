@@ -247,6 +247,11 @@ function materials(theme: Theme): Materials {
       circuit: bumpy(circuitRoadTexture(), 0.05, { emissive: 0xffffff, emissiveMap: circuitGlowTexture(), emissiveIntensity: 1 }),
       // The Wheel's: a record's groove, black vinyl.
       groove: bumpy(grooveRoadTexture(), 0.04),
+      // The All Stars Cup #1's roads (placeholders until each track's world is built).
+      farmtrack: bumpy(tex.asphaltTexture(), 0.08),
+      graphene: bumpy(tex.asphaltTexture(), 0.08),
+      cinder: bumpy(tex.asphaltTexture(), 0.08),
+      earth: bumpy(tex.asphaltTexture(), 0.08),
       gravel: bumpy(gravelTexture(), 0.1),
       cosmic: (() => {
         const map = tex.cosmicRoadTexture();

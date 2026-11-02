@@ -5,9 +5,9 @@ import { CUPS, TRACK_LIST } from '../src/tracks/index';
 const IDS = ['alien-metal', 'kill-for-the-steel', 'level-5', 'rapid-alpha-decay'];
 
 describe('the Alien Metal Cup', () => {
-  it("is four of Alien Metal's songs in album order, the last cup, after the Phantom Island Cup", () => {
+  it("is four of Alien Metal's songs in album order, the last album cup, after the Phantom Island Cup and before the All Stars Cup #1", () => {
     const at = CUPS.findIndex((c) => c.id === 'alien-metal');
-    expect(at).toBe(CUPS.length - 1);
+    expect(CUPS[at + 1].id).toBe('all-stars-1');
     expect(CUPS[at - 1].id).toBe('phantom-island');
     expect(CUPS[at].tracks.map((i) => TRACK_LIST[i].id)).toEqual(IDS);
     for (const id of IDS) expect(TRACK_SONGS[id].album).toBe('Alien Metal');

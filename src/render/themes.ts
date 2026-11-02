@@ -18,7 +18,7 @@ import { MURK, bushGroundTexture, railTexture as summerRailTexture, sandstoneTex
 import { chainBarrierTexture, scalaGroundTexture, strataWallTexture } from './greatChainOfBeing';
 import { duskStoneTexture, heathTexture, railTexture as wheelRailTexture } from './theWheel';
 
-export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism' | 'factory' | 'gamma' | 'carrion' | 'wah' | 'smog' | 'dome' | 'solar' | 'inferno' | 'mind' | 'notmind' | 'cellophane' | 'mindfuzz' | 'elbow' | 'muck' | 'boogie' | 'treesea' | 'theia' | 'set' | 'change' | 'uruk' | 'headon' | 'godcall' | 'nan' | 'float' | 'newworld' | 'foe' | 'altered' | 'hollow' | 'forge' | 'steelwar' | 'autonomy' | 'reactor' | 'muddy' | 'scala' | 'network' | 'wheel';
+export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism' | 'factory' | 'gamma' | 'carrion' | 'wah' | 'smog' | 'dome' | 'solar' | 'inferno' | 'mind' | 'notmind' | 'cellophane' | 'mindfuzz' | 'elbow' | 'muck' | 'boogie' | 'treesea' | 'theia' | 'set' | 'change' | 'uruk' | 'headon' | 'godcall' | 'nan' | 'float' | 'newworld' | 'foe' | 'altered' | 'hollow' | 'forge' | 'steelwar' | 'autonomy' | 'reactor' | 'muddy' | 'scala' | 'network' | 'wheel' | 'windmill' | 'cyborg' | 'grimreaper' | 'gaia';
 export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy' | 'hadean' | 'deshret' | 'moonpalace' | 'uruk' | 'nanshouse' | 'suburb' | 'headtrip' | 'paddock' | 'den' | 'alteredworld' | 'mudflat' | 'hollowness' | 'openCut' | 'forge' | 'driverless' | 'reactor' | 'network' | 'summer' | 'scala' | 'slumber';
 
 /** Everything that makes a track's world look like itself. */
@@ -1189,5 +1189,73 @@ export const THEMES: Record<ThemeId, Theme> = {
     roadGlow: 0.2,
     edgeLine: 0xffc470,
     edgeWidth: 0.9,
+  },
+  // Straws in the Wind: (placeholder, Set's look until its world is built).
+  windmill: {
+    sky: { zenith: '#0a0a34', high: '#262a78', low: '#c86a3a', horizon: '#ffd070', below: '#c06030', ground: '#6a2a14', cloud: '255,200,150', clouds: 12, stars: { count: 140, color: '#f0f0ff' }, moon: '#f4f4ff' },
+    fog: { color: 0xc07850, near: 160, far: 860 },
+    hemi: { sky: 0xffd0a0, ground: 0x8a3a1a, intensity: 1.5 },
+    sun: { color: 0xffd890, intensity: 2.3 },
+    ground: tex.redSandTexture,
+    groundTile: 20,
+    cliff: tex.templeWallTexture,
+    decor: 'deshret',
+    distant: { shape: 'mesa', color: 0x5a2414 },
+    haze: 0.8,
+    duotone: [0x0a0420, 0xd05a20, 0xffe890],
+    skyCycle: false,
+    dust: 0xd08050,
+    barrier: { map: tex.templeWallTexture, crawl: false },
+  },
+  // Cyboogie: (placeholder, Set's look until its world is built).
+  cyborg: {
+    sky: { zenith: '#0a0a34', high: '#262a78', low: '#c86a3a', horizon: '#ffd070', below: '#c06030', ground: '#6a2a14', cloud: '255,200,150', clouds: 12, stars: { count: 140, color: '#f0f0ff' }, moon: '#f4f4ff' },
+    fog: { color: 0xc07850, near: 160, far: 860 },
+    hemi: { sky: 0xffd0a0, ground: 0x8a3a1a, intensity: 1.5 },
+    sun: { color: 0xffd890, intensity: 2.3 },
+    ground: tex.redSandTexture,
+    groundTile: 20,
+    cliff: tex.templeWallTexture,
+    decor: 'deshret',
+    distant: { shape: 'mesa', color: 0x5a2414 },
+    haze: 0.8,
+    duotone: [0x0a0420, 0xd05a20, 0xffe890],
+    skyCycle: false,
+    dust: 0xd08050,
+    barrier: { map: tex.templeWallTexture, crawl: false },
+  },
+  // The Grim Reaper: (placeholder, Set's look until its world is built).
+  grimreaper: {
+    sky: { zenith: '#0a0a34', high: '#262a78', low: '#c86a3a', horizon: '#ffd070', below: '#c06030', ground: '#6a2a14', cloud: '255,200,150', clouds: 12, stars: { count: 140, color: '#f0f0ff' }, moon: '#f4f4ff' },
+    fog: { color: 0xc07850, near: 160, far: 860 },
+    hemi: { sky: 0xffd0a0, ground: 0x8a3a1a, intensity: 1.5 },
+    sun: { color: 0xffd890, intensity: 2.3 },
+    ground: tex.redSandTexture,
+    groundTile: 20,
+    cliff: tex.templeWallTexture,
+    decor: 'deshret',
+    distant: { shape: 'mesa', color: 0x5a2414 },
+    haze: 0.8,
+    duotone: [0x0a0420, 0xd05a20, 0xffe890],
+    skyCycle: false,
+    dust: 0xd08050,
+    barrier: { map: tex.templeWallTexture, crawl: false },
+  },
+  // Gaia: (placeholder, Set's look until its world is built).
+  gaia: {
+    sky: { zenith: '#0a0a34', high: '#262a78', low: '#c86a3a', horizon: '#ffd070', below: '#c06030', ground: '#6a2a14', cloud: '255,200,150', clouds: 12, stars: { count: 140, color: '#f0f0ff' }, moon: '#f4f4ff' },
+    fog: { color: 0xc07850, near: 160, far: 860 },
+    hemi: { sky: 0xffd0a0, ground: 0x8a3a1a, intensity: 1.5 },
+    sun: { color: 0xffd890, intensity: 2.3 },
+    ground: tex.redSandTexture,
+    groundTile: 20,
+    cliff: tex.templeWallTexture,
+    decor: 'deshret',
+    distant: { shape: 'mesa', color: 0x5a2414 },
+    haze: 0.8,
+    duotone: [0x0a0420, 0xd05a20, 0xffe890],
+    skyCycle: false,
+    dust: 0xd08050,
+    barrier: { map: tex.templeWallTexture, crawl: false },
   },
 };

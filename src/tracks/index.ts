@@ -54,6 +54,10 @@ import { buildMuddyWater } from './muddyWater';
 import { buildGreatChainOfBeing } from './greatChainOfBeing';
 import { buildAllIsKnown } from './allIsKnown';
 import { buildTheWheel } from './theWheel';
+import { buildStrawsInTheWind } from './strawsInTheWind';
+import { buildCyboogie } from './cyboogie';
+import { buildTheGrimReaper } from './theGrimReaper';
+import { buildGaia } from './gaia';
 import { buildCutThroatBoogie } from './cutThroatBoogie';
 import { buildSeaOfTrees } from './seaOfTrees';
 import { buildTheia } from './theia';
@@ -124,6 +128,10 @@ export const RAW_TRACK_LIST: { id: string; name: string; build: () => TrackDef }
   { id: 'kill-for-the-steel', name: 'Kill for the Steel', build: buildKillForTheSteel },
   { id: 'level-5', name: 'Level 5', build: buildLevel5 },
   { id: 'rapid-alpha-decay', name: 'Rapid Alpha Decay', build: buildRapidAlphaDecay },
+  { id: 'straws-in-the-wind', name: 'Straws in the Wind', build: buildStrawsInTheWind },
+  { id: 'cyboogie', name: 'Cyboogie', build: buildCyboogie },
+  { id: 'the-grim-reaper', name: 'The Grim Reaper', build: buildTheGrimReaper },
+  { id: 'gaia', name: 'Gaia', build: buildGaia },
 ];
 
 export const TRACK_LIST: { id: string; name: string; build: () => TrackDef }[] = RAW_TRACK_LIST.map((t) => ({ ...t, build: () => enrichTrack(t.build()) }));
@@ -160,6 +168,8 @@ export const CUPS: { id: string; name: string; tracks: number[] }[] = [
   { id: 'phantom-island', name: 'Phantom Island Cup', tracks: [52, 53, 54, 55] },
   // Alien Metal (August 2026), the EDM record in one tempo and key that loops back on itself: the life of the metal round one circuit. Forged by the astral blacksmith, fought over, built into the machines, and burnt down to energy in the core, whose finish runs into the forge's start.
   { id: 'alien-metal', name: 'Alien Metal Cup', tracks: [56, 57, 58, 59] },
+  // The first All Stars Cup, after the album cups: four favourites from four years, each its own world. The trash tornado (K.G., 2020), the cyborg who can't dance (Fishing for Fishies, 2019), the reaper come to collect (Omnium Gatherum, 2022), and the Earth herself (Omnium Gatherum, 2022).
+  { id: 'all-stars-1', name: 'All Stars Cup #1', tracks: [60, 61, 62, 63] },
 ];
 
 /** Cups that were retired when every cup became an album's, and the album cup that took most of each one's tracks: progress.ts carries their trophies over. */
