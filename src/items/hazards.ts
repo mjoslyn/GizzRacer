@@ -23,7 +23,7 @@ export interface HazardPose {
   vz: number;
   /** Can hit karts right now. */
   active: boolean;
-  /** Which way across the road it goes, 1 (to the right) or -1: a gust's direction; a crane's magnet, the edge it switches on at. 0 when it doesn't matter. */
+  /** Which way across the road it goes, 1 (to the right) or -1: a gust's direction; a crane's magnet, the edge it switches on at; a rocky meteor, its lane (-1 left, 0 the middle, 1 right). 0 when it doesn't matter. */
   side: number;
   /**
    * An airlock's opening: half the width between its two doors, centred on
@@ -37,7 +37,7 @@ export interface HazardPose {
    * A crane's magnet: the road's half-width under its gantry. 0 for the rest.
    */
   gap: number;
-  /** A row of arrows: the lane with no arrow in it, 0 (leftmost) to 3. The plant of immortality: 1 while it's growing there to be had, else 0. A present: 1 once it has landed open, a gift. -1 for the rest. */
+  /** A row of arrows: the lane with no arrow in it, 0 (leftmost) to 3. The plant of immortality: 1 while it's growing there to be had, else 0. A present: 1 once it has landed open, a gift. A rocky meteor: its stage (METEOR_STAGE). -1 for the rest. */
   lane: number;
   /**
    * Kind-specific: boulder cycle stage (0..1), tumbleweed bounce height,
@@ -148,6 +148,7 @@ export const WAVE_SPIN = 1.0;
  * - through the static wave crackling across the road in a burst of alphas' wake, a jumpstart: a boost
  * - tucked into the clean wake just behind a street sweeper as it crosses, the road it has this moment swept, a boost
  * - slipped past just behind a shark as it cuts across the shallows, through its wake, a boost
+ * - hopped as it rolls down at you, a rocky meteor is cleared and you come down on a boost; rammed on a boost it bursts and the boost runs on
  */
 /** A reward can't pay out again to the same kart for this long. */
 export const REWARD_COOLDOWN = 1.5;
@@ -962,6 +963,67 @@ export function sharkCourse(u: number, cycle: number, i: number, reach: number):
   };
 }
 
+/**
+ * The Great Chain of Being's rocky meteors: a rock with eyes to the sky
+ * falls out of it onto the top of a climb, its mark burning on the road
+ * where it will land first; it lands in a burst of sparks and fire, then
+ * rolls back down the climb at the karts coming up it, in its lane, until
+ * it crumbles at the foot. Each fall picks one of three lanes. Under it as
+ * it lands, blasted; in its way as it rolls, pushed down; both spin you.
+ * Hopped as it rolls at you, it's cleared and you come down on a boost;
+ * rammed on a boost, it bursts and the boost runs on.
+ */
+/** Its mark burns on the road this long (s) before it lands, and the last of that it's seen coming down. */
+export const METEOR_MARK = 1.8;
+export const METEOR_FALL = 0.8;
+/** How high it is when it's first seen, over where it will land. */
+export const METEOR_HEIGHT = 48;
+/** Rolling down the climb, m/s. */
+export const METEOR_ROLL = 13;
+export const METEOR_RADIUS = 1.5;
+/** The burst as it lands: this far, for this long (s). */
+export const METEOR_BLAST = 3.8;
+export const METEOR_BLAST_TIME = 0.2;
+/** At the foot of its climb it crumbles, over this long (s). */
+export const METEOR_CRUMBLE = 0.6;
+/** Its lanes, as shares of the road's half width (a lateral to the right is positive). */
+export const METEOR_LANES = [-0.55, 0, 0.55] as const;
+export const METEOR_SPIN = 1.2;
+/** Hopped as it rolls at you: a boost this long. */
+export const METEOR_CLEAR = 0.9;
+/** Its stages, as `HazardPose.lane` gives them. */
+export const METEOR_STAGE = { gone: -1, mark: 0, blast: 1, roll: 2, crumble: 3 } as const;
+
+/**
+ * Where rocky meteor `i` of `count` is at race time `t`, on a climb `length`
+ * long: its stage, how far through it (0 to 1; rolling, the seconds since it
+ * landed), how far back down the climb from the top it has rolled, and its
+ * lane (an index into METEOR_LANES), which each fall picks afresh.
+ */
+export function rockyMeteor(t: number, period: number, i: number, count: number, length: number): { stage: number; u: number; along: number; lane: number; cycle: number } {
+  const tt = t + 10 + (i * period) / count;
+  const cycle = Math.floor(tt / period);
+  const age = tt - cycle * period;
+  const hash = Math.abs(Math.sin(cycle * 12.9898 + i * 78.233) * 43758.5453) % 1;
+  const lane = Math.min(METEOR_LANES.length - 1, Math.floor(hash * METEOR_LANES.length));
+  const S = METEOR_STAGE;
+  if (age < METEOR_MARK) return { stage: S.mark, u: age / METEOR_MARK, along: 0, lane, cycle };
+  const rolled = age - METEOR_MARK;
+  const along = rolled * METEOR_ROLL;
+  if (along < length) return { stage: rolled < METEOR_BLAST_TIME ? S.blast : S.roll, u: rolled, along, lane, cycle };
+  const after = rolled - length / METEOR_ROLL;
+  if (after < METEOR_CRUMBLE) return { stage: S.crumble, u: after / METEOR_CRUMBLE, along: length, lane, cycle };
+  return { stage: S.gone, u: 0, along: length, lane, cycle };
+}
+
+/** How high a rocky meteor is over where it will land, at stage `u` of its mark: out of sight, then falling the last of the way. */
+export function meteorHeight(u: number): number {
+  const f = 1 - METEOR_FALL / METEOR_MARK;
+  if (u < f) return METEOR_HEIGHT;
+  const x = (u - f) / (1 - f);
+  return METEOR_HEIGHT * (1 - x * x);
+}
+
 /** How far a tree has toppled at cycle stage `u`: 0 upright, a lean while it creaks, 1 lying across the road. */
 export function timberFall(u: number): number {
   const T = TIMBER_STAGES;
@@ -1061,6 +1123,7 @@ const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds' | 'butterfli
   alphas: ALPHA_SPIN,
   sweepers: SWEEP_SPIN,
   sharks: SHARK_SPIN,
+  rockyMeteors: METEOR_SPIN,
 };
 
 /** Kinds that fill the whole road across, on a rhythm: nothing to steer round, only to time. */
@@ -1792,6 +1855,27 @@ export class HazardSystem {
           p.phase = u;
           break;
         }
+        case 'rockyMeteors': {
+          // A rock with eyes falling onto the top of the climb, in a lane it picked, and rolling back down it.
+          const length = def.to - def.from;
+          const m = rockyMeteor(t, def.period, i, def.count, length);
+          const s = def.to - m.along;
+          const S = METEOR_STAGE;
+          const lat = METEOR_LANES[m.lane] * (this.halfWidth(s) - METEOR_RADIUS);
+          // Rolling, it bounces a little on the road; crumbling, it sinks into it.
+          let lift = METEOR_RADIUS;
+          if (m.stage === S.mark) lift += meteorHeight(m.u);
+          else if (m.stage === S.roll) lift += 0.35 * Math.abs(Math.sin(m.along * 0.4));
+          else if (m.stage === S.crumble) lift *= 1 - m.u;
+          this.place(p, s, lat, lift);
+          p.lane = m.stage;
+          p.side = m.lane - 1;
+          p.radius = m.stage === S.blast || m.stage === S.mark ? METEOR_BLAST : METEOR_RADIUS;
+          p.active = m.stage === S.blast || m.stage === S.roll;
+          // The mark: how near it is to landing. Rolling: how far it has turned over, rolling back down the road.
+          p.phase = m.stage === S.mark || m.stage === S.crumble ? m.u : m.along / METEOR_RADIUS;
+          break;
+        }
         case 'dustDevils':
         case 'butterflies':
         case 'tornadoes':
@@ -2013,6 +2097,10 @@ export class HazardSystem {
         }
         if (p.kind === 'sweepers') {
           this.sweeper(hit, p, s);
+          continue;
+        }
+        if (p.kind === 'rockyMeteors') {
+          this.meteor(hit, p, s);
           continue;
         }
         if (p.kind === 'fuzz' && p.phase >= FUZZ_STAGES.gold && p.phase < FUZZ_STAGES.red) {
@@ -2334,6 +2422,14 @@ export class HazardSystem {
           const lat = p.gap + p.side * d;
           out.push({ x: p.ax - fz * lat, z: p.az + fx * lat, r: 2, vx: -fz * p.side * speed, vz: fx * p.side * speed });
         }
+        continue;
+      }
+      if (p.kind === 'rockyMeteors') {
+        // Its mark, from when it's seen coming down, the burst, and the rock rolling down its lane at you.
+        const S = METEOR_STAGE;
+        if (p.lane === S.mark && p.phase < 1 - METEOR_FALL / METEOR_MARK) continue;
+        if (p.lane === S.gone || p.lane === S.crumble) continue;
+        out.push({ x: p.x, z: p.z, r: p.radius, vx: p.vx, vz: p.vz });
         continue;
       }
       if (p.kind === 'magnets') {
@@ -3006,6 +3102,29 @@ export class HazardSystem {
     if (ahead < 0 && ahead >= -SWEEP_HALF - SWEEP_WAKE && Math.abs(lat) <= p.radius - SWEEP_PARK + KART_RADIUS && !this.cooldown.has(s)) {
       this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, SWEEP_BOOST)));
     }
+  }
+
+  /**
+   * A rocky meteor: under it as it lands, blasted and spun; in its way as it
+   * rolls down at you, pushed down and spun, unless you hop it (cleared, a
+   * boost) or ram it on a boost (it bursts, and the boost runs on).
+   */
+  private meteor(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+    if (!p.active || Math.hypot(s.x - p.x, s.z - p.z) > p.radius + KART_RADIUS) return;
+    if (p.lane === METEOR_STAGE.roll) {
+      if (!s.grounded || s.hopAge < HOP_WINDOW) {
+        this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, METEOR_CLEAR)));
+        return;
+      }
+      if (s.boostTime > 0) {
+        this.reward(hit, s, p.kind, () => (s.boostTime += RAM_BOOST));
+        return;
+      }
+      this.pushOut(p, s);
+    }
+    if (this.cooldown.has(s)) return;
+    this.cooldown.set(s, HIT_COOLDOWN);
+    if (spinOut(s, METEOR_SPIN)) hit.push({ kart: s, by: p.kind });
   }
 
   /** Pays a kart for using a hazard well, once in a while. */

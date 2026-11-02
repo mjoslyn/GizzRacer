@@ -1,5 +1,6 @@
 import { clamp, seededRandom } from '../core/math';
 import { launchersFor } from './enrich';
+import { METEOR_CRUMBLE, METEOR_MARK, METEOR_ROLL } from '../items/hazards';
 import { TrackBuilder, dubins, offsetPose, type Pose, type RoadSurface, type SectionProps, ROAD_WIDTH_SCALE } from './builder';
 import { nearestOnSpline } from './spline';
 import { Track, inPit, type BranchDef, type HazardDef, type ItemBoxRow, type Landmark, type TrackDef } from './track';
@@ -801,12 +802,12 @@ const PALETTES: Record<GenTheme, Palette> = {
   scala: {
     surface: 'strata',
     deck: 'strata',
-    alt: 'sand',
-    hazards: ['sunMoon'],
-    start: 'setGate',
-    landmarks: ['setGate'],
+    alt: 'rock',
+    hazards: ['rockyMeteors'],
+    start: 'chainGate',
+    landmarks: ['chainGate', 'emptyThrone'],
     tallWalls: 6,
-    places: ['Jackal', 'Snake', 'Tornado', 'Tomb', 'Duality', 'Sandstorm', 'Moonbeam', 'Hieroglyph', 'Reset'],
+    places: ['Great Chain', 'Rock with Eyes', 'Pocket', 'Precious Stones', 'Throne', 'Natural Flesh', 'Meteor', 'Church', 'Stairs', 'Chains', 'Natural Order', 'Sulking Lamb'],
     music: { lap: 'great-chain-of-being', finalLap: 'great-chain-of-being-final-lap' },
   },
   network: {
@@ -1622,6 +1623,10 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
       case 'sharks':
         // Sharks coming across the stretch one after another, each from the edge it circled off.
         hazards.push({ kind, at: at(count), period: 5.2 });
+        break;
+      case 'rockyMeteors':
+        // Rocks with eyes falling onto the far end of the stretch and rolling back down it, one after another: long enough a cycle for each to roll the whole way.
+        hazards.push({ kind, from, to, count: 2, period: METEOR_MARK + (to - from) / METEOR_ROLL + METEOR_CRUMBLE + 1.5 });
         break;
     }
     return true;

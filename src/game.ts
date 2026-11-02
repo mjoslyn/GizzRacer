@@ -2023,6 +2023,7 @@ const HIT_TEXT: Record<ItemKind | HazardKind, string> = {
   alphas: 'ALPHA DECAY!',
   sweepers: 'DIGITISED!',
   sharks: 'SHARK BITE!',
+  rockyMeteors: 'PUSHED DOWN!',
 };
 
 /** What a hazard used well says: the ones that can help. */
@@ -2092,6 +2093,7 @@ const BONUS_TEXT: Record<HazardKind, string> = {
   alphas: 'JUMPSTART MY HEART!',
   sweepers: 'SWEEP THE STREETS!',
   sharks: "I'M NOT A BUOY!",
+  rockyMeteors: 'TRANSCEND!',
 };
 
 /** Takes a group out of the scene and frees what it built. */

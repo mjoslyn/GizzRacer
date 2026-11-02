@@ -64,7 +64,7 @@ export function branchOpen(def: BranchDef, ctx?: LapContext): boolean {
 }
 
 export interface Landmark {
-  kind: 'skeletonArch' | 'fangs' | 'fortressGate' | 'templeGate' | 'waterfall' | 'gantry' | 'lighthouse' | 'iceArch' | 'neonArch' | 'rainbowArch' | 'mushroomArch' | 'starGate' | 'dragonGate' | 'dragonFlight' | 'colonyGate' | 'rodGate' | 'voidEye' | 'phantomArch' | 'runwayGate' | 'treeGate' | 'wreckGate' | 'worldTree' | 'crystalGate' | 'magentaPeak' | 'keplerArch' | 'goblinGate' | 'jawsGate' | 'castleGate' | 'castleKeep' | 'cloudGate' | 'airCastle' | 'skyTower' | 'cellGate' | 'nucleus' | 'prismGate' | 'prismEye' | 'factoryGate' | 'robotColossus' | 'gammaGate' | 'gammaRing' | 'carrionGate' | 'carcass' | 'wahGate' | 'wahPedal' | 'smogGate' | 'burningEarth' | 'domeGate' | 'richDome' | 'shipGate' | 'theSun' | 'hellGate' | 'ratsNest' | 'eyeGate' | 'mindFace' | 'arrowGate' | 'emptyHead' | 'filmGate' | 'cellophaneBloom' | 'fuzzGate' | 'fuzzMeter' | 'elbowGate' | 'bentArm' | 'rakeGate' | 'powerStation' | 'harmonicaGate' | 'mirrorBall' | 'trunkGate' | 'snowPeak' | 'cordGate' | 'theiaPlanet' | 'setGate' | 'setColossus' | 'jadePortal' | 'moonPalace' | 'urukGate' | 'ziggurat' | 'lockedDoor' | 'teacups' | 'heavenGate' | 'hillHouse' | 'sitarGate' | 'blackCup' | 'lostLegs' | 'pillTube' | 'oldFord' | 'faceCloud' | 'farmDam' | 'catapultGate' | 'monsterPlate' | 'fangGate' | 'weepingAngels' | 'basePair' | 'beastTree' | 'newWorldGate' | 'mushroomCloud' | 'culDeSac' | 'ribcage' | 'hellmouth' | 'steelGate' | 'mineRig' | 'anvilGate' | 'astralBlacksmith' | 'mobiusStrip' | 'carParkGate' | 'carPark' | 'levelSign' | 'milkCarton' | 'deadSky' | 'blindTunnel' | 'reactorGate' | 'atomNucleus' | 'knownGate' | 'kingsEye' | 'mainframe' | 'steelBone' | 'synapseGap' | 'acetone' | 'viaPad' | 'busTrace' | 'flagsGate' | 'coast' | 'sharkCopter' | 'willowTree' | 'billabong';
+  kind: 'skeletonArch' | 'fangs' | 'fortressGate' | 'templeGate' | 'waterfall' | 'gantry' | 'lighthouse' | 'iceArch' | 'neonArch' | 'rainbowArch' | 'mushroomArch' | 'starGate' | 'dragonGate' | 'dragonFlight' | 'colonyGate' | 'rodGate' | 'voidEye' | 'phantomArch' | 'runwayGate' | 'treeGate' | 'wreckGate' | 'worldTree' | 'crystalGate' | 'magentaPeak' | 'keplerArch' | 'goblinGate' | 'jawsGate' | 'castleGate' | 'castleKeep' | 'cloudGate' | 'airCastle' | 'skyTower' | 'cellGate' | 'nucleus' | 'prismGate' | 'prismEye' | 'factoryGate' | 'robotColossus' | 'gammaGate' | 'gammaRing' | 'carrionGate' | 'carcass' | 'wahGate' | 'wahPedal' | 'smogGate' | 'burningEarth' | 'domeGate' | 'richDome' | 'shipGate' | 'theSun' | 'hellGate' | 'ratsNest' | 'eyeGate' | 'mindFace' | 'arrowGate' | 'emptyHead' | 'filmGate' | 'cellophaneBloom' | 'fuzzGate' | 'fuzzMeter' | 'elbowGate' | 'bentArm' | 'rakeGate' | 'powerStation' | 'harmonicaGate' | 'mirrorBall' | 'trunkGate' | 'snowPeak' | 'cordGate' | 'theiaPlanet' | 'setGate' | 'setColossus' | 'jadePortal' | 'moonPalace' | 'urukGate' | 'ziggurat' | 'lockedDoor' | 'teacups' | 'heavenGate' | 'hillHouse' | 'sitarGate' | 'blackCup' | 'lostLegs' | 'pillTube' | 'oldFord' | 'faceCloud' | 'farmDam' | 'catapultGate' | 'monsterPlate' | 'fangGate' | 'weepingAngels' | 'basePair' | 'beastTree' | 'newWorldGate' | 'mushroomCloud' | 'culDeSac' | 'ribcage' | 'hellmouth' | 'steelGate' | 'mineRig' | 'anvilGate' | 'astralBlacksmith' | 'mobiusStrip' | 'carParkGate' | 'carPark' | 'levelSign' | 'milkCarton' | 'deadSky' | 'blindTunnel' | 'reactorGate' | 'atomNucleus' | 'knownGate' | 'kingsEye' | 'mainframe' | 'steelBone' | 'synapseGap' | 'acetone' | 'viaPad' | 'busTrace' | 'flagsGate' | 'coast' | 'sharkCopter' | 'willowTree' | 'billabong' | 'chainGate' | 'rockWithEyes' | 'burningChurch' | 'greatChain' | 'emptyThrone' | 'brokenLink';
   ribbon: number; // -1 = main, else branch index
   s: number; // builder units
   /** Metres to the right of the road (left if negative), for a landmark that stands off it. */
@@ -245,7 +245,15 @@ export type HazardDef =
   /** All Is Known: street sweepers crossing the road one after another on a rhythm, scanning as they go; swept aside, spun and digitised; tucked into the clean wake behind one, a boost. */
   | { kind: 'sweepers'; at: number[]; period: number }
   /** Muddy Water: sharks circling in the shallows off one edge of the causeway (the fin), then cutting right across it, the jaws out of the water as they go; slip past behind one, in its wake, for a boost. */
-  | { kind: 'sharks'; at: number[]; period: number };
+  | { kind: 'sharks'; at: number[]; period: number }
+  /**
+   * The Great Chain of Being: rocks with eyes falling out of the sky onto the
+   * top of a climb (`to`), their marks burning on the road first, landing in
+   * a burst of sparks and rolling back down it at the karts to `from`, each in
+   * its lane; `count` of them, one after another, a fall every `period`
+   * seconds each.
+   */
+  | { kind: 'rockyMeteors'; from: number; to: number; count: number; period: number };
 
 export interface StartSlot {
   x: number;

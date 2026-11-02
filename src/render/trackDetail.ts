@@ -405,6 +405,14 @@ const STYLES: Record<DecorKind, DetailStyle> = {
     crowd: true,
   },
   // Rapid Alpha Decay: hazard poles along the road, green lamps on them; nobody watching in the core.
+  // Torches burning along the road at dusk, chips of precious stone in the verge, a crowd of men come to watch the rock climb.
+  scala: {
+    edge: { kind: 'torch', height: 1.6, spacing: 16, color: 0x3a2a22, stripe: 0x6a4a30 },
+    light: 0xff8a30,
+    cover: { shape: 'crystal', colors: [0xa85ce8, 0xe22c46, 0x2ec478, 0xf6be40, 0x4678ec, 0x5a4a44], count: 900 },
+    boards: { words: ['THE GREAT CHAIN OF BEING', 'ROCK WITH EYES', 'NATURAL ORDER', 'UNLINKED', 'GUMBOOT SOUP'], bg: ['#1a1012', '#4a1e14', '#2a2a30'], fg: '#ffcf7a' },
+    crowd: true,
+  },
   reactor: {
     edge: { kind: 'pole', height: 1.6, spacing: 14, color: 0xf0c010, stripe: 0x141414 },
     light: 0x7aff4a,
@@ -510,7 +518,7 @@ export function roadPaint(ribbon: Ribbon, decor: DecorKind, edgeLine?: number, e
     line[i] = -Math.max(-0.55, Math.min(0.55, (sum / 25) * 14));
   }
   const paintable = new Set(['asphalt']);
-  const wearable = new Set(['asphalt', 'salt', 'rock', 'sand', 'boards', 'regolith', 'wet', 'paving', 'reef', 'flagstone', 'membrane', 'steel', 'scorched', 'fret', 'tar', 'gilded', 'heatshield', 'brimstone', 'neural', 'film', 'fuzz', 'carpet', 'muck', 'moss', 'hieroglyph', 'mudbrick', 'florals', 'bitumen', 'gravel', 'butcherfur', 'bitumen', 'gravel', 'crust', 'bone', 'ore', 'lane', 'clay']);
+  const wearable = new Set(['asphalt', 'salt', 'rock', 'sand', 'boards', 'regolith', 'wet', 'paving', 'reef', 'flagstone', 'membrane', 'steel', 'scorched', 'fret', 'tar', 'gilded', 'heatshield', 'brimstone', 'neural', 'film', 'fuzz', 'carpet', 'muck', 'moss', 'hieroglyph', 'mudbrick', 'florals', 'bitumen', 'gravel', 'butcherfur', 'bitumen', 'gravel', 'crust', 'bone', 'ore', 'lane', 'clay', 'strata']);
   for (let i = 0; i < segs; i++) {
     const j = (i + 1) % n;
     const sMid = (sp.dist[i] + (j === 0 ? sp.length : sp.dist[j])) / 2;

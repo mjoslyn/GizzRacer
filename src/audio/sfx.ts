@@ -581,6 +581,12 @@ export class Sfx {
       this.tone(82, 0.22, 'sawtooth', 0.1, undefined, 0.1, true);
       this.tone(87, 0.3, 'sawtooth', 0.1, undefined, 0.36, true);
     }
+    // A rocky meteor: the crunch of a boulder coming down on you, a low rumble rolling on, and the hiss of its fire.
+    if (by === 'rockyMeteors') {
+      this.hit(0.45, 120, 0.8);
+      this.tone(55, 1.1, 'sawtooth', 0.12, 38, 0, true);
+      this.whoosh(0.7, 500, 2200, 0.25);
+    }
     // A wave breaking over you: a crash of white noise; a glider comes in with a whistle of wind.
     if (by === 'waves') this.whoosh(0.8, 2400, 300, 0.35);
     if (by === 'gliders') this.whoosh(0.5, 1800, 500, 0.2);
