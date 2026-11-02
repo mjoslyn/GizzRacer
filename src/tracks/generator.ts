@@ -822,12 +822,12 @@ const PALETTES: Record<GenTheme, Palette> = {
   wheel: {
     surface: 'groove',
     deck: 'groove',
-    alt: 'sand',
-    hazards: ['sunMoon'],
-    start: 'setGate',
-    landmarks: ['setGate'],
+    alt: 'boards',
+    hazards: ['dozes'],
+    start: 'wheelGate',
+    landmarks: ['wheelGate', 'greatWheel', 'reaper'],
     tallWalls: 6,
-    places: ['Jackal', 'Snake', 'Tornado', 'Tomb', 'Duality', 'Sandstorm', 'Moonbeam', 'Hieroglyph', 'Reset'],
+    places: ['Stupor', 'Into Our Future', 'Without Mercy', 'Better Thesis', 'Pilgrim', 'Steeper Path', 'Reaper', 'Allegiance', 'Locked Groove'],
     music: { lap: 'the-wheel', finalLap: 'the-wheel-final-lap' },
   },
 };
@@ -1613,6 +1613,10 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
         break;
       case 'alphas':
         hazards.push({ kind, at: at(count - 1), period: 4.6 });
+        break;
+      case 'dozes':
+        // Rows of sleep across the stretch, settling one after another down it.
+        hazards.push({ kind, at: at(count + 1), period: 4.2 });
         break;
     }
     return true;

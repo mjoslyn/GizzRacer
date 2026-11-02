@@ -1,4 +1,4 @@
-import { KART_RADIUS, TRICK_WINDOW, spinOut, type KartState } from '../physics/kart';
+import { KART_RADIUS, TRICK_WINDOW, spinOut, wobble, type KartState } from '../physics/kart';
 import { pointAt } from '../tracks/spline';
 import type { HazardDef, Track } from '../tracks/track';
 
@@ -34,10 +34,11 @@ export interface HazardPose {
    * beast's knife and fork: the fork's lateral (the knife is the pose). A
    * beast's footfall: how far its shockwave's ring has run out from the foot.
    * The astral blacksmith's hammer: how far its sparks fly, while they do.
-   * A crane's magnet: the road's half-width under its gantry. 0 for the rest.
+   * A crane's magnet: the road's half-width under its gantry. A row of
+   * sleep: how thick its haze lies, 0 to 1. 0 for the rest.
    */
   gap: number;
-  /** A row of arrows: the lane with no arrow in it, 0 (leftmost) to 3. The plant of immortality: 1 while it's growing there to be had, else 0. A present: 1 once it has landed open, a gift. -1 for the rest. */
+  /** A row of arrows: the lane with no arrow in it, 0 (leftmost) to 3. The plant of immortality: 1 while it's growing there to be had, else 0. A present: 1 once it has landed open, a gift. A row of sleep: 1 while its rumble strip rattles, else 0. -1 for the rest. */
   lane: number;
   /**
    * Kind-specific: boulder cycle stage (0..1), tumbleweed bounce height,
@@ -146,6 +147,7 @@ export const WAVE_SPIN = 1.0;
  * - driven through the shower of sparks off the astral blacksmith's hammer, just after it strikes, a fix: a boost
  * - tucked in behind a driverless pod, in its slipstream, it tows you on, a boost
  * - through the static wave crackling across the road in a burst of alphas' wake, a jumpstart: a boost
+ * - over a rumble strip as the haze of sleep lifts off it, jolted awake: a boost
  */
 /** A reward can't pay out again to the same kart for this long. */
 export const REWARD_COOLDOWN = 1.5;
@@ -858,6 +860,48 @@ export function alphaAcross(u: number, k: number, reach: number): number | null 
   return from - (2 * from + (ALPHA_COUNT - 1) * ALPHA_GAP) * f + k * ALPHA_GAP;
 }
 
+/**
+ * The Wheel's waves of sleep: "we only fall asleep willingly at the wheel
+ * that steers us into our future". A row across the road where sleep
+ * settles on the song's slow sway: a haze of dream gathers over it (the
+ * warning, harmless), lies thick right across the road a while, and lifts,
+ * and as it lifts the rumble strip under it rattles, the wake-up line.
+ * Down a stretch each row settles a beat after the one before, so the wave
+ * of sleep rolls down the road at about a fast kart's pace, and the moment
+ * to be awake rolls with it. Caught in the haze while it lies thick, you
+ * nod off at the wheel: your eyelids droop, your speed bleeds away, the
+ * wheel wobbles in your hands and you drift toward the edge. Over the
+ * strip while it rattles, jolted awake: a boost, into our future.
+ */
+export const DOZE_STAGES = { thick: 0.24, lift: 0.62, clear: 0.84 } as const;
+/** How far along the road a row's haze and its rumble strip reach either side of the row. */
+export const DOZE_DEPTH = 3.2;
+/** Each row down a stretch settles this share of a period after the one before. */
+export const DOZE_LAG = 0.2;
+/** Nodded off: you keep this share of your speed, the wheel wobbles this long, and you drift this fast toward the edge you're nearer. */
+export const DOZE_SLOW = 0.6;
+export const DOZE_NOD = 1.2;
+export const DOZE_DRIFT = 7;
+/** Nodded off: this long with your eyelids drooping on the screen. */
+export const DOZE_SLEEP = 1.8;
+/** Jolted awake on the rumble strip: a boost this long. */
+export const DOZE_WAKE = 1.0;
+
+/** Where row `i` of a stretch of sleep is in its sway at race time `t`, 0 to 1. */
+export function dozePhase(t: number, period: number, i: number): number {
+  const tt = (t + 10) / period - i * DOZE_LAG;
+  return tt - Math.floor(tt);
+}
+
+/** How thick a row's haze lies at cycle stage `u`: gathering to 1 when it's thick, thinning away as it lifts, 0 when clear. */
+export function dozeHaze(u: number): number {
+  const D = DOZE_STAGES;
+  if (u < D.thick) return 0.15 + 0.85 * (u / D.thick) ** 2;
+  if (u < D.lift) return 1;
+  if (u < D.clear) return 1 - (u - D.lift) / (D.clear - D.lift);
+  return 0.15 * ((u - D.clear) / (1 - D.clear));
+}
+
 /** How far a tree has toppled at cycle stage `u`: 0 upright, a lean while it creaks, 1 lying across the road. */
 export function timberFall(u: number): number {
   const T = TIMBER_STAGES;
@@ -955,11 +999,12 @@ const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds' | 'butterfli
   hammer: HAMMER_SPIN,
   autopilot: AUTOPILOT_SPIN,
   alphas: ALPHA_SPIN,
+  dozes: 0,
 };
 
 /** Kinds that fill the whole road across, on a rhythm: nothing to steer round, only to time. */
 export function isSheet(kind: HazardKind): boolean {
-  return kind === 'flameJets' || kind === 'dragonFire' || kind === 'lasers' || kind === 'waves' || kind === 'gusts' || kind === 'prisms' || kind === 'flares' || kind === 'timber' || kind === 'cords' || kind === 'strings' || kind === 'fangs';
+  return kind === 'flameJets' || kind === 'dragonFire' || kind === 'lasers' || kind === 'waves' || kind === 'gusts' || kind === 'prisms' || kind === 'flares' || kind === 'timber' || kind === 'cords' || kind === 'strings' || kind === 'fangs' || kind === 'dozes';
 }
 
 /** Which of a prism beam's four colours it is showing at cycle stage `u` (3 is the fourth colour), and whether it is lit. */
@@ -1647,6 +1692,20 @@ export class HazardSystem {
           p.phase = u;
           break;
         }
+        case 'dozes': {
+          // A row of sleep right across the road, settling a beat after the row before it; its rumble strip rattles as it lifts.
+          const at = def.at[i];
+          const u = dozePhase(t, def.period, i);
+          this.place(p, at, 0, 0);
+          p.radius = this.halfWidth(at);
+          // Nodded off with nothing to go by, you drift the way the row leans: alternate rows, alternate edges.
+          p.side = i % 2 ? -1 : 1;
+          p.active = u >= DOZE_STAGES.thick && u < DOZE_STAGES.lift;
+          p.lane = u >= DOZE_STAGES.lift && u < DOZE_STAGES.clear ? 1 : 0;
+          p.gap = dozeHaze(u);
+          p.phase = u;
+          break;
+        }
         case 'dustDevils':
         case 'butterflies':
         case 'tornadoes':
@@ -1860,6 +1919,10 @@ export class HazardSystem {
         }
         if (p.kind === 'alphas') {
           this.alpha(hit, p, s);
+          continue;
+        }
+        if (p.kind === 'dozes') {
+          this.doze(hit, p, s);
           continue;
         }
         if (p.kind === 'fuzz' && p.phase >= FUZZ_STAGES.gold && p.phase < FUZZ_STAGES.red) {
@@ -2778,6 +2841,33 @@ export class HazardSystem {
       if (spinOut(s, ALPHA_SPIN)) hit.push({ kart: s, by: p.kind });
       return;
     }
+  }
+
+  /**
+   * A row of sleep: in its haze while it lies thick, you nod off at the
+   * wheel (your speed bleeds away, the wheel wobbles and you drift toward
+   * the edge you're nearer); over its rumble strip while it rattles, as the
+   * haze lifts, you're jolted awake, a boost.
+   */
+  private doze(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+    const fx = Math.sin(p.heading);
+    const fz = Math.cos(p.heading);
+    const along = (s.x - p.x) * fx + (s.z - p.z) * fz;
+    // A lateral to the right is (-cos h, sin h).
+    const lat = (s.x - p.x) * -fz + (s.z - p.z) * fx;
+    if (Math.abs(along) > DOZE_DEPTH + KART_RADIUS || Math.abs(lat) > p.radius + KART_RADIUS) return;
+    if (p.lane === 1) {
+      this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, DOZE_WAKE)));
+      return;
+    }
+    if (!p.active || this.cooldown.has(s)) return;
+    this.cooldown.set(s, HIT_COOLDOWN);
+    if (!wobble(s, DOZE_NOD)) return;
+    s.speed *= DOZE_SLOW;
+    const side = Math.abs(lat) > 0.5 ? Math.sign(lat) : p.side;
+    s.extX += -fz * side * DOZE_DRIFT;
+    s.extZ += fx * side * DOZE_DRIFT;
+    hit.push({ kart: s, by: p.kind });
   }
 
   /** Pays a kart for using a hazard well, once in a while. */
