@@ -568,6 +568,12 @@ export class Sfx {
       this.hit(0.3, 7000, 0.3);
       this.tone(1400, 0.3, 'square', 0.06, 180);
     }
+    // Swept up by a street sweeper: the brushes' scrub, then a string of data bleeps as you're digitised, stepping down.
+    if (by === 'sweepers') {
+      this.whoosh(0.45, 3000, 600, 0.3);
+      this.hit(0.18, 1200, 0.35);
+      for (let k = 0; k < 8; k++) this.tone(1760 - k * 160 + (k % 2) * 520, 0.04, 'square', 0.045, undefined, 0.08 + k * 0.05);
+    }
     // A wave breaking over you: a crash of white noise; a glider comes in with a whistle of wind.
     if (by === 'waves') this.whoosh(0.8, 2400, 300, 0.35);
     if (by === 'gliders') this.whoosh(0.5, 1800, 500, 0.2);

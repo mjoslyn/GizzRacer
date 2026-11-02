@@ -389,6 +389,14 @@ const STYLES: Record<DecorKind, DetailStyle> = {
     boards: { words: ['NO LOVE NO PAIN', "I DON'T FEEL ANYTHING", 'NEVER!', 'ALTERED BEAST'], bg: ['#141214', '#5a1418'], fg: '#e8e0d0' },
     crowd: false,
   },
+  // All Is Known: posts like a board's pins along the road, a cyan light on each; bits of components underfoot; nobody left to watch.
+  network: {
+    edge: { kind: 'pole', height: 1.3, spacing: 10, color: 0x14181e, stripe: 0x9aa6b4 },
+    light: 0x7af4ff,
+    cover: { shape: 'pebble', colors: [0x0c0e12, 0x2a2e36, 0x8a96a2, 0x46ecff], count: 1100 },
+    boards: { words: ['ALL IS KNOWN', 'SUPERSEDE', 'CONNECTED TO THE NETWORK', 'STEEL BONE', 'DIGITISE'], bg: ['#020507', '#06303a'], fg: '#7af4ff' },
+    crowd: false,
+  },
   // Rapid Alpha Decay: hazard poles along the road, green lamps on them; nobody watching in the core.
   reactor: {
     edge: { kind: 'pole', height: 1.6, spacing: 14, color: 0xf0c010, stripe: 0x141414 },
