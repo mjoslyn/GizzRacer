@@ -19,6 +19,7 @@ import { meteorParts, poseMeteor } from './greatChainOfBeing';
 import { alphaParts, poseAlphas } from './rapidAlphaDecay';
 import { poseSweeper, sweeperParts } from './allIsKnown';
 import { poseShark, sharkParts } from './muddyWater';
+import { dozeParts, poseDoze } from './theWheel';
 import { BOX_RESPAWN, SHIELD_ITEMS, WAVE_RANGE, type ItemHolder, type ItemSystem } from '../items/items';
 import type { KartState } from '../physics/kart';
 import type { HazardSystem } from '../items/hazards';
@@ -1456,6 +1457,10 @@ export class HazardsView {
           // A rock with eyes, burning: its mark on the road, its fall, its burst, and the fire it trails rolling back down.
           parts.push(...meteorParts(obj));
           break;
+        case 'dozes':
+          // A row of sleep: the haze of dream across the road, its Zs, and the rumble strip under it.
+          parts.push(...dozeParts(obj));
+          break;
         case 'timber': {
           // A tree at the road's edge: its trunk, as long as the road is wide, and its crown; it leans, creaks and comes down across the road.
           const pivot = new THREE.Group();
@@ -2348,6 +2353,9 @@ export class HazardsView {
           break;
         case 'rockyMeteors':
           poseMeteor(obj, parts, p, elapsed);
+          break;
+        case 'dozes':
+          poseDoze(obj, parts, p, elapsed);
           break;
         case 'presents': {
           const [present, lid, inside, shadow, roofs, santa, arm] = parts;

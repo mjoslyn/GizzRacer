@@ -16,9 +16,10 @@ import { hazardBandTexture, leadBrickTexture, reactorFloorTexture } from './rapi
 import { boardTexture, rackTexture, railTexture } from './allIsKnown';
 import { MURK, bushGroundTexture, railTexture as summerRailTexture, sandstoneTexture } from './muddyWater';
 import { chainBarrierTexture, scalaGroundTexture, strataWallTexture } from './greatChainOfBeing';
+import { duskStoneTexture, heathTexture, railTexture as wheelRailTexture } from './theWheel';
 
 export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism' | 'factory' | 'gamma' | 'carrion' | 'wah' | 'smog' | 'dome' | 'solar' | 'inferno' | 'mind' | 'notmind' | 'cellophane' | 'mindfuzz' | 'elbow' | 'muck' | 'boogie' | 'treesea' | 'theia' | 'set' | 'change' | 'uruk' | 'headon' | 'godcall' | 'nan' | 'float' | 'newworld' | 'foe' | 'altered' | 'hollow' | 'forge' | 'steelwar' | 'autonomy' | 'reactor' | 'muddy' | 'scala' | 'network' | 'wheel';
-export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy' | 'hadean' | 'deshret' | 'moonpalace' | 'uruk' | 'nanshouse' | 'suburb' | 'headtrip' | 'paddock' | 'den' | 'alteredworld' | 'mudflat' | 'hollowness' | 'openCut' | 'forge' | 'driverless' | 'reactor' | 'network' | 'summer' | 'scala';
+export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy' | 'hadean' | 'deshret' | 'moonpalace' | 'uruk' | 'nanshouse' | 'suburb' | 'headtrip' | 'paddock' | 'den' | 'alteredworld' | 'mudflat' | 'hollowness' | 'openCut' | 'forge' | 'driverless' | 'reactor' | 'network' | 'summer' | 'scala' | 'slumber';
 
 /** Everything that makes a track's world look like itself. */
 export interface Theme {
@@ -1165,22 +1166,27 @@ export const THEMES: Record<ThemeId, Theme> = {
     edgeLine: 0xc8faff,
     edgeWidth: 0.35,
   },
-  // The Wheel: (placeholder, Set's look until its world is built).
+  // The Wheel: the cup's finale, dusk going into night over a dark moor, a somber jazz light, violet overhead and the last amber low down where the future glows on the horizon; the first stars out, a moon rising, lamplight.
   wheel: {
-    sky: { zenith: '#0a0a34', high: '#262a78', low: '#c86a3a', horizon: '#ffd070', below: '#c06030', ground: '#6a2a14', cloud: '255,200,150', clouds: 12, stars: { count: 140, color: '#f0f0ff' }, moon: '#f4f4ff' },
-    fog: { color: 0xc07850, near: 160, far: 860 },
-    hemi: { sky: 0xffd0a0, ground: 0x8a3a1a, intensity: 1.5 },
-    sun: { color: 0xffd890, intensity: 2.3 },
-    ground: tex.redSandTexture,
-    groundTile: 20,
-    // Walls are a temple's, blocks of sandstone with a painted frieze.
-    cliff: tex.templeWallTexture,
-    decor: 'deshret',
-    distant: { shape: 'mesa', color: 0x5a2414 },
-    haze: 0.8,
-    duotone: [0x0a0420, 0xd05a20, 0xffe890],
+    sky: { zenith: '#07061a', high: '#1e1640', low: '#5a3466', horizon: '#f0a058', below: '#6a3048', ground: '#1a1220', cloud: '110,72,110', clouds: 10, stars: { count: 200, color: '#ffe8c8' }, moon: '#fff0d8' },
+    fog: { color: 0x2e2040, near: 150, far: 820 },
+    hemi: { sky: 0xb8a0e0, ground: 0x2a1a24, intensity: 1.35 },
+    sun: { color: 0xffb070, intensity: 1.7 },
+    ground: heathTexture,
+    groundTile: 22,
+    // Walls are the cut's and the world's edge: dark dusk stone, moss low down.
+    cliff: duskStoneTexture,
+    decor: 'slumber',
+    // The future's city on the horizon, dark against the glow.
+    distant: { shape: 'city', color: 0x1a1028 },
+    haze: 0,
+    duotone: [0x08040e, 0x8a3a8a, 0xffc070],
     skyCycle: false,
-    dust: 0xd08050,
-    barrier: { map: tex.templeWallTexture, crawl: false },
+    dust: 0x6a5a6a,
+    barrier: { map: wheelRailTexture, crawl: false },
+    // A black road on a dark moor: it glows a little with its own sheen, and an amber line runs down each edge.
+    roadGlow: 0.14,
+    edgeLine: 0xffb060,
+    edgeWidth: 0.4,
   },
 };

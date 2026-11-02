@@ -22,6 +22,8 @@ export interface PostFxParams {
   crackle?: number;
   /** Swept by a street sweeper (All Is Known), 0..1: the picture broken up into big square pixels, cold cyan, a scan line running down it. */
   digitise?: number;
+  /** Nodded off at the wheel (The Wheel), 0..1 as it wears off: the eyelids droop shut from above and below, the picture blurs and dims, and they open again slowly, fluttering. */
+  doze?: number;
   /** The duotone's shadows, body and highlights (the track theme's `duotone`). */
   palette?: readonly [number, number, number];
 }
@@ -48,6 +50,7 @@ uniform vec3 uSeaTint;
 uniform float uSwim;
 uniform float uCrackle;
 uniform float uDigitise;
+uniform float uDoze;
 uniform vec3 uDuoDark;
 uniform vec3 uDuoMid;
 uniform vec3 uDuoHigh;
@@ -176,6 +179,18 @@ void main() {
     float scan = 1.0 - smoothstep(0.0, 0.012, abs(vUv.y - (1.0 - fract(uTime * 0.9))));
     col.rgb += vec3(0.5, 1.0, 1.0) * scan * 0.6 * uDigitise;
   }
+  // Nodded off: the picture blurs and dims, and the eyelids droop over it, shut at first and opening again, fluttering.
+  if (uDoze > 0.0) {
+    vec2 px = vec2(0.006 / uAspect, 0.006) * uDoze;
+    vec3 soft = (col.rgb + texture2D(tScene, uv + px).rgb + texture2D(tScene, uv - px).rgb + texture2D(tScene, uv + vec2(px.x, -px.y)).rgb + texture2D(tScene, uv - vec2(px.x, -px.y)).rgb) / 5.0;
+    col.rgb = mix(col.rgb, soft * vec3(0.78, 0.72, 0.95), smoothstep(0.0, 0.5, uDoze));
+    float shut = 0.92 * smoothstep(0.0, 0.55, uDoze) + 0.05 * sin(uTime * 9.0) * uDoze;
+    // Each lid's edge an arc, lower at the middle of the screen than its corners.
+    float x = (vUv.x - 0.5) * 2.0;
+    float lid = (1.0 - shut) * 0.5 * (1.0 - 0.28 * x * x);
+    float d = abs(vUv.y - 0.5) - lid;
+    col.rgb *= 1.0 - smoothstep(-0.03, 0.01, d);
+  }
   // Letterbox bars, like the tape the video was shot on.
   if (uBox > 0.0 && abs(vUv.y - 0.5) > 0.5 - uBox * 0.11) col.rgb = vec3(0.0);
 
@@ -217,6 +232,7 @@ export class PostFx {
           uSwim: { value: 0 },
           uCrackle: { value: 0 },
           uDigitise: { value: 0 },
+          uDoze: { value: 0 },
           uDuoDark: { value: new THREE.Color(0x0a0002) },
           uDuoMid: { value: new THREE.Color(0xc00410) },
           uDuoHigh: { value: new THREE.Color(0xf0c020) },
@@ -238,7 +254,8 @@ export class PostFx {
     const swim = p.swim ?? 0;
     const crackle = p.crackle ?? 0;
     const digitise = p.digitise ?? 0;
-    if (p.haze < 0.01 && p.kaleido < 0.01 && vhs < 0.01 && duo < 0.01 && box < 0.01 && water < 0.01 && swim < 0.01 && crackle < 0.01 && digitise < 0.01) {
+    const doze = p.doze ?? 0;
+    if (p.haze < 0.01 && p.kaleido < 0.01 && vhs < 0.01 && duo < 0.01 && box < 0.01 && water < 0.01 && swim < 0.01 && crackle < 0.01 && digitise < 0.01 && doze < 0.01) {
       r.render(scene, camera);
       return;
     }
@@ -272,6 +289,7 @@ export class PostFx {
     u.uSwim.value = swim;
     u.uCrackle.value = crackle;
     u.uDigitise.value = digitise;
+    u.uDoze.value = doze;
     if (p.palette) {
       (u.uDuoDark.value as THREE.Color).setHex(p.palette[0]);
       (u.uDuoMid.value as THREE.Color).setHex(p.palette[1]);

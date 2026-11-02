@@ -587,6 +587,13 @@ export class Sfx {
       this.tone(55, 1.1, 'sawtooth', 0.12, 38, 0, true);
       this.whoosh(0.7, 500, 2200, 0.25);
     }
+    // Nodded off at the wheel: a long yawn sliding down, and a music box winding down under it, four notes falling slower and softer.
+    if (by === 'dozes') {
+      this.tone(330, 1.1, 'sine', 0.1, 150);
+      this.tone(495, 0.9, 'triangle', 0.035, 220, 0.05);
+      [1047, 831, 659, 523].forEach((f, k) => this.tone(f, 0.6, 'sine', 0.05 - k * 0.008, undefined, 0.15 + k * 0.28));
+      this.whoosh(0.9, 900, 200, 0.08);
+    }
     // A wave breaking over you: a crash of white noise; a glider comes in with a whistle of wind.
     if (by === 'waves') this.whoosh(0.8, 2400, 300, 0.35);
     if (by === 'gliders') this.whoosh(0.5, 1800, 500, 0.2);

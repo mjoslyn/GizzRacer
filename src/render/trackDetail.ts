@@ -420,6 +420,14 @@ const STYLES: Record<DecorKind, DetailStyle> = {
     boards: { words: ['RAPID ALPHA DECAY', 'KEEPER OF THE ENERGY', 'CLIMB THE WALLS', 'ENERGY AND HEAT'], bg: ['#0a120c', '#c09a08'], fg: '#a0ff70' },
     crowd: false,
   },
+  // The Wheel: old iron street lamps along the moor road, lit for nobody, everyone asleep; heather, and the lamplight in it.
+  slumber: {
+    edge: { kind: 'lamp', height: 4.8, spacing: 26, color: 0x1e1a22, stripe: 0xc8a050 },
+    light: 0xffb060,
+    cover: { shape: 'tuft', colors: [0x3a2434, 0x5a3a52, 0x2e3a2c, 0x8a6a8a], count: 1400 },
+    boards: { words: ['THE WHEEL', 'INTO OUR FUTURE', 'A BETTER THESIS', 'WAKE UP', 'GUMBOOT SOUP'], bg: ['#1a1028', '#2a1630'], fg: '#ffc070' },
+    crowd: false,
+  },
   // The forge's own fires along the road, nobody out here among the stars but the smith: cinders, slag and stardust.
   forge: {
     edge: { kind: 'torch', height: 1.5, spacing: 16, color: 0x1a1a22, stripe: 0x3a3a48 },

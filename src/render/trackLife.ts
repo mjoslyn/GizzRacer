@@ -97,6 +97,8 @@ const LIFE: Record<DecorKind, LifeSpec> = {
   summer: { flock: { kind: 'gull', color: 0xf8f8f4, count: 14, height: 20, size: 1.1 }, motes: { color: 0xfff0d0, count: 240, size: 0.45, drift: 'blow' } },
   // Crows circling the ladder, and embers rising from the fires into the smoke.
   scala: { flock: { kind: 'bird', color: 0x120c0c, count: 14, height: 30, size: 1.1 }, motes: { color: 0xff9a40, count: 380, size: 0.35, drift: 'rise', glow: true } },
+  // Moths round the lamps, and dust of dreams drifting in the lamplight.
+  slumber: { flock: { kind: 'moth', color: 0xd8c8a8, count: 14, height: 9, size: 0.5 }, motes: { color: 0xffc890, count: 300, size: 0.35, drift: 'float', glow: true } },
   reactor: { flock: { kind: 'orb', color: 0x80d8ff, count: 14, height: 22, size: 0.6, glow: true }, motes: { color: 0x9aff6a, count: 420, size: 0.4, drift: 'rise', glow: true } },
   uruk: { flock: { kind: 'bird', color: 0x2a2a30, count: 12, height: 24, size: 1.0 }, motes: { color: 0xc8c0b0, count: 300, size: 0.4, drift: 'blow' } },
   den: { flock: { kind: 'bat', color: 0x1a0806, count: 14, height: 22, size: 1.1 }, motes: { color: 0xffa050, count: 320, size: 0.4, drift: 'rise', glow: true } },
