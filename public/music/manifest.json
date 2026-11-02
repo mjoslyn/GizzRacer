@@ -1041,5 +1041,61 @@
     "bars": 32,
     "loopSamples": 2242967,
     "sampleRate": 44100
+  },
+  "muddy-water-remix": {
+    "title": "muddy water (remix)",
+    "bpm": 107.27,
+    "bars": 32,
+    "loopSamples": 2368006,
+    "sampleRate": 44100
+  },
+  "muddy-water-remix-final-lap": {
+    "title": "muddy water (remix, final lap)",
+    "bpm": 113.27,
+    "bars": 32,
+    "loopSamples": 2242571,
+    "sampleRate": 44100
+  },
+  "great-chain-of-being-remix": {
+    "title": "the great chain of being (remix)",
+    "bpm": 120,
+    "bars": 32,
+    "loopSamples": 4939200,
+    "sampleRate": 44100
+  },
+  "great-chain-of-being-remix-final-lap": {
+    "title": "the great chain of being (remix, final lap)",
+    "bpm": 128,
+    "bars": 32,
+    "loopSamples": 4630500,
+    "sampleRate": 44100
+  },
+  "all-is-known-remix": {
+    "title": "all is known (remix)",
+    "bpm": 105.6,
+    "bars": 32,
+    "loopSamples": 2405455,
+    "sampleRate": 44100
+  },
+  "all-is-known-remix-final-lap": {
+    "title": "all is known (remix, final lap)",
+    "bpm": 111.6,
+    "bars": 32,
+    "loopSamples": 2276129,
+    "sampleRate": 44100
+  },
+  "the-wheel-remix": {
+    "title": "the wheel (remix)",
+    "bpm": 131.4,
+    "bars": 32,
+    "loopSamples": 3383014,
+    "sampleRate": 44100
+  },
+  "the-wheel-remix-final-lap": {
+    "title": "the wheel (remix, final lap)",
+    "bpm": 137.4,
+    "bars": 32,
+    "loopSamples": 3235284,
+    "sampleRate": 44100
   }
 }
