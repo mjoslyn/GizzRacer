@@ -8,7 +8,7 @@ No install and no account. It will always be free. **[The manual](https://www.gi
 
 ## What's in it
 
-- **56 tracks in 14 cups**, one an album, in the order the albums came out, plus a Random Cup of four drawn from them
+- **60 tracks in 15 cups**, one an album, in the order the albums came out, plus a Random Cup of four drawn from them
   - **12 Bar Bruise Cup:** the band's first album, in album order: Elbow, Muckraker, Cut Throat Boogie, Sea of Trees
   - **Float Along – Fill Your Lungs Cup:** the third album, in album order: Head On/Pill, God Is Calling Me Back Home, Let Me Mend the Past, Float Along (a cinquefoil knot in 5/4)
   - **Mind Fuzz Cup:** the suite that opens I'm in Your Mind Fuzz, in order: I'm in Your Mind, I'm Not in Your Mind, Cellophane, I'm in Your Mind Fuzz
@@ -16,6 +16,7 @@ No install and no account. It will always be free. **[The manual](https://www.gi
   - **Flying Microtonal Banana Cup:** Rattlesnake, Open Water, Sleep Drifter, Doom City, all in the cover's cobalt and banana yellow
   - **Altered Beast Cup:** the suite that opens Murder of the Universe, each Altered Beast run into its Alter Me: Altered Beast I, II, III and IV (III the beast's DNA, a double helix); Track song plays the two back to back from one show
   - **Polygondwanaland Cup:** Crumbling Castle (on the N64 castle's layout), The Castle in the Air, Inner Cell, Tetrachromacy
+  - **Gumboot Soup Cup:** the four songs from the album the band play most, in album order: Muddy Water (the scorching beach and the river behind it, through the surf, across a ford and under the brown water), The Great Chain of Being (a ladder of being climbed rung by rung and fallen back down), All Is Known (a neural network on a city-sized circuit board), The Wheel (a ship's helm across a dark moor, waves of sleep)
   - **Infest the Rats' Nest Cup:** Planet B, Mars for the Rich, Perihelion, Hell
   - **Omnium Gatherum Cup:** Magenta Mountain, Kepler-22b, The Garden Goblin, Predator X
   - **Ice, Death, Planets, Lungs, Mushrooms and Lava Cup:** Ice V, Magma, Iron Lung, Gliese 710
