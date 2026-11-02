@@ -1,11 +1,11 @@
 import { TrackBuilder, offsetPose, type Pose } from './builder';
 import type { BranchDef, TrackDef } from './track';
 
-const K = 0.87;
+const K = 1.0;
 const deg = (d: number) => (d * Math.PI) / 180;
 /** The helm's hub: the lap is laid round it, this far off the map's middle, so the whole of it sits in the middle of the map. */
-export const HUB_X = -88;
-export const HUB_Z = -76;
+export const HUB_X = -96;
+export const HUB_Z = -112;
 /**
  * The helm, seen from above. Its three spokes are three roads straight
  * across the hub, sixty degrees apart; between them the road swings out
@@ -14,8 +14,8 @@ export const HUB_Z = -76;
  * again into the next spoke; SPOKE is how far out from the hub the swings
  * start, where the spokes meet the rim.
  */
-export const RIM = 150;
-const KNUCKLE = 24;
+export const RIM = 165;
+const KNUCKLE = 34;
 const ALPHA = (Math.acos(-KNUCKLE / (RIM - KNUCKLE)) * 180) / Math.PI;
 const ARC = 240 - 2 * ALPHA;
 export const SPOKE = (RIM - KNUCKLE) * Math.sin(deg(ALPHA));
@@ -39,23 +39,27 @@ const HUB_HOLD = 55;
 /** In a Stupor: the cut bows this far round (each way) across the hub, so it passes beside the others' crossing. */
 const BOW = 8;
 /** Without Mercy: a loop of this radius, and a deck this high back over its own way in. */
-const LOOP_R = 45;
+const LOOP_R = 56;
 export const DECK = 8;
 /** The summit, where the idealistic reaper waits. */
-export const SUMMIT = 14;
+export const SUMMIT = 16;
 /** Shivering Pilgrims: the main road climbs round the shoulder in three arcs of this radius and turn; the steeper path runs straight up the face. */
-const PATH_R = 36;
+const PATH_R = 40;
 const PATH_TURN = 84;
 /** With Hope to Prosper: down off the summit round the reaper's feet, on turns of this radius. */
-const PROSPER_R = 34;
+const PROSPER_R = 42;
 /** What Can We Offer?: a swerve out and back, on bends of this radius and turn. */
 const OFFER_R = 30;
 const OFFER_TURN = 20;
 const OFFER = 4 * OFFER_R * Math.sin(deg(OFFER_TURN));
 const ALLEGIANCE = 30;
+/** A Better Thesis: a long sweep up off the leap, turning for the peak, on bends of this radius with a run between them. */
+const THESIS_R = 55;
+const THESIS_RUN = 16;
+const THESIS_TURN = 60;
 /** The waves of sleep: one sway every this many seconds, and their rows this far apart (about how far a fast kart goes in the lag between rows). */
 export const DOZE_PERIOD = 4.2;
-const ROW = 36;
+const ROW = 32;
 
 /**
  * The Wheel (the Gumboot Soup Cup's last, and the last song of the band's
@@ -163,7 +167,7 @@ export function buildTheWheel(): TrackDef {
   // Heading for a better thesis: turning for the peak.
   b.section('A Better Thesis', { halfWidth: 10, wallHeight: 1.2, surface: 'groove' });
   b.mark('thesis');
-  b.arc(50, -45).straight(10);
+  b.arc(THESIS_R, -THESIS_TURN).straight(THESIS_RUN);
   b.mark('thesisEnd');
 
   // The shivering pilgrims' way, climbing round the shoulder of the peak; the steeper path runs straight up its face.
@@ -237,8 +241,8 @@ export function buildTheWheel(): TrackDef {
       { s: at('reaper', 4), length: 8, lateral: 0, halfWidth: 2.5 },
     ],
     checkpoints: ['asleep', 'unpack', 'relax', 'stupor', 'future', 'crest', 'mercy', 'destroy', 'thesis', 'pilgrims', 'reaper', 'prosper', 'offer'].map((k) => b.marks[k].s / main.length),
-    laps: 2,
-    bounds: 250,
+    laps: 3,
+    bounds: 300,
     landmarks: [
       { kind: 'wheelGate', ribbon: -1, s: 6 },
       // The helm's handles, out past the rim where the road swings off a spoke or onto one.
@@ -280,7 +284,7 @@ function plunge(b: TrackBuilder, s0: number, y0: number, s1: number, y1: number)
 }
 
 /** The steeper path: the lane in from the foot of the peak before it runs out over the crevasse, and the crevasse. */
-const PATH_IN = 40;
+const PATH_IN = 50;
 export const CREVASSE = 26;
 
 /**

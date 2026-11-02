@@ -69,10 +69,10 @@ describe('The Wheel', () => {
     ]);
     const length = track.length;
     console.log(`The Wheel: ${length.toFixed(0)} m a lap`);
-    // A long lap: two laps a race, the length of the cup's others.
-    expect(length).toBeGreaterThan(1800);
-    expect(length).toBeLessThan(2300);
-    expect(def.laps).toBe(2);
+    // Three laps a race, the length of the cup's others.
+    expect(length).toBeGreaterThan(2400);
+    expect(length).toBeLessThan(2750);
+    expect(def.laps).toBe(3);
   });
 
   it("is a ship's helm seen from above: three spokes straight across its hub, sixty degrees apart, and the road round its rim between them", () => {
@@ -172,7 +172,7 @@ describe('The Steeper Path, straight up the face to the reaper over a crevasse',
   const k = def.branches.findIndex((b) => b.name === 'The Steeper Path');
   const bdef = def.branches[k];
   const branch = track.branches[k];
-  const last: LapContext = { lap: 2, lastLap: true };
+  const last: LapContext = { lap: 3, lastLap: true };
 
   it('leaves the foot of the pilgrims\' way and meets the main road again at the summit, at the same pose', () => {
     expect(k).toBeGreaterThanOrEqual(0);
@@ -213,7 +213,7 @@ describe('The Steeper Path, straight up the face to the reaper over a crevasse',
     expect(drop).toBeDefined();
     for (let i = 0; i < sp.count; i++) {
       expect(Math.max(Math.abs(sp.px[i]), Math.abs(sp.pz[i]))).toBeLessThan(def.bounds - 20);
-      if (sp.dist[i] < 30 * ROAD_WIDTH_SCALE || sp.dist[i] > sp.length - 30 * ROAD_WIDTH_SCALE) continue;
+      if (sp.dist[i] < 40 * ROAD_WIDTH_SCALE || sp.dist[i] > sp.length - 40 * ROAD_WIDTH_SCALE) continue;
       const hit = nearestOnSpline(track.spline, sp.px[i], sp.pz[i]);
       expect(hit.distance - main.halfWidthAt(hit) - branch.halfWidth[i]).toBeGreaterThan(4);
     }
@@ -237,7 +237,7 @@ describe('The Steeper Path, straight up the face to the reaper over a crevasse',
     expect(bdef.openOn).toEqual(['final']);
     const p = kartParams(first.stats, '150cc');
     expect(drive(branch, bdef.mainTo, p, undefined, last).fell).toBe(false);
-    expect(drive(branch, bdef.mainTo, p, undefined, { lap: 1, lastLap: false }).fell).toBe(true);
+    expect(drive(branch, bdef.mainTo, p, undefined, { lap: 2, lastLap: false }).fell).toBe(true);
   });
 
   it('saves 0.8 to 2.5 s at 150cc', () => {
@@ -325,13 +325,13 @@ describe('The Wheel elevation and driving', () => {
     expect(crests.some((b) => b > reaper.from && b < prosper.to)).toBe(true);
   }, 30000);
 
-  it('a full field of 150cc CPUs laps it, and the leader finishes the two laps in about a minute and three quarters', () => {
+  it('a full field of 150cc CPUs laps it, the leader in about a minute and five seconds a lap', () => {
     const race = new Race(track);
     for (const r of RACERS.slice(0, 8)) race.addKart(r, '150cc', CPU_SKILL['150cc']);
     let respawns = 0;
     let t = 0;
     let leader = Infinity;
-    for (; t < 300 && race.karts.some((k) => k.laps.lap < def.laps); t += PHYSICS_DT) {
+    for (; t < 400 && race.karts.some((k) => k.laps.lap < def.laps); t += PHYSICS_DT) {
       race.step(PHYSICS_DT, []);
       respawns += race.karts.filter((k) => k.respawned).length;
       if (leader === Infinity && race.karts.some((k) => k.laps.lap >= def.laps)) leader = t;
@@ -339,9 +339,9 @@ describe('The Wheel elevation and driving', () => {
     console.log(`The Wheel: the leader home in ${leader.toFixed(1)} s, the last in ${t.toFixed(1)} s`);
     for (const k of race.karts) expect(k.laps.lap, k.racer.name).toBeGreaterThanOrEqual(def.laps);
     expect(respawns).toBeLessThanOrEqual(2 * def.laps);
-    expect(leader).toBeGreaterThan(95);
-    expect(leader).toBeLessThan(120);
-  }, 60000);
+    expect(leader / def.laps).toBeGreaterThan(60);
+    expect(leader / def.laps).toBeLessThan(70);
+  }, 120000);
 });
 
 describe('dozes: waves of sleep rolling down the road, and the rumble strips that wake you', () => {
