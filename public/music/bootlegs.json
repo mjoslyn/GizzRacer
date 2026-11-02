@@ -6635,5 +6635,476 @@
    "gain": 6,
    "end": 638.5
   }
+ ],
+ "Straws in the Wind": [
+  {
+   "id": "kg2021-04-22",
+   "file": "8. Straws In The Wind (Live In Sydney _21).mp3",
+   "date": "2021-04-22",
+   "venue": "The Enmore Theatre",
+   "seconds": 609,
+   "start": 11.5,
+   "gain": 7.5,
+   "end": 585.5
+  },
+  {
+   "id": "kglw2022-10-02.MC59",
+   "file": "14-Straws in the Wind.mp3",
+   "date": "2022-10-02",
+   "venue": "The William Randolph Hearst Greek Theatre",
+   "seconds": 676,
+   "start": 40.5,
+   "gain": 15.5,
+   "end": 598.5
+  },
+  {
+   "id": "kglw2022-10-23.vwmule",
+   "file": "kglw2022-10-23.vwmule.t09.mp3",
+   "date": "2022-10-23",
+   "venue": "The Anthem",
+   "seconds": 681,
+   "start": 24.5,
+   "gain": 10.5,
+   "end": 616.5
+  },
+  {
+   "id": "kglw2024-06-03.FLAC.bootleggermix",
+   "file": "King Gizzard & The Lizard Wizard - Live at The Caverns '23 - 05 Straws In The Wind (Live at The Caverns '23).mp3",
+   "date": "2023-06-03",
+   "venue": "The Caverns Above Ground Amphitheater",
+   "seconds": 724,
+   "start": 20.5,
+   "gain": 3,
+   "end": 649.5
+  },
+  {
+   "id": "kglw2024-05-16.KGLWOffenbach24",
+   "file": "11-Straws in the Wind.mp3",
+   "date": "2024-05-16",
+   "venue": "Offenbach Stadthalle",
+   "seconds": 647,
+   "start": 31.5,
+   "gain": 9,
+   "end": 565.5
+  },
+  {
+   "id": "kglw2024-08-16.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live at Forest Hills Stadium, Queens, NY (8-16-24) - 19 Straws In The Wind (Live).mp3",
+   "date": "2024-08-16",
+   "venue": "Forest Hills Stadium, Queens, NY, USA",
+   "seconds": 897,
+   "start": 10.5,
+   "gain": 6.5,
+   "end": 852.5
+  },
+  {
+   "id": "kglw2024-09-01.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live at Northerly Island- Chicago- IL (9-1-24)/King Gizzard & The Lizard Wizard - Live at Northerly Island, Chicago, IL (9-1-24) - 19 Straws In The Wind (Live).mp3",
+   "date": "2024-09-01",
+   "venue": "Northerly Island",
+   "seconds": 708,
+   "start": 0,
+   "gain": 5,
+   "end": 536.5
+  },
+  {
+   "id": "kglw2024-09-12.bandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live at Pacific Coliseum- Vancouver- BC (9-12-24) (1)/King Gizzard & The Lizard Wizard - Live at Pacific Coliseum, Vancouver, BC (9-12-24) - 05 Straws In The Wind (Live).mp3",
+   "date": "2024-09-12",
+   "venue": "Pacific Coliseum",
+   "seconds": 727,
+   "start": 0,
+   "gain": 4,
+   "end": 725.5
+  },
+  {
+   "id": "kglw2024-11-15.bandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live in Austin '24 - 09 Straws In The Wind (Live in Austin '24).mp3",
+   "date": "2024-11-15",
+   "venue": "Germania Insurance Amphitheater",
+   "seconds": 700,
+   "start": 16.5,
+   "gain": 4.5,
+   "end": 666.5
+  },
+  {
+   "id": "kglw2025-05-20.SBD.flac",
+   "file": "King Gizzard & The Lizard Wizard - Live in Lisbon '25 - 05 Straws In The Wind (Live in Lisbon '25).mp3",
+   "date": "2025-05-20",
+   "venue": "Coliseu dos Recreios",
+   "seconds": 642,
+   "start": 13.5,
+   "gain": 7
+  },
+  {
+   "id": "kglw2025-08-16.SBD.wav",
+   "file": "King Gizzard & The Lizard Wizard - Live at Field of Vision '25 - 47 Straws In The Wind (Live at Field of Vision '25).mp3",
+   "date": "2025-08-16",
+   "venue": "Field of Vision at Meadow Creek",
+   "seconds": 590,
+   "start": 36.5,
+   "gain": 2,
+   "end": 546.5
+  },
+  {
+   "id": "kglw2026-08-20",
+   "file": "15- Straws In The Wind.mp3",
+   "date": "2026-08-20",
+   "venue": "Forest Hills",
+   "seconds": 951,
+   "start": 10.5,
+   "gain": 9,
+   "end": 868.5
+  }
+ ],
+ "Cyboogie": [
+  {
+   "id": "kg2019-06-27",
+   "file": "23-Cyboogie.mp3",
+   "date": "2019-06-27",
+   "venue": "Forum Melbourne",
+   "seconds": 407,
+   "start": 38.5,
+   "gain": 2,
+   "end": 383.5
+  },
+  {
+   "id": "kglw2019-07-12",
+   "file": "05. Cyboogie.mp3",
+   "date": "2019-07-12",
+   "venue": "Thebarton Theatre",
+   "seconds": 417,
+   "start": 9.5,
+   "gain": 1.5,
+   "end": 351.5
+  },
+  {
+   "id": "KGATLW082319",
+   "file": "15.Cyboogie.mp3",
+   "date": "2019-08-23",
+   "venue": "The Riverside Theater",
+   "seconds": 407,
+   "start": 9.5,
+   "gain": 9.5,
+   "end": 389.5
+  },
+  {
+   "id": "king-gizzard-the-lizard-wizard-live-in-asheville-19-audio",
+   "file": "2.1 King Gizzard & The Lizard Wizard - Live in Asheville '19 - 10 Cyboogie (Live In Asheville '19).mp3",
+   "date": "2019-09-01",
+   "venue": "New Belgium Brewing Company",
+   "seconds": 256,
+   "start": 15.5,
+   "gain": -1,
+   "end": 239.5
+  },
+  {
+   "id": "kglw2019-09-02.ca14.flac1648",
+   "file": "14-Cyboogie.mp3",
+   "date": "2019-09-02",
+   "venue": "The Tabernacle",
+   "seconds": 477,
+   "start": 26.5,
+   "gain": 6,
+   "end": 395.5
+  },
+  {
+   "id": "kglw2019-10-11.dpa4061.flac2448",
+   "file": "09 - Cyboogie.mp3",
+   "date": "2019-10-11",
+   "venue": "Carlswerk Victoria",
+   "seconds": 459,
+   "start": 33.5,
+   "gain": 7.5,
+   "end": 407.5
+  },
+  {
+   "id": "kglw2020-02-21",
+   "file": "26 - Cyboogie.mp3",
+   "date": "2020-02-21",
+   "venue": "The Croxton",
+   "seconds": 515,
+   "start": 7.5,
+   "gain": 7,
+   "end": 499.5
+  },
+  {
+   "id": "kglw2025-11-01.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live in London '25 - 04 Cyboogie (Live in London '25).mp3",
+   "date": "2025-11-01",
+   "venue": "Electric Brixton, London, England, United Kingdom",
+   "seconds": 930,
+   "start": 0,
+   "gain": 3.5
+  },
+  {
+   "id": "kglw2025-11-10.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live in Berlin '25 - 02 Cyboogie (Live in Berlin '25).mp3",
+   "date": "2025-11-10",
+   "venue": "Columbiahalle, Berlin, Germany",
+   "seconds": 545,
+   "start": 33.5,
+   "gain": 0.5
+  },
+  {
+   "id": "kglw2025-11-15.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live In Gothenburg '25 - 02 Cyboogie (Live In Gothenburg '25).mp3",
+   "date": "2025-11-15",
+   "venue": "Filmstudion, Gothenburg, Sweden",
+   "seconds": 897,
+   "start": 0,
+   "gain": -2.5
+  },
+  {
+   "id": "kglw2026-08-21.birds",
+   "file": "14-Cyboogie.mp3",
+   "date": "2026-08-21",
+   "venue": "Forest Hills Stadium",
+   "seconds": 551,
+   "start": 15.5,
+   "gain": 16,
+   "end": 481.5
+  }
+ ],
+ "The Grim Reaper": [
+  {
+   "id": "kglw2022-06-17",
+   "file": "King Gizzard & The Lizard Wizard - Live At Bonnaroo '22 - 03 The Grim Reaper (Live At Bonnaroo '22).mp3",
+   "date": "2022-06-17",
+   "venue": "Bonnaroo Festival",
+   "seconds": 287,
+   "start": 4.5,
+   "gain": 0,
+   "end": 269.5
+  },
+  {
+   "id": "kglw2022-10-05",
+   "file": "KingGizzard2022-10-05t05 - The Grim Reaper.mp3",
+   "date": "2022-10-05",
+   "venue": "PNE Forum",
+   "seconds": 349,
+   "start": 11.5,
+   "gain": 7.5,
+   "end": 324.5
+  },
+  {
+   "id": "kglw2022-10-22.ScheopsMK41.Flac24",
+   "file": "KingGizzard2022-10-22-t-10.mp3",
+   "date": "2022-10-22",
+   "venue": "Franklin Music Hall",
+   "seconds": 289,
+   "start": 15.5,
+   "gain": 7.5,
+   "end": 270.5
+  },
+  {
+   "id": "kglw2023-03-02.dank",
+   "file": "10 The Grim Reaper.mp3",
+   "date": "2023-03-02",
+   "venue": "Zenith La Villette",
+   "seconds": 571,
+   "start": 0,
+   "gain": 13,
+   "end": 514.5
+  },
+  {
+   "id": "kglw2023-03-18",
+   "file": "kglw2023.03.18.spacebandit/kglw202305.mp3",
+   "date": "2023-03-18",
+   "venue": "Schlachthof Wiesbaden",
+   "seconds": 501,
+   "start": 0,
+   "gain": 3.5,
+   "end": 461.5
+  },
+  {
+   "id": "kglw2023-06-16.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live at Remlinger Farms '23 - 09 The Grim Reaper (Live at Remlinger Farms '23).mp3",
+   "date": "2023-06-16",
+   "venue": "Remlinger Farms",
+   "seconds": 535,
+   "start": 11.5,
+   "gain": -0.5,
+   "end": 491.5
+  },
+  {
+   "id": "kglw2023-08-21.aud1",
+   "file": "KGLW_2023-08-21_AUD_t09_The Grim Reaper.mp3",
+   "date": "2023-08-21",
+   "venue": "Tonhalle",
+   "seconds": 549,
+   "start": 14.5,
+   "gain": 9.5,
+   "end": 462.5
+  },
+  {
+   "id": "kglw2024-11-08.bandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live in Las Vegas '24 - 14 The Grim Reaper (Live in Las Vegas '24).mp3",
+   "date": "2024-11-08",
+   "venue": "PH Live",
+   "seconds": 508,
+   "start": 0,
+   "gain": -0.5,
+   "end": 412.5
+  },
+  {
+   "id": "kglw2024-11-17.bandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live in New Orleans '24 - 08 The Grim Reaper (Live in New Orleans '24).mp3",
+   "date": "2024-11-17",
+   "venue": "Mardi Gras World",
+   "seconds": 761,
+   "start": 0,
+   "gain": 3
+  },
+  {
+   "id": "kglw2025-08-02.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live in New York City '25 -Rock Night- - 08 The Grim Reaper (Live in New York City '25).mp3",
+   "date": "2025-08-02",
+   "venue": "Forest Hills Stadium",
+   "seconds": 440,
+   "start": 0,
+   "gain": 0.5,
+   "end": 423.5
+  },
+  {
+   "id": "kglw2025-11-06.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live in Tilburg '25 - 05 The Grim Reaper (Live in Tilburg '25).mp3",
+   "date": "2025-11-06",
+   "venue": "013, Tilburg, Netherlands",
+   "seconds": 727,
+   "start": 16.5,
+   "gain": 4.5,
+   "end": 622.5
+  },
+  {
+   "id": "kglw2025-11-15.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live In Gothenburg '25 - 07 The Grim Reaper (Live In Gothenburg '25).mp3",
+   "date": "2025-11-15",
+   "venue": "Filmstudion, Gothenburg, Sweden",
+   "seconds": 887,
+   "start": 0,
+   "gain": 1.5,
+   "end": 812.5
+  }
+ ],
+ "Gaia": [
+  {
+   "id": "kglw2022-04-15",
+   "file": "kgatlw-2022-04-15-coachella-aud-16bit-t08-gaia.mp3",
+   "date": "2022-04-15",
+   "venue": "Coachella",
+   "seconds": 504,
+   "start": 31.5,
+   "gain": 6.5,
+   "end": 428.5
+  },
+  {
+   "id": "kglw2022-04-27.AT2022",
+   "file": "06-Gaia.mp3",
+   "date": "2022-04-27",
+   "venue": "Phoenix Theater",
+   "seconds": 471,
+   "start": 3.5,
+   "gain": 6,
+   "end": 419.5
+  },
+  {
+   "id": "kglw2022-10-02",
+   "file": "18 Gaia.mp3",
+   "date": "2022-10-02",
+   "venue": "William Randolph Hearst Greek Theatre",
+   "seconds": 633,
+   "start": 37.5,
+   "gain": 9,
+   "end": 552.5
+  },
+  {
+   "id": "kglw2022-10-21.p170",
+   "file": "kglw2022-10-21t09.mp3",
+   "date": "2022-10-21",
+   "venue": "Forest Hills Stadium",
+   "seconds": 208,
+   "start": 27.5,
+   "gain": 7
+  },
+  {
+   "id": "kglw2023-03-02.dank",
+   "file": "15 Gaia.mp3",
+   "date": "2023-03-02",
+   "venue": "Zenith La Villette",
+   "seconds": 496,
+   "start": 7.5,
+   "gain": 5.5,
+   "end": 463.5
+  },
+  {
+   "id": "kglw2023-06-07.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live at Red Rocks '23 - 01 Gaia (Live at Red Rocks '23).mp3",
+   "date": "2023-06-07",
+   "venue": "Red Rocks Amphitheatre",
+   "seconds": 322,
+   "start": 47.5,
+   "gain": 0.5
+  },
+  {
+   "id": "kglw2023-08-29",
+   "file": "kglw2023-08-29d2t06 Gaia.mp3",
+   "date": "2023-08-29",
+   "venue": "Le Bikini, Ramonville-Saint-Agne, France",
+   "seconds": 204,
+   "start": 8.5,
+   "gain": 5,
+   "end": 201.5
+  },
+  {
+   "id": "kglw2024-05-27.dankski",
+   "file": "kglw2024.05.27t09.mp3",
+   "date": "2024-05-27",
+   "venue": "The Usher Hall",
+   "seconds": 260,
+   "start": 7.5,
+   "gain": 7.5,
+   "end": 202.5
+  },
+  {
+   "id": "kglw2024-08-30.bandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live at ExploreAsheville.com Arena- Asheville- NC (8-30-24) 2/King Gizzard & The Lizard Wizard - Live at ExploreAsheville.com Arena, Asheville, NC (8-30-24) - 07 Gaia (Live).mp3",
+   "date": "2024-08-30",
+   "venue": "ExploreAsheville​.​com Arena",
+   "seconds": 480,
+   "start": 7.5,
+   "gain": 3,
+   "end": 461.5
+  },
+  {
+   "id": "kglw2024-11-09.bandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live in Phoenix '24 - 01 Gaia (Live in Phoenix '24).mp3",
+   "date": "2024-11-09",
+   "venue": "Arizona Financial Theater",
+   "seconds": 348,
+   "start": 62.5,
+   "gain": 4.5,
+   "end": 338.5
+  },
+  {
+   "id": "kglw2025-05-29.SBD.flac",
+   "file": "King Gizzard & The Lizard Wizard - Live in Lithuania '25 - 01 Gaia (Live in Lithuania '25).mp3",
+   "date": "2025-05-29",
+   "venue": "Lukiškės Prison 2.0",
+   "seconds": 357,
+   "start": 74.5,
+   "gain": 4,
+   "end": 346.5
+  },
+  {
+   "id": "kglw2025-11-04",
+   "file": "13-Gaia.mp3",
+   "date": "2025-11-04",
+   "venue": "Royal Albert Hall",
+   "seconds": 670,
+   "start": 7.5,
+   "gain": 4,
+   "end": 558.5
+  }
  ]
 }
