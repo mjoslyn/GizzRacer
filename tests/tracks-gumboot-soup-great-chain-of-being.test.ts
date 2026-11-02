@@ -36,7 +36,7 @@ const section = (name: string) => {
 const first = RACERS[0];
 const FALL = 'Bring That Sulking Lamb to Slaughter';
 /** The ladder's rungs, bottom to top, by the sections that run across the map on each. */
-const RUNG_SECTIONS = [['Fall to Pieces', 'Usurp the Precious Stones'], ['Transcend the Natural Flesh'], ['Rocky Meteor Sparks Fire'], ['Climb Stairs to Push You Down'], ['Disrupt Natural Order']];
+const RUNG_SECTIONS = [['Fall to Pieces', 'Usurp the Precious Stones'], ['Transcend the Natural Flesh'], ["See Through Your World's Facade"], ['Rocky Meteor Sparks Fire'], ['Climb Stairs to Push You Down'], ['Disrupt Natural Order']];
 
 describe('The Great Chain of Being', () => {
   it("is the Gumboot Soup Cup's second, on a road of layered stone", () => {
@@ -61,6 +61,8 @@ describe('The Great Chain of Being', () => {
       'Come to Take the Throne',
       'Transcend the Natural Flesh',
       'Lay Your God to Rest',
+      "See Through Your World's Facade",
+      'Punish God',
       'Rocky Meteor Sparks Fire',
       'Burn the Church',
       'Climb Stairs to Push You Down',
@@ -70,12 +72,12 @@ describe('The Great Chain of Being', () => {
     ]);
     const length = track.length;
     console.log(`The Great Chain of Being: ${length.toFixed(0)} m a lap`);
-    expect(length).toBeGreaterThan(1300);
-    expect(length).toBeLessThan(1650);
+    expect(length).toBeGreaterThan(2450);
+    expect(length).toBeLessThan(2750);
     expect(def.laps).toBe(3);
   });
 
-  it('climbs the ladder rung by rung, each across the map over the one before, a hairpin up to the next', () => {
+  it('climbs the ladder rung by rung, a rung to each tier of being, each across the map over the one before, a hairpin up to the next', () => {
     const sp = main.spline;
     const along = (name: string) => {
       const q = section(name);
@@ -95,7 +97,7 @@ describe('The Great Chain of Being', () => {
       const ys = all.flatMap((a) => a.ys);
       // Across the map on its rung (the esses and the throne's swing aside).
       const mean = zs.reduce((a, b) => a + b, 0) / zs.length;
-      expect(Math.abs(mean - RUNGS[k]), names[0]).toBeLessThan(k === 4 ? 25 : 6);
+      expect(Math.abs(mean - RUNGS[k]), names[0]).toBeLessThan(k === RUNGS.length - 1 ? 25 : 6);
       // Higher than the rung below, all the way across.
       const lo = Math.min(...ys);
       expect(lo, names[0]).toBeGreaterThan(below);
@@ -111,7 +113,7 @@ describe('The Great Chain of Being', () => {
       const i1 = Math.round((track.mainS(q.to) / sp.length) * sp.count);
       return main.turn[i1] - main.turn[i0];
     };
-    const hairpins = ['Come to Take the Throne', 'Lay Your God to Rest', 'Burn the Church', 'Climb Chains to Cut You Down'];
+    const hairpins = ['Come to Take the Throne', 'Lay Your God to Rest', 'Punish God', 'Burn the Church', 'Climb Chains to Cut You Down'];
     hairpins.forEach((n, k) => expect(Math.abs(turn(n) - (k % 2 === 0 ? -1 : 1) * Math.PI), n).toBeLessThan(0.12));
     for (let k = 1; k < RUNGS.length; k++) expect(RUNGS[k] - RUNGS[k - 1]).toBeGreaterThan(40);
   });
@@ -120,7 +122,7 @@ describe('The Great Chain of Being', () => {
     const over = crossings(track);
     expect(over.map((c) => c.upper).every((n) => n === FALL)).toBe(true);
     const under = over.map((c) => RUNG_SECTIONS.findIndex((names) => names.includes(c.lower))).sort();
-    expect(under).toEqual([0, 1, 2, 3]);
+    expect(under).toEqual([0, 1, 2, 3, 4]);
     for (const c of over) {
       expect(c.dy, `${c.upper} over ${c.lower}`).toBeGreaterThan(7);
       expect(sectionAt(c.upperS).bridge, c.upper).toBe(true);

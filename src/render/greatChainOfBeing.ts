@@ -13,7 +13,8 @@ import { glowTexture } from './textures';
  * strata of the quarry walls with veins of precious stone in them, the iron
  * chain along the barriers), its scenery, a tier of being to each rung of
  * the ladder (the minerals: crystals, geodes, quarried blocks and small rocks
- * with eyes; the plants and the beasts: twisted trees, ferns and lambs; men:
+ * with eyes; the plants: twisted trees and ferns; the beasts: lambs grazing
+ * among the trees; men:
  * cottages, some of them burning, graves and bonfires; the angels: stone
  * angels with their haloes lit and banks of cloud; the top: gold columns and
  * candles in the clouds), its landmarks (a link of the great chain for a
@@ -444,8 +445,8 @@ function linkGeometry(halfLen: number, halfWidth: number, bar: number, segments 
 
 /**
  * The tier of being the ground at `z` is under, on the ladder of the
- * track's rungs: 0 the minerals, 1 the plants and the beasts, 2 men, 3 the
- * angels, 4 the top.
+ * track's rungs: 0 the minerals, 1 the plants, 2 the beasts, 3 men, 4 the
+ * angels, 5 the top.
  */
 export function tierAt(z: number): number {
   for (let k = 0; k < RUNGS.length - 1; k++) if (z < (RUNGS[k] + RUNGS[k + 1]) / 2) return k;
@@ -460,8 +461,8 @@ export function chainTiers(track: Track): ((x: number, z: number) => number) | u
 /**
  * The scenery, a tier of being on each rung of the ladder: the minerals
  * (clusters of precious stones, geodes split open, quarried blocks, small
- * rocks with eyes), the plants and the beasts (twisted trees, ferns, lambs
- * grazing), men (cottages with their windows lit and some of them burning,
+ * rocks with eyes), the plants (twisted trees, ferns), the beasts (lambs
+ * grazing among the trees), men (cottages with their windows lit and some of them burning,
  * graves, bonfires), the angels (stone angels with their haloes lit, banks
  * of cloud) and the top (gold columns, candles, cloud). With no tiers, a
  * mix of them all.
@@ -773,7 +774,8 @@ export function scalaFeature(animated: Animated, tiers?: (x: number, z: number) 
 
   const byTier: Feature[] = [
     (x, z, rand) => pick(rand, [[3, crystals], [1.5, geode], [2, blocks], [1.2, eyedRock]])(x, z, rand),
-    (x, z, rand) => pick(rand, [[3, tree], [2, fern], [2, lambs]])(x, z, rand),
+    (x, z, rand) => pick(rand, [[3, tree], [2.5, fern]])(x, z, rand),
+    (x, z, rand) => pick(rand, [[3, lambs], [1.2, tree], [0.5, fern]])(x, z, rand),
     (x, z, rand) => pick(rand, [[3, cottage], [2, graves], [1.2, bonfire], [1, tree]])(x, z, rand),
     (x, z, rand) => pick(rand, [[2, angel], [3, cloud], [0.6, column]])(x, z, rand),
     (x, z, rand) => pick(rand, [[2, column], [2, cloud], [1.5, candles], [0.6, angel]])(x, z, rand),
