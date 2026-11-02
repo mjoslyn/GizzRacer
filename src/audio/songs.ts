@@ -150,6 +150,10 @@ export const TRANSCRIBED: Record<string, { recording: string; release: string }>
   'kill-for-the-steel': { recording: 'Kill for the Steel', release: "Live at Field of Vision II '26, the soundboard mix" },
   'level-5': { recording: 'Level 5', release: "Live at Field of Vision II '26, the soundboard mix" },
   'rapid-alpha-decay': { recording: 'Rapid Alpha Decay', release: "Live at Field of Vision II '26, the soundboard mix" },
+  'muddy-water': { recording: 'Muddy Water', release: "Live at Field of Vision II '26, the soundboard mix" },
+  'great-chain-of-being': { recording: 'The Great Chain of Being', release: "Live at Field of Vision II '26, the soundboard mix" },
+  'all-is-known': { recording: 'All Is Known', release: "Live at Field of Vision '25, the soundboard mix" },
+  'the-wheel': { recording: 'The Wheel', release: "Live in Bulgaria '25, the soundboard mix" },
 };
 
 const FINAL = '-final-lap';
