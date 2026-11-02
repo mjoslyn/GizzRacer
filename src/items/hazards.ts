@@ -146,6 +146,7 @@ export const WAVE_SPIN = 1.0;
  * - driven through the shower of sparks off the astral blacksmith's hammer, just after it strikes, a fix: a boost
  * - tucked in behind a driverless pod, in its slipstream, it tows you on, a boost
  * - through the static wave crackling across the road in a burst of alphas' wake, a jumpstart: a boost
+ * - tucked into the clean wake just behind a street sweeper as it crosses, the road it has this moment swept, a boost
  */
 /** A reward can't pay out again to the same kart for this long. */
 export const REWARD_COOLDOWN = 1.5;
@@ -845,6 +846,43 @@ export const ALPHA_SPIN = 1.0;
 export const ALPHA_STATIC = 1.5;
 
 /**
+ * All Is Known's street sweepers, sweeping the streets for the machine:
+ * each parked off one edge of the road with its beacon turning; then (the
+ * warning) its brushes spin up and its scanner lights; then it drives
+ * right across the road at a steady pace and parks off the other edge, and
+ * the next time it comes back. Down the street they go one after another.
+ * Caught in its brushes, you're swept aside, spun, and digitised (the
+ * screen breaks up into pixels, game.ts); through the clean wake just
+ * behind it, the road it has this moment swept, a boost.
+ */
+export const SWEEP_STAGES = { warn: 0.3, go: 0.42, done: 0.86 } as const;
+/** The machine: half its depth along the road, and half its length across it, the way it drives. */
+export const SWEEP_DEPTH = 1.7;
+export const SWEEP_HALF = 2.5;
+/** It parks this far off the road's edge, its middle. */
+export const SWEEP_PARK = 3.5;
+/** The clean wake: this far behind it across the road, the road it has just swept. */
+export const SWEEP_WAKE = 6;
+export const SWEEP_BOOST = 0.9;
+export const SWEEP_SPIN = 1.0;
+/** Swept aside: shoved the way it's going this hard (m/s). */
+export const SWEEP_SHOVE = 8;
+/** Swept: this long of the screen digitised. */
+export const SWEEP_DIGITISE = 1.4;
+
+/**
+ * Where a sweeper is across the road at cycle stage `u`, as a lateral
+ * measured toward the edge it's heading for, on a road it parks `reach` off
+ * the middle of: parked at -reach, across, parked at +reach.
+ */
+export function sweeperAcross(u: number, reach: number): number {
+  const S = SWEEP_STAGES;
+  if (u < S.go) return -reach;
+  if (u >= S.done) return reach;
+  return -reach + (2 * reach * (u - S.go)) / (S.done - S.go);
+}
+
+/**
  * Where a burst's alpha `k` (0 leads) is across the road at cycle stage
  * `u`, as a lateral from the road's centre measured toward the edge they're
  * fired from, for a road `reach` wide either side: from beyond that edge,
@@ -955,6 +993,7 @@ const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds' | 'butterfli
   hammer: HAMMER_SPIN,
   autopilot: AUTOPILOT_SPIN,
   alphas: ALPHA_SPIN,
+  sweepers: SWEEP_SPIN,
 };
 
 /** Kinds that fill the whole road across, on a rhythm: nothing to steer round, only to time. */
@@ -1647,6 +1686,24 @@ export class HazardSystem {
           p.phase = u;
           break;
         }
+        case 'sweepers': {
+          // A street sweeper parked off one edge, then right across the road to the other; one after another down the street, each coming back the next time.
+          const at = def.at[i];
+          const tt = (t + 10) / def.period + i * 0.25;
+          const cycle = Math.floor(tt);
+          const u = tt - cycle;
+          const reach = this.halfWidth(at) + SWEEP_PARK;
+          // The way it's heading this time: toward the right (1) or the left.
+          const side = (cycle + i) % 2 === 0 ? 1 : -1;
+          const lat = side * sweeperAcross(u, reach);
+          this.place(p, at, lat, 0);
+          p.radius = reach;
+          p.side = side;
+          p.gap = lat;
+          p.active = u >= SWEEP_STAGES.go && u < SWEEP_STAGES.done;
+          p.phase = u;
+          break;
+        }
         case 'dustDevils':
         case 'butterflies':
         case 'tornadoes':
@@ -1860,6 +1917,10 @@ export class HazardSystem {
         }
         if (p.kind === 'alphas') {
           this.alpha(hit, p, s);
+          continue;
+        }
+        if (p.kind === 'sweepers') {
+          this.sweeper(hit, p, s);
           continue;
         }
         if (p.kind === 'fuzz' && p.phase >= FUZZ_STAGES.gold && p.phase < FUZZ_STAGES.red) {
@@ -2167,6 +2228,19 @@ export class HazardSystem {
         for (let n = 0; n < ALPHA_COUNT; n++) {
           const lat = p.side * (alphaAcross(Math.max(p.phase, ALPHA_STAGES.fire), n, p.radius) ?? 0);
           out.push({ x: p.ax - fz * lat, z: p.az + fx * lat, r: ALPHA_RADIUS, vx: fz * p.side * speed, vz: -fx * p.side * speed });
+        }
+        continue;
+      }
+      if (p.kind === 'sweepers') {
+        // From its warning until it's across: the machine and its brushes, moving across the road.
+        if (p.phase < SWEEP_STAGES.warn || p.phase >= SWEEP_STAGES.done) continue;
+        const fx = Math.sin(p.heading);
+        const fz = Math.cos(p.heading);
+        const { def } = this.slots[k];
+        const speed = (2 * p.radius) / ((SWEEP_STAGES.done - SWEEP_STAGES.go) * ('period' in def ? def.period : 5));
+        for (const d of [-1.4, 1.4]) {
+          const lat = p.gap + p.side * d;
+          out.push({ x: p.ax - fz * lat, z: p.az + fx * lat, r: 2, vx: -fz * p.side * speed, vz: fx * p.side * speed });
         }
         continue;
       }
@@ -2777,6 +2851,34 @@ export class HazardSystem {
       this.cooldown.set(s, HIT_COOLDOWN);
       if (spinOut(s, ALPHA_SPIN)) hit.push({ kart: s, by: p.kind });
       return;
+    }
+  }
+
+  /**
+   * A street sweeper crossing the road: caught in it or its brushes, swept
+   * aside the way it's going, spun, and digitised (game.ts); through the
+   * clean wake just behind it, on the road it has this moment swept, a boost.
+   */
+  private sweeper(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+    if (!p.active) return;
+    const fx = Math.sin(p.heading);
+    const fz = Math.cos(p.heading);
+    if (Math.abs((s.x - p.ax) * fx + (s.z - p.az) * fz) > SWEEP_DEPTH + KART_RADIUS) return;
+    const lat = (s.x - p.ax) * -fz + (s.z - p.az) * fx;
+    // How far ahead of it, the way it's going (behind it is negative).
+    const ahead = (lat - p.gap) * p.side;
+    if (Math.abs(ahead) <= SWEEP_HALF + KART_RADIUS) {
+      if (this.cooldown.has(s)) return;
+      this.cooldown.set(s, HIT_COOLDOWN);
+      if (spinOut(s, SWEEP_SPIN)) {
+        s.extX -= fz * p.side * SWEEP_SHOVE;
+        s.extZ += fx * p.side * SWEEP_SHOVE;
+        hit.push({ kart: s, by: p.kind });
+      }
+      return;
+    }
+    if (ahead < 0 && ahead >= -SWEEP_HALF - SWEEP_WAKE && Math.abs(lat) <= p.radius - SWEEP_PARK + KART_RADIUS && !this.cooldown.has(s)) {
+      this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, SWEEP_BOOST)));
     }
   }
 

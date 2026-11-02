@@ -13,9 +13,10 @@ import { benchWallTexture, regolithTexture, steelBarrierTexture } from './killFo
 import { forgeFloorTexture, forgeRailTexture, forgeWallTexture } from './alienMetal';
 import { barrierTexture as motorwayBarrierTexture, concreteTexture, tarmacTexture } from './level5';
 import { hazardBandTexture, leadBrickTexture, reactorFloorTexture } from './rapidAlphaDecay';
+import { boardTexture, rackTexture, railTexture } from './allIsKnown';
 
 export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism' | 'factory' | 'gamma' | 'carrion' | 'wah' | 'smog' | 'dome' | 'solar' | 'inferno' | 'mind' | 'notmind' | 'cellophane' | 'mindfuzz' | 'elbow' | 'muck' | 'boogie' | 'treesea' | 'theia' | 'set' | 'change' | 'uruk' | 'headon' | 'godcall' | 'nan' | 'float' | 'newworld' | 'foe' | 'altered' | 'hollow' | 'forge' | 'steelwar' | 'autonomy' | 'reactor' | 'muddy' | 'scala' | 'network' | 'wheel';
-export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy' | 'hadean' | 'deshret' | 'moonpalace' | 'uruk' | 'nanshouse' | 'suburb' | 'headtrip' | 'paddock' | 'den' | 'alteredworld' | 'mudflat' | 'hollowness' | 'openCut' | 'forge' | 'driverless' | 'reactor';
+export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy' | 'hadean' | 'deshret' | 'moonpalace' | 'uruk' | 'nanshouse' | 'suburb' | 'headtrip' | 'paddock' | 'den' | 'alteredworld' | 'mudflat' | 'hollowness' | 'openCut' | 'forge' | 'driverless' | 'reactor' | 'network';
 
 /** Everything that makes a track's world look like itself. */
 export interface Theme {
@@ -1136,23 +1137,27 @@ export const THEMES: Record<ThemeId, Theme> = {
     dust: 0xd08050,
     barrier: { map: tex.templeWallTexture, crawl: false },
   },
-  // All Is Known: (placeholder, Set's look until its world is built).
+  // All Is Known: the machine's world, where everything is known. A circuit board the size of a city under a black sky with no moon and no
+  // stars to speak of, only the network's cold cyan glow on the horizon; white light, steel, and the board's traces lit.
   network: {
-    sky: { zenith: '#0a0a34', high: '#262a78', low: '#c86a3a', horizon: '#ffd070', below: '#c06030', ground: '#6a2a14', cloud: '255,200,150', clouds: 12, stars: { count: 140, color: '#f0f0ff' }, moon: '#f4f4ff' },
-    fog: { color: 0xc07850, near: 160, far: 860 },
-    hemi: { sky: 0xffd0a0, ground: 0x8a3a1a, intensity: 1.5 },
-    sun: { color: 0xffd890, intensity: 2.3 },
-    ground: tex.redSandTexture,
-    groundTile: 20,
-    // Walls are a temple's, blocks of sandstone with a painted frieze.
-    cliff: tex.templeWallTexture,
-    decor: 'deshret',
-    distant: { shape: 'mesa', color: 0x5a2414 },
-    haze: 0.8,
-    duotone: [0x0a0420, 0xd05a20, 0xffe890],
+    sky: { zenith: '#000000', high: '#02060a', low: '#06161c', horizon: '#3ad8f0', below: '#041014', ground: '#020406', cloud: '40,120,140', clouds: 4, stars: { count: 60, color: '#d8faff' } },
+    fog: { color: 0x04121a, near: 140, far: 760 },
+    hemi: { sky: 0xb8f4ff, ground: 0x0a1a20, intensity: 1.35 },
+    sun: { color: 0xe8fcff, intensity: 1.7 },
+    ground: boardTexture,
+    groundTile: 30,
+    // Walls (the sunk muscle's, the world's edge) are server racks, their lights going.
+    cliff: rackTexture,
+    decor: 'network',
+    distant: { shape: 'city', color: 0x03080c },
+    haze: 0,
+    duotone: [0x000000, 0x1ab8d0, 0xf0ffff],
     skyCycle: false,
-    dust: 0xd08050,
-    barrier: { map: tex.templeWallTexture, crawl: false },
+    dust: 0x6a8a94,
+    barrier: { map: railTexture, crawl: true },
+    roadGlow: 0.12,
+    edgeLine: 0xc8faff,
+    edgeWidth: 0.35,
   },
   // The Wheel: (placeholder, Set's look until its world is built).
   wheel: {

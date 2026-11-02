@@ -811,12 +811,12 @@ const PALETTES: Record<GenTheme, Palette> = {
   network: {
     surface: 'circuit',
     deck: 'circuit',
-    alt: 'sand',
-    hazards: ['sunMoon'],
-    start: 'setGate',
-    landmarks: ['setGate'],
+    alt: 'steel',
+    hazards: ['sweepers'],
+    start: 'knownGate',
+    landmarks: ['knownGate', 'kingsEye'],
     tallWalls: 6,
-    places: ['Jackal', 'Snake', 'Tornado', 'Tomb', 'Duality', 'Sandstorm', 'Moonbeam', 'Hieroglyph', 'Reset'],
+    places: ['Human', 'Vermin', 'Weed', 'Acetone', 'Synapse', 'Network', 'Steel Bone', 'Fourth Cone', 'Mainframe'],
     music: { lap: 'all-is-known', finalLap: 'all-is-known-final-lap' },
   },
   wheel: {
@@ -1613,6 +1613,10 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
         break;
       case 'alphas':
         hazards.push({ kind, at: at(count - 1), period: 4.6 });
+        break;
+      case 'sweepers':
+        // Street sweepers down the stretch, crossing one after another.
+        hazards.push({ kind, at: at(count - 1), period: 4.8 });
         break;
     }
     return true;

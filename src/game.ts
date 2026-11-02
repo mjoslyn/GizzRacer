@@ -38,7 +38,7 @@ import { Race, TOUCH_CPU_PACE, ordinal, type RaceKart } from './core/race';
 import { ASSIST_NORMAL, ASSIST_TOUCH } from './physics/steerAssist';
 import { DRIFT_TIERS, PHYSICS_VERSION, copyKartState, createKartState, driftTier, respawnKart, type KartState, type StepEvents } from './physics/kart';
 import { FIELD_SIZE, RACERS, pickRivals, type RacerDef } from './physics/racers';
-import { ALPHA_STATIC, PILL_SWIM, type HazardKind } from './items/hazards';
+import { ALPHA_STATIC, PILL_SWIM, SWEEP_DIGITISE, type HazardKind } from './items/hazards';
 import { ITEMS, type ItemHolder, type ItemKind } from './items/items';
 import { ChaseCamera, DEFAULT_PLACEMENT, type CameraPlacement } from './render/chaseCamera';
 import { HazardsView, ItemsView } from './render/itemViews';
@@ -285,7 +285,7 @@ let fieldSeed = 1;
 let intro = 0;
 /** Smoothed post effect levels. */
 /** Post effects, eased toward their targets each frame; `bite` is the red flash of a hit, decaying. */
-const fx = { haze: 0, kaleido: 0, vhs: 0, duo: 0, box: 0, bite: 0, water: 0, swim: 0, crackle: 0 };
+const fx = { haze: 0, kaleido: 0, vhs: 0, duo: 0, box: 0, bite: 0, water: 0, swim: 0, crackle: 0, digitise: 0 };
 
 /** The world's own fog, and the close blue-green of being under water, blended. */
 const SEA_FOG = new THREE.Color(0x0a5a6a);
@@ -1499,6 +1499,8 @@ function seatStep(seat: Seat, ev: StepEvents, dt: number): void {
       if (e.by === 'pills') fx.swim = 1;
       // Hit by an alpha: the screen crackles with static.
       if (e.by === 'alphas') fx.crackle = 1;
+      // Swept by a street sweeper: the screen is digitised, broken up into pixels.
+      if (e.by === 'sweepers') fx.digitise = 1;
       buzz(seat, 160);
       if (e.by !== 'tempoShift' && e.by !== 'bassDrop') c.bump(0.5);
       if (e.by === 'bassDrop') c.bump(1.2);
@@ -2017,6 +2019,7 @@ const HIT_TEXT: Record<ItemKind | HazardKind, string> = {
   hammer: 'FLATTENED!',
   autopilot: 'NO DRIVER!',
   alphas: 'ALPHA DECAY!',
+  sweepers: 'DIGITISED!',
 };
 
 /** What a hazard used well says: the ones that can help. */
@@ -2084,6 +2087,7 @@ const BONUS_TEXT: Record<HazardKind, string> = {
   hammer: 'GIMME A FIX!',
   autopilot: 'SLIPSTREAM!',
   alphas: 'JUMPSTART MY HEART!',
+  sweepers: 'SWEEP THE STREETS!',
 };
 
 /** Takes a group out of the scene and frees what it built. */
@@ -2606,6 +2610,7 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
   fx.water += ((submerged ? 1 : 0) - fx.water) * damp(6, frameDt);
   fx.swim = Math.max(0, fx.swim - frameDt / PILL_SWIM);
   fx.crackle = Math.max(0, fx.crackle - frameDt / ALPHA_STATIC);
+  fx.digitise = Math.max(0, fx.digitise - frameDt / SWEEP_DIGITISE);
   underwaterFog(fx.water);
   music.setMuffle(fx.water);
   if (drawGallery(frameDt)) return;
@@ -2613,7 +2618,7 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
   if (mode === 'skill') return;
   if (splitView) return renderSplit(theme.skyCycle ? Math.PI * 2 * skyTurn : 0, drawn);
   const beat = music.beatPhase();
-  postFx.render(scene, camera, { haze: fx.haze, kaleido: fx.kaleido, beat: beat >= 0 ? beat : (elapsed * 2.4) % 1, time: elapsed, vhs: fx.vhs, duo: fx.duo, box: fx.box, palette: theme.duotone, water: fx.water, swim: fx.swim, crackle: fx.crackle });
+  postFx.render(scene, camera, { haze: fx.haze, kaleido: fx.kaleido, beat: beat >= 0 ? beat : (elapsed * 2.4) % 1, time: elapsed, vhs: fx.vhs, duo: fx.duo, box: fx.box, palette: theme.duotone, water: fx.water, swim: fx.swim, crackle: fx.crackle, digitise: fx.digitise });
 });
 
 /** The podium's extra line: the trophy and what it unlocked. */

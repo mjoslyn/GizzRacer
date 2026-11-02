@@ -18,6 +18,8 @@ export interface PostFxParams {
   swim?: number;
   /** Hit by an alpha (Rapid Alpha Decay), 0..1: the screen crackles with static, torn lines and snow, a sick green. */
   crackle?: number;
+  /** Swept by a street sweeper (All Is Known), 0..1: the picture broken up into big square pixels, cold cyan, a scan line running down it. */
+  digitise?: number;
   /** The duotone's shadows, body and highlights (the track theme's `duotone`). */
   palette?: readonly [number, number, number];
 }
@@ -42,6 +44,7 @@ uniform float uBox;
 uniform float uWater;
 uniform float uSwim;
 uniform float uCrackle;
+uniform float uDigitise;
 uniform vec3 uDuoDark;
 uniform vec3 uDuoMid;
 uniform vec3 uDuoHigh;
@@ -81,6 +84,15 @@ void main() {
     float band = floor(uv.y * 60.0);
     float tear = step(0.82, hash(vec2(band, floor(uTime * 24.0))));
     uv.x += (hash(vec2(band, floor(uTime * 30.0) + 7.0)) - 0.5) * 0.08 * tear * uCrackle;
+  }
+
+  // Swept and digitised: the picture breaks up into square pixels, coarser the harder it's hit, and blocks of them slip.
+  if (uDigitise > 0.0) {
+    float cells = mix(260.0, 46.0, uDigitise);
+    vec2 cell = vec2(cells * uAspect, cells);
+    vec2 q = floor(uv * cell);
+    q.x += floor((hash(vec2(q.y, floor(uTime * 12.0))) - 0.5) * 6.0 * step(0.86, hash(vec2(floor(q.y / 3.0), floor(uTime * 9.0)))) * uDigitise);
+    uv = (q + 0.5) / cell;
   }
 
   // Under water everything wavers.
@@ -149,6 +161,18 @@ void main() {
     float flick = 0.6 + 0.4 * step(0.5, hash(vec2(floor(uTime * 18.0), 3.0)));
     col.rgb = mix(col.rgb, vec3(snow) * vec3(0.7, 1.0, 0.6), 0.55 * uCrackle * flick);
   }
+  // Digitised: each pixel quantised and washed cold cyan, its grid showing, and the scanner's line running down the screen.
+  if (uDigitise > 0.0) {
+    float cells = mix(260.0, 46.0, uDigitise);
+    vec2 f = fract(vUv * vec2(cells * uAspect, cells));
+    float grid = step(0.9, max(f.x, f.y));
+    vec3 q = floor(col.rgb * 5.0 + 0.5) / 5.0;
+    float lum = dot(q, vec3(0.3, 0.59, 0.11));
+    vec3 cold = mix(vec3(0.0, 0.05, 0.08), vec3(0.55, 1.0, 1.0), lum);
+    col.rgb = mix(col.rgb, mix(q, cold, 0.6) * (1.0 - 0.35 * grid), uDigitise);
+    float scan = 1.0 - smoothstep(0.0, 0.012, abs(vUv.y - (1.0 - fract(uTime * 0.9))));
+    col.rgb += vec3(0.5, 1.0, 1.0) * scan * 0.6 * uDigitise;
+  }
   // Letterbox bars, like the tape the video was shot on.
   if (uBox > 0.0 && abs(vUv.y - 0.5) > 0.5 - uBox * 0.11) col.rgb = vec3(0.0);
 
@@ -188,6 +212,7 @@ export class PostFx {
           uWater: { value: 0 },
           uSwim: { value: 0 },
           uCrackle: { value: 0 },
+          uDigitise: { value: 0 },
           uDuoDark: { value: new THREE.Color(0x0a0002) },
           uDuoMid: { value: new THREE.Color(0xc00410) },
           uDuoHigh: { value: new THREE.Color(0xf0c020) },
@@ -208,7 +233,8 @@ export class PostFx {
     const water = p.water ?? 0;
     const swim = p.swim ?? 0;
     const crackle = p.crackle ?? 0;
-    if (p.haze < 0.01 && p.kaleido < 0.01 && vhs < 0.01 && duo < 0.01 && box < 0.01 && water < 0.01 && swim < 0.01 && crackle < 0.01) {
+    const digitise = p.digitise ?? 0;
+    if (p.haze < 0.01 && p.kaleido < 0.01 && vhs < 0.01 && duo < 0.01 && box < 0.01 && water < 0.01 && swim < 0.01 && crackle < 0.01 && digitise < 0.01) {
       r.render(scene, camera);
       return;
     }
@@ -233,6 +259,7 @@ export class PostFx {
     u.uWater.value = water;
     u.uSwim.value = swim;
     u.uCrackle.value = crackle;
+    u.uDigitise.value = digitise;
     if (p.palette) {
       (u.uDuoDark.value as THREE.Color).setHex(p.palette[0]);
       (u.uDuoMid.value as THREE.Color).setHex(p.palette[1]);
