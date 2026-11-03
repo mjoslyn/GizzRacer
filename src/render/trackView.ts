@@ -26,6 +26,7 @@ import { acetone, busTrace, circuitGlowTexture, circuitRoadTexture, kingsEye, kn
 import { billabong, clayRoadTexture, coast, flagsGate, riverbed, sharkCopter, summerFeature, willowTree } from './muddyWater';
 import { brokenLink, burningChurch, chainGate, chainTiers, emptyThrone, greatChain, rockWithEyes, scalaFeature, strataRoadTexture } from './greatChainOfBeing';
 import { greatWheel, grooveRoadTexture, helmHandle, pilgrims, reaper, slumberFeature, steeperPath, wheelGate } from './theWheel';
+import { bodyBags, chequeBank, chimneys, cinderRoadTexture, fortress, homestead, keeperGate, openGrave, reaperMC, reapingFeature, scytheGate, wickedSun } from './theGrimReaper';
 import { bandroomFeature, bentArm, canopyFeature, elbowGate, harmonicaGate, mirrorBall, partyFeature, powerStation, rakeGate, snowPeak, trunkGate, wetlandFeature } from './twelveBarBruise';
 import { arrowGate, cellophaneBloom, emptyHead, eyeGate, filmGate, fuzzGate, fuzzMeter, mindFace, neuronsFeature, opartFeature, panesFeature, staticFeature } from './mindfuzz';
 import { blightFeature, burningEarth, coronaFeature, domeGate, domesFeature, hellGate, pitFeature, ratsNest, richDome, shipGate, smogGate, theSun } from './infest';
@@ -135,6 +136,7 @@ function materials(theme: Theme): Materials {
     summer: () => tex.stoneTexture([150, 96, 56], [226, 190, 140]),
     scala: () => tex.stoneTexture([84, 58, 46], [168, 134, 104]),
     slumber: () => tex.stoneTexture([46, 38, 50], [110, 96, 112]),
+    reaping: () => tex.stoneTexture([150, 96, 60], [220, 180, 130]),
   };
   const neon = banana ? tex.neonRoadTexture(tex.BANANA.neon) : tex.neonRoadTexture();
   const rainbow = banana ? tex.rainbowTexture(tex.BANANA.bands) : tex.rainbowTexture();
@@ -247,10 +249,11 @@ function materials(theme: Theme): Materials {
       circuit: bumpy(circuitRoadTexture(), 0.05, { emissive: 0xffffff, emissiveMap: circuitGlowTexture(), emissiveIntensity: 1 }),
       // The Wheel's: a record's groove, black vinyl.
       groove: bumpy(grooveRoadTexture(), 0.04),
+      // The Grim Reaper's: black cinders and ash, a gold line down the middle.
+      cinder: bumpy(cinderRoadTexture(), 0.06),
       // The All Stars Cup #1's roads (placeholders until each track's world is built).
       farmtrack: bumpy(tex.asphaltTexture(), 0.08),
       graphene: bumpy(tex.asphaltTexture(), 0.08),
-      cinder: bumpy(tex.asphaltTexture(), 0.08),
       earth: bumpy(tex.asphaltTexture(), 0.08),
       gravel: bumpy(gravelTexture(), 0.1),
       cosmic: (() => {
@@ -465,6 +468,16 @@ export function buildTrackView(track: Track): TrackView {
     if (lm.kind === 'pilgrims') group.add(pilgrims(ribbon, s, (lm.to ?? lm.s) * ribbon.scale, animated));
     if (lm.kind === 'reaper') group.add(reaper(ribbon, s, lm.lateral ?? 0, animated));
     if (lm.kind === 'steeperPath') group.add(steeperPath(ribbon, s, track.def.pits, animated));
+    if (lm.kind === 'scytheGate') group.add(scytheGate(ribbon, s, animated));
+    if (lm.kind === 'chimneys') group.add(chimneys(ribbon, s, (lm.to ?? lm.s + 100) * ribbon.scale, animated));
+    if (lm.kind === 'keeperGate') group.add(keeperGate(ribbon, s, animated));
+    if (lm.kind === 'reaperMC') group.add(reaperMC(ribbon, s, lm.lateral ?? 0, animated));
+    if (lm.kind === 'wickedSun') group.add(wickedSun(ribbon, s, animated));
+    if (lm.kind === 'chequeBank') group.add(chequeBank(ribbon, s, lm.lateral ?? 0, animated));
+    if (lm.kind === 'fortress') group.add(fortress(ribbon, s, (lm.to ?? lm.s + 80) * ribbon.scale, animated));
+    if (lm.kind === 'bodyBags') group.add(bodyBags(ribbon, s, (lm.to ?? lm.s + 100) * ribbon.scale, animated));
+    if (lm.kind === 'homestead') group.add(homestead(ribbon, s, lm.lateral ?? 0, animated));
+    if (lm.kind === 'openGrave') group.add(openGrave(ribbon, s, track.def.pits, animated));
     if (lm.kind === 'dragonFlight') {
       const d = dragonFlight(track.def.bounds);
       group.add(d.group);
@@ -1818,6 +1831,9 @@ function featureBuilder(theme: Theme, mats: Materials, animated: ((time: number)
       return scalaFeature(animated, track && chainTiers(track));
     case 'slumber':
       return slumberFeature(animated);
+    case 'reaping':
+      // The frontier, dressed by which stretch of the reaper's round it's beside.
+      return reapingFeature(animated, track);
     case 'lagoon': {
       const bark = lambert(0x9a7a52);
       const frond = lambert(0x3aa04a, { side: THREE.DoubleSide, flatShading: true });

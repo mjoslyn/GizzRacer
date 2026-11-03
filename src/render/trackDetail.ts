@@ -428,6 +428,14 @@ const STYLES: Record<DecorKind, DetailStyle> = {
     boards: { words: ['THE WHEEL', 'INTO OUR FUTURE', 'A BETTER THESIS', 'WAKE UP', 'GUMBOOT SOUP'], bg: ['#1a1028', '#2a1630'], fg: '#ffc070' },
     crowd: false,
   },
+  // The Grim Reaper: giant matches stuck in the ground along the road, lit; dry grass on the hardpan.
+  reaping: {
+    edge: { kind: 'torch', height: 1.8, spacing: 15, color: 0xe8d4a0, stripe: 0xb81818 },
+    light: 0xff9a40,
+    cover: { shape: 'tuft', colors: [0xc8a860, 0x9a7a40, 0x7a6a40, 0xe0cc98], count: 1300 },
+    boards: { words: ['THE GRIM REAPER', 'CHIMNEY SWEEPER', 'GATE KEEPER', 'TIME IS PRICELESS', 'SHRIMPOMANIAC', 'OMNIUM GATHERUM'], bg: ['#0e0a0a', '#2a0c0c'], fg: '#f4c040' },
+    crowd: false,
+  },
   // The forge's own fires along the road, nobody out here among the stars but the smith: cinders, slag and stardust.
   forge: {
     edge: { kind: 'torch', height: 1.5, spacing: 16, color: 0x1a1a22, stripe: 0x3a3a48 },

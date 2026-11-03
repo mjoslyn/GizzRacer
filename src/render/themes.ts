@@ -17,9 +17,10 @@ import { boardTexture, rackTexture, railTexture } from './allIsKnown';
 import { MURK, bushGroundTexture, railTexture as summerRailTexture, sandstoneTexture } from './muddyWater';
 import { chainBarrierTexture, scalaGroundTexture, strataWallTexture } from './greatChainOfBeing';
 import { duskStoneTexture, heathTexture, railTexture as wheelRailTexture } from './theWheel';
+import { adobeTexture, scorchedGroundTexture, waveformRailTexture } from './theGrimReaper';
 
 export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism' | 'factory' | 'gamma' | 'carrion' | 'wah' | 'smog' | 'dome' | 'solar' | 'inferno' | 'mind' | 'notmind' | 'cellophane' | 'mindfuzz' | 'elbow' | 'muck' | 'boogie' | 'treesea' | 'theia' | 'set' | 'change' | 'uruk' | 'headon' | 'godcall' | 'nan' | 'float' | 'newworld' | 'foe' | 'altered' | 'hollow' | 'forge' | 'steelwar' | 'autonomy' | 'reactor' | 'muddy' | 'scala' | 'network' | 'wheel' | 'windmill' | 'cyborg' | 'grimreaper' | 'gaia';
-export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy' | 'hadean' | 'deshret' | 'moonpalace' | 'uruk' | 'nanshouse' | 'suburb' | 'headtrip' | 'paddock' | 'den' | 'alteredworld' | 'mudflat' | 'hollowness' | 'openCut' | 'forge' | 'driverless' | 'reactor' | 'network' | 'summer' | 'scala' | 'slumber';
+export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy' | 'hadean' | 'deshret' | 'moonpalace' | 'uruk' | 'nanshouse' | 'suburb' | 'headtrip' | 'paddock' | 'den' | 'alteredworld' | 'mudflat' | 'hollowness' | 'openCut' | 'forge' | 'driverless' | 'reactor' | 'network' | 'summer' | 'scala' | 'slumber' | 'reaping';
 
 /** Everything that makes a track's world look like itself. */
 export interface Theme {
@@ -1224,22 +1225,27 @@ export const THEMES: Record<ThemeId, Theme> = {
     dust: 0xd08050,
     barrier: { map: tex.templeWallTexture, crawl: false },
   },
-  // The Grim Reaper: (placeholder, Set's look until its world is built).
+  // The Grim Reaper: collection night on a sun-scorched frontier, the sun going down blood red and gold low on the horizon, plum and the first stars overhead; bleached, cracked hardpan, a road of black cinders.
   grimreaper: {
-    sky: { zenith: '#0a0a34', high: '#262a78', low: '#c86a3a', horizon: '#ffd070', below: '#c06030', ground: '#6a2a14', cloud: '255,200,150', clouds: 12, stars: { count: 140, color: '#f0f0ff' }, moon: '#f4f4ff' },
-    fog: { color: 0xc07850, near: 160, far: 860 },
-    hemi: { sky: 0xffd0a0, ground: 0x8a3a1a, intensity: 1.5 },
-    sun: { color: 0xffd890, intensity: 2.3 },
-    ground: tex.redSandTexture,
-    groundTile: 20,
-    cliff: tex.templeWallTexture,
-    decor: 'deshret',
-    distant: { shape: 'mesa', color: 0x5a2414 },
-    haze: 0.8,
-    duotone: [0x0a0420, 0xd05a20, 0xffe890],
+    sky: { zenith: '#1c0c2a', high: '#4a1a3c', low: '#c8482a', horizon: '#ffb848', below: '#d07a40', ground: '#8a5a30', cloud: '160,70,64', clouds: 14, stars: { count: 70, color: '#ffe8c8' } },
+    fog: { color: 0xd88850, near: 170, far: 900 },
+    hemi: { sky: 0xffd8a8, ground: 0xa06a3a, intensity: 1.6 },
+    sun: { color: 0xffb070, intensity: 2.5 },
+    ground: scorchedGroundTexture,
+    groundTile: 22,
+    // Walls are the pit's and the world's edge: sun-baked adobe and sandstone, scorched along the top.
+    cliff: adobeTexture,
+    decor: 'reaping',
+    distant: { shape: 'mesa', color: 0x3a1418 },
+    haze: 0.6,
+    duotone: [0x0c0406, 0xc02020, 0xffc838],
     skyCycle: false,
-    dust: 0xd08050,
-    barrier: { map: tex.templeWallTexture, crawl: false },
+    dust: 0xd8b088,
+    // A black rail with a cut-up sample's waveform along it in gold, playing past.
+    barrier: { map: waveformRailTexture, crawl: true },
+    // The black cinder road on the pale ground, a thin gold line down each edge.
+    edgeLine: 0xf0b830,
+    edgeWidth: 0.35,
   },
   // Gaia: (placeholder, Set's look until its world is built).
   gaia: {
