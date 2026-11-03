@@ -8,23 +8,27 @@ import { glowTexture } from './textures';
 
 /**
  * The Grim Reaper's world, the All Stars Cup's third: the reaper's rounds
- * on collection night, a boom-bap swagger over a dusty, sun-scorched
- * frontier of cactus country as the sun goes down blood red behind the
- * wicked men. Its textures (the road of black cinders with a gold line down
- * its middle, the bleached and cracked hardpan, the sun-baked adobe of the
- * pit and the world's edge, a black rail with a cut-up sample's waveform
- * in gold along it), its scenery (saguaros, prickly pears, the chimneys of
- * burnt-out houses, crates of dollar-bin records and speaker stacks,
- * boot hill's crosses, cattle skulls, dead trees with hatchets in their
- * stumps, giant lit matches, wagon wheels, body bags on pegs), its
- * landmarks (the start between two speaker stacks under a golden scythe,
- * the chimneys smoking on the beat, the gate keeper's iron gate over the
- * hellhound pit, the reaper himself in gold and shades rapping over his
- * turntables in the crook of his blade, the sun setting behind the
- * silhouettes of many wicked men, the bank and the cheque he cashes, the
- * fortress of the wicked, the body bags on the hills, the homestead the
- * stench orbits, the open grave under Time Is Priceless) and its hazard's
- * look (the hellhounds, their dens and the stitches they sniff out).
+ * on collection night, a slow boom-bap dread over a dead frontier. Night
+ * coming down, the sun gone dark blood red behind black cloud over the
+ * wicked men, the only warmth in a cold, ashen world; fog lying in the pit
+ * and the hollows, crows and vultures over the carrion. Its textures (the
+ * road of black cinders with a gold line down its middle, ashen and cracked
+ * hardpan with old blood dried into it, charred rock for the pit and the
+ * world's edge, a black rail with a cut-up sample's waveform in gold along
+ * it), its scenery (charred cacti, dead trees with nooses and hatchets,
+ * bones and skulls, carrion with crows on it, broken wagon wheels, crooked
+ * crosses and gravestones, chimneys of burnt-out houses, crates of
+ * dollar-bin records and speaker stacks, body bags on pegs, guttering
+ * matches, ground fog), its landmarks (the start between two speaker
+ * stacks under a tarnished, bloodied scythe, the chimneys belching black
+ * smoke, the gate keeper's iron gate over the hellhound pit, the reaper
+ * himself, hooded, his skull's hollow eyes burning red, looming over the
+ * lap and nodding slowly over his turntables, the dark sun behind the
+ * silhouettes of many wicked men, the bank and the cheque signed in blood,
+ * the black, spiked fortress of the wicked, the body bags on the hills,
+ * the rotting homestead the stench orbits, the open grave under Time Is
+ * Priceless) and its hazard's look (the hellhounds, their dens glowing
+ * like furnaces and the stitches like fresh wounds).
  */
 
 export type Feature = (x: number, z: number, rand: () => number) => THREE.Object3D;
@@ -110,14 +114,17 @@ const mix = (a: RGB, b: RGB, t: number): RGB => [a[0] + (b[0] - a[0]) * t, a[1] 
 const shade = (c: RGB, f: number): RGB => [c[0] * f, c[1] * f, c[2] * f];
 const css = ([r, g, b]: RGB, a = 1) => `rgba(${r | 0},${g | 0},${b | 0},${a})`;
 
-/** Hip-hop gold, the blood-red sun, the hellhounds' ember and the stench's sick green. */
-const GOLD_HEX = 0xf0b830;
-const SUN_HEX = 0xff5a28;
-const EMBER_HEX = 0xff4a18;
-const STENCH_HEX = 0x9ad040;
+/** Tarnished gold, the dark red sun, the hellhounds' fire, blood, and the stench's sick yellow-green. */
+const GOLD_HEX = 0xc89a30;
+const SUN_HEX = 0xb01408;
+const EMBER_HEX = 0xff3a10;
+const BLOOD_HEX = 0x6a0606;
+const STENCH_HEX = 0x8aa030;
+/** The fog lying in the pit and the hollows: a cold grey. */
+const FOG_HEX = 0x9a9aa6;
 
-/** The boom-bap's tempo, slowed down like the sample: about 88 beats a minute. */
-const BEAT = 88 / 60;
+/** The boom-bap's tempo, slowed right down like the sample: about 80 beats a minute. */
+const BEAT = 80 / 60;
 /** 0..1 through each beat, a kick on the 0. */
 const beatPhase = (time: number) => (time * BEAT) % 1;
 /** A kick: 1 on the beat, falling away fast. */
@@ -127,9 +134,9 @@ const kick = (time: number) => Math.exp(-beatPhase(time) * 7);
  * The road: black cinders and ash, the scorched dirt of the reaper's round.
  * The texture spans half the road (its u across, its v along): charcoal
  * cinders, coarse and speckled, lighter ash in the two worn ruts, a few
- * embers still glowing and flecks of gold; a pale ash shoulder down the
- * edge, and a broken gold line down the middle. It reads dark and plain
- * against the bleached ground either side.
+ * embers still glowing red and flecks of gold; a pale ash shoulder down
+ * the edge, and a broken gold line down the middle. It reads black and
+ * plain against the pale ash of the ground either side.
  */
 export function cinderRoadTexture(): THREE.CanvasTexture {
   const S = 256;
@@ -156,7 +163,7 @@ export function cinderRoadTexture(): THREE.CanvasTexture {
   }
   // A few embers, and flecks of gold.
   for (let k = 0; k < 70; k++) {
-    ctx.fillStyle = rand() < 0.6 ? 'rgba(255,110,40,0.85)' : 'rgba(255,206,80,0.9)';
+    ctx.fillStyle = rand() < 0.7 ? 'rgba(220,40,20,0.85)' : 'rgba(255,196,70,0.9)';
     ctx.fillRect(S * (0.08 + rand() * 0.86), rand() * S, 1.5, 1.5);
   }
   // The broken gold line down the middle.
@@ -170,24 +177,24 @@ export function cinderRoadTexture(): THREE.CanvasTexture {
   return finish(c);
 }
 
-/** The ground: a sun-scorched hardpan, bleached bone-pale and ochre, cracked into plates, ash and scorch marks across it, pebbles and dry grass. */
+/** The ground: dead hardpan gone to ash, pale and cold, cracked into plates, old blood dried dark into it, scorch marks, bone chips and dead grass. */
 export function scorchedGroundTexture(): THREE.CanvasTexture {
   const S = 512;
   const [c, ctx] = canvas(S);
   const n = fbm(S, 8, 5, 7111);
   const patch = fbm(S, 4, 3, 7112);
   paint(ctx, S, S, (_x, _y, i) => {
-    const bone: RGB = [226, 202, 158];
-    const ochre: RGB = [196, 146, 90];
-    const scorch: RGB = [120, 82, 58];
-    const base = patch[i] < 0.42 ? mix(scorch, ochre, patch[i] / 0.42) : mix(ochre, bone, Math.min(1, (patch[i] - 0.42) * 2.2));
-    return shade(base, 0.82 + n[i] * 0.34);
+    const bone: RGB = [216, 210, 202];
+    const ash: RGB = [170, 164, 160];
+    const char: RGB = [100, 92, 92];
+    const base = patch[i] < 0.4 ? mix(char, ash, patch[i] / 0.4) : mix(ash, bone, Math.min(1, (patch[i] - 0.4) * 2));
+    return shade(base, 0.8 + n[i] * 0.34);
   });
   const rand = seededRandom(7113);
-  // The cracks: the baked crust split into plates, a crooked line from each seed to its neighbours.
+  // The cracks: the dead crust split into plates, a crooked line from each seed to its neighbours.
   const seeds = Array.from({ length: 70 }, () => [rand() * S, rand() * S] as const);
-  ctx.strokeStyle = 'rgba(70,44,30,0.55)';
-  ctx.lineWidth = 1.4;
+  ctx.strokeStyle = 'rgba(24,18,18,0.6)';
+  ctx.lineWidth = 1.5;
   for (const [x, y] of seeds) {
     const near = seeds
       .map(([a, b]) => [a, b, Math.hypot(a - x, b - y)] as const)
@@ -204,31 +211,31 @@ export function scorchedGroundTexture(): THREE.CanvasTexture {
       ctx.stroke();
     }
   }
-  // Ash smudges and scorch marks.
-  for (let k = 0; k < 40; k++) {
+  // Scorch marks, and old blood dried dark.
+  for (let k = 0; k < 46; k++) {
     const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
-    const ashy = rand() < 0.5;
-    g.addColorStop(0, ashy ? 'rgba(90,86,84,0.35)' : 'rgba(60,34,22,0.35)');
+    const blood = rand() < 0.35;
+    g.addColorStop(0, blood ? 'rgba(80,10,10,0.4)' : 'rgba(30,24,24,0.4)');
     g.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.save();
     ctx.translate(rand() * S, rand() * S);
-    ctx.scale(10 + rand() * 30, 6 + rand() * 20);
+    ctx.scale(8 + rand() * 30, 5 + rand() * 18);
     ctx.fillStyle = g;
     ctx.beginPath();
     ctx.arc(0, 0, 1, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   }
-  // Pebbles and dry grass.
+  // Grit, bone chips and dead grass.
   for (let k = 0; k < 6000; k++) {
     const r = rand();
-    ctx.fillStyle = r < 0.4 ? 'rgba(120,96,70,0.5)' : r < 0.75 ? 'rgba(180,150,80,0.45)' : 'rgba(250,236,200,0.5)';
+    ctx.fillStyle = r < 0.4 ? 'rgba(60,54,52,0.5)' : r < 0.75 ? 'rgba(120,112,96,0.45)' : 'rgba(232,226,214,0.55)';
     ctx.fillRect(rand() * S, rand() * S, r < 0.4 ? 2 : 1, r > 0.4 && r < 0.75 ? 3 : 1.5);
   }
   return finish(c);
 }
 
-/** The pit's walls and the world's edge: sun-baked adobe and sandstone in strata, rust, ochre and bone, scorched black along the top. */
+/** The pit's walls and the world's edge: charred rock in strata, black and dark rust, scorched blacker along the top, red-brown runs down it like old blood. */
 export function adobeTexture(): THREE.CanvasTexture {
   const S = 256;
   const [c, ctx] = canvas(S);
@@ -238,15 +245,25 @@ export function adobeTexture(): THREE.CanvasTexture {
     // Strata across the wall, wavering.
     const v = (y / S + band[i] * 0.25) * 7;
     const layer = Math.floor(v) % 3;
-    const col: RGB = layer === 0 ? [176, 96, 60] : layer === 1 ? [204, 150, 96] : [150, 78, 52];
+    const col: RGB = layer === 0 ? [84, 60, 54] : layer === 1 ? [112, 96, 88] : [58, 40, 38];
     // Scorched dark near the top of the wall (v small: the texture's top is the wall's top).
-    const soot = Math.max(0, 1 - y / (S * 0.3));
-    return shade(mix(col, [40, 26, 22], soot * 0.8), 0.78 + n[i] * 0.4);
+    const sootTop = Math.max(0, 1 - y / (S * 0.3));
+    return shade(mix(col, [18, 12, 12], sootTop * 0.8), 0.78 + n[i] * 0.4);
   });
   const rand = seededRandom(7123);
   for (let k = 0; k < 1400; k++) {
-    ctx.fillStyle = rand() < 0.5 ? 'rgba(60,30,20,0.4)' : 'rgba(240,210,170,0.35)';
+    ctx.fillStyle = rand() < 0.5 ? 'rgba(20,12,12,0.45)' : 'rgba(170,160,150,0.25)';
     ctx.fillRect(rand() * S, rand() * S, 1 + rand() * 2, 1);
+  }
+  // The runs, dark red, down from the top.
+  for (let k = 0; k < 18; k++) {
+    const x = rand() * S;
+    const len = S * (0.2 + rand() * 0.6);
+    const g = ctx.createLinearGradient(0, 0, 0, len);
+    g.addColorStop(0, 'rgba(100,10,8,0.55)');
+    g.addColorStop(1, 'rgba(100,10,8,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(x, 0, 1.5 + rand() * 2, len);
   }
   return finish(c);
 }
@@ -277,17 +294,22 @@ export function waveformRailTexture(): THREE.CanvasTexture {
 }
 
 const glowTex = once(() => glowTexture());
-const gold = once(() => new THREE.MeshPhongMaterial({ color: GOLD_HEX, emissive: 0x3a2400, specular: 0xfff0b0, shininess: 90 }));
+const gold = once(() => new THREE.MeshPhongMaterial({ color: GOLD_HEX, emissive: 0x1a1000, specular: 0xc8b080, shininess: 60 }));
+/** Gold gone dark: the reaper's scythe and chain. */
+const tarnish = once(() => new THREE.MeshPhongMaterial({ color: 0x5a4216, emissive: 0x080400, specular: 0x6a5838, shininess: 35 }));
+const blood = once(() => new THREE.MeshPhongMaterial({ color: BLOOD_HEX, emissive: 0x2a0000, specular: 0x803030, shininess: 90 }));
 const blackGloss = once(() => new THREE.MeshPhongMaterial({ color: 0x0e0c0e, specular: 0x605860, shininess: 70 }));
-const bone = once(() => lambert(0xe8dcc0));
-const wood = once(() => lambert(0x8a6a48));
-const darkWood = once(() => lambert(0x4a3424));
-const brick = once(() => lambert(0x8a3e2a));
+const bone = once(() => lambert(0xc8bca8));
+const wood = once(() => lambert(0x5a4a3c));
+const darkWood = once(() => lambert(0x2e241e));
+const brick = once(() => lambert(0x4a2822));
 const soot = once(() => lambert(0x1a1412));
 const iron = once(() => lambert(0x1c181a));
-const adobe = once(() => lambert(0xc8885a));
-const cactus = once(() => lambert(0x5a7a3a, { flatShading: true }));
-const hound = once(() => lambert(0x161012));
+/** The fortress of the wicked: black stone. */
+const adobe = once(() => lambert(0x1c1818));
+/** The cacti, charred black, a little dead green left in them. */
+const cactus = once(() => lambert(0x2a2c22, { flatShading: true }));
+const hound = once(() => new THREE.MeshPhongMaterial({ color: 0x0a0808, specular: 0x402020, shininess: 30 }));
 
 function sprite(color: number, size: number, opacity = 1, fog = true): THREE.Sprite {
   const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex(), color, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity, fog }));
@@ -327,10 +349,10 @@ function pick(rand: () => number, kinds: [number, Feature][]): Feature {
   return kinds[kinds.length - 1][1];
 }
 
-/** A face of words on a sign: gold on black, a gold rule round it, heavy letters. */
+/** A face of words on a sign: blood red on black, a rule round it, heavy letters. */
 const signFace = (() => {
   const made = new Map<string, THREE.CanvasTexture>();
-  return (lines: string[], bg = '#0e0a0a', fg = '#f4c040'): THREE.CanvasTexture => {
+  return (lines: string[], bg = '#060404', fg = '#c81810'): THREE.CanvasTexture => {
     const key = `${lines.join('|')}|${bg}|${fg}`;
     let t = made.get(key);
     if (t) return t;
@@ -427,8 +449,9 @@ function speakerStack(n: number, size: number, animated: Animated, phase = 0): T
 
 /**
  * A scythe, along +y from the butt of its snath, `len` long: a black snath
- * with two gold grips, the blade fixed at its head sweeping out along +x
- * and curving down to its point, gold, its edge bright.
+ * with two grips of tarnished gold, the blade fixed at its head sweeping out
+ * along +x and curving down to its point, gold gone dark, blood along its
+ * edge and dripping off it.
  */
 function scytheFigure(len: number): THREE.Group {
   const g = new THREE.Group();
@@ -436,7 +459,7 @@ function scytheFigure(len: number): THREE.Group {
   snath.position.y = len / 2;
   g.add(snath);
   for (const at of [0.35, 0.68]) {
-    const grip = new THREE.Mesh(new THREE.CylinderGeometry(len * 0.01, len * 0.01, len * 0.09, 6), gold());
+    const grip = new THREE.Mesh(new THREE.CylinderGeometry(len * 0.01, len * 0.01, len * 0.09, 6), tarnish());
     grip.rotation.z = Math.PI / 2;
     grip.position.set(len * 0.04, len * at, 0);
     g.add(grip);
@@ -447,10 +470,29 @@ function scytheFigure(len: number): THREE.Group {
   blade.quadraticCurveTo(B * 0.5, len * 0.12, B, -len * 0.1);
   blade.quadraticCurveTo(B * 0.5, len * 0.03, 0, -len * 0.04);
   blade.lineTo(0, len * 0.02);
-  const steel = new THREE.MeshPhongMaterial({ color: GOLD_HEX, emissive: 0x4a3000, specular: 0xffffff, shininess: 120, side: THREE.DoubleSide });
-  const edge = new THREE.Mesh(new THREE.ExtrudeGeometry(blade, { depth: len * 0.008, bevelEnabled: false, curveSegments: 16 }), steel);
+  const steel = new THREE.MeshPhongMaterial({ color: 0x6a5020, emissive: 0x0a0400, specular: 0x907040, shininess: 50, side: THREE.DoubleSide });
+  const depth = len * 0.008;
+  const edge = new THREE.Mesh(new THREE.ExtrudeGeometry(blade, { depth, bevelEnabled: false, curveSegments: 16 }), steel);
   edge.position.y = len;
   g.add(edge);
+  // The blood along its cutting edge, a little proud of the steel either side.
+  const wet = new THREE.Shape();
+  wet.moveTo(0, -len * 0.04);
+  wet.quadraticCurveTo(B * 0.5, len * 0.03, B, -len * 0.1);
+  wet.quadraticCurveTo(B * 0.5, len * 0.055, 0, -len * 0.015);
+  wet.lineTo(0, -len * 0.04);
+  const stain = new THREE.Mesh(new THREE.ExtrudeGeometry(wet, { depth: depth * 1.4, bevelEnabled: false, curveSegments: 16 }), blood());
+  stain.position.set(0, len, -depth * 0.2);
+  g.add(stain);
+  // Drips hanging off it.
+  for (const u of [0.3, 0.5, 0.68, 0.84]) {
+    const drip = new THREE.Mesh(new THREE.ConeGeometry(len * 0.006, len * 0.03, 5), blood());
+    drip.rotation.z = Math.PI;
+    // Under the lower curve, roughly: from (0, -0.04) through (0.5B, 0.03) to (B, -0.1).
+    const y = (1 - u) * (1 - u) * -0.04 + 2 * u * (1 - u) * 0.03 + u * u * -0.1;
+    drip.position.set(B * u, len + len * y - len * 0.016, depth / 2);
+    g.add(drip);
+  }
   return g;
 }
 
@@ -488,13 +530,16 @@ function saguaroFigure(h: number, rand: () => number): THREE.Group {
 const SLEEVES = [0xd84a20, 0x2a6ab8, 0xf0c840, 0x3a8a4a, 0xe8e0d0, 0x8a2a6a, 0x1a1a1a, 0xc87830];
 
 /**
- * The frontier on collection night, scenery by where it stands along the
- * lap: chimneys of burnt-out houses by the chimney sweeper's stretch,
- * crates of dollar-bin records and speaker stacks where the scraps are
- * scratched for, saguaros and lit matches in the cactus, dead trees with
- * hatchets in their stumps, boot hill's crosses by the hellhound pit and
- * the grave, body bags on pegs over the hills; saguaros, prickly pears,
- * cattle skulls and wagon wheels everywhere. Each piece a little cluster.
+ * The dead frontier on collection night, scenery by where it stands along
+ * the lap: chimneys of burnt-out houses belching black smoke by the
+ * chimney sweeper's stretch, crates of dollar-bin records and speaker
+ * stacks where the scraps are scratched for, charred saguaros and
+ * guttering matches in the cactus, dead trees with nooses and hatchets in
+ * their stumps, boot hill's crooked crosses and gravestones by the
+ * hellhound pit and the grave, body bags on pegs with flies over the hills;
+ * everywhere charred cacti, skulls on posts, carrion with crows at it,
+ * broken wagon wheels and the fog lying in the hollows. Each piece a little
+ * cluster.
  */
 export function reapingFeature(animated: Animated, track?: Track): Feature {
   const sectionAt = (x: number, z: number): string => {
@@ -513,7 +558,7 @@ export function reapingFeature(animated: Animated, track?: Track): Feature {
     return place(t, x, z, rand);
   };
   const padGeo = new THREE.SphereGeometry(1, 8, 6);
-  const fruit = lambert(0xc0285a);
+  const fruit = lambert(0x4a1020);
   const pear: Feature = (x, z, rand) => {
     const t = new THREE.Group();
     const n = 5 + Math.floor(rand() * 7);
@@ -549,24 +594,29 @@ export function reapingFeature(animated: Animated, track?: Track): Feature {
       beam.rotation.set(rand() * 0.6, rand() * Math.PI, rand() * 0.6);
       t.add(beam);
     }
+    // Still burning down inside: a red glow in its mouth, and black smoke belching out.
+    const glow = sprite(EMBER_HEX, 2.4, 0.6);
+    glow.position.y = h + 0.8;
+    t.add(glow);
     const puffs: THREE.Sprite[] = [];
-    for (let k = 0; k < 4; k++) {
-      const p = smoke(0x2a2426, 3, 0.5);
+    for (let k = 0; k < 6; k++) {
+      const p = smoke(0x080606, 4, 0.75);
       t.add(p);
       puffs.push(p);
     }
     const ph = rand() * 4;
     animated.push((time) => {
       puffs.forEach((p, k) => {
-        const v = (time * 0.25 + k / puffs.length + ph) % 1;
-        p.position.set(Math.sin(v * 3 + k) * 0.8 + v * 3, h + 1 + v * 9, 0);
-        p.scale.setScalar(2 + v * 5 + 0.6 * kick(time));
-        p.material.opacity = 0.55 * (1 - v);
+        const v = (time * 0.18 + k / puffs.length + ph) % 1;
+        p.position.set(Math.sin(v * 3 + k) * 1.2 + v * 5, h + 1 + v * 14, 0);
+        p.scale.setScalar(3 + v * 9 + kick(time));
+        p.material.opacity = 0.75 * (1 - v);
       });
+      glow.material.opacity = 0.4 + 0.25 * Math.sin(time * 7 + ph);
     });
     return place(t, x, z, rand);
   };
-  const crateMat = lambert(0x9a7444);
+  const crateMat = lambert(0x4a3e30);
   const sleeveMats = SLEEVES.map((c) => lambert(c));
   const crate: Feature = (x, z, rand) => {
     const t = new THREE.Group();
@@ -597,9 +647,9 @@ export function reapingFeature(animated: Animated, track?: Track): Feature {
     t.add(a, b);
     return place(t, x, z, rand);
   };
-  const crossMat = lambert(0x6a5038);
-  const stone = lambert(0x9a948a);
-  const moundMat = lambert(0x8a6040, { flatShading: true });
+  const crossMat = lambert(0x3a2e24);
+  const stone = lambert(0x6a6662);
+  const moundMat = lambert(0x3a3230, { flatShading: true });
   const graves: Feature = (x, z, rand) => {
     const t = new THREE.Group();
     const n = 2 + Math.floor(rand() * 4);
@@ -623,7 +673,8 @@ export function reapingFeature(animated: Animated, track?: Track): Feature {
       mound.scale.set(0.7, 0.3, 1.3);
       mound.position.set(0, 0, 1.2);
       g.add(mound);
-      g.rotation.z = (rand() - 0.5) * 0.2;
+      // Crooked, sunk at a lean.
+      g.rotation.set((rand() - 0.5) * 0.5, (rand() - 0.5) * 0.4, (rand() - 0.5) * 0.6);
       g.position.set((k % 3) * 2.4 + (rand() - 0.5) * 0.5, 0, Math.floor(k / 3) * 3.4);
       t.add(g);
     }
@@ -647,7 +698,8 @@ export function reapingFeature(animated: Animated, track?: Track): Feature {
     }
     return place(t, x, z, rand);
   };
-  const bark = lambert(0x5a4a3a, { flatShading: true });
+  const bark = lambert(0x221c18, { flatShading: true });
+  const rope = lambert(0x6a5a40);
   const steelMat = new THREE.MeshPhongMaterial({ color: 0xa8a8b0, specular: 0xffffff, shininess: 80 });
   const hatchet = (): THREE.Group => {
     const g = new THREE.Group();
@@ -673,17 +725,37 @@ export function reapingFeature(animated: Animated, track?: Track): Feature {
       branch.rotation.set(Math.sin(a) * 0.9, 0, -Math.cos(a) * 0.9);
       t.add(branch);
     }
-    // The stump beside it, a hatchet dug up and buried in it again.
-    const stump = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.7, 0.8, 8), bark);
-    stump.position.set(2.2, 0.4, 0.6);
-    const axe = hatchet();
-    axe.position.set(2.2, 0.75, 0.6);
-    axe.rotation.z = 0.5;
-    t.add(stump, axe);
+    if (rand() < 0.55) {
+      // A noose off a bough, turning slowly.
+      const bough = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.18, 3.4, 5), bark);
+      bough.rotation.z = Math.PI / 2;
+      bough.position.set(1.5, h * 0.72, 0);
+      const noose = new THREE.Group();
+      noose.position.set(2.6, h * 0.72, 0);
+      const line = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 2, 4), rope);
+      line.position.y = -1;
+      const loop = new THREE.Mesh(new THREE.TorusGeometry(0.35, 0.06, 5, 12), rope);
+      loop.position.y = -2.3;
+      noose.add(line, loop);
+      t.add(bough, noose);
+      const ph = rand() * 6;
+      animated.push((time) => {
+        noose.rotation.y = time * 0.3 + ph;
+        noose.rotation.z = 0.05 * Math.sin(time * 0.7 + ph);
+      });
+    } else {
+      // The stump beside it, a hatchet dug up and buried in it again.
+      const stump = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.7, 0.8, 8), bark);
+      stump.position.set(2.2, 0.4, 0.6);
+      const axe = hatchet();
+      axe.position.set(2.2, 0.75, 0.6);
+      axe.rotation.z = 0.5;
+      t.add(stump, axe);
+    }
     return place(t, x, z, rand);
   };
-  const matchWood = lambert(0xe8d4a0);
-  const matchHead = lambert(0xb81818);
+  const matchWood = lambert(0x8a7a60);
+  const matchHead = lambert(0x5a0a0a);
   const match: Feature = (x, z, rand) => {
     const t = new THREE.Group();
     const h = 3.5 + rand() * 2.5;
@@ -692,17 +764,18 @@ export function reapingFeature(animated: Animated, track?: Track): Feature {
     const head = new THREE.Mesh(new THREE.SphereGeometry(0.4, 8, 6), matchHead);
     head.scale.set(1, 1.4, 1);
     head.position.y = h + 0.2;
-    const flame = sprite(0xff8a30, 3.2, 0.9);
+    const flame = sprite(0xff4a18, 2.6, 0.8);
     flame.position.y = h + 1;
-    const core = sprite(0xffe090, 1.4, 0.9);
+    const core = sprite(0xffb060, 1, 0.8);
     core.position.y = h + 0.7;
     t.add(stick, head, flame, core);
     t.rotation.z = (rand() - 0.5) * 0.3;
     const ph = rand() * 10;
     animated.push((time) => {
-      const f = 0.8 + 0.2 * Math.sin(time * 13 + ph) * Math.sin(time * 5.3 + ph);
-      flame.scale.set(2.6 * f, 3.4 * f, 1);
-      flame.material.opacity = 0.75 + 0.2 * f;
+      // Guttering: dying down and catching again.
+      const f = 0.45 + 0.55 * Math.abs(Math.sin(time * 1.7 + ph) * Math.sin(time * 9 + ph * 2));
+      flame.scale.set(2.2 * f, 3 * f, 1);
+      flame.material.opacity = 0.4 + 0.5 * f;
     });
     const g = new THREE.Group();
     g.add(t);
@@ -711,10 +784,13 @@ export function reapingFeature(animated: Animated, track?: Track): Feature {
   const wheel: Feature = (x, z, rand) => {
     const t = new THREE.Group();
     const R = 1.2 + rand() * 0.4;
-    const rim = new THREE.Mesh(new THREE.TorusGeometry(R, 0.1, 6, 24), darkWood());
+    // Broken: a piece of the rim gone, spokes snapped.
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(R, 0.1, 6, 24, Math.PI * (1.2 + rand() * 0.6)), darkWood());
     t.add(rim);
     for (let k = 0; k < 6; k++) {
-      const spoke = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 2 * R, 5), darkWood());
+      if (rand() < 0.4) continue;
+      const len = rand() < 0.5 ? 2 * R : R * (0.4 + rand() * 0.5);
+      const spoke = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, len, 5), darkWood());
       spoke.rotation.z = (k / 6) * Math.PI;
       t.add(spoke);
     }
@@ -736,12 +812,77 @@ export function reapingFeature(animated: Animated, track?: Track): Feature {
     hang.position.set(1.5, 3.9, 0);
     const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.42, 1.5, 4, 8), bagMat);
     body.position.y = -1.3;
-    const zip = new THREE.Mesh(new THREE.BoxGeometry(0.05, 1.6, 0.05), gold());
+    const zip = new THREE.Mesh(new THREE.BoxGeometry(0.05, 1.6, 0.05), tarnish());
     zip.position.set(0, -1.3, 0.42);
     hang.add(body, zip);
     t.add(post, peg, hang);
+    const flies = Array.from({ length: 4 }, () => {
+      const f = smoke(0x000000, 0.25, 0.95);
+      t.add(f);
+      return f;
+    });
     const ph = rand() * 6;
-    animated.push((time) => (hang.rotation.z = 0.12 * Math.sin(time * 0.9 + ph)));
+    animated.push((time) => {
+      hang.rotation.z = 0.12 * Math.sin(time * 0.9 + ph);
+      flies.forEach((f, k) => f.position.set(1.5 + Math.cos(time * 6 + k * 1.6 + ph) * 0.9, 2.6 + 0.5 * Math.sin(time * 8 + k), Math.sin(time * 6 + k * 1.6 + ph) * 0.9));
+    });
+    return place(t, x, z, rand);
+  };
+  // Carrion: the bones of something that died here, picked at by crows.
+  const crowMat = lambert(0x060506);
+  const crowFigure = (): THREE.Group => {
+    const c = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.22, 6, 5), crowMat);
+    body.scale.set(0.8, 0.8, 1.5);
+    body.position.y = 0.3;
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.12, 6, 5), crowMat);
+    head.position.set(0, 0.42, 0.3);
+    const beak = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.18, 4), crowMat);
+    beak.rotation.x = Math.PI / 2;
+    beak.position.set(0, 0.4, 0.46);
+    c.add(body, head, beak);
+    return c;
+  };
+  const carrion: Feature = (x, z, rand) => {
+    const t = new THREE.Group();
+    const spine = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 3.4, 5), bone());
+    spine.rotation.x = Math.PI / 2;
+    spine.position.y = 0.5;
+    t.add(spine);
+    for (let k = 0; k < 7; k++) {
+      const rib = new THREE.Mesh(new THREE.TorusGeometry(0.6 - Math.abs(k - 3) * 0.05, 0.04, 4, 10, Math.PI), bone());
+      // Arching up over the spine, across it.
+      rib.position.set(0, 0.5, -1.2 + k * 0.4);
+      t.add(rib);
+    }
+    const skullBox = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.4, 0.8), bone());
+    skullBox.position.set(0.2, 0.25, 2.1);
+    skullBox.rotation.y = 0.5;
+    t.add(skullBox);
+    const crows: THREE.Group[] = [];
+    for (let k = 0; k < 2 + Math.floor(rand() * 2); k++) {
+      const c = crowFigure();
+      c.position.set((rand() - 0.5) * 2.4, 0, (rand() - 0.5) * 3);
+      c.rotation.y = rand() * Math.PI * 2;
+      t.add(c);
+      crows.push(c);
+    }
+    const ph = rand() * 6;
+    animated.push((time) => crows.forEach((c, k) => (c.rotation.x = Math.max(0, Math.sin(time * 3 + k * 2 + ph)) * 0.6)));
+    return place(t, x, z, rand);
+  };
+  // Fog lying in a hollow: low grey banks drifting.
+  const fogPatch: Feature = (x, z, rand) => {
+    const t = new THREE.Group();
+    const banks: THREE.Sprite[] = [];
+    for (let k = 0; k < 5; k++) {
+      const b = smoke(FOG_HEX, 1, 0.22);
+      b.scale.set(14 + rand() * 10, 3, 1);
+      t.add(b);
+      banks.push(b);
+    }
+    const ph = rand() * 6;
+    animated.push((time) => banks.forEach((b, k) => b.position.set(Math.sin(time * 0.05 + k * 1.3 + ph) * 8, 1 + (k % 2) * 0.6, Math.cos(time * 0.04 + k * 2.1 + ph) * 8)));
     return place(t, x, z, rand);
   };
   const hourglass: Feature = (x, z, rand) => {
@@ -764,12 +905,15 @@ export function reapingFeature(animated: Animated, track?: Track): Feature {
     return place(t, x, z, rand);
   };
   const general: [number, Feature][] = [
-    [4, saguaro],
-    [2, pear],
-    [1, skull],
+    [2.6, saguaro],
+    [1.2, pear],
+    [1.2, skull],
     [0.8, wheel],
-    [0.7, match],
-    [0.5, deadTree],
+    [0.5, match],
+    [1.4, deadTree],
+    [1, carrion],
+    [1.4, fogPatch],
+    [0.8, graves],
   ];
   const bySection: Record<string, [number, Feature][]> = {
     "I'm the Grim Reaper": [[3, speakers], [2, crate], [1, chimney]],
@@ -779,10 +923,10 @@ export function reapingFeature(animated: Animated, track?: Track): Feature {
     'Like a Hurricane': [[2, crate], [1, speakers]],
     'Sipping on Cactus': [[5, saguaro], [3, pear], [3, match]],
     'Unburied Hatchets': [[5, deadTree], [1, graves]],
-    'The Hellhounds': [[3, graves], [1, skull]],
+    'The Hellhounds': [[3, graves], [1, skull], [2, fogPatch]],
     'Existential Crisis': [[3, graves], [2, hourglass]],
-    'Body Bags on the Hills': [[5, bag], [1, skull]],
-    'The Stench Orbits the Homestead': [[3, bag], [1, wheel]],
+    'Body Bags on the Hills': [[6, bag], [1, carrion]],
+    'The Stench Orbits the Homestead': [[4, bag], [2, carrion], [1, wheel]],
     'Came to Collect His Debt': [[2, graves], [1, speakers]],
   };
   return (x, z, rand) => {
@@ -815,21 +959,40 @@ export function scytheGate(ribbon: Ribbon, s: number, animated: Animated): THREE
   }
   const beam = new THREE.Mesh(new THREE.BoxGeometry(2 * hw + 2 * size, 1, 1.2), blackGloss());
   beam.position.y = H + 0.5;
-  const trim = new THREE.Mesh(new THREE.BoxGeometry(2 * hw + 2 * size + 0.1, 0.18, 1.3), gold());
+  const trim = new THREE.Mesh(new THREE.BoxGeometry(2 * hw + 2 * size + 0.1, 0.18, 1.3), tarnish());
   trim.position.y = H + 1;
   const sign = signPanel(12, reaperFace());
   sign.scale.y = 0.5;
   sign.position.y = H - 1.4;
   g.add(beam, trim, sign);
+  // A skull on each stack, its eyes lit red.
+  const eyes: THREE.Sprite[] = [];
+  for (const side of [-1, 1]) {
+    const head = new THREE.Mesh(new THREE.SphereGeometry(1.1, 12, 10), bone());
+    head.scale.set(1, 1.1, 1.05);
+    head.position.set(side * (hw + size / 2), H + 1.1, 0);
+    const jaw = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.5, 1), bone());
+    jaw.position.set(side * (hw + size / 2), H + 0.45, -0.3);
+    g.add(head, jaw);
+    for (const e of [-1, 1]) {
+      const eye = sprite(0xff1a08, 1, 0.9);
+      eye.position.set(side * (hw + size / 2) + e * 0.38, H + 1.2, -1.05);
+      g.add(eye);
+      eyes.push(eye);
+    }
+  }
   // The scythe, laid along the beam, its blade hanging out over the far side of the road.
   const scythe = scytheFigure(2 * hw + 6);
   scythe.rotation.z = -Math.PI / 2;
   scythe.position.set(-(hw + 3), H + 1.6, 0);
   g.add(scythe);
-  const glow = sprite(GOLD_HEX, 10, 0.25);
+  const glow = sprite(SUN_HEX, 10, 0.25);
   glow.position.set(hw, H + 1, 0);
   g.add(glow);
-  animated.push((time) => (glow.material.opacity = 0.15 + 0.25 * kick(time)));
+  animated.push((time) => {
+    glow.material.opacity = 0.15 + 0.25 * kick(time);
+    eyes.forEach((e) => (e.material.opacity = 0.55 + 0.4 * kick(time)));
+  });
   g.position.set(f.x, Math.max(0, f.y), f.z);
   g.rotation.y = f.heading;
   return g;
@@ -837,8 +1000,9 @@ export function scytheGate(ribbon: Ribbon, s: number, animated: Animated): THREE
 
 /**
  * Chimney sweeper: the chimneys of burnt-out houses all along both sides
- * of the snath from `s` to `to`, sooty brick, a sweep's brush stuck out of
- * the odd one, puffing black smoke on the kick.
+ * of the snath from `s` to `to`, soot-black brick, a sweep's brush stuck
+ * out of the odd one, a fire still glowing in their mouths, belching black
+ * smoke that heaves on the kick.
  */
 export function chimneys(ribbon: Ribbon, s: number, to: number, animated: Animated): THREE.Group {
   const g = new THREE.Group();
@@ -871,10 +1035,13 @@ export function chimneys(ribbon: Ribbon, s: number, to: number, animated: Animat
       brush.rotation.z = 0.25;
       t.add(pole, brush);
     }
-    for (let p = 0; p < 3; p++) {
-      const sp = smoke(0x1e1a1c, 3, 0.55);
+    const mouth = sprite(EMBER_HEX, 3, 0.55);
+    mouth.position.y = h + 1.2;
+    t.add(mouth);
+    for (let p = 0; p < 5; p++) {
+      const sp = smoke(0x060404, 4, 0.8);
       t.add(sp);
-      puffs.push({ p: sp, h, ph: p / 3 + rand() });
+      puffs.push({ p: sp, h, ph: p / 5 + rand() });
     }
     t.position.set(where.x, 0, where.z);
     t.rotation.y = where.heading;
@@ -883,10 +1050,10 @@ export function chimneys(ribbon: Ribbon, s: number, to: number, animated: Animat
   animated.push((time) => {
     const kk = kick(time);
     for (const { p, h, ph } of puffs) {
-      const v = (time * 0.3 + ph) % 1;
-      p.position.set(v * 3, h + 1.5 + v * 10, Math.sin(v * 4 + ph) * 0.6);
-      p.scale.setScalar(2 + v * 6 + kk * (1 - v) * 1.5);
-      p.material.opacity = 0.6 * (1 - v);
+      const v = (time * 0.22 + ph) % 1;
+      p.position.set(v * 6, h + 1.5 + v * 16, Math.sin(v * 4 + ph) * 1.2);
+      p.scale.setScalar(3 + v * 11 + kk * (1 - v) * 2.5);
+      p.material.opacity = 0.8 * (1 - v * v);
     }
   });
   return g;
@@ -906,7 +1073,7 @@ export function keeperGate(ribbon: Ribbon, s: number, animated: Animated): THREE
   const f = frameAt(ribbon, s);
   const hw = ribbon.halfWidthAtS(s) + 1;
   const H = 8;
-  const pillarMat = lambert(0x8a7a66);
+  const pillarMat = lambert(0x4a4440);
   const eyes: THREE.Sprite[] = [];
   for (const side of [-1, 1]) {
     const pillar = new THREE.Mesh(new THREE.BoxGeometry(1.8, H, 1.8), pillarMat);
@@ -972,7 +1139,7 @@ export function keeperGate(ribbon: Ribbon, s: number, animated: Animated): THREE
   g.add(ring);
   const lanterns: THREE.Sprite[] = [];
   for (const side of [-1, 1]) {
-    const l = sprite(0xffa040, 3.5, 0.8);
+    const l = sprite(0xff4a18, 3.5, 0.8);
     l.position.set(side * (hw + 0.9), H - 1, -1.2);
     g.add(l);
     lanterns.push(l);
@@ -1041,25 +1208,30 @@ const recordFace = once(() => {
 });
 
 /**
- * The grim reaper himself, fresh: a giant skeleton in a black tracksuit
- * with gold stripes, a backwards cap, gold shades and gold teeth, a fat
- * gold chain with a dollar medallion, a golden mic in one hand and his
- * golden scythe over the other shoulder, nodding on the beat behind his
- * turntables (records of the 1974 world-music LP he sampled spinning on
- * them), a speaker stack either side. He stands `lateral` off the road at
- * `s` (inside his blade's curve), facing back along it at the karts coming round.
+ * The grim reaper himself, come to collect: a skeleton half as tall again
+ * as anything else on the frontier, in a black tracksuit with stripes of
+ * tarnished gold, its hood up, the skull under it grinning with teeth gone
+ * dark gold, its eye sockets hollow and burning red; a heavy chain of
+ * tarnished gold, two ropes of it, and a medallion; the mic in one hand
+ * and in the other his scythe, its gold gone dark and its edge bloodied,
+ * leant out over the road so the blade hangs over the karts going under
+ * it. He nods slowly, on every other beat, behind his turntables (records
+ * of the 1974 world-music LP he sampled spinning on them), a speaker stack
+ * either side, a red glow on the ground under him. He stands `lateral`
+ * off the road at `s` (inside his blade's curve), facing back along it at
+ * the karts coming round.
  */
 export function reaperMC(ribbon: Ribbon, s: number, lateral: number, animated: Animated): THREE.Group {
   const g = new THREE.Group();
   const off = lateral || -(ribbon.halfWidthAtS(s) + 26);
   const at = offRoad(ribbon, s, off);
-  const suit = new THREE.MeshPhongMaterial({ color: 0x141016, specular: 0x403848, shininess: 30 });
-  const stripe = gold();
-  const T = 1.9; // the scale of him: about 30 m tall.
+  const suit = new THREE.MeshPhongMaterial({ color: 0x0c0a0c, specular: 0x302830, shininess: 25 });
+  const stripe = tarnish();
+  const T = 3; // the scale of him: nearly 50 m tall.
   // The DJ table, his decks on it.
   const table = new THREE.Mesh(new THREE.BoxGeometry(16, 3.6, 5), blackGloss());
   table.position.set(0, 1.8, 4);
-  const tableTrim = new THREE.Mesh(new THREE.BoxGeometry(16.2, 0.3, 5.2), gold());
+  const tableTrim = new THREE.Mesh(new THREE.BoxGeometry(16.2, 0.3, 5.2), tarnish());
   tableTrim.position.set(0, 3.6, 4);
   g.add(table, tableTrim);
   const platters: THREE.Mesh[] = [];
@@ -1069,7 +1241,7 @@ export function reaperMC(ribbon: Ribbon, s: number, lateral: number, animated: A
     const platter = new THREE.Mesh(new THREE.CircleGeometry(1.8, 32), new THREE.MeshBasicMaterial({ map: recordFace() }));
     platter.rotation.x = -Math.PI / 2;
     platter.position.set(x, 4.12, 4);
-    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.15, 2.2), gold());
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.15, 2.2), tarnish());
     arm.position.set(x + 2, 4.3, 4);
     arm.rotation.y = 0.4;
     g.add(deck, platter, arm);
@@ -1083,14 +1255,14 @@ export function reaperMC(ribbon: Ribbon, s: number, lateral: number, animated: A
     stack.position.set(x, 0, 3);
     g.add(stack);
   }
-  // Him: legs, the tracksuit, the chain, arms, the skull.
+  // Him: legs, the tracksuit, the chain, arms, the hooded skull.
   const body = new THREE.Group();
   for (const x of [-1.6, 1.6]) {
     const leg = new THREE.Mesh(new THREE.CylinderGeometry(1.1 * T, 0.9 * T, 6 * T, 10), suit);
     leg.position.set(x * T, 3 * T, 0);
     const legStripe = new THREE.Mesh(new THREE.BoxGeometry(0.18 * T, 6 * T, 0.18 * T), stripe);
     legStripe.position.set(x * T + Math.sign(x) * 1.05 * T, 3 * T, 0);
-    const shoe = new THREE.Mesh(new THREE.BoxGeometry(1.8 * T, 0.9 * T, 3 * T), lambert(0xf4f0e8));
+    const shoe = new THREE.Mesh(new THREE.BoxGeometry(1.8 * T, 0.9 * T, 3 * T), lambert(0x1a1616));
     shoe.position.set(x * T, 0.45 * T, 0.5 * T);
     body.add(leg, legStripe, shoe);
   }
@@ -1098,18 +1270,21 @@ export function reaperMC(ribbon: Ribbon, s: number, lateral: number, animated: A
   torso.position.y = 9.2 * T;
   const zip = new THREE.Mesh(new THREE.BoxGeometry(0.22 * T, 6.4 * T, 0.2 * T), stripe);
   zip.position.set(0, 9.2 * T, 3 * T);
-  const collar = new THREE.Mesh(new THREE.TorusGeometry(1.6 * T, 0.35 * T, 8, 20), suit);
-  collar.rotation.x = Math.PI / 2;
-  collar.position.y = 12.4 * T;
-  body.add(torso, zip, collar);
-  // The chain: a fat gold rope round the neck, the medallion on his chest.
-  const chain = new THREE.Mesh(new THREE.TorusGeometry(2.3 * T, 0.28 * T, 8, 28), stripe);
-  chain.rotation.x = 1.15;
-  chain.position.set(0, 11.2 * T, 1.2 * T);
-  const medallion = new THREE.Mesh(new THREE.CircleGeometry(1.2 * T, 28), new THREE.MeshPhongMaterial({ map: medallionFace(), emissive: 0x302000, shininess: 100, specular: 0xffffff }));
-  medallion.position.set(0, 9.4 * T, 3.05 * T);
-  body.add(chain, medallion);
-  // The arms: the right up with the mic, the left over his shoulder with the scythe.
+  body.add(torso, zip);
+  // The chain: two heavy ropes of tarnished gold round the neck, the medallion on his chest.
+  for (const [r, y, z, tilt] of [
+    [2.3, 11.2, 1.2, 1.15],
+    [2.7, 10.4, 1.5, 1.05],
+  ]) {
+    const chain = new THREE.Mesh(new THREE.TorusGeometry(r * T, 0.38 * T, 8, 28), stripe);
+    chain.rotation.x = tilt;
+    chain.position.set(0, y * T, z * T);
+    body.add(chain);
+  }
+  const medallion = new THREE.Mesh(new THREE.CircleGeometry(1.3 * T, 28), new THREE.MeshPhongMaterial({ map: medallionFace(), color: 0x5a4830, emissive: 0x060300, shininess: 30, specular: 0x605030 }));
+  medallion.position.set(0, 8.9 * T, 3.1 * T);
+  body.add(medallion);
+  // The arms: the right up with the mic, the left holding the scythe out over the road.
   const armGeo = new THREE.CylinderGeometry(0.75 * T, 0.65 * T, 5 * T, 8);
   const handGeo = new THREE.SphereGeometry(0.75 * T, 10, 8);
   const micArm = new THREE.Group();
@@ -1124,7 +1299,7 @@ export function reaperMC(ribbon: Ribbon, s: number, lateral: number, animated: A
   hand.position.set(-0.6 * T, -0.6 * T, 4.6 * T);
   const mic = new THREE.Group();
   const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.3 * T, 0.2 * T, 2.4 * T, 8), stripe);
-  const grille = new THREE.Mesh(new THREE.SphereGeometry(0.55 * T, 10, 8), lambert(0xc8c0b0));
+  const grille = new THREE.Mesh(new THREE.SphereGeometry(0.55 * T, 10, 8), lambert(0x5a5652));
   grille.position.y = 1.4 * T;
   mic.add(handle, grille);
   mic.position.set(-1.2 * T, 0.2 * T, 4.4 * T);
@@ -1141,66 +1316,75 @@ export function reaperMC(ribbon: Ribbon, s: number, lateral: number, animated: A
   const sHand = new THREE.Mesh(handGeo, bone());
   sHand.position.set(0.1 * T, -1.8 * T, 5.1 * T);
   const scythe = scytheFigure(24 * T);
-  // Over his shoulder, the blade high behind his head.
-  scythe.position.set(0.1 * T, -12 * T, 4.5 * T);
-  scythe.rotation.set(-0.35, 0, 0.3);
+  // Held at the grip and leant out toward the road, the blade high over it.
+  scythe.position.set(0.1 * T, -9 * T, 3 * T);
+  scythe.rotation.set(SCYTHE_LEAN, 0, 0.25);
   scytheArm.add(sUpper, sFore, sHand, scythe);
   body.add(micArm, scytheArm);
-  // The skull: bone white, its jaw grinning gold, gold shades on, a cap on backwards.
+  // The skull: grey bone, its teeth gone dark gold, hollow eyes burning, under its hood.
   const head = new THREE.Group();
   head.position.y = 14.6 * T;
-  const skull = new THREE.Mesh(new THREE.SphereGeometry(2.3 * T, 18, 14), bone());
-  skull.scale.set(1, 1.08, 1.05);
-  const cheek = new THREE.Mesh(new THREE.BoxGeometry(3.4 * T, 1.6 * T, 3.2 * T), bone());
-  cheek.position.set(0, -1.6 * T, 0.6 * T);
-  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.4 * T, 0.8 * T, 3), lambert(0x140c0c));
+  // Long and gaunt, grey, the jaw hanging.
+  const skullBone = lambert(0x8a8278);
+  const skull = new THREE.Mesh(new THREE.SphereGeometry(2.3 * T, 18, 14), skullBone);
+  skull.scale.set(0.86, 1.15, 1);
+  const cheek = new THREE.Mesh(new THREE.BoxGeometry(2.5 * T, 1.5 * T, 2.8 * T), skullBone);
+  cheek.position.set(0, -1.9 * T, 0.7 * T);
+  const hollow = lambert(0x050303);
+  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.4 * T, 0.8 * T, 3), hollow);
   nose.position.set(0, -0.6 * T, 2.38 * T);
   nose.rotation.x = Math.PI;
   const grin = new THREE.Group();
   for (let k = 0; k < 8; k++) {
-    const tooth = new THREE.Mesh(new THREE.BoxGeometry(0.34 * T, 0.6 * T, 0.2 * T), k % 3 === 1 ? bone() : stripe);
-    tooth.position.set((k - 3.5) * 0.38 * T, -1.75 * T, 2.25 * T);
+    const tooth = new THREE.Mesh(new THREE.BoxGeometry(0.26 * T, 0.6 * T, 0.2 * T), k % 3 === 1 ? skullBone : stripe);
+    tooth.position.set((k - 3.5) * 0.29 * T, -2.1 * T, 2.12 * T);
     grin.add(tooth);
   }
-  const shadesMat = new THREE.MeshPhongMaterial({ color: 0x0a0806, specular: 0xffd890, shininess: 140 });
-  const shades = new THREE.Group();
+  const eyes: THREE.Sprite[] = [];
   for (const x of [-1, 1]) {
-    const lens = new THREE.Mesh(new THREE.BoxGeometry(1.6 * T, 0.9 * T, 0.2 * T), shadesMat);
-    lens.position.set(x * 0.95 * T, 0.25 * T, 2.35 * T);
-    const rim = new THREE.Mesh(new THREE.BoxGeometry(1.75 * T, 0.16 * T, 0.24 * T), stripe);
-    rim.position.set(x * 0.95 * T, 0.72 * T, 2.36 * T);
-    shades.add(lens, rim);
+    // The socket, a black hollow, and the fire deep in it.
+    const socket = new THREE.Mesh(new THREE.SphereGeometry(0.62 * T, 12, 10), hollow);
+    socket.scale.set(0.95, 0.75, 0.5);
+    socket.position.set(x * 0.78 * T, 0.1 * T, 2.02 * T);
+    const fire = sprite(0xff1a08, 1.1 * T, 1);
+    fire.position.set(x * 0.78 * T, 0.05 * T, 2.35 * T);
+    const halo = sprite(0x900804, 2.6 * T, 0.45);
+    halo.position.set(x * 0.78 * T, 0.05 * T, 2.55 * T);
+    head.add(socket, fire, halo);
+    eyes.push(fire, halo);
   }
-  const bridge = new THREE.Mesh(new THREE.BoxGeometry(0.5 * T, 0.14 * T, 0.2 * T), stripe);
-  bridge.position.set(0, 0.5 * T, 2.4 * T);
-  shades.add(bridge);
-  const glint = sprite(0xfff0c0, 2.5 * T, 0.0);
-  glint.position.set(-1.2 * T, 0.5 * T, 2.6 * T);
-  const cap = new THREE.Mesh(new THREE.SphereGeometry(2.4 * T, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), lambert(0x101010));
-  cap.position.y = 0.6 * T;
-  const brim = new THREE.Mesh(new THREE.BoxGeometry(3.2 * T, 0.2 * T, 2.4 * T), stripe);
-  // Backwards: the brim out behind.
-  brim.position.set(0, 0.7 * T, -2.9 * T);
-  const button = new THREE.Mesh(new THREE.SphereGeometry(0.3 * T, 8, 6), stripe);
-  button.position.y = 3 * T;
-  head.add(skull, cheek, nose, grin, shades, glint, cap, brim, button);
+  // The hood: drawn close round the face, its brow low over the eyes, peaked behind.
+  const hood = new THREE.Mesh(new THREE.SphereGeometry(2.9 * T, 18, 14, Math.PI * 0.68, Math.PI * 1.64, 0, Math.PI * 0.74), new THREE.MeshLambertMaterial({ color: 0x0a080a, side: THREE.DoubleSide }));
+  hood.position.set(0, 0.5 * T, 0.2 * T);
+  hood.scale.set(1, 1.1, 1);
+  const brow = new THREE.Mesh(new THREE.SphereGeometry(2.95 * T, 18, 8, Math.PI * 0.25, Math.PI * 0.5, 0, Math.PI * 0.28), new THREE.MeshLambertMaterial({ color: 0x0a080a, side: THREE.DoubleSide }));
+  brow.position.set(0, 0.5 * T, 0.35 * T);
+  brow.scale.set(1, 1.1, 1);
+  head.add(brow);
+  const peak = new THREE.Mesh(new THREE.ConeGeometry(1.4 * T, 2.6 * T, 10), suit);
+  peak.position.set(0, 2.9 * T, -1.4 * T);
+  peak.rotation.x = -0.6;
+  const drape = new THREE.Mesh(new THREE.CylinderGeometry(2.9 * T, 3.4 * T, 2.4 * T, 16, 1, true), new THREE.MeshLambertMaterial({ color: 0x0a080a, side: THREE.DoubleSide }));
+  drape.position.y = -2.2 * T;
+  head.add(skull, cheek, nose, grin, hood, peak, drape);
   body.add(head);
-  body.position.z = -1;
+  body.position.z = -3 * T;
   g.add(body);
-  // A gold glow on the ground under the decks.
-  const pool = sprite(GOLD_HEX, 30, 0.25);
+  // A red glow on the ground under him.
+  const pool = sprite(SUN_HEX, 40, 0.3);
   pool.position.set(0, 2, 6);
   g.add(pool);
   animated.push((time) => {
-    const b = beatPhase(time);
-    // The nod: down hard on the kick, back up slow.
-    head.rotation.x = 0.2 * Math.exp(-b * 5) - 0.04;
-    body.position.y = -0.35 * Math.exp(-b * 6);
-    micArm.rotation.z = 0.06 * Math.sin(time * BEAT * Math.PI);
-    platters.forEach((p, k) => (p.rotation.z = -time * 3.5 * (k ? 1 : 1.05) + (k ? 0 : 0.4 * Math.sin(time * BEAT * Math.PI * 2))));
-    // A glint off the shades now and then.
-    glint.material.opacity = Math.max(0, Math.sin(time * 0.7) - 0.85) * 5;
-    pool.material.opacity = 0.18 + 0.12 * kick(time);
+    // The nod: slow, on every other beat, down and held, up again.
+    const b2 = (time * BEAT * 0.5) % 1;
+    head.rotation.x = 0.06 + 0.2 * (0.5 - 0.5 * Math.cos(b2 * Math.PI * 2)) ** 2;
+    body.position.y = -0.6 * (0.5 - 0.5 * Math.cos(b2 * Math.PI * 2));
+    micArm.rotation.z = 0.04 * Math.sin(time * BEAT * Math.PI * 0.5);
+    scythe.rotation.x = SCYTHE_LEAN + 0.03 * Math.sin(time * 0.4);
+    platters.forEach((p, k) => (p.rotation.z = -time * 3 * (k ? 1 : 1.05) + (k ? 0 : 0.4 * Math.sin(time * BEAT * Math.PI * 2))));
+    const burn = 0.75 + 0.25 * Math.sin(time * 2.1) * Math.sin(time * 7.3);
+    eyes.forEach((e, k) => (e.material.opacity = (k % 2 ? 0.45 : 1) * burn));
+    pool.material.opacity = 0.2 + 0.12 * kick(time);
   });
   g.position.set(at.x, Math.max(0, ribbon.heightAt(s) - 1), at.z);
   // Facing the road back the way the karts come round to him, so they see him coming.
@@ -1210,15 +1394,18 @@ export function reaperMC(ribbon: Ribbon, s: number, lateral: number, animated: A
   return g;
 }
 
-/** The sun going down: a blood-red disc, gold at its heart, banded by the haze. */
+/** How far the reaper leans his scythe out toward the road. */
+const SCYTHE_LEAN = 0.55;
+
+/** The sun gone dark: a dull blood-red disc, darker to its rim, banded by black haze. */
 const sunFace = once(() => {
   const S = 256;
   const [c, ctx] = canvas(S);
   const g = ctx.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
-  g.addColorStop(0, '#ffe890');
-  g.addColorStop(0.45, '#ffa040');
-  g.addColorStop(0.85, '#e8381c');
-  g.addColorStop(1, 'rgba(200,30,20,0)');
+  g.addColorStop(0, '#d02a14');
+  g.addColorStop(0.5, '#9a1008');
+  g.addColorStop(0.85, '#4a0404');
+  g.addColorStop(1, 'rgba(60,4,4,0)');
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, S, S);
   // Bands of haze across the lower half.
@@ -1257,10 +1444,11 @@ function wickedMan(h: number, rand: () => number, mat: THREE.Material): THREE.Gr
 
 /**
  * Heaven sent the silhouette of many wicked men: straight ahead up the
- * ridge from `s`, far off past the edge of the world, the sun going down
- * blood red and huge on the horizon, and black against it a row of
- * wicked men on a ridge, fearless, hats and guns, waiting on their
- * reckoning; a pair of vultures wheeling across it.
+ * ridge from `s`, far off past the edge of the world, the sun gone dark
+ * blood red and huge on the horizon behind black cloud drifting across it,
+ * and black against it a row of wicked men on a ridge, fearless, hats and
+ * guns, waiting on their reckoning, a gallows tree among them with one
+ * already hanging; vultures and crows wheeling across it.
  */
 export function wickedSun(ribbon: Ribbon, s: number, animated: Animated): THREE.Group {
   const g = new THREE.Group();
@@ -1270,9 +1458,19 @@ export function wickedSun(ribbon: Ribbon, s: number, animated: Animated): THREE.
   const sun = new THREE.Mesh(new THREE.PlaneGeometry(2 * R, 2 * R), new THREE.MeshBasicMaterial({ map: sunFace(), transparent: true, depthWrite: false, fog: false }));
   sun.position.set(0, R * 0.55, D + 40);
   sun.rotation.y = Math.PI;
-  const halo = sprite(SUN_HEX, R * 4.2, 0.35, false);
+  const halo = sprite(SUN_HEX, R * 3.6, 0.3, false);
   halo.position.set(0, R * 0.53, D + 60);
   g.add(halo, sun);
+  // Black cloud across it, drifting.
+  const clouds: THREE.Sprite[] = [];
+  for (let k = 0; k < 7; k++) {
+    const cloud = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex(), color: 0x040203, transparent: true, depthWrite: false, opacity: 0.85, fog: false }));
+    cloud.scale.set(R * (1.6 + (k % 3) * 0.4), R * 0.35, 1);
+    cloud.userData.y = R * (0.2 + (k % 4) * 0.28);
+    cloud.userData.ph = k * 0.9;
+    g.add(cloud);
+    clouds.push(cloud);
+  }
   const black = new THREE.MeshBasicMaterial({ color: 0x0c0406, fog: false });
   // Their ridge, and them on it.
   // Up high enough to stand clear over the edge of the world.
@@ -1288,18 +1486,39 @@ export function wickedSun(ribbon: Ribbon, s: number, animated: Animated): THREE.
     g.add(man);
     men.push(man);
   }
+  // The gallows tree on the ridge, and the one hanging from it.
+  const tree = new THREE.Group();
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 2, 46, 6), black);
+  trunk.position.y = 23;
+  const bough = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 1.1, 26, 5), black);
+  bough.rotation.z = Math.PI / 2 - 0.25;
+  bough.position.set(12, 40, 0);
+  const hanged = new THREE.Group();
+  hanged.position.set(20, 41, 0);
+  const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 7, 4), black);
+  rope.position.y = -3.5;
+  const hung = new THREE.Mesh(new THREE.CapsuleGeometry(1.6, 9, 4, 8), black);
+  hung.position.y = -12;
+  hanged.add(rope, hung);
+  tree.add(trunk, bough, hanged);
+  tree.position.set(-150, 31, D - 230);
+  tree.rotation.y = Math.PI;
+  g.add(tree);
   const birds: THREE.Mesh[] = [];
-  for (let k = 0; k < 3; k++) {
-    const bird = new THREE.Mesh(new THREE.BoxGeometry(14, 0.6, 3), black);
+  for (let k = 0; k < 9; k++) {
+    const bird = new THREE.Mesh(new THREE.BoxGeometry(k < 3 ? 14 : 7, 0.6, 2.4), black);
     g.add(bird);
     birds.push(bird);
   }
   animated.push((time) => {
-    halo.material.opacity = 0.3 + 0.05 * Math.sin(time * 0.4);
+    halo.material.opacity = 0.26 + 0.05 * Math.sin(time * 0.4);
+    clouds.forEach((cl) => cl.position.set(((time * 3 + (cl.userData.ph as number) * 90) % 360) - 180, cl.userData.y as number, D + 20));
+    hanged.rotation.z = 0.04 * Math.sin(time * 0.5);
     men.forEach((m, k) => (m.rotation.z = 0.015 * Math.sin(time * 0.6 + k)));
     birds.forEach((b, k) => {
-      const a = time * 0.12 + (k * Math.PI * 2) / 3;
-      b.position.set(Math.cos(a) * 140, 120 + 18 * Math.sin(a * 2 + k), D - 120 + Math.sin(a) * 60);
+      const a = time * (k < 3 ? 0.12 : 0.2) + (k * Math.PI * 2) / (k < 3 ? 3 : 6);
+      const r = k < 3 ? 140 : 70 + k * 6;
+      b.position.set(Math.cos(a) * r, (k < 3 ? 120 : 90) + 18 * Math.sin(a * 2 + k), D - 120 + Math.sin(a) * 60);
       b.rotation.z = 0.4 * Math.sin(time * 3 + k);
     });
   });
@@ -1308,14 +1527,14 @@ export function wickedSun(ribbon: Ribbon, s: number, animated: Animated): THREE.
   return g;
 }
 
-/** The cheque: made out to the grim reaper, priceless, signed. */
+/** The cheque: yellowed and stained, made out to the grim reaper, priceless, signed in blood, a bloody thumbprint on it. */
 const chequeFace = once(() => {
   const W = 1024;
   const H = 440;
   const [c, ctx] = canvas(W, H);
   const g = ctx.createLinearGradient(0, 0, W, H);
-  g.addColorStop(0, '#f4ead0');
-  g.addColorStop(1, '#e4d0a0');
+  g.addColorStop(0, '#c8b890');
+  g.addColorStop(1, '#8a7a58');
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, W, H);
   ctx.strokeStyle = '#7a5a20';
@@ -1349,36 +1568,57 @@ const chequeFace = once(() => {
   ctx.stroke();
   ctx.font = '28px Georgia, serif';
   ctx.fillText('Memo: rotting flesh odorous', 60, 370);
-  // The signature, a scrawl in red.
-  ctx.strokeStyle = '#b01818';
-  ctx.lineWidth = 5;
+  // The signature, a scrawl in blood, running.
+  ctx.strokeStyle = '#7a0606';
+  ctx.lineWidth = 7;
   ctx.beginPath();
   ctx.moveTo(W - 420, 360);
   for (let k = 0; k < 14; k++) ctx.quadraticCurveTo(W - 410 + k * 24, 320 + (k % 2) * 70, W - 400 + k * 24 + 10, 360 - (k % 3) * 10);
   ctx.stroke();
+  ctx.fillStyle = '#6a0404';
+  for (let k = 0; k < 7; k++) {
+    const x = W - 400 + k * 46;
+    const len = 20 + ((k * 37) % 50);
+    ctx.fillRect(x, 362, 3, len);
+    ctx.beginPath();
+    ctx.arc(x + 1.5, 362 + len, 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // A bloody thumbprint, and stains.
+  ctx.fillStyle = 'rgba(110,8,6,0.75)';
+  ctx.beginPath();
+  ctx.ellipse(130, 120, 26, 34, 0.4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(60,40,20,0.35)';
+  for (const [x, y, r] of [[300, 330, 60], [700, 90, 45], [880, 300, 70]]) {
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
   ctx.font = 'italic 22px Georgia, serif';
   ctx.fillStyle = '#3a2410';
   ctx.fillText('G. Reaper', W - 280, 400);
   return finish(c, false);
 });
 
-const bankFace = once(() => signFace(['BANK'], '#2a1408', '#f4c040'));
+const bankFace = once(() => signFace(['BANK'], '#0e0806', '#8a7a5a'));
 
 /**
  * The grim reaper cashes the cheque: a frontier bank `lateral` off the road
- * at `s`, its false front high over the porch with BANK across it in gold,
- * barred windows, and leaning against its porch facing the road a cheque
- * the size of a wagon made out to the grim reaper, priceless, signed;
- * sacks of gold coin by the door.
+ * at `s`, charred and dark, its false front high over the porch with BANK
+ * across it, barred windows lit dull red, a lamp guttering on the porch,
+ * and leaning against it facing the karts a cheque the size of a wagon made
+ * out to the grim reaper, priceless, signed in blood; sacks of tarnished
+ * coin by the door.
  */
 export function chequeBank(ribbon: Ribbon, s: number, lateral: number, animated: Animated): THREE.Group {
   const g = new THREE.Group();
   const off = lateral || -(ribbon.halfWidthAtS(s) + 22);
   const at = offRoad(ribbon, s, off);
-  const plank = lambert(0x9a6a40);
+  const plank = lambert(0x3a2e26);
   const house = new THREE.Mesh(new THREE.BoxGeometry(16, 8, 11), plank);
   house.position.set(0, 4, -3);
-  const front = new THREE.Mesh(new THREE.BoxGeometry(18, 13, 0.6), lambert(0x7a4a28));
+  const front = new THREE.Mesh(new THREE.BoxGeometry(18, 13, 0.6), lambert(0x2a201a));
   front.position.set(0, 6.5, 2.6);
   const sign = signPanel(12, bankFace());
   sign.scale.y = 0.5;
@@ -1393,7 +1633,7 @@ export function chequeBank(ribbon: Ribbon, s: number, lateral: number, animated:
     g.add(post);
   }
   for (const x of [-5.5, 5.5]) {
-    const win = new THREE.Mesh(new THREE.PlaneGeometry(3, 2.6), new THREE.MeshBasicMaterial({ color: 0xffb860 }));
+    const win = new THREE.Mesh(new THREE.PlaneGeometry(3, 2.6), new THREE.MeshBasicMaterial({ color: 0x6a1408 }));
     win.position.set(x, 3.6, 2.95);
     g.add(win);
     for (let b = 0; b < 5; b++) {
@@ -1413,8 +1653,8 @@ export function chequeBank(ribbon: Ribbon, s: number, lateral: number, animated:
   easel.position.set(0, 3, 11.4);
   easel.rotation.x = 0.4;
   g.add(cheque, easel);
-  const sackMat = lambert(0xb89a6a);
-  const coinMat = gold();
+  const sackMat = lambert(0x5a4a38);
+  const coinMat = tarnish();
   for (let k = 0; k < 4; k++) {
     const sack = new THREE.Mesh(new THREE.SphereGeometry(0.9, 10, 8), sackMat);
     sack.scale.set(1, 1.2, 1);
@@ -1424,10 +1664,11 @@ export function chequeBank(ribbon: Ribbon, s: number, lateral: number, animated:
   const pile = new THREE.Mesh(new THREE.ConeGeometry(2.2, 1.4, 14), coinMat);
   pile.position.set(9, 0.7, 9);
   g.add(pile);
-  const sparkle = sprite(GOLD_HEX, 5, 0.4);
-  sparkle.position.set(9, 2, 9);
+  // A lamp guttering red on the porch.
+  const sparkle = sprite(EMBER_HEX, 5, 0.4);
+  sparkle.position.set(-7, 4.4, 6.6);
   g.add(sparkle);
-  animated.push((time) => (sparkle.material.opacity = 0.25 + 0.3 * kick(time)));
+  animated.push((time) => (sparkle.material.opacity = 0.25 + 0.25 * Math.abs(Math.sin(time * 1.3) * Math.sin(time * 7))));
   g.position.set(at.x, Math.max(0, ribbon.heightAt(s) - 0.5), at.z);
   // Facing the road back the way the karts come, the cheque toward them.
   const L = ribbon.spline.length;
@@ -1437,17 +1678,20 @@ export function chequeBank(ribbon: Ribbon, s: number, lateral: number, animated:
 }
 
 /**
- * Whiplash in the fortress: the fortress of the wicked, adobe walls
- * crenellated along both sides of the road from `s` to `to`, a tower
- * either side at each end with a black flag on it, and a gatehouse arch
- * over the road where it goes in.
+ * Whiplash in the fortress: the fortress of the wicked, black stone walls
+ * spiked with iron along both sides of the road from `s` to `to`, a tower
+ * either side at each end with a black and red flag and a torch guttering
+ * on it, and a spiked gatehouse over the road where it goes in, a whip and
+ * a skull hung from it.
  */
 export function fortress(ribbon: Ribbon, s: number, to: number, animated: Animated): THREE.Group {
   const g = new THREE.Group();
   const wallMat = adobe();
   const H = 6;
   const flags: THREE.Mesh[] = [];
-  const flagMat = new THREE.MeshLambertMaterial({ color: 0x141012, side: THREE.DoubleSide });
+  const flagMat = new THREE.MeshLambertMaterial({ color: 0x4a0606, side: THREE.DoubleSide });
+  const spikeGeo = new THREE.ConeGeometry(0.28, 1.8, 5);
+  const torches: THREE.Sprite[] = [];
   const tower = (x: number, z: number, y: number, heading: number) => {
     const t = new THREE.Group();
     const body = new THREE.Mesh(new THREE.BoxGeometry(5, H + 6, 5), wallMat);
@@ -1456,8 +1700,14 @@ export function fortress(ribbon: Ribbon, s: number, to: number, animated: Animat
     for (const [dx, dz] of [[-2, -2], [2, -2], [-2, 2], [2, 2]]) {
       const merlon = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.4, 1.2), wallMat);
       merlon.position.set(dx, H + 6.7, dz);
-      t.add(merlon);
+      const spike = new THREE.Mesh(spikeGeo, iron());
+      spike.position.set(dx, H + 8.3, dz);
+      t.add(merlon, spike);
     }
+    const torch = sprite(0xff5018, 4, 0.8);
+    torch.position.set(0, H + 7.5, -2.8);
+    t.add(torch);
+    torches.push(torch);
     const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 5, 5), darkWood());
     pole.position.y = H + 8.5;
     const flag = new THREE.Mesh(new THREE.PlaneGeometry(3, 1.8, 6, 1), flagMat);
@@ -1483,10 +1733,10 @@ export function fortress(ribbon: Ribbon, s: number, to: number, animated: Animat
       const wall = new THREE.Mesh(new THREE.BoxGeometry(1.6, H + y, 7.4), wallMat);
       wall.position.y = (H + y) / 2;
       seg.add(wall);
-      for (const dz of [-2.4, 0, 2.4]) {
-        const merlon = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.2, 1.2), wallMat);
-        merlon.position.set(0, H + y + 0.6, dz);
-        seg.add(merlon);
+      for (const dz of [-2.4, -0.8, 0.8, 2.4]) {
+        const spike = new THREE.Mesh(spikeGeo, iron());
+        spike.position.set(0, H + y + 0.9, dz);
+        seg.add(spike);
       }
       seg.position.set(p.x, 0, p.z);
       seg.rotation.y = p.heading;
@@ -1500,11 +1750,15 @@ export function fortress(ribbon: Ribbon, s: number, to: number, animated: Animat
   const beam = new THREE.Mesh(new THREE.BoxGeometry(2 * hw + 4, 3, 4), wallMat);
   beam.position.y = H + 4.5;
   lintel.add(beam);
-  for (let k = -3; k <= 3; k++) {
-    const merlon = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.4, 1.4), wallMat);
-    merlon.position.set((k * (2 * hw + 2)) / 7, H + 6.7, 0);
-    lintel.add(merlon);
+  for (let k = -6; k <= 6; k++) {
+    const spike = new THREE.Mesh(spikeGeo, iron());
+    spike.scale.setScalar(1.6);
+    spike.position.set((k * (2 * hw + 2)) / 13, H + 7.4, 0);
+    lintel.add(spike);
   }
+  const gateSkull = new THREE.Mesh(new THREE.SphereGeometry(1, 10, 8), bone());
+  gateSkull.position.set(0, H + 2.4, -2.2);
+  lintel.add(gateSkull);
   // A whip coiled on it, hung over the way in.
   const whip = new THREE.Mesh(new THREE.TorusGeometry(1.6, 0.12, 6, 24), darkWood());
   whip.position.set(0, H + 4.5, -2.1);
@@ -1513,6 +1767,11 @@ export function fortress(ribbon: Ribbon, s: number, to: number, animated: Animat
   lintel.rotation.y = f.heading;
   g.add(lintel);
   animated.push((time) => {
+    torches.forEach((tc, k) => {
+      const f = 0.4 + 0.6 * Math.abs(Math.sin(time * 1.9 + k * 1.7) * Math.sin(time * 11 + k));
+      tc.scale.set(3 * f, 4.4 * f, 1);
+      tc.material.opacity = 0.35 + 0.55 * f;
+    });
     flags.forEach((fl, k) => {
       const pos = fl.geometry.attributes.position as THREE.BufferAttribute;
       for (let i = 0; i < pos.count; i++) {
@@ -1526,9 +1785,9 @@ export function fortress(ribbon: Ribbon, s: number, to: number, animated: Animat
 }
 
 /**
- * Body bags hanging on the hills, hoist with a peg: gallows posts along
- * both sides of the road from `s` to `to`, a black bag on the peg of each,
- * swaying, flies round them.
+ * Body bags hanging on the hills, hoist with a peg: gallows posts close
+ * along both sides of the road from `s` to `to`, a black bag on the peg of
+ * each, swaying, the flies thick round them.
  */
 export function bodyBags(ribbon: Ribbon, s: number, to: number, animated: Animated): THREE.Group {
   const g = new THREE.Group();
@@ -1536,7 +1795,7 @@ export function bodyBags(ribbon: Ribbon, s: number, to: number, animated: Animat
   const swingers: { o: THREE.Object3D; ph: number }[] = [];
   const flies: THREE.Sprite[] = [];
   let k = 0;
-  for (let at = s; at < to; at += 14, k++) {
+  for (let at = s; at < to; at += 8, k++) {
     const side = k % 2 ? 1 : -1;
     const p = offRoad(ribbon, at, side * (ribbon.halfWidthAtS(at) + 4));
     const y = Math.max(0, ribbon.heightAt(at));
@@ -1555,12 +1814,12 @@ export function bodyBags(ribbon: Ribbon, s: number, to: number, animated: Animat
     rope.position.y = -0.4;
     const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 1.8, 4, 8), bagMat);
     body.position.y = -1.9;
-    const zip = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.9, 0.06), gold());
+    const zip = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.9, 0.06), tarnish());
     zip.position.set(0, -1.9, 0.5);
     hang.add(rope, body, zip);
     t.add(post, peg, brace, hang);
     swingers.push({ o: hang, ph: k * 1.3 });
-    for (let q = 0; q < 3; q++) {
+    for (let q = 0; q < 5; q++) {
       const fly = sprite(0x0a0a0a, 0.3, 0.9);
       fly.material.blending = THREE.NormalBlending;
       fly.userData = { y: 3.6 + y, ph: q * 2.1 + k };
@@ -1583,38 +1842,53 @@ export function bodyBags(ribbon: Ribbon, s: number, to: number, animated: Animat
 }
 
 /**
- * The stench orbits the homestead: a timber farmhouse on a rise in the
- * middle of the loop (`lateral` off the road at `s`), a porch and a lit
- * window, a windmill turning and a water tank on stilts; round it all the
- * stench, rings of sick green haze orbiting at three heights, and the
- * flies.
+ * The stench orbits the homestead: a rotting timber farmhouse on a rise in
+ * the middle of the loop (`lateral` off the road at `s`), its roof caved
+ * in, its porch sagging, a window lit a sick yellow; the windmill broken,
+ * its vanes snapped and hanging, creaking back and forth; a water tank on
+ * stilts; round it all the stench, thick rings of sickly yellow-green haze
+ * orbiting at three heights, and swarms of flies.
  */
 export function homestead(ribbon: Ribbon, s: number, lateral: number, animated: Animated): THREE.Group {
   const g = new THREE.Group();
   const at = offRoad(ribbon, s, lateral || -(ribbon.halfWidthAtS(s) + 30));
-  const rise = new THREE.Mesh(new THREE.SphereGeometry(22, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), lambert(0xb8925c, { flatShading: true }));
+  const rise = new THREE.Mesh(new THREE.SphereGeometry(22, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), lambert(0x4a4440, { flatShading: true }));
   rise.scale.y = 0.18;
   g.add(rise);
   const y0 = 3.6;
-  const plank = lambert(0xa8845a);
+  const plank = lambert(0x4a4036);
   const house = new THREE.Mesh(new THREE.BoxGeometry(12, 6, 9), plank);
+  house.rotation.z = 0.03;
   house.position.y = y0 + 3;
   const roofShape = new THREE.Shape();
   roofShape.moveTo(-6.8, 0);
   roofShape.lineTo(0, 4);
   roofShape.lineTo(6.8, 0);
   roofShape.lineTo(-6.8, 0);
-  const roof = new THREE.Mesh(new THREE.ExtrudeGeometry(roofShape, { depth: 10, bevelEnabled: false }), lambert(0x5a3a2a));
+  // The roof caved in: half of it, the other half's rafters bare.
+  const roof = new THREE.Mesh(new THREE.ExtrudeGeometry(roofShape, { depth: 5, bevelEnabled: false }), lambert(0x2a221c));
   roof.position.set(0, y0 + 6, -5);
+  roof.rotation.z = -0.06;
+  g.add(roof);
+  for (let k = 0; k < 5; k++) {
+    const rafter = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.25, 7.6), darkWood());
+    rafter.rotation.set(0, 0, 0);
+    rafter.rotation.x = 0;
+    rafter.position.set(-6 + k * 3, y0 + 6.6 - Math.abs(-6 + k * 3) * 0.4, 1.8);
+    rafter.rotation.y = Math.PI / 2;
+    rafter.rotation.z = (k - 2) * 0.25;
+    g.add(rafter);
+  }
   const porch = new THREE.Mesh(new THREE.BoxGeometry(12, 0.3, 3), darkWood());
-  porch.position.set(0, y0 + 3.4, 6);
-  g.add(house, roof, porch);
-  for (const x of [-5.5, 0, 5.5]) {
+  porch.position.set(0, y0 + 3.1, 6);
+  porch.rotation.z = 0.09;
+  g.add(house, porch);
+  for (const x of [-5.5, 5.5]) {
     const post = new THREE.Mesh(new THREE.BoxGeometry(0.3, 3.4, 0.3), darkWood());
     post.position.set(x, y0 + 1.7, 7.3);
     g.add(post);
   }
-  const win = new THREE.Mesh(new THREE.PlaneGeometry(2, 1.6), new THREE.MeshBasicMaterial({ color: 0xffc070 }));
+  const win = new THREE.Mesh(new THREE.PlaneGeometry(2, 1.6), new THREE.MeshBasicMaterial({ color: 0x8a8a30 }));
   win.position.set(-3, y0 + 3.4, 4.55);
   const chimneyStack = new THREE.Mesh(new THREE.BoxGeometry(1.4, 4, 1.4), brick());
   chimneyStack.position.set(3.5, y0 + 9, -1);
@@ -1630,17 +1904,24 @@ export function homestead(ribbon: Ribbon, s: number, lateral: number, animated: 
   }
   const vanes = new THREE.Group();
   vanes.position.set(0, 14.5, 1);
-  for (let k = 0; k < 12; k++) {
-    const vane = new THREE.Mesh(new THREE.BoxGeometry(0.5, 2.6, 0.05), lambert(0xd8d0c0));
-    vane.position.y = 1.8;
+  // Broken: most of its vanes snapped off, one hanging by a thread.
+  const vaneMat = lambert(0x5a5650);
+  for (const k of [0, 1, 4, 7, 8]) {
+    const vane = new THREE.Mesh(new THREE.BoxGeometry(0.5, k === 4 ? 1.4 : 2.6, 0.05), vaneMat);
+    vane.position.y = k === 4 ? 1.2 : 1.8;
     const holder = new THREE.Group();
     holder.add(vane);
     holder.rotation.z = (k / 12) * Math.PI * 2;
     vanes.add(holder);
   }
-  const tail = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.4, 2.6), lambert(0xd8d0c0));
+  const dangling = new THREE.Mesh(new THREE.BoxGeometry(0.5, 2.6, 0.05), vaneMat);
+  dangling.position.set(0.6, 12.6, 1.1);
+  dangling.rotation.z = 0.2;
+  const tail = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.4, 2.6), vaneMat);
   tail.position.set(0, 14.5, -1.8);
-  mill.add(vanes, tail);
+  tail.rotation.x = 0.5;
+  mill.add(vanes, tail, dangling);
+  mill.rotation.z = 0.08;
   g.add(mill);
   const tank = new THREE.Group();
   tank.position.set(13, y0 - 1, -4);
@@ -1659,13 +1940,13 @@ export function homestead(ribbon: Ribbon, s: number, lateral: number, animated: 
   const rings: { group: THREE.Group; speed: number }[] = [];
   for (let r = 0; r < 3; r++) {
     const ring = new THREE.Group();
-    ring.position.y = y0 + 3 + r * 4;
+    ring.position.y = y0 + 2 + r * 4;
     ring.rotation.x = (r - 1) * 0.25;
-    const R = 16 + r * 3;
-    for (let k = 0; k < 16; k++) {
-      const a = (k / 16) * Math.PI * 2;
-      const puff = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex(), color: STENCH_HEX, transparent: true, depthWrite: false, opacity: 0.4 }));
-      puff.scale.set(7, 3.5, 1);
+    const R = 15 + r * 3;
+    for (let k = 0; k < 24; k++) {
+      const a = (k / 24) * Math.PI * 2;
+      const puff = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex(), color: STENCH_HEX, transparent: true, depthWrite: false, opacity: 0.6 }));
+      puff.scale.set(9, 5, 1);
       puff.position.set(Math.cos(a) * R, Math.sin(a * 3) * 0.8, Math.sin(a) * R);
       ring.add(puff);
     }
@@ -1673,14 +1954,16 @@ export function homestead(ribbon: Ribbon, s: number, lateral: number, animated: 
     rings.push({ group: ring, speed: (r % 2 ? -1 : 1) * (0.35 + r * 0.1) });
   }
   const flies: THREE.Sprite[] = [];
-  for (let k = 0; k < 24; k++) {
+  for (let k = 0; k < 60; k++) {
     const fly = sprite(0x0a0a0a, 0.5, 0.95);
     fly.material.blending = THREE.NormalBlending;
     g.add(fly);
     flies.push(fly);
   }
   animated.push((time) => {
-    vanes.rotation.z = time * 1.4;
+    // Creaking back and forth in the wind, never round.
+    vanes.rotation.z = 0.5 * Math.sin(time * 0.6) + 0.15 * Math.sin(time * 2.3);
+    dangling.rotation.z = 0.2 + 0.25 * Math.sin(time * 0.9);
     for (const { group, speed } of rings) group.rotation.y = time * speed;
     flies.forEach((f, k) => {
       const a = time * (1.6 + (k % 5) * 0.3) + k;
@@ -1715,10 +1998,11 @@ const graveFace = once(() => {
 
 /**
  * Time Is Priceless: the open grave the lane crosses on planks (on the
- * final lap; on the others there's only the grave). A headstone at its
- * near end, HERE LIES TIME, the dug earth heaped beside it with a shovel
- * stuck in, a coffin open at the bottom, and an hourglass on a post
- * running out, its sand falling.
+ * final lap; on the others there's only the grave). A crooked headstone at
+ * its near end, HERE LIES TIME, older graves round it with their stones
+ * sunk at a lean, the dug earth heaped beside it with a shovel stuck in, a
+ * coffin open at the bottom in the dark, mist rising out of it, and an
+ * hourglass on a post running out, its sand falling.
  */
 export function openGrave(ribbon: Ribbon, s: number, pits: readonly PitDef[], animated: Animated): THREE.Group {
   const g = new THREE.Group();
@@ -1727,17 +2011,29 @@ export function openGrave(ribbon: Ribbon, s: number, pits: readonly PitDef[], an
   if (!pit) return g;
   const L = pit.halfLength;
   const W = pit.halfWidth;
-  const stone = lambert(0x8a8478);
+  const stone = lambert(0x5a5652);
   const head = new THREE.Mesh(new THREE.BoxGeometry(3, 4, 0.6), stone);
   head.position.set(-W - 3, 2, -L - 1);
+  head.rotation.z = 0.12;
   const face = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 3.4), new THREE.MeshLambertMaterial({ map: graveFace() }));
   face.position.set(-W - 3, 2, -L - 1.31);
   face.rotation.y = Math.PI;
   const top = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 0.6, 16, 1, false, 0, Math.PI), stone);
   top.rotation.set(Math.PI / 2, 0, Math.PI / 2);
   top.position.set(-W - 3, 4, -L - 1);
+  face.rotation.z = -0.12;
+  top.position.x += -0.25;
   g.add(head, face, top);
-  const heap = new THREE.Mesh(new THREE.SphereGeometry(5, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), lambert(0x7a5434, { flatShading: true }));
+  // Older graves round it, their stones sunk crooked.
+  const rand = seededRandom(7401);
+  for (let k = 0; k < 9; k++) {
+    const side = k % 2 ? 1 : -1;
+    const old = new THREE.Mesh(new THREE.BoxGeometry(1.4 + rand(), 2 + rand() * 1.6, 0.4), stone);
+    old.position.set(side * (W + 4 + rand() * 9), 0.8, -L - 6 + k * 3.5);
+    old.rotation.set((rand() - 0.5) * 0.6, (rand() - 0.5) * 0.8, (rand() - 0.5) * 0.7);
+    g.add(old);
+  }
+  const heap = new THREE.Mesh(new THREE.SphereGeometry(5, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), lambert(0x3a302a, { flatShading: true }));
   heap.scale.set(1, 0.5, 1.6);
   heap.position.set(W + 6, 0, 0);
   const shovel = new THREE.Group();
@@ -1756,7 +2052,7 @@ export function openGrave(ribbon: Ribbon, s: number, pits: readonly PitDef[], an
   const lid = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.2, 6), coffinMat);
   lid.position.set(2, -pit.depth + 1.4, 0.5);
   lid.rotation.z = 0.8;
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(2 * W, 2 * L), new THREE.MeshBasicMaterial({ color: 0x1a0e08 }));
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(2 * W, 2 * L), new THREE.MeshBasicMaterial({ color: 0x060404 }));
   floor.rotation.x = -Math.PI / 2;
   floor.position.y = -pit.depth + 0.1;
   g.add(coffin, lid, floor);
@@ -1785,7 +2081,19 @@ export function openGrave(ribbon: Ribbon, s: number, pits: readonly PitDef[], an
   stream.position.y = 3.6;
   hg.add(upperSand, lowerSand, stream);
   g.add(hg);
+  // Mist rising out of the grave.
+  const mists: THREE.Sprite[] = [];
+  for (let k = 0; k < 8; k++) {
+    const m = smoke(FOG_HEX, 6, 0.3);
+    g.add(m);
+    mists.push(m);
+  }
   animated.push((time) => {
+    mists.forEach((m, k) => {
+      const v = (time * 0.1 + k / mists.length) % 1;
+      m.position.set(Math.sin(k * 2.1 + time * 0.2) * W * 0.6, -pit.depth + v * (pit.depth + 4), Math.cos(k * 1.7) * L * 0.7);
+      m.material.opacity = 0.32 * Math.sin(v * Math.PI);
+    });
     // It runs out over a lap's worth, about a minute, and starts again.
     const u = (time / 60) % 1;
     upperSand.scale.set(1 - u * 0.85, 1 - u * 0.85, 1 - u * 0.85);
@@ -1796,17 +2104,23 @@ export function openGrave(ribbon: Ribbon, s: number, pits: readonly PitDef[], an
   return g;
 }
 
-/** The stitches the hellhounds sniff out: a seam of crossed red stitches, burning like embers, across the road. */
+/** The stitches the hellhounds sniff out: a fresh wound across the road, raw red and wet, black thread crossed through it, blood beading. */
 const stitchTexture = once(() => {
   const W = 256;
   const H = 32;
   const [c, ctx] = canvas(W, H);
   ctx.clearRect(0, 0, W, H);
-  // The seam, a scar.
-  ctx.fillStyle = 'rgba(120,10,10,0.6)';
-  ctx.fillRect(0, H / 2 - 2, W, 4);
-  ctx.strokeStyle = '#ff3a18';
-  ctx.lineWidth = 3;
+  // The wound: dark at its lips, raw and bright down its middle.
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0.2, 'rgba(60,4,4,0)');
+  g.addColorStop(0.36, 'rgba(90,6,6,0.9)');
+  g.addColorStop(0.5, 'rgba(230,30,20,1)');
+  g.addColorStop(0.64, 'rgba(90,6,6,0.9)');
+  g.addColorStop(0.8, 'rgba(60,4,4,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = '#0a0404';
+  ctx.lineWidth = 2.5;
   ctx.lineCap = 'round';
   for (let x = 8; x < W; x += 16) {
     ctx.beginPath();
@@ -1815,14 +2129,19 @@ const stitchTexture = once(() => {
     ctx.moveTo(x + 5, 5);
     ctx.lineTo(x - 5, H - 5);
     ctx.stroke();
+    // A bead of blood at each stitch.
+    ctx.fillStyle = 'rgba(200,16,10,0.9)';
+    ctx.beginPath();
+    ctx.arc(x + 5, H - 5, 2, 0, Math.PI * 2);
+    ctx.fill();
   }
   const t = finish(c);
   t.wrapT = THREE.ClampToEdgeWrapping;
   return t;
 });
 
-/** A hellhound, facing +z, its foot at the origin: black, a ridge of fire down its back, red eyes. Returns it and the parts that move. */
-function houndFigure(): { group: THREE.Group; legs: THREE.Object3D[]; flames: THREE.Sprite[]; head: THREE.Object3D; tail: THREE.Object3D } {
+/** A hellhound, facing +z, its foot at the origin: black, a ridge of fire down its back, eyes of fire, smoke on its breath. Returns it and the parts that move. */
+function houndFigure(): { group: THREE.Group; legs: THREE.Object3D[]; flames: THREE.Sprite[]; head: THREE.Object3D; tail: THREE.Object3D; breath: THREE.Sprite[] } {
   const g = new THREE.Group();
   const mat = hound();
   const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 1.4, 4, 8), mat);
@@ -1842,9 +2161,18 @@ function houndFigure(): { group: THREE.Group; legs: THREE.Object3D[]; flames: TH
     const ear = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.45, 4), mat);
     ear.position.set(side * 0.2, 0.42, -0.1);
     ear.rotation.z = side * -0.25;
-    const eye = sprite(0xff2a10, 0.45, 1);
-    eye.position.set(side * 0.16, 0.08, 0.34);
-    head.add(ear, eye);
+    const eye = sprite(0xff3a10, 0.8, 1);
+    eye.position.set(side * 0.16, 0.08, 0.36);
+    const core = sprite(0xffd060, 0.25, 1);
+    core.position.set(side * 0.16, 0.08, 0.38);
+    head.add(ear, eye, core);
+  }
+  // Its breath, smoking off its jaws.
+  const breath: THREE.Sprite[] = [];
+  for (let k = 0; k < 3; k++) {
+    const puff = smoke(0x5a5458, 0.6, 0.5);
+    head.add(puff);
+    breath.push(puff);
   }
   const legs: THREE.Object3D[] = [];
   for (const [x, z] of [[-0.3, 0.6], [0.3, 0.6], [-0.3, -0.6], [0.3, -0.6]]) {
@@ -1870,38 +2198,46 @@ function houndFigure(): { group: THREE.Group; legs: THREE.Object3D[]; flames: TH
     flames.push(fl);
   }
   g.add(body, chest, head, tail);
-  return { group: g, legs, flames, head, tail };
+  return { group: g, legs, flames, head, tail, breath };
 }
+
+/** The hellhounds are drawn this much bigger than a dog: a little bigger than the body they bite with. */
+const HOUND_LOOK = 1.35;
 
 /**
  * A pack of hellhounds at their station, the hazard's look: the three
- * hounds; the seam of stitches across the road they sniff out, stitched
- * brighter and further across from the den they'll come from as the run
- * nears; and the two dens in the pit's walls, dark arches framed in bone,
- * eyes burning in the one the pack waits in.
+ * hounds, big and black, eyes of fire and smoke on their breath; the
+ * stitches across the road they sniff out, a fresh wound sewn further
+ * across from the den they'll come from as the run nears; the two dens in
+ * the pit's walls glowing like furnaces in arches of bone, eyes burning in
+ * the one the pack waits in; and fog lying across the pit floor.
  */
 export function houndParts(obj: THREE.Object3D): THREE.Object3D[] {
   const pack = new THREE.Group();
   for (let k = 0; k < 3; k++) {
     const h = houndFigure();
     h.group.userData = h;
+    h.group.scale.setScalar(HOUND_LOOK);
     pack.add(h.group);
   }
   // Its own copy of the stitches, to repeat as far across as they've been sewn.
   const map = stitchTexture().clone();
   map.needsUpdate = true;
-  const stitches = new THREE.Mesh(new THREE.PlaneGeometry(1, 1.3), new THREE.MeshBasicMaterial({ map, transparent: true, depthWrite: false, opacity: 0, blending: THREE.AdditiveBlending }));
+  const stitches = new THREE.Mesh(new THREE.PlaneGeometry(1, 1.6), new THREE.MeshBasicMaterial({ map, transparent: true, depthWrite: false, opacity: 0 }));
   stitches.rotation.x = -Math.PI / 2;
   stitches.position.y = 0.06;
   const dens = new THREE.Group();
-  const holeMat = new THREE.MeshBasicMaterial({ color: 0x050203 });
+  const holeMat = new THREE.MeshBasicMaterial({ color: 0x3a0804 });
   for (const side of [-1, 1]) {
     const den = new THREE.Group();
-    const hole = new THREE.Mesh(new THREE.CircleGeometry(1.8, 20, 0, Math.PI), holeMat);
-    const frame = new THREE.Mesh(new THREE.TorusGeometry(1.95, 0.22, 6, 20, Math.PI), bone());
-    const keystone = new THREE.Mesh(new THREE.SphereGeometry(0.35, 8, 6), bone());
-    keystone.position.y = 2.1;
-    den.add(hole, frame, keystone);
+    const hole = new THREE.Mesh(new THREE.CircleGeometry(2.2, 20, 0, Math.PI), holeMat);
+    const frame = new THREE.Mesh(new THREE.TorusGeometry(2.35, 0.26, 6, 20, Math.PI), bone());
+    const keystone = new THREE.Mesh(new THREE.SphereGeometry(0.45, 8, 6), bone());
+    keystone.position.y = 2.5;
+    // The furnace inside it.
+    const furnace = sprite(0xff4a10, 4.5, 0.6);
+    furnace.position.set(0, 0.9, 0.1);
+    den.add(hole, frame, keystone, furnace);
     const eyes = new THREE.Group();
     for (let k = 0; k < 3; k++) {
       for (const e of [-1, 1]) {
@@ -1911,16 +2247,23 @@ export function houndParts(obj: THREE.Object3D): THREE.Object3D[] {
       }
     }
     den.add(eyes);
-    den.userData = { side, eyes };
+    den.userData = { side, eyes, furnace };
     dens.add(den);
   }
-  obj.add(pack, stitches, dens);
-  return [pack, stitches, dens];
+  // Fog lying on the pit floor.
+  const fog = new THREE.Group();
+  for (let k = 0; k < 6; k++) {
+    const bank = smoke(FOG_HEX, 1, 0.22);
+    bank.scale.set(16, 2.4, 1);
+    fog.add(bank);
+  }
+  obj.add(pack, stitches, dens, fog);
+  return [pack, stitches, dens, fog];
 }
 
 /** Poses a pack of hellhounds' parts (from houndParts) at race time: in the road's frame at the station. */
 export function poseHounds(obj: THREE.Object3D, parts: THREE.Object3D[], p: HazardPose, elapsed: number): void {
-  const [pack, stitches, dens] = parts;
+  const [pack, stitches, dens, fog] = parts;
   // In the road's frame, from its centre: a lateral to the right is local -x.
   obj.position.set(p.ax, p.ground, p.az);
   obj.rotation.y = p.heading;
@@ -1952,12 +2295,18 @@ export function poseHounds(obj: THREE.Object3D, parts: THREE.Object3D[], p: Haza
       f.scale.set(0.7 * fl, 1.1 * fl, 1);
       f.position.y = 1.65 + 0.15 * fl;
     });
+    fig.breath.forEach((b, j) => {
+      const v = (elapsed * 1.6 + j / fig.breath.length + k * 0.3) % 1;
+      b.position.set(0, -0.1 + v * 0.5, 0.85 + v * 0.4);
+      b.scale.setScalar(0.4 + v * 1.1);
+      b.material.opacity = 0.5 * (1 - v);
+    });
   });
   // The stitches: sewn across from the near den as the run nears, burning while the pack runs it, then cooling.
   const mat = (stitches as THREE.Mesh).material as THREE.MeshBasicMaterial;
   const w = 2 * reach;
   const grow = u < H.run ? Math.min(1, Math.max(0, (u - 0.08) / (H.run - 0.12))) : 1;
-  mat.opacity = u < H.run ? 0.25 + 0.55 * grow + 0.15 * Math.sin(elapsed * 12) * grow : u < H.gone ? 0.9 : 0.9 * Math.max(0, 1 - (u - H.gone) / 0.12);
+  mat.opacity = u < H.run ? 0.3 + 0.6 * grow : u < H.gone ? 0.95 : 0.95 * Math.max(0.15, 1 - (u - H.gone) / 0.12);
   stitches.scale.x = Math.max(0.01, w * grow);
   // Anchored at the near den's side, reaching across.
   stitches.position.x = p.side * (reach - (w * grow) / 2);
@@ -1970,5 +2319,9 @@ export function poseHounds(obj: THREE.Object3D, parts: THREE.Object3D[], p: Haza
     const near = side === p.side;
     const lit = near ? (u < H.run ? Math.min(1, u * 4) : 0) : u >= H.gone ? Math.max(0, 1 - (u - H.gone) / 0.15) : 0;
     (den.userData.eyes as THREE.Group).children.forEach((e, k) => (((e as THREE.Sprite).material as THREE.SpriteMaterial).opacity = lit * (0.7 + 0.3 * Math.sin(elapsed * 3 + k))));
+    // The furnace roars up while the pack's in it.
+    const furnace = den.userData.furnace as THREE.Sprite;
+    furnace.material.opacity = 0.35 + 0.4 * lit + 0.1 * Math.sin(elapsed * 9 + side);
   });
+  fog.children.forEach((bank, k) => bank.position.set(Math.sin(elapsed * 0.07 + k * 1.9) * reach * 0.8, 0.9 + (k % 2) * 0.5, -14 + k * 5.6 + Math.sin(elapsed * 0.05 + k) * 2));
 }

@@ -104,8 +104,8 @@ const LIFE: Record<DecorKind, LifeSpec> = {
   // Crows tossed about over the field, and straw blowing through the air.
   strawfield: { flock: { kind: 'bird', color: 0x1a1a20, count: 14, height: 22, size: 0.9 }, motes: { color: 0xf0cc6a, count: 380, size: 0.5, drift: 'blow' } },
   // Moths round the lamps, and dust of dreams drifting in the lamplight.
-  // Vultures wheeling over the reaper's round, and dust and ash blowing across the hardpan.
-  reaping: { flock: { kind: 'vulture', color: 0x1a1210, count: 10, height: 32, size: 1.5 }, motes: { color: 0xd8a070, count: 340, size: 0.35, drift: 'blow' } },
+  // Vultures and crows wheeling black over the reaper's round, and ash falling.
+  reaping: { flock: { kind: 'vulture', color: 0x050404, count: 22, height: 26, size: 1.4 }, motes: { color: 0x8a8484, count: 420, size: 0.3, drift: 'fall' } },
   slumber: { flock: { kind: 'moth', color: 0xd8c8a8, count: 14, height: 9, size: 0.5 }, motes: { color: 0xffc890, count: 300, size: 0.35, drift: 'float', glow: true } },
   reactor: { flock: { kind: 'orb', color: 0x80d8ff, count: 14, height: 22, size: 0.6, glow: true }, motes: { color: 0x9aff6a, count: 420, size: 0.4, drift: 'rise', glow: true } },
   uruk: { flock: { kind: 'bird', color: 0x2a2a30, count: 12, height: 24, size: 1.0 }, motes: { color: 0xc8c0b0, count: 300, size: 0.4, drift: 'blow' } },

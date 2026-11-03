@@ -139,7 +139,7 @@ function materials(theme: Theme): Materials {
     summer: () => tex.stoneTexture([150, 96, 56], [226, 190, 140]),
     scala: () => tex.stoneTexture([84, 58, 46], [168, 134, 104]),
     slumber: () => tex.stoneTexture([46, 38, 50], [110, 96, 112]),
-    reaping: () => tex.stoneTexture([150, 96, 60], [220, 180, 130]),
+    reaping: () => tex.stoneTexture([46, 40, 40], [110, 102, 98]),
     cyborg: () => tex.stoneTexture([30, 34, 40], [130, 136, 146]),
     gaia: () => tex.stoneTexture([96, 98, 86], [170, 166, 150]),
     strawfield: () => tex.stoneTexture([130, 118, 100], [200, 190, 170]),

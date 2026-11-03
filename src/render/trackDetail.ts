@@ -444,12 +444,12 @@ const STYLES: Record<DecorKind, DetailStyle> = {
     boards: { words: ['THE WHEEL', 'INTO OUR FUTURE', 'A BETTER THESIS', 'WAKE UP', 'GUMBOOT SOUP'], bg: ['#1a1028', '#2a1630'], fg: '#ffc070' },
     crowd: false,
   },
-  // The Grim Reaper: giant matches stuck in the ground along the road, lit; dry grass on the hardpan.
+  // The Grim Reaper: torches guttering on charred posts along the road; dead grass grey on the ash.
   reaping: {
-    edge: { kind: 'torch', height: 1.8, spacing: 15, color: 0xe8d4a0, stripe: 0xb81818 },
-    light: 0xff9a40,
-    cover: { shape: 'tuft', colors: [0xc8a860, 0x9a7a40, 0x7a6a40, 0xe0cc98], count: 1300 },
-    boards: { words: ['THE GRIM REAPER', 'CHIMNEY SWEEPER', 'GATE KEEPER', 'TIME IS PRICELESS', 'SHRIMPOMANIAC', 'OMNIUM GATHERUM'], bg: ['#0e0a0a', '#2a0c0c'], fg: '#f4c040' },
+    edge: { kind: 'torch', height: 1.8, spacing: 15, color: 0x1e1818, stripe: 0x4a0a08 },
+    light: 0xff4a18,
+    cover: { shape: 'tuft', colors: [0x6a6258, 0x4a4440, 0x3a3430, 0x8a8070], count: 1300 },
+    boards: { words: ['THE GRIM REAPER', 'ROTTING FLESH ODOROUS', 'HE CAME TO COLLECT', 'STITCHES FOR SNITCHES', 'TIME IS PRICELESS', 'REPENT'], bg: ['#050304', '#1a0404'], fg: '#c01a10' },
     crowd: false,
   },
   // Straws in the Wind: white-washed fence posts along the farm track, wildflowers and straw in the verge, the media's hoardings never quitting.

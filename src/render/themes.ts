@@ -1234,27 +1234,28 @@ export const THEMES: Record<ThemeId, Theme> = {
     edgeLine: 0xff2a3c,
     edgeWidth: 0.5,
   },
-  // The Grim Reaper: collection night on a sun-scorched frontier, the sun going down blood red and gold low on the horizon, plum and the first stars overhead; bleached, cracked hardpan, a road of black cinders.
+  // The Grim Reaper: collection night on a dead frontier, the sun gone down dark blood red behind black cloud, the only warmth in a cold, ashen world; near black overhead, a few stars, fog lying low. Pale ash ground, a road of black cinders with its gold lines.
   grimreaper: {
-    sky: { zenith: '#1c0c2a', high: '#4a1a3c', low: '#c8482a', horizon: '#ffb848', below: '#d07a40', ground: '#8a5a30', cloud: '160,70,64', clouds: 14, stars: { count: 70, color: '#ffe8c8' } },
-    fog: { color: 0xd88850, near: 170, far: 900 },
-    hemi: { sky: 0xffd8a8, ground: 0xa06a3a, intensity: 1.6 },
-    sun: { color: 0xffb070, intensity: 2.5 },
+    sky: { zenith: '#030306', high: '#0e0a12', low: '#2a0a0c', horizon: '#6a120c', below: '#1e0808', ground: '#0c0808', cloud: '14,10,12', clouds: 26, stars: { count: 30, color: '#c8c0c0' } },
+    fog: { color: 0x241a1e, near: 110, far: 620 },
+    hemi: { sky: 0x9098b0, ground: 0x2a2020, intensity: 1.35 },
+    sun: { color: 0xc04a38, intensity: 1.5 },
     ground: scorchedGroundTexture,
     groundTile: 22,
-    // Walls are the pit's and the world's edge: sun-baked adobe and sandstone, scorched along the top.
+    // Walls are the pit's and the world's edge: charred rock, old blood run down it.
     cliff: adobeTexture,
     decor: 'reaping',
-    distant: { shape: 'mesa', color: 0x3a1418 },
-    haze: 0.6,
-    duotone: [0x0c0406, 0xc02020, 0xffc838],
+    distant: { shape: 'mesa', color: 0x050304 },
+    haze: 0,
+    duotone: [0x020102, 0x7a0a08, 0xd8c8b0],
     skyCycle: false,
-    dust: 0xd8b088,
+    dust: 0x4a4246,
     // A black rail with a cut-up sample's waveform along it in gold, playing past.
     barrier: { map: waveformRailTexture, crawl: true },
-    // The black cinder road on the pale ground, a thin gold line down each edge.
-    edgeLine: 0xf0b830,
-    edgeWidth: 0.35,
+    // The black cinder road in the dark, on the pale ash: lit a little by its own texture, a gold line down each edge.
+    roadGlow: 0.06,
+    edgeLine: 0xe8a830,
+    edgeWidth: 0.5,
   },
   // Gaia: the Earth herself, ancient, vast and indifferent, lying in a blighted land under a storm-dark, bruised sky, black-green overhead and blood-ochre low down where an eclipsed sun glows dim; heavy low cloud, lightning, fog swallowing the distance; her body the hills, her hair dead forest, her veins glowing dull red through the cracked earth.
   gaia: {
