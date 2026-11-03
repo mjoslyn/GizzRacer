@@ -6163,7 +6163,7 @@
    "date": "2018-06-02",
    "venue": "The Warfield",
    "seconds": 294,
-   "start": 0,
+   "start": 23.5,
    "gain": 2,
    "end": 242.5
   },
@@ -6173,7 +6173,7 @@
    "date": "2018-06-09",
    "venue": "The Pabst Theater",
    "seconds": 266,
-   "start": 0,
+   "start": 15.5,
    "gain": 8,
    "end": 209.5
   },
@@ -6183,7 +6183,7 @@
    "date": "2018-06-18",
    "venue": "Union Transfer",
    "seconds": 323,
-   "start": 0,
+   "start": 35.5,
    "gain": 8,
    "end": 251.5
   },
@@ -6193,7 +6193,7 @@
    "date": "2019-10-14",
    "venue": "L'Olympia",
    "seconds": 257,
-   "start": 0,
+   "start": 27,
    "gain": 1.5,
    "end": 235.5
   },
@@ -6203,19 +6203,9 @@
    "date": "2021-12-13",
    "venue": "The Brunswick Ballroom",
    "seconds": 393,
-   "start": 4.5,
+   "start": 60,
    "gain": 9.5,
    "end": 295.5
-  },
-  {
-   "id": "kglw2022-04-27.AT2022",
-   "file": "16-Muddy Water.mp3",
-   "date": "2022-04-27",
-   "venue": "Phoenix Theater",
-   "seconds": 346,
-   "start": 0,
-   "gain": 9.5,
-   "end": 339.5
   },
   {
    "id": "kglw2022-10-10.bootlegger",
@@ -6233,7 +6223,7 @@
    "date": "2024-08-24",
    "venue": "Jacob's Pavillion",
    "seconds": 558,
-   "start": 0,
+   "start": 61,
    "gain": 4,
    "end": 457.5
   },
@@ -6243,7 +6233,7 @@
    "date": "2024-09-08",
    "venue": "Red Rocks Amphitheatre",
    "seconds": 251,
-   "start": 0,
+   "start": 24.5,
    "gain": 2
   },
   {
@@ -6261,7 +6251,7 @@
    "date": "2025-11-12",
    "venue": "Gasometer, Vienna, Austria",
    "seconds": 564,
-   "start": 0,
+   "start": 52.5,
    "gain": 0.5,
    "end": 449.5
   },
@@ -6271,7 +6261,7 @@
    "date": "2026-08-15",
    "venue": "Field of Vision II, Buena Vista, CO",
    "seconds": 394,
-   "start": 0,
+   "start": 63,
    "gain": 7,
    "end": 359.5
   }
@@ -6293,7 +6283,7 @@
    "date": "2019-08-23",
    "venue": "The Riverside Theater",
    "seconds": 315,
-   "start": 0.5,
+   "start": 46,
    "gain": 6,
    "end": 280.5
   },
@@ -6313,7 +6303,7 @@
    "date": "2019-10-05",
    "venue": "Alexandra Palace",
    "seconds": 279,
-   "start": 0,
+   "start": 6,
    "gain": -1,
    "end": 259.5
   },
@@ -6323,7 +6313,7 @@
    "date": "2020-02-21",
    "venue": "The Croxton",
    "seconds": 304,
-   "start": 14.5,
+   "start": 47.5,
    "gain": 7,
    "end": 284.5
   },
@@ -6333,7 +6323,7 @@
    "date": "2022-10-02",
    "venue": "William Randolph Hearst Greek Theatre",
    "seconds": 296,
-   "start": 0.5,
+   "start": 23.5,
    "gain": 8,
    "end": 292.5
   },
@@ -6343,7 +6333,7 @@
    "date": "2023-06-11",
    "venue": "The Salt Shed",
    "seconds": 290,
-   "start": 0,
+   "start": 1.5,
    "gain": 0.5
   },
   {
@@ -6352,7 +6342,7 @@
    "date": "2024-08-17",
    "venue": "Forest Hills Stadium",
    "seconds": 482,
-   "start": 0,
+   "start": 5,
    "gain": 5.5
   },
   {
@@ -6361,7 +6351,7 @@
    "date": "2024-08-21",
    "venue": "Budweiser Stage",
    "seconds": 365,
-   "start": 1.5,
+   "start": 7,
    "gain": 5.5
   },
   {
@@ -6380,7 +6370,7 @@
    "date": "2025-05-23",
    "venue": "Plaza Mayor de El Poble Espanyol",
    "seconds": 357,
-   "start": 0,
+   "start": 4,
    "gain": 2.5,
    "end": 314.5
   },
@@ -6390,7 +6380,7 @@
    "date": "2026-08-16",
    "venue": "Field of Vision II, Buena Vista, CO",
    "seconds": 361,
-   "start": 2.5,
+   "start": 36.5,
    "gain": 3.5,
    "end": 301.5
   }
@@ -6402,7 +6392,7 @@
    "date": "2017-04-01",
    "venue": "Webster Hall- New York, NY",
    "seconds": 220,
-   "start": 14.5,
+   "start": 15.5,
    "gain": 6.5,
    "end": 191.5
   },
@@ -6412,7 +6402,7 @@
    "date": "2018-06-02",
    "venue": "The Warfield",
    "seconds": 275,
-   "start": 11.5,
+   "start": 34,
    "gain": 1.5,
    "end": 220.5
   },
@@ -6422,7 +6412,7 @@
    "date": "2018-06-20",
    "venue": "Variety Playhouse",
    "seconds": 260,
-   "start": 1.5,
+   "start": 2.5,
    "gain": 5,
    "end": 189.5
   },
@@ -6432,7 +6422,7 @@
    "date": "2021-02-26",
    "venue": "Sidney Myer Music Bowl",
    "seconds": 277,
-   "start": 0,
+   "start": 21.5,
    "gain": 1,
    "end": 236.5
   },
@@ -6442,7 +6432,7 @@
    "date": "2022-10-02",
    "venue": "William Randolph Hearst Greek Theatre",
    "seconds": 191,
-   "start": 3.5,
+   "start": 4.5,
    "gain": 7.5,
    "end": 183.5
   },
@@ -6452,7 +6442,7 @@
    "date": "2023-03-09",
    "venue": "Den Grå Hal",
    "seconds": 261,
-   "start": 0,
+   "start": 60.5,
    "gain": 9.5,
    "end": 249.5
   },
@@ -6471,7 +6461,7 @@
    "date": "2024-08-25",
    "venue": "Megacorp Pavilion",
    "seconds": 319,
-   "start": 68.5,
+   "start": 97.5,
    "gain": 1,
    "end": 309.5
   },
@@ -6481,7 +6471,7 @@
    "date": "2024-09-01",
    "venue": "Northerly Island",
    "seconds": 252,
-   "start": 9.5,
+   "start": 59.5,
    "gain": 2,
    "end": 247.5
   },
@@ -6491,7 +6481,7 @@
    "date": "2024-11-12",
    "venue": "The Criterion",
    "seconds": 239,
-   "start": 3.5,
+   "start": 48.5,
    "gain": 2.5
   },
   {
@@ -6500,19 +6490,9 @@
    "date": "2025-08-16",
    "venue": "Field of Vision at Meadow Creek",
    "seconds": 346,
-   "start": 0,
+   "start": 67.5,
    "gain": 1,
    "end": 259.5
-  },
-  {
-   "id": "kglw2026-10-18.h1n.flac16",
-   "file": "kglw2026-10-18t09.mp3",
-   "date": "2026-10-18",
-   "venue": "carpark opposite Croxton Park Hotel",
-   "seconds": 227,
-   "start": 1.5,
-   "gain": 12.5,
-   "end": 209.5
   }
  ],
  "The Wheel": [
@@ -6522,59 +6502,9 @@
    "date": "2018-06-01",
    "venue": "The Observatory North Park",
    "seconds": 316,
-   "start": 1.5,
+   "start": 40.5,
    "gain": 10.5,
    "end": 284.5
-  },
-  {
-   "id": "kglw2018-06-07.mysteryjack",
-   "file": "17 The Wheel.mp3",
-   "date": "2018-06-07",
-   "venue": "Monk's Bar",
-   "seconds": 354,
-   "start": 2.5,
-   "gain": 13.5,
-   "end": 305.5
-  },
-  {
-   "id": "KGATLW060918",
-   "file": "12.The Wheel.mp3",
-   "date": "2018-06-09",
-   "venue": "The Pabst Theater",
-   "seconds": 372,
-   "start": 0.5,
-   "gain": 13,
-   "end": 289.5
-  },
-  {
-   "id": "kglw2018-06-14",
-   "file": "kglw2018-06-14d1t12.mp3",
-   "date": "2018-06-14",
-   "venue": "Royale",
-   "seconds": 563,
-   "start": 0,
-   "gain": 10.5,
-   "end": 301.5
-  },
-  {
-   "id": "kglw2018-06-18.SchoepsMK41.Burns.Flac24",
-   "file": "kinggizzard2018-06-18t17_24bit.mp3",
-   "date": "2018-06-18",
-   "venue": "Union Transfer",
-   "seconds": 323,
-   "start": 1.5,
-   "gain": 13.5,
-   "end": 295.5
-  },
-  {
-   "id": "kglw2018-08-22.AUD.FLAC16",
-   "file": "KGLW_2018-08-22_AUD_t17_The Wheel.mp3",
-   "date": "2018-08-22",
-   "venue": "Club Manufaktur",
-   "seconds": 465,
-   "start": 9.5,
-   "gain": 15.5,
-   "end": 429.5
   },
   {
    "id": "kglw2019-10-09",
@@ -6582,7 +6512,7 @@
    "date": "2019-10-09",
    "venue": "Ancienne Belgique",
    "seconds": 460,
-   "start": 5.5,
+   "start": 44,
    "gain": 6,
    "end": 421.5
   },
@@ -6592,7 +6522,7 @@
    "date": "2021-12-19",
    "venue": "The Princess Theatre",
    "seconds": 358,
-   "start": 30.5,
+   "start": 48,
    "gain": 2.5,
    "end": 342.5
   },
@@ -6612,18 +6542,9 @@
    "date": "2023-06-08",
    "venue": "Red Rocks",
    "seconds": 643,
-   "start": 16.5,
+   "start": 17.5,
    "gain": 1.5,
    "end": 593.5
-  },
-  {
-   "id": "kglw2025-06-10.SBD.flac",
-   "file": "King Gizzard & The Lizard Wizard - Live in Bulgaria '25 - 38 The Wheel (Live in Bulgaria '25).mp3",
-   "date": "2025-06-10",
-   "venue": "Ancient Theatre",
-   "seconds": 409,
-   "start": 4.5,
-   "gain": 9
   },
   {
    "id": "kglw2025-12-04.SBD",
@@ -6631,7 +6552,7 @@
    "date": "2025-12-04",
    "venue": "Enmore Theatre, Sydney, NSW, Australia",
    "seconds": 767,
-   "start": 43.5,
+   "start": 73.5,
    "gain": 6,
    "end": 638.5
   }
@@ -6643,7 +6564,7 @@
    "date": "2021-04-22",
    "venue": "The Enmore Theatre",
    "seconds": 609,
-   "start": 11.5,
+   "start": 51,
    "gain": 7.5,
    "end": 585.5
   },
@@ -6663,7 +6584,7 @@
    "date": "2022-10-23",
    "venue": "The Anthem",
    "seconds": 681,
-   "start": 24.5,
+   "start": 53,
    "gain": 10.5,
    "end": 616.5
   },
@@ -6673,19 +6594,9 @@
    "date": "2023-06-03",
    "venue": "The Caverns Above Ground Amphitheater",
    "seconds": 724,
-   "start": 20.5,
+   "start": 88,
    "gain": 3,
    "end": 649.5
-  },
-  {
-   "id": "kglw2024-05-16.KGLWOffenbach24",
-   "file": "11-Straws in the Wind.mp3",
-   "date": "2024-05-16",
-   "venue": "Offenbach Stadthalle",
-   "seconds": 647,
-   "start": 31.5,
-   "gain": 9,
-   "end": 565.5
   },
   {
    "id": "kglw2024-08-16.SBD",
@@ -6693,7 +6604,7 @@
    "date": "2024-08-16",
    "venue": "Forest Hills Stadium, Queens, NY, USA",
    "seconds": 897,
-   "start": 10.5,
+   "start": 33.5,
    "gain": 6.5,
    "end": 852.5
   },
@@ -6703,7 +6614,7 @@
    "date": "2024-09-01",
    "venue": "Northerly Island",
    "seconds": 708,
-   "start": 0,
+   "start": 102.5,
    "gain": 5,
    "end": 536.5
   },
@@ -6713,7 +6624,7 @@
    "date": "2024-09-12",
    "venue": "Pacific Coliseum",
    "seconds": 727,
-   "start": 0,
+   "start": 69,
    "gain": 4,
    "end": 725.5
   },
@@ -6723,18 +6634,9 @@
    "date": "2024-11-15",
    "venue": "Germania Insurance Amphitheater",
    "seconds": 700,
-   "start": 16.5,
+   "start": 88.5,
    "gain": 4.5,
    "end": 666.5
-  },
-  {
-   "id": "kglw2025-05-20.SBD.flac",
-   "file": "King Gizzard & The Lizard Wizard - Live in Lisbon '25 - 05 Straws In The Wind (Live in Lisbon '25).mp3",
-   "date": "2025-05-20",
-   "venue": "Coliseu dos Recreios",
-   "seconds": 642,
-   "start": 13.5,
-   "gain": 7
   },
   {
    "id": "kglw2025-08-16.SBD.wav",
@@ -6742,32 +6644,12 @@
    "date": "2025-08-16",
    "venue": "Field of Vision at Meadow Creek",
    "seconds": 590,
-   "start": 36.5,
+   "start": 37,
    "gain": 2,
    "end": 546.5
-  },
-  {
-   "id": "kglw2026-08-20",
-   "file": "15- Straws In The Wind.mp3",
-   "date": "2026-08-20",
-   "venue": "Forest Hills",
-   "seconds": 951,
-   "start": 10.5,
-   "gain": 9,
-   "end": 868.5
   }
  ],
  "Cyboogie": [
-  {
-   "id": "kg2019-06-27",
-   "file": "23-Cyboogie.mp3",
-   "date": "2019-06-27",
-   "venue": "Forum Melbourne",
-   "seconds": 407,
-   "start": 38.5,
-   "gain": 2,
-   "end": 383.5
-  },
   {
    "id": "kglw2019-07-12",
    "file": "05. Cyboogie.mp3",
@@ -6794,19 +6676,9 @@
    "date": "2019-09-01",
    "venue": "New Belgium Brewing Company",
    "seconds": 256,
-   "start": 15.5,
+   "start": 5,
    "gain": -1,
    "end": 239.5
-  },
-  {
-   "id": "kglw2019-09-02.ca14.flac1648",
-   "file": "14-Cyboogie.mp3",
-   "date": "2019-09-02",
-   "venue": "The Tabernacle",
-   "seconds": 477,
-   "start": 26.5,
-   "gain": 6,
-   "end": 395.5
   },
   {
    "id": "kglw2019-10-11.dpa4061.flac2448",
@@ -6824,7 +6696,7 @@
    "date": "2020-02-21",
    "venue": "The Croxton",
    "seconds": 515,
-   "start": 7.5,
+   "start": 1.5,
    "gain": 7,
    "end": 499.5
   },
@@ -6854,16 +6726,6 @@
    "seconds": 897,
    "start": 0,
    "gain": -2.5
-  },
-  {
-   "id": "kglw2026-08-21.birds",
-   "file": "14-Cyboogie.mp3",
-   "date": "2026-08-21",
-   "venue": "Forest Hills Stadium",
-   "seconds": 551,
-   "start": 15.5,
-   "gain": 16,
-   "end": 481.5
   }
  ],
  "The Grim Reaper": [
@@ -6893,7 +6755,7 @@
    "date": "2022-10-22",
    "venue": "Franklin Music Hall",
    "seconds": 289,
-   "start": 15.5,
+   "start": 5,
    "gain": 7.5,
    "end": 270.5
   },
@@ -6906,16 +6768,6 @@
    "start": 0,
    "gain": 13,
    "end": 514.5
-  },
-  {
-   "id": "kglw2023-03-18",
-   "file": "kglw2023.03.18.spacebandit/kglw202305.mp3",
-   "date": "2023-03-18",
-   "venue": "Schlachthof Wiesbaden",
-   "seconds": 501,
-   "start": 0,
-   "gain": 3.5,
-   "end": 461.5
   },
   {
    "id": "kglw2023-06-16.SBD",
@@ -6943,7 +6795,7 @@
    "date": "2024-11-08",
    "venue": "PH Live",
    "seconds": 508,
-   "start": 0,
+   "start": 36,
    "gain": -0.5,
    "end": 412.5
   },
@@ -6982,58 +6834,19 @@
    "date": "2025-11-15",
    "venue": "Filmstudion, Gothenburg, Sweden",
    "seconds": 887,
-   "start": 0,
+   "start": 33.5,
    "gain": 1.5,
    "end": 812.5
   }
  ],
  "Gaia": [
   {
-   "id": "kglw2022-04-15",
-   "file": "kgatlw-2022-04-15-coachella-aud-16bit-t08-gaia.mp3",
-   "date": "2022-04-15",
-   "venue": "Coachella",
-   "seconds": 504,
-   "start": 31.5,
-   "gain": 6.5,
-   "end": 428.5
-  },
-  {
-   "id": "kglw2022-04-27.AT2022",
-   "file": "06-Gaia.mp3",
-   "date": "2022-04-27",
-   "venue": "Phoenix Theater",
-   "seconds": 471,
-   "start": 3.5,
-   "gain": 6,
-   "end": 419.5
-  },
-  {
-   "id": "kglw2022-10-02",
-   "file": "18 Gaia.mp3",
-   "date": "2022-10-02",
-   "venue": "William Randolph Hearst Greek Theatre",
-   "seconds": 633,
-   "start": 37.5,
-   "gain": 9,
-   "end": 552.5
-  },
-  {
-   "id": "kglw2022-10-21.p170",
-   "file": "kglw2022-10-21t09.mp3",
-   "date": "2022-10-21",
-   "venue": "Forest Hills Stadium",
-   "seconds": 208,
-   "start": 27.5,
-   "gain": 7
-  },
-  {
    "id": "kglw2023-03-02.dank",
    "file": "15 Gaia.mp3",
    "date": "2023-03-02",
    "venue": "Zenith La Villette",
    "seconds": 496,
-   "start": 7.5,
+   "start": 88.5,
    "gain": 5.5,
    "end": 463.5
   },
@@ -7043,28 +6856,8 @@
    "date": "2023-06-07",
    "venue": "Red Rocks Amphitheatre",
    "seconds": 322,
-   "start": 47.5,
+   "start": 77,
    "gain": 0.5
-  },
-  {
-   "id": "kglw2023-08-29",
-   "file": "kglw2023-08-29d2t06 Gaia.mp3",
-   "date": "2023-08-29",
-   "venue": "Le Bikini, Ramonville-Saint-Agne, France",
-   "seconds": 204,
-   "start": 8.5,
-   "gain": 5,
-   "end": 201.5
-  },
-  {
-   "id": "kglw2024-05-27.dankski",
-   "file": "kglw2024.05.27t09.mp3",
-   "date": "2024-05-27",
-   "venue": "The Usher Hall",
-   "seconds": 260,
-   "start": 7.5,
-   "gain": 7.5,
-   "end": 202.5
   },
   {
    "id": "kglw2024-08-30.bandcampbootlegger",
@@ -7072,7 +6865,7 @@
    "date": "2024-08-30",
    "venue": "ExploreAsheville​.​com Arena",
    "seconds": 480,
-   "start": 7.5,
+   "start": 0,
    "gain": 3,
    "end": 461.5
   },
@@ -7082,7 +6875,7 @@
    "date": "2024-11-09",
    "venue": "Arizona Financial Theater",
    "seconds": 348,
-   "start": 62.5,
+   "start": 103.5,
    "gain": 4.5,
    "end": 338.5
   },
@@ -7092,19 +6885,9 @@
    "date": "2025-05-29",
    "venue": "Lukiškės Prison 2.0",
    "seconds": 357,
-   "start": 74.5,
+   "start": 95,
    "gain": 4,
    "end": 346.5
-  },
-  {
-   "id": "kglw2025-11-04",
-   "file": "13-Gaia.mp3",
-   "date": "2025-11-04",
-   "venue": "Royal Albert Hall",
-   "seconds": 670,
-   "start": 7.5,
-   "gain": 4,
-   "end": 558.5
   }
  ]
 }
