@@ -151,6 +151,7 @@ export const WAVE_SPIN = 1.0;
  * - slipped past just behind a shark as it cuts across the shallows, through its wake, a boost
  * - hopped as it rolls down at you, a rocky meteor is cleared and you come down on a boost; rammed on a boost it bursts and the boost runs on
  * - over a rumble strip as the haze of sleep lifts off it, jolted awake: a boost
+ * - slipped through the gap just behind a pack of hellhounds as the last of them crosses, faster than a cheetah: a boost
  */
 /** A reward can't pay out again to the same kart for this long. */
 export const REWARD_COOLDOWN = 1.5;
@@ -1068,6 +1069,65 @@ export function dozeHaze(u: number): number {
   return 0.15 * ((u - D.clear) / (1 - D.clear));
 }
 
+/**
+ * The Grim Reaper's hellhounds, "sniffing out stitches for the snitches": a
+ * pack of three bursting out of a den in one wall of their pit and running
+ * right across the road into the den in the other, nose to tail, noses down
+ * on the scent. Their scent line is stitched across the road first, a seam
+ * of red stitches glowing brighter and brighter from the side they'll come
+ * from (the warning), while their eyes burn in the dark of the den and the
+ * lead hound's nose pokes out sniffing; then the run, each hound weaving a
+ * little along the road as it sniffs, and the next time round they come
+ * back the other way. Caught by one, bitten and spun. Slipped through the
+ * gap just behind the last of the pack as it crosses, a boost.
+ */
+export const HOUND_STAGES = { run: 0.42, gone: 0.82 } as const;
+export const HOUND_COUNT = 3;
+/** Nose to nose along their line, and each one's body: the head this far ahead of its middle, the tail this far behind, this thick. */
+export const HOUND_SPACING = 3.6;
+export const HOUND_HEAD = 1.3;
+export const HOUND_TAIL = 1.3;
+export const HOUND_RADIUS = 0.75;
+/** The dens are this far out past the road's edge: where the pack waits and where it runs to. */
+export const HOUND_OUT = 2;
+/** How far each hound weaves along the road as it sniffs, either way. */
+export const HOUND_SNIFF = 0.6;
+/** The gap behind the pack: this far back behind the last one's tail, this far either side of its line. */
+export const HOUND_GAP = 7;
+export const HOUND_GAP_DEPTH = 2.6;
+export const HOUND_SPIN = 1.1;
+export const HOUND_BOOST = 1.0;
+/** Each pack down the pit runs this share of a period after the one before, so a fast kart through the gap behind one meets the next as it opens. */
+export const HOUND_LAG = 0.3;
+
+/** Where pack `i` of a stretch is in its cycle at race time `t` (0 to 1), and which way it runs this time (1 to the right). */
+export function houndPhase(t: number, period: number, i: number): { u: number; side: number } {
+  const tt = (t + 10) / period - i * HOUND_LAG;
+  const cycle = Math.floor(tt);
+  return { u: tt - cycle, side: (cycle + i) % 2 === 0 ? 1 : -1 };
+}
+
+/**
+ * Where each hound of a pack is at cycle stage `u`, in the road's frame at
+ * its station: `lateral` (to the right), `along` the road, and whether it's
+ * out of its den (`out`). `side` is the way they run; the road is `reach`
+ * wide either side of its centre. The lead is first.
+ */
+export function houndPack(u: number, side: number, reach: number): { lateral: number; along: number; out: boolean }[] {
+  const H = HOUND_STAGES;
+  const den = reach + HOUND_OUT;
+  const back = (HOUND_COUNT - 1) * HOUND_SPACING;
+  // The lead runs from its den until the last of them is in the far one.
+  const f = u < H.run ? 0 : u >= H.gone ? 1 : (u - H.run) / (H.gone - H.run);
+  const lead = -den + (2 * den + back) * f;
+  return Array.from({ length: HOUND_COUNT }, (_, k) => {
+    const l = lead - k * HOUND_SPACING;
+    const out = u >= H.run && u < H.gone && l > -den && l < den;
+    const lateral = side * Math.max(-den, Math.min(den, l));
+    return { lateral, along: out ? HOUND_SNIFF * Math.sin(f * Math.PI * 7 + k * 1.9) : 0, out };
+  });
+}
+
 /** How far a tree has toppled at cycle stage `u`: 0 upright, a lean while it creaks, 1 lying across the road. */
 export function timberFall(u: number): number {
   const T = TIMBER_STAGES;
@@ -1169,6 +1229,7 @@ const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds' | 'butterfli
   sharks: SHARK_SPIN,
   rockyMeteors: METEOR_SPIN,
   dozes: 0,
+  hellhounds: HOUND_SPIN,
 };
 
 /** Kinds that fill the whole road across, on a rhythm: nothing to steer round, only to time. */
@@ -1935,6 +1996,27 @@ export class HazardSystem {
           p.phase = u;
           break;
         }
+        case 'hellhounds': {
+          // A pack of hellhounds waiting in the den in one wall, then running right across the road into the other's, the scent stitched across first.
+          const at = def.at[i];
+          const { u, side } = houndPhase(t, def.period, i);
+          const reach = this.halfWidth(at);
+          const pack = houndPack(u, side, reach);
+          // The pose is the lead hound's, the pack following it along its line; ax, az is the road's centre at the station, its frame.
+          this.place(p, at, 0, 0);
+          const fx = Math.sin(p.heading);
+          const fz = Math.cos(p.heading);
+          p.x = p.ax - fz * pack[0].lateral + fx * pack[0].along;
+          p.z = p.az + fx * pack[0].lateral + fz * pack[0].along;
+          p.radius = HOUND_RADIUS;
+          p.side = side;
+          p.gap = reach;
+          p.active = pack.some((h) => h.out);
+          // Running: the gap behind the pack is open.
+          p.lane = u >= HOUND_STAGES.run && u < HOUND_STAGES.gone ? 1 : 0;
+          p.phase = u;
+          break;
+        }
         case 'dustDevils':
         case 'butterflies':
         case 'tornadoes':
@@ -2164,6 +2246,10 @@ export class HazardSystem {
         }
         if (p.kind === 'dozes') {
           this.doze(hit, p, s);
+          continue;
+        }
+        if (p.kind === 'hellhounds') {
+          this.hound(hit, p, s);
           continue;
         }
         if (p.kind === 'fuzz' && p.phase >= FUZZ_STAGES.gold && p.phase < FUZZ_STAGES.red) {
@@ -2511,6 +2597,19 @@ export class HazardSystem {
         // The face, from a little before it comes down until it lifts; the sparks after are there to be driven through.
         if (p.phase < HAMMER_STAGES.fall - 0.1 || p.phase >= HAMMER_STAGES.lift) continue;
         out.push({ x: p.x, z: p.z, r: p.radius, vx: 0, vz: 0 });
+        continue;
+      }
+      if (p.kind === 'hellhounds') {
+        // From just before they burst out until they're in the far den: each hound out of its den, head to tail, and where the next will be.
+        if (p.phase < HOUND_STAGES.run - 0.06 || p.phase >= HOUND_STAGES.gone) continue;
+        const fx = Math.sin(p.heading);
+        const fz = Math.cos(p.heading);
+        const { def } = this.slots[k];
+        const speed = (2 * (p.gap + HOUND_OUT) + (HOUND_COUNT - 1) * HOUND_SPACING) / ((HOUND_STAGES.gone - HOUND_STAGES.run) * ('period' in def ? def.period : 5));
+        for (const h of houndPack(Math.max(p.phase, HOUND_STAGES.run), p.side, p.gap)) {
+          if (!h.out && p.phase >= HOUND_STAGES.run) continue;
+          out.push({ x: p.ax - fz * h.lateral + fx * h.along, z: p.az + fx * h.lateral + fz * h.along, r: 1.6, vx: -fz * p.side * speed, vz: fx * p.side * speed });
+        }
         continue;
       }
       if (p.kind === 'sharks') {
@@ -3215,6 +3314,38 @@ export class HazardSystem {
     s.extX += -fz * side * DOZE_DRIFT;
     s.extZ += fx * side * DOZE_DRIFT;
     hit.push({ kart: s, by: p.kind });
+  }
+
+  /**
+   * A pack of hellhounds crossing their pit: caught by one, head to tail,
+   * bitten and spun; slipped through the gap just behind the last of them as
+   * it crosses, a boost.
+   */
+  private hound(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+    if (p.lane !== 1) return;
+    const fx = Math.sin(p.heading);
+    const fz = Math.cos(p.heading);
+    // In the road's frame at the station: a lateral to the right is (-cos h, sin h).
+    const along = (s.x - p.ax) * fx + (s.z - p.az) * fz;
+    const lat = (s.x - p.ax) * -fz + (s.z - p.az) * fx;
+    const pack = houndPack(p.phase, p.side, p.gap);
+    for (const h of pack) {
+      if (!h.out) continue;
+      // Its body: a segment across the road, tail to head the way the pack runs.
+      const mid = h.lateral + p.side * ((HOUND_HEAD - HOUND_TAIL) / 2);
+      const d = Math.hypot(Math.max(0, Math.abs(lat - mid) - (HOUND_HEAD + HOUND_TAIL) / 2), along - h.along);
+      if (d > HOUND_RADIUS + KART_RADIUS) continue;
+      if (this.cooldown.has(s)) return;
+      this.cooldown.set(s, HIT_COOLDOWN);
+      if (spinOut(s, HOUND_SPIN)) hit.push({ kart: s, by: p.kind });
+      return;
+    }
+    // The gap behind the last of them: the road it has this moment crossed.
+    const last = pack[pack.length - 1];
+    if (!last.out) return;
+    const behind = p.side * (last.lateral - lat) - HOUND_TAIL - HOUND_RADIUS;
+    if (behind < 0 || behind > HOUND_GAP || Math.abs(along - last.along) > HOUND_GAP_DEPTH || Math.abs(lat) > p.gap + 1 || s.speed < 8 || this.cooldown.has(s)) return;
+    this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, HOUND_BOOST)));
   }
 
   /** Pays a kart for using a hazard well, once in a while. */

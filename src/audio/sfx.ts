@@ -594,6 +594,14 @@ export class Sfx {
       [1047, 831, 659, 523].forEach((f, k) => this.tone(f, 0.6, 'sine', 0.05 - k * 0.008, undefined, 0.15 + k * 0.28));
       this.whoosh(0.9, 900, 200, 0.08);
     }
+    // Bitten by a hellhound: a snarl, two barks, the snap of its jaws, and a growl rolling on under them.
+    if (by === 'hellhounds') {
+      this.tone(98, 0.6, 'sawtooth', 0.1, 62, 0, true);
+      this.hit(0.12, 900, 0.45);
+      this.tone(440, 0.09, 'square', 0.08, 250, 0.1);
+      this.tone(400, 0.11, 'square', 0.08, 220, 0.26);
+      this.whoosh(0.3, 1800, 500, 0.12);
+    }
     // A wave breaking over you: a crash of white noise; a glider comes in with a whistle of wind.
     if (by === 'waves') this.whoosh(0.8, 2400, 300, 0.35);
     if (by === 'gliders') this.whoosh(0.5, 1800, 500, 0.2);

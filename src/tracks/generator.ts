@@ -862,11 +862,11 @@ const PALETTES: Record<GenTheme, Palette> = {
     surface: 'cinder',
     deck: 'cinder',
     alt: 'sand',
-    hazards: ['sunMoon'],
-    start: 'setGate',
-    landmarks: ['setGate'],
+    hazards: ['hellhounds'],
+    start: 'scytheGate',
+    landmarks: ['scytheGate', 'reaperMC', 'chequeBank'],
     tallWalls: 6,
-    places: ['Jackal', 'Snake', 'Tornado', 'Tomb', 'Duality', 'Sandstorm', 'Moonbeam', 'Hieroglyph', 'Reset'],
+    places: ['Chimney', 'Gate Keeper', 'Cheetah', 'Point Blank', 'Hurricane', 'Scraps', 'Cactus', 'Hatchet', 'Hellhound', 'Cheque', 'Silhouette', 'Fortress', 'Homestead'],
     music: { lap: 'the-grim-reaper', finalLap: 'the-grim-reaper-final-lap' },
   },
   gaia: {
@@ -1679,6 +1679,10 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
       case 'dozes':
         // Rows of sleep across the stretch, settling one after another down it.
         hazards.push({ kind, at: at(count + 1), period: 4.2 });
+        break;
+      case 'hellhounds':
+        // Packs of hellhounds crossing the stretch one after another, the way back the next time.
+        hazards.push({ kind, at: at(count), period: 4.4 });
         break;
     }
     return true;

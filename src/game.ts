@@ -2027,6 +2027,7 @@ const HIT_TEXT: Record<ItemKind | HazardKind, string> = {
   sharks: 'SHARK BITE!',
   rockyMeteors: 'PUSHED DOWN!',
   dozes: 'ASLEEP AT THE WHEEL!',
+  hellhounds: 'STITCHED UP!',
 };
 
 /** What a hazard used well says: the ones that can help. */
@@ -2098,6 +2099,7 @@ const BONUS_TEXT: Record<HazardKind, string> = {
   sharks: "I'M NOT A BUOY!",
   rockyMeteors: 'TRANSCEND!',
   dozes: 'INTO OUR FUTURE!',
+  hellhounds: 'FASTER THAN A CHEETAH!',
 };
 
 /** Takes a group out of the scene and frees what it built. */
