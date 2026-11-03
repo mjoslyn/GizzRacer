@@ -616,6 +616,12 @@ export class Sfx {
       this.hit(0.3, 160, 0.5);
       this.whoosh(0.9, 700, 180, 0.22);
     }
+    // Caught on a red light: brakes squealing, the gale gusting, and the crossing's flat beeps telling you to stay, three of them, one a beat.
+    if (by === 'trafficLights') {
+      this.tone(1900, 0.45, 'sawtooth', 0.05, 1100);
+      this.whoosh(0.7, 600, 2600, 0.2);
+      [0, 1, 2].forEach((k) => this.tone(880, 0.12, 'square', 0.06, undefined, 0.3 + k * 0.26));
+    }
     // A wave breaking over you: a crash of white noise; a glider comes in with a whistle of wind.
     if (by === 'waves') this.whoosh(0.8, 2400, 300, 0.35);
     if (by === 'gliders') this.whoosh(0.5, 1800, 500, 0.2);

@@ -29,6 +29,7 @@ import { greatWheel, grooveRoadTexture, helmHandle, pilgrims, reaper, slumberFea
 import { bodyBags, chequeBank, chimneys, cinderRoadTexture, fortress, homestead, keeperGate, openGrave, reaperMC, reapingFeature, scytheGate, wickedSun } from './theGrimReaper';
 import { binaryBrook, cyboogieGate, cyborgFeature, cyborgHead, cyborgHeart, cyborgZones, debugLane, fishHook, grapheneGlowTexture, grapheneRoadTexture, hanTyumi } from './cyboogie';
 import { deadEarth, earthRoadTexture, elements, gaiaFaceLand, gaiaFeature, gaiaHands, gaiaHeart, gaiaZones, luckyRainbow, parasites } from './gaia';
+import { cheshireGrin, farmTrackTexture, forgottenPier, hellsKitchen, shortStraw, strawFeature, strawsGate, trashTornado } from './strawsInTheWind';
 import { bandroomFeature, bentArm, canopyFeature, elbowGate, harmonicaGate, mirrorBall, partyFeature, powerStation, rakeGate, snowPeak, trunkGate, wetlandFeature } from './twelveBarBruise';
 import { arrowGate, cellophaneBloom, emptyHead, eyeGate, filmGate, fuzzGate, fuzzMeter, mindFace, neuronsFeature, opartFeature, panesFeature, staticFeature } from './mindfuzz';
 import { blightFeature, burningEarth, coronaFeature, domeGate, domesFeature, hellGate, pitFeature, ratsNest, richDome, shipGate, smogGate, theSun } from './infest';
@@ -141,6 +142,7 @@ function materials(theme: Theme): Materials {
     reaping: () => tex.stoneTexture([150, 96, 60], [220, 180, 130]),
     cyborg: () => tex.stoneTexture([30, 34, 40], [130, 136, 146]),
     gaia: () => tex.stoneTexture([96, 98, 86], [170, 166, 150]),
+    strawfield: () => tex.stoneTexture([130, 118, 100], [200, 190, 170]),
   };
   const neon = banana ? tex.neonRoadTexture(tex.BANANA.neon) : tex.neonRoadTexture();
   const rainbow = banana ? tex.rainbowTexture(tex.BANANA.bands) : tex.rainbowTexture();
@@ -256,7 +258,8 @@ function materials(theme: Theme): Materials {
       // The Grim Reaper's: black cinders and ash, a gold line down the middle.
       cinder: bumpy(cinderRoadTexture(), 0.06),
       // The All Stars Cup #1's roads (placeholders until each track's world is built).
-      farmtrack: bumpy(tex.asphaltTexture(), 0.08),
+      // Straws in the Wind's: a farm track through the flowers, straw blown across it.
+      farmtrack: bumpy(farmTrackTexture(), 0.07),
       // Cyboogie's: a graphene lattice over his pistons and pumps, its bonds lit faintly and a red line down the middle.
       graphene: bumpy(grapheneRoadTexture(), 0.05, { emissive: 0xffffff, emissiveMap: grapheneGlowTexture(), emissiveIntensity: 0.6 }),
       // Gaia's: the Earth's own skin, soil and pale stones.
@@ -498,6 +501,12 @@ export function buildTrackView(track: Track): TrackView {
     if (lm.kind === 'gaiaHeart') group.add(gaiaHeart(track, ribbon, s, (lm.to ?? lm.s) * ribbon.scale, animated));
     if (lm.kind === 'deadEarth') group.add(deadEarth(track, ribbon, s, (lm.to ?? lm.s + 90) * ribbon.scale, animated));
     if (lm.kind === 'luckyRainbow') group.add(luckyRainbow(ribbon, s, animated));
+    if (lm.kind === 'strawsGate') group.add(strawsGate(ribbon, s, animated));
+    if (lm.kind === 'trashTornado') group.add(trashTornado(ribbon, s, lm.lateral ?? 0, animated));
+    if (lm.kind === 'cheshireGrin') group.add(cheshireGrin(ribbon, s, animated));
+    if (lm.kind === 'hellsKitchen') group.add(hellsKitchen(ribbon, s, (lm.to ?? lm.s) * ribbon.scale, animated));
+    if (lm.kind === 'forgottenPier') group.add(forgottenPier(ribbon, s, (lm.to ?? lm.s) * ribbon.scale, animated));
+    if (lm.kind === 'shortStraw') group.add(shortStraw(ribbon, s, animated));
     if (lm.kind === 'dragonFlight') {
       const d = dragonFlight(track.def.bounds);
       group.add(d.group);
@@ -1690,8 +1699,8 @@ function decor(track: Track, mats: Materials, theme: Theme, animated: ((time: nu
     track.def.pits.every((p) => !inPit({ ...p, halfWidth: p.halfWidth + 6, halfLength: p.halfLength + 6 }, x, z));
 
   const scale = densityScale();
-  const rockCount = Math.round(scale * ({ jungle: 120, city: 0, sky: 0, lagoon: 60, glacier: 140, wasteland: 150, colony: 170, plains: 60, cosmos: 0, isle: 90, airstrip: 40, grove: 90, sea: 70, peaks: 120, alienSea: 40, garden: 30, shore: 110, ruins: 160, clouds: 0, cytoplasm: 60, spectrum: 40, foundry: 60, theatre: 30, boneyard: 140, pedalboard: 20, blight: 120, domes: 90, corona: 0, pit: 160, neurons: 50, opart: 0, panes: 20, static: 60, bandroom: 30, wetland: 60, party: 10, canopy: 90, hadean: 110, deshret: 60, moonpalace: 70, uruk: 90, nanshouse: 0, suburb: 30, headtrip: 40, paddock: 40, den: 0, alteredworld: 50, mudflat: 80, hollowness: 70, openCut: 140, forge: 50, driverless: 0, reactor: 60, network: 0, summer: 40, scala: 90, slumber: 40, cyborg: 0, gaia: 70 }[theme.decor as string] ?? 220));
-  const featureCount = Math.round(scale * ({ jungle: 150, meadow: 110, lagoon: 120, glacier: 160, city: 90, sky: 90, wasteland: 110, colony: 110, plains: 140, cosmos: 110, isle: 140, airstrip: 110, grove: 170, sea: 120, peaks: 140, alienSea: 150, garden: 170, shore: 140, ruins: 120, clouds: 110, cytoplasm: 160, spectrum: 150, foundry: 150, theatre: 150, boneyard: 160, pedalboard: 160, blight: 150, domes: 140, corona: 160, pit: 160, neurons: 170, opart: 150, panes: 160, static: 170, bandroom: 160, wetland: 180, party: 160, canopy: 260, hadean: 170, deshret: 160, moonpalace: 170, uruk: 180, nanshouse: 190, suburb: 170, headtrip: 190, paddock: 170, den: 190, alteredworld: 180, mudflat: 180, hollowness: 160, openCut: 170, forge: 170, driverless: 170, reactor: 150, network: 170, summer: 230, scala: 190, slumber: 180, cyborg: 180, gaia: 240 }[theme.decor as string] ?? 70));
+  const rockCount = Math.round(scale * ({ jungle: 120, city: 0, sky: 0, lagoon: 60, glacier: 140, wasteland: 150, colony: 170, plains: 60, cosmos: 0, isle: 90, airstrip: 40, grove: 90, sea: 70, peaks: 120, alienSea: 40, garden: 30, shore: 110, ruins: 160, clouds: 0, cytoplasm: 60, spectrum: 40, foundry: 60, theatre: 30, boneyard: 140, pedalboard: 20, blight: 120, domes: 90, corona: 0, pit: 160, neurons: 50, opart: 0, panes: 20, static: 60, bandroom: 30, wetland: 60, party: 10, canopy: 90, hadean: 110, deshret: 60, moonpalace: 70, uruk: 90, nanshouse: 0, suburb: 30, headtrip: 40, paddock: 40, den: 0, alteredworld: 50, mudflat: 80, hollowness: 70, openCut: 140, forge: 50, driverless: 0, reactor: 60, network: 0, summer: 40, scala: 90, slumber: 40, cyborg: 0, gaia: 70, strawfield: 0 }[theme.decor as string] ?? 220));
+  const featureCount = Math.round(scale * ({ jungle: 150, meadow: 110, lagoon: 120, glacier: 160, city: 90, sky: 90, wasteland: 110, colony: 110, plains: 140, cosmos: 110, isle: 140, airstrip: 110, grove: 170, sea: 120, peaks: 140, alienSea: 150, garden: 170, shore: 140, ruins: 120, clouds: 110, cytoplasm: 160, spectrum: 150, foundry: 150, theatre: 150, boneyard: 160, pedalboard: 160, blight: 150, domes: 140, corona: 160, pit: 160, neurons: 170, opart: 150, panes: 160, static: 170, bandroom: 160, wetland: 180, party: 160, canopy: 260, hadean: 170, deshret: 160, moonpalace: 170, uruk: 180, nanshouse: 190, suburb: 170, headtrip: 190, paddock: 170, den: 190, alteredworld: 180, mudflat: 180, hollowness: 160, openCut: 170, forge: 170, driverless: 170, reactor: 150, network: 170, summer: 230, scala: 190, slumber: 180, cyborg: 180, gaia: 240, strawfield: 200 }[theme.decor as string] ?? 70));
   // Sky and void scenery floats at all heights; city towers need room off the road.
   const floating = theme.decor === 'sky' || theme.decor === 'cosmos' || theme.decor === 'clouds';
   const rocks = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 1), mats.rock, rockCount);
@@ -1860,6 +1869,8 @@ function featureBuilder(theme: Theme, mats: Materials, animated: ((time: number)
     case 'gaia':
       // Her living land, her hair, her parasites and the dead earth, by the stretch of the lap it's nearest.
       return gaiaFeature(animated, track && gaiaZones(track));
+    case 'strawfield':
+      return strawFeature(animated);
     case 'lagoon': {
       const bark = lambert(0x9a7a52);
       const frond = lambert(0x3aa04a, { side: THREE.DoubleSide, flatShading: true });

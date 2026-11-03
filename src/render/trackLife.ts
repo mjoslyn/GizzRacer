@@ -101,6 +101,8 @@ const LIFE: Record<DecorKind, LifeSpec> = {
   cyborg: { flock: { kind: 'orb', color: 0xff3a4a, count: 14, height: 18, size: 0.6, glow: true }, motes: { color: 0x8affc8, count: 380, size: 0.35, drift: 'rise', glow: true } },
   // Birds wheeling over her, and pollen drifting off the meadow.
   gaia: { flock: { kind: 'bird', color: 0x2a2a26, count: 16, height: 26, size: 1.0 }, motes: { color: 0xf4ecc0, count: 200, size: 0.35, drift: 'float' } },
+  // Crows tossed about over the field, and straw blowing through the air.
+  strawfield: { flock: { kind: 'bird', color: 0x1a1a20, count: 14, height: 22, size: 0.9 }, motes: { color: 0xf0cc6a, count: 380, size: 0.5, drift: 'blow' } },
   // Moths round the lamps, and dust of dreams drifting in the lamplight.
   // Vultures wheeling over the reaper's round, and dust and ash blowing across the hardpan.
   reaping: { flock: { kind: 'vulture', color: 0x1a1210, count: 10, height: 32, size: 1.5 }, motes: { color: 0xd8a070, count: 340, size: 0.35, drift: 'blow' } },

@@ -151,6 +151,7 @@ export const WAVE_SPIN = 1.0;
  * - slipped past just behind a shark as it cuts across the shallows, through its wake, a boost
  * - hopped as it rolls down at you, a rocky meteor is cleared and you come down on a boost; rammed on a boost it bursts and the boost runs on
  * - over a rumble strip as the haze of sleep lifts off it, jolted awake: a boost
+ * - under a mortal traffic light while it shows green, on the one of the waltz: go, a boost
  * - slipped through the gap just behind a pack of hellhounds as the last of them crosses, faster than a cheetah: a boost
  * - hopped onto a piston at the top of its stroke (or as it punches up), ridden: up, and on with a boost
  * - over one of Gaia's ribs as it rises with her breath, thrown on: up, and a boost
@@ -1226,6 +1227,38 @@ export function breathLift(u: number): number {
   return -BREATH_SINK * (1 - k * k * (3 - 2 * k));
 }
 
+/**
+ * Straws in the Wind's mortal traffic lights: "mortal traffic lights
+ * signalling when to stay or go". A gantry of lights over the road, swaying
+ * in the gale, changing on the waltz's three beats: green on the one (go),
+ * amber on the two, red on the three (stay). Down a stretch each gantry
+ * changes a little after the one before, so a green wave rolls down the
+ * road at about a fast kart's pace. Under one while it shows green, a
+ * boost; caught under one on red, you're stopped dead: spun round, most of
+ * your speed gone. Amber does nothing but warn.
+ */
+export const LIGHT_STAGES = { amber: 1 / 3, red: 2 / 3 } as const;
+/** How far along the road a gantry's stop line reaches either side of it. */
+export const LIGHT_DEPTH = 2.4;
+/** Each gantry down a stretch changes this share of a bar after the one before. */
+export const LIGHT_LAG = 0.21;
+/** Through on green: a boost this long. */
+export const LIGHT_GO = 0.9;
+/** Caught on red: spun this long, keeping this share of your speed. */
+export const LIGHT_SPIN = 0.8;
+export const LIGHT_SLOW = 0.3;
+
+/** Where gantry `i` of a stretch of traffic lights is in its bar at race time `t`, 0 to 1. */
+export function lightPhase(t: number, period: number, i: number): number {
+  const tt = (t + 10) / period - i * LIGHT_LAG;
+  return tt - Math.floor(tt);
+}
+
+/** Which light a gantry shows at bar stage `u`: 0 green, 1 amber, 2 red. */
+export function lightColour(u: number): 0 | 1 | 2 {
+  return u < LIGHT_STAGES.amber ? 0 : u < LIGHT_STAGES.red ? 1 : 2;
+}
+
 /** How far a tree has toppled at cycle stage `u`: 0 upright, a lean while it creaks, 1 lying across the road. */
 export function timberFall(u: number): number {
   const T = TIMBER_STAGES;
@@ -1330,11 +1363,12 @@ const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds' | 'butterfli
   hellhounds: HOUND_SPIN,
   pistons: PISTON_SPIN,
   breaths: 0,
+  trafficLights: LIGHT_SPIN,
 };
 
 /** Kinds that fill the whole road across, on a rhythm: nothing to steer round, only to time. */
 export function isSheet(kind: HazardKind): boolean {
-  return kind === 'flameJets' || kind === 'dragonFire' || kind === 'lasers' || kind === 'waves' || kind === 'gusts' || kind === 'prisms' || kind === 'flares' || kind === 'timber' || kind === 'cords' || kind === 'strings' || kind === 'fangs' || kind === 'dozes' || kind === 'breaths';
+  return kind === 'flameJets' || kind === 'dragonFire' || kind === 'lasers' || kind === 'waves' || kind === 'gusts' || kind === 'prisms' || kind === 'flares' || kind === 'timber' || kind === 'cords' || kind === 'strings' || kind === 'fangs' || kind === 'dozes' || kind === 'breaths' || kind === 'trafficLights';
 }
 
 /** Which of a prism beam's four colours it is showing at cycle stage `u` (3 is the fourth colour), and whether it is lit. */
@@ -2146,6 +2180,21 @@ export class HazardSystem {
           p.phase = u;
           break;
         }
+        case 'trafficLights': {
+          // A gantry of lights over the road, changing on the waltz's beats a little after the one before it.
+          const at = def.at[i];
+          const u = lightPhase(t, def.period, i);
+          this.place(p, at, 0, 0);
+          p.radius = this.halfWidth(at);
+          p.lane = lightColour(u);
+          p.active = p.lane === 2;
+          // How far through its beat the light is, 0 to 1.
+          p.gap = (u * 3) % 1;
+          // The gale rocks each gantry its own way.
+          p.side = i % 2 ? -1 : 1;
+          p.phase = u;
+          break;
+        }
         case 'dustDevils':
         case 'butterflies':
         case 'tornadoes':
@@ -2387,6 +2436,10 @@ export class HazardSystem {
         }
         if (p.kind === 'breaths') {
           this.breath(hit, p, s);
+          continue;
+        }
+        if (p.kind === 'trafficLights') {
+          this.trafficLight(hit, p, s);
           continue;
         }
         if (p.kind === 'fuzz' && p.phase >= FUZZ_STAGES.gold && p.phase < FUZZ_STAGES.red) {
@@ -3512,6 +3565,7 @@ export class HazardSystem {
     if (!spinOut(s, pumping ? PISTON_SPIN : PISTON_BUMP)) return;
     if (pumping) launch(s, PISTON_THROW);
     s.speed *= pumping ? PISTON_SLOW : PISTON_BUMP_SLOW;
+    hit.push({ kart: s, by: p.kind });
   }
 
   /**
@@ -3535,6 +3589,28 @@ export class HazardSystem {
     this.cooldown.set(s, HIT_COOLDOWN);
     if (!wobble(s, BREATH_WOBBLE)) return;
     s.speed *= BREATH_SLOW;
+    hit.push({ kart: s, by: p.kind });
+  }
+
+  /**
+   * A mortal traffic light: under it on green, go, a boost; caught under it
+   * on red, stay: stopped dead, spun round, most of your speed gone. Amber
+   * only warns.
+   */
+  private trafficLight(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+    const fx = Math.sin(p.heading);
+    const fz = Math.cos(p.heading);
+    const along = (s.x - p.x) * fx + (s.z - p.z) * fz;
+    const lat = (s.x - p.x) * -fz + (s.z - p.z) * fx;
+    if (Math.abs(along) > LIGHT_DEPTH + KART_RADIUS || Math.abs(lat) > p.radius + KART_RADIUS) return;
+    if (p.lane === 0) {
+      this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, LIGHT_GO)));
+      return;
+    }
+    if (!p.active || this.cooldown.has(s)) return;
+    this.cooldown.set(s, HIT_COOLDOWN);
+    if (!spinOut(s, LIGHT_SPIN)) return;
+    s.speed *= LIGHT_SLOW;
     hit.push({ kart: s, by: p.kind });
   }
 
