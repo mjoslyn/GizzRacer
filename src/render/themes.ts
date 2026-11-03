@@ -17,9 +17,10 @@ import { boardTexture, rackTexture, railTexture } from './allIsKnown';
 import { MURK, bushGroundTexture, railTexture as summerRailTexture, sandstoneTexture } from './muddyWater';
 import { chainBarrierTexture, scalaGroundTexture, strataWallTexture } from './greatChainOfBeing';
 import { duskStoneTexture, heathTexture, railTexture as wheelRailTexture } from './theWheel';
+import { brineTankTexture, plateTexture, synthPanelTexture } from './cyboogie';
 
 export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism' | 'factory' | 'gamma' | 'carrion' | 'wah' | 'smog' | 'dome' | 'solar' | 'inferno' | 'mind' | 'notmind' | 'cellophane' | 'mindfuzz' | 'elbow' | 'muck' | 'boogie' | 'treesea' | 'theia' | 'set' | 'change' | 'uruk' | 'headon' | 'godcall' | 'nan' | 'float' | 'newworld' | 'foe' | 'altered' | 'hollow' | 'forge' | 'steelwar' | 'autonomy' | 'reactor' | 'muddy' | 'scala' | 'network' | 'wheel' | 'windmill' | 'cyborg' | 'grimreaper' | 'gaia';
-export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy' | 'hadean' | 'deshret' | 'moonpalace' | 'uruk' | 'nanshouse' | 'suburb' | 'headtrip' | 'paddock' | 'den' | 'alteredworld' | 'mudflat' | 'hollowness' | 'openCut' | 'forge' | 'driverless' | 'reactor' | 'network' | 'summer' | 'scala' | 'slumber';
+export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy' | 'hadean' | 'deshret' | 'moonpalace' | 'uruk' | 'nanshouse' | 'suburb' | 'headtrip' | 'paddock' | 'den' | 'alteredworld' | 'mudflat' | 'hollowness' | 'openCut' | 'forge' | 'driverless' | 'reactor' | 'network' | 'summer' | 'scala' | 'slumber' | 'cyborg';
 
 /** Everything that makes a track's world look like itself. */
 export interface Theme {
@@ -1207,22 +1208,25 @@ export const THEMES: Record<ThemeId, Theme> = {
     dust: 0xd08050,
     barrier: { map: tex.templeWallTexture, crawl: false },
   },
-  // Cyboogie: (placeholder, Set's look until its world is built).
+  // Cyboogie: inside a cyborg who has lost his humanity, as dark as the video's stage, synth red glowing low all round, chrome and the brine green of his dome; his plating underfoot, the graphene road pale and lit over it, a red line down each edge.
   cyborg: {
-    sky: { zenith: '#0a0a34', high: '#262a78', low: '#c86a3a', horizon: '#ffd070', below: '#c06030', ground: '#6a2a14', cloud: '255,200,150', clouds: 12, stars: { count: 140, color: '#f0f0ff' }, moon: '#f4f4ff' },
-    fog: { color: 0xc07850, near: 160, far: 860 },
-    hemi: { sky: 0xffd0a0, ground: 0x8a3a1a, intensity: 1.5 },
-    sun: { color: 0xffd890, intensity: 2.3 },
-    ground: tex.redSandTexture,
-    groundTile: 20,
-    cliff: tex.templeWallTexture,
-    decor: 'deshret',
-    distant: { shape: 'mesa', color: 0x5a2414 },
-    haze: 0.8,
-    duotone: [0x0a0420, 0xd05a20, 0xffe890],
+    sky: { zenith: '#040206', high: '#14060c', low: '#4a0a16', horizon: '#d8283a', below: '#3a0a12', ground: '#08120f', cloud: '150,30,46', clouds: 7, stars: { count: 160, color: '#ffb0b8' } },
+    fog: { color: 0x2a0a12, near: 170, far: 820 },
+    hemi: { sky: 0xffd0d8, ground: 0x1a4a3a, intensity: 1.6 },
+    sun: { color: 0xfff0f2, intensity: 2.0 },
+    ground: plateTexture,
+    groundTile: 24,
+    // Walls are brine tanks in chrome frames: the cut down his neck, and the world's edge.
+    cliff: brineTankTexture,
+    decor: 'cyborg',
+    distant: { shape: 'hill', color: 0x12060a },
+    haze: 0,
+    duotone: [0x050208, 0xe8182c, 0xe0f4ec],
     skyCycle: false,
-    dust: 0xd08050,
-    barrier: { map: tex.templeWallTexture, crawl: false },
+    dust: 0x6a8a80,
+    barrier: { map: synthPanelTexture, crawl: false },
+    edgeLine: 0xff2a3c,
+    edgeWidth: 0.5,
   },
   // The Grim Reaper: (placeholder, Set's look until its world is built).
   grimreaper: {

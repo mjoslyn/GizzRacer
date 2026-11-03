@@ -151,6 +151,7 @@ export const WAVE_SPIN = 1.0;
  * - slipped past just behind a shark as it cuts across the shallows, through its wake, a boost
  * - hopped as it rolls down at you, a rocky meteor is cleared and you come down on a boost; rammed on a boost it bursts and the boost runs on
  * - over a rumble strip as the haze of sleep lifts off it, jolted awake: a boost
+ * - hopped onto a piston at the top of its stroke (or as it punches up), ridden: up, and on with a boost
  */
 /** A reward can't pay out again to the same kart for this long. */
 export const REWARD_COOLDOWN = 1.5;
@@ -1068,6 +1069,55 @@ export function dozeHaze(u: number): number {
   return 0.15 * ((u - D.clear) / (1 - D.clear));
 }
 
+/**
+ * Cyboogie's pistons: "pistons and pumps under graphene lattice". Rows of
+ * PISTON_LANES pistons across the road, flush in the graphene, that punch up
+ * through it one after another on the four beats of the boogie's bar, left to
+ * right down one row and right to left down the next, like the song's
+ * arpeggio, each row a beat behind the one before. Each piston hisses and its
+ * ring glows red (the warning, harmless), punches up (caught over it, you're
+ * thrown and spun), stands at the top of its stroke a while (a chrome column:
+ * driven into, you're spun; hopped onto, you ride it, up and on with a
+ * boost), and drops back flush.
+ */
+/** Pistons to a row, across the road. */
+export const PISTON_LANES = 4;
+export const PISTON_STAGES = { top: 0.07, drop: 0.42, down: 0.52, warn: 0.8 } as const;
+export const PISTON_RADIUS = 2.6;
+/** How high a piston stands at the top of its stroke. */
+export const PISTON_LIFT = 1.6;
+/** Caught as it punches up: thrown up this fast (m/s), spun this long, and this much of your speed kept. */
+export const PISTON_THROW = 8;
+export const PISTON_SPIN = 1.0;
+export const PISTON_SLOW = 0.55;
+/** Driven into one standing at the top of its stroke: spun this long, this much of your speed kept. */
+export const PISTON_BUMP = 0.8;
+export const PISTON_BUMP_SLOW = 0.6;
+/** Hopped onto at the top of its stroke: ridden up this fast (m/s), and a boost this long. */
+export const PISTON_RIDE = 11;
+export const PISTON_BOOST = 0.9;
+
+/** The beat of the bar (0 to PISTON_LANES - 1) the piston in lane `lane` of row `row` punches up on: an arpeggio up one row and down the next, each row a beat behind. */
+export function pistonBeat(row: number, lane: number, lanes: number): number {
+  const step = row % 2 ? lanes - 1 - lane : lane;
+  return (step + row) % lanes;
+}
+
+/** Where a piston is in its stroke at race time `t`, 0 to 1: 0 as it punches up. */
+export function pistonPhase(t: number, period: number, beat: number, lanes: number): number {
+  const tt = (t + 10) / period - beat / lanes;
+  return tt - Math.floor(tt);
+}
+
+/** How far up a piston stands at stroke stage `u`, 0 (flush) to 1 (the top of its stroke). */
+export function pistonLift(u: number): number {
+  const P = PISTON_STAGES;
+  if (u < P.top) return Math.sin(((u / P.top) * Math.PI) / 2);
+  if (u < P.drop) return 1;
+  if (u < P.down) return 1 - (u - P.drop) / (P.down - P.drop);
+  return 0;
+}
+
 /** How far a tree has toppled at cycle stage `u`: 0 upright, a lean while it creaks, 1 lying across the road. */
 export function timberFall(u: number): number {
   const T = TIMBER_STAGES;
@@ -1169,6 +1219,7 @@ const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds' | 'butterfli
   sharks: SHARK_SPIN,
   rockyMeteors: METEOR_SPIN,
   dozes: 0,
+  pistons: PISTON_SPIN,
 };
 
 /** Kinds that fill the whole road across, on a rhythm: nothing to steer round, only to time. */
@@ -1935,6 +1986,22 @@ export class HazardSystem {
           p.phase = u;
           break;
         }
+        case 'pistons': {
+          // A piston in its row across the road, punching up on its beat of the bar.
+          const at = def.at[i];
+          const lane = i % PISTON_LANES;
+          const row = Math.floor(i / PISTON_LANES);
+          const hw = this.halfWidth(at);
+          const u = pistonPhase(t, def.period, pistonBeat(row, lane, PISTON_LANES), PISTON_LANES);
+          const lift = pistonLift(u);
+          this.place(p, at, -hw + ((lane + 0.5) * 2 * hw) / PISTON_LANES, lift * PISTON_LIFT);
+          p.radius = PISTON_RADIUS;
+          p.lane = lane;
+          p.gap = lift;
+          p.active = u < PISTON_STAGES.drop;
+          p.phase = u;
+          break;
+        }
         case 'dustDevils':
         case 'butterflies':
         case 'tornadoes':
@@ -2164,6 +2231,10 @@ export class HazardSystem {
         }
         if (p.kind === 'dozes') {
           this.doze(hit, p, s);
+          continue;
+        }
+        if (p.kind === 'pistons') {
+          this.piston(hit, p, s);
           continue;
         }
         if (p.kind === 'fuzz' && p.phase >= FUZZ_STAGES.gold && p.phase < FUZZ_STAGES.red) {
@@ -2542,6 +2613,12 @@ export class HazardSystem {
           // The first sheet runs to the right, the second to the left.
           out.push({ x, z, r: SHEET_HALF, vx: -fz * -side * speed, vz: fx * -side * speed });
         }
+        continue;
+      }
+      if (p.kind === 'pistons') {
+        // From its hiss until it drops back flush: the piston, punching up or standing.
+        if (p.phase >= PISTON_STAGES.drop && p.phase < PISTON_STAGES.warn) continue;
+        out.push({ x: p.x, z: p.z, r: p.radius + 0.5, vx: 0, vz: 0 });
         continue;
       }
       const falling = isFalling(p.kind);
@@ -3214,6 +3291,30 @@ export class HazardSystem {
     const side = Math.abs(lat) > 0.5 ? Math.sign(lat) : p.side;
     s.extX += -fz * side * DOZE_DRIFT;
     s.extZ += fx * side * DOZE_DRIFT;
+    hit.push({ kart: s, by: p.kind });
+  }
+
+  /**
+   * A piston: over it as it punches up, you're thrown and spun; driven into
+   * it at the top of its stroke, spun; hopped onto it there (or as it
+   * punches up), you ride it: up, and on with a boost.
+   */
+  private piston(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+    if (!p.active || Math.hypot(s.x - p.x, s.z - p.z) > p.radius + KART_RADIUS) return;
+    if ((s.hopAge < HOP_WINDOW || !s.grounded) && !this.cooldown.has(s)) {
+      this.reward(hit, s, p.kind, () => {
+        launch(s, PISTON_RIDE);
+        s.boostTime = Math.max(s.boostTime, PISTON_BOOST);
+      });
+      return;
+    }
+    const pumping = p.phase < PISTON_STAGES.top;
+    if (!pumping) this.pushOut(p, s);
+    if (this.cooldown.has(s)) return;
+    this.cooldown.set(s, HIT_COOLDOWN);
+    if (!spinOut(s, pumping ? PISTON_SPIN : PISTON_BUMP)) return;
+    if (pumping) launch(s, PISTON_THROW);
+    s.speed *= pumping ? PISTON_SLOW : PISTON_BUMP_SLOW;
     hit.push({ kart: s, by: p.kind });
   }
 
