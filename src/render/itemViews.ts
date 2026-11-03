@@ -20,6 +20,7 @@ import { alphaParts, poseAlphas } from './rapidAlphaDecay';
 import { poseSweeper, sweeperParts } from './allIsKnown';
 import { poseShark, sharkParts } from './muddyWater';
 import { dozeParts, poseDoze } from './theWheel';
+import { poseTrafficLight, trafficLightParts } from './strawsInTheWind';
 import { BOX_RESPAWN, SHIELD_ITEMS, WAVE_RANGE, type ItemHolder, type ItemSystem } from '../items/items';
 import type { KartState } from '../physics/kart';
 import type { HazardSystem } from '../items/hazards';
@@ -1461,6 +1462,10 @@ export class HazardsView {
           // A row of sleep: the haze of dream across the road, its Zs, and the rumble strip under it.
           parts.push(...dozeParts(obj));
           break;
+        case 'trafficLights':
+          // A gantry of mortal traffic lights over the road, its stop line, and the red curtain when it says stay.
+          parts.push(...trafficLightParts(obj));
+          break;
         case 'timber': {
           // A tree at the road's edge: its trunk, as long as the road is wide, and its crown; it leans, creaks and comes down across the road.
           const pivot = new THREE.Group();
@@ -2356,6 +2361,9 @@ export class HazardsView {
           break;
         case 'dozes':
           poseDoze(obj, parts, p, elapsed);
+          break;
+        case 'trafficLights':
+          poseTrafficLight(obj, parts, p, elapsed);
           break;
         case 'presents': {
           const [present, lid, inside, shadow, roofs, santa, arm] = parts;

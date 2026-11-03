@@ -839,12 +839,12 @@ const PALETTES: Record<GenTheme, Palette> = {
   windmill: {
     surface: 'farmtrack',
     deck: 'farmtrack',
-    alt: 'sand',
-    hazards: ['sunMoon'],
-    start: 'setGate',
-    landmarks: ['setGate'],
+    alt: 'gravel',
+    hazards: ['trafficLights'],
+    start: 'strawsGate',
+    landmarks: ['trashTornado', 'cheshireGrin'],
     tallWalls: 6,
-    places: ['Jackal', 'Snake', 'Tornado', 'Tomb', 'Duality', 'Sandstorm', 'Moonbeam', 'Hieroglyph', 'Reset'],
+    places: ['Straw', 'Black Heart', 'Brim', 'Cheshire', 'Pandemonium', 'Allegro', 'Expendable', "Hell's Kitchen", 'Omen', 'Forgotten Pier'],
     music: { lap: 'straws-in-the-wind', finalLap: 'straws-in-the-wind-final-lap' },
   },
   cyborg: {
@@ -1679,6 +1679,10 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
       case 'dozes':
         // Rows of sleep across the stretch, settling one after another down it.
         hazards.push({ kind, at: at(count + 1), period: 4.2 });
+        break;
+      case 'trafficLights':
+        // Gantries of traffic lights down the stretch, changing on the waltz one after another.
+        hazards.push({ kind, at: at(count), period: 2.4 });
         break;
     }
     return true;

@@ -428,6 +428,13 @@ const STYLES: Record<DecorKind, DetailStyle> = {
     boards: { words: ['THE WHEEL', 'INTO OUR FUTURE', 'A BETTER THESIS', 'WAKE UP', 'GUMBOOT SOUP'], bg: ['#1a1028', '#2a1630'], fg: '#ffc070' },
     crowd: false,
   },
+  // Straws in the Wind: white-washed fence posts along the farm track, wildflowers and straw in the verge, the media's hoardings never quitting.
+  strawfield: {
+    edge: { kind: 'fence', height: 1.2, spacing: 10, color: 0xece6d8, stripe: 0x8a7a64 },
+    cover: { shape: 'tuft', colors: [0x4a9a3a, 0x6ab84a, 0xe0bc5c, 0xe8202a, 0xffd21a, 0xffffff, 0x9a4ad8], count: 1900 },
+    boards: { words: ['STRAWS IN THE WIND', 'IS IT ALL ENDING?', 'BREAKING NEWS', 'PANDEMONIUM', 'STAY OR GO', 'K.G.'], bg: ['#c8101a', '#f4ead0', '#1a3a8a'], fg: '#ffffff' },
+    crowd: true,
+  },
   // The forge's own fires along the road, nobody out here among the stars but the smith: cinders, slag and stardust.
   forge: {
     edge: { kind: 'torch', height: 1.5, spacing: 16, color: 0x1a1a22, stripe: 0x3a3a48 },
