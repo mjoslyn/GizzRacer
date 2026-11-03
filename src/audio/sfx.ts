@@ -609,6 +609,13 @@ export class Sfx {
       this.tone(196, 0.12, 'square', 0.06, undefined, 0.02, true);
       [784, 659, 523, 392, 330, 262].forEach((f, k) => this.tone(f, 0.07, 'sawtooth', 0.05, undefined, 0.08 + k * 0.06));
     }
+    // Caught as Gaia breathes out: the ground groaning low as it sinks under you, and her breath rushing out of the earth.
+    if (by === 'breaths') {
+      this.tone(49, 1.0, 'sawtooth', 0.12, 36, 0, true);
+      this.tone(62, 0.8, 'triangle', 0.08, 41, 0.05);
+      this.hit(0.3, 160, 0.5);
+      this.whoosh(0.9, 700, 180, 0.22);
+    }
     // A wave breaking over you: a crash of white noise; a glider comes in with a whistle of wind.
     if (by === 'waves') this.whoosh(0.8, 2400, 300, 0.35);
     if (by === 'gliders') this.whoosh(0.5, 1800, 500, 0.2);

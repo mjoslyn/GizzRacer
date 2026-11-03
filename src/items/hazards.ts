@@ -153,6 +153,7 @@ export const WAVE_SPIN = 1.0;
  * - over a rumble strip as the haze of sleep lifts off it, jolted awake: a boost
  * - slipped through the gap just behind a pack of hellhounds as the last of them crosses, faster than a cheetah: a boost
  * - hopped onto a piston at the top of its stroke (or as it punches up), ridden: up, and on with a boost
+ * - over one of Gaia's ribs as it rises with her breath, thrown on: up, and a boost
  */
 /** A reward can't pay out again to the same kart for this long. */
 export const REWARD_COOLDOWN = 1.5;
@@ -1178,6 +1179,53 @@ export function pistonLift(u: number): number {
   return 0;
 }
 
+/**
+ * Gaia breathes: her ribs, under the skin of the road, heave across it all
+ * in one breath on the riff. Each breath she draws in (her ribs swell up
+ * into a ridge right across the road, the cracks in it glowing as she
+ * starts), holds it, and lets it out: the ridge sinks back down through
+ * the road into a trough, her breath blowing dust out of the cracks, and
+ * fills again. Over a rib as it rises or while it's held, it throws you
+ * on: up, with a boost. Caught as it falls, you sink with it: your speed
+ * bleeds into the earth and the wheel wobbles. The ribs are a fast kart's
+ * breath apart, so one that meets the first as it rises meets them all so.
+ */
+export const BREATH_STAGES = { inhale: 0.18, full: 0.5, exhale: 0.6, empty: 0.8 } as const;
+/** How high a rib swells over the road, and how deep the trough it sinks to. */
+export const BREATH_RISE = 2;
+export const BREATH_SINK = 1.2;
+/** How far along the road a rib reaches either side of its crest. */
+export const BREATH_DEPTH = 4;
+/** Thrown on by a rib as it rises: up this fast (m/s), and a boost this long. */
+export const BREATH_THROW = 10;
+export const BREATH_BOOST = 0.7;
+/** Caught as it falls: you keep this share of your speed, and the wheel wobbles this long. */
+export const BREATH_SLOW = 0.55;
+export const BREATH_WOBBLE = 0.8;
+
+/** Where Gaia's breath is at race time `t`, 0 to 1: every rib breathes together. */
+export function breathPhase(t: number, period: number): number {
+  const tt = (t + 10) / period;
+  return tt - Math.floor(tt);
+}
+
+/** How high a rib stands over the road at stage `u` (negative: a trough): flat at rest, swelling as she breathes in, held, sinking right through as she breathes out, and filling again. */
+export function breathLift(u: number): number {
+  const B = BREATH_STAGES;
+  if (u < B.inhale) return 0;
+  if (u < B.full) {
+    const k = (u - B.inhale) / (B.full - B.inhale);
+    return BREATH_RISE * k * k * (3 - 2 * k);
+  }
+  if (u < B.exhale) return BREATH_RISE;
+  if (u < B.empty) {
+    const k = (u - B.exhale) / (B.empty - B.exhale);
+    return BREATH_RISE - (BREATH_RISE + BREATH_SINK) * Math.sin((Math.PI * k) / 2);
+  }
+  const k = (u - B.empty) / (1 - B.empty);
+  return -BREATH_SINK * (1 - k * k * (3 - 2 * k));
+}
+
 /** How far a tree has toppled at cycle stage `u`: 0 upright, a lean while it creaks, 1 lying across the road. */
 export function timberFall(u: number): number {
   const T = TIMBER_STAGES;
@@ -1281,11 +1329,12 @@ const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds' | 'butterfli
   dozes: 0,
   hellhounds: HOUND_SPIN,
   pistons: PISTON_SPIN,
+  breaths: 0,
 };
 
 /** Kinds that fill the whole road across, on a rhythm: nothing to steer round, only to time. */
 export function isSheet(kind: HazardKind): boolean {
-  return kind === 'flameJets' || kind === 'dragonFire' || kind === 'lasers' || kind === 'waves' || kind === 'gusts' || kind === 'prisms' || kind === 'flares' || kind === 'timber' || kind === 'cords' || kind === 'strings' || kind === 'fangs' || kind === 'dozes';
+  return kind === 'flameJets' || kind === 'dragonFire' || kind === 'lasers' || kind === 'waves' || kind === 'gusts' || kind === 'prisms' || kind === 'flares' || kind === 'timber' || kind === 'cords' || kind === 'strings' || kind === 'fangs' || kind === 'dozes' || kind === 'breaths';
 }
 
 /** Which of a prism beam's four colours it is showing at cycle stage `u` (3 is the fourth colour), and whether it is lit. */
@@ -2084,6 +2133,19 @@ export class HazardSystem {
           p.phase = u;
           break;
         }
+        case 'breaths': {
+          // One of Gaia's ribs across the road, heaving with all the others in one breath.
+          const at = def.at[i];
+          const u = breathPhase(t, def.period);
+          this.place(p, at, 0, 0);
+          p.radius = this.halfWidth(at);
+          p.side = i % 2 ? -1 : 1;
+          p.active = u >= BREATH_STAGES.exhale && u < BREATH_STAGES.empty;
+          p.lane = u >= BREATH_STAGES.inhale && u < BREATH_STAGES.exhale ? 1 : 0;
+          p.gap = breathLift(u);
+          p.phase = u;
+          break;
+        }
         case 'dustDevils':
         case 'butterflies':
         case 'tornadoes':
@@ -2321,6 +2383,10 @@ export class HazardSystem {
         }
         if (p.kind === 'pistons') {
           this.piston(hit, p, s);
+          continue;
+        }
+        if (p.kind === 'breaths') {
+          this.breath(hit, p, s);
           continue;
         }
         if (p.kind === 'fuzz' && p.phase >= FUZZ_STAGES.gold && p.phase < FUZZ_STAGES.red) {
@@ -3446,6 +3512,29 @@ export class HazardSystem {
     if (!spinOut(s, pumping ? PISTON_SPIN : PISTON_BUMP)) return;
     if (pumping) launch(s, PISTON_THROW);
     s.speed *= pumping ? PISTON_SLOW : PISTON_BUMP_SLOW;
+  }
+
+  /**
+   * One of Gaia's ribs: over it as it rises or while it's held, it throws
+   * you on, up and with a boost; caught as it falls, you sink with it,
+   * slowed, the wheel wobbling.
+   */
+  private breath(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+    const fx = Math.sin(p.heading);
+    const fz = Math.cos(p.heading);
+    const along = (s.x - p.x) * fx + (s.z - p.z) * fz;
+    const lat = (s.x - p.x) * -fz + (s.z - p.z) * fx;
+    if (Math.abs(along) > BREATH_DEPTH + KART_RADIUS || Math.abs(lat) > p.radius + KART_RADIUS) return;
+    if (p.lane === 1) {
+      // The rib lifts whoever is on it; the boost is paid once in a while.
+      if (s.grounded) launch(s, BREATH_THROW * Math.min(1, 0.5 + p.gap / BREATH_RISE));
+      this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, BREATH_BOOST)));
+      return;
+    }
+    if (!p.active || this.cooldown.has(s)) return;
+    this.cooldown.set(s, HIT_COOLDOWN);
+    if (!wobble(s, BREATH_WOBBLE)) return;
+    s.speed *= BREATH_SLOW;
     hit.push({ kart: s, by: p.kind });
   }
 

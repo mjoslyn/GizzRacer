@@ -19,9 +19,10 @@ import { chainBarrierTexture, scalaGroundTexture, strataWallTexture } from './gr
 import { duskStoneTexture, heathTexture, railTexture as wheelRailTexture } from './theWheel';
 import { adobeTexture, scorchedGroundTexture, waveformRailTexture } from './theGrimReaper';
 import { brineTankTexture, plateTexture, synthPanelTexture } from './cyboogie';
+import { meadowTexture, rootBarrierTexture, strataTexture as gaiaStrataTexture } from './gaia';
 
 export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism' | 'factory' | 'gamma' | 'carrion' | 'wah' | 'smog' | 'dome' | 'solar' | 'inferno' | 'mind' | 'notmind' | 'cellophane' | 'mindfuzz' | 'elbow' | 'muck' | 'boogie' | 'treesea' | 'theia' | 'set' | 'change' | 'uruk' | 'headon' | 'godcall' | 'nan' | 'float' | 'newworld' | 'foe' | 'altered' | 'hollow' | 'forge' | 'steelwar' | 'autonomy' | 'reactor' | 'muddy' | 'scala' | 'network' | 'wheel' | 'windmill' | 'cyborg' | 'grimreaper' | 'gaia';
-export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy' | 'hadean' | 'deshret' | 'moonpalace' | 'uruk' | 'nanshouse' | 'suburb' | 'headtrip' | 'paddock' | 'den' | 'alteredworld' | 'mudflat' | 'hollowness' | 'openCut' | 'forge' | 'driverless' | 'reactor' | 'network' | 'summer' | 'scala' | 'slumber' | 'reaping' | 'cyborg';
+export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy' | 'hadean' | 'deshret' | 'moonpalace' | 'uruk' | 'nanshouse' | 'suburb' | 'headtrip' | 'paddock' | 'den' | 'alteredworld' | 'mudflat' | 'hollowness' | 'openCut' | 'forge' | 'driverless' | 'reactor' | 'network' | 'summer' | 'scala' | 'slumber' | 'reaping' | 'cyborg' | 'gaia';
 
 /** Everything that makes a track's world look like itself. */
 export interface Theme {
@@ -63,6 +64,8 @@ export interface Theme {
   banana?: boolean;
   /** Muddy water: the colour of the water in this world's pits, and of the light under it when a road dives in (blue-green when unset). */
   murk?: number;
+  /** Gaia: on the final lap the world dies, its colour draining away as the lap goes on, nearly grey at the line. */
+  dies?: boolean;
 }
 
 /** Flying Microtonal Banana's worlds through the tape: cobalt shadows, banana yellow, and highlights like the peel. */
@@ -1251,21 +1254,27 @@ export const THEMES: Record<ThemeId, Theme> = {
     edgeLine: 0xf0b830,
     edgeWidth: 0.35,
   },
-  // Gaia: (placeholder, Set's look until its world is built).
+  // Gaia: the Earth herself, a colossal goddess lying in a green land under a heavy sky, slate cloud piled over her and the sun breaking through low and gold; her body the hills, her hair the forests.
   gaia: {
-    sky: { zenith: '#0a0a34', high: '#262a78', low: '#c86a3a', horizon: '#ffd070', below: '#c06030', ground: '#6a2a14', cloud: '255,200,150', clouds: 12, stars: { count: 140, color: '#f0f0ff' }, moon: '#f4f4ff' },
-    fog: { color: 0xc07850, near: 160, far: 860 },
-    hemi: { sky: 0xffd0a0, ground: 0x8a3a1a, intensity: 1.5 },
-    sun: { color: 0xffd890, intensity: 2.3 },
-    ground: tex.redSandTexture,
-    groundTile: 20,
-    cliff: tex.templeWallTexture,
-    decor: 'deshret',
-    distant: { shape: 'mesa', color: 0x5a2414 },
-    haze: 0.8,
-    duotone: [0x0a0420, 0xd05a20, 0xffe890],
+    sky: { zenith: '#24405a', high: '#46708a', low: '#a8c8c8', horizon: '#ffe8b0', below: '#86a060', ground: '#3a5a2a', cloud: '92,100,112', clouds: 22 },
+    fog: { color: 0xb4c8c0, near: 210, far: 980 },
+    hemi: { sky: 0xf0f8ff, ground: 0x5a7a34, intensity: 1.6 },
+    sun: { color: 0xfff0c8, intensity: 2.5 },
+    ground: meadowTexture,
+    groundTile: 16,
+    // Walls are her body's strata: topsoil and roots over clay and rock.
+    cliff: gaiaStrataTexture,
+    decor: 'gaia',
+    // Her body, far off: the hills of her knees and her other hand.
+    distant: { shape: 'hill', color: 0x4a6a4a },
+    haze: 0,
+    duotone: [0x08140a, 0x2a7a3a, 0xf4e090],
     skyCycle: false,
-    dust: 0xd08050,
-    barrier: { map: tex.templeWallTexture, crawl: false },
+    dust: 0x9a7048,
+    barrier: { map: rootBarrierTexture, crawl: false },
+    // Ochre on green reads well; a pale line of stones down each edge keeps the far bends clear.
+    edgeLine: 0xf6ecc8,
+    edgeWidth: 0.45,
+    dies: true,
   },
 };
