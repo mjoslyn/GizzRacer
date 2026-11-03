@@ -428,11 +428,12 @@ const STYLES: Record<DecorKind, DetailStyle> = {
     boards: { words: ['CYBOOGIE', 'BOOGIE BOOGIE BOOGIE', 'FISHING FOR FISHIES', 'RUN OVER THE TESTS', 'DE-BUG', 'HAN-TYUMI'], bg: ['#0a0a0e', '#e8182c'], fg: '#f0f0f0' },
     crowd: false,
   },
-  // Gaia: low cairns of pale stones along her skin, wildflowers in the grass by the road.
+  // Gaia: fires guttering in iron baskets along her skin, dead grass and thorns by the road, ash.
   gaia: {
-    edge: { kind: 'pole', height: 1.0, spacing: 14, color: 0xe8dcc0, stripe: 0x6a8a3a },
-    cover: { shape: 'tuft', colors: [0x3e7a2e, 0x5a9a36, 0x6aa040, 0xfff8f0, 0xffd84a, 0xff8ac8], count: 1800 },
-    boards: { words: ['I AM GAIA', 'GAIA SEES', 'GAIA BREATHES', 'NO ONE SEES', 'OMNIUM GATHERUM'], bg: ['#1e3a22', '#3a2a1a'], fg: '#f4ecc8' },
+    edge: { kind: 'torch', height: 1.6, spacing: 16, color: 0x1a1612, stripe: 0x3a2a20 },
+    light: 0xff5a24,
+    cover: { shape: 'tuft', colors: [0x3a3a2a, 0x4a4430, 0x2a2a20, 0x5a5040, 0x6a2a1a], count: 1600 },
+    boards: { words: ['I AM GAIA', 'GIANT BODY PARASITE', 'DIRT IS DECEASED', 'NO ONE SEES', 'GAIA DIES'], bg: ['#0c0a08', '#2a0e0a'], fg: '#d8ccb0' },
     crowd: false,
   },
   // The Wheel: old iron street lamps along the moor road, lit for nobody, everyone asleep; heather, and the lamplight in it.

@@ -19,7 +19,7 @@ import { chainBarrierTexture, scalaGroundTexture, strataWallTexture } from './gr
 import { duskStoneTexture, heathTexture, railTexture as wheelRailTexture } from './theWheel';
 import { adobeTexture, scorchedGroundTexture, waveformRailTexture } from './theGrimReaper';
 import { brineTankTexture, plateTexture, synthPanelTexture } from './cyboogie';
-import { meadowTexture, rootBarrierTexture, strataTexture as gaiaStrataTexture } from './gaia';
+import { blightTexture, rootBarrierTexture, strataTexture as gaiaStrataTexture } from './gaia';
 import { boardsTexture as barnBoardsTexture, fenceTexture as farmFenceTexture, flowerFieldTexture } from './strawsInTheWind';
 
 export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism' | 'factory' | 'gamma' | 'carrion' | 'wah' | 'smog' | 'dome' | 'solar' | 'inferno' | 'mind' | 'notmind' | 'cellophane' | 'mindfuzz' | 'elbow' | 'muck' | 'boogie' | 'treesea' | 'theia' | 'set' | 'change' | 'uruk' | 'headon' | 'godcall' | 'nan' | 'float' | 'newworld' | 'foe' | 'altered' | 'hollow' | 'forge' | 'steelwar' | 'autonomy' | 'reactor' | 'muddy' | 'scala' | 'network' | 'wheel' | 'windmill' | 'cyborg' | 'grimreaper' | 'gaia';
@@ -1256,27 +1256,30 @@ export const THEMES: Record<ThemeId, Theme> = {
     edgeLine: 0xf0b830,
     edgeWidth: 0.35,
   },
-  // Gaia: the Earth herself, a colossal goddess lying in a green land under a heavy sky, slate cloud piled over her and the sun breaking through low and gold; her body the hills, her hair the forests.
+  // Gaia: the Earth herself, ancient, vast and indifferent, lying in a blighted land under a storm-dark, bruised sky, black-green overhead and blood-ochre low down where an eclipsed sun glows dim; heavy low cloud, lightning, fog swallowing the distance; her body the hills, her hair dead forest, her veins glowing dull red through the cracked earth.
   gaia: {
-    sky: { zenith: '#24405a', high: '#46708a', low: '#a8c8c8', horizon: '#ffe8b0', below: '#86a060', ground: '#3a5a2a', cloud: '92,100,112', clouds: 22 },
-    fog: { color: 0xb4c8c0, near: 210, far: 980 },
-    hemi: { sky: 0xf0f8ff, ground: 0x5a7a34, intensity: 1.6 },
-    sun: { color: 0xfff0c8, intensity: 2.5 },
-    ground: meadowTexture,
+    sky: { zenith: '#070c0a', high: '#16221c', low: '#3e3424', horizon: '#8a4a22', below: '#2a1e16', ground: '#120f0c', cloud: '34,40,36', clouds: 34 },
+    fog: { color: 0x1c221e, near: 120, far: 640 },
+    hemi: { sky: 0x9aa89a, ground: 0x2e2218, intensity: 1.45 },
+    sun: { color: 0xd0a070, intensity: 1.5 },
+    ground: blightTexture,
     groundTile: 16,
-    // Walls are her body's strata: topsoil and roots over clay and rock.
+    // Walls are her body's strata: dead topsoil and roots over clay and black rock, a seam of red.
     cliff: gaiaStrataTexture,
     decor: 'gaia',
-    // Her body, far off: the hills of her knees and her other hand.
-    distant: { shape: 'hill', color: 0x4a6a4a },
+    // Her body, far off in the fog: the black hills of her knees and her other hand.
+    distant: { shape: 'mountain', color: 0x0e120f },
     haze: 0,
-    duotone: [0x08140a, 0x2a7a3a, 0xf4e090],
+    duotone: [0x050806, 0x5a1a10, 0xd8b070],
     skyCycle: false,
-    dust: 0x9a7048,
+    dust: 0x4a4038,
     barrier: { map: rootBarrierTexture, crawl: false },
-    // Ochre on green reads well; a pale line of stones down each edge keeps the far bends clear.
-    edgeLine: 0xf6ecc8,
-    edgeWidth: 0.45,
+    // Her stream, black.
+    murk: 0x0a1410,
+    // A dark world: the road of her skin glows a little with its own light, and a line of bone runs down each edge.
+    roadGlow: 0.16,
+    edgeLine: 0xece0c4,
+    edgeWidth: 0.55,
     dies: true,
   },
 };
