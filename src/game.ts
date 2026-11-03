@@ -2028,6 +2028,7 @@ const HIT_TEXT: Record<ItemKind | HazardKind, string> = {
   rockyMeteors: 'PUSHED DOWN!',
   dozes: 'ASLEEP AT THE WHEEL!',
   hellhounds: 'STITCHED UP!',
+  pistons: 'TERMINAL ERROR!',
 };
 
 /** What a hazard used well says: the ones that can help. */
@@ -2100,6 +2101,7 @@ const BONUS_TEXT: Record<HazardKind, string> = {
   rockyMeteors: 'TRANSCEND!',
   dozes: 'INTO OUR FUTURE!',
   hellhounds: 'FASTER THAN A CHEETAH!',
+  pistons: 'CYBOOGIE!',
 };
 
 /** Takes a group out of the scene and frees what it built. */

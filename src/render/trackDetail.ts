@@ -420,6 +420,14 @@ const STYLES: Record<DecorKind, DetailStyle> = {
     boards: { words: ['RAPID ALPHA DECAY', 'KEEPER OF THE ENERGY', 'CLIMB THE WALLS', 'ENERGY AND HEAT'], bg: ['#0a120c', '#c09a08'], fg: '#a0ff70' },
     crowd: false,
   },
+  // Cyboogie: chrome posts with red lamps along the road inside him, his circuitry and brine scattered off it; boards of the song.
+  cyborg: {
+    edge: { kind: 'pole', height: 1.8, spacing: 16, color: 0xd0d4dc, stripe: 0xe8182c },
+    light: 0xff2a3c,
+    cover: { shape: 'pebble', colors: [0x1a2a26, 0x2a4a40, 0x3affa0, 0xc8ccd4], count: 1000 },
+    boards: { words: ['CYBOOGIE', 'BOOGIE BOOGIE BOOGIE', 'FISHING FOR FISHIES', 'RUN OVER THE TESTS', 'DE-BUG', 'HAN-TYUMI'], bg: ['#0a0a0e', '#e8182c'], fg: '#f0f0f0' },
+    crowd: false,
+  },
   // The Wheel: old iron street lamps along the moor road, lit for nobody, everyone asleep; heather, and the lamplight in it.
   slumber: {
     edge: { kind: 'lamp', height: 4.8, spacing: 18, color: 0x2a242c, stripe: 0xe0b860 },

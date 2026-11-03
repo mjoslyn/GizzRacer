@@ -602,6 +602,13 @@ export class Sfx {
       this.tone(400, 0.11, 'square', 0.08, 220, 0.26);
       this.whoosh(0.3, 1800, 500, 0.12);
     }
+    // A piston punching up under you: the hiss of its steam, the clank of steel, and a vocoder's arpeggio tumbling down an octave, out of time.
+    if (by === 'pistons') {
+      this.whoosh(0.35, 5200, 1400, 0.22);
+      this.hit(0.16, 1600, 0.55);
+      this.tone(196, 0.12, 'square', 0.06, undefined, 0.02, true);
+      [784, 659, 523, 392, 330, 262].forEach((f, k) => this.tone(f, 0.07, 'sawtooth', 0.05, undefined, 0.08 + k * 0.06));
+    }
     // A wave breaking over you: a crash of white noise; a glider comes in with a whistle of wind.
     if (by === 'waves') this.whoosh(0.8, 2400, 300, 0.35);
     if (by === 'gliders') this.whoosh(0.5, 1800, 500, 0.2);

@@ -21,6 +21,7 @@ import { poseSweeper, sweeperParts } from './allIsKnown';
 import { poseShark, sharkParts } from './muddyWater';
 import { dozeParts, poseDoze } from './theWheel';
 import { houndParts, poseHounds } from './theGrimReaper';
+import { pistonParts, posePiston } from './cyboogie';
 import { BOX_RESPAWN, SHIELD_ITEMS, WAVE_RANGE, type ItemHolder, type ItemSystem } from '../items/items';
 import type { KartState } from '../physics/kart';
 import type { HazardSystem } from '../items/hazards';
@@ -1466,6 +1467,10 @@ export class HazardsView {
           // A pack of hellhounds, their dens in the pit's walls, and the stitches across the road they sniff out.
           parts.push(...houndParts(obj));
           break;
+        case 'pistons':
+          // A piston flush in the road: its red ring, its rod and head, and its steam.
+          parts.push(...pistonParts(obj));
+          break;
         case 'timber': {
           // A tree at the road's edge: its trunk, as long as the road is wide, and its crown; it leans, creaks and comes down across the road.
           const pivot = new THREE.Group();
@@ -2364,6 +2369,9 @@ export class HazardsView {
           break;
         case 'hellhounds':
           poseHounds(obj, parts, p, elapsed);
+          break;
+        case 'pistons':
+          posePiston(obj, parts, p, elapsed);
           break;
         case 'presents': {
           const [present, lid, inside, shadow, roofs, santa, arm] = parts;

@@ -1,6 +1,7 @@
 import { clamp, seededRandom } from '../core/math';
 import { launchersFor } from './enrich';
 import { METEOR_CRUMBLE, METEOR_MARK, METEOR_ROLL } from '../items/hazards';
+import { PISTON_LANES } from '../items/hazards';
 import { TrackBuilder, dubins, offsetPose, type Pose, type RoadSurface, type SectionProps, ROAD_WIDTH_SCALE } from './builder';
 import { nearestOnSpline } from './spline';
 import { Track, inPit, type BranchDef, type HazardDef, type ItemBoxRow, type Landmark, type TrackDef } from './track';
@@ -850,12 +851,12 @@ const PALETTES: Record<GenTheme, Palette> = {
   cyborg: {
     surface: 'graphene',
     deck: 'graphene',
-    alt: 'sand',
-    hazards: ['sunMoon'],
-    start: 'setGate',
-    landmarks: ['setGate'],
+    alt: 'steel',
+    hazards: ['pistons'],
+    start: 'cyboogieGate',
+    landmarks: ['cyboogieGate', 'hanTyumi'],
     tallWalls: 6,
-    places: ['Jackal', 'Snake', 'Tornado', 'Tomb', 'Duality', 'Sandstorm', 'Moonbeam', 'Hieroglyph', 'Reset'],
+    places: ['Grey Matter', 'Brine', 'Bouncy Ball', 'Cables', 'De-bug', 'Graphene', 'Palpitations', 'Binary Brook', 'Red-Bellied Trout'],
     music: { lap: 'cyboogie', finalLap: 'cyboogie-final-lap' },
   },
   grimreaper: {
@@ -1683,6 +1684,10 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
       case 'hellhounds':
         // Packs of hellhounds crossing the stretch one after another, the way back the next time.
         hazards.push({ kind, at: at(count), period: 4.4 });
+        break;
+      case 'pistons':
+        // Rows of pistons across the stretch, punching up through it on the boogie's beat, PISTON_LANES to a row.
+        hazards.push({ kind, at: at(count).flatMap((s) => Array.from({ length: PISTON_LANES }, () => s)), period: 2 });
         break;
     }
     return true;
