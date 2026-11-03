@@ -161,6 +161,10 @@ export const TRANSCRIBED: Record<string, { recording: string; release: string }>
   'great-chain-of-being': { recording: 'The Great Chain of Being', release: "Live at Field of Vision II '26, the soundboard mix" },
   'all-is-known': { recording: 'All Is Known', release: "Live at Field of Vision '25, the soundboard mix" },
   'the-wheel': { recording: 'The Wheel', release: "Live in Bulgaria '25, the soundboard mix" },
+  'straws-in-the-wind': { recording: 'Straws in the Wind', release: "Live at Field of Vision '25, the soundboard mix" },
+  cyboogie: { recording: 'Cyboogie', release: "Live in Berlin '25, the soundboard mix" },
+  'the-grim-reaper': { recording: 'The Grim Reaper', release: "Live in New York City '25 (Rock Night), the soundboard mix" },
+  gaia: { recording: 'Gaia', release: "Live in Lithuania '25, the soundboard mix" },
 };
 
 const FINAL = '-final-lap';

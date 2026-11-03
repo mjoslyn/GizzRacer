@@ -1097,5 +1097,61 @@
     "bars": 32,
     "loopSamples": 3235284,
     "sampleRate": 44100
+  },
+  "straws-in-the-wind-remix": {
+    "title": "straws in the wind (remix)",
+    "bpm": 173,
+    "bars": 32,
+    "loopSamples": 2936601,
+    "sampleRate": 44100
+  },
+  "straws-in-the-wind-remix-final-lap": {
+    "title": "straws in the wind (remix, final lap)",
+    "bpm": 181,
+    "bars": 32,
+    "loopSamples": 2806807,
+    "sampleRate": 44100
+  },
+  "cyboogie-remix": {
+    "title": "cyboogie (remix)",
+    "bpm": 99.68,
+    "bars": 32,
+    "loopSamples": 2548315,
+    "sampleRate": 44100
+  },
+  "cyboogie-remix-final-lap": {
+    "title": "cyboogie (remix, final lap)",
+    "bpm": 105.68,
+    "bars": 32,
+    "loopSamples": 2403634,
+    "sampleRate": 44100
+  },
+  "the-grim-reaper-remix": {
+    "title": "the grim reaper (remix)",
+    "bpm": 101.05,
+    "bars": 32,
+    "loopSamples": 3351687,
+    "sampleRate": 44100
+  },
+  "the-grim-reaper-remix-final-lap": {
+    "title": "the grim reaper (remix, final lap)",
+    "bpm": 109.05,
+    "bars": 32,
+    "loopSamples": 3105805,
+    "sampleRate": 44100
+  },
+  "gaia-remix": {
+    "title": "gaia (remix)",
+    "bpm": 134.35,
+    "bars": 32,
+    "loopSamples": 2836055,
+    "sampleRate": 44100
+  },
+  "gaia-remix-final-lap": {
+    "title": "gaia (remix, final lap)",
+    "bpm": 142.35,
+    "bars": 32,
+    "loopSamples": 2676670,
+    "sampleRate": 44100
   }
 }
