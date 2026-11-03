@@ -54,7 +54,7 @@ export class LiveRadio {
   private history: { rec: LiveRecording; title: string; mode: LiveMode }[] = [];
   private fallback: readonly MusicCue[] = [];
   private readonly listeners = new Set<() => void>();
-  /** Where each song's music starts and how loud it is, worked out once. */
+  /** Where each song's music starts, worked out once. */
   private readonly openings = new Map<string, Promise<Opening | null>>();
   /** Bumped by every new request, so an answer that comes back late is dropped. */
   private ticket = 0;
@@ -62,7 +62,7 @@ export class LiveRadio {
   constructor(
     private readonly music: MusicPlayer,
     private readonly rand: () => number = Math.random,
-    /** Where a recording's music starts (s) and the gain (dB) that evens its level; reads the opening of the file by default. */
+    /** Where a recording's music starts (s); reads the opening of the file by default. */
     private readonly read: (rec: LiveRecording) => Promise<Opening> = readRecording,
   ) {}
 
@@ -121,7 +121,7 @@ export class LiveRadio {
     const then = rec.then!;
     const second: LiveRecording = { ...rec, file: then.file, seconds: then.seconds, start: 0, end: then.end, then: undefined };
     const first = (): void => {
-      if (t === this.ticket) this.music.playLive(rec, this.fallback, { onEnded: () => t === this.ticket && this.music.playLive(second, this.fallback, { gain: rec.gain, onEnded: first }) });
+      if (t === this.ticket) this.music.playLive(rec, this.fallback, { onEnded: () => t === this.ticket && this.music.playLive(second, this.fallback, { onEnded: first }) });
     };
     first();
   }
@@ -189,7 +189,7 @@ export class LiveRadio {
     this.changed();
     const opening = await Promise.race([this.openingOf(rec), new Promise<null>((res) => setTimeout(() => res(null), START_WAIT))]);
     if (t !== this.ticket) return;
-    this.music.playLive(rec, this.fallback, { start: opening?.start ?? 0, gain: opening?.gain, onEnded: () => this.next() });
+    this.music.playLive(rec, this.fallback, { start: opening?.start ?? 0, onEnded: () => this.next() });
     this.prefetch(set, set.index);
   }
 
@@ -199,9 +199,9 @@ export class LiveRadio {
     if (i < set.songs.length) void this.openingOf(set.songs[i]);
   }
 
-  /** Where a song's music starts and its gain: the catalogue's, else read from its file (once); null when it can't be read. */
+  /** Where a song's music starts: the catalogue's, else read from its file (once); null when it can't be read. */
   private openingOf(rec: LiveRecording): Promise<Opening | null> {
-    if (rec.start !== undefined && rec.gain !== undefined) return Promise.resolve({ start: rec.start, gain: rec.gain });
+    if (rec.start !== undefined) return Promise.resolve({ start: rec.start });
     const key = `${rec.id}/${rec.file}`;
     let p = this.openings.get(key);
     if (!p) {
@@ -289,10 +289,9 @@ export function playable(set: { songs: readonly LiveRecording[]; titles: readonl
   return i;
 }
 
-/** Where a recording's music starts (s, past any talk) and the gain (dB) that evens its level. */
+/** Where a recording's music starts (s, past any talk). Its level is evened as it plays (audio/talk.ts Leveller). */
 export interface Opening {
   start: number;
-  gain: number;
 }
 
 /** A recording's opening, read from the first OPENING_BYTES of its file (audio/talk.ts); throws when it can't be. */

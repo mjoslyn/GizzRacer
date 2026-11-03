@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { TARGET_LOUDNESS, gainFor, loudness, musicStart, readOpening, talkTrack } from '../src/audio/talk';
+import { Leveller, TARGET_LOUDNESS, gainFor, musicStart, readOpening, talkTrack } from '../src/audio/talk';
 
 const RATE = 8000;
 
@@ -68,20 +68,50 @@ describe('skipping the band talk', () => {
     for (const t of ['Rattlesnake', 'Gamma Knife', 'The Dripping Tap', 'Crumbling Castle', 'Organ Farmer']) expect(talkTrack(t), t).toBe(false);
   });
 
-  it('measures loudness past the gaps, and evens a quiet tape up to the remixes, within limits', () => {
-    const loud = band(30, 0.5);
-    const quiet = band(30, 0.1);
-    // A fifth of the level is 14 dB down.
-    expect(loudness(loud, RATE) - loudness(quiet, RATE)).toBeCloseTo(20 * Math.log10(5), 0);
-    // Gaps don't pull it down.
-    expect(loudness(join(loud, new Float32Array(RATE * 20)), RATE)).toBeCloseTo(loudness(loud, RATE), 0);
+  it('evens a quiet tape up to the remixes, within limits, and reads an opening for where its music starts', () => {
     expect(gainFor(TARGET_LOUDNESS - 5)).toBe(5);
     expect(gainFor(TARGET_LOUDNESS + 2)).toBe(-2);
     expect(gainFor(-80)).toBe(17);
     expect(gainFor(-Infinity)).toBe(0);
-    // Read from where the music starts: the talk doesn't count.
-    const opening = readOpening(join(talk(20, 0.05), quiet), RATE);
-    expect(opening.start).toBeGreaterThan(15);
-    expect(opening.gain).toBe(gainFor(loudness(quiet, RATE)));
+    expect(readOpening(join(talk(20, 0.05), band(30, 0.1)), RATE).start).toBeGreaterThan(15);
+  });
+});
+
+describe('levelling a live recording as it plays', () => {
+  /** Feeds `seconds` of blocks at `db` (dB of full scale, as mean square) in 0.2 s ticks; the last gain answered. */
+  const feed = (l: Leveller, db: number, seconds: number) => {
+    let g = NaN;
+    for (let t = 0; t < seconds; t += 0.2) g = l.feed(10 ** (db / 10), 0.2);
+    return g;
+  };
+
+  it("holds the catalogue's gain until it has heard a few seconds of music", () => {
+    const l = new Leveller(5);
+    expect(feed(l, -30, 2.4)).toBe(5);
+  });
+
+  it('then brings the recording to the target, however quiet or loud the tape', () => {
+    expect(feed(new Leveller(0), -24, 60)).toBeCloseTo(TARGET_LOUDNESS + 24, 0);
+    expect(feed(new Leveller(12), -14, 60)).toBeCloseTo(TARGET_LOUDNESS + 14, 0);
+  });
+
+  it('follows a recording that gets louder, slowly enough not to pump on one loud bar', () => {
+    const l = new Leveller(0);
+    const quiet = feed(l, -26, 30);
+    const oneBar = feed(l, -14, 2);
+    expect(quiet - oneBar).toBeLessThanOrEqual(1.5);
+    expect(feed(l, -14, 120)).toBeCloseTo(TARGET_LOUDNESS + 14, 0);
+  });
+
+  it('leaves out silence (a pause, or a stream it cannot hear) and the quiet between songs', () => {
+    const l = new Leveller(3);
+    expect(feed(l, -120, 20)).toBe(3);
+    const g = feed(l, -20, 30);
+    expect(feed(l, -40, 10)).toBe(g);
+  });
+
+  it('never turns a recording up or down past the limits', () => {
+    expect(feed(new Leveller(0), -55, 30)).toBe(gainFor(-55));
+    expect(feed(new Leveller(0), -2, 30)).toBe(gainFor(-2));
   });
 });

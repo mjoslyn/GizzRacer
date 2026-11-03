@@ -49,8 +49,8 @@ describe('live soundtrack', () => {
   it('a live set: the picked show in order from where the music starts, kept across races, then the next show at its end', async () => {
     stubFetch({ 'shows.json': [SHOW, NEXT], '/files': { result: FILES } });
     const { music, last } = fakeMusic();
-    // Magma opens with the band talking, and was taped quiet.
-    const radio = new LiveRadio(music, () => 0, async (r) => (r.file.includes('t02') ? { start: 12.5, gain: 7 } : { start: 0, gain: 0 }));
+    // Magma opens with the band talking.
+    const radio = new LiveRadio(music, () => 0, async (r) => (r.file.includes('t02') ? { start: 12.5 } : { start: 0 }));
     await radio.ensureShow(SHOW, ['remix']);
     expect(radio.playing!.mode).toBe('show');
     expect(radio.playing!.set!.index).toBe(0);
@@ -60,7 +60,6 @@ describe('live soundtrack', () => {
     last().opts!.onEnded!();
     expect(radio.playing!.title).toBe('Magma');
     await vi.waitFor(() => expect(last().opts?.start).toBe(12.5));
-    expect(last().opts?.gain).toBe(7);
     // The next race keeps the show going.
     const before = radio.playing;
     await radio.ensureShow(SHOW, ['other-remix']);
@@ -126,7 +125,7 @@ describe('live soundtrack', () => {
     const magma: LiveRecording = { ...rec(SHOW.id, 'kglw2024-01-01t02.mp3'), date: SHOW.date, venue: SHOW.venue };
     stubFetch({ 'bootlegs.json': { Magma: [magma] }, '/files': { result: FILES } });
     const { music, last } = fakeMusic();
-    const radio = new LiveRadio(music, () => 0, async () => ({ start: 0, gain: 0 }));
+    const radio = new LiveRadio(music, () => 0, async () => ({ start: 0 }));
     await radio.playSong('Magma', ['remix']);
     await radio.playOnInShow();
     // The song after it that night, playing through as a set does.
@@ -170,8 +169,8 @@ describe('live soundtrack', () => {
     expect(calls).toHaveLength(0);
   });
 
-  it('two songs the band played back to back: the first, straight on into the second at the same gain, and round again', async () => {
-    const pair: LiveRecording = { ...rec('kglw2017-09-27', '14 Altered Beast II.mp3'), start: 4, gain: 6, then: { file: '15 Alter Me II.mp3', seconds: 92, end: 88 } };
+  it('two songs the band played back to back: the first, straight on into the second, and round again', async () => {
+    const pair: LiveRecording = { ...rec('kglw2017-09-27', '14 Altered Beast II.mp3'), start: 4, then: { file: '15 Alter Me II.mp3', seconds: 92, end: 88 } };
     stubFetch({ 'bootlegs.json': { 'Altered Beast II / Alter Me II': [pair], Magma: [rec('a', 'a.mp3')] } });
     const { music, last } = fakeMusic();
     const radio = new LiveRadio(music, () => 0);
@@ -180,7 +179,6 @@ describe('live soundtrack', () => {
     last().opts!.onEnded!();
     const second = last();
     expect(second.live).toMatchObject({ id: 'kglw2017-09-27', file: '15 Alter Me II.mp3', seconds: 92, start: 0, end: 88 });
-    expect(second.opts!.gain).toBe(6);
     second.opts!.onEnded!();
     expect(last().live?.file).toBe('14 Altered Beast II.mp3');
     // A new song asked for stops the pair going round.

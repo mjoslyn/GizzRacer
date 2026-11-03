@@ -81,35 +81,12 @@ export function talkTrack(title: string): boolean {
   return /\b(banter|tuning|tune ?up|crowd|talk|chat|soundcheck|encore break|silence|intro tape|walk ?on|applause|stage announcement)\b/i.test(title);
 }
 
-/** Loudness windows (s), and the gate under the mean (dB) that leaves out the quiet bits (a pause, the talk). */
+/** Loudness windows (s), and the gate under the running level (dB) that leaves out the quiet bits (a pause, the talk, the gap between songs). */
 const LOUD_WINDOW = 0.4;
 const LOUD_GATE = 10;
 
 /**
- * How loud `samples` (mono, at `rate`) are from `from` seconds on, in dB of
- * full scale: the mean power of its 0.4 s windows, leaving out any more than
- * 10 dB under the mean, so the gaps and the talk don't pull it down (a
- * gated loudness, in the manner of broadcast loudness meters). -Infinity
- * for silence.
- */
-export function loudness(samples: Float32Array, rate: number, from = 0): number {
-  const per = Math.max(1, Math.round(rate * LOUD_WINDOW));
-  const powers: number[] = [];
-  for (let s = Math.floor(from * rate); s + per <= samples.length; s += per) {
-    let e = 0;
-    for (let i = s; i < s + per; i++) e += samples[i] * samples[i];
-    powers.push(e / per);
-  }
-  if (!powers.length) return -Infinity;
-  const mean = powers.reduce((a, b) => a + b, 0) / powers.length;
-  if (mean <= 0) return -Infinity;
-  const gate = mean * 10 ** (-LOUD_GATE / 10);
-  const kept = powers.filter((p) => p >= gate);
-  return 10 * Math.log10(kept.reduce((a, b) => a + b, 0) / kept.length);
-}
-
-/**
- * The loudness (dB, as `loudness` measures it) a live recording is brought
+ * The loudness (dB of full scale, the mean power of 0.4 s windows) a live recording is brought
  * to: 3 dB over the game's own remixes (measured at -16 to -12 with a
  * median of -14.4), since a tape at the remixes' level still sounds smaller
  * than a mastered track. Taped shows come in from about -13 to -25, mostly
@@ -126,8 +103,61 @@ export function gainFor(measured: number): number {
   return Math.round(Math.min(GAIN_MAX, Math.max(GAIN_MIN, TARGET_LOUDNESS - measured)) * 2) / 2;
 }
 
-/** A live recording's opening, read: where its music starts (s) and the gain (dB) that evens it with the rest of the music. */
-export function readOpening(samples: Float32Array, rate: number): { start: number; gain: number } {
-  const start = musicStart(samples, rate);
-  return { start, gain: gainFor(loudness(samples, rate, start)) };
+/** Under this (dB of full scale), a window is silence (a pause, or a stream the page can't hear): it doesn't count. */
+const LEVEL_FLOOR = -60;
+/** How long the leveller listens (s) before it trusts what it heard over its starting gain. */
+const LEVEL_WARMUP = 3;
+/** How far back it listens: the time constant (s) of its running level, so a loud bar or a quiet verse doesn't pump the gain. */
+const LEVEL_MEMORY = 20;
+
+/**
+ * Levels a live recording as it plays, in the page: nothing is measured
+ * ahead of time. It starts at a typical tape's gain (`prior`), and once it
+ * has heard a few seconds of music, the gain follows the recording's own
+ * running level: the level of each 0.4 s window in dB, averaged (over all
+ * it has heard at first, then over about the last 20 s), leaving out
+ * silence and any window 10 dB under the running level (a pause, the talk,
+ * the gap between songs), so every show comes out at TARGET_LOUDNESS
+ * whatever its tape and wherever its start is. Feed it each block's mean
+ * square (mono, before any gain) and the seconds that block stands for; it
+ * answers the gain (dB) to apply now.
+ */
+export class Leveller {
+  private level = NaN;
+  private heard = 0;
+  private power = 0;
+  private span = 0;
+  private gain: number;
+
+  constructor(prior: number) {
+    this.gain = prior;
+  }
+
+  feed(meanSquare: number, seconds: number): number {
+    if (!(seconds > 0) || !(meanSquare >= 0)) return this.gain;
+    this.power += meanSquare * seconds;
+    this.span += seconds;
+    if (this.span < LOUD_WINDOW - 1e-9) return this.gain;
+    const p = this.power / this.span;
+    const span = this.span;
+    this.power = 0;
+    this.span = 0;
+    if (!(p > 10 ** (LEVEL_FLOOR / 10))) return this.gain;
+    const db = 10 * Math.log10(p);
+    if (Number.isNaN(this.level)) this.level = db;
+    else {
+      if (this.heard >= LEVEL_WARMUP && db < this.level - LOUD_GATE) return this.gain;
+      // The mean of all it has heard at first, then a running mean over LEVEL_MEMORY.
+      const k = Math.max(span / (this.heard + span), 1 - Math.exp(-span / LEVEL_MEMORY));
+      this.level += (db - this.level) * k;
+    }
+    this.heard += span;
+    if (this.heard >= LEVEL_WARMUP) this.gain = gainFor(this.level);
+    return this.gain;
+  }
+}
+
+/** A live recording's opening, read: where its music starts (s). */
+export function readOpening(samples: Float32Array, rate: number): { start: number } {
+  return { start: musicStart(samples, rate) };
 }

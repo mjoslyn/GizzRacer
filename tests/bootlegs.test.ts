@@ -46,11 +46,8 @@ describe('live bootlegs', () => {
         expect(r.file, song).toMatch(/\.mp3$/i);
         expect(r.date, song).toMatch(/^\d{4}-\d{2}-\d{2}$/);
         // Where the music starts, past the talk: inside the recording, and inside the opening that was read.
-        // The gain that evens it with the remixes: within the limits.
-        if (r.gain !== undefined) {
-          expect(r.gain, song).toBeGreaterThanOrEqual(-6);
-          expect(r.gain, song).toBeLessThanOrEqual(17);
-        }
+        // No gain kept: the game evens each recording's level as it plays (audio/talk.ts Leveller).
+        expect(r, song).not.toHaveProperty('gain');
         if (r.start !== undefined) {
           expect(r.start, song).toBeGreaterThanOrEqual(0);
           // Picked by ear, a start can sit past a long tuning-up, but never past two and a half minutes.

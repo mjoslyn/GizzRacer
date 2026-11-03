@@ -69,11 +69,11 @@ const SKIP = new Set([
   'kglw2026-08-16.Full-Three-Shows-discocape/kglw2026-08-15-4ch-discocape_13.mp3',
   "kglw2025-06-08.SBD.flac/King Gizzard & The Lizard Wizard - Live in Bulgaria '25 - 11 Altered Beast III (Live in Bulgaria '25).mp3",
 ]);
-/** Start points and gains already found (tools/bootleg-starts.mjs), and ends (tools/live-edges.py), kept across a re-run. */
+/** Start points already found (tools/bootleg-starts.mjs, or set by ear), and ends (tools/live-edges.py), kept across a re-run. */
 const known = new Map();
 try {
   for (const recs of Object.values(JSON.parse(readFileSync(OUT, 'utf8'))))
-    for (const r of recs) if (r.start !== undefined) known.set(`${r.id}/${r.file}${r.then ? `>${r.then.file}` : ''}`, { start: r.start, ...(r.end !== undefined ? { end: r.end } : {}), gain: r.gain, ...(r.then ? { then: r.then } : {}) });
+    for (const r of recs) if (r.start !== undefined) known.set(`${r.id}/${r.file}${r.then ? `>${r.then.file}` : ''}`, { start: r.start, ...(r.end !== undefined ? { end: r.end } : {}), ...(r.then ? { then: r.then } : {}) });
 } catch {
   // First run.
 }
@@ -203,7 +203,7 @@ async function scan(show) {
       const byDate = found.get(song);
       if (byDate.has(date)) continue;
       const rec = { id: show.identifier, file: f.name, date, venue, seconds: seconds(f.length) };
-      // Where its music starts and ends and its gain, if they were already worked out.
+      // Where its music starts and ends, if they were already worked out.
       const read = known.get(`${rec.id}/${rec.file}`);
       byDate.set(date, read ? { ...rec, ...read } : rec);
     }

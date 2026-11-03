@@ -1,3 +1,5 @@
+import { Leveller } from './talk';
+
 /**
  * Seamless looping music from pre-rendered MP3s (tools/render-soundtrack.mjs).
  * Each file holds exactly one loop; MP3 encoders pad the front with a little
@@ -78,12 +80,10 @@ export interface LiveRecording {
   start?: number;
   /** Seconds in that the music ends, before the applause and the banter (tools/live-edges.py); absent: to the end of the file. */
   end?: number;
-  /** The gain (dB) that brings it to the remixes' loudness (audio/talk.ts `gainFor`); absent when not measured. */
-  gain?: number;
   /**
    * The song the band played straight after it, the next file in the same
    * show, for a track that is two songs (an Altered Beast and its Alter Me):
-   * it plays on from the first, from its top, at the same gain, and the pair
+   * it plays on from the first, from its top, and the pair
    * loops. Its `end` as the recording's own.
    */
   then?: { file: string; seconds: number; end?: number };
@@ -99,11 +99,9 @@ export interface LiveOptions {
   onEnded?: () => void;
   /** Where to start (s), past the talk; the recording's own `start` when absent. A loop comes back round to it. */
   start?: number;
-  /** The gain (dB) that brings it to the remixes' loudness; the recording's own `gain` when absent, else DEFAULT_LIVE_GAIN. */
-  gain?: number;
 }
 
-/** The gain (dB) for a recording not measured yet: what a taped show typically falls short of the remixes by (audio/talk.ts). */
+/** The gain (dB) a live recording starts at, before the leveller (audio/talk.ts) has heard it: what a taped show typically falls short of the remixes by. */
 export const DEFAULT_LIVE_GAIN = 8;
 
 /**
@@ -120,6 +118,10 @@ function liveLimiter(ctx: BaseAudioContext): DynamicsCompressorNode {
   c.release.value = 0.15;
   return c;
 }
+
+/** How often (s) a live recording's level is read and its gain follows it (audio/talk.ts Leveller), and how fast the gain glides (time constant, s). */
+const LEVEL_TICK = 0.2;
+const LEVEL_GLIDE = 1.5;
 
 /** A stream that hasn't started playing in this long has failed: the fallback plays instead. */
 const LIVE_TIMEOUT = 10000;
@@ -378,11 +380,19 @@ export class MusicPlayer {
     audio.src = from > 0 ? `${liveUrl(rec)}#t=${from}` : liveUrl(rec);
     const node = ctx.createMediaElementSource(audio);
     // Brought to the remixes' loudness, its peaks held under full scale, then the fade.
+    const prior = DEFAULT_LIVE_GAIN;
     const level = ctx.createGain();
-    level.gain.value = 10 ** ((opts.gain ?? rec.gain ?? DEFAULT_LIVE_GAIN) / 20);
+    level.gain.value = 10 ** (prior / 20);
     const gain = ctx.createGain();
     gain.gain.value = 0;
     node.connect(level).connect(liveLimiter(ctx)).connect(gain);
+    // Listens to the recording itself, before any gain, and keeps it at the target loudness as it plays.
+    const meter = ctx.createAnalyser();
+    meter.fftSize = 4096;
+    node.connect(meter);
+    const leveller = new Leveller(prior);
+    const block = new Float32Array(meter.fftSize);
+    let levelling = 0;
     let started = false;
     const giveUp = () => {
       if (started) return;
@@ -421,6 +431,13 @@ export class MusicPlayer {
         gain.gain.setValueAtTime(0, t);
         gain.gain.linearRampToValueAtTime(1, t + FADE);
         gain.connect(this.master);
+        levelling = window.setInterval(() => {
+          if (audio.paused) return;
+          meter.getFloatTimeDomainData(block);
+          let e = 0;
+          for (let i = 0; i < block.length; i++) e += block[i] * block[i];
+          level.gain.setTargetAtTime(10 ** (leveller.feed(e / block.length, LEVEL_TICK) / 20), ctx.currentTime, LEVEL_GLIDE);
+        }, LEVEL_TICK * 1000);
         if (opts.onEnded) {
           const ended = opts.onEnded;
           audio.addEventListener('ended', () => {
@@ -433,6 +450,7 @@ export class MusicPlayer {
           gain,
           stop: (at) => {
             setTimeout(() => {
+              clearInterval(levelling);
               audio.pause();
               audio.removeAttribute('src');
               node.disconnect();
