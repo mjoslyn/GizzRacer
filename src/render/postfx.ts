@@ -24,7 +24,7 @@ export interface PostFxParams {
   digitise?: number;
   /** Nodded off at the wheel (The Wheel), 0..1 as it wears off: the eyelids droop shut from above and below, the picture blurs and dims, and they open again slowly, fluttering. */
   doze?: number;
-  /** Gaia dying on the final lap, 0..1: the colour drains out of the world, toward a cold grey that keeps the light and dark of it. */
+  /** Gaia dying on the final lap, 0..1: the colour drains out of the world, toward a cold grey that keeps the light and dark of it, and the dark closes in from the edges of the picture. */
   drain?: number;
   /** The duotone's shadows, body and highlights (the track theme's `duotone`). */
   palette?: readonly [number, number, number];
@@ -197,7 +197,11 @@ void main() {
   // Gaia dies: the colour drains out of everything, its light and dark kept, so the road still reads.
   if (uDrain > 0.0) {
     float grey = dot(col.rgb, vec3(0.3, 0.59, 0.11));
-    col.rgb = mix(col.rgb, vec3(grey) * vec3(0.98, 0.99, 1.03), uDrain);
+    float d = clamp(uDrain * 1.25, 0.0, 1.0);
+    col.rgb = mix(col.rgb, vec3(grey) * vec3(0.97, 0.99, 1.04), d);
+    // The light going out of her: the edges of the picture close in, dark, while the middle (the road) keeps its light.
+    vec2 q = (vUv - 0.5) * vec2(1.2, 1.0);
+    col.rgb *= 1.0 - 0.55 * d * smoothstep(0.25, 0.75, length(q));
   }
   // Letterbox bars, like the tape the video was shot on.
   if (uBox > 0.0 && abs(vUv.y - 0.5) > 0.5 - uBox * 0.11) col.rgb = vec3(0.0);

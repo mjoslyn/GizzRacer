@@ -873,13 +873,13 @@ const PALETTES: Record<GenTheme, Palette> = {
   gaia: {
     surface: 'earth',
     deck: 'earth',
-    alt: 'moss',
-    liquid: 'water',
+    alt: 'scorched',
+    liquid: 'oil',
     hazards: ['breaths'],
     start: 'gaiaHands',
     landmarks: ['parasites', 'deadEarth'],
     tallWalls: 6,
-    places: ['Gaia', 'Photon', 'Wave', 'Stream', 'Parasite', 'Rain', 'Wind', 'Bequest', 'Dirt'],
+    places: ['Gaia', 'Parasite', 'Dirt', 'Carrion', 'Eclipse', 'Downpour', 'Black Wave', 'Bequest', 'No One'],
     music: { lap: 'gaia', finalLap: 'gaia-final-lap' },
   },
 };
