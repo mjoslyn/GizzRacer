@@ -420,6 +420,13 @@ const STYLES: Record<DecorKind, DetailStyle> = {
     boards: { words: ['RAPID ALPHA DECAY', 'KEEPER OF THE ENERGY', 'CLIMB THE WALLS', 'ENERGY AND HEAT'], bg: ['#0a120c', '#c09a08'], fg: '#a0ff70' },
     crowd: false,
   },
+  // Gaia: low cairns of pale stones along her skin, wildflowers in the grass by the road.
+  gaia: {
+    edge: { kind: 'pole', height: 1.0, spacing: 14, color: 0xe8dcc0, stripe: 0x6a8a3a },
+    cover: { shape: 'tuft', colors: [0x3e7a2e, 0x5a9a36, 0x6aa040, 0xfff8f0, 0xffd84a, 0xff8ac8], count: 1800 },
+    boards: { words: ['I AM GAIA', 'GAIA SEES', 'GAIA BREATHES', 'NO ONE SEES', 'OMNIUM GATHERUM'], bg: ['#1e3a22', '#3a2a1a'], fg: '#f4ecc8' },
+    crowd: false,
+  },
   // The Wheel: old iron street lamps along the moor road, lit for nobody, everyone asleep; heather, and the lamplight in it.
   slumber: {
     edge: { kind: 'lamp', height: 4.8, spacing: 18, color: 0x2a242c, stripe: 0xe0b860 },

@@ -872,12 +872,13 @@ const PALETTES: Record<GenTheme, Palette> = {
   gaia: {
     surface: 'earth',
     deck: 'earth',
-    alt: 'sand',
-    hazards: ['sunMoon'],
-    start: 'setGate',
-    landmarks: ['setGate'],
+    alt: 'moss',
+    liquid: 'water',
+    hazards: ['breaths'],
+    start: 'gaiaHands',
+    landmarks: ['parasites', 'deadEarth'],
     tallWalls: 6,
-    places: ['Jackal', 'Snake', 'Tornado', 'Tomb', 'Duality', 'Sandstorm', 'Moonbeam', 'Hieroglyph', 'Reset'],
+    places: ['Gaia', 'Photon', 'Wave', 'Stream', 'Parasite', 'Rain', 'Wind', 'Bequest', 'Dirt'],
     music: { lap: 'gaia', finalLap: 'gaia-final-lap' },
   },
 };
@@ -1679,6 +1680,10 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
       case 'dozes':
         // Rows of sleep across the stretch, settling one after another down it.
         hazards.push({ kind, at: at(count + 1), period: 4.2 });
+        break;
+      case 'breaths':
+        // Gaia's ribs across the stretch, all heaving in one breath.
+        hazards.push({ kind, at: at(count), period: 2.5 });
         break;
     }
     return true;

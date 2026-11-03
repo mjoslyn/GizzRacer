@@ -24,6 +24,8 @@ export interface PostFxParams {
   digitise?: number;
   /** Nodded off at the wheel (The Wheel), 0..1 as it wears off: the eyelids droop shut from above and below, the picture blurs and dims, and they open again slowly, fluttering. */
   doze?: number;
+  /** Gaia dying on the final lap, 0..1: the colour drains out of the world, toward a cold grey that keeps the light and dark of it. */
+  drain?: number;
   /** The duotone's shadows, body and highlights (the track theme's `duotone`). */
   palette?: readonly [number, number, number];
 }
@@ -51,6 +53,7 @@ uniform float uSwim;
 uniform float uCrackle;
 uniform float uDigitise;
 uniform float uDoze;
+uniform float uDrain;
 uniform vec3 uDuoDark;
 uniform vec3 uDuoMid;
 uniform vec3 uDuoHigh;
@@ -191,6 +194,11 @@ void main() {
     float d = abs(vUv.y - 0.5) - lid;
     col.rgb *= 1.0 - smoothstep(-0.03, 0.01, d);
   }
+  // Gaia dies: the colour drains out of everything, its light and dark kept, so the road still reads.
+  if (uDrain > 0.0) {
+    float grey = dot(col.rgb, vec3(0.3, 0.59, 0.11));
+    col.rgb = mix(col.rgb, vec3(grey) * vec3(0.98, 0.99, 1.03), uDrain);
+  }
   // Letterbox bars, like the tape the video was shot on.
   if (uBox > 0.0 && abs(vUv.y - 0.5) > 0.5 - uBox * 0.11) col.rgb = vec3(0.0);
 
@@ -233,6 +241,7 @@ export class PostFx {
           uCrackle: { value: 0 },
           uDigitise: { value: 0 },
           uDoze: { value: 0 },
+          uDrain: { value: 0 },
           uDuoDark: { value: new THREE.Color(0x0a0002) },
           uDuoMid: { value: new THREE.Color(0xc00410) },
           uDuoHigh: { value: new THREE.Color(0xf0c020) },
@@ -255,7 +264,8 @@ export class PostFx {
     const crackle = p.crackle ?? 0;
     const digitise = p.digitise ?? 0;
     const doze = p.doze ?? 0;
-    if (p.haze < 0.01 && p.kaleido < 0.01 && vhs < 0.01 && duo < 0.01 && box < 0.01 && water < 0.01 && swim < 0.01 && crackle < 0.01 && digitise < 0.01 && doze < 0.01) {
+    const drain = p.drain ?? 0;
+    if (p.haze < 0.01 && p.kaleido < 0.01 && vhs < 0.01 && duo < 0.01 && box < 0.01 && water < 0.01 && swim < 0.01 && crackle < 0.01 && digitise < 0.01 && doze < 0.01 && drain < 0.01) {
       r.render(scene, camera);
       return;
     }
@@ -290,6 +300,7 @@ export class PostFx {
     u.uCrackle.value = crackle;
     u.uDigitise.value = digitise;
     u.uDoze.value = doze;
+    u.uDrain.value = drain;
     if (p.palette) {
       (u.uDuoDark.value as THREE.Color).setHex(p.palette[0]);
       (u.uDuoMid.value as THREE.Color).setHex(p.palette[1]);
