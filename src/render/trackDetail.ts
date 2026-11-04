@@ -428,6 +428,14 @@ const STYLES: Record<DecorKind, DetailStyle> = {
     boards: { words: ['CYBOOGIE', 'BOOGIE BOOGIE BOOGIE', 'FISHING FOR FISHIES', 'RUN OVER THE TESTS', 'DE-BUG', 'HAN-TYUMI'], bg: ['#0a0a0e', '#e8182c'], fg: '#f0f0f0' },
     crowd: false,
   },
+  // Hot Wax: little candles burning along the road, drops of wax spattered on the boards.
+  waxworks: {
+    edge: { kind: 'torch', height: 1.6, spacing: 14, color: 0xf0e2c4, stripe: 0xb0201a },
+    light: 0xffa040,
+    cover: { shape: 'pebble', colors: [0xf0e2c4, 0xf0e2c4, 0xe8601a, 0xb0201a, 0xe0a020, 0x5a1a40], count: 1300 },
+    boards: { words: ['HOT WAX', "C'MON GET AROUND", "EVERYBODY'S LEARNING HOW", 'COME ON A SAFARI WITH ME', 'ODDMENTS', 'HOT WAX!'], bg: ['#e0601a', '#5a1a40', '#e0a020', '#6a7a26'], fg: '#fff4dc' },
+    crowd: false,
+  },
   // Gaia: fires guttering in iron baskets along her skin, dead grass and thorns by the road, ash.
   gaia: {
     edge: { kind: 'torch', height: 1.6, spacing: 16, color: 0x1a1612, stripe: 0x3a2a20 },

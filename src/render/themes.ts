@@ -21,9 +21,10 @@ import { adobeTexture, scorchedGroundTexture, waveformRailTexture } from './theG
 import { brineTankTexture, plateTexture, synthPanelTexture } from './cyboogie';
 import { blightTexture, rootBarrierTexture, strataTexture as gaiaStrataTexture } from './gaia';
 import { boardsTexture as barnBoardsTexture, fenceTexture as farmFenceTexture, flowerFieldTexture } from './strawsInTheWind';
+import { floorboardTexture, wallpaperTexture, waxRailTexture } from './hotWax';
 
 export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism' | 'factory' | 'gamma' | 'carrion' | 'wah' | 'smog' | 'dome' | 'solar' | 'inferno' | 'mind' | 'notmind' | 'cellophane' | 'mindfuzz' | 'elbow' | 'muck' | 'boogie' | 'treesea' | 'theia' | 'set' | 'change' | 'uruk' | 'headon' | 'godcall' | 'nan' | 'float' | 'newworld' | 'foe' | 'altered' | 'hollow' | 'forge' | 'steelwar' | 'autonomy' | 'reactor' | 'muddy' | 'scala' | 'network' | 'wheel' | 'windmill' | 'cyborg' | 'grimreaper' | 'gaia' | 'hotwax' | 'sorceress' | 'emptiness' | 'bushranger';
-export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy' | 'hadean' | 'deshret' | 'moonpalace' | 'uruk' | 'nanshouse' | 'suburb' | 'headtrip' | 'paddock' | 'den' | 'alteredworld' | 'mudflat' | 'hollowness' | 'openCut' | 'forge' | 'driverless' | 'reactor' | 'network' | 'summer' | 'scala' | 'slumber' | 'reaping' | 'cyborg' | 'gaia' | 'strawfield';
+export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy' | 'hadean' | 'deshret' | 'moonpalace' | 'uruk' | 'nanshouse' | 'suburb' | 'headtrip' | 'paddock' | 'den' | 'alteredworld' | 'mudflat' | 'hollowness' | 'openCut' | 'forge' | 'driverless' | 'reactor' | 'network' | 'summer' | 'scala' | 'slumber' | 'reaping' | 'cyborg' | 'gaia' | 'strawfield' | 'waxworks';
 
 /** Everything that makes a track's world look like itself. */
 export interface Theme {
@@ -1283,22 +1284,29 @@ export const THEMES: Record<ThemeId, Theme> = {
     edgeWidth: 0.55,
     dies: true,
   },
-  // Hot Wax: (placeholder, Set's look until its world is built).
+  // Hot Wax: a house at night, the karts tiny in it, lit by candles: the ceiling lost in smoke overhead, the glow of the flames low down, the walls papered in 60s circles; giant dark floorboards with the wax creeping over everything. A pale road of set wax, molten at its edges, an orange line down each.
   hotwax: {
-    sky: { zenith: '#0a0a34', high: '#262a78', low: '#c86a3a', horizon: '#ffd070', below: '#c06030', ground: '#6a2a14', cloud: '255,200,150', clouds: 12, stars: { count: 140, color: '#f0f0ff' }, moon: '#f4f4ff' },
-    fog: { color: 0xc07850, near: 160, far: 860 },
-    hemi: { sky: 0xffd0a0, ground: 0x8a3a1a, intensity: 1.5 },
-    sun: { color: 0xffd890, intensity: 2.3 },
-    ground: tex.redSandTexture,
-    groundTile: 20,
-    cliff: tex.templeWallTexture,
-    decor: 'deshret',
-    distant: { shape: 'mesa', color: 0x5a2414 },
-    haze: 0.8,
-    duotone: [0x0a0420, 0xd05a20, 0xffe890],
+    sky: { zenith: '#0c0408', high: '#26080e', low: '#5e1c14', horizon: '#dc642a', below: '#4a1a0c', ground: '#1a0a06', cloud: '70,34,28', clouds: 14 },
+    fog: { color: 0x2e1410, near: 150, far: 780 },
+    hemi: { sky: 0xffcc98, ground: 0x5a2a1a, intensity: 1.65 },
+    sun: { color: 0xffb478, intensity: 2.2 },
+    ground: floorboardTexture,
+    groundTile: 22,
+    // Walls are the room's, and the sides of the cut under the floor: 60s wallpaper.
+    cliff: wallpaperTexture,
+    decor: 'waxworks',
+    // The furniture of the house, dark shapes far off.
+    distant: { shape: 'mesa', color: 0x120604 },
+    haze: 0.4,
+    duotone: [0x12040a, 0xe0501a, 0xfff0c0],
     skyCycle: false,
-    dust: 0xd08050,
-    barrier: { map: tex.templeWallTexture, crawl: false },
+    dust: 0x8a5a3a,
+    barrier: { map: waxRailTexture, crawl: false },
+    // The spilt drink: cherry red.
+    murk: 0x6a1420,
+    roadGlow: 0.1,
+    edgeLine: 0xff8a2a,
+    edgeWidth: 0.6,
   },
   // Sadie Sorceress: (placeholder, Set's look until its world is built).
   sorceress: {

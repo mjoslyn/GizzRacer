@@ -889,12 +889,13 @@ const PALETTES: Record<GenTheme, Palette> = {
   hotwax: {
     surface: 'wax',
     deck: 'wax',
-    alt: 'sand',
-    hazards: ['sunMoon'],
-    start: 'setGate',
-    landmarks: ['setGate'],
+    alt: 'boards',
+    liquid: 'lava',
+    hazards: ['waxFlows'],
+    start: 'waxDoor',
+    landmarks: ['armchair', 'glassHead', 'giantBed'],
     tallWalls: 6,
-    places: ['Jackal', 'Snake', 'Tornado', 'Tomb', 'Duality', 'Sandstorm', 'Moonbeam', 'Hieroglyph', 'Reset'],
+    places: ['Door', 'Floor', 'Sill', 'Safari', 'Seat', 'Sink', 'Drink', 'Maze', 'Leaves'],
     music: { lap: 'hot-wax', finalLap: 'hot-wax-final-lap' },
   },
   sorceress: {
@@ -1745,6 +1746,10 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
       case 'trafficLights':
         // Gantries of traffic lights down the stretch, changing on the waltz one after another.
         hazards.push({ kind, at: at(count), period: 2.4 });
+        break;
+      case 'waxFlows':
+        // Tongues of hot wax creeping across the stretch one after another, setting as they cool.
+        hazards.push({ kind, at: at(count), period: 4.4 });
         break;
     }
     return true;

@@ -622,6 +622,13 @@ export class Sfx {
       this.whoosh(0.7, 600, 2600, 0.2);
       [0, 1, 2].forEach((k) => this.tone(880, 0.12, 'square', 0.06, undefined, 0.3 + k * 0.26));
     }
+    // Grabbed by hot wax: a thick, sucking squelch sliding down, the sizzle of it, and the spring reverb punched, a rattling metallic clang.
+    if (by === 'waxFlows') {
+      this.tone(180, 0.5, 'sawtooth', 0.09, 70, 0, true);
+      this.whoosh(0.6, 3200, 900, 0.14);
+      this.hit(0.22, 2400, 0.4);
+      [1180, 1410, 1630].forEach((f, k) => this.tone(f, 0.45, 'square', 0.025, f * 0.94, 0.02 + k * 0.012));
+    }
     // A wave breaking over you: a crash of white noise; a glider comes in with a whistle of wind.
     if (by === 'waves') this.whoosh(0.8, 2400, 300, 0.35);
     if (by === 'gliders') this.whoosh(0.5, 1800, 500, 0.2);
