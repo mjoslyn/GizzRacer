@@ -40,6 +40,8 @@ export interface Theme {
   fog: { color: number; near: number; far: number };
   hemi: { sky: number; ground: number; intensity: number };
   sun: { color: number; intensity: number };
+  /** How strong the sun's lens flare is, 0..1 (1 when unset): a night world's sun is dim and its flare would wash the frame. */
+  sunFlare?: number;
   ground: () => THREE.Texture;
   groundTile: number;
   /** Boundary cliffs and canyon walls. */

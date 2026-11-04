@@ -406,7 +406,7 @@ function props(p: Pulse) {
     const face = kit.signPanel(w, kit.textFace([SAYS[Math.floor(rand() * SAYS.length)]], { style: 'neon', bg: '#050c16', fg: red ? '#ff8a8a' : '#bfe8ff', glow: red ? '#ff2a3a' : '#7ae8ff' }), { h, depth: 0.5, frame: metal() });
     face.position.y = post + h / 2;
     face.rotation.x = -0.1;
-    const lit = halo(p, red ? RED : GLOW, w * 1.7, 0.26);
+    const lit = halo(p, red ? RED : GLOW, w * 1.2, 0.14);
     lit.position.y = post + h / 2;
     g.add(pole(post, 0.3, metal()), face, lit);
     return g;
@@ -574,7 +574,7 @@ function props(p: Pulse) {
     const post = 14 + rand() * 18;
     const face = kit.signPanel(w, kit.textFace([SAYS[Math.floor(rand() * SAYS.length)]], { style: 'neon', bg: '#050c16', fg: '#bfe8ff', glow: '#7ae8ff', width: 256, height: 384 }), { h, depth: 0.6, frame: metal() });
     face.position.y = post + h / 2;
-    const lit = halo(p, GLOW, w * 2, 0.26);
+    const lit = halo(p, GLOW, w * 1.1, 0.1);
     lit.position.y = post + h / 2;
     g.add(pole(post, 0.5, metal()), face, lit);
     return g;
@@ -676,7 +676,10 @@ export function echoFeature(animated: kit.Animated, track?: Track): Feature {
     'Standing on a Ball': [[3, P.orb], [2, P.keys]],
   };
   const noSite = {} as kit.Site;
+  // The set landmarks keep their room: nothing from the roadside fill stands in the bedroom, under the spider or round the bro.
+  const kept = track ? track.def.landmarks.filter((l) => ROOM[l.kind] !== undefined).map((l) => ({ ...kit.offRoad(track.main, l.s * track.main.scale, l.lateral ?? 0), r: ROOM[l.kind]! })) : [];
   return (x, z, rand) => {
+    if (kept.some((q) => Math.hypot(x - q.x, z - q.z) < q.r)) return new THREE.Group();
     // The brain's island and the eye's are left clear.
     if (track && Math.hypot(x, z) < 60 && kit.clearance(track, x, z) < 55) return new THREE.Group();
     const obj = kit.weighted(rand, [...general, ...(bySection[sectionAt(x, z)] ?? [])])(rand, noSite);
@@ -685,6 +688,9 @@ export function echoFeature(animated: kit.Animated, track?: Track): Feature {
     return obj;
   };
 }
+
+/** How much room each landmark wants kept clear round it, in metres. */
+const ROOM: Partial<Record<string, number>> = { bedroom: 40, spiderCrow: 48, biccyHeap: 24, brainBall: 34, tearEye: 34, broAvatar: 36, flyCloud: 24 };
 
 /** One stretch of the lap being dressed. */
 interface Field {
@@ -734,6 +740,13 @@ function midground(f: Field, piece: THREE.Object3D, frac: number, away: number, 
   kit.standBeside(piece, f.ribbon, s, lateral);
   f.g.add(piece);
   return piece;
+}
+
+/** How far along the field a banner `offset` metres past (or before) the landmark of `kind` falls, or `fallback` if it has none: so the words hang clear of the landmark, not across the view of it. */
+function clearOf(f: Field, kind: string, offset: number, fallback: number): number {
+  const lm = f.track.def.landmarks.find((l) => l.kind === kind);
+  if (!lm) return fallback;
+  return Math.min(0.95, Math.max(0.05, (lm.s * f.track.main.scale + offset - f.from) / (f.to - f.from)));
 }
 
 /** A banner of the song's words across the road `frac` of the way along the field. */
@@ -787,7 +800,7 @@ function giantScreen(f: Field, lines: string[], w = 20, color = GLOW): THREE.Obj
   const face = kit.signPanel(w, kit.textFace(lines, { style: 'neon', bg: '#050c16', fg: hex, glow: hex }), { h, depth: 1, frame: metal() });
   face.position.y = legs + h / 2;
   body.add(face, pole(legs, 0.5, metal(), 0).translateX(-w * 0.3), pole(legs, 0.5, metal(), 0).translateX(w * 0.3));
-  return kit.setPiece({ body, base: 'plinth', baseColor: 0x1a2234, baseWidth: w * 0.9, glow: { color, size: w * 1.6, y: legs + h / 2, opacity: 0.25 }, beat: music }, f.animated);
+  return kit.setPiece({ body, base: 'plinth', baseColor: 0x1a2234, baseWidth: w * 0.9, glow: { color, size: w * 0.9, y: legs + h / 2, opacity: 0.12 }, beat: music }, f.animated);
 }
 
 /** A giant faceless head on a neck: the mob's. */
@@ -804,7 +817,7 @@ function giantHead(f: Field): THREE.Object3D {
   badge.position.set(6.4, 25, 0);
   f.p.badges.push(badge);
   body.add(neck, head, hood, badge);
-  return kit.setPiece({ body, base: 'mound', baseColor: 0x1a2030, glow: { color: GLOW, size: 30, y: 16, opacity: 0.22 }, bob: 1.2, period: 5, beat: music }, f.animated);
+  return kit.setPiece({ body, base: 'mound', baseColor: 0x1a2030, glow: { color: GLOW, size: 18, y: 16, opacity: 0.12 }, bob: 1.2, period: 5, beat: music }, f.animated);
 }
 
 /** A row of big eyes on a gantry, all looking at the road. */
@@ -817,7 +830,7 @@ function eyeWall(f: Field): THREE.Object3D {
     eye.position.set(x, 8, 0.5);
     body.add(eye, pole(8, 0.3, metal(), 8).translateX(x));
   }
-  return kit.setPiece({ body, base: 'plinth', baseColor: 0x1a2234, baseWidth: 38, glow: { color: 0xe8f4ff, size: 40, y: 26, opacity: 0.22 }, beat: music }, f.animated);
+  return kit.setPiece({ body, base: 'plinth', baseColor: 0x1a2234, baseWidth: 38, glow: { color: 0xe8f4ff, size: 22, y: 26, opacity: 0.12 }, beat: music }, f.animated);
 }
 
 /** The mute button, a giant one: a speaker crossed out, throbbing red. */
@@ -830,7 +843,7 @@ function giantMute(f: Field): THREE.Object3D {
   const bar = slab(2, 30, 1.4, kit.lit(RED), 0, 12, 10);
   bar.rotation.z = Math.PI / 4;
   body.add(cone, bar);
-  return kit.setPiece({ body, base: 'ring', baseColor: 0x30343e, baseWidth: 34, glow: { color: RED, size: 40, y: 14, opacity: 0.25 }, beat: music }, f.animated);
+  return kit.setPiece({ body, base: 'ring', baseColor: 0x30343e, baseWidth: 34, glow: { color: RED, size: 22, y: 14, opacity: 0.14 }, beat: music }, f.animated);
 }
 
 /** The ball and the flame at its foot: standing on a ball, pissing on a flame. */
@@ -844,7 +857,7 @@ function ballAndFlame(f: Field): THREE.Object3D {
   const fire = kit.fire(f.animated, 1.3, { size: 2, colors: { outer: 0xffb45a, mid: 0xff7a2a, core: 0xfff0c0 } });
   fire.position.set(14, 0, 4);
   body.add(ball, mind, fire);
-  return kit.setPiece({ body, base: 'ring', baseColor: 0x1a2234, baseWidth: 36, glow: { color: GLOW, size: 38, y: 18, opacity: 0.22 }, spin: 0.1, beat: music }, f.animated);
+  return kit.setPiece({ body, base: 'ring', baseColor: 0x1a2234, baseWidth: 36, glow: { color: GLOW, size: 22, y: 18, opacity: 0.12 }, spin: 0.1, beat: music }, f.animated);
 }
 
 /** The giant lonely one in the spotlight. */
@@ -854,7 +867,7 @@ function giantLone(f: Field): THREE.Object3D {
   beam.position.y = 23;
   const top = new THREE.Group();
   top.add(body, beam);
-  return kit.setPiece({ body: top, base: 'plinth', baseColor: 0x1a2234, glow: { color: GLOW, size: 26, y: 8, opacity: 0.22 }, breathe: 0.02, beat: music }, f.animated);
+  return kit.setPiece({ body: top, base: 'plinth', baseColor: 0x1a2234, glow: { color: GLOW, size: 16, y: 8, opacity: 0.12 }, breathe: 0.02, beat: music }, f.animated);
 }
 
 /** Smoke and embers from a trash fire. */
@@ -871,7 +884,7 @@ const FIELDS: Record<string, (f: Field) => void> = {
   'Riddle Me This'(f) {
     strew(f, [[3, f.P.monitor], [2, f.P.keys], [2, f.P.litter], [1, f.P.popup]], 13);
     pixels(f);
-    words(f, 0.62, ['DID YOU EVER GROW?']);
+    words(f, clearOf(f, 'bedroom', -85, 0.15), ['DID YOU EVER GROW?']);
     midground(f, giantScreen(f, ['ONLINE', 'ALL NIGHT'], 24), 0.55, 36, 15);
     const dust = kit.motes({ count: 90, radius: 40, height: 16, color: 0x9adaff, drift: 'float', size: 0.35, seed: f.seed }, f.animated);
     const at = kit.offRoad(f.ribbon, along(f, 0.5), 0);
@@ -882,8 +895,8 @@ const FIELDS: Record<string, (f: Field) => void> = {
   "Break the Spider's Legs"(f) {
     strew(f, [[3, f.P.cables], [2, f.P.litter], [2, f.P.popup], [2, f.P.monitor]], 13);
     pixels(f);
-    words(f, 0.2, ["BREAK THE SPIDER'S LEGS"], '#ff8a8a', RED);
-    words(f, 0.8, ['JUST TO FEED THE CROW'], '#ff8a8a', RED);
+    words(f, clearOf(f, 'spiderCrow', 75, 0.5), ["BREAK THE SPIDER'S LEGS"], '#ff8a8a', RED);
+    words(f, clearOf(f, 'spiderCrow', 150, 0.85), ['JUST TO FEED THE CROW'], '#ff8a8a', RED);
     const s = along(f, 0.4);
     const at = kit.offRoad(f.ribbon, s, 30);
     const crows = kit.flock({ count: 12, radius: 30, height: 26, color: 0x0a0c10, size: 2 }, f.animated);
@@ -1032,8 +1045,7 @@ export function feedField(track: Track, ribbon: Ribbon, s: number, to: number, s
   if (!recipe) return g;
   const p = pulse(animated);
   const islands = track.def.landmarks.filter((l) => l.kind === 'brainBall' || l.kind === 'tearEye').map((l) => kit.offRoad(track.main, l.s * track.main.scale, l.lateral ?? 0));
-  const room: Partial<Record<string, number>> = { bedroom: 28, spiderCrow: 40, biccyHeap: 24, brainBall: 34, tearEye: 34, broAvatar: 28, flyCloud: 24 };
-  const stands = track.def.landmarks.filter((l) => room[l.kind] !== undefined).map((l) => ({ ...kit.offRoad(track.main, l.s * track.main.scale, l.lateral ?? 0), r: room[l.kind]! }));
+  const stands = track.def.landmarks.filter((l) => ROOM[l.kind] !== undefined).map((l) => ({ ...kit.offRoad(track.main, l.s * track.main.scale, l.lateral ?? 0), r: ROOM[l.kind]! }));
   recipe({ track, ribbon, from: s, to, animated, g, p, P: props(p), seed: Math.round(s) + 11, islands, stands });
   return g;
 }
@@ -1096,109 +1108,179 @@ export function echoGate(ribbon: Ribbon, s: number, animated: kit.Animated): THR
   return atRoad(g, ribbon, s);
 }
 
-/** The lonely bedroom beside the start: a bed, a desk, a monitor lighting a hunched figure at night, cans and biscuits on the floor, open to the road. */
+/** The lonely bedroom beside the start: a teenager's room open to the road, lit: a bed, a desk and its glowing monitor, a poster wall, a lamp, cans and biscuits on the floor. */
 export function bedroom(ribbon: Ribbon, s: number, lateral: number, animated: kit.Animated): THREE.Group {
   const g = new THREE.Group();
+  const room = new THREE.Group();
   const p = pulse(animated);
   const W = 26;
   const D = 20;
-  const wall = kit.matte(0x30303c);
-  g.add(slab(W, 0.6, D, kit.matte(0x2a2430), 0, 0.3, 0));
-  g.add(slab(W, 10, 0.5, wall, 0, 5.6, -D / 2));
-  g.add(slab(0.5, 10, D, kit.matte(0x2a2a36), -W / 2, 5.6, 0));
-  // The bed, unmade, with a lump in it.
-  g.add(slab(9, 1.6, 5, kit.matte(0x4a4a66), -7, 1.4, -6));
-  const lump = new THREE.Mesh(BALL(), kit.matte(0x6a6a8a));
-  lump.scale.set(2.9, 1.4, 1.8);
-  lump.position.set(-8, 2.7, -6);
-  g.add(lump);
-  // The desk, the monitor lighting the room, and the one in front of it.
-  g.add(slab(9, 0.5, 4, kit.matte(0x3a3026), 6, 3.4, -6.5), slab(8.4, 3.2, 3.4, kit.matte(0x241c14), 6, 1.6, -6.5));
-  const mon = panel(6, label(['ONLINE', 'ALL NIGHT'], '#bfe8ff', '#06101c'), 3.6);
-  mon.position.set(6, 6, -7.6);
-  const lit = halo(p, GLOW, 28, 0.4);
-  lit.position.set(6, 5.5, -4);
-  g.add(mon, lit);
+  const wall = kit.matte(0x6a6a90, { emissive: 0x24243c });
+  room.add(slab(W, 0.6, D, kit.matte(0x6a5a78, { emissive: 0x2a2038 }), 0, 0.3, 0));
+  room.add(slab(W, 10, 0.5, wall, 0, 5.6, -D / 2));
+  room.add(slab(0.5, 10, D, kit.matte(0x5a5a84, { emissive: 0x20203a }), -W / 2, 5.6, 0));
+  // A rug in the middle of the floor.
+  room.add(slab(9, 0.1, 6, kit.matte(0x8a3a6a, { emissive: 0x3a1430 }), 1, 0.65, 3));
+  // The poster wall: bands, a game, anime, over the bed and the desk.
+  const posters: [string[], string, string][] = [
+    [['K.G.'], '#ffd25a', '#2a0a3a'],
+    [['GIZZ'], '#a8ff8a', '#0a2a1a'],
+    [['ANIME', 'FOREVER'], '#ff8ac8', '#2a0a20'],
+    [['LEVEL 99'], '#7ae8ff', '#0a1a3a'],
+    [['NO FEAR'], '#ff8a5a', '#2a1006'],
+    [['HEAVY', 'METAL'], '#e8e8ff', '#101018'],
+  ];
+  posters.forEach(([lines, fg, bg], k) => {
+    const pos = panel(4.2, label(lines, fg, bg), 2.8);
+    pos.position.set(-10 + (k % 3) * 5.8 + (k >= 3 ? 8.2 : 0), k % 3 === 1 ? 8.4 : 6.6, -D / 2 + 0.5);
+    pos.rotation.z = (k - 2.5) * 0.02;
+    room.add(pos);
+  });
+  // The bed, unmade, against the back wall under the posters, with a pillow and a lump in it.
+  room.add(slab(10, 1.2, 5.6, kit.matte(0x5a5a80, { emissive: 0x1c1c38 }), -7.5, 1.2, -6.8));
+  room.add(slab(0.5, 3.4, 5.8, kit.matte(0x4a3a30, { emissive: 0x180e08 }), -12.6, 2.3, -6.8));
+  room.add(slab(9.4, 0.8, 5.2, kit.matte(0x8aa0d0, { emissive: 0x28344c }), -7.3, 2.1, -6.8));
+  room.add(slab(2.6, 0.7, 3.6, kit.matte(0xf0f0ff, { emissive: 0x404058 }), -11.2, 2.8, -6.8));
+  room.add(slab(5.4, 0.9, 5.3, kit.matte(0xc0506a, { emissive: 0x501830 }), -5.2, 2.7, -6.8));
+  const lump = new THREE.Mesh(BALL(), kit.matte(0x8a8aaa, { emissive: 0x30304a }));
+  lump.scale.set(2.6, 1.3, 1.7);
+  lump.position.set(-8, 3.4, -6.6);
+  room.add(lump);
+  // The desk, its monitor lighting the room, a keyboard, a chair and the one in it.
+  room.add(slab(10, 0.5, 4, kit.matte(0x6a5440), 6, 3.4, -6.5), slab(0.5, 3.2, 3.6, kit.matte(0x4a3a2a), 1.4, 1.6, -6.5), slab(0.5, 3.2, 3.6, kit.matte(0x4a3a2a), 10.6, 1.6, -6.5));
+  const mon = panel(7, label(['ONLINE', 'ALL NIGHT'], '#bfe8ff', '#06101c'), 4.2);
+  mon.position.set(5.2, 6.4, -7.5);
+  room.add(mon, slab(1, 1.4, 1, metal(), 5.2, 4.3, -7.5));
+  room.add(slab(3.4, 0.15, 1.1, kit.lit(0x4a7a9a), 5.4, 3.75, -5.4));
+  const lit = halo(p, GLOW, 26, 0.4);
+  lit.position.set(5.2, 6, -5);
+  room.add(lit);
+  room.add(slab(2.2, 0.4, 2.2, kit.matte(0x30303c), 6, 2.2, -2.8), slab(2.2, 2.2, 0.35, kit.matte(0x30303c), 6, 3.4, -1.6));
   const who = avatar(1.8, false);
-  who.position.set(6, 0.4, -2.4);
+  who.position.set(6, 2.4, -3.2);
   who.rotation.y = Math.PI;
-  g.add(who);
-  // Empty cans and biscuit packets on the floor.
+  room.add(who);
+  // A desk lamp on the desk and a standing lamp by the bed, warm, their light on the floor.
+  const deskLamp = new THREE.Group();
+  const deskShade = new THREE.Mesh(new THREE.ConeGeometry(0.9, 0.9, 10, 1, true), new THREE.MeshBasicMaterial({ color: 0xffd890, side: THREE.DoubleSide }));
+  deskShade.position.y = 2.6;
+  deskLamp.add(pole(2.4, 0.1, metal()), deskShade);
+  deskLamp.position.set(9.6, 3.65, -6.2);
+  room.add(deskLamp);
+  const dglow = kit.glowSprite(AMBER, 9, 0.5);
+  dglow.position.set(9.6, 6.1, -6.2);
+  room.add(dglow);
+  const stand = pole(8.4, 0.16, metal());
+  stand.position.set(-12, 0.6, -2);
+  const shade = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.9, 2, 12, 1, true), new THREE.MeshBasicMaterial({ color: 0xffd890, side: THREE.DoubleSide }));
+  shade.position.set(-12, 9.6, -2);
+  const sglow = kit.glowSprite(AMBER, 16, 0.5);
+  sglow.position.set(-12, 9, -2);
+  room.add(stand, shade, sglow);
+  for (const [x, z, r, o] of [[-9, -1, 15, 0.45], [6, -2, 16, 0.4]] as const) {
+    const pool = kit.lightPool(x < 0 ? AMBER : GLOW, r, o);
+    pool.position.set(x, 0.66, z);
+    room.add(pool);
+  }
+  // Empty cans and biscuit packets on the floor, off the bed and the desk.
   const rand = seededRandom(7401);
-  for (let k = 0; k < 18; k++) {
+  for (let k = 0; k < 16; k++) {
+    const x = -W / 2 + 3 + rand() * (W - 6);
+    const z = -D / 2 + 3 + rand() * (D - 6);
+    if ((x < -1.5 && z < -3) || (x > 0.5 && z < -4)) continue;
     const can = rand() < 0.6;
     const m = can ? slab(0.9, 1.4, 0.9, canMat()) : slab(1.6, 0.2, 1, biscuit());
-    m.position.set(-W / 2 + 3 + rand() * (W - 6), can ? 1.3 : 0.7, -D / 2 + 3 + rand() * (D - 6));
+    m.position.set(x, can ? 1.3 : 0.75, z);
     m.rotation.y = rand() * 3;
-    g.add(m);
+    room.add(m);
   }
-  // A window onto the feed, the wall's one light, and a sign over the door: the way in.
+  // A window onto the feed, the wall's one light.
   const feed = panel(10, label(['LOG IN', 'SCROLL', 'REFRESH'], '#ffd25a', '#06101c', 'the-feed.com'), 6);
-  feed.position.set(-W / 2 + 0.4, 7, 2);
+  feed.position.set(-W / 2 + 0.4, 6.4, 3);
   feed.rotation.y = Math.PI / 2;
-  g.add(feed);
+  room.add(feed);
   animated.push((time) => (lit.material.opacity = 0.34 + 0.08 * Math.sin(time * 9) * Math.sin(time * 2.3)));
+  // Pushed back from the road, and bigger than it is: it has to read from the track.
+  room.position.z = -4;
+  g.add(room);
+  g.scale.setScalar(1.35);
   return offRoadFacing(g, ribbon, s, lateral);
 }
 
-/** Break the spider's legs just to feed the crow: a giant spider with two of its legs snapped off, and the crow perched over the gap. */
+/** Break the spider's legs just to feed the crow: a giant spider, pale against the dark and lit from below, two of its legs snapped off, and the crow perched over the gap in a spotlight. */
 export function spiderCrow(ribbon: Ribbon, s: number, lateral: number, animated: kit.Animated): THREE.Group {
   const g = new THREE.Group();
-  const body = new THREE.Mesh(BALL(), kit.matte(0x2c2c40, { emissive: 0x161630 }));
+  const bodyMat = kit.matte(0xb89aff, { emissive: 0x5a3aa8 });
+  const body = new THREE.Mesh(BALL(), bodyMat);
   body.scale.set(5, 4, 6.5);
   body.position.y = 7;
-  const head = new THREE.Mesh(BALL(), kit.matte(0x2c2c40, { emissive: 0x161630 }));
+  const head = new THREE.Mesh(BALL(), bodyMat);
   head.scale.setScalar(2.6);
   head.position.set(0, 7.5, 6);
-  g.add(body, head);
-  g.add(kit.lightPool(RED, 22, 0.28));
+  // The red hourglass on its back.
+  const mark = new THREE.Mesh(BALL(), kit.lit(RED));
+  mark.scale.set(1.3, 0.4, 2);
+  mark.position.set(0, 10.9, -0.5);
+  g.add(body, head, mark);
+  // Lit from below: a wide red pool under it and a warm uplight, and a cold rim behind.
+  g.add(kit.lightPool(RED, 46, 0.5));
+  const under = kit.glowSprite(0xff7a4a, 24, 0.45);
+  under.position.set(0, 2.5, 3);
+  const rim = kit.glowSprite(0x9ad0ff, 26, 0.32);
+  rim.position.set(0, 9, -6);
+  g.add(under, rim);
   const eyes: THREE.Sprite[] = [];
   for (const e of [-0.9, 0.9]) {
-    const eye = kit.glowSprite(RED, 2, 0.95);
+    const eye = kit.glowSprite(RED, 2.4, 0.95);
     eye.position.set(e, 8.2, 8.3);
     g.add(eye);
     eyes.push(eye);
   }
-  const legMat = kit.matte(0x383850, { emissive: 0x121226 });
+  const legMat = kit.matte(0xffa84a, { emissive: 0x80400a });
   for (let k = 0; k < 8; k++) {
     const side = k < 4 ? -1 : 1;
     const row = k % 4;
     const a = (row - 1.5) * 0.55;
     const snapped = k === 1 || k === 6;
-    const up = pole(snapped ? 3 : 8, 0.35, legMat);
+    const up = pole(snapped ? 3 : 8, 0.6, legMat);
     up.position.set(side * (3.5 + (snapped ? 1.2 : 3)), 7 + (snapped ? 0.8 : 3), a * 5);
     up.rotation.z = side * 1.0;
     g.add(up);
     if (!snapped) {
-      const low = pole(9, 0.25, legMat);
+      const low = pole(9, 0.45, legMat);
       low.position.set(side * 11.5, 3.6, a * 5 + a * 2);
       low.rotation.z = -side * 0.45;
       g.add(low);
     } else {
       // The snapped-off leg lying on the ground, for the crow.
-      const lying = pole(8, 0.25, legMat);
-      lying.position.set(side * 11, 0.4, a * 6 - 4);
+      const lying = pole(8, 0.45, legMat);
+      lying.position.set(side * 11, 0.9, a * 6 - 4);
       lying.rotation.set(0, 0.8 * side, Math.PI / 2);
       g.add(lying);
     }
   }
-  // The crow on a post over it all, a beak on the end of its neck, looking at the road.
+  // The crow on a post in front of it, a beak on the end of its neck, looking at the road, a cold spotlight on it.
   const crow = new THREE.Group();
   const cb = new THREE.Mesh(BALL(), crowMat());
   cb.scale.set(1.4, 1.2, 2.1);
   const ch = new THREE.Mesh(BALL(), crowMat());
   ch.scale.setScalar(0.8);
   ch.position.set(0, 0.9, 1.5);
-  const beak = new THREE.Mesh(new THREE.ConeGeometry(0.3, 1.2, 5), kit.matte(0xd0a040));
+  const beak = new THREE.Mesh(new THREE.ConeGeometry(0.3, 1.2, 5), kit.lit(0xffc040));
   beak.rotation.x = Math.PI / 2;
   beak.position.set(0, 0.8, 2.5);
   const wing = slab(0.2, 0.2, 2.6, crowMat(), -1.1, 0.2, -0.2);
   crow.add(cb, ch, beak, wing);
-  crow.position.set(14, 12.9, -6);
+  crow.scale.setScalar(1.7);
+  crow.position.set(15, 13.4, 3);
   const cEye = kit.glowSprite(RED, 0.8, 0.9);
   cEye.position.set(0.3, 1.1, 2);
   crow.add(cEye);
-  g.add(pole(12, 0.28, metal()).translateX(14).translateZ(-6), crow);
+  const spot = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 6, 24, 20, 1, true), new THREE.MeshBasicMaterial({ color: 0xcfe8ff, transparent: true, opacity: 0.13, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
+  spot.position.set(15, 25, 3);
+  const perch = kit.glowSprite(0xcfe8ff, 12, 0.4);
+  perch.position.set(15, 13.4, 1);
+  g.add(pole(12, 0.28, metal()).translateX(15).translateZ(3), crow, spot, perch);
   const flock = kit.flock({ count: 8, radius: 26, height: 22, color: 0x0a0c10, size: 1.8 }, animated);
   flock.position.set(0, 0, 0);
   g.add(flock);
@@ -1207,7 +1289,7 @@ export function spiderCrow(ribbon: Ribbon, s: number, lateral: number, animated:
     crow.rotation.y = 0.2 * Math.sin(time * 0.6);
     eyes.forEach((e, k) => (e.material.opacity = 0.7 + 0.3 * Math.sin(time * 3 + k * 2)));
   });
-  g.scale.setScalar(1.25);
+  g.scale.setScalar(1.6);
   return offRoadFacing(g, ribbon, s, lateral);
 }
 
@@ -1315,10 +1397,10 @@ export function brainBall(ribbon: Ribbon, s: number, lateral: number, animated: 
   const mind = brain(2.4);
   g.add(mind);
   // The cold beam from above on it.
-  const beam = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 14, 40, 24, 1, true), new THREE.MeshBasicMaterial({ color: GLOW, transparent: true, opacity: 0.1, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
+  const beam = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 14, 40, 24, 1, true), new THREE.MeshBasicMaterial({ color: GLOW, transparent: true, opacity: 0.05, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
   beam.position.y = 22;
   g.add(beam);
-  const glow = halo(p, GLOW, 32, 0.38);
+  const glow = halo(p, GLOW, 20, 0.2);
   glow.position.y = 12;
   g.add(glow);
   // A flame at its foot, tiny, and the sparks it throws.
@@ -1335,7 +1417,7 @@ export function brainBall(ribbon: Ribbon, s: number, lateral: number, animated: 
     mind.position.y = 6.9 + 6.5 + 1.7 + 0.15 * Math.sin(time * 2);
     flame.material.opacity = 0.65 + 0.3 * Math.sin(time * 13);
     flame.scale.setScalar(3.2 + 0.6 * Math.sin(time * 9));
-    beam.material.opacity = 0.08 + 0.04 * Math.sin(time * 1.5);
+    beam.material.opacity = 0.04 + 0.02 * Math.sin(time * 1.5);
     ring.material.opacity = 0.5 + 0.4 * music.pulse(time);
   });
   const at = kit.offRoad(ribbon, s, lateral);
@@ -1368,7 +1450,7 @@ export function tearEye(ribbon: Ribbon, s: number, lateral: number, animated: ki
   puddle.rotation.x = -Math.PI / 2;
   puddle.position.set(0, 0.5, 3);
   g.add(puddle);
-  const glow = halo(p, 0xe8f4ff, 40, 0.3);
+  const glow = halo(p, 0xe8f4ff, 22, 0.16);
   glow.position.y = 24;
   g.add(glow);
   const plaque = panel(8, label(['YOU WILL NOT', 'BE MISSED'], '#ff8a8a', '#0a1020'), 4);
@@ -1392,35 +1474,77 @@ export function tearEye(ribbon: Ribbon, s: number, lateral: number, animated: ki
   return g;
 }
 
-/** Himpathetic bro: a giant faceless figure hunched in a hoodie over a glowing laptop, alone with it. */
+/** Himpathetic bro: a giant faceless figure hunched in a hoodie over a glowing laptop at his desk, in a pool of light on a lit floor, his screens, cans and pop-ups piled round him. */
 export function broAvatar(ribbon: Ribbon, s: number, lateral: number, animated: kit.Animated): THREE.Group {
   const g = new THREE.Group();
   const p = pulse(animated);
+  // His own floor and pool of light, so he isn't floating in the dark.
+  const floor = new THREE.Mesh(new THREE.CylinderGeometry(24, 25, 0.5, 40), kit.matte(0x2a3450, { emissive: 0x141c30 }));
+  floor.position.y = 0.25;
+  const ring = new THREE.Mesh(new THREE.RingGeometry(22.2, 23.4, 56), new THREE.MeshBasicMaterial({ color: GLOW, transparent: true, opacity: 0.7, side: THREE.DoubleSide, depthWrite: false }));
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.y = 0.55;
+  const pool = kit.lightPool(GLOW, 34, 0.5);
+  pool.position.y = 0.6;
+  g.add(floor, ring, pool);
+  const spot = new THREE.Mesh(new THREE.CylinderGeometry(6, 20, 44, 28, 1, true), new THREE.MeshBasicMaterial({ color: GLOW, transparent: true, opacity: 0.08, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
+  spot.position.y = 22;
+  g.add(spot);
   const body = new THREE.Mesh(new THREE.CapsuleGeometry(6, 9, 6, 14), avatarGrey());
-  body.position.set(0, 10, 4);
+  body.position.set(0, 10.6, 4);
   body.rotation.x = 0.5;
   const head = new THREE.Mesh(BALL(), avatarGrey());
   head.scale.setScalar(5);
-  head.position.set(0, 18, -4);
+  head.position.set(0, 18.6, -4);
   const hood = new THREE.Mesh(new THREE.SphereGeometry(5.6, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.62), avatarDark());
-  hood.position.set(0, 18.6, -3.4);
+  hood.position.set(0, 19.2, -3.4);
   g.add(body, head, hood);
+  // His desk, and the laptop on it.
+  g.add(slab(20, 0.8, 11, kit.matte(0x4a3a2c, { emissive: 0x1c140c }), 0, 7.4, -12.5));
+  for (const x of [-8.5, 8.5]) g.add(slab(1.2, 7, 9, kit.matte(0x30241a), x, 3.9, -12.5));
+  g.add(slab(1, 6, 7, kit.matte(0x30303c), 0, 3.8, 2));
+  g.add(slab(8, 0.7, 8, kit.matte(0x30303c), 0, 4.2, 3));
   const laptop = panel(12, label(['HIMPATHETIC', 'BRO'], '#bfe8ff', '#06101c'), 7.5);
-  laptop.position.set(0, 12, -16);
+  laptop.position.set(0, 12.2, -16);
   laptop.rotation.x = -0.25;
-  g.add(laptop, slab(12, 0.6, 8, metal(), 0, 7.8, -12));
-  const lit = halo(p, GLOW, 44, 0.32);
-  lit.position.set(0, 14, -14);
+  g.add(laptop, slab(12, 0.6, 8, metal(), 0, 8.1, -12), slab(8, 0.2, 2.2, kit.lit(0x4a7a9a), 0, 8.5, -9.4));
+  const lit = halo(p, GLOW, 34, 0.3);
+  lit.position.set(0, 13, -13);
   g.add(lit);
+  // Screens either side of the desk and a lamp, in the toolkit's props: monitors, keycaps, cans, cables, pop-ups, a lantern.
+  const P = props(p);
+  const rand = seededRandom(7561);
+  const none = {} as kit.Site;
+  const kinds: [number, kit.Prop][] = [[3, P.monitor], [2, P.keys], [2, P.litter], [2, P.popup], [1, P.cables], [1, P.bubble], [1, P.hood], [1, P.lantern]];
+  for (let k = 0; k < 16; k++) {
+    const a = (k / 16) * Math.PI * 2 + rand() * 0.3;
+    const r = 13 + rand() * 8;
+    const x = Math.sin(a) * r;
+    const z = Math.cos(a) * r;
+    if (Math.abs(x) < 12 && z < -6) continue;
+    const prop = kit.weighted(rand, kinds)(rand, none);
+    prop.position.set(x, 0.5, z);
+    prop.rotation.y = a + Math.PI + (rand() - 0.5) * 1.2;
+    g.add(prop);
+  }
+  for (const x of [-18, 18]) {
+    const lamp = new THREE.Group();
+    lamp.add(pole(9, 0.2, metal()), new THREE.Mesh(new THREE.SphereGeometry(1, 10, 8), kit.lit(0xffe0a0)));
+    lamp.children[1].position.y = 9.4;
+    lamp.position.set(x, 0.5, -8);
+    const glow = kit.glowSprite(AMBER, 14, 0.4);
+    glow.position.set(x, 9.9, -8);
+    g.add(lamp, glow);
+  }
   const badge = new THREE.Mesh(BALL(), kit.lit(RED));
   badge.scale.setScalar(1.4);
-  badge.position.set(5, 24, -2);
+  badge.position.set(5, 24.6, -2);
   p.badges.push(badge);
   g.add(badge);
   const dust = kit.motes({ count: 50, radius: 14, height: 18, color: GLOW, drift: 'float', size: 0.4, seed: 7552 }, animated);
   g.add(dust);
   animated.push((time) => {
-    lit.userData.base = 0.28 + 0.08 * Math.sin(time * 7) * Math.sin(time * 1.7);
+    lit.userData.base = 0.26 + 0.07 * Math.sin(time * 7) * Math.sin(time * 1.7);
     body.rotation.x = 0.5 + 0.03 * Math.sin(time * 1.1);
   });
   const at = kit.offRoad(ribbon, s, lateral);
@@ -1441,13 +1565,13 @@ export function deckFeed(ribbon: Ribbon, s: number, to: number, animated: kit.An
       const at = kit.offRoad(ribbon, d, side * (hw + 0.8));
       const post = pole(4, 0.18, metal());
       post.position.set(at.x, f.y + 2, at.z);
-      const l = kit.glowSprite(GLOW, 3.4, 0.9);
+      const l = kit.glowSprite(GLOW, 2.2, 0.9);
       l.position.set(at.x, f.y + 4.2, at.z);
       g.add(post, l);
       lights.push(l);
     }
   }
-  animated.push((time) => lights.forEach((l, n) => (l.material.opacity = 0.35 + 0.6 * Math.max(0, Math.sin(time * 6 - Math.floor(n / 2) * 0.7)))));
+  animated.push((time) => lights.forEach((l, n) => (l.material.opacity = 0.25 + 0.4 * Math.max(0, Math.sin(time * 6 - Math.floor(n / 2) * 0.7)))));
   return g;
 }
 
