@@ -23,6 +23,8 @@ export const view: KitView<'minimum-brain-size'> = {
       fog: { color: 0x12242a, near: 110, far: 640 },
       hemi: { sky: 0x8ab8c8, ground: 0x2a3040, intensity: 1.5 },
       sun: { color: 0xbfe8ff, intensity: 1.5 },
+      // A night world: the sun's lens flare, a screen-wide yellow wash from the hub, is a faint glint.
+      sunFlare: 0.12,
       ground: staticGroundTexture,
       groundTile: 20,
       // Walls of the cut and the world's edge: a wet membrane, the inside of something.

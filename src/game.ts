@@ -108,10 +108,15 @@ const chase = new ChaseCamera(camera);
 
 // Sun with lens flare, parked far along the light direction.
 const flare = new Lensflare();
-flare.addElement(new LensflareElement(glowTexture('rgba(255,250,230,1)', 'rgba(255,220,160,0)', 256), 500, 0, new THREE.Color(0xfff2d0)));
-flare.addElement(new LensflareElement(flareRingTexture(), 120, 0.4, new THREE.Color(0x9fd0ff)));
-flare.addElement(new LensflareElement(glowTexture(), 70, 0.6, new THREE.Color(0xffb070)));
-flare.addElement(new LensflareElement(flareRingTexture(), 200, 0.9, new THREE.Color(0xc0a0ff)));
+const flareElements = [
+  new LensflareElement(glowTexture('rgba(255,250,230,1)', 'rgba(255,220,160,0)', 256), 500, 0, new THREE.Color(0xfff2d0)),
+  new LensflareElement(flareRingTexture(), 120, 0.4, new THREE.Color(0x9fd0ff)),
+  new LensflareElement(glowTexture(), 70, 0.6, new THREE.Color(0xffb070)),
+  new LensflareElement(flareRingTexture(), 200, 0.9, new THREE.Color(0xc0a0ff)),
+];
+for (const e of flareElements) flare.addElement(e);
+/** Each flare element as built, so a world with a dim sun can scale them (the theme's `sunFlare`). */
+const flareBase = flareElements.map((e) => ({ size: e.size, color: e.color.clone() }));
 const sunAnchor = new THREE.Object3D();
 sunAnchor.add(flare);
 scene.add(sunAnchor);
@@ -938,6 +943,11 @@ function loadTrack(entry: TrackEntry): void {
   hemi.intensity = t.hemi.intensity;
   sun.color.setHex(t.sun.color);
   sun.intensity = t.sun.intensity;
+  const glare = t.sunFlare ?? 1;
+  flareElements.forEach((e, k) => {
+    e.size = flareBase[k].size * glare;
+    e.color.copy(flareBase[k].color).multiplyScalar(glare);
+  });
   hud.minimap.setTrack(track);
   startRace(false);
 }
