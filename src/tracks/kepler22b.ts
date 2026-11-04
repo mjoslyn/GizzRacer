@@ -172,11 +172,11 @@ export function buildKepler22b(): TrackDef {
       { kind: 'keplerArch', ribbon: -1, s: at('ridge', 4) },
     ],
     itemBoxes: [
-      { s: 75, count: 4 },
-      { s: at('shallows', 20), count: 4 },
+      { s: 75, count: 8 },
+      { s: at('shallows', 20), count: 8 },
       { s: at('ridge', 240), count: 3 },
       { s: at('landing', 25), count: 3 },
-      { s: at('zone', 30), count: 4 },
+      { s: at('zone', 30), count: 8 },
       { s: mem.boxes, count: 1, ribbon: 0, double: true },
     ],
     hazards: [

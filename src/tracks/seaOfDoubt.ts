@@ -157,11 +157,11 @@ export function buildSeaOfDoubt(): TrackDef {
       { kind: 'wreckGate', ribbon: -1, s: at('doubt', 2) },
     ],
     itemBoxes: [
-      { s: 75, count: 4 },
-      { s: at('causeway', 20), count: 4 },
+      { s: 75, count: 8 },
+      { s: at('causeway', 20), count: 8 },
       { s: at('swells', 40), count: 3 },
       { s: at('cave', 50), count: 3 },
-      { s: at('doubt', 45), count: 4 },
+      { s: at('doubt', 45), count: 8 },
       { s: rip.boxes, count: 1, ribbon: 0, double: true },
     ],
     hazards: [

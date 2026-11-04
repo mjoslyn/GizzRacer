@@ -19,6 +19,9 @@ const HIGH_FALL = 5;
 const RESPAWN_SPEED = 0.5;
 const RESPAWN_BOOST = 0.6;
 const RESPAWN_IMMUNE = 1.5;
+/** A CPU that gains less than this (m) in STUCK_RESPAWN seconds is wedged: it's put back on the road. */
+const STUCK_GAIN = 15;
+const STUCK_RESPAWN = 8;
 export const COUNTDOWN = 3;
 /** Trailing CPUs get up to this much extra top speed (spec section 8). */
 export const RUBBER_BAND_MAX = 0.08;
@@ -89,6 +92,10 @@ export class RaceKart implements ItemHolder {
   lapStart = 0;
   finishTime: number | null = null;
   fallTime = 0;
+  /** A CPU's ground gained along the road (m) since the stuck clock last reset, where it was last step, and that clock: wedged too long, it's put back on the road. */
+  gained = 0;
+  lastS = NaN;
+  stuckTime = 0;
   respawned = false;
   /** On a road last step, and the height of the last road under it: falling well below that is a fall (off a high deck). */
   onRoad = true;
@@ -316,6 +323,7 @@ export class Race {
       const ev = stepKart(kart.state, input, kart.params, this.track, dt);
       if (d && ev.launched) kart.trickPlan = d.roll(CPU_TRICK * d.skill.itemIq);
       this.updateFall(kart, dt);
+      if (d) this.updateStuck(kart, dt);
       this.updateLaps(kart);
       return ev;
     });
@@ -473,6 +481,11 @@ export class Race {
     if (kart.fallTime < RESPAWN_DELAY) return;
     const cp = kart.laps.lastCheckpoint;
     const s = cp < 0 ? 2 : this.track.def.checkpoints[cp] * this.track.length + 2;
+    this.putBack(kart, s);
+  }
+
+  /** Puts a kart back on the road at `s` (m), facing along it, a little boosted and shielded. */
+  private putBack(kart: RaceKart, s: number): void {
     const pose = this.track.respawnPose(s);
     respawnKart(kart.state, pose.x, pose.y, pose.z, pose.heading);
     kart.state.speed = kart.params.topSpeed * RESPAWN_SPEED;
@@ -484,6 +497,35 @@ export class Race {
     kart.fallTime = 0;
     kart.respawned = true;
     kart.driver?.onRespawn();
+  }
+
+  /**
+   * A CPU wedged somewhere it can't drive out of (knocked into a corner of
+   * walls, say) and making no progress for STUCK_RESPAWN seconds is put back
+   * on the road where it is, as after a fall; a human never is.
+   */
+  private updateStuck(kart: RaceKart, dt: number): void {
+    if (!this.started || kart.finishTime !== null) return;
+    const L = this.track.length;
+    if (!Number.isNaN(kart.lastS)) {
+      // Along the road since last step, across the line either way.
+      let d = kart.progressS - kart.lastS;
+      if (d > L / 2) d -= L;
+      else if (d < -L / 2) d += L;
+      kart.gained += d;
+    }
+    kart.lastS = kart.progressS;
+    if (kart.gained > STUCK_GAIN) {
+      kart.gained = 0;
+      kart.stuckTime = 0;
+      return;
+    }
+    kart.stuckTime += dt;
+    if (kart.stuckTime < STUCK_RESPAWN) return;
+    kart.stuckTime = 0;
+    kart.gained = 0;
+    kart.lastS = NaN;
+    this.putBack(kart, kart.progressS + 2);
   }
 
   private onSunkRoad(s: KartState): boolean {

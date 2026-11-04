@@ -134,11 +134,11 @@ export function buildImInYourMind(): TrackDef {
       { kind: 'mindFace', ribbon: -1, s: at('drop', 30), lateral: -110 },
     ],
     itemBoxes: [
-      { s: 75, count: 4 },
-      { s: at('esses', 10), count: 4 },
+      { s: 75, count: 8 },
+      { s: at('esses', 10), count: 8 },
       { s: at('drop', 105), count: 3 },
       { s: at('deep', 50), count: 3 },
-      { s: at('bend', 45), count: 4 },
+      { s: at('bend', 45), count: 8 },
       { s: open.boxes, count: 1, ribbon: 0, double: true },
     ],
     hazards: [

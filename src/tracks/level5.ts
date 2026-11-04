@@ -213,12 +213,12 @@ export function buildLevel5(): TrackDef {
       { kind: 'blindTunnel', ribbon: 0, s: blind.boxes },
     ],
     itemBoxes: [
-      { s: 72, count: 4 },
+      { s: 72, count: 8 },
       { s: at('level3', 15), count: 3 },
       { s: at('milk', 30), count: 3 },
-      { s: at('date', 40), count: 4 },
-      { s: at('sulphur', 30), count: 4 },
-      { s: at('rise', 40), count: 4 },
+      { s: at('date', 40), count: 8 },
+      { s: at('sulphur', 30), count: 8 },
+      { s: at('rise', 40), count: 8 },
       { s: blind.boxes, count: 1, ribbon: 0, double: true },
     ],
     hazards: [

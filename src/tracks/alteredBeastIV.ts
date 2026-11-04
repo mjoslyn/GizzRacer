@@ -200,12 +200,12 @@ export function buildAlteredBeastIV(): TrackDef {
       { kind: 'hellmouth', ribbon: 0, s: hell.boxes },
     ],
     itemBoxes: [
-      { s: 75, count: 4 },
-      { s: at('satisfied', 25), count: 4 },
-      { s: at('hell', 30), count: 4 },
+      { s: 75, count: 8 },
+      { s: at('satisfied', 25), count: 8 },
+      { s: at('hell', 30), count: 8 },
       { s: at('feel', 15), count: 3 },
       { s: at('heart', 22), count: 3 },
-      { s: at('underA', 30), count: 4 },
+      { s: at('underA', 30), count: 8 },
       { s: hell.boxes, count: 1, ribbon: 0, double: true },
     ],
     hazards: [

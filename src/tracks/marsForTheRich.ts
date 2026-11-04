@@ -156,11 +156,11 @@ export function buildMarsForTheRich(): TrackDef {
       { kind: 'richDome', ribbon: -1, s: at('esses', 60), lateral: 150 },
     ],
     itemBoxes: [
-      { s: 75, count: 4 },
-      { s: at('esses', 10), count: 4 },
+      { s: 75, count: 8 },
+      { s: at('esses', 10), count: 8 },
       { s: at('drop', 60), count: 3 },
       { s: at('under', 120), count: 3 },
-      { s: at('rim', 5), count: 4 },
+      { s: at('rim', 5), count: 8 },
       { s: tube.boxes, count: 1, ribbon: 0, double: true },
     ],
     hazards: [

@@ -149,11 +149,11 @@ export function buildHellOnMars(): TrackDef {
       { kind: 'colonyGate', ribbon: -1, s: at('habs', 2) },
     ],
     itemBoxes: [
-      { s: 98, count: 4 },
+      { s: 98, count: 8 },
       { s: at('climb', 30), count: 3 },
-      { s: at('crater', 55), count: 4 },
+      { s: at('crater', 55), count: 8 },
       { s: at('nest', 60), count: 3 },
-      { s: at('mile', 10), count: 4 },
+      { s: at('mile', 10), count: 8 },
       { s: toll.boxes, count: 2, ribbon: 0, span: 5, double: true },
     ],
     hazards: [

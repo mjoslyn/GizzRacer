@@ -150,11 +150,11 @@ export function buildRobotStop(): TrackDef {
       { kind: 'robotColossus', ribbon: -1, s: at('drop', 140), lateral: -100 },
     ],
     itemBoxes: [
-      { s: 75, count: 4 },
-      { s: at('esses', 20), count: 4 },
+      { s: 75, count: 8 },
+      { s: at('esses', 20), count: 8 },
       { s: at('drop', 140), count: 3 },
       { s: at('trench', 50), count: 3 },
-      { s: at('door', 45), count: 4 },
+      { s: at('door', 45), count: 8 },
       { s: door.boxes, count: 1, ribbon: 0, double: true },
     ],
     hazards: [

@@ -167,8 +167,8 @@ export function buildTheia(): TrackDef {
       { kind: 'theiaPlanet', ribbon: -1, s: at('impact', 120), lateral: -300 },
     ],
     itemBoxes: [
-      { s: 75, count: 4 },
-      { s: at('destiny', 20), count: 4 },
+      { s: 75, count: 8 },
+      { s: at('destiny', 20), count: 8 },
       { s: at('fate', 20), count: 3 },
       { s: at('dance', 10), count: 3 },
       { s: at('void', 50), count: 3 },

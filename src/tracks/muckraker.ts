@@ -150,11 +150,11 @@ export function buildMuckraker(): TrackDef {
       { kind: 'powerStation', ribbon: -1, s: at('pit', 20), lateral: 130 },
     ],
     itemBoxes: [
-      { s: 62, count: 4 },
-      { s: at('drop', 20), count: 4 },
+      { s: 62, count: 8 },
+      { s: at('drop', 20), count: 8 },
       { s: at('tinesEnd', 0), count: 3 },
       { s: at('boardwalk', 80), count: 3 },
-      { s: at('fairway', 5), count: 4 },
+      { s: at('fairway', 5), count: 8 },
       { s: water.boxes, count: 1, ribbon: 0, double: true },
     ],
     hazards: [

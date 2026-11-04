@@ -147,11 +147,11 @@ export function buildSupercell(): TrackDef {
       { kind: 'rodGate', ribbon: -1, s: at('farm', 2) },
     ],
     itemBoxes: [
-      { s: 75, count: 4 },
-      { s: at('alley', 90), count: 4 },
+      { s: 75, count: 8 },
+      { s: at('alley', 90), count: 8 },
       { s: at('farm', 50), count: 3 },
       { s: at('washout', 15), count: 3 },
-      { s: at('down', 45), count: 4 },
+      { s: at('down', 45), count: 8 },
       { s: levee.boxes, count: 1, ribbon: 0, double: true },
     ],
     hazards: [

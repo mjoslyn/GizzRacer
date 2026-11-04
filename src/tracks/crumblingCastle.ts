@@ -171,13 +171,13 @@ export function buildCrumblingCastle(): TrackDef {
       { kind: 'castleKeep', ribbon: -1, s: at('hallStraight', 0), lateral: 150 },
     ],
     itemBoxes: [
-      { s: at('kick1', 25), count: 4 },
+      { s: at('kick1', 25), count: 8 },
       { s: at('hall', 30), count: 3 },
-      { s: at('greatHall', 30), count: 4 },
+      { s: at('greatHall', 30), count: 8 },
       { s: at('upper', 60), count: 3 },
       { s: at('garden', 5), count: 3 },
       { s: at('dungeon', 55), count: 3 },
-      { s: at('moatRoad', 20), count: 4 },
+      { s: at('moatRoad', 20), count: 8 },
       { s: breach.boxes, count: 1, ribbon: 0, double: true },
     ],
     hazards: [

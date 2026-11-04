@@ -181,10 +181,10 @@ export function buildAlteredBeastIII(): TrackDef {
       ...basePairs(m, peep.branch),
     ],
     itemBoxes: [
-      { s: 90, count: 4 },
-      { s: m('a7'), count: 4 },
+      { s: 90, count: 8 },
+      { s: m('a7'), count: 8 },
       { s: m('a16', 10), count: 3 },
-      { s: m('b22'), count: 4 },
+      { s: m('b22'), count: 8 },
       { s: m('b7'), count: 3 },
       { s: peep.boxes, count: 1, ribbon: 0, double: true },
     ],

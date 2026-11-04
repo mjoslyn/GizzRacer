@@ -138,10 +138,10 @@ export function buildVolcanoFortress(): TrackDef {
       { kind: 'fortressGate', ribbon: -1, s: b.marks.fortressEnd.s - 8 },
     ],
     itemBoxes: [
-      { s: 95, count: 4 },
+      { s: 95, count: 8 },
       { s: b.marks.fortress.s + 30, count: 3 },
       { s: m('cone', 200), count: 3 },
-      { s: b.marks.caldera.s + 25, count: 4 },
+      { s: b.marks.caldera.s + 25, count: 8 },
       { s: m('tube', 200), count: 3 },
       { s: itch.branch.length / 2, count: 2, ribbon: 0, span: 4, double: true },
     ],

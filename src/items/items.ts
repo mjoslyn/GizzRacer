@@ -132,6 +132,8 @@ export const BOX_RESPAWN = 3;
 /** Seconds the item roulette spins before the item lands in the slot. */
 export const ROULETTE = 1;
 const BOX_RADIUS = 1.4;
+/** The least gap (m) between the boxes of a row: a row of 8 on a narrow road keeps as many as fit at this spacing. */
+const BOX_GAP = 2;
 const MINE_RADIUS = 1.2;
 const MINE_ARM = 0.4;
 const MAX_MINES = 12;
@@ -323,8 +325,10 @@ export class ItemSystem {
       const p = pointAt(ribbon.spline, s);
       const hw = row.span !== undefined ? row.span / 2 : ribbon.halfWidthAtS(s) * 0.7;
       const tl = Math.hypot(p.tx, p.tz) || 1;
-      for (let i = 0; i < row.count; i++) {
-        const lat = (row.lateral ?? 0) + (row.count > 1 ? -hw + (2 * hw * i) / (row.count - 1) : 0);
+      // A row of more than four thins out to as many as fit at BOX_GAP apart, so a narrow road isn't walled off.
+      const count = row.count > 4 ? Math.max(4, Math.min(row.count, Math.floor((2 * hw) / BOX_GAP) + 1)) : row.count;
+      for (let i = 0; i < count; i++) {
+        const lat = (row.lateral ?? 0) + (count > 1 ? -hw + (2 * hw * i) / (count - 1) : 0);
         const x = p.x - (p.tz / tl) * lat;
         const z = p.z + (p.tx / tl) * lat;
         this.boxes.push({ x, y: ribbon.heightAt(s) + 1.1, z, respawn: 0, double: !!row.double });

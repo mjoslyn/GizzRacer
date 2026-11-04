@@ -185,10 +185,10 @@ export function buildMendThePast(): TrackDef {
       { kind: 'teacups', ribbon: -1, s: at('o15', 10), lateral: -120 },
     ],
     itemBoxes: [
-      { s: 75, count: 4 },
-      { s: at('o7', 10), count: 4 },
+      { s: 75, count: 8 },
+      { s: at('o7', 10), count: 8 },
       { s: at('o16', 10), count: 3 },
-      { s: at('r2', 10), count: 4 },
+      { s: at('r2', 10), count: 8 },
       { s: at('r18', 10), count: 3 },
       { s: ask.boxes, count: 1, ribbon: 0, double: true },
     ],

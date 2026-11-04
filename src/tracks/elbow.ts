@@ -119,11 +119,11 @@ export function buildElbow(): TrackDef {
       { kind: 'bentArm', ribbon: -1, s: at('forearm', 80), lateral: 130 },
     ],
     itemBoxes: [
-      { s: 75, count: 4 },
-      { s: at('forearm', 20), count: 4 },
+      { s: 75, count: 8 },
+      { s: at('forearm', 20), count: 8 },
       { s: at('wrist', 30), count: 3 },
       { s: at('alley', 110), count: 3 },
-      { s: at('flange', 110), count: 4 },
+      { s: at('flange', 110), count: 8 },
       { s: stab.boxes, count: 1, ribbon: 0, double: true },
     ],
     hazards: [

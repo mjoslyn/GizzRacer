@@ -124,11 +124,11 @@ export function buildHell(): TrackDef {
       { kind: 'ratsNest', ribbon: -1, s: at('pit', 75), lateral: -170 },
     ],
     itemBoxes: [
-      { s: 75, count: 4 },
-      { s: at('bend', 20), count: 4 },
+      { s: 75, count: 8 },
+      { s: at('bend', 20), count: 8 },
       { s: at('fall', 60), count: 3 },
       { s: at('pit', 50), count: 3 },
-      { s: at('lake', 45), count: 4 },
+      { s: at('lake', 45), count: 8 },
       { s: bridge.boxes, count: 1, ribbon: 0, double: true },
     ],
     hazards: [

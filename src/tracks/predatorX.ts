@@ -144,11 +144,11 @@ export function buildPredatorX(): TrackDef {
       { kind: 'jawsGate', ribbon: -1, s: at('bend', 2) },
     ],
     itemBoxes: [
-      { s: 75, count: 4 },
-      { s: at('flats', 20), count: 4 },
+      { s: 75, count: 8 },
+      { s: at('flats', 20), count: 8 },
       { s: at('woods', 40), count: 3 },
       { s: at('cut', 50), count: 3 },
-      { s: at('bend', 45), count: 4 },
+      { s: at('bend', 45), count: 8 },
       { s: bone.boxes, count: 1, ribbon: 0, double: true },
     ],
     hazards: [

@@ -120,11 +120,11 @@ export function buildCastleInTheAir(): TrackDef {
       { kind: 'airCastle', ribbon: -1, s: at('battlements', 60), lateral: -140 },
     ],
     itemBoxes: [
-      { s: at('kick1', 45), count: 4 },
+      { s: at('kick1', 45), count: 8 },
       { s: at('battlements', 10), count: 3 },
       { s: at('skyBridge', 30), count: 3 },
-      { s: at('court', 40), count: 4 },
-      { s: at('gallery', 60), count: 4 },
+      { s: at('court', 40), count: 8 },
+      { s: at('gallery', 60), count: 8 },
       { s: cloud.boxes, count: 2, ribbon: 0, double: true },
     ],
     hazards: [

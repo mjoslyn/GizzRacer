@@ -157,11 +157,11 @@ export function buildInnerCell(): TrackDef {
       { kind: 'nucleus', ribbon: 0, s: pore.boxes },
     ],
     itemBoxes: [
-      { s: 75, count: 4 },
-      { s: at('stream', 20), count: 4 },
+      { s: 75, count: 8 },
+      { s: at('stream', 20), count: 8 },
       { s: at('esses', 60), count: 3 },
       { s: at('loopTop', 20), count: 3 },
-      { s: at('rim', 45), count: 4 },
+      { s: at('rim', 45), count: 8 },
       { s: pore.boxes, count: 1, ribbon: 0, double: true },
     ],
     hazards: [

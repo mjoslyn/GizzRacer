@@ -254,13 +254,13 @@ export function buildTheWheel(): TrackDef {
       { kind: 'steeperPath', ribbon: 0, s: path.boxes },
     ],
     itemBoxes: [
-      { s: at('unpack', 6), count: 4 },
+      { s: at('unpack', 6), count: 8 },
       { s: at('relax', 110), count: 3 },
-      { s: at('future', 100), count: 4 },
+      { s: at('future', 100), count: 8 },
       { s: at('declineEnd', -25), count: 3 },
-      { s: at('thesis', 30), count: 4 },
+      { s: at('thesis', 30), count: 8 },
       { s: at('reaper', 10), count: 3 },
-      { s: at('allegiance', 12), count: 4 },
+      { s: at('allegiance', 12), count: 8 },
       { s: path.boxes, count: 1, ribbon: 0, double: true },
     ],
     hazards: [

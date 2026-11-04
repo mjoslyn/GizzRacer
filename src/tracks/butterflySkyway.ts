@@ -103,10 +103,10 @@ export function buildButterflySkyway(): TrackDef {
       { kind: 'rainbowArch', ribbon: -1, s: b.marks.leap.s + 70 },
     ],
     itemBoxes: [
-      { s: 90, count: 4 },
-      { s: b.marks.garden.s + 6, count: 4 },
+      { s: 90, count: 8 },
+      { s: b.marks.garden.s + 6, count: 8 },
       { s: b.marks.hairpins.s + 55, count: 3 },
-      { s: b.marks.mile.s + 10, count: 4 },
+      { s: b.marks.mile.s + 10, count: 8 },
       { s: smoke.boxes, count: 2, ribbon: 0, double: true },
     ],
     hazards: [{ kind: 'butterflies', from: b.marks.garden.s + 20, to: b.marks.garden.s + 160, count: 2 }],

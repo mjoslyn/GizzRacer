@@ -83,10 +83,10 @@ export function buildRattlesnakeRun(): TrackDef {
       { kind: 'fangs', ribbon: 0, s: shortcut.caveStart },
     ],
     itemBoxes: [
-      { s: 95, count: 4 },
+      { s: 95, count: 8 },
       { s: b.marks.canyon.s - 18, count: 3 },
-      { s: b.marks.wash.s + 25, count: 4 },
-      { s: b.marks.mesa.s + 8, count: 4 },
+      { s: b.marks.wash.s + 25, count: 8 },
+      { s: b.marks.mesa.s + 8, count: 8 },
       { s: shortcut.caveStart + 35, count: 2, ribbon: 0, span: 6, double: true },
     ],
     hazards: [

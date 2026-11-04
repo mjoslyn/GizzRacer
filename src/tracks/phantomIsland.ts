@@ -127,11 +127,11 @@ export function buildPhantomIsland(): TrackDef {
       { kind: 'phantomArch', ribbon: -1, s: at('bend', 2) },
     ],
     itemBoxes: [
-      { s: 75, count: 4 },
-      { s: at('flats', 20), count: 4 },
+      { s: 75, count: 8 },
+      { s: at('flats', 20), count: 8 },
       { s: at('woods', 50), count: 3 },
       { s: at('gapRun', 50), count: 3 },
-      { s: at('bend', 45), count: 4 },
+      { s: at('bend', 45), count: 8 },
       { s: ret.boxes, count: 1, ribbon: 0, double: true },
     ],
     hazards: [

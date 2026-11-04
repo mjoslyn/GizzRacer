@@ -179,11 +179,11 @@ export function buildPerihelion(): TrackDef {
       { kind: 'theSun', ribbon: -1, s: at('closest', 0), lateral: -700 },
     ],
     itemBoxes: [
-      { s: 75, count: 4 },
-      { s: at('neck', 40), count: 4 },
+      { s: 75, count: 8 },
+      { s: at('neck', 40), count: 8 },
       { s: at('wind', 60), count: 3 },
       { s: at('rift', 50), count: 3 },
-      { s: at('aphelion', 30), count: 4 },
+      { s: at('aphelion', 30), count: 8 },
       { s: spot.boxes, count: 1, ribbon: 0, double: true },
     ],
     hazards: [

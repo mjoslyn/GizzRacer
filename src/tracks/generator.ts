@@ -1236,7 +1236,7 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
       const mark = `side${side}`;
       b.mark(mark);
       marks.push(mark);
-      itemBoxes.push({ s: b.s + 15, count: halfWidth > 10 ? 4 : 3 });
+      itemBoxes.push({ s: b.s + 15, count: halfWidth > 10 ? 8 : 3 });
     }
     // The last two sides aim for where the final corner must start, so the loop closes on a plain corner;
     // the others run their length.

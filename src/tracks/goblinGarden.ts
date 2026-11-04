@@ -101,11 +101,11 @@ export function buildGoblinGarden(): TrackDef {
       { kind: 'goblinGate', ribbon: -1, s: at('maze', 2) },
     ],
     itemBoxes: [
-      { s: 75, count: 4 },
-      { s: at('roses', 20), count: 4 },
+      { s: 75, count: 8 },
+      { s: at('roses', 20), count: 8 },
       { s: at('maze', 40), count: 3 },
       { s: at('pond', 50), count: 3 },
-      { s: at('lawn', 45), count: 4 },
+      { s: at('lawn', 45), count: 8 },
       { s: hole.boxes, count: 1, ribbon: 0, double: true },
     ],
     hazards: [

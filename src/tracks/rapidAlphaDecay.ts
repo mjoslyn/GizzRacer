@@ -218,10 +218,10 @@ export function buildRapidAlphaDecay(): TrackDef {
       { kind: 'atomNucleus', ribbon: 0, s: transcend.core },
     ],
     itemBoxes: [
-      { s: 75, count: 4 },
-      { s: at('flame', 30), count: 4 },
+      { s: 75, count: 8 },
+      { s: at('flame', 30), count: 8 },
       { s: at('metallic', 20), count: 3 },
-      { s: at('static', 10), count: 4 },
+      { s: at('static', 10), count: 8 },
       { s: at('heat', 30), count: 3 },
       { s: transcend.core - 12, count: 1, ribbon: 0, double: true },
     ],

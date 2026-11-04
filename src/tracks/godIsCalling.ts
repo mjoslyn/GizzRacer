@@ -180,11 +180,11 @@ export function buildGodIsCalling(): TrackDef {
       { kind: 'hillHouse', ribbon: -1, s: at('swells', 67), lateral: 108 },
     ],
     itemBoxes: [
-      { s: 75, count: 4 },
+      { s: 75, count: 8 },
       { s: at('two', 90), count: 3 },
-      { s: at('santa', 10), count: 4 },
+      { s: at('santa', 10), count: 8 },
       { s: at('call', 20), count: 3 },
-      { s: at('swells', 20), count: 4 },
+      { s: at('swells', 20), count: 8 },
       { s: park.boxes, count: 1, ribbon: 0, double: true },
     ],
     hazards: [

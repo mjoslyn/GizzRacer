@@ -108,11 +108,11 @@ export function buildGammaKnife(): TrackDef {
       { kind: 'gammaRing', ribbon: -1, s: at('drop', 60), lateral: -120 },
     ],
     itemBoxes: [
-      { s: 75, count: 4 },
-      { s: at('cortex', 10), count: 4 },
+      { s: 75, count: 8 },
+      { s: at('cortex', 10), count: 8 },
       { s: at('drop', 105), count: 3 },
       { s: at('trench', 50), count: 3 },
-      { s: at('bend', 45), count: 4 },
+      { s: at('bend', 45), count: 8 },
       { s: beam.boxes, count: 1, ribbon: 0, double: true },
     ],
     hazards: [

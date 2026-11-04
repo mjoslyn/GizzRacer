@@ -115,9 +115,9 @@ export function buildInfiniteLoopSpeedway(): TrackDef {
     bounds: 420,
     landmarks: [{ kind: 'gantry', ribbon: -1, s: 0 }],
     itemBoxes: [
-      { s: 50, count: 4 },
-      { s: b.marks.overpass.s + 40, count: 4 },
-      { s: b.marks.endless.s + 60, count: 4 },
+      { s: 50, count: 8 },
+      { s: b.marks.overpass.s + 40, count: 8 },
+      { s: b.marks.endless.s + 60, count: 8 },
       { s: face.length / 2, count: 2, ribbon: 0, span: 5, double: true },
     ],
     hazards: [],

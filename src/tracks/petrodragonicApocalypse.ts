@@ -140,12 +140,12 @@ export function buildPetrodragonicApocalypse(): TrackDef {
       { kind: 'dragonFlight', ribbon: -1, s: 0 },
     ],
     itemBoxes: [
-      { s: 100, count: 4 },
+      { s: 100, count: 8 },
       { s: at('derricks', 40), count: 3 },
       { s: at('gullet', -20), count: 3 },
       { s: at('coil', 120), count: 3 },
       // Past where karts flying off the trestle come down.
-      { s: at('mile', 30), count: 4 },
+      { s: at('mile', 30), count: 8 },
       { s: flame.boxes, count: 2, ribbon: 0, span: 5, double: true },
     ],
     hazards: [

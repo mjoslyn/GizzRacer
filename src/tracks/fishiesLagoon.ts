@@ -133,11 +133,11 @@ export function buildFishiesLagoon(): TrackDef {
       { kind: 'gantry', ribbon: -1, s: 0 },
     ],
     itemBoxes: [
-      { s: 95, count: 4 },
-      { s: b.marks.leap.s + 90, count: 4 },
+      { s: 95, count: 8 },
+      { s: b.marks.leap.s + 90, count: 8 },
       { s: b.marks.palms.s + 6, count: 3 },
-      { s: b.marks.whirl.s + 150, count: 4 },
-      { s: b.marks.lighthouse.s + 40, count: 4 },
+      { s: b.marks.whirl.s + 150, count: 8 },
+      { s: b.marks.lighthouse.s + 40, count: 8 },
       { s: open.boardsFrom + 20, count: 2, ribbon: 0, double: true },
     ],
     hazards: [

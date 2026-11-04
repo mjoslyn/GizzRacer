@@ -241,10 +241,10 @@ export function buildAlienMetal(): TrackDef {
       { kind: 'astralBlacksmith', ribbon: -1, s: at('twist', 20), lateral: 240 },
     ],
     itemBoxes: [
-      { s: 75, count: 4 },
+      { s: 75, count: 8 },
       { s: at('chant2', 10), count: 3 },
-      { s: at('twist', 150), count: 4 },
-      { s: at('reality', 120), count: 4 },
+      { s: at('twist', 150), count: 8 },
+      { s: at('reality', 120), count: 8 },
       { s: at('anvilEnd', 10), count: 3 },
       { s: slip.boxes, count: 1, ribbon: 0, double: true },
     ],

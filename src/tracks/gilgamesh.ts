@@ -184,11 +184,11 @@ export function buildGilgamesh(): TrackDef {
       { kind: 'ziggurat', ribbon: -1, s: at('bone', 20), lateral: 170 },
     ],
     itemBoxes: [
-      { s: 80, count: 4 },
-      { s: at('shamash', 30), count: 4 },
+      { s: 80, count: 8 },
+      { s: at('shamash', 30), count: 8 },
       { s: at('photon', 40), count: 3 },
       { s: at('pass', 110), count: 3 },
-      { s: at('ridge', 10), count: 4 },
+      { s: at('ridge', 10), count: 8 },
       { s: flood.boxes, count: 1, ribbon: 0, double: true },
     ],
     hazards: [

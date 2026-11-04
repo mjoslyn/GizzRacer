@@ -129,11 +129,11 @@ export function buildMurderOfTheUniverse(): TrackDef {
       { kind: 'starGate', ribbon: -1, s: at('blackTo', 4) },
     ],
     itemBoxes: [
-      { s: 75, count: 4 },
+      { s: 75, count: 8 },
       { s: at('lightning', 20), count: 3 },
       { s: at('leap', 50), count: 3 },
       { s: at('han', 20), count: 3 },
-      { s: at('oblivion', 20), count: 4 },
+      { s: at('oblivion', 20), count: 8 },
       { s: black.boxes, count: 1, ribbon: 0, double: true },
     ],
     hazards: [

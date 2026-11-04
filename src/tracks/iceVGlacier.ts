@@ -124,8 +124,8 @@ export function buildIceVGlacier(): TrackDef {
       { kind: 'gantry', ribbon: -1, s: 0 },
     ],
     itemBoxes: [
-      { s: 80, count: 4 },
-      { s: b.marks.shelf.s + 30, count: 4 },
+      { s: 80, count: 8 },
+      { s: b.marks.shelf.s + 30, count: 8 },
       { s: b.marks.hairpins.s + 60, count: 3 },
       { s: b.marks.lake.s + 10, count: 5 },
       { s: mycelium.boxes, count: 2, ribbon: 0, double: true },

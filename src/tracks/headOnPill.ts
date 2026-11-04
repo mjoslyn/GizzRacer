@@ -166,11 +166,11 @@ export function buildHeadOnPill(): TrackDef {
       { kind: 'pillTube', ribbon: 0, s: TUBE_IN },
     ],
     itemBoxes: [
-      { s: 75, count: 4 },
-      { s: at('legsGap', 30), count: 4 },
+      { s: 75, count: 8 },
+      { s: at('legsGap', 30), count: 8 },
       { s: at('upright', 40), count: 3 },
       { s: at('enemy', 40), count: 3 },
-      { s: at('pill', 20), count: 4 },
+      { s: at('pill', 20), count: 8 },
       { s: tube.boxes, count: 1, ribbon: 0, double: true },
     ],
     hazards: [

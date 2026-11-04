@@ -123,11 +123,11 @@ export function buildCellophane(): TrackDef {
       { kind: 'cellophaneBloom', ribbon: -1, s: at('unrolled', 40), lateral: 130 },
     ],
     itemBoxes: [
-      { s: 75, count: 4 },
-      { s: at('esses', 20), count: 4 },
+      { s: 75, count: 8 },
+      { s: at('esses', 20), count: 8 },
       { s: at('unrolled', 88), count: 3 },
       { s: at('fold', 50), count: 3 },
-      { s: at('bend', 45), count: 4 },
+      { s: at('bend', 45), count: 8 },
       { s: bridge.boxes, count: 1, ribbon: 0, double: true },
     ],
     hazards: [

@@ -127,11 +127,11 @@ export function buildCutThroatBoogie(): TrackDef {
       { kind: 'mirrorBall', ribbon: -1, s: at('edge', 60), lateral: -130 },
     ],
     itemBoxes: [
-      { s: 75, count: 4 },
-      { s: at('landed', 5), count: 4 },
+      { s: 75, count: 8 },
+      { s: at('landed', 5), count: 8 },
       { s: at('tip', 10), count: 3 },
       { s: at('inches', 95), count: 3 },
-      { s: at('handle', 20), count: 4 },
+      { s: at('handle', 20), count: 8 },
       { s: left.boxes, count: 1, ribbon: 0, double: true },
     ],
     hazards: [

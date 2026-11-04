@@ -37,9 +37,9 @@ export const TEST_TRACK: TrackDef = {
   bounds: 240,
   landmarks: [],
   itemBoxes: [
-    { s: 120, count: 4 },
-    { s: 430, count: 4 },
-    { s: 700, count: 4 },
+    { s: 120, count: 8 },
+    { s: 430, count: 8 },
+    { s: 700, count: 8 },
   ],
   hazards: [],
   theme: 'speedway',

@@ -140,11 +140,11 @@ export function buildPlanetB(): TrackDef {
       { kind: 'burningEarth', ribbon: -1, s: at('drop', 15), lateral: 150 },
     ],
     itemBoxes: [
-      { s: 75, count: 4 },
-      { s: at('esses', 70), count: 4 },
+      { s: 75, count: 8 },
+      { s: at('esses', 70), count: 8 },
       { s: at('drop', 105), count: 3 },
       { s: at('sewer', 30), count: 3 },
-      { s: at('bend', 70), count: 4 },
+      { s: at('bend', 70), count: 8 },
       { s: bridge.boxes, count: 1, ribbon: 0, double: true },
     ],
     hazards: [

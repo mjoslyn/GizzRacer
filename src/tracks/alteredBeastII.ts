@@ -188,10 +188,10 @@ export function buildAlteredBeastII(): TrackDef {
       { kind: 'monsterPlate', ribbon: -1, s: at('plate', 60), lateral: PLATE_R },
     ],
     itemBoxes: [
-      { s: 80, count: 4 },
-      { s: at('sabre', 40), count: 4 },
+      { s: 80, count: 8 },
+      { s: at('sabre', 40), count: 8 },
       { s: at('chain', 160), count: 3 },
-      { s: at('wolf', 30), count: 4 },
+      { s: at('wolf', 30), count: 8 },
       { s: at('plate', 60), count: 3 },
       { s: run.boxes, count: 1, ribbon: 0, double: true },
     ],

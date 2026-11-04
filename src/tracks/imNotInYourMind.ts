@@ -120,11 +120,11 @@ export function buildImNotInYourMind(): TrackDef {
       { kind: 'emptyHead', ribbon: -1, s: at('drop', 60), lateral: 130 },
     ],
     itemBoxes: [
-      { s: 75, count: 4 },
-      { s: at('vacant', 20), count: 4 },
+      { s: 75, count: 8 },
+      { s: at('vacant', 20), count: 8 },
       { s: at('drop', 112), count: 3 },
       { s: at('blind', 50), count: 3 },
-      { s: at('bend', 45), count: 4 },
+      { s: at('bend', 45), count: 8 },
       { s: not.boxes, count: 1, ribbon: 0, double: true },
     ],
     hazards: [

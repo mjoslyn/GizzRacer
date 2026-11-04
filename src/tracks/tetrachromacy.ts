@@ -168,11 +168,11 @@ export function buildTetrachromacy(): TrackDef {
       { kind: 'prismEye', ribbon: -1, s: at('iris', 1), lateral: -IRIS_R0 * K },
     ],
     itemBoxes: [
-      { s: 75, count: 4 },
-      { s: at('cones', 20), count: 4 },
+      { s: 75, count: 8 },
+      { s: at('cones', 20), count: 8 },
       { s: at('descent', 20), count: 3 },
       { s: at('trench', 50), count: 3 },
-      { s: at('bend', 45), count: 4 },
+      { s: at('bend', 45), count: 8 },
       { s: uv.boxes, count: 1, ribbon: 0, double: true },
     ],
     hazards: [

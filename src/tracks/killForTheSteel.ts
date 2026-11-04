@@ -162,11 +162,11 @@ export function buildKillForTheSteel(): TrackDef {
       { kind: 'mineRig', ribbon: -1, s: at('upon', 240), lateral: 120 },
     ],
     itemBoxes: [
-      { s: 75, count: 4 },
-      { s: at('upon', 60), count: 4 },
+      { s: 75, count: 8 },
+      { s: at('upon', 60), count: 8 },
       { s: at('mid', 80), count: 3 },
       { s: at('floor', 90), count: 3 },
-      { s: at('five', 30), count: 4 },
+      { s: at('five', 30), count: 8 },
       { s: chute.boxes, count: 1, ribbon: 0, double: true },
     ],
     hazards: [

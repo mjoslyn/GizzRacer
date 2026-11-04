@@ -151,11 +151,11 @@ export function buildPeopleVultures(): TrackDef {
       { kind: 'carcass', ribbon: -1, s: at('gully', 0), lateral: LOBE_R * K },
     ],
     itemBoxes: [
-      { s: 64, count: 4 },
-      { s: at('scavenger', 20), count: 4 },
+      { s: 64, count: 8 },
+      { s: at('scavenger', 20), count: 8 },
       { s: at('swoop', 130), count: 3 },
       { s: at('gully', 50), count: 3 },
-      { s: at('bend', 45), count: 4 },
+      { s: at('bend', 45), count: 8 },
       { s: bones.boxes, count: 1, ribbon: 0, double: true },
     ],
     hazards: [

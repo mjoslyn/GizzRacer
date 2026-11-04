@@ -155,11 +155,11 @@ export function buildSeaOfTrees(): TrackDef {
       { kind: 'snowPeak', ribbon: -1, s: at('canopy', 20), lateral: -360 },
     ],
     itemBoxes: [
-      { s: 75, count: 4 },
-      { s: at('canopy', 60), count: 4 },
+      { s: 75, count: 8 },
+      { s: at('canopy', 60), count: 8 },
       { s: at('sink', 30), count: 3 },
       { s: at('under', 120), count: 3 },
-      { s: at('jam', 5), count: 4 },
+      { s: at('jam', 5), count: 8 },
       { s: rope.boxes, count: 1, ribbon: 0, double: true },
     ],
     hazards: [

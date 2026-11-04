@@ -225,11 +225,11 @@ export function buildSet(): TrackDef {
       { kind: 'setColossus', ribbon: -1, s: at('storm', 20), lateral: 120 },
     ],
     itemBoxes: [
-      { s: 80, count: 4 },
-      { s: at('moon', 30), count: 4 },
+      { s: 80, count: 8 },
+      { s: at('moon', 30), count: 8 },
       { s: at('thrown', 20), count: 3 },
       { s: at('slay', 100), count: 3 },
-      { s: at('conflict', 5), count: 4 },
+      { s: at('conflict', 5), count: 8 },
       { s: tomb.boxes, count: 1, ribbon: 0, double: true },
     ],
     hazards: [

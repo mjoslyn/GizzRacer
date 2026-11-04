@@ -136,10 +136,10 @@ export function buildPolygondwanalandJungle(): TrackDef {
       { kind: 'waterfall', ribbon: -1, s: b.marks.waterfall.s + 30 },
     ],
     itemBoxes: [
-      { s: 42, count: 4 },
-      { s: b.marks.river.s + 15, count: 4 },
+      { s: 42, count: 8 },
+      { s: b.marks.river.s + 15, count: 8 },
       { s: b.marks.ruins.s + 30, count: 3 },
-      { s: b.marks.waterfall.s + 72, count: 4 },
+      { s: b.marks.waterfall.s + 72, count: 8 },
       { s: colour.landing + 12, count: 2, ribbon: 0, span: 5, double: true },
     ],
     hazards: [

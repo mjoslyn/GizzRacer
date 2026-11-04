@@ -129,11 +129,11 @@ export function buildDeadstickDrop(): TrackDef {
       { kind: 'runwayGate', ribbon: -1, s: at('runway', 4) },
     ],
     itemBoxes: [
-      { s: 75, count: 4 },
-      { s: at('wash', 20), count: 4 },
+      { s: 75, count: 8 },
+      { s: at('wash', 20), count: 8 },
       { s: at('runway', 40), count: 3 },
       { s: at('landing', 25), count: 3 },
-      { s: at('cross', 45), count: 4 },
+      { s: at('cross', 45), count: 8 },
       { s: tail.boxes, count: 1, ribbon: 0, double: true },
     ],
     hazards: [

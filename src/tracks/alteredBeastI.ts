@@ -164,8 +164,8 @@ export function buildAlteredBeastI(): TrackDef {
       { kind: 'mushroomCloud', ribbon: -1, s: at('see', 50), lateral: 420 },
     ],
     itemBoxes: [
-      { s: 75, count: 4 },
-      { s: at('meadow', 60), count: 4 },
+      { s: 75, count: 8 },
+      { s: at('meadow', 60), count: 8 },
       { s: at('see', 60), count: 3 },
       { s: at('dreams', 80), count: 3 },
       { s: at('trample', 120), count: 3 },

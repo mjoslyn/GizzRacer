@@ -194,11 +194,11 @@ export function buildFloatAlong(): TrackDef {
       { kind: 'farmDam', ribbon: 0, s: dam.boxes },
     ],
     itemBoxes: [
-      { s: 80, count: 4 },
-      { s: w(4, 10), count: 4 },
-      { s: w(8, 10), count: 4 },
+      { s: 80, count: 8 },
+      { s: w(4, 10), count: 8 },
+      { s: w(8, 10), count: 8 },
       { s: w(13, LUNGFUL + 40), count: 3 },
-      { s: m('foldEnd', 30), count: 4 },
+      { s: m('foldEnd', 30), count: 8 },
       { s: dam.boxes, count: 1, ribbon: 0, double: true },
     ],
     hazards: [

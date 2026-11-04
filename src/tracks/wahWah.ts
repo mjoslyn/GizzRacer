@@ -156,11 +156,11 @@ export function buildWahWah(): TrackDef {
       { kind: 'wahPedal', ribbon: -1, s: at('o6', 0), lateral: SWING * K },
     ],
     itemBoxes: [
-      { s: 50, count: 4 },
-      { s: at('heel', 20), count: 4 },
+      { s: 50, count: 8 },
+      { s: at('heel', 20), count: 8 },
       { s: at('drop', 115), count: 3 },
       { s: at('trench', 50), count: 3 },
-      { s: at('bend', 45), count: 4 },
+      { s: at('bend', 45), count: 8 },
       { s: pedal.boxes, count: 1, ribbon: 0, double: true },
     ],
     hazards: [

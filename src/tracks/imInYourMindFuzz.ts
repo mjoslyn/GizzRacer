@@ -149,11 +149,11 @@ export function buildImInYourMindFuzz(): TrackDef {
       { kind: 'fuzzMeter', ribbon: -1, s: at('leap', -20), lateral: 150 },
     ],
     itemBoxes: [
-      { s: 75, count: 4 },
-      { s: at('feedback', 20), count: 4 },
+      { s: 75, count: 8 },
+      { s: at('feedback', 20), count: 8 },
       { s: at('wall', 115), count: 3 },
       { s: at('pit', 50), count: 3 },
-      { s: at('bend', 45), count: 4 },
+      { s: at('bend', 45), count: 8 },
       { s: red.boxes, count: 1, ribbon: 0, double: true },
     ],
     hazards: [
