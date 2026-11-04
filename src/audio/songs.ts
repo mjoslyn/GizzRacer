@@ -94,6 +94,10 @@ export const TRACK_SONGS: Record<string, TrackSong> = {
   'cyboogie': { title: 'Cyboogie', ...FFF },
   'the-grim-reaper': { title: 'The Grim Reaper', ...OG },
   'gaia': { title: 'Gaia', ...OG },
+  'hot-wax': { title: 'Hot Wax', album: 'Oddments', year: 2014 },
+  'sadie-sorceress': { title: 'Sadie Sorceress', ...OG },
+  'empty': { title: 'Empty', album: "I'm in Your Mind Fuzz", year: 2014 },
+  'billabong-valley': { title: 'Billabong Valley', ...FMB },
 };
 
 /**

@@ -103,7 +103,15 @@ export type RoadSurface =
   /** The Grim Reaper's road: cinders, ash and scorched dirt. */
   | 'cinder'
   /** Gaia's road: the Earth's own skin, soil and rock. */
-  | 'earth';
+  | 'earth'
+  /** Hot Wax's road: a slick of cooling wax, molten at the edges. */
+  | 'wax'
+  /** Sadie Sorceress's road: an 80s roller rink floor. */
+  | 'rink'
+  /** Empty's road: pale, worn, nothing left in it. */
+  | 'pale'
+  /** Billabong Valley's road: a bush track of red dirt. */
+  | 'redgum';
 
 /**
  * Every road is built this much wider than its section says: the layouts

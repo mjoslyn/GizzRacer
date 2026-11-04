@@ -264,6 +264,11 @@ function materials(theme: Theme): Materials {
       graphene: bumpy(grapheneRoadTexture(), 0.05, { emissive: 0xffffff, emissiveMap: grapheneGlowTexture(), emissiveIntensity: 0.6 }),
       // Gaia's: the Earth's own skin, soil and pale stones.
       earth: bumpy(earthRoadTexture(), 0.07),
+      // The All Stars Cup #2's roads (placeholders until each track's world is built).
+      wax: bumpy(tex.asphaltTexture(), 0.08),
+      rink: bumpy(tex.asphaltTexture(), 0.08),
+      pale: bumpy(tex.asphaltTexture(), 0.08),
+      redgum: bumpy(tex.asphaltTexture(), 0.08),
       gravel: bumpy(gravelTexture(), 0.1),
       cosmic: (() => {
         const map = tex.cosmicRoadTexture();

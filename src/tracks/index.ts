@@ -58,6 +58,10 @@ import { buildStrawsInTheWind } from './strawsInTheWind';
 import { buildCyboogie } from './cyboogie';
 import { buildTheGrimReaper } from './theGrimReaper';
 import { buildGaia } from './gaia';
+import { buildHotWax } from './hotWax';
+import { buildSadieSorceress } from './sadieSorceress';
+import { buildEmpty } from './empty';
+import { buildBillabongValley } from './billabongValley';
 import { buildCutThroatBoogie } from './cutThroatBoogie';
 import { buildSeaOfTrees } from './seaOfTrees';
 import { buildTheia } from './theia';
@@ -132,6 +136,10 @@ export const RAW_TRACK_LIST: { id: string; name: string; build: () => TrackDef }
   { id: 'cyboogie', name: 'Cyboogie', build: buildCyboogie },
   { id: 'the-grim-reaper', name: 'The Grim Reaper', build: buildTheGrimReaper },
   { id: 'gaia', name: 'Gaia', build: buildGaia },
+  { id: 'hot-wax', name: 'Hot Wax', build: buildHotWax },
+  { id: 'sadie-sorceress', name: 'Sadie Sorceress', build: buildSadieSorceress },
+  { id: 'empty', name: 'Empty', build: buildEmpty },
+  { id: 'billabong-valley', name: 'Billabong Valley', build: buildBillabongValley },
 ];
 
 export const TRACK_LIST: { id: string; name: string; build: () => TrackDef }[] = RAW_TRACK_LIST.map((t) => ({ ...t, build: () => enrichTrack(t.build()) }));
@@ -170,6 +178,8 @@ export const CUPS: { id: string; name: string; tracks: number[] }[] = [
   { id: 'alien-metal', name: 'Alien Metal Cup', tracks: [56, 57, 58, 59] },
   // The first All Stars Cup, after the album cups: four favourites from four years, each its own world. The trash tornado (K.G., 2020), the cyborg who can't dance (Fishing for Fishies, 2019), the reaper come to collect (Omnium Gatherum, 2022), and the Earth herself (Omnium Gatherum, 2022).
   { id: 'all-stars-1', name: 'All Stars Cup #1', tracks: [60, 61, 62, 63] },
+  // The second All Stars Cup: four more favourites. The hot wax creeping in under everything (Oddments, 2014), the 80s sorceress on rollerblades (Omnium Gatherum, 2022), the empty waltz (I'm in Your Mind Fuzz, 2014), and the bushranger's hideout (Flying Microtonal Banana, 2017).
+  { id: 'all-stars-2', name: 'All Stars Cup #2', tracks: [64, 65, 66, 67] },
 ];
 
 /** Cups that were retired when every cup became an album's, and the album cup that took most of each one's tracks: progress.ts carries their trophies over. */
