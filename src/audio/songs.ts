@@ -169,6 +169,10 @@ export const TRANSCRIBED: Record<string, { recording: string; release: string }>
   cyboogie: { recording: 'Cyboogie', release: "Live in Berlin '25, the soundboard mix" },
   'the-grim-reaper': { recording: 'The Grim Reaper', release: "Live in New York City '25 (Rock Night), the soundboard mix" },
   gaia: { recording: 'Gaia', release: "Live in Lithuania '25, the soundboard mix" },
+  'hot-wax': { recording: 'Hot Wax', release: "Live in Bulgaria '25, the soundboard mix" },
+  'sadie-sorceress': { recording: 'Sadie Sorceress', release: "Live At Red Rocks '22" },
+  empty: { recording: 'Empty', release: "Live at Field of Vision '25, the soundboard mix" },
+  'billabong-valley': { recording: 'Billabong Valley', release: "Live in Sydney '25, the soundboard mix" },
 };
 
 const FINAL = '-final-lap';
