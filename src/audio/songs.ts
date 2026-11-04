@@ -98,6 +98,7 @@ export const TRACK_SONGS: Record<string, TrackSong> = {
   'sadie-sorceress': { title: 'Sadie Sorceress', ...OG },
   'empty': { title: 'Empty', album: "I'm in Your Mind Fuzz", year: 2014 },
   'billabong-valley': { title: 'Billabong Valley', ...FMB },
+  'minimum-brain-size': { title: 'Minimum Brain Size', ...KG },
 };
 
 /**

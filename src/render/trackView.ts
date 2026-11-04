@@ -275,6 +275,8 @@ function materials(theme: Theme): Materials {
       earth: bumpy(earthRoadTexture(), 0.07),
       // Billabong Valley's: a bush track of pale red dirt, worn into ruts.
       redgum: bumpy(redgumRoadTexture(), 0.07),
+      // Minimum Brain Size's (placeholder until its world is built).
+      feed: bumpy(tex.asphaltTexture(), 0.08),
       // The All Stars Cup #2's roads (placeholders until each track's world is built).
       // Hot Wax's: a slick of set wax, cream marbled with orange, molten and glowing down its edges.
       wax: (() => {

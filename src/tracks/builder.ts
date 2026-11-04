@@ -111,7 +111,9 @@ export type RoadSurface =
   /** Empty's road: pale, worn, nothing left in it. */
   | 'pale'
   /** Billabong Valley's road: a bush track of red dirt. */
-  | 'redgum';
+  | 'redgum'
+  /** Minimum Brain Size's road: an endless scrolling feed. */
+  | 'feed';
 
 /**
  * Every road is built this much wider than its section says: the layouts

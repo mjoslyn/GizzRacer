@@ -83,6 +83,7 @@ export const GEN_THEME_NAMES: Record<GenTheme, string> = {
   sorceress: 'Sadie Sorceress',
   emptiness: 'Empty',
   bushranger: 'Billabong Valley',
+  echochamber: 'Minimum Brain Size',
 };
 export type GenLength = 'short' | 'medium' | 'long';
 export const GEN_LENGTHS: readonly GenLength[] = ['short', 'medium', 'long'];
@@ -929,6 +930,17 @@ const PALETTES: Record<GenTheme, Palette> = {
     tallWalls: 6,
     places: ['Outlaw', 'Stolen Gun', 'Red Gum', 'Billabong', 'Kyeamba', 'Trooper', 'Wanted', 'Bushranger', 'Ranges', 'Mad Dog', 'Morgan', 'Dawn'],
     music: { lap: 'billabong-valley', finalLap: 'billabong-valley-final-lap' },
+  },
+  echochamber: {
+    surface: 'feed',
+    deck: 'feed',
+    alt: 'sand',
+    hazards: ['sunMoon'],
+    start: 'setGate',
+    landmarks: ['setGate'],
+    tallWalls: 6,
+    places: ['Jackal', 'Snake', 'Tornado', 'Tomb', 'Duality', 'Sandstorm', 'Moonbeam', 'Hieroglyph', 'Reset'],
+    music: { lap: 'minimum-brain-size', finalLap: 'minimum-brain-size-final-lap' },
   },
 };
 
