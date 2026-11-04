@@ -1,3 +1,4 @@
+// @ts-nocheck: runs the node tool as a process (tsc here has no node types).
 import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';

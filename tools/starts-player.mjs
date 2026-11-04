@@ -101,22 +101,30 @@ function add(pos, flags) {
     const recs = songs.flatMap((song, n) => catalogue[song].map((r, i) => ({ song, r, key: `${slugs[n]}${String(i).padStart(2, '0')}`, path: join(dl, `${slugs[n]}${String(i).padStart(2, '0')}.mp3`) })));
     for (const x of recs) {
       console.log(`download ${x.key} ${x.r.id}/${x.r.file}`);
-      run('curl', ['-sSf', '--retry', '5', '--retry-all-errors', '--retry-delay', '3', '-o', x.path, archiveUrl(x.r.id, x.r.file)]);
+      run('curl', ['-sSfL', '--retry', '5', '--retry-all-errors', '--retry-delay', '3', '-o', x.path, archiveUrl(x.r.id, x.r.file)]);
     }
 
     const fresh = recs.filter((x) => x.r.start === undefined);
     if (fresh.length) {
       console.log(`reading edges of ${fresh.length} recording(s)`);
-      const text = run(python, ['-I', join(HERE, 'live-edges.py'), ...fresh.map((x) => x.path)]);
-      console.log(text);
-      for (const line of text.split('\n')) {
-        const m = /^(\S+)\.mp3 {2}[\d.]+ s {2}music ([\d.]+) s to ([\d.]+) s$/.exec(line);
+      // One at a time: a file the Archive served broken fails alone, and is named.
+      const broken = [];
+      for (const x of fresh) {
+        let text;
+        try {
+          text = run(python, ['-I', join(HERE, 'live-edges.py'), x.path]);
+        } catch (e) {
+          broken.push(`${x.key} ${x.r.id}/${x.r.file}: ${String(e.message).split('\n').slice(-2).join(' ').slice(0, 160)}`);
+          continue;
+        }
+        console.log(text);
+        const m = /^\S+\.mp3 {2}[\d.]+ s {2}music ([\d.]+) s to ([\d.]+) s$/m.exec(text);
         if (!m) continue;
-        const x = fresh.find((f) => f.key === m[1]);
-        x.r.start = Number(m[2]);
-        x.r.end = Number(m[3]);
-        console.log(`  ${x.key}: ${m[2]} s to ${m[3]} s`);
+        x.r.start = Number(m[1]);
+        x.r.end = Number(m[2]);
+        console.log(`  ${x.key}: ${m[1]} s to ${m[2]} s`);
       }
+      if (broken.length) throw new Error(`unreadable recordings (the Archive does not serve them: take them out of bootlegs.json and add them to SKIP in tools/bootlegs.mjs, then run again):\n${broken.join('\n')}`);
       const missing = fresh.filter((x) => x.r.start === undefined);
       if (missing.length) throw new Error(`no edges read for ${missing.map((x) => x.key).join(', ')}`);
       writeJson(bootlegsPath, catalogue);
