@@ -152,6 +152,8 @@ const SKIP = new Set([
   'kglw2026-08-16.Full-Three-Shows-discocape/kglw2026-08-14-4ch_discocape_15.mp3',
   'kglw2026-08-16.Full-Three-Shows-discocape/kglw2026-08-15-4ch-discocape_13.mp3',
   "kglw2025-06-08.SBD.flac/King Gizzard & The Lizard Wizard - Live in Bulgaria '25 - 11 Altered Beast III (Live in Bulgaria '25).mp3",
+  "kglw2023-03-18/kglw2023.03.18.spacebandit/kglw202308.mp3",
+  "kglw2024-05-27.dankski/kglw2024.05.27t16.mp3",
 ]);
 /** Start points already found (tools/bootleg-starts.mjs, or set by ear), and ends (tools/live-edges.py), kept across a re-run. */
 const known = new Map();

@@ -5752,7 +5752,7 @@
    "date": "2022-05-26",
    "venue": "Higher Ground",
    "seconds": 297,
-   "start": 0,
+   "start": 9.5,
    "end": 296.5
   },
   {
@@ -5774,30 +5774,12 @@
    "end": 250.5
   },
   {
-   "id": "kglw2023-03-18",
-   "file": "kglw2023.03.18.spacebandit/kglw202308.mp3",
-   "date": "2023-03-18",
-   "venue": "Schlachthof Wiesbaden",
-   "seconds": 278,
-   "start": 6.5,
-   "end": 246.5
-  },
-  {
    "id": "kglw2023-06-11",
    "file": "04-Minimum Brain Size.mp3",
    "date": "2023-06-11",
    "venue": "The Salt Shed",
    "seconds": 334,
    "start": 1.5,
-   "end": 249.5
-  },
-  {
-   "id": "kglw2024-05-27.dankski",
-   "file": "kglw2024.05.27t16.mp3",
-   "date": "2024-05-27",
-   "venue": "The Usher Hall",
-   "seconds": 254,
-   "start": 0,
    "end": 249.5
   },
   {
@@ -5824,7 +5806,7 @@
    "date": "2025-05-24",
    "venue": "Plaza Mayor de El Poble Espanyol",
    "seconds": 357,
-   "start": 6.5,
+   "start": 31,
    "end": 281.5
   },
   {
@@ -5833,7 +5815,7 @@
    "date": "2025-08-02",
    "venue": "Forest Hills Stadium",
    "seconds": 310,
-   "start": 13.5,
+   "start": 21,
    "end": 300.5
   },
   {
