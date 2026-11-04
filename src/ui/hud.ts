@@ -2,6 +2,7 @@ import { DRIFT_TIERS, driftTier, type KartState } from '../physics/kart';
 import { ordinal } from '../core/race';
 import { ITEMS, ITEM_KINDS, type ItemKind } from '../items/items';
 import { itemIcon } from './itemIcons';
+import { g, kbOrPad } from './padNav';
 import { Minimap } from './minimap';
 
 const TIER_NAMES = ['', 'BLUE', 'ORANGE', 'PURPLE', 'RAINBOW'];
@@ -32,7 +33,7 @@ function renderActions(t: Table | null): string {
   const touch = 'ontouchstart' in window;
   if (!t) return '';
   const buttons = (t.actions ?? []).map((a) => `<button data-table-act="${a.id}">${a.label}${a.key && !touch ? ` <kbd>${a.key}</kbd>` : ''}</button>`).join('');
-  return (buttons ? `<div class="hud-standings-actions">${buttons}</div>` : '') + `<div class="hud-standings-next">${touch ? 'tap' : 'press any key'} to continue</div>`;
+  return (buttons ? `<div class="hud-standings-actions">${buttons}</div>` : '') + `<div class="hud-standings-next">${kbOrPad(`${touch ? 'tap' : 'press any key'} to continue`, buttons ? `${g('dpad')} picks, ${g('right')} presses` : `${g('right')} to continue`)}</div>`;
 }
 
 export function formatTime(seconds: number): string {
@@ -240,7 +241,7 @@ export class Hud {
       <div class="hud-item"><img alt="" /><div class="hud-item-name"></div><div class="hud-spare"><img alt="" /></div></div>
       <div class="hud-warn"><div class="hud-warn-text hud-big">NONAGON INFINITY!</div><div class="hud-warn-bar"><i></i></div><div class="hud-warn-hop hud-big">HOP!</div></div>
       <div class="hud-flash hud-big"></div>
-      <div class="hud-intro"><div class="hud-intro-name hud-big"></div><div class="hud-intro-sub"></div><div class="hud-intro-skip">${'ontouchstart' in window ? 'tap' : 'press any key'} to skip</div></div>
+      <div class="hud-intro"><div class="hud-intro-name hud-big"></div><div class="hud-intro-sub"></div><div class="hud-intro-skip">${kbOrPad(`${'ontouchstart' in window ? 'tap' : 'press any key'} to skip`, `${g('right')} to skip`)}</div></div>
       <div class="hud-drift">
         <div class="hud-drift-bar"><div class="hud-drift-fill"></div>${ticks}</div>
         <div class="hud-drift-label"></div>
@@ -251,8 +252,11 @@ export class Hud {
         <div class="hud-surface"></div>
       </div>
       <div class="hud-help">
-        &larr;/&rarr; steer &middot; &darr; brake/reverse &middot; Shift/Space hop+drift (tap at a ramp lip for a trick) &middot; &uarr; or E item &middot; Q look back &middot; Esc pause<br />
-        R restart &middot; N music on/off &middot; B sound effects on/off
+        ${kbOrPad(
+          `&larr;/&rarr; steer &middot; &darr; brake/reverse &middot; Shift/Space hop+drift (tap at a ramp lip for a trick) &middot; &uarr; or E item &middot; Q look back &middot; Esc pause<br />
+        R restart &middot; N music on/off &middot; B sound effects on/off`,
+          `${g('dpad')} steer &middot; ${g('bottom')} brake/reverse &middot; ${g('r1')} or ${g('r2')} hop+drift (tap at a ramp lip for a trick) &middot; ${g('l1')} or ${g('l2')} item &middot; ${g('top')} or ${g('select')} look back &middot; ${g('start')} pause &middot; ${g('right')} accelerate (it does by itself)`,
+        )}
       </div>
       <div class="hud-count hud-big"></div>
       <div class="hud-banner hud-big">FINISH!</div>
@@ -261,10 +265,10 @@ export class Hud {
         <div class="hud-big">PAUSED</div>
         <div class="hud-pause-by"></div>
         <div class="hud-pause-buttons">
-          <button data-act="resume">Resume <small>Esc</small></button>
-          <button data-act="restart">Restart <small>R</small></button>
+          <button data-act="resume">Resume <small>${kbOrPad('Esc', `${g('start')} / ${g('bottom')}`)}</small></button>
+          <button data-act="restart">Restart <small>${kbOrPad('R', '')}</small></button>
           <button data-act="settings">Settings</button>
-          <button data-act="quit">Quit to menu <small>Backspace</small></button>
+          <button data-act="quit">Quit to menu <small>${kbOrPad('Backspace', '')}</small></button>
         </div>
       </div>
       <div class="hud-confirm">
@@ -272,15 +276,15 @@ export class Hud {
           <div class="hud-big">RESTART?</div>
           <div class="hud-confirm-sub">The race starts over from the grid.</div>
           <div class="hud-pause-buttons">
-            <button data-act="restartNow">Restart <small>R / Enter</small></button>
-            <button data-act="keepRacing">Keep racing <small>Esc</small></button>
+            <button data-act="restartNow">Restart <small>${kbOrPad('R / Enter', g('right'))}</small></button>
+            <button data-act="keepRacing">Keep racing <small>${kbOrPad('Esc', g('bottom'))}</small></button>
           </div>
         </div>
       </div>
       <div class="hud-title">
         <div class="hud-title-logo hud-big">GIZZRACER</div>
         <div class="hud-title-sub">psychedelic kart racing</div>
-        <div class="hud-title-press">${'ontouchstart' in window ? 'tap to start' : 'press any key'}</div>
+        <div class="hud-title-press">${kbOrPad('ontouchstart' in window ? 'tap to start' : 'press any key', `press ${g('right')} or ${g('start')}`)}</div>
         <div class="hud-title-buttons">
           <button class="hud-title-settings" data-title="settings">SETTINGS</button>
           <button class="hud-title-settings" data-title="credits">CREDITS</button>

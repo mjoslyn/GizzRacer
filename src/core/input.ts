@@ -1,5 +1,6 @@
 import { clamp } from './math';
 import { NEUTRAL_INPUT, type InputFrame } from './inputFrame';
+import { PadTracker, padRace } from './gamepad';
 
 export { NEUTRAL_INPUT, type InputFrame };
 
@@ -15,17 +16,12 @@ const KEYS = {
   pause: ['Escape'],
 } as const;
 
-// Standard gamepad mapping indices.
-const PAD = { a: 0, b: 1, y: 3, l1: 4, r1: 5, l2: 6, r2: 7, start: 9, dUp: 12, dDown: 13, dLeft: 14, dRight: 15 } as const;
-const STICK_DEADZONE = 0.15;
-/** The stick's up and down only pitch the glider when meant: steering wanders off the horizontal. */
-const PITCH_DEADZONE = 0.45;
-
 const PREVENT_DEFAULT = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space']);
 
 /**
- * Reads keyboard and the first standard gamepad into InputFrames. The kart
- * accelerates by itself: throttle is always full unless braking.
+ * Reads keyboard, touch and the gamepad in use (whichever was pressed last,
+ * at any index, by the map in core/gamepad.ts) into InputFrames. The kart
+ * accelerates by itself: throttle is full unless braking.
  */
 export class InputManager {
   /** The player's glider is open (set by the game each tick): up climbs rather than firing the item. */
@@ -42,7 +38,11 @@ export class InputManager {
   private prevPadStart = false;
   private pauseRequested = false;
 
-  constructor(target: Window = window) {
+  constructor(
+    target: Window = window,
+    /** The pads, shared with the menus so both follow the one in use. */
+    readonly pads: PadTracker = new PadTracker(),
+  ) {
     target.addEventListener('keydown', (e) => {
       if (PREVENT_DEFAULT.has(e.code)) e.preventDefault();
       if (e.repeat) return;
@@ -73,25 +73,16 @@ export class InputManager {
     brake = Math.max(brake, this.touch.brake ? 1 : 0);
     item ||= this.touch.item;
 
-    const pad = this.gamepad();
-    if (pad) {
-      const btn = (i: number) => pad.buttons[i]?.pressed ?? false;
-      const val = (i: number) => pad.buttons[i]?.value ?? 0;
-      brake = Math.max(brake, btn(PAD.b) ? 1 : 0, val(PAD.l2));
-      const x = pad.axes[0] ?? 0;
-      if (Math.abs(x) > STICK_DEADZONE) {
-        steer += Math.sign(x) * ((Math.abs(x) - STICK_DEADZONE) / (1 - STICK_DEADZONE));
-      }
-      steer += (btn(PAD.dRight) ? 1 : 0) - (btn(PAD.dLeft) ? 1 : 0);
-      // The stick's up is negative.
-      const y = pad.axes[1] ?? 0;
-      if (Math.abs(y) > PITCH_DEADZONE) pitch -= Math.sign(y) * ((Math.abs(y) - PITCH_DEADZONE) / (1 - PITCH_DEADZONE));
-      pitch += (btn(PAD.dUp) ? 1 : 0) - (btn(PAD.dDown) ? 1 : 0);
-      drift ||= btn(PAD.r1);
-      item ||= btn(PAD.l1);
-      lookBack ||= btn(PAD.y);
+    const state = this.pads.current();
+    if (state) {
+      const p = padRace(state);
+      brake = Math.max(brake, p.brake);
+      steer += p.steer;
+      pitch += p.pitch;
+      drift ||= p.drift;
+      item ||= p.item;
+      lookBack ||= p.lookBack;
     }
-
     const throttle = brake > 0 ? 0 : 1;
 
     const frame: InputFrame = {
@@ -128,20 +119,12 @@ export class InputManager {
 
   /** True once per Esc / Start press. Polled per render frame so it works while paused. */
   consumePause(): boolean {
-    const pad = this.gamepad();
-    const start = pad?.buttons[PAD.start]?.pressed ?? false;
+    const state = this.pads.current();
+    const start = state ? padRace(state).pause : false;
     const padEdge = start && !this.prevPadStart;
     this.prevPadStart = start;
     const requested = this.pauseRequested || padEdge;
     this.pauseRequested = false;
     return requested;
-  }
-
-  private gamepad(): Gamepad | null {
-    if (typeof navigator === 'undefined' || !navigator.getGamepads) return null;
-    for (const pad of navigator.getGamepads()) {
-      if (pad?.connected) return pad;
-    }
-    return null;
   }
 }

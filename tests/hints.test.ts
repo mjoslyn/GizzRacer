@@ -18,4 +18,13 @@ describe('hints ticker', () => {
     // Same hints after the controls, whatever the order.
     expect(new Set(keys.slice(6))).toEqual(new Set(touch.slice(4)));
   });
+
+  it('with a controller, names the buttons as the pad does: Nintendo letters, Xbox letters on an Xbox pad', () => {
+    const snes = buildHints({ pad: 'nintendo' }, () => 0.5).slice(0, 4).join(' ');
+    const xbox = buildHints({ pad: 'xbox' }, () => 0.5).slice(0, 4).join(' ');
+    expect(snes).toMatch(/R or ZR hops/);
+    expect(snes).toMatch(/B brakes/);
+    expect(xbox).toMatch(/RB or RT hops/);
+    expect(snes).not.toMatch(/Shift/);
+  });
 });

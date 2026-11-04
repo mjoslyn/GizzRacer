@@ -1,4 +1,6 @@
-import { MAX_SEATS, PAD, SEAT_COLORS, SEAT_KEYS, SEAT_KEY_NAMES, connectedPads, sameSource, sourceName, type KeySide, type SeatSource } from '../core/seatInput';
+import { glyph, readPad, type PadButton } from '../core/gamepad';
+import { g } from './padNav';
+import { MAX_SEATS, SEAT_COLORS, SEAT_KEYS, SEAT_KEY_NAMES, connectedPads, sameSource, sourceName, type KeySide, type SeatSource } from '../core/seatInput';
 import { CPU_DIFFICULTIES, type CpuDifficulty } from '../ai/cpuDriver';
 import { progress, unlocks } from '../core/progress';
 import { SOUNDTRACKS, SOUNDTRACK_NAMES, settings as gameSettings, updateSettings } from '../core/settings';
@@ -73,7 +75,7 @@ export class PartyScreen {
   phoneInfo = '';
   private readonly el = document.createElement('div');
   /** Each gamepad's buttons and stick last frame, for presses. */
-  private readonly padWas = new Map<number, { buttons: boolean[]; stick: number; stickY: number }>();
+  private readonly padWas = new Map<number, { buttons: Set<PadButton>; stick: number; stickY: number }>();
   private startAt: number | null = null;
   private lastHtml = '';
   /** What the side column was last scaled for (its html, the screen's height, the TV scale). */
@@ -131,36 +133,37 @@ export class PartyScreen {
     return false;
   }
 
-  /** Every frame while showing: the gamepads (A joins and readies, B leaves, left and right pick), and the start. */
+  /** Every frame while showing: the gamepads (A, the right button, joins and readies, B, the bottom one, leaves, left and right pick, by place: core/gamepad.ts), and the start. */
   poll(now: number): void {
     // Casting, the race is the TV's: nothing joins or starts here.
     if (this.casting) return;
     const pads = connectedPads();
     pads.forEach((pad, index) => {
-      if (!pad?.connected) return;
-      const buttons = pad.buttons.map((b) => b.pressed);
-      const x = pad.axes[0] ?? 0;
-      const y = pad.axes[1] ?? 0;
+      const state = readPad(pad);
+      if (!state) return;
+      const buttons = new Set((Object.keys(state.buttons) as PadButton[]).filter((b) => state.buttons[b] >= 0.5));
+      const x = state.stickX;
+      const y = state.stickY;
       const stick = x > STICK_PRESS ? 1 : x < -STICK_PRESS ? -1 : 0;
       const stickY = y > STICK_PRESS ? 1 : y < -STICK_PRESS ? -1 : 0;
       const was = this.padWas.get(index);
       this.padWas.set(index, { buttons, stick, stickY });
       if (!was) return;
-      const pressed = (b: number) => buttons[b] && !was.buttons[b];
+      const pressed = (b: PadButton) => buttons.has(b) && !was.buttons.has(b);
       const src: SeatSource = { kind: 'pad', index };
       const i = this.find(src);
       if (i < 0) {
-        if (pressed(PAD.a) || pressed(PAD.start)) this.join(src);
-        else if (pressed(PAD.b) && !this.seats.length) this.onBack();
+        if (pressed('right') || pressed('start')) this.join(src);
+        else if (pressed('bottom') && !this.seats.length) this.onBack();
         return;
       }
-      const dir = (pressed(PAD.dRight) ? 1 : 0) - (pressed(PAD.dLeft) ? 1 : 0) || (stick !== was.stick ? stick : 0);
+      const dir = (pressed('dright') ? 1 : 0) - (pressed('dleft') ? 1 : 0) || (stick !== was.stick ? stick : 0);
       if (dir) this.change(i, dir);
-      const row = (pressed(PAD.dDown) ? 1 : 0) - (pressed(PAD.dUp) ? 1 : 0) || (stickY !== was.stickY ? stickY : 0);
+      const row = (pressed('down') ? 1 : 0) - (pressed('up') ? 1 : 0) || (stickY !== was.stickY ? stickY : 0);
       if (row && i === 0) this.moveRow(row);
-      if (pressed(PAD.a)) this.toggleReady(i);
-      if (pressed(PAD.start)) this.readyAll();
-      if (pressed(PAD.b)) this.leave(i);
+      if (pressed('right')) this.toggleReady(i);
+      if (pressed('start')) this.readyAll();
+      if (pressed('bottom')) this.leave(i);
     });
     this.fit();
     const all = this.seats.length > 0 && this.seats.every((s) => s.ready);
@@ -327,9 +330,9 @@ export class PartyScreen {
       const s = this.seats[i];
       const color = SEAT_COLORS[i];
       if (!s) {
-        return `<div class="party-seat empty" style="--seat:${color}"><div class="party-p hud-big">P${i + 1}</div><div class="party-join">Scan to join, or press <b>Shift</b>, <b>Right Shift</b> or <b>A</b></div></div>`;
+        return `<div class="party-seat empty" style="--seat:${color}"><div class="party-p hud-big">P${i + 1}</div><div class="party-join">Scan to join, or press <b>Shift</b>, <b>Right Shift</b> or ${g('right')} on a controller</div></div>`;
       }
-      const how = s.source.kind === 'keys' ? SEAT_KEY_NAMES[s.source.side] : s.source.kind === 'pad' || s.controller ? 'Stick or d-pad · A hop · L item' : 'Tilt or drag to steer';
+      const how = s.source.kind === 'keys' ? SEAT_KEY_NAMES[s.source.side] : s.source.kind === 'pad' || s.controller ? padHow(s.source.kind === 'pad' ? s.source.index : -1) : 'Tilt or drag to steer';
       return `<div class="party-seat${s.ready ? ' ready' : ''}" style="--seat:${color}">
         <div class="party-p hud-big">P${i + 1}</div>
         <div class="party-src">${esc(s.controller ? `${s.name ?? 'Controller'} (laptop)` : s.name ? `${s.name} · ${sourceName(s.source)}` : sourceName(s.source))}</div>
@@ -345,12 +348,12 @@ export class PartyScreen {
     }).join('');
     const all = this.seats.length > 0 && this.seats.every((s) => s.ready);
     const left = this.startAt !== null ? Math.max(0, Math.ceil(this.startAt - performance.now() / 1000)) : null;
-    const status = !this.seats.length ? 'Join to race: up to four on this screen' : all ? `Starting${left ? ` in ${left}` : ''}...` : 'Pick a racer, then press hop (or A) when you are ready';
+    const status = !this.seats.length ? 'Join to race: up to four on this screen' : all ? `Starting${left ? ` in ${left}` : ''}...` : `Pick a racer, then press hop (or ${g('right')} on a controller) when you are ready`;
     if (this.casting) {
       const html = `
         <div class="party-panel">
           <div class="party-title hud-big">PARTY <span class="party-beta">BETA</span></div>
-          <div class="party-status">Casting: the race is on the TV. Join with a phone, or press A on a controller paired with this laptop.</div>
+          <div class="party-status">Casting: the race is on the TV. Join with a phone, or press ${g('right')} on a controller paired with this laptop.</div>
           <div class="party-phones">${this.phoneInfo}</div>
           <div class="party-nav"><button data-party="back">&lsaquo; back</button><button data-party="cast">Stop casting</button></div>
           <div class="party-cast-note">${CAST_NOTE}</div>
@@ -402,4 +405,10 @@ export class PartyScreen {
 
 function esc(s: string): string {
   return s.replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`);
+}
+
+/** A seat's controller buttons, by what its pad calls them (Nintendo's letters, Xbox's on an Xbox pad). */
+function padHow(index: number): string {
+  const family = (index >= 0 ? readPad(connectedPads()[index])?.family : undefined) ?? 'xbox';
+  return `D-pad or stick · ${glyph(family, 'r1')} hop · ${glyph(family, 'l1')} item · ${glyph(family, 'bottom')} brake`;
 }

@@ -1,5 +1,6 @@
 import { dailyLabel, dailyParams } from '../core/daily';
 import { cupTrophies, progress, raceKey, unlocks, type Unlocks } from '../core/progress';
+import { g, kbOrPad } from './padNav';
 import { SONG_END_SOUNDTRACKS, SOUNDTRACKS, SOUNDTRACK_BLURBS, SOUNDTRACK_NAMES, VIDEO_LOOKS, settings, updateSettings } from '../core/settings';
 import type { SavedTrack } from '../core/savedTracks';
 import { CPU_DIFFICULTIES } from '../ai/cpuDriver';
@@ -165,6 +166,11 @@ export class Menu {
     this.render();
     // The show list arrives after startup: the Full set rows fill in.
     onShows(() => this.visible && this.render());
+  }
+
+  /** On the first screen (the mode's): back from here is the title's. */
+  get atStart(): boolean {
+    return this.step === 0;
   }
 
   /** The row being used: the game shows the racer gallery while it's 'racer'. */
@@ -588,9 +594,20 @@ export class Menu {
           <button class="menu-back" data-back${this.step === 0 ? ' disabled' : ''}>&lsaquo; back</button>
           ${last ? `<button class="menu-start hud-big" data-start>${c.mode === 'online' ? 'ROOMS' : c.mode === 'party' ? 'PLAYERS' : c.mode === 'infinite' && c.watch ? 'WATCH!' : c.mode === 'skills' ? 'PLAY!' : 'RACE!'}</button>` : `<button class="menu-start menu-next hud-big" data-next>next &rsaquo;</button>`}
         </div>
-        <div class="menu-hint">${this.gridCount(rows[this.row]) ? '&larr;&rarr;&uarr;&darr; pick' : `&larr;&rarr; change${rows.length > 1 ? ' &middot; &uarr;&darr; row' : ''}`} &middot; Enter ${last ? (c.mode === 'online' ? 'rooms' : c.mode === 'party' ? 'players' : c.mode === 'skills' ? 'play' : 'race') : 'next'} &middot; Backspace back</div>
+        <div class="menu-hint">${this.hint(rows, last)}</div>
       </div>`;
     this.markMore();
+  }
+
+  /** The keys (or a controller's buttons, while one is in use) along the foot of the panel. */
+  private hint(rows: MenuRow[], last: boolean): string {
+    const c = this.choice;
+    const grid = this.gridCount(rows[this.row]) > 0;
+    const go = last ? (c.mode === 'online' ? 'rooms' : c.mode === 'party' ? 'players' : c.mode === 'skills' ? 'play' : 'race') : 'next';
+    const keys = `${grid ? '&larr;&rarr;&uarr;&darr; pick' : `&larr;&rarr; change${rows.length > 1 ? ' &middot; &uarr;&darr; row' : ''}`} &middot; Enter ${go} &middot; Backspace back`;
+    const dice = rows.includes('racer') && c.mode !== 'online' ? ` &middot; ${g('top')} random` : '';
+    const pad = `${g('dpad')} ${grid ? 'pick' : rows.length > 1 ? 'row, change' : 'change'} &middot; ${g('right')} ${go} &middot; ${g('bottom')} back${dice}`;
+    return kbOrPad(keys, pad);
   }
 
   /** Marks the panel while there's more of it below the fold, for the hint above RACE!. */

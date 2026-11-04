@@ -1,5 +1,6 @@
 import PartySocket from 'partysocket';
-import { Keyboard, PAD, SeatInput, connectedPads } from '../core/seatInput';
+import { readPad, type PadButton } from '../core/gamepad';
+import { Keyboard, SeatInput, connectedPads } from '../core/seatInput';
 import { HELD, TAP, type CouchClientMsg, type CouchServerMsg, type PadAction, type PadRow, type PadState, type SeatInfo } from './couchProtocol';
 
 /** How often (ms) a controller's state goes to the TV, at most; sooner on a press. */
@@ -53,7 +54,8 @@ export class CastPads {
         this.idle.set(index, true);
         return;
       }
-      const a = pad.buttons[PAD.a]?.pressed ?? false;
+      // A (the right button, by place) joins.
+      const a = (readPad(pad)?.buttons.right ?? 0) >= 0.5;
       if (a && this.idle.get(index) === false) this.pads.set(index, new CastPad(this.code, `${this.laptopId}-pad${index}`, index, this.keys));
       this.idle.set(index, a);
     });
@@ -71,7 +73,7 @@ class CastPad {
   private readonly socket: PartySocket;
   private readonly input: SeatInput;
   private info: SeatInfo | null = null;
-  private was: boolean[] = [];
+  private was = new Set<PadButton>();
   private stick = { x: 0, y: 0 };
   private row = 0;
   private lastSent = '';
@@ -97,15 +99,15 @@ class CastPad {
 
   /** One frame: the buttons for the screen the TV shows. False once it has left. */
   tick(now: number): boolean {
-    const pad = connectedPads()[this.index];
+    const pad = readPad(connectedPads()[this.index]);
     if (!pad) return true;
-    const buttons = pad.buttons.map((b) => b.pressed);
-    const pressed = (b: number) => buttons[b] && !this.was[b];
-    const sx = edge(pad.axes[0] ?? 0, this.stick.x);
-    const sy = edge(pad.axes[1] ?? 0, this.stick.y);
+    const buttons = new Set((Object.keys(pad.buttons) as PadButton[]).filter((b) => pad.buttons[b] >= 0.5));
+    const pressed = (b: PadButton) => buttons.has(b) && !this.was.has(b);
+    const sx = edge(pad.stickX, this.stick.x);
+    const sy = edge(pad.stickY, this.stick.y);
     this.stick = { x: sx.now, y: sy.now };
-    const across = (pressed(PAD.dRight) ? 1 : 0) - (pressed(PAD.dLeft) ? 1 : 0) || sx.press;
-    const down = (pressed(PAD.dDown) ? 1 : 0) - (pressed(PAD.dUp) ? 1 : 0) || sy.press;
+    const across = (pressed('dright') ? 1 : 0) - (pressed('dleft') ? 1 : 0) || sx.press;
+    const down = (pressed('down') ? 1 : 0) - (pressed('up') ? 1 : 0) || sy.press;
     const info = this.info;
     const phase = info?.phase;
     if (phase === 'join') {
@@ -115,17 +117,17 @@ class CastPad {
         this.act('row', ROWS[this.row]);
       }
       if (across) this.act(across < 0 ? 'left' : 'right', info?.host ? ROWS[this.row] : 'racer');
-      if (pressed(PAD.a)) this.act('ready');
-      if (pressed(PAD.b)) {
+      if (pressed('right')) this.act('ready');
+      if (pressed('bottom')) {
         this.act('leave');
         this.left = true;
       }
     } else if (phase === 'race') {
       if (info?.paused) {
-        if (pressed(PAD.start) || pressed(PAD.a)) this.act('resume');
-      } else if (pressed(PAD.start)) this.act('pause');
+        if (pressed('start') || pressed('right')) this.act('resume');
+      } else if (pressed('start')) this.act('pause');
       this.pump(now);
-    } else if (phase === 'results' && (pressed(PAD.a) || pressed(PAD.start))) {
+    } else if (phase === 'results' && (pressed('right') || pressed('start'))) {
       this.act('continue');
     }
     // The race's own sampling, kept going so a press's edge is never stale.
