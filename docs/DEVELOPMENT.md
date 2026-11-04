@@ -200,6 +200,63 @@ Example kits to read: `src/kits/billabongValley.ts` and `.view.ts` (a hazard wit
 
 Still shared, and rare: a new `Theme` flag with a post effect of its own (Gaia's `dies`, Billabong Valley's `dawn`: `render/postfx.ts` and `game.ts`), a new kind of hit result (Billabong Valley's `robbed`: `core/race.ts`, `items/items.ts`), and the songs (`audio/songs.ts`, `public/music`).
 
+## Building a world
+
+A kit's render module is where a track looks rich or plain. The richest worlds (Gaia, The Grim Reaper, Hot Wax, Sadie Sorceress, Billabong Valley, Empty) are dense, layered and moving everywhere; build to their bar, from the parts they're made of.
+
+**The bar.** No driver's-seat frame shows empty ground. Every stretch has at least three kinds of prop, a mid-ground set piece and a skyline behind it. Every landmark moves or glows (most do both).
+
+**The layers, per stretch** (a stretch is a section of the lap; dress each by its name, `sectionNamer`):
+
+| Layer | What | From the toolkit |
+| --- | --- | --- |
+| Foreground | props in the band 3 to 15 m off the road, three kinds or more, sized and turned at random; ground cover by the hundred | `scatter`, `scatterInstanced`, the decor's `feature` and `detail.cover` |
+| Mid-ground | a set piece 30 to 80 m off: a body on a base, a glow, a slow movement, facing the karts; fires, crowds, camps | `setPiece`, `standBeside`, `fire`, `crowd`, `torch`, `lamp` |
+| Skyline | a ring of silhouettes outside the walls, lit in a dark world, beyond it the theme's `distant` | `skyline` |
+| In the air | a flock over the set piece, motes or embers, smoke, a swarm | `flock`, `motes`, `smokeColumn`, `swarm`, the decor's `life` |
+| Words | the start gate's name, the song's lines on signs and banners | `textFace`, `signPanel`, `roadBanner`, `buzz` |
+
+**The toolkit** is `src/render/scenery/` (import it as `import * as kit from './scenery'` in `src/render/<track>.ts`; `scenery/index.ts` lists every part). It imports no shared render system, so a render module may use it. Its parts are the patterns those worlds each wrote for themselves, made general: `scatter` keeps props off every road (the lap's other stretches too) and out of the pits; `crowd` is three InstancedMeshes however big; `matte` and `lit` share one material per colour; glows are sprites, not lights (no world uses real lights for scenery). Beat-synced motion takes a `beat(bpm)` at your song's tempo; `finalLap()` reads the final lap's look. `tests/scenery.test.ts` tests it without a GPU. To see every part at once, run `npm run dev` and open http://localhost:5173/scenery.html (`?seat` for the driver's eye; dev only, not built).
+
+A stretch, worked through (a festival field beside a section `from` to `to`, from a landmark builder that's given `track`, `ribbon`, `s` and `animated`):
+
+```ts
+import * as kit from './scenery';
+const BEAT = kit.beat(128); // the song's tempo
+const TUFT = new THREE.ConeGeometry(0.25, 1, 4); // shared, and a white material for the colours to tint
+const WHITE = new THREE.MeshLambertMaterial({ color: 0xffffff });
+
+export function festivalField(track: Track, ribbon: Ribbon, from: number, to: number, animated: kit.Animated): THREE.Group {
+  const g = new THREE.Group();
+  // Foreground: three kinds of prop either side, and grass by the hundred.
+  const tent: kit.Prop = (rand) => tentFigure(rand); // yours, built at the origin facing +z
+  const bale: kit.Prop = (rand) => baleFigure(rand);
+  const brazier: kit.Prop = (rand) => kit.torch(animated, rand() * 9, { kind: 'basket' });
+  g.add(kit.scatter({ track, ribbon, from, to, spacing: 12, kinds: [[3, tent], [2, bale], [1, brazier]] }));
+  g.add(kit.scatterInstanced({ track, ribbon, from, to, spacing: 1.5, band: [2, 24], geometry: TUFT, material: WHITE, colors: [0x4a5a2a, 0x6a6a38], lift: 0.5 }));
+  // The crowd on the left, jumping on the beat, lighters up.
+  g.add(kit.crowd({ track, ribbon, from, to: from + 80, side: 'left', rows: 3, motion: 'jump', beat: BEAT, lights: { color: 0xffd080 } }, animated).group);
+  // Mid-ground: the stage, glowing and pulsing on the kick, facing the karts coming.
+  const stage = kit.setPiece({ body: stageFigure(), base: 'plinth', glow: { color: 0xff3aa8 }, beat: BEAT }, animated);
+  g.add(kit.standBeside(stage, ribbon, from + 120, -45, { track, radius: 20 }));
+  // In the air: crows wheeling over it, and smoke off a bonfire.
+  const crows = kit.flock({ count: 10, radius: 30, height: 30, color: 0x0e0a08 }, animated);
+  crows.position.copy(stage.position);
+  g.add(crows);
+  // Words: the song's line over the road.
+  g.add(kit.roadBanner(ribbon, from + 40, ['ALL TOGETHER NOW'], { style: 'neon', glowColor: 0xff3aa8 }, animated));
+  return g;
+}
+```
+
+Build the skyline once, in the start gate's builder (`g.add(kit.skyline({ track, shapes: [[3, 'tower'], [1, 'spire']], color: 0x0c0a10, windows: 0xffc070 }, animated))`), or give it a landmark kind of its own.
+
+**The screenshot routine** (SPEC.md section 7, Screenshots; each image costs as much to read as a long file):
+
+1. Plot the lap once from above as a line drawing.
+2. `node tools/landmark-shots.mjs <track id> <out dir>`: two contact sheets, `<id>-landmarks.jpg` (every landmark framed from a raised camera on the side the karts come from, labelled with its number and kind) and `<id>-seat.jpg` (12 spots round the lap from the driver's seat, labelled with the stretch). It drives the dev server at http://localhost:5173/ (or a URL given third), starting vite itself if none is running; about two minutes with software rendering. `--final` takes them on the final lap's look; `--list` prints the landmarks, their sizes and cameras without shooting. Read the two sheets against the bar: an empty frame, a stretch with one kind of prop, a landmark that's dead still or too small to read.
+3. Fix what they show, and take one more pair at most.
+
 ## Soundtrack
 
 The songs live in seqbaby. `public/music/*.mp3` are rendered from them by playing each song in headless Chromium through seqbaby's own engine:

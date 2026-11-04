@@ -332,6 +332,8 @@ const VHS_LEVELS: Record<'full' | 'light' | 'off', { vhs: Record<VhsMoment, numb
 function bite(): void {
   if (settings().videoLook !== 'off') fx.bite = 1;
 }
+/** Tools only (gizz.look, tools/landmark-shots.mjs): the camera held at a point looking at another, whatever else it would do. */
+let heldCamera: { eye: THREE.Vector3; target: THREE.Vector3 } | null = null;
 /** Debug: the simulation stands still without the pause menu (gizz.freeze). */
 let frozen = false;
 let lastInput: InputFrame = NEUTRAL_INPUT;
@@ -2563,6 +2565,10 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
     chase.update(s, f.params.topSpeed, seats[0]?.last.lookBack ?? false, dt);
     if (split()) for (const seat of seats) seat.chase.update(drawn[race.karts.indexOf(seat.kart)], seat.kart.params.topSpeed, seat.last.lookBack, dt);
   }
+  if (heldCamera) {
+    camera.position.copy(heldCamera.eye);
+    camera.lookAt(heldCamera.target);
+  }
   // Where the camera is in the world the simulation knows (the views are flipped, the camera isn't).
   const camWorld = flip ? new THREE.Vector3(-camera.position.x, camera.position.y, camera.position.z) : camera.position;
   document.body.classList.toggle('intro', intro > 0);
@@ -3185,7 +3191,56 @@ Object.assign(window, {
     pick(id: string) {
       choice.racer = RACERS.find((r) => r.id === id) ?? choice.racer;
     },
-    race_: (trackIndex: number) => {
+    /** Holds the camera at `eye` looking at `target` (world points), or lets it go with null (tools/landmark-shots.mjs). */
+    look(eye: { x: number; y: number; z: number } | null, target?: { x: number; y: number; z: number }) {
+      heldCamera = eye && target ? { eye: new THREE.Vector3(eye.x, eye.y, eye.z), target: new THREE.Vector3(target.x, target.y, target.z) } : null;
+    },
+    /**
+     * The track's landmarks as built (tools/landmark-shots.mjs): each one's
+     * kind, its road point and the road 60 m before it, and the box round
+     * its meshes (glows, smoke and motes left out).
+     */
+    get landmarks() {
+      const boxes = new Map<number, THREE.Box3>();
+      trackView?.group.updateMatrixWorld(true);
+      for (const child of trackView?.group.children ?? []) {
+        const index = child.userData.landmark as number | undefined;
+        if (index === undefined) continue;
+        const box = boxes.get(index) ?? new THREE.Box3();
+        child.traverse((o) => {
+          if (!(o instanceof THREE.Mesh) || !o.visible) return;
+          o.geometry.computeBoundingBox();
+          const b = o.geometry.boundingBox!.clone();
+          if (o instanceof THREE.InstancedMesh) {
+            o.computeBoundingBox();
+            b.copy(o.boundingBox!);
+          }
+          box.union(b.applyMatrix4(o.matrixWorld));
+        });
+        boxes.set(index, box);
+      }
+      return track.def.landmarks.map((lm, index) => {
+        const ribbon = track.ribbon(lm.ribbon);
+        const s = lm.s * ribbon.scale;
+        const L = ribbon.spline.length;
+        const at = pointAt(ribbon.spline, s);
+        const back = pointAt(ribbon.spline, ribbon.spline.closed ? (((s - 60) % L) + L) % L : Math.max(0, s - 60));
+        const box = boxes.get(index);
+        return {
+          index,
+          kind: lm.kind,
+          road: { x: at.x, y: ribbon.heightAt(Math.min(s, L)), z: at.z, tx: at.tx, tz: at.tz },
+          back: { x: back.x, z: back.z },
+          box: box && !box.isEmpty() ? { min: box.min.toArray(), max: box.max.toArray() } : null,
+        };
+      });
+    },
+    /** The track ids in the game's order. */
+    get tracks() {
+      return TRACK_LIST.map((t) => t.id);
+    },
+    race_: (trackIndex: number | string) => {
+      if (typeof trackIndex === 'string') trackIndex = TRACK_LIST.findIndex((t) => t.id === trackIndex);
       choice.track = trackIndex;
       setMode('menu');
       loadTrack(TRACK_LIST[trackIndex]);
