@@ -1,6 +1,11 @@
-import { KART_RADIUS, TRICK_WINDOW, spinOut, wobble, type KartState } from '../physics/kart';
+import { KART_RADIUS, spinOut, wobble, type KartState } from '../physics/kart';
 import { pointAt } from '../tracks/spline';
-import type { HazardDef, Track } from '../tracks/track';
+import type { CoreHazardKind, HazardDef, Track } from '../tracks/track';
+import { HIT_COOLDOWN, HOP_WINDOW, REWARD_COOLDOWN, launch } from './hazardBase';
+import { KIT_HAZARDS } from '../kits/index';
+import type { HazardHit, HazardWorld, KitHazard, Threat } from '../kits/kit';
+
+export { HOP_WINDOW, REWARD_COOLDOWN };
 
 export type HazardKind = HazardDef['kind'];
 
@@ -80,7 +85,6 @@ const TUMBLEWEED_RADIUS = 0.9;
 const TUMBLEWEED_SPEED = 7;
 const BOULDER_RADIUS = 1.7;
 const BOULDER_DROP = 24;
-const HIT_COOLDOWN = 1;
 /** Sideways acceleration inside a tornado, m/s^2: a dust devil grown up. */
 export const TORNADO_PUSH = 40;
 const TORNADO_RADIUS = 6;
@@ -151,17 +155,8 @@ export const WAVE_SPIN = 1.0;
  * - slipped past just behind a shark as it cuts across the shallows, through its wake, a boost
  * - hopped as it rolls down at you, a rocky meteor is cleared and you come down on a boost; rammed on a boost it bursts and the boost runs on
  * - over a rumble strip as the haze of sleep lifts off it, jolted awake: a boost
- * - under a mortal traffic light while it shows green, on the one of the waltz: go, a boost
- * - slipped through the gap just behind a pack of hellhounds as the last of them crosses, faster than a cheetah: a boost
- * - hopped onto a piston at the top of its stroke (or as it punches up), ridden: up, and on with a boost
- * - over one of Gaia's ribs as it rises with her breath, thrown on: up, and a boost
- * - tucked into Sadie's slipstream just behind her broomstick as she swoops across the road, more fly than Quidditch: a boost
- * - over a tongue of hot wax once it has set hard, a slick that slings you on: a boost
- * - slipped through the dust just behind Mad Dog Morgan's gang as the last of them rides across, faster than a stolen gun: a boost
- * - through the one wanderer who isn't empty, the one you're with, drifting across the road with the empty ones: a boost
+ * - and the track kits' hazards (src/kits), each in its own kit
  */
-/** A reward can't pay out again to the same kart for this long. */
-export const REWARD_COOLDOWN = 1.5;
 /** Touch a ghost light's core and it carries you: a boost this long. */
 export const WISP_CORE = 1.4;
 export const WISP_BOOST = 0.9;
@@ -169,8 +164,6 @@ export const WISP_BOOST = 0.9;
 export const RAMP_LAUNCH = 9;
 /** Rammed on a boost, the boost runs on this much longer. */
 export const RAM_BOOST = 0.6;
-/** A hop this recent (or being in the air) counts as hopping a hazard. */
-export const HOP_WINDOW = 0.35;
 /** Hopped: a snake cleared or a fish caught is a boost this long; a wave surfed, longer. */
 export const HOP_BOOST = 0.7;
 export const WAVE_SURF = 1.1;
@@ -1076,437 +1069,6 @@ export function dozeHaze(u: number): number {
   return 0.15 * ((u - D.clear) / (1 - D.clear));
 }
 
-/**
- * The Grim Reaper's hellhounds, "sniffing out stitches for the snitches": a
- * pack of three bursting out of a den in one wall of their pit and running
- * right across the road into the den in the other, nose to tail, noses down
- * on the scent. Their scent line is stitched across the road first, a seam
- * of red stitches glowing brighter and brighter from the side they'll come
- * from (the warning), while their eyes burn in the dark of the den and the
- * lead hound's nose pokes out sniffing; then the run, each hound weaving a
- * little along the road as it sniffs, and the next time round they come
- * back the other way. Caught by one, bitten and spun. Slipped through the
- * gap just behind the last of the pack as it crosses, a boost.
- */
-export const HOUND_STAGES = { run: 0.42, gone: 0.82 } as const;
-export const HOUND_COUNT = 3;
-/** Nose to nose along their line, and each one's body: the head this far ahead of its middle, the tail this far behind, this thick. */
-export const HOUND_SPACING = 3.6;
-export const HOUND_HEAD = 1.3;
-export const HOUND_TAIL = 1.3;
-export const HOUND_RADIUS = 0.75;
-/** The dens are this far out past the road's edge: where the pack waits and where it runs to. */
-export const HOUND_OUT = 2;
-/** How far each hound weaves along the road as it sniffs, either way. */
-export const HOUND_SNIFF = 0.6;
-/** The gap behind the pack: this far back behind the last one's tail, this far either side of its line. */
-export const HOUND_GAP = 7;
-export const HOUND_GAP_DEPTH = 2.6;
-export const HOUND_SPIN = 1.1;
-export const HOUND_BOOST = 1.0;
-/** Each pack down the pit runs this share of a period after the one before, so a fast kart through the gap behind one meets the next as it opens. */
-export const HOUND_LAG = 0.3;
-
-/** Where pack `i` of a stretch is in its cycle at race time `t` (0 to 1), and which way it runs this time (1 to the right). */
-export function houndPhase(t: number, period: number, i: number): { u: number; side: number } {
-  const tt = (t + 10) / period - i * HOUND_LAG;
-  const cycle = Math.floor(tt);
-  return { u: tt - cycle, side: (cycle + i) % 2 === 0 ? 1 : -1 };
-}
-
-/**
- * Where each hound of a pack is at cycle stage `u`, in the road's frame at
- * its station: `lateral` (to the right), `along` the road, and whether it's
- * out of its den (`out`). `side` is the way they run; the road is `reach`
- * wide either side of its centre. The lead is first.
- */
-export function houndPack(u: number, side: number, reach: number): { lateral: number; along: number; out: boolean }[] {
-  const H = HOUND_STAGES;
-  const den = reach + HOUND_OUT;
-  const back = (HOUND_COUNT - 1) * HOUND_SPACING;
-  // The lead runs from its den until the last of them is in the far one.
-  const f = u < H.run ? 0 : u >= H.gone ? 1 : (u - H.run) / (H.gone - H.run);
-  const lead = -den + (2 * den + back) * f;
-  return Array.from({ length: HOUND_COUNT }, (_, k) => {
-    const l = lead - k * HOUND_SPACING;
-    const out = u >= H.run && u < H.gone && l > -den && l < den;
-    const lateral = side * Math.max(-den, Math.min(den, l));
-    return { lateral, along: out ? HOUND_SNIFF * Math.sin(f * Math.PI * 7 + k * 1.9) : 0, out };
-  });
-}
-
-/**
- * Sadie Sorceress's broomstick, "snapping necks with her broomstick getting
- * tortuous": Sadie circling high over one side of the road, cackling (the
- * warning: that's the side she'll come from), then swooping down out of the
- * sky across the road at kart height on a slant, a trail of sparks in her
- * slipstream, and up and away the other side, where she circles again until
- * she comes back the other way. Caught by her broomstick, snapped and spun.
- * Tucked into her slipstream just behind her as she crosses, a boost.
- */
-export const BROOM_STAGES = { dive: 0.52, away: 0.8 } as const;
-/** She starts her swoop this far out past the road's edge, this high, and skims across it this high. */
-export const BROOM_OUT = 11;
-export const BROOM_HIGH = 12;
-export const BROOM_LOW = 1.1;
-/** She circles this wide while she waits. */
-export const BROOM_CIRCLE = 6;
-/** How far along the road her swoop slants, from one side to the other. */
-export const BROOM_SLANT = 8;
-/** The broomstick from her: its tip this far ahead, its bristles this far behind, this thick either side. */
-export const BROOM_HEAD = 2.1;
-export const BROOM_TAIL = 1.7;
-export const BROOM_RADIUS = 0.8;
-/** Her slipstream: this far back behind the bristles, this wide either side of her line. */
-export const BROOM_WAKE = 10;
-export const BROOM_WAKE_WIDTH = 2.6;
-export const BROOM_SPIN = 1.1;
-export const BROOM_BOOST = 1.0;
-/** Each station down the stretch swoops this share of a period after the one before, so a fast kart in one slipstream meets the next. */
-export const BROOM_LAG = 0.3;
-
-/** Where Sadie of station `i` is in her cycle at race time `t` (0 to 1), which cycle it is, and which way she crosses this time (1 to the right). */
-export function broomPhase(t: number, period: number, i: number): { u: number; cycle: number; side: number } {
-  const tt = (t + 10) / period - i * BROOM_LAG;
-  const cycle = Math.floor(tt);
-  return { u: tt - cycle, cycle, side: (cycle + i) % 2 === 0 ? 1 : -1 };
-}
-
-/** Her height over the road at `lateral`: skimming across it, climbing steeply out past its edges. */
-export function broomHeight(lateral: number, reach: number): number {
-  const out = Math.max(0, Math.abs(lateral) - reach - 1) / (BROOM_OUT - 1);
-  return BROOM_LOW + (BROOM_HIGH - BROOM_LOW) * Math.min(1, out) ** 2;
-}
-
-/**
- * Where Sadie is at cycle stage `u` crossing toward `side`, in the road's
- * frame at her station: `along` the road, `lateral` (to the right), `height`
- * over the road, and whether she's swooping (`swoop`, and how far across, `f`
- * from 0 to 1). The road is `reach` wide either side of its centre. Before
- * her dive she circles high off the edge she'll come from; after it, off the
- * edge she went to, until the next.
- */
-export function broomCourse(u: number, side: number, reach: number): { along: number; lateral: number; height: number; swoop: boolean; f: number } {
-  const S = BROOM_STAGES;
-  const R = reach + BROOM_OUT;
-  const c = BROOM_CIRCLE;
-  const a0 = -BROOM_SLANT / 2;
-  if (u >= S.dive && u < S.away) {
-    const f = (u - S.dive) / (S.away - S.dive);
-    const lateral = side * (-R + 2 * R * f);
-    return { along: a0 + BROOM_SLANT * f, lateral, height: broomHeight(lateral, reach), swoop: true, f };
-  }
-  // Circling: from where the last swoop came out (the far end of its slant) twice round, to where this one sets off.
-  const span = 1 - S.away + S.dive;
-  const v = u < S.dive ? (u + 1 - S.away) / span : (u - S.away) / span;
-  // The edge she circles off: before the dive, the one she'll come from; after it, the one she went to.
-  const edge = u < S.dive ? -side : side;
-  const psi = 4 * Math.PI * v;
-  const from = -a0;
-  const to = a0;
-  return {
-    along: from + (to - from) * v + c * Math.sin(psi),
-    lateral: edge * (R + c - c * Math.cos(psi)),
-    height: BROOM_HIGH + 2 * Math.sin(Math.PI * v),
-    swoop: false,
-    f: u < S.dive ? 0 : 1,
-  };
-}
-
-/**
- * Cyboogie's pistons: "pistons and pumps under graphene lattice". Rows of
- * PISTON_LANES pistons across the road, flush in the graphene, that punch up
- * through it one after another on the four beats of the boogie's bar, left to
- * right down one row and right to left down the next, like the song's
- * arpeggio, each row a beat behind the one before. Each piston hisses and its
- * ring glows red (the warning, harmless), punches up (caught over it, you're
- * thrown and spun), stands at the top of its stroke a while (a chrome column:
- * driven into, you're spun; hopped onto, you ride it, up and on with a
- * boost), and drops back flush.
- */
-/** Pistons to a row, across the road. */
-export const PISTON_LANES = 4;
-export const PISTON_STAGES = { top: 0.07, drop: 0.42, down: 0.52, warn: 0.8 } as const;
-export const PISTON_RADIUS = 2.6;
-/** How high a piston stands at the top of its stroke. */
-export const PISTON_LIFT = 1.6;
-/** Caught as it punches up: thrown up this fast (m/s), spun this long, and this much of your speed kept. */
-export const PISTON_THROW = 8;
-export const PISTON_SPIN = 1.0;
-export const PISTON_SLOW = 0.55;
-/** Driven into one standing at the top of its stroke: spun this long, this much of your speed kept. */
-export const PISTON_BUMP = 0.8;
-export const PISTON_BUMP_SLOW = 0.6;
-/** Hopped onto at the top of its stroke: ridden up this fast (m/s), and a boost this long. */
-export const PISTON_RIDE = 11;
-export const PISTON_BOOST = 0.9;
-
-/** The beat of the bar (0 to PISTON_LANES - 1) the piston in lane `lane` of row `row` punches up on: an arpeggio up one row and down the next, each row a beat behind. */
-export function pistonBeat(row: number, lane: number, lanes: number): number {
-  const step = row % 2 ? lanes - 1 - lane : lane;
-  return (step + row) % lanes;
-}
-
-/** Where a piston is in its stroke at race time `t`, 0 to 1: 0 as it punches up. */
-export function pistonPhase(t: number, period: number, beat: number, lanes: number): number {
-  const tt = (t + 10) / period - beat / lanes;
-  return tt - Math.floor(tt);
-}
-
-/** How far up a piston stands at stroke stage `u`, 0 (flush) to 1 (the top of its stroke). */
-export function pistonLift(u: number): number {
-  const P = PISTON_STAGES;
-  if (u < P.top) return Math.sin(((u / P.top) * Math.PI) / 2);
-  if (u < P.drop) return 1;
-  if (u < P.down) return 1 - (u - P.drop) / (P.down - P.drop);
-  return 0;
-}
-
-/**
- * Gaia breathes: her ribs, under the skin of the road, heave across it all
- * in one breath on the riff. Each breath she draws in (her ribs swell up
- * into a ridge right across the road, the cracks in it glowing as she
- * starts), holds it, and lets it out: the ridge sinks back down through
- * the road into a trough, her breath blowing dust out of the cracks, and
- * fills again. Over a rib as it rises or while it's held, it throws you
- * on: up, with a boost. Caught as it falls, you sink with it: your speed
- * bleeds into the earth and the wheel wobbles. The ribs are a fast kart's
- * breath apart, so one that meets the first as it rises meets them all so.
- */
-export const BREATH_STAGES = { inhale: 0.18, full: 0.5, exhale: 0.6, empty: 0.8 } as const;
-/** How high a rib swells over the road, and how deep the trough it sinks to. */
-export const BREATH_RISE = 2;
-export const BREATH_SINK = 1.2;
-/** How far along the road a rib reaches either side of its crest. */
-export const BREATH_DEPTH = 4;
-/** Thrown on by a rib as it rises: up this fast (m/s), and a boost this long. */
-export const BREATH_THROW = 10;
-export const BREATH_BOOST = 0.7;
-/** Caught as it falls: you keep this share of your speed, and the wheel wobbles this long. */
-export const BREATH_SLOW = 0.55;
-export const BREATH_WOBBLE = 0.8;
-
-/** Where Gaia's breath is at race time `t`, 0 to 1: every rib breathes together. */
-export function breathPhase(t: number, period: number): number {
-  const tt = (t + 10) / period;
-  return tt - Math.floor(tt);
-}
-
-/** How high a rib stands over the road at stage `u` (negative: a trough): flat at rest, swelling as she breathes in, held, sinking right through as she breathes out, and filling again. */
-export function breathLift(u: number): number {
-  const B = BREATH_STAGES;
-  if (u < B.inhale) return 0;
-  if (u < B.full) {
-    const k = (u - B.inhale) / (B.full - B.inhale);
-    return BREATH_RISE * k * k * (3 - 2 * k);
-  }
-  if (u < B.exhale) return BREATH_RISE;
-  if (u < B.empty) {
-    const k = (u - B.exhale) / (B.empty - B.exhale);
-    return BREATH_RISE - (BREATH_RISE + BREATH_SINK) * Math.sin((Math.PI * k) / 2);
-  }
-  const k = (u - B.empty) / (1 - B.empty);
-  return -BREATH_SINK * (1 - k * k * (3 - 2 * k));
-}
-
-/**
- * Straws in the Wind's mortal traffic lights: "mortal traffic lights
- * signalling when to stay or go". A gantry of lights over the road, swaying
- * in the gale, changing on the waltz's three beats: green on the one (go),
- * amber on the two, red on the three (stay). Down a stretch each gantry
- * changes a little after the one before, so a green wave rolls down the
- * road at about a fast kart's pace. Under one while it shows green, a
- * boost; caught under one on red, you're stopped dead: spun round, most of
- * your speed gone. Amber does nothing but warn.
- */
-export const LIGHT_STAGES = { amber: 1 / 3, red: 2 / 3 } as const;
-/** How far along the road a gantry's stop line reaches either side of it. */
-export const LIGHT_DEPTH = 2.4;
-/** Each gantry down a stretch changes this share of a bar after the one before. */
-export const LIGHT_LAG = 0.21;
-/** Through on green: a boost this long. */
-export const LIGHT_GO = 0.9;
-/** Caught on red: spun this long, keeping this share of your speed. */
-export const LIGHT_SPIN = 0.8;
-export const LIGHT_SLOW = 0.3;
-
-/** Where gantry `i` of a stretch of traffic lights is in its bar at race time `t`, 0 to 1. */
-export function lightPhase(t: number, period: number, i: number): number {
-  const tt = (t + 10) / period - i * LIGHT_LAG;
-  return tt - Math.floor(tt);
-}
-
-/** Which light a gantry shows at bar stage `u`: 0 green, 1 amber, 2 red. */
-export function lightColour(u: number): 0 | 1 | 2 {
-  return u < LIGHT_STAGES.amber ? 0 : u < LIGHT_STAGES.red ? 1 : 2;
-}
-
-/**
- * Empty's wanderers: "I'm wandering around so lazily". Rows of figures
- * drifting across the road in three-four, WANDER_COUNT to a row, spread
- * evenly across it: on the one of each bar they take a step, on the two
- * and three they sway where they stand, and they come out of nothing at
- * one edge and fade to nothing at the other, the next wandering on behind
- * them. All of them empty but one: coats and hats with nobody in them,
- * pale as the morning, and in each row one who isn't, the one you're
- * with, warm. Driven into an empty one you go right through it and it
- * empties you: the colour drains out of everything, your speed bleeds
- * away and the wheel wobbles. Through the one you're with, you don't feel
- * empty: a boost.
- */
-export const WANDER_COUNT = 3;
-/** Bars of the waltz a wanderer takes to cross: a step on the one of each. */
-export const WANDER_BARS = 8;
-/** How far past each edge of the road a wanderer comes out of nothing and fades back into it. */
-export const WANDER_OUT = 3;
-export const WANDER_RADIUS = 1.3;
-/** Each row down a stretch is this share of a crossing behind the one before. */
-export const WANDER_LAG = 0.29;
-/** Emptied: you keep this share of your speed, and the wheel wobbles this long. */
-export const WANDER_SLOW = 0.55;
-export const WANDER_WOBBLE = 0.9;
-/** Through the one you're with: a boost this long. */
-export const WANDER_WARM = 1.0;
-
-/** Where wanderer `k` of row `row` is in its crossing at race time `t`, 0 to 1. */
-export function wanderPhase(t: number, period: number, row: number, k: number): number {
-  const tt = (t + 10) / period + k / WANDER_COUNT - row * WANDER_LAG;
-  return tt - Math.floor(tt);
-}
-
-/** How far across a wanderer has come at crossing stage `u`, 0 to 1: a step on the one of each bar, standing on the two and three. */
-export function wanderStep(u: number): number {
-  const q = u * WANDER_BARS;
-  const bar = Math.floor(q);
-  const f = Math.min(1, (q - bar) * 3);
-  return (bar + f * f * (3 - 2 * f)) / WANDER_BARS;
-}
-
-/** Whether wanderer `k` of row `row` is the one you're with. */
-export function wanderYou(row: number, k: number): boolean {
-  return k === row % WANDER_COUNT;
-}
-
-/**
- * Billabong Valley's bushrangers: Mad Dog Morgan and two of his gang
- * galloping out of the dark bush and right across the road, rifles
- * flashing, and gone into the dark on the other side. He never gave a
- * warning: nothing on the road tells you they're coming, only the riders
- * themselves out in the scrub, and they never come at quite the same
- * moment twice (each time round, the ride starts somewhere in the first
- * GANG_JITTER of the period) nor always from the same side. Ridden down by
- * one, you're bailed up: robbed of the item in your hands and spun.
- * Slipped through the dust just behind the last of them as they cross, a
- * boost.
- */
-export const GANG_COUNT = 3;
-/** Each ride takes this share of the period, starting somewhere in the first GANG_JITTER of it. */
-export const GANG_RIDE = 0.55;
-export const GANG_JITTER = 0.35;
-/** Out in the scrub this far past the road's edge: where they gallop in from and off to. */
-export const GANG_OUT = 18;
-/** Horse to horse along their line, and each one staggered this far along the road from Morgan's line (his first). */
-export const GANG_SPACING = 3.4;
-export const GANG_STAGGER = [0, 1.7, -1.5] as const;
-/** A horse and rider: the head this far ahead of its middle, the tail this far behind, this thick. */
-export const GANG_HEAD = 1.5;
-export const GANG_TAIL = 1.3;
-export const GANG_RADIUS = 0.8;
-/** The dust behind the last of them: this far back behind its tail, this far either side of its line. */
-export const GANG_GAP = 7;
-export const GANG_GAP_DEPTH = 2.8;
-export const GANG_SPIN = 1.2;
-export const GANG_BOOST = 1.0;
-
-/** A number from 0 to 1 for ride `k` of station `i`, the same every time it's asked: how late in the period that ride comes, and which way. */
-function gangDice(k: number, i: number, salt: number): number {
-  const v = Math.sin(k * 12.9898 + i * 78.233 + salt * 37.719) * 43758.5453;
-  return v - Math.floor(v);
-}
-
-/**
- * Where the gang at station `i` is at race time `t`: `u` through their ride
- * (0 as they set off from the scrub, 1 as the last is gone into it; below 0
- * before it, above 1 after), and which way they ride this time (1 to the
- * right).
- */
-export function gangPhase(t: number, period: number, i: number): { u: number; side: number } {
-  const tt = (t + 10) / period;
-  const k = Math.floor(tt);
-  const start = GANG_JITTER * gangDice(k, i, 1);
-  const u = (tt - k - start) / GANG_RIDE;
-  return { u, side: gangDice(k, i, 2) < 0.5 ? 1 : -1 };
-}
-
-/**
- * Where each rider is at ride stage `u`, in the road's frame at its station:
- * `lateral` (to the right), `along` the road, and whether they're on their
- * way across (`out`). `side` is the way they ride; the road is `reach` wide
- * either side of its centre. Morgan is first.
- */
-export function gangRiders(u: number, side: number, reach: number): { lateral: number; along: number; out: boolean }[] {
-  const edge = reach + GANG_OUT;
-  const back = (GANG_COUNT - 1) * GANG_SPACING;
-  const f = Math.max(0, Math.min(1, u));
-  const lead = -edge + (2 * edge + back) * f;
-  return Array.from({ length: GANG_COUNT }, (_, k) => {
-    const l = lead - k * GANG_SPACING;
-    const out = u >= 0 && u < 1 && l > -edge && l < edge;
-    return { lateral: side * Math.max(-edge, Math.min(edge, l)), along: GANG_STAGGER[k], out };
-  });
-}
-
-/**
- * Hot Wax: "hot wax comin' under the door". Tongues of hot wax creeping out
- * across the road from under the cupboards at one edge. Each wells up at
- * the edge first, glowing (the warning, harmless), then creeps right across
- * the road, molten, lies there a while, and cools: a skin forms over it,
- * its glow dies to a pale cream and it sets hard, and at last it cracks up
- * and crumbles away. The next one comes from the other edge. Down a
- * stretch each tongue comes out a little after the one before, so the
- * moment the wax sets rolls down the road at about a fast kart's pace.
- * Caught in it while it's molten, it grabs you: you're slowed hard and the
- * wheel wobbles. Over it once it has set hard, it's a slick that slings
- * you on, a boost. While it's still creeping across, the far side of the
- * road is clear.
- */
-export const WAX_STAGES = { creep: 0.1, across: 0.38, cool: 0.58, set: 0.66, crack: 0.92 } as const;
-/** How far along the road a tongue reaches either side of its middle. */
-export const WAX_DEPTH = 5;
-/** Each tongue down a stretch comes out this share of a period after the one before. */
-export const WAX_LAG = 0.25;
-/** Grabbed by molten wax: you keep this share of your speed, and the wheel wobbles this long. */
-export const WAX_SLOW = 0.45;
-export const WAX_STICK = 1.0;
-/** Over it set hard: a boost this long. */
-export const WAX_SLICK = 0.9;
-
-/** Where tongue `i` of a stretch is in its cycle at race time `t` (0 to 1), and the edge it comes from this time (1: from the right). */
-export function waxPhase(t: number, period: number, i: number): { u: number; side: number } {
-  const tt = (t + 10) / period - i * WAX_LAG;
-  const cycle = Math.floor(tt);
-  return { u: tt - cycle, side: (cycle + i) % 2 === 0 ? 1 : -1 };
-}
-
-/** How far across the road a tongue has crept at cycle stage `u`, 0 (still at its edge) to 1 (right across), and how it shrinks back as it crumbles. */
-export function waxReach(u: number): number {
-  const W = WAX_STAGES;
-  if (u < W.creep) return 0;
-  if (u < W.across) {
-    const k = (u - W.creep) / (W.across - W.creep);
-    return k * (2 - k);
-  }
-  return u < W.crack ? 1 : 1 - (u - W.crack) / (1 - W.crack);
-}
-
-/** How hot a tongue is at cycle stage `u`: 1 molten, falling through the cooling to 0 once it has set. */
-export function waxHeat(u: number): number {
-  const W = WAX_STAGES;
-  if (u < W.cool) return 1;
-  if (u < W.set) return 1 - (u - W.cool) / (W.set - W.cool);
-  return 0;
-}
-
 /** How far a tree has toppled at cycle stage `u`: 0 upright, a lean while it creaks, 1 lying across the road. */
 export function timberFall(u: number): number {
   const T = TIMBER_STAGES;
@@ -1537,15 +1099,11 @@ export function flareHeight(u: number): number {
 }
 
 /** Throws a grounded kart up at `vy` with a trick window. */
-function launch(s: KartState, vy: number): void {
-  s.grounded = false;
-  s.vy = Math.max(s.vy, vy);
-  s.trickWindow = TRICK_WINDOW;
-}
 const SWIRL_PUSH: Partial<Record<HazardKind, number>> = { dustDevils: DEVIL_PUSH, butterflies: BUTTERFLY_PUSH, tornadoes: TORNADO_PUSH, blackHoles: HOLE_PUSH, wisps: WISP_PUSH };
 /** A bolt strikes for this share of the cycle after its warning ring closes. */
 export const LIGHTNING_STRIKE = 0.12;
-const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds' | 'butterflies' | 'tornadoes' | 'wisps'>, number> = {
+/** What touching each of the game's own hazards spins you out for (a kit's hazard deals its own, in its collide). */
+const SPIN: Record<Exclude<CoreHazardKind, 'dustDevils' | 'tumbleweeds' | 'butterflies' | 'tornadoes' | 'wisps'>, number> = {
   snakes: SNAKE_SPIN,
   fish: FISH_SPIN,
   iceBlocks: ICE_BLOCK_SPIN,
@@ -1608,19 +1166,11 @@ const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds' | 'butterfli
   sharks: SHARK_SPIN,
   rockyMeteors: METEOR_SPIN,
   dozes: 0,
-  hellhounds: HOUND_SPIN,
-  pistons: PISTON_SPIN,
-  breaths: 0,
-  trafficLights: LIGHT_SPIN,
-  waxFlows: 0,
-  bushrangers: GANG_SPIN,
-  wanderers: 0,
-  brooms: BROOM_SPIN,
 };
 
 /** Kinds that fill the whole road across, on a rhythm: nothing to steer round, only to time. */
 export function isSheet(kind: HazardKind): boolean {
-  return kind === 'flameJets' || kind === 'dragonFire' || kind === 'lasers' || kind === 'waves' || kind === 'gusts' || kind === 'prisms' || kind === 'flares' || kind === 'timber' || kind === 'cords' || kind === 'strings' || kind === 'fangs' || kind === 'dozes' || kind === 'breaths' || kind === 'trafficLights';
+  return kind === 'flameJets' || kind === 'dragonFire' || kind === 'lasers' || kind === 'waves' || kind === 'gusts' || kind === 'prisms' || kind === 'flares' || kind === 'timber' || kind === 'cords' || kind === 'strings' || kind === 'fangs' || kind === 'dozes' || !!KIT_HAZARDS.get(kind)?.sheet;
 }
 
 /** Which of a prism beam's four colours it is showing at cycle stage `u` (3 is the fourth colour), and whether it is lit. */
@@ -1652,6 +1202,17 @@ export const BOULDER_STAGES = { fall: 0.3, land: 0.4, crumble: 0.85 } as const;
 export class HazardSystem {
   readonly poses: HazardPose[] = [];
   private readonly slots: { def: HazardDef; index: number }[] = [];
+  /** Each pose's kit hazard (kits/kit.ts), if it's one, which poses and hits by itself. */
+  private readonly kits: (KitHazard | undefined)[] = [];
+  /** What a kit's hazard gets of this system: the road, and the cooldowns and rewards. */
+  private readonly world: HazardWorld = {
+    place: (p, builderS, lateral, lift) => this.place(p, builderS, lateral, lift),
+    halfWidth: (builderS) => this.halfWidth(builderS),
+    cooling: (s) => this.cooldown.has(s),
+    cool: (s) => void this.cooldown.set(s, HIT_COOLDOWN),
+    reward: (hit, s, by, pay) => this.reward(hit, s, by, pay),
+    pushOut: (p, s) => this.pushOut(p, s),
+  };
   private readonly cooldown = new Map<KartState, number>();
   /** Per kart: a hazard used well can't pay out again for this long. */
   private readonly rewarded = new Map<KartState, number>();
@@ -1662,6 +1223,7 @@ export class HazardSystem {
       const n = 'at' in def ? def.at.length : def.count;
       for (let i = 0; i < n; i++) {
         this.slots.push({ def, index: i });
+        this.kits.push(KIT_HAZARDS.get(def.kind));
         this.poses.push({ kind: def.kind, x: 0, y: 0, z: 0, heading: 0, radius: 0, ground: 0, ax: 0, az: 0, vx: 0, vz: 0, active: false, phase: 0, side: 0, gap: 0, lane: -1 });
       }
     }
@@ -1676,7 +1238,9 @@ export class HazardSystem {
       const p = this.poses[k];
       const x0 = p.x;
       const z0 = p.z;
-      switch (def.kind) {
+      const kit = this.kits[k];
+      if (kit) kit.pose(p, def, i, t, this.world);
+      else switch (def.kind) {
         case 'snakes':
         case 'rollers':
         case 'iceBlocks':
@@ -2382,147 +1946,6 @@ export class HazardSystem {
           p.phase = u;
           break;
         }
-        case 'hellhounds': {
-          // A pack of hellhounds waiting in the den in one wall, then running right across the road into the other's, the scent stitched across first.
-          const at = def.at[i];
-          const { u, side } = houndPhase(t, def.period, i);
-          const reach = this.halfWidth(at);
-          const pack = houndPack(u, side, reach);
-          // The pose is the lead hound's, the pack following it along its line; ax, az is the road's centre at the station, its frame.
-          this.place(p, at, 0, 0);
-          const fx = Math.sin(p.heading);
-          const fz = Math.cos(p.heading);
-          p.x = p.ax - fz * pack[0].lateral + fx * pack[0].along;
-          p.z = p.az + fx * pack[0].lateral + fz * pack[0].along;
-          p.radius = HOUND_RADIUS;
-          p.side = side;
-          p.gap = reach;
-          p.active = pack.some((h) => h.out);
-          // Running: the gap behind the pack is open.
-          p.lane = u >= HOUND_STAGES.run && u < HOUND_STAGES.gone ? 1 : 0;
-          p.phase = u;
-          break;
-        }
-        case 'pistons': {
-          // A piston in its row across the road, punching up on its beat of the bar.
-          const at = def.at[i];
-          const lane = i % PISTON_LANES;
-          const row = Math.floor(i / PISTON_LANES);
-          const hw = this.halfWidth(at);
-          const u = pistonPhase(t, def.period, pistonBeat(row, lane, PISTON_LANES), PISTON_LANES);
-          const lift = pistonLift(u);
-          this.place(p, at, -hw + ((lane + 0.5) * 2 * hw) / PISTON_LANES, lift * PISTON_LIFT);
-          p.radius = PISTON_RADIUS;
-          p.lane = lane;
-          p.gap = lift;
-          p.active = u < PISTON_STAGES.drop;
-          p.phase = u;
-          break;
-        }
-        case 'breaths': {
-          // One of Gaia's ribs across the road, heaving with all the others in one breath.
-          const at = def.at[i];
-          const u = breathPhase(t, def.period);
-          this.place(p, at, 0, 0);
-          p.radius = this.halfWidth(at);
-          p.side = i % 2 ? -1 : 1;
-          p.active = u >= BREATH_STAGES.exhale && u < BREATH_STAGES.empty;
-          p.lane = u >= BREATH_STAGES.inhale && u < BREATH_STAGES.exhale ? 1 : 0;
-          p.gap = breathLift(u);
-          p.phase = u;
-          break;
-        }
-        case 'wanderers': {
-          // A wanderer drifting across the road in three-four with the rest of its row, out of nothing at one edge and into nothing at the other; alternate rows the other way.
-          const at = def.at[i];
-          const row = Math.floor(i / WANDER_COUNT);
-          const k = i % WANDER_COUNT;
-          const u = wanderPhase(t, def.period, row, k);
-          const reach = this.halfWidth(at) + WANDER_OUT;
-          const dir = row % 2 ? -1 : 1;
-          const lat = dir * (-reach + 2 * reach * wanderStep(u));
-          this.place(p, at, lat, 0);
-          p.radius = WANDER_RADIUS;
-          p.side = dir;
-          p.lane = wanderYou(row, k) ? 1 : 0;
-          p.gap = Math.min(1, Math.max(0, (reach - Math.abs(lat)) / WANDER_OUT));
-          p.active = p.gap > 0.5;
-          p.phase = u;
-          break;
-        }
-        case 'brooms': {
-          // Sadie circling high off one edge, then swooping down across the road on her broomstick and up and away off the other.
-          const at = def.at[i];
-          const { u, side } = broomPhase(t, def.period, i);
-          const reach = this.halfWidth(at);
-          const c = broomCourse(u, side, reach);
-          // Which way she's flying: where she'll be a moment from now, in the road's frame.
-          const next = broomPhase(t + 0.02, def.period, i);
-          const d = broomCourse(next.u, next.side, reach);
-          this.place(p, at + c.along, c.lateral, c.height);
-          // Her heading: the road's, turned toward the way she's flying (a lateral to the right is a turn to the right, -h).
-          p.heading -= Math.atan2(d.lateral - c.lateral, d.along - c.along);
-          p.radius = BROOM_RADIUS;
-          p.side = side;
-          p.gap = c.lateral;
-          // Down skimming the road: snapping distance.
-          p.active = c.swoop && c.height < 2.6;
-          // Her slipstream, over the road behind her, while she swoops.
-          p.lane = c.swoop ? 1 : 0;
-          p.phase = u;
-          break;
-        }
-        case 'trafficLights': {
-          // A gantry of lights over the road, changing on the waltz's beats a little after the one before it.
-          const at = def.at[i];
-          const u = lightPhase(t, def.period, i);
-          this.place(p, at, 0, 0);
-          p.radius = this.halfWidth(at);
-          p.lane = lightColour(u);
-          p.active = p.lane === 2;
-          // How far through its beat the light is, 0 to 1.
-          p.gap = (u * 3) % 1;
-          // The gale rocks each gantry its own way.
-          p.side = i % 2 ? -1 : 1;
-          p.phase = u;
-          break;
-        }
-        case 'bushrangers': {
-          // Mad Dog Morgan's gang galloping out of the scrub on one side, right across the road, and off into the dark on the other.
-          const at = def.at[i];
-          const { u, side } = gangPhase(t, def.period, i);
-          const reach = this.halfWidth(at);
-          const riders = gangRiders(u, side, reach);
-          // The pose is Morgan's; ax, az is the road's centre at the station, its frame.
-          this.place(p, at, 0, 0);
-          const fx = Math.sin(p.heading);
-          const fz = Math.cos(p.heading);
-          p.x = p.ax - fz * riders[0].lateral + fx * riders[0].along;
-          p.z = p.az + fx * riders[0].lateral + fz * riders[0].along;
-          p.radius = GANG_RADIUS;
-          p.side = side;
-          p.gap = reach;
-          p.active = riders.some((r) => r.out && Math.abs(r.lateral) < reach + GANG_HEAD);
-          // Riding: the dust behind them is there to slip through.
-          p.lane = u >= 0 && u < 1 ? 1 : 0;
-          p.phase = u;
-          break;
-        }
-        case 'waxFlows': {
-          // A tongue of hot wax creeping out across the road from one edge, setting as it cools.
-          const at = def.at[i];
-          const { u, side } = waxPhase(t, def.period, i);
-          this.place(p, at, 0, 0);
-          p.radius = this.halfWidth(at);
-          p.side = side;
-          // How far across the road it has crept, 0 to 1.
-          p.gap = waxReach(u);
-          p.active = u >= WAX_STAGES.creep && u < WAX_STAGES.cool;
-          // Set hard: a slick.
-          p.lane = u >= WAX_STAGES.set && u < WAX_STAGES.crack ? 1 : 0;
-          p.phase = u;
-          break;
-        }
         case 'dustDevils':
         case 'butterflies':
         case 'tornadoes':
@@ -2626,8 +2049,8 @@ export class HazardSystem {
    * (spun or slowed) and by what; `good` marks a hazard used well, which
    * helps rather than hurts (see the reward rules above).
    */
-  collide(karts: readonly KartState[], dt: number): { kart: KartState; by: HazardKind; good?: boolean; gift?: boolean; robbed?: boolean }[] {
-    const hit: { kart: KartState; by: HazardKind; good?: boolean; gift?: boolean; robbed?: boolean }[] = [];
+  collide(karts: readonly KartState[], dt: number): HazardHit[] {
+    const hit: HazardHit[] = [];
     for (const map of [this.cooldown, this.rewarded]) {
       for (const [k, v] of map) {
         if (v - dt <= 0) map.delete(k);
@@ -2635,8 +2058,14 @@ export class HazardSystem {
       }
     }
     for (const s of karts) {
-      for (const p of this.poses) {
+      for (let k = 0; k < this.poses.length; k++) {
+        const p = this.poses[k];
         if (Math.abs(s.y - p.ground) > 2.2) continue;
+        const kit = this.kits[k];
+        if (kit) {
+          kit.collide(hit, p, s, this.world, dt);
+          continue;
+        }
         // A gate warming up is a gap to slip through, and a boost for making it.
         if (WARMING.has(p.kind) && !p.active) {
           if (p.phase >= JET_STAGES.sputter && this.distance(p, s) <= p.radius + KART_RADIUS) this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, GATE_BOOST)));
@@ -2752,38 +2181,6 @@ export class HazardSystem {
         }
         if (p.kind === 'dozes') {
           this.doze(hit, p, s);
-          continue;
-        }
-        if (p.kind === 'hellhounds') {
-          this.hound(hit, p, s);
-          continue;
-        }
-        if (p.kind === 'pistons') {
-          this.piston(hit, p, s);
-          continue;
-        }
-        if (p.kind === 'breaths') {
-          this.breath(hit, p, s);
-          continue;
-        }
-        if (p.kind === 'trafficLights') {
-          this.trafficLight(hit, p, s);
-          continue;
-        }
-        if (p.kind === 'wanderers') {
-          this.wanderer(hit, p, s);
-          continue;
-        }
-        if (p.kind === 'bushrangers') {
-          this.bushranger(hit, p, s);
-          continue;
-        }
-        if (p.kind === 'waxFlows') {
-          this.wax(hit, p, s);
-          continue;
-        }
-        if (p.kind === 'brooms') {
-          this.broom(hit, p, s);
           continue;
         }
         if (p.kind === 'fuzz' && p.phase >= FUZZ_STAGES.gold && p.phase < FUZZ_STAGES.red) {
@@ -2960,7 +2357,7 @@ export class HazardSystem {
           s.speed *= TUMBLEWEED_SLOW;
           s.vy = Math.max(s.vy, 2.5);
           hit.push({ kart: s, by: p.kind });
-        } else if (spinOut(s, SPIN[p.kind])) {
+        } else if (spinOut(s, SPIN[p.kind as keyof typeof SPIN])) {
           hit.push({ kart: s, by: p.kind });
         }
       }
@@ -2969,9 +2366,16 @@ export class HazardSystem {
   }
 
   /** Circles for CPU avoidance, including boulders about to land. */
-  obstacles(out: { x: number; z: number; r: number; vx: number; vz: number }[]): void {
+  obstacles(out: Threat[]): void {
     for (const [k, p] of this.poses.entries()) {
       if (isSheet(p.kind)) continue; // the whole road: nothing to steer around
+      const kit = this.kits[k];
+      if (kit) {
+        // A kit's hazard: what it says to steer round, else its circle while it's active.
+        if (kit.threats) kit.threats(out, p, this.slots[k].def);
+        else if (p.active) out.push({ x: p.x, z: p.z, r: p.radius, vx: p.vx, vz: p.vz });
+        continue;
+      }
       if (p.kind === 'airlocks') {
         // From just before they close until they open: the doors where they will be when shut, so the slit is lined up early.
         if (p.phase < AIRLOCK_STAGES.close - 0.1 || p.phase > AIRLOCK_STAGES.open) continue;
@@ -3133,41 +2537,6 @@ export class HazardSystem {
         out.push({ x: p.x, z: p.z, r: p.radius, vx: 0, vz: 0 });
         continue;
       }
-      if (p.kind === 'hellhounds') {
-        // From just before they burst out until they're in the far den: each hound out of its den, head to tail, and where the next will be.
-        if (p.phase < HOUND_STAGES.run - 0.06 || p.phase >= HOUND_STAGES.gone) continue;
-        const fx = Math.sin(p.heading);
-        const fz = Math.cos(p.heading);
-        const { def } = this.slots[k];
-        const speed = (2 * (p.gap + HOUND_OUT) + (HOUND_COUNT - 1) * HOUND_SPACING) / ((HOUND_STAGES.gone - HOUND_STAGES.run) * ('period' in def ? def.period : 5));
-        for (const h of houndPack(Math.max(p.phase, HOUND_STAGES.run), p.side, p.gap)) {
-          if (!h.out && p.phase >= HOUND_STAGES.run) continue;
-          out.push({ x: p.ax - fz * h.lateral + fx * h.along, z: p.az + fx * h.lateral + fz * h.along, r: 1.6, vx: -fz * p.side * speed, vz: fx * p.side * speed });
-        }
-        continue;
-      }
-      if (p.kind === 'bushrangers') {
-        // From a moment before they gallop out until the last is gone: each rider on the way across, and where they'll be.
-        if (p.phase < -0.08 || p.phase >= 1) continue;
-        const fx = Math.sin(p.heading);
-        const fz = Math.cos(p.heading);
-        const { def } = this.slots[k];
-        const speed = (2 * (p.gap + GANG_OUT) + (GANG_COUNT - 1) * GANG_SPACING) / (GANG_RIDE * ('period' in def ? def.period : 5));
-        for (const r of gangRiders(Math.max(p.phase, 0), p.side, p.gap)) {
-          if (!r.out && p.phase >= 0) continue;
-          if (Math.abs(r.lateral) > p.gap + 8) continue;
-          out.push({ x: p.ax - fz * r.lateral + fx * r.along, z: p.az + fx * r.lateral + fz * r.along, r: 1.8, vx: -fz * p.side * speed, vz: fx * p.side * speed });
-        }
-        continue;
-      }
-      if (p.kind === 'brooms') {
-        // Sadie skimming across the road, broomstick tip to bristles.
-        if (!p.active) continue;
-        const fx = Math.sin(p.heading);
-        const fz = Math.cos(p.heading);
-        for (const d of [BROOM_HEAD, 0, -BROOM_TAIL]) out.push({ x: p.x + fx * d, z: p.z + fz * d, r: 1.4, vx: p.vx, vz: p.vz });
-        continue;
-      }
       if (p.kind === 'sharks') {
         // A shark on its run, head to tail, crossing the road.
         if (!p.active) continue;
@@ -3199,31 +2568,6 @@ export class HazardSystem {
         }
         continue;
       }
-      if (p.kind === 'wanderers') {
-        // An empty one, drifting across: steer round it (the one you're with is there to drive through).
-        if (!p.active || p.lane === 1) continue;
-        out.push({ x: p.x, z: p.z, r: p.radius + 0.4, vx: p.vx, vz: p.vz });
-        continue;
-      }
-      if (p.kind === 'waxFlows') {
-        // While it creeps across, its molten part, so the CPUs keep to the clear side; once it lies right across there's nothing to steer round.
-        if (!p.active || p.gap >= 0.98) continue;
-        const fx = Math.sin(p.heading);
-        const fz = Math.cos(p.heading);
-        const from = p.side * (p.radius + 1);
-        const front = from - p.side * (2 * p.radius + 1) * p.gap;
-        const mid = (from + front) / 2;
-        const { def } = this.slots[k];
-        const speed = (2 * p.radius) / ((WAX_STAGES.across - WAX_STAGES.creep) * ('period' in def ? def.period : 5));
-        out.push({ x: p.ax - fz * mid, z: p.az + fx * mid, r: Math.abs(front - from) / 2 + 1, vx: fz * p.side * speed * 0.5, vz: -fx * p.side * speed * 0.5 });
-        continue;
-      }
-      if (p.kind === 'pistons') {
-        // From its hiss until it drops back flush: the piston, punching up or standing.
-        if (p.phase >= PISTON_STAGES.drop && p.phase < PISTON_STAGES.warn) continue;
-        out.push({ x: p.x, z: p.z, r: p.radius + 0.5, vx: 0, vz: 0 });
-        continue;
-      }
       const falling = isFalling(p.kind);
       if (p.kind === 'lightning' || p.kind === 'geysers' || p.kind === 'jaws') {
         if (p.phase < BOULDER_STAGES.fall * 0.5 || p.phase > BOULDER_STAGES.land + LIGHTNING_STRIKE) continue;
@@ -3252,7 +2596,7 @@ export class HazardSystem {
    * A crusher: caught under it as it slams, you're squashed; just ahead of
    * it, its shockwave throws you on; once it's down it's a block to drive round.
    */
-  private crush(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+  private crush(hit: HazardHit[], p: HazardPose, s: KartState): void {
     if (!p.active) return;
     const d = Math.hypot(s.x - p.x, s.z - p.z);
     const C = CRUSHER_STAGES;
@@ -3281,7 +2625,7 @@ export class HazardSystem {
    * An airlock: caught by either door as it closes (or once it's shut),
    * you're spun out; through the slit while it's shut to one, a boost.
    */
-  private airlock(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+  private airlock(hit: HazardHit[], p: HazardPose, s: KartState): void {
     if (!p.active) return;
     const fx = Math.sin(p.heading);
     const fz = Math.cos(p.heading);
@@ -3305,7 +2649,7 @@ export class HazardSystem {
    * An eye reading your mind: on the half of the road its arrow points to,
    * a boost; on the other half, it blasts you.
    */
-  private eye(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+  private eye(hit: HazardHit[], p: HazardPose, s: KartState): void {
     if (!p.active) return;
     const fx = Math.sin(p.heading);
     const fz = Math.cos(p.heading);
@@ -3325,7 +2669,7 @@ export class HazardSystem {
    * A row of four arrows across the road: while they're lit, the three
    * arrows zap you; the lane with no arrow in it is a boost.
    */
-  private arrowRow(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+  private arrowRow(hit: HazardHit[], p: HazardPose, s: KartState): void {
     if (!p.active) return;
     const fx = Math.sin(p.heading);
     const fz = Math.cos(p.heading);
@@ -3350,7 +2694,7 @@ export class HazardSystem {
    * Two sheets of cellophane: caught in one you're wrapped up and slowed;
    * through where they overlap, lined up, a boost.
    */
-  private cellophane(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+  private cellophane(hit: HazardHit[], p: HazardPose, s: KartState): void {
     if (!p.active) return;
     const fx = Math.sin(p.heading);
     const fz = Math.cos(p.heading);
@@ -3372,7 +2716,7 @@ export class HazardSystem {
    * An elbow thrown across half the road: in that half, elbowed, spun and
    * shoved across; past it on the other half as it's thrown, a boost.
    */
-  private elbow(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+  private elbow(hit: HazardHit[], p: HazardPose, s: KartState): void {
     if (!p.active) return;
     const fx = Math.sin(p.heading);
     const fz = Math.cos(p.heading);
@@ -3397,7 +2741,7 @@ export class HazardSystem {
    * Four lanes of muck: down the furrow the rake dragged clean, a boost;
    * through the heaps either side, bogged down and slowed.
    */
-  private muck(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+  private muck(hit: HazardHit[], p: HazardPose, s: KartState): void {
     if (!p.active) return;
     const fx = Math.sin(p.heading);
     const fz = Math.cos(p.heading);
@@ -3420,7 +2764,7 @@ export class HazardSystem {
    * A swinging razor: touched, it cuts you and you spin; past it at speed,
    * inches from the blade, a close shave and a boost.
    */
-  private razor(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+  private razor(hit: HazardHit[], p: HazardPose, s: KartState): void {
     const d = this.distance(p, s);
     if (d <= p.radius + KART_RADIUS) {
       if (this.cooldown.has(s)) return;
@@ -3437,7 +2781,7 @@ export class HazardSystem {
    * A silver cord across the road: through it while it's taut, it slings
    * you on; caught as it snaps and lashes back, you spin.
    */
-  private cord(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+  private cord(hit: HazardHit[], p: HazardPose, s: KartState): void {
     const fx = Math.sin(p.heading);
     const fz = Math.cos(p.heading);
     if (Math.abs((s.x - p.x) * fx + (s.z - p.z) * fz) > CORD_DEPTH + KART_RADIUS) return;
@@ -3456,7 +2800,7 @@ export class HazardSystem {
    * scorched and spun; through the moon, a moonbeam boost. Where they pass,
    * the moon covers the sun.
    */
-  private sunAndMoon(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+  private sunAndMoon(hit: HazardHit[], p: HazardPose, s: KartState): void {
     const fx = Math.sin(p.heading);
     const fz = Math.cos(p.heading);
     const mx = p.ax - fz * -p.gap;
@@ -3475,7 +2819,7 @@ export class HazardSystem {
   }
 
   /** A lightning string: plucked as you cross it, a bolt that spins you; still humming after, a boost. */
-  private lyreString(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+  private lyreString(hit: HazardHit[], p: HazardPose, s: KartState): void {
     const fx = Math.sin(p.heading);
     const fz = Math.cos(p.heading);
     if (Math.abs((s.x - p.x) * fx + (s.z - p.z) * fz) > STRING_DEPTH + KART_RADIUS) return;
@@ -3496,7 +2840,7 @@ export class HazardSystem {
    * A jaw of nine pearl fangs: shut, it bites (spun out); driven through
    * as it opens again, through the gap between its fangs, a boost.
    */
-  private fang(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+  private fang(hit: HazardHit[], p: HazardPose, s: KartState): void {
     const fx = Math.sin(p.heading);
     const fz = Math.cos(p.heading);
     if (Math.abs((s.x - p.x) * fx + (s.z - p.z) * fz) > FANG_DEPTH + KART_RADIUS) return;
@@ -3515,7 +2859,7 @@ export class HazardSystem {
    * snake eats it, a long boost; the snake bites what it touches, unless
    * it's hopped.
    */
-  private serpent(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+  private serpent(hit: HazardHit[], p: HazardPose, s: KartState): void {
     if (p.lane === 1) {
       // The plant, `gap` to the right of the road's centre (the snake faces across the road, so the road's heading is a quarter turn from its own).
       const road = p.heading + (p.side * Math.PI) / 2;
@@ -3540,7 +2884,7 @@ export class HazardSystem {
    * Two surveillance cameras' beams: caught in either, seen and slowed;
    * through the gap between them as they pan, clear of both, a boost.
    */
-  private camera(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+  private camera(hit: HazardHit[], p: HazardPose, s: KartState): void {
     const fx = Math.sin(p.heading);
     const fz = Math.cos(p.heading);
     const along = (s.x - p.ax) * fx + (s.z - p.az) * fz;
@@ -3563,7 +2907,7 @@ export class HazardSystem {
    * Santa's present: landed open, a gift (a boost here, and an item from the
    * race); shut, it spins you, unless you ram it on a boost and it bursts.
    */
-  private present(hit: { kart: KartState; by: HazardKind; good?: boolean; gift?: boolean }[], p: HazardPose, s: KartState): void {
+  private present(hit: HazardHit[], p: HazardPose, s: KartState): void {
     if (!p.active || this.distance(p, s) > p.radius + KART_RADIUS) return;
     if (p.lane === 1) {
       const before = hit.length;
@@ -3584,7 +2928,7 @@ export class HazardSystem {
    * A capsule tumbling across the road: through the right pill, a boost;
    * the wrong one spins you out, and the steering swims for a while after.
    */
-  private pill(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+  private pill(hit: HazardHit[], p: HazardPose, s: KartState): void {
     if (!p.active || Math.hypot(s.x - p.x, s.z - p.z) > p.radius + KART_RADIUS) return;
     if (p.lane === 1) {
       this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, PILL_BOOST)));
@@ -3603,7 +2947,7 @@ export class HazardSystem {
    * it or the fork's tines, and you spin; threaded through between them as
    * they pull apart, while they're still close, a boost.
    */
-  private cutlery(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+  private cutlery(hit: HazardHit[], p: HazardPose, s: KartState): void {
     if (!p.active) return;
     const fx = Math.sin(p.heading);
     const fz = Math.cos(p.heading);
@@ -3628,7 +2972,7 @@ export class HazardSystem {
    * A breath of air: caught as it rises, it floats you up and you come down
    * on a boost; driven into as it bursts, it knocks you aside.
    */
-  private bubble(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+  private bubble(hit: HazardHit[], p: HazardPose, s: KartState): void {
     const d = Math.hypot(s.x - p.x, s.z - p.z);
     if (p.phase >= BUBBLE_STAGES.rise && p.phase < BUBBLE_STAGES.burst) {
       if (d > p.radius + KART_RADIUS) return;
@@ -3656,7 +3000,7 @@ export class HazardSystem {
    * the ground, your feet stick to the terrain and you're slowed; hopped as
    * it passes, a boost.
    */
-  private stomp(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+  private stomp(hit: HazardHit[], p: HazardPose, s: KartState): void {
     const S = STOMP_STAGES;
     const d = Math.hypot(s.x - p.x, s.z - p.z);
     if (d <= p.radius + KART_RADIUS && p.phase >= S.land - STOMP_CRUSH && p.phase < S.lift) {
@@ -3684,7 +3028,7 @@ export class HazardSystem {
    * A hollow in the road: over it while it's open, it drags you down,
    * slowed; on its rim as it closes, it slings you on, a boost.
    */
-  private hollow(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+  private hollow(hit: HazardHit[], p: HazardPose, s: KartState): void {
     const r = voidRadius(p.phase);
     if (r <= 0) return;
     const d = Math.hypot(s.x - p.x, s.z - p.z);
@@ -3703,7 +3047,7 @@ export class HazardSystem {
    * it, steel and all, and holds it back; under it as it switches off, the
    * kart is flung on, a boost.
    */
-  private magnet(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState, dt: number): void {
+  private magnet(hit: HazardHit[], p: HazardPose, s: KartState, dt: number): void {
     const dx = p.x - s.x;
     const dz = p.z - s.z;
     const d = Math.hypot(dx, dz);
@@ -3728,7 +3072,7 @@ export class HazardSystem {
    * flattened, spun out; resting on the road, a block to drive round.
    * Through the shower of sparks off the strike, a fix: a boost.
    */
-  private hammer(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+  private hammer(hit: HazardHit[], p: HazardPose, s: KartState): void {
     const H = HAMMER_STAGES;
     const d = Math.hypot(s.x - p.x, s.z - p.z);
     if (p.active && d <= p.radius + KART_RADIUS) {
@@ -3749,7 +3093,7 @@ export class HazardSystem {
    * in its lane and going its way faster than it does, its slipstream tows
    * you on, a boost.
    */
-  private pod(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+  private pod(hit: HazardHit[], p: HazardPose, s: KartState): void {
     if (!p.active) return;
     const fx = Math.sin(p.heading);
     const fz = Math.cos(p.heading);
@@ -3773,7 +3117,7 @@ export class HazardSystem {
    * A shark cutting across the shallows: driven into, head to tail, it
    * bites, spun; slipped past just behind it, through its wake, a boost.
    */
-  private shark(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+  private shark(hit: HazardHit[], p: HazardPose, s: KartState): void {
     if (p.lane !== 1) return;
     const fx = Math.sin(p.heading);
     const fz = Math.cos(p.heading);
@@ -3799,7 +3143,7 @@ export class HazardSystem {
    * A burst of alphas across the road: hit by one, spun, the screen full of
    * static (game.ts); through the static wave in their wake, a jumpstart.
    */
-  private alpha(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+  private alpha(hit: HazardHit[], p: HazardPose, s: KartState): void {
     const fx = Math.sin(p.heading);
     const fz = Math.cos(p.heading);
     const along = (s.x - p.ax) * fx + (s.z - p.az) * fz;
@@ -3824,7 +3168,7 @@ export class HazardSystem {
    * aside the way it's going, spun, and digitised (game.ts); through the
    * clean wake just behind it, on the road it has this moment swept, a boost.
    */
-  private sweeper(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+  private sweeper(hit: HazardHit[], p: HazardPose, s: KartState): void {
     if (!p.active) return;
     const fx = Math.sin(p.heading);
     const fz = Math.cos(p.heading);
@@ -3852,7 +3196,7 @@ export class HazardSystem {
    * rolls down at you, pushed down and spun, unless you hop it (cleared, a
    * boost) or ram it on a boost (it bursts, and the boost runs on).
    */
-  private meteor(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+  private meteor(hit: HazardHit[], p: HazardPose, s: KartState): void {
     if (!p.active || Math.hypot(s.x - p.x, s.z - p.z) > p.radius + KART_RADIUS) return;
     if (p.lane === METEOR_STAGE.roll) {
       if (!s.grounded || s.hopAge < HOP_WINDOW) {
@@ -3876,7 +3220,7 @@ export class HazardSystem {
    * the edge you're nearer); over its rumble strip while it rattles, as the
    * haze lifts, you're jolted awake, a boost.
    */
-  private doze(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+  private doze(hit: HazardHit[], p: HazardPose, s: KartState): void {
     const fx = Math.sin(p.heading);
     const fz = Math.cos(p.heading);
     const along = (s.x - p.x) * fx + (s.z - p.z) * fz;
@@ -3897,213 +3241,8 @@ export class HazardSystem {
     hit.push({ kart: s, by: p.kind });
   }
 
-  /**
-   * A pack of hellhounds crossing their pit: caught by one, head to tail,
-   * bitten and spun; slipped through the gap just behind the last of them as
-   * it crosses, a boost.
-   */
-  private hound(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
-    if (p.lane !== 1) return;
-    const fx = Math.sin(p.heading);
-    const fz = Math.cos(p.heading);
-    // In the road's frame at the station: a lateral to the right is (-cos h, sin h).
-    const along = (s.x - p.ax) * fx + (s.z - p.az) * fz;
-    const lat = (s.x - p.ax) * -fz + (s.z - p.az) * fx;
-    const pack = houndPack(p.phase, p.side, p.gap);
-    for (const h of pack) {
-      if (!h.out) continue;
-      // Its body: a segment across the road, tail to head the way the pack runs.
-      const mid = h.lateral + p.side * ((HOUND_HEAD - HOUND_TAIL) / 2);
-      const d = Math.hypot(Math.max(0, Math.abs(lat - mid) - (HOUND_HEAD + HOUND_TAIL) / 2), along - h.along);
-      if (d > HOUND_RADIUS + KART_RADIUS) continue;
-      if (this.cooldown.has(s)) return;
-      this.cooldown.set(s, HIT_COOLDOWN);
-      if (spinOut(s, HOUND_SPIN)) hit.push({ kart: s, by: p.kind });
-      return;
-    }
-    // The gap behind the last of them: the road it has this moment crossed.
-    const last = pack[pack.length - 1];
-    if (!last.out) return;
-    const behind = p.side * (last.lateral - lat) - HOUND_TAIL - HOUND_RADIUS;
-    if (behind < 0 || behind > HOUND_GAP || Math.abs(along - last.along) > HOUND_GAP_DEPTH || Math.abs(lat) > p.gap + 1 || s.speed < 8 || this.cooldown.has(s)) return;
-    this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, HOUND_BOOST)));
-  }
-
-  /**
-   * A piston: over it as it punches up, you're thrown and spun; driven into
-   * it at the top of its stroke, spun; hopped onto it there (or as it
-   * punches up), you ride it: up, and on with a boost.
-   */
-  private piston(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
-    if (!p.active || Math.hypot(s.x - p.x, s.z - p.z) > p.radius + KART_RADIUS) return;
-    if ((s.hopAge < HOP_WINDOW || !s.grounded) && !this.cooldown.has(s)) {
-      this.reward(hit, s, p.kind, () => {
-        launch(s, PISTON_RIDE);
-        s.boostTime = Math.max(s.boostTime, PISTON_BOOST);
-      });
-      return;
-    }
-    const pumping = p.phase < PISTON_STAGES.top;
-    if (!pumping) this.pushOut(p, s);
-    if (this.cooldown.has(s)) return;
-    this.cooldown.set(s, HIT_COOLDOWN);
-    if (!spinOut(s, pumping ? PISTON_SPIN : PISTON_BUMP)) return;
-    if (pumping) launch(s, PISTON_THROW);
-    s.speed *= pumping ? PISTON_SLOW : PISTON_BUMP_SLOW;
-    hit.push({ kart: s, by: p.kind });
-  }
-
-  /**
-   * One of Gaia's ribs: over it as it rises or while it's held, it throws
-   * you on, up and with a boost; caught as it falls, you sink with it,
-   * slowed, the wheel wobbling.
-   */
-  private breath(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
-    const fx = Math.sin(p.heading);
-    const fz = Math.cos(p.heading);
-    const along = (s.x - p.x) * fx + (s.z - p.z) * fz;
-    const lat = (s.x - p.x) * -fz + (s.z - p.z) * fx;
-    if (Math.abs(along) > BREATH_DEPTH + KART_RADIUS || Math.abs(lat) > p.radius + KART_RADIUS) return;
-    if (p.lane === 1) {
-      // The rib lifts whoever is on it; the boost is paid once in a while.
-      if (s.grounded) launch(s, BREATH_THROW * Math.min(1, 0.5 + p.gap / BREATH_RISE));
-      this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, BREATH_BOOST)));
-      return;
-    }
-    if (!p.active || this.cooldown.has(s)) return;
-    this.cooldown.set(s, HIT_COOLDOWN);
-    if (!wobble(s, BREATH_WOBBLE)) return;
-    s.speed *= BREATH_SLOW;
-    hit.push({ kart: s, by: p.kind });
-  }
-
-  /**
-   * A mortal traffic light: under it on green, go, a boost; caught under it
-   * on red, stay: stopped dead, spun round, most of your speed gone. Amber
-   * only warns.
-   */
-  /**
-   * Mad Dog Morgan's gang riding across: ridden down by a horse, head to
-   * tail, you're bailed up, robbed of your item and spun; slipped through
-   * the dust just behind the last of them as they cross, a boost.
-   */
-  private bushranger(hit: { kart: KartState; by: HazardKind; good?: boolean; robbed?: boolean }[], p: HazardPose, s: KartState): void {
-    if (p.lane !== 1) return;
-    const fx = Math.sin(p.heading);
-    const fz = Math.cos(p.heading);
-    // In the road's frame at the station: a lateral to the right is (-cos h, sin h).
-    const along = (s.x - p.ax) * fx + (s.z - p.az) * fz;
-    const lat = (s.x - p.ax) * -fz + (s.z - p.az) * fx;
-    const riders = gangRiders(p.phase, p.side, p.gap);
-    for (const r of riders) {
-      if (!r.out) continue;
-      // A horse: a segment across the road, tail to head the way they ride.
-      const mid = r.lateral + p.side * ((GANG_HEAD - GANG_TAIL) / 2);
-      const d = Math.hypot(Math.max(0, Math.abs(lat - mid) - (GANG_HEAD + GANG_TAIL) / 2), along - r.along);
-      if (d > GANG_RADIUS + KART_RADIUS) continue;
-      if (this.cooldown.has(s)) return;
-      this.cooldown.set(s, HIT_COOLDOWN);
-      if (spinOut(s, GANG_SPIN)) hit.push({ kart: s, by: p.kind, robbed: true });
-      return;
-    }
-    // The dust behind the last of them: the road they have this moment crossed.
-    const last = riders[riders.length - 1];
-    if (!last.out) return;
-    const behind = p.side * (last.lateral - lat) - GANG_TAIL - GANG_RADIUS;
-    if (behind < 0 || behind > GANG_GAP || Math.abs(along - last.along) > GANG_GAP_DEPTH || Math.abs(lat) > p.gap + 1 || s.speed < 8 || this.cooldown.has(s)) return;
-    this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, GANG_BOOST)));
-  }
-
-  private trafficLight(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
-    const fx = Math.sin(p.heading);
-    const fz = Math.cos(p.heading);
-    const along = (s.x - p.x) * fx + (s.z - p.z) * fz;
-    const lat = (s.x - p.x) * -fz + (s.z - p.z) * fx;
-    if (Math.abs(along) > LIGHT_DEPTH + KART_RADIUS || Math.abs(lat) > p.radius + KART_RADIUS) return;
-    if (p.lane === 0) {
-      this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, LIGHT_GO)));
-      return;
-    }
-    if (!p.active || this.cooldown.has(s)) return;
-    this.cooldown.set(s, HIT_COOLDOWN);
-    if (!spinOut(s, LIGHT_SPIN)) return;
-    s.speed *= LIGHT_SLOW;
-    hit.push({ kart: s, by: p.kind });
-  }
-
-  /**
-   * A wanderer: driven into an empty one, you go right through it and it
-   * empties you, slowed, the wheel wobbling; through the one you're with,
-   * you don't feel empty, a boost.
-   */
-  private wanderer(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
-    if (!p.active || Math.hypot(s.x - p.x, s.z - p.z) > p.radius + KART_RADIUS || Math.abs(s.y - p.ground) > 2.5) return;
-    if (p.lane === 1) {
-      this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, WANDER_WARM)));
-      return;
-    }
-    if (this.cooldown.has(s)) return;
-    this.cooldown.set(s, HIT_COOLDOWN);
-    if (!wobble(s, WANDER_WOBBLE)) return;
-    s.speed *= WANDER_SLOW;
-    hit.push({ kart: s, by: p.kind });
-  }
-
-  /**
-   * A tongue of hot wax: caught in its molten part, it grabs you, slowed
-   * hard, the wheel wobbling; over it once it has set hard, a slick that
-   * slings you on, a boost.
-   */
-  private wax(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
-    const fx = Math.sin(p.heading);
-    const fz = Math.cos(p.heading);
-    const along = (s.x - p.x) * fx + (s.z - p.z) * fz;
-    // A lateral to the right is (-cos h, sin h).
-    const lat = (s.x - p.x) * -fz + (s.z - p.z) * fx;
-    if (Math.abs(along) > WAX_DEPTH + KART_RADIUS || Math.abs(lat) > p.radius + KART_RADIUS) return;
-    if (p.lane === 1) {
-      if (s.speed > 6) this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, WAX_SLICK)));
-      return;
-    }
-    if (!p.active || this.cooldown.has(s)) return;
-    // How far across from its edge the kart is, 0 to 1: beyond the tongue's front the road is clear.
-    const across = (p.radius - p.side * lat) / (2 * p.radius);
-    if (across - KART_RADIUS / (2 * p.radius) > p.gap) return;
-    this.cooldown.set(s, HIT_COOLDOWN);
-    if (!wobble(s, WAX_STICK)) return;
-    s.speed *= WAX_SLOW;
-    hit.push({ kart: s, by: p.kind });
-  }
-
-  /**
-   * Sadie swooping across the road on her broomstick: caught by it, tip to
-   * bristles, as she skims across, snapped and spun; tucked into her
-   * slipstream just behind the bristles as she crosses, a boost.
-   */
-  private broom(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
-    if (p.lane !== 1) return;
-    const fx = Math.sin(p.heading);
-    const fz = Math.cos(p.heading);
-    const along = (s.x - p.x) * fx + (s.z - p.z) * fz;
-    const across = Math.abs((s.x - p.x) * -fz + (s.z - p.z) * fx);
-    if (p.active && along >= -BROOM_TAIL - BROOM_RADIUS - KART_RADIUS && along <= BROOM_HEAD + BROOM_RADIUS + KART_RADIUS) {
-      const d = Math.hypot(Math.max(0, Math.abs(along - (BROOM_HEAD - BROOM_TAIL) / 2) - (BROOM_HEAD + BROOM_TAIL) / 2), across);
-      if (d <= BROOM_RADIUS + KART_RADIUS) {
-        if (this.cooldown.has(s)) return;
-        this.cooldown.set(s, HIT_COOLDOWN);
-        if (spinOut(s, BROOM_SPIN)) hit.push({ kart: s, by: p.kind });
-        return;
-      }
-    }
-    // Her slipstream: behind the bristles, along her line, while she's down skimming the road.
-    if (p.y - p.ground > 3) return;
-    const behind = -along - BROOM_TAIL - BROOM_RADIUS;
-    if (behind < 0 || behind > BROOM_WAKE || across > BROOM_WAKE_WIDTH || s.speed < 8 || this.cooldown.has(s)) return;
-    this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, BROOM_BOOST)));
-  }
-
   /** Pays a kart for using a hazard well, once in a while. */
-  private reward(hit: { kart: KartState; by: HazardKind; good?: boolean }[], s: KartState, by: HazardKind, pay: () => void): void {
+  private reward(hit: HazardHit[], s: KartState, by: HazardKind, pay: () => void): void {
     if (this.rewarded.has(s)) return;
     this.rewarded.set(s, REWARD_COOLDOWN);
     pay();

@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import * as tex from './textures';
 import { DESERT_SKY, type SkyColors } from './textures';
+import type { CoreTheme, TrackDef } from '../tracks/track';
+import { KIT_WORLDS } from '../kits/views';
 import { floorboardsTexture, skirtingTexture, wallpaperTexture as nanWallpaperTexture } from './mendThePast';
 import { lawnTexture, palingTexture, picketTexture } from './godIsCalling';
 import { dyeGroundTexture, wallpaperTexture as flockedWallpaperTexture } from './headOnPill';
@@ -17,17 +19,20 @@ import { boardTexture, rackTexture, railTexture } from './allIsKnown';
 import { MURK, bushGroundTexture, railTexture as summerRailTexture, sandstoneTexture } from './muddyWater';
 import { chainBarrierTexture, scalaGroundTexture, strataWallTexture } from './greatChainOfBeing';
 import { duskStoneTexture, heathTexture, railTexture as wheelRailTexture } from './theWheel';
-import { adobeTexture, scorchedGroundTexture, waveformRailTexture } from './theGrimReaper';
-import { brineTankTexture, plateTexture, synthPanelTexture } from './cyboogie';
-import { blightTexture, rootBarrierTexture, strataTexture as gaiaStrataTexture } from './gaia';
-import { boardsTexture as barnBoardsTexture, fenceTexture as farmFenceTexture, flowerFieldTexture } from './strawsInTheWind';
-import { bushFloorTexture, rangeRockTexture, slabFenceTexture } from './billabongValley';
-import { boardConcreteTexture, dewGroundTexture, picketTexture as whitePicketTexture } from './empty';
-import { floorboardTexture, wallpaperTexture, waxRailTexture } from './hotWax';
-import { cryptWallTexture, hexGroundTexture, rinkRailTexture } from './sadieSorceress';
 
-export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism' | 'factory' | 'gamma' | 'carrion' | 'wah' | 'smog' | 'dome' | 'solar' | 'inferno' | 'mind' | 'notmind' | 'cellophane' | 'mindfuzz' | 'elbow' | 'muck' | 'boogie' | 'treesea' | 'theia' | 'set' | 'change' | 'uruk' | 'headon' | 'godcall' | 'nan' | 'float' | 'newworld' | 'foe' | 'altered' | 'hollow' | 'forge' | 'steelwar' | 'autonomy' | 'reactor' | 'muddy' | 'scala' | 'network' | 'wheel' | 'windmill' | 'cyborg' | 'grimreaper' | 'gaia' | 'hotwax' | 'sorceress' | 'emptiness' | 'bushranger';
-export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy' | 'hadean' | 'deshret' | 'moonpalace' | 'uruk' | 'nanshouse' | 'suburb' | 'headtrip' | 'paddock' | 'den' | 'alteredworld' | 'mudflat' | 'hollowness' | 'openCut' | 'forge' | 'driverless' | 'reactor' | 'network' | 'summer' | 'scala' | 'slumber' | 'reaping' | 'cyborg' | 'gaia' | 'strawfield' | 'emptyTown' | 'nightbush' | 'waxworks' | 'sorcery';
+/** A world: the game's own (THEMES) or a kit's (its view). */
+export type ThemeId = TrackDef['theme'];
+/** The game's own scenery kinds; kits add theirs (KitDecors). */
+export type CoreDecor = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy' | 'hadean' | 'deshret' | 'moonpalace' | 'uruk' | 'nanshouse' | 'suburb' | 'headtrip' | 'paddock' | 'den' | 'alteredworld' | 'mudflat' | 'hollowness' | 'openCut' | 'forge' | 'driverless' | 'reactor' | 'network' | 'summer' | 'scala' | 'slumber';
+/** A world's scenery (trackView's features, trackDetail's STYLES, trackLife's LIFE). */
+export type DecorKind = CoreDecor | Extract<keyof KitDecors, string>;
+
+/**
+ * The scenery kinds track kits add (src/kits), by declaration merging in
+ * the kit's view (`declare module '../render/themes'`): the kind, and its
+ * kit's id.
+ */
+export interface KitDecors {}
 
 /** Everything that makes a track's world look like itself. */
 export interface Theme {
@@ -78,7 +83,8 @@ export interface Theme {
 /** Flying Microtonal Banana's worlds through the tape: cobalt shadows, banana yellow, and highlights like the peel. */
 const BANANA_DUOTONE: [number, number, number] = [0x1430b8, 0xffc81a, 0xfff6c8];
 
-export const THEMES: Record<ThemeId, Theme> = {
+/** The game's own worlds; a kit's are in its view (themeOf finds either). */
+export const THEMES: Record<CoreTheme, Theme> = {
   // Rattlesnake, in Flying Microtonal Banana's blue and yellow: banana sand, cobalt mesas, a cobalt sky.
   desert: {
     sky: { ...DESERT_SKY, horizon: '#ffe6a0', below: '#f2c43a', ground: '#b88a1a' },
@@ -1202,189 +1208,11 @@ export const THEMES: Record<ThemeId, Theme> = {
     edgeLine: 0xffc470,
     edgeWidth: 0.9,
   },
-  // Straws in the Wind: a bright summer's day over a field of flowers and windmills, blue sky and fair-weather cumulus, the light warm and clear; the only cloud that matters is the one the tornado hangs from.
-  windmill: {
-    sky: { zenith: '#1656c8', high: '#3a86ee', low: '#a6d2f6', horizon: '#fff2c8', below: '#cfe2a0', ground: '#5a8a3a', cloud: '255,255,255', clouds: 30 },
-    fog: { color: 0xdceaf0, near: 220, far: 1000 },
-    hemi: { sky: 0xfff4dc, ground: 0x5a8a3a, intensity: 1.6 },
-    sun: { color: 0xfff4d8, intensity: 2.5 },
-    ground: flowerFieldTexture,
-    groundTile: 18,
-    // Walls (the kitchen's cellar, the pier's piles, the world's edge) are weathered barn boards.
-    cliff: barnBoardsTexture,
-    decor: 'strawfield',
-    distant: { shape: 'hill', color: 0x7a9ab0 },
-    haze: 0.3,
-    duotone: [0x1a1206, 0xd89a2a, 0xfff0a0],
-    skyCycle: false,
-    dust: 0xe0c890,
-    barrier: { map: farmFenceTexture, crawl: false },
-  },
-  // Cyboogie: inside a cyborg who has lost his humanity, as dark as the video's stage, synth red glowing low all round, chrome and the brine green of his dome; his plating underfoot, the graphene road pale and lit over it, a red line down each edge.
-  cyborg: {
-    sky: { zenith: '#040206', high: '#14060c', low: '#4a0a16', horizon: '#d8283a', below: '#3a0a12', ground: '#08120f', cloud: '150,30,46', clouds: 7, stars: { count: 160, color: '#ffb0b8' } },
-    fog: { color: 0x2a0a12, near: 170, far: 820 },
-    hemi: { sky: 0xffd0d8, ground: 0x1a4a3a, intensity: 1.6 },
-    sun: { color: 0xfff0f2, intensity: 2.0 },
-    ground: plateTexture,
-    groundTile: 24,
-    // Walls are brine tanks in chrome frames: the cut down his neck, and the world's edge.
-    cliff: brineTankTexture,
-    decor: 'cyborg',
-    distant: { shape: 'hill', color: 0x12060a },
-    haze: 0,
-    duotone: [0x050208, 0xe8182c, 0xe0f4ec],
-    skyCycle: false,
-    dust: 0x6a8a80,
-    barrier: { map: synthPanelTexture, crawl: false },
-    edgeLine: 0xff2a3c,
-    edgeWidth: 0.5,
-  },
-  // The Grim Reaper: collection night on a dead frontier, the sun gone down dark blood red behind black cloud, the only warmth in a cold, ashen world; near black overhead, a few stars, fog lying low. Pale ash ground, a road of black cinders with its gold lines.
-  grimreaper: {
-    sky: { zenith: '#030306', high: '#0e0a12', low: '#2a0a0c', horizon: '#6a120c', below: '#1e0808', ground: '#0c0808', cloud: '14,10,12', clouds: 26, stars: { count: 30, color: '#c8c0c0' } },
-    fog: { color: 0x241a1e, near: 110, far: 620 },
-    hemi: { sky: 0x9098b0, ground: 0x2a2020, intensity: 1.35 },
-    sun: { color: 0xc04a38, intensity: 1.5 },
-    ground: scorchedGroundTexture,
-    groundTile: 22,
-    // Walls are the pit's and the world's edge: charred rock, old blood run down it.
-    cliff: adobeTexture,
-    decor: 'reaping',
-    distant: { shape: 'mesa', color: 0x050304 },
-    haze: 0,
-    duotone: [0x020102, 0x7a0a08, 0xd8c8b0],
-    skyCycle: false,
-    dust: 0x4a4246,
-    // A black rail with a cut-up sample's waveform along it in gold, playing past.
-    barrier: { map: waveformRailTexture, crawl: true },
-    // The black cinder road in the dark, on the pale ash: lit a little by its own texture, a gold line down each edge.
-    roadGlow: 0.06,
-    edgeLine: 0xe8a830,
-    edgeWidth: 0.5,
-  },
-  // Gaia: the Earth herself, ancient, vast and indifferent, lying in a blighted land under a storm-dark, bruised sky, black-green overhead and blood-ochre low down where an eclipsed sun glows dim; heavy low cloud, lightning, fog swallowing the distance; her body the hills, her hair dead forest, her veins glowing dull red through the cracked earth.
-  gaia: {
-    sky: { zenith: '#070c0a', high: '#16221c', low: '#3e3424', horizon: '#8a4a22', below: '#2a1e16', ground: '#120f0c', cloud: '34,40,36', clouds: 34 },
-    fog: { color: 0x1c221e, near: 120, far: 640 },
-    hemi: { sky: 0x9aa89a, ground: 0x2e2218, intensity: 1.45 },
-    sun: { color: 0xd0a070, intensity: 1.5 },
-    ground: blightTexture,
-    groundTile: 16,
-    // Walls are her body's strata: dead topsoil and roots over clay and black rock, a seam of red.
-    cliff: gaiaStrataTexture,
-    decor: 'gaia',
-    // Her body, far off in the fog: the black hills of her knees and her other hand.
-    distant: { shape: 'mountain', color: 0x0e120f },
-    haze: 0,
-    duotone: [0x050806, 0x5a1a10, 0xd8b070],
-    skyCycle: false,
-    dust: 0x4a4038,
-    barrier: { map: rootBarrierTexture, crawl: false },
-    // Her stream, black.
-    murk: 0x0a1410,
-    // A dark world: the road of her skin glows a little with its own light, and a line of bone runs down each edge.
-    roadGlow: 0.16,
-    edgeLine: 0xece0c4,
-    edgeWidth: 0.55,
-    dies: true,
-  },
-  // Hot Wax: a house at night, the karts tiny in it, lit by candles: the ceiling lost in smoke overhead, the glow of the flames low down, the walls papered in 60s circles; giant dark floorboards with the wax creeping over everything. A pale road of set wax, molten at its edges, an orange line down each.
-  hotwax: {
-    sky: { zenith: '#0c0408', high: '#26080e', low: '#5e1c14', horizon: '#dc642a', below: '#4a1a0c', ground: '#1a0a06', cloud: '70,34,28', clouds: 14 },
-    fog: { color: 0x2e1410, near: 150, far: 780 },
-    hemi: { sky: 0xffcc98, ground: 0x5a2a1a, intensity: 1.65 },
-    sun: { color: 0xffb478, intensity: 2.2 },
-    ground: floorboardTexture,
-    groundTile: 22,
-    // Walls are the room's, and the sides of the cut under the floor: 60s wallpaper.
-    cliff: wallpaperTexture,
-    decor: 'waxworks',
-    // The furniture of the house, dark shapes far off.
-    distant: { shape: 'mesa', color: 0x120604 },
-    haze: 0.4,
-    duotone: [0x12040a, 0xe0501a, 0xfff0c0],
-    skyCycle: false,
-    dust: 0x8a5a3a,
-    barrier: { map: waxRailTexture, crawl: false },
-    // The spilt drink: cherry red.
-    murk: 0x6a1420,
-    roadGlow: 0.1,
-    edgeLine: 0xff8a2a,
-    edgeWidth: 0.6,
-  },
-  // Sadie Sorceress: Sadie's night out, 80s roller disco and witchcraft; a violet night, the town's neon glowing pink low down, a sickly moon over it, stars; dark heath, and the road a pale maple roller rink floor lit by its own neon, a pink line down each edge.
-  sorceress: {
-    sky: { zenith: '#07030f', high: '#1c0a30', low: '#4a1450', horizon: '#c02a7a', below: '#2a0c30', ground: '#0e0814', cloud: '60,30,70', clouds: 18, stars: { count: 160, color: '#f0e0ff' }, moon: '#d8ff9a' },
-    fog: { color: 0x2a1236, near: 140, far: 760 },
-    hemi: { sky: 0xb8a0e0, ground: 0x302040, intensity: 1.5 },
-    sun: { color: 0xd8c8ff, intensity: 1.6 },
-    ground: hexGroundTexture,
-    groundTile: 18,
-    // Walls are crypt brick, violet-black, moss down them: the masquerade's cut and the world's edge.
-    cliff: cryptWallTexture,
-    decor: 'sorcery',
-    distant: { shape: 'hill', color: 0x120818 },
-    haze: 0,
-    duotone: [0x08020e, 0xff2a9a, 0xb8ff5a],
-    skyCycle: false,
-    dust: 0x6a5a7a,
-    // A roller rink's padded rail, its chase lights running along it.
-    barrier: { map: rinkRailTexture, crawl: true },
-    // A dark world: the pale rink floor lit by its own neon, a hot pink line down each edge.
-    roadGlow: 0.14,
-    edgeLine: 0xff3aa8,
-    edgeWidth: 0.5,
-    // The ducking pond: black-green, poisoned.
-    murk: 0x0e2414,
-  },
-  // Empty: an empty town on a pale plain at dawn, nobody about; a milky, faded sky, pale peach low down where the sun is coming up cold, a white moon still out; mist over everything; the plain grey-green with dew, the road pale old concrete with a slate kerb down each edge.
-  emptiness: {
-    sky: { zenith: '#8c9eb2', high: '#b4c0cc', low: '#e2d8cc', horizon: '#f6e4cc', below: '#d6d0c6', ground: '#7c8a80', cloud: '238,234,228', clouds: 14, moon: '#f6f4f0' },
-    fog: { color: 0xdcd8d2, near: 100, far: 560 },
-    hemi: { sky: 0xeef2f6, ground: 0x66706a, intensity: 1.45 },
-    sun: { color: 0xfff0dc, intensity: 1.55 },
-    ground: dewGroundTexture,
-    groundTile: 18,
-    // Walls are the cut's and the world's edge: board-marked concrete, pale and stained.
-    cliff: boardConcreteTexture,
-    decor: 'emptyTown',
-    // An empty city on the horizon, pale in the mist.
-    distant: { shape: 'city', color: 0xa4aab2 },
-    haze: 0,
-    duotone: [0x2a2e38, 0x9aa4ae, 0xf6ece0],
-    skyCycle: false,
-    dust: 0xc8c6c0,
-    barrier: { map: whitePicketTexture, crawl: false },
-    // A pale road on the grey-green plain, its slate kerb drawn on down each edge so the way reads far ahead in the mist.
-    edgeLine: 0x4a5464,
-    edgeWidth: 0.45,
-    murk: 0x9a968e,
-  },
-  // Billabong Valley: Mad Dog Morgan's country, a dark, violent bush night in the 1860s going to a blood-red dawn: a crescent moon and stars over the black ranges, the horizon glowing red where the dawn is coming and where the camp is burning, smoke lying through the valley; the dark bush floor, and a pale red dirt road through it.
-  bushranger: {
-    sky: { zenith: '#03040a', high: '#0a0c18', low: '#2a1014', horizon: '#7a2410', below: '#1e0c0a', ground: '#0c0806', cloud: '30,20,22', clouds: 28, stars: { count: 180, color: '#e8e0d0' }, moon: '#e8dcc0' },
-    fog: { color: 0x1e1412, near: 110, far: 640 },
-    hemi: { sky: 0x9098c0, ground: 0x3a2418, intensity: 1.45 },
-    sun: { color: 0xd06a48, intensity: 1.5 },
-    ground: bushFloorTexture,
-    groundTile: 18,
-    // Walls are the ranges' and the gully's: dark granite, iron-stained.
-    cliff: rangeRockTexture,
-    decor: 'nightbush',
-    // The ranges, old and worn round, black against the glow.
-    distant: { shape: 'hill', color: 0x080606 },
-    haze: 0,
-    duotone: [0x040202, 0x8a1a0a, 0xf0c070],
-    skyCycle: false,
-    dust: 0x6a4a3a,
-    barrier: { map: slabFenceTexture, crawl: false },
-    // The billabong, black.
-    murk: 0x101820,
-    // A dark world: the pale dirt road lit a little by its own texture, a line of pale dust down each edge.
-    roadGlow: 0.12,
-    edgeLine: 0xf0d0a0,
-    edgeWidth: 0.5,
-    dawn: true,
-  },
 };
+
+/** The world for a theme: the game's own, or a kit's. */
+export function themeOf(id: ThemeId): Theme {
+  const theme = id in THEMES ? THEMES[id as CoreTheme] : KIT_WORLDS.get(id);
+  if (!theme) throw new Error(`No world for the theme ${id}`);
+  return theme;
+}

@@ -4,7 +4,8 @@ import { FIELD_SIZE } from '../physics/racers';
 import { nearestOnSpline } from '../tracks/spline';
 import { inPit, type Track } from '../tracks/track';
 import * as tex from './textures';
-import type { DecorKind, Theme } from './themes';
+import type { CoreDecor, Theme } from './themes';
+import { KIT_DECORS } from '../kits/views';
 import { CURB_WIDTH, buildStand, detailStyle } from './trackDetail';
 import { densityScale } from './detail';
 
@@ -29,16 +30,17 @@ export interface Life {
   update(time: number, cam: THREE.Vector3): void;
 }
 
-type Creature = 'bird' | 'vulture' | 'gull' | 'bat' | 'moth' | 'orb';
+export type Creature = 'bird' | 'vulture' | 'gull' | 'bat' | 'moth' | 'orb';
 
-interface LifeSpec {
+export interface LifeSpec {
   /** What circles the infield: the creature, its colour, how many, how high, and how big. */
   flock?: { kind: Creature; color: number; count: number; height: number; size: number; glow?: boolean };
   /** What drifts through the air: colour, how many, how big, how it moves. */
   motes?: { color: number; count: number; size: number; drift: 'fall' | 'rise' | 'float' | 'blow'; glow?: boolean };
 }
 
-const LIFE: Record<DecorKind, LifeSpec> = {
+/** The game's own worlds' life; a kit's is in its view. */
+const LIFE: Record<CoreDecor, LifeSpec> = {
   desert: { flock: { kind: 'vulture', color: 0x2a1a14, count: 7, height: 26, size: 1.6 }, motes: { color: 0xf4e4c8, count: 260, size: 0.55, drift: 'blow' } },
   meadow: { flock: { kind: 'bird', color: 0x3a3a48, count: 14, height: 18, size: 0.8 }, motes: { color: 0xfff0a0, count: 320, size: 0.4, drift: 'float' } },
   volcanic: { flock: { kind: 'bat', color: 0x1a0a0a, count: 12, height: 20, size: 1 }, motes: { color: 0xff8a30, count: 360, size: 0.45, drift: 'rise', glow: true } },
@@ -97,23 +99,7 @@ const LIFE: Record<DecorKind, LifeSpec> = {
   summer: { flock: { kind: 'gull', color: 0xf8f8f4, count: 14, height: 20, size: 1.1 }, motes: { color: 0xfff0d0, count: 240, size: 0.45, drift: 'blow' } },
   // Crows circling the ladder, and embers rising from the fires into the smoke.
   scala: { flock: { kind: 'bird', color: 0x120c0c, count: 14, height: 30, size: 1.1 }, motes: { color: 0xff9a40, count: 380, size: 0.35, drift: 'rise', glow: true } },
-  // Red lights of his circuitry wheeling over him, and bubbles of brine rising.
-  cyborg: { flock: { kind: 'orb', color: 0xff3a4a, count: 14, height: 18, size: 0.6, glow: true }, motes: { color: 0x8affc8, count: 380, size: 0.35, drift: 'rise', glow: true } },
-  // Hot Wax: moths round the candles, and sparks rising off the flames.
-  waxworks: { flock: { kind: 'moth', color: 0xe8d8b0, count: 18, height: 14, size: 0.9 }, motes: { color: 0xffa040, count: 340, size: 0.35, drift: 'rise', glow: true } },
-  // Carrion birds wheeling low over her, and ash falling.
-  // Bats round Sadie's town, and sparks off her broomstick drifting down, pink and green.
-  sorcery: { flock: { kind: 'bat', color: 0x0a060e, count: 16, height: 22, size: 1 }, motes: { color: 0xff6ac8, count: 340, size: 0.35, drift: 'fall', glow: true } },
-  gaia: { flock: { kind: 'vulture', color: 0x0e0c0a, count: 12, height: 22, size: 1.5 }, motes: { color: 0x8a8480, count: 300, size: 0.4, drift: 'fall' } },
-  // Crows tossed about over the field, and straw blowing through the air.
-  // Flying foxes over the valley, and embers rising from the burning camp into the smoke.
-  nightbush: { flock: { kind: 'bat', color: 0x140e0c, count: 16, height: 22, size: 1.1 }, motes: { color: 0xff7a30, count: 340, size: 0.35, drift: 'rise', glow: true } },
-  // A few birds over the empty town, and pale dust hanging in the dawn light.
-  emptyTown: { flock: { kind: 'bird', color: 0x4a4e56, count: 6, height: 20, size: 0.8 }, motes: { color: 0xf4f0e8, count: 220, size: 0.35, drift: 'float' } },
-  strawfield: { flock: { kind: 'bird', color: 0x1a1a20, count: 14, height: 22, size: 0.9 }, motes: { color: 0xf0cc6a, count: 380, size: 0.5, drift: 'blow' } },
   // Moths round the lamps, and dust of dreams drifting in the lamplight.
-  // Vultures and crows wheeling black over the reaper's round, and ash falling.
-  reaping: { flock: { kind: 'vulture', color: 0x050404, count: 22, height: 26, size: 1.4 }, motes: { color: 0x8a8484, count: 420, size: 0.3, drift: 'fall' } },
   slumber: { flock: { kind: 'moth', color: 0xd8c8a8, count: 14, height: 9, size: 0.5 }, motes: { color: 0xffc890, count: 300, size: 0.35, drift: 'float', glow: true } },
   reactor: { flock: { kind: 'orb', color: 0x80d8ff, count: 14, height: 22, size: 0.6, glow: true }, motes: { color: 0x9aff6a, count: 420, size: 0.4, drift: 'rise', glow: true } },
   uruk: { flock: { kind: 'bird', color: 0x2a2a30, count: 12, height: 24, size: 1.0 }, motes: { color: 0xc8c0b0, count: 300, size: 0.4, drift: 'blow' } },
@@ -137,7 +123,7 @@ export function trackLife(track: Track, theme: Theme, animated: ((time: number) 
       return hit.distance > r.halfWidth[hit.index] + margin;
     }) && track.def.pits.every((p) => !inPit({ ...p, halfWidth: p.halfWidth + 2, halfLength: p.halfLength + 2 }, x, z));
   const style = detailStyle(theme.decor);
-  const spec = LIFE[theme.decor];
+  const spec = theme.decor in LIFE ? LIFE[theme.decor as CoreDecor] : (KIT_DECORS.get(theme.decor)?.life ?? {});
 
   group.add(sectionSigns(track, style.boards, clear));
   group.add(gridPaint(track));

@@ -63,8 +63,10 @@ export function branchOpen(def: BranchDef, ctx?: LapContext): boolean {
   return def.openOn.some((o) => (o === 'final' ? ctx.lastLap : o === ctx.lap));
 }
 
+export type CoreLandmarkKind = 'skeletonArch' | 'fangs' | 'fortressGate' | 'templeGate' | 'waterfall' | 'gantry' | 'lighthouse' | 'iceArch' | 'neonArch' | 'rainbowArch' | 'mushroomArch' | 'starGate' | 'dragonGate' | 'dragonFlight' | 'colonyGate' | 'rodGate' | 'voidEye' | 'phantomArch' | 'runwayGate' | 'treeGate' | 'wreckGate' | 'worldTree' | 'crystalGate' | 'magentaPeak' | 'keplerArch' | 'goblinGate' | 'jawsGate' | 'castleGate' | 'castleKeep' | 'cloudGate' | 'airCastle' | 'skyTower' | 'cellGate' | 'nucleus' | 'prismGate' | 'prismEye' | 'factoryGate' | 'robotColossus' | 'gammaGate' | 'gammaRing' | 'carrionGate' | 'carcass' | 'wahGate' | 'wahPedal' | 'smogGate' | 'burningEarth' | 'domeGate' | 'richDome' | 'shipGate' | 'theSun' | 'hellGate' | 'ratsNest' | 'eyeGate' | 'mindFace' | 'arrowGate' | 'emptyHead' | 'filmGate' | 'cellophaneBloom' | 'fuzzGate' | 'fuzzMeter' | 'elbowGate' | 'bentArm' | 'rakeGate' | 'powerStation' | 'harmonicaGate' | 'mirrorBall' | 'trunkGate' | 'snowPeak' | 'cordGate' | 'theiaPlanet' | 'setGate' | 'setColossus' | 'jadePortal' | 'moonPalace' | 'urukGate' | 'ziggurat' | 'lockedDoor' | 'teacups' | 'heavenGate' | 'hillHouse' | 'sitarGate' | 'blackCup' | 'lostLegs' | 'pillTube' | 'oldFord' | 'faceCloud' | 'farmDam' | 'catapultGate' | 'monsterPlate' | 'fangGate' | 'weepingAngels' | 'basePair' | 'beastTree' | 'newWorldGate' | 'mushroomCloud' | 'culDeSac' | 'ribcage' | 'hellmouth' | 'steelGate' | 'mineRig' | 'anvilGate' | 'astralBlacksmith' | 'mobiusStrip' | 'carParkGate' | 'carPark' | 'levelSign' | 'milkCarton' | 'deadSky' | 'blindTunnel' | 'reactorGate' | 'atomNucleus' | 'knownGate' | 'kingsEye' | 'mainframe' | 'steelBone' | 'synapseGap' | 'acetone' | 'viaPad' | 'busTrace' | 'flagsGate' | 'coast' | 'sharkCopter' | 'willowTree' | 'billabong' | 'chainGate' | 'rockWithEyes' | 'burningChurch' | 'greatChain' | 'emptyThrone' | 'brokenLink' | 'wheelGate' | 'helmHandle' | 'greatWheel' | 'pilgrims' | 'reaper' | 'steeperPath';
+
 export interface Landmark {
-  kind: 'skeletonArch' | 'fangs' | 'fortressGate' | 'templeGate' | 'waterfall' | 'gantry' | 'lighthouse' | 'iceArch' | 'neonArch' | 'rainbowArch' | 'mushroomArch' | 'starGate' | 'dragonGate' | 'dragonFlight' | 'colonyGate' | 'rodGate' | 'voidEye' | 'phantomArch' | 'runwayGate' | 'treeGate' | 'wreckGate' | 'worldTree' | 'crystalGate' | 'magentaPeak' | 'keplerArch' | 'goblinGate' | 'jawsGate' | 'castleGate' | 'castleKeep' | 'cloudGate' | 'airCastle' | 'skyTower' | 'cellGate' | 'nucleus' | 'prismGate' | 'prismEye' | 'factoryGate' | 'robotColossus' | 'gammaGate' | 'gammaRing' | 'carrionGate' | 'carcass' | 'wahGate' | 'wahPedal' | 'smogGate' | 'burningEarth' | 'domeGate' | 'richDome' | 'shipGate' | 'theSun' | 'hellGate' | 'ratsNest' | 'eyeGate' | 'mindFace' | 'arrowGate' | 'emptyHead' | 'filmGate' | 'cellophaneBloom' | 'fuzzGate' | 'fuzzMeter' | 'elbowGate' | 'bentArm' | 'rakeGate' | 'powerStation' | 'harmonicaGate' | 'mirrorBall' | 'trunkGate' | 'snowPeak' | 'cordGate' | 'theiaPlanet' | 'setGate' | 'setColossus' | 'jadePortal' | 'moonPalace' | 'urukGate' | 'ziggurat' | 'lockedDoor' | 'teacups' | 'heavenGate' | 'hillHouse' | 'sitarGate' | 'blackCup' | 'lostLegs' | 'pillTube' | 'oldFord' | 'faceCloud' | 'farmDam' | 'catapultGate' | 'monsterPlate' | 'fangGate' | 'weepingAngels' | 'basePair' | 'beastTree' | 'newWorldGate' | 'mushroomCloud' | 'culDeSac' | 'ribcage' | 'hellmouth' | 'steelGate' | 'mineRig' | 'anvilGate' | 'astralBlacksmith' | 'mobiusStrip' | 'carParkGate' | 'carPark' | 'levelSign' | 'milkCarton' | 'deadSky' | 'blindTunnel' | 'reactorGate' | 'atomNucleus' | 'knownGate' | 'kingsEye' | 'mainframe' | 'steelBone' | 'synapseGap' | 'acetone' | 'viaPad' | 'busTrace' | 'flagsGate' | 'coast' | 'sharkCopter' | 'willowTree' | 'billabong' | 'chainGate' | 'rockWithEyes' | 'burningChurch' | 'greatChain' | 'emptyThrone' | 'brokenLink' | 'wheelGate' | 'helmHandle' | 'greatWheel' | 'pilgrims' | 'reaper' | 'steeperPath' | 'scytheGate' | 'chimneys' | 'keeperGate' | 'reaperMC' | 'wickedSun' | 'chequeBank' | 'fortress' | 'bodyBags' | 'homestead' | 'openGrave' | 'cyboogieGate' | 'cyborgHead' | 'cyborgHeart' | 'fishHook' | 'binaryBrook' | 'hanTyumi' | 'debugLane' | 'gaiaHands' | 'gaiaFace' | 'parasites' | 'elements' | 'gaiaHeart' | 'deadEarth' | 'luckyRainbow' | 'strawsGate' | 'trashTornado' | 'cheshireGrin' | 'hellsKitchen' | 'forgottenPier' | 'shortStraw' | 'metronome' | 'emptyStage' | 'shotClock' | 'companion' | 'setInStone' | 'hideoutGate' | 'blackBillabong' | 'ropeGums' | 'burningCamp' | 'troopersCamp' | 'wantedPoster' | 'trestle' | 'stationHomestead' | 'redDawn' | 'stolenGun' | 'waxDoor' | 'floorJoists' | 'rugHill' | 'windowSill' | 'giantCandle' | 'lavaLamp' | 'waxJungle' | 'armchair' | 'giantFeet' | 'kitchenSink' | 'spiltDrink' | 'lordShrine' | 'glassHead' | 'waxMaze' | 'giantLeaves' | 'giantBed' | 'giantLeg' | 'springKing' | 'learningHow' | 'rinkGate' | 'sadieColossus' | 'quidditchHoops' | 'masquerade' | 'flightPath' | 'poisonGarden' | 'grannyCottage' | 'pitchforkMob' | 'duckingStool' | 'bigTop' | 'poisonPool';
+  kind: CoreLandmarkKind | Extract<keyof KitLandmarks, string>;
   ribbon: number; // -1 = main, else branch index
   s: number; // builder units
   /** Metres to the right of the road (left if negative), for a landmark that stands off it. */
@@ -72,6 +74,9 @@ export interface Landmark {
   /** For one that reaches across to another stretch of the same road (a base pair between two strands): where, in builder units. */
   to?: number;
 }
+
+/** The game's own themes (render/themes.ts); kits add theirs (KitThemes). */
+export type CoreTheme = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism' | 'factory' | 'gamma' | 'carrion' | 'wah' | 'smog' | 'dome' | 'solar' | 'inferno' | 'mind' | 'notmind' | 'cellophane' | 'mindfuzz' | 'elbow' | 'muck' | 'boogie' | 'treesea' | 'theia' | 'set' | 'change' | 'uruk' | 'headon' | 'godcall' | 'nan' | 'float' | 'newworld' | 'foe' | 'altered' | 'hollow' | 'forge' | 'steelwar' | 'autonomy' | 'reactor' | 'muddy' | 'scala' | 'network' | 'wheel';
 
 /** Serializable track description (spec section 11). */
 export interface TrackDef {
@@ -96,8 +101,8 @@ export interface TrackDef {
    */
   itemBoxes: ItemBoxRow[];
   hazards: HazardDef[];
-  /** Visual theme (render/themes.ts). */
-  theme: 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism' | 'factory' | 'gamma' | 'carrion' | 'wah' | 'smog' | 'dome' | 'solar' | 'inferno' | 'mind' | 'notmind' | 'cellophane' | 'mindfuzz' | 'elbow' | 'muck' | 'boogie' | 'treesea' | 'theia' | 'set' | 'change' | 'uruk' | 'headon' | 'godcall' | 'nan' | 'float' | 'newworld' | 'foe' | 'altered' | 'hollow' | 'forge' | 'steelwar' | 'autonomy' | 'reactor' | 'muddy' | 'scala' | 'network' | 'wheel' | 'windmill' | 'cyborg' | 'grimreaper' | 'gaia' | 'hotwax' | 'sorceress' | 'emptiness' | 'bushranger';
+  /** Visual theme (render/themes.ts; a kit's in its view). */
+  theme: CoreTheme | Extract<keyof KitThemes, string>;
   /** No ground: off the road is a long drop (the sky track). */
   abyss?: boolean;
   /** Music cues (public/music/<cue>.mp3): one for the race, one for the final lap. */
@@ -119,7 +124,7 @@ export interface ItemBoxRow {
  * Track hazards, positioned along the main ribbon (builder units). Their
  * motion is a pure function of race time (items/hazards.ts).
  */
-export type HazardDef =
+export type CoreHazardDef =
   | { kind: 'snakes'; from: number; to: number; count: number; period: number }
   | { kind: 'dustDevils'; from: number; to: number; count: number }
   | { kind: 'tumbleweeds'; from: number; to: number; count: number }
@@ -255,30 +260,23 @@ export type HazardDef =
    */
   | { kind: 'rockyMeteors'; from: number; to: number; count: number; period: number }
   /** The Wheel: waves of sleep settling across the road on a slow sway, one row after another; caught in one, you nod off at the wheel; over its rumble strip as it lifts, jolted awake. */
-  | { kind: 'dozes'; at: number[]; period: number }
-  /** The Grim Reaper: packs of hellhounds bursting out of a den in one wall of their pit and running right across the road into the other's, nose to tail, their scent stitched across the road first; caught by one, bitten; through the gap just behind the pack, a boost. */
-  | { kind: 'hellhounds'; at: number[]; period: number }
-  /**
-   * Cyboogie: pistons under the graphene lattice punching up through the road
-   * on the boogie's beat, PISTON_LANES to a row across it (`at` lists each
-   * piston's row, in lane order from the left), the four in a row one after
-   * another like an arpeggio; caught as one punches up, you're thrown and
-   * spun; driven into one standing at the top of its stroke, spun; hopped
-   * onto it there, you ride it, a boost.
-   */
-  | { kind: 'pistons'; at: number[]; period: number }
-  /** Gaia: her ribs heaving under the road on the riff, all in one breath; rise with one and it throws you on, caught as it falls and you sink with it. */
-  | { kind: 'breaths'; at: number[]; period: number }
-  /** Straws in the Wind: gantries of mortal traffic lights over the road, changing on the waltz's three beats, green, amber, red, one after another down the stretch; through on green, a boost; caught on red, stopped dead. */
-  | { kind: 'trafficLights'; at: number[]; period: number }
-  /** Empty: figures wandering lazily across the road in three-four, WANDER_COUNT to a row (`at` lists each one's row), all empty but the one you're with; through an empty one, emptied; through the one you're with, a boost. */
-  | { kind: 'wanderers'; at: number[]; period: number }
-  /** Billabong Valley: Mad Dog Morgan and his gang riding across the road out of the dark, rifles flashing, never at quite the same moment twice; ridden down, you're robbed of your item and spun; through the dust just behind the last rider, a boost. */
-  | { kind: 'bushrangers'; at: number[]; period: number }
-  /** Hot Wax: tongues of hot wax creeping out across the road from one edge, one after another down a stretch, setting as they cool; caught in one while it's molten, it grabs you; over it once it has set hard, a slick that slings you on. */
-  | { kind: 'waxFlows'; at: number[]; period: number }
-  /** Sadie Sorceress: Sadie on her broomstick, circling high off one edge cackling, then swooping down across the road at kart height on a slant and up and away the other side, a trail of sparks behind her; caught by her broomstick, snapped and spun; in her slipstream just behind her, a boost. */
-  | { kind: 'brooms'; at: number[]; period: number };
+  | { kind: 'dozes'; at: number[]; period: number };
+
+/** A hazard of the game's own (items/hazards.ts); kits add theirs (KitHazards). */
+export type CoreHazardKind = CoreHazardDef['kind'];
+/** Every hazard: the game's own and the kits'. */
+export type HazardDef = CoreHazardDef | (KitHazards[keyof KitHazards] extends infer E ? (E extends { def: infer D } ? D : never) : never);
+
+/**
+ * What the track kits add (src/kits, docs/DEVELOPMENT.md "Track kits"):
+ * each kit's own file adds its entries to these by declaration merging
+ * (`declare module '../tracks/track'`), keyed by the kind or theme, the
+ * value its kit's id; its hazards' entries are `{ kit: <id>; def: <its
+ * HazardDef> }`.
+ */
+export interface KitHazards {}
+export interface KitLandmarks {}
+export interface KitThemes {}
 
 export interface StartSlot {
   x: number;

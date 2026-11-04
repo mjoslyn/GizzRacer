@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { seededRandom } from '../core/math';
-import { BROOM_HEAD, BROOM_STAGES, BROOM_TAIL, BROOM_WAKE, type HazardPose } from '../items/hazards';
+import type { HazardPose } from '../items/hazards';
+import { BROOM_HEAD, BROOM_STAGES, BROOM_TAIL, BROOM_WAKE } from '../kits/sadieSorceress';
 import type { PitDef } from '../tracks/builder';
 import { nearestOnSpline, pointAt } from '../tracks/spline';
 import type { Ribbon, Track } from '../tracks/track';

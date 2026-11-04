@@ -1,11 +1,12 @@
 import * as THREE from 'three';
 import { seededRandom } from '../core/math';
-import { BREATH_DEPTH, BREATH_SINK, BREATH_STAGES, type HazardPose } from '../items/hazards';
+import type { HazardPose } from '../items/hazards';
+import { BREATH_DEPTH, BREATH_SINK, BREATH_STAGES } from '../kits/gaia';
 import { BREATH_PERIOD } from '../tracks/gaia';
 import { nearestOnSpline, pointAt } from '../tracks/spline';
 import { inPit, type Ribbon, type Track } from '../tracks/track';
 import { glowTexture } from './textures';
-import { atmosphere } from './trackDetail';
+import { atmosphere } from './atmosphere';
 
 /**
  * Gaia's world, the All Stars Cup #1's finale: the Earth herself, ancient,

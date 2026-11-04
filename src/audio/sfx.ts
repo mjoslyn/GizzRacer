@@ -1,4 +1,6 @@
 import type { HazardKind } from '../items/hazards';
+import { KIT_HAZARDS } from '../kits/index';
+import type { SfxVoice } from '../kits/kit';
 import type { ItemKind } from '../items/items';
 
 /**
@@ -7,7 +9,7 @@ import type { ItemKind } from '../items/items';
  * is a continuous voice pitched by speed with fuzz on boosts; hazards are
  * panned and faded by distance from the listener.
  */
-export class Sfx {
+export class Sfx implements SfxVoice {
   private out: GainNode | null = null;
   /** One-shot effects ride louder than the engine bed. */
   private mainShots: GainNode | null = null;
@@ -594,62 +596,8 @@ export class Sfx {
       [1047, 831, 659, 523].forEach((f, k) => this.tone(f, 0.6, 'sine', 0.05 - k * 0.008, undefined, 0.15 + k * 0.28));
       this.whoosh(0.9, 900, 200, 0.08);
     }
-    // Bitten by a hellhound: a snarl, two barks, the snap of its jaws, and a growl rolling on under them.
-    if (by === 'hellhounds') {
-      this.tone(98, 0.6, 'sawtooth', 0.1, 62, 0, true);
-      this.hit(0.12, 900, 0.45);
-      this.tone(440, 0.09, 'square', 0.08, 250, 0.1);
-      this.tone(400, 0.11, 'square', 0.08, 220, 0.26);
-      this.whoosh(0.3, 1800, 500, 0.12);
-    }
-    // A piston punching up under you: the hiss of its steam, the clank of steel, and a vocoder's arpeggio tumbling down an octave, out of time.
-    if (by === 'pistons') {
-      this.whoosh(0.35, 5200, 1400, 0.22);
-      this.hit(0.16, 1600, 0.55);
-      this.tone(196, 0.12, 'square', 0.06, undefined, 0.02, true);
-      [784, 659, 523, 392, 330, 262].forEach((f, k) => this.tone(f, 0.07, 'sawtooth', 0.05, undefined, 0.08 + k * 0.06));
-    }
-    // Caught as Gaia breathes out: the ground groaning low as it sinks under you, and her breath rushing out of the earth.
-    if (by === 'breaths') {
-      this.tone(49, 1.0, 'sawtooth', 0.12, 36, 0, true);
-      this.tone(62, 0.8, 'triangle', 0.08, 41, 0.05);
-      this.hit(0.3, 160, 0.5);
-      this.whoosh(0.9, 700, 180, 0.22);
-    }
-    // Caught on a red light: brakes squealing, the gale gusting, and the crossing's flat beeps telling you to stay, three of them, one a beat.
-    if (by === 'trafficLights') {
-      this.tone(1900, 0.45, 'sawtooth', 0.05, 1100);
-      this.whoosh(0.7, 600, 2600, 0.2);
-      [0, 1, 2].forEach((k) => this.tone(880, 0.12, 'square', 0.06, undefined, 0.3 + k * 0.26));
-    }
-    // Emptied by a wanderer: a hollow sigh sliding down an octave, and the song's mechanical clicks, three to a bar, under it.
-    if (by === 'wanderers') {
-      this.tone(392, 0.9, 'sine', 0.09, 196);
-      this.tone(294, 0.9, 'triangle', 0.05, 147, 0.05);
-      [0, 1, 2].forEach((k) => this.tone(2600, 0.02, 'square', k === 0 ? 0.06 : 0.035, undefined, 0.2 + k * 0.25));
-      this.whoosh(0.8, 900, 250, 0.1);
-    }
-    // Ridden down by Mad Dog Morgan's gang: two rifle cracks, hooves thundering past, and a horse screaming as it goes.
-    if (by === 'bushrangers') {
-      this.hit(0.09, 3200, 0.6);
-      this.whoosh(0.18, 4000, 900, 0.18);
-      [0.08, 0.17, 0.24, 0.33, 0.4, 0.49].forEach((d, k) => this.tone(70 - k * 3, 0.06, 'triangle', 0.12, 45, d));
-      this.tone(620, 0.7, 'sawtooth', 0.04, 380, 0.2);
-      this.tone(900, 0.25, 'sine', 0.03, 1300, 0.22);
-    }
-    // Grabbed by hot wax: a thick, sucking squelch sliding down, the sizzle of it, and the spring reverb punched, a rattling metallic clang.
-    if (by === 'waxFlows') {
-      this.tone(180, 0.5, 'sawtooth', 0.09, 70, 0, true);
-      this.whoosh(0.6, 3200, 900, 0.14);
-      this.hit(0.22, 2400, 0.4);
-      [1180, 1410, 1630].forEach((f, k) => this.tone(f, 0.45, 'square', 0.025, f * 0.94, 0.02 + k * 0.012));
-    }
-    // Snapped by Sadie's broomstick: the whoosh of her coming down past you, the crack of the broom, and her cackle, a witch's laugh tumbling down in four notes.
-    if (by === 'brooms') {
-      this.whoosh(0.4, 600, 3200, 0.22);
-      this.hit(0.08, 2400, 0.5);
-      [1175, 988, 1175, 880].forEach((f, k) => this.tone(f, 0.08, 'square', 0.05, f * 0.8, 0.12 + k * 0.09));
-    }
+    // A kit hazard's own sound (kits/kit.ts).
+    KIT_HAZARDS.get(by)?.sound(this);
     // A wave breaking over you: a crash of white noise; a glider comes in with a whistle of wind.
     if (by === 'waves') this.whoosh(0.8, 2400, 300, 0.35);
     if (by === 'gliders') this.whoosh(0.5, 1800, 500, 0.2);
@@ -758,7 +706,7 @@ export class Sfx {
     src.stop(t + 0.35);
   }
 
-  private tone(freq: number, dur: number, type: OscillatorType, level: number, slideTo?: number, delay = 0, fuzz = false): void {
+  tone(freq: number, dur: number, type: OscillatorType, level: number, slideTo?: number, delay = 0, fuzz = false): void {
     const ctx = this.ctx;
     if (!ctx) return;
     const t = ctx.currentTime + delay;
@@ -782,7 +730,7 @@ export class Sfx {
   }
 
   /** A low-passed noise thump. */
-  private hit(dur: number, cutoff: number, level: number): void {
+  hit(dur: number, cutoff: number, level: number): void {
     const ctx = this.ctx;
     if (!ctx) return;
     const t = ctx.currentTime;
@@ -800,7 +748,7 @@ export class Sfx {
   }
 
   /** A band-passed noise sweep. */
-  private whoosh(dur: number, from: number, to: number, level: number): void {
+  whoosh(dur: number, from: number, to: number, level: number): void {
     const ctx = this.ctx;
     if (!ctx) return;
     const t = ctx.currentTime;

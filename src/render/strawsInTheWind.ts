@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { seededRandom } from '../core/math';
-import { LIGHT_DEPTH, type HazardPose } from '../items/hazards';
+import type { HazardPose } from '../items/hazards';
+import { LIGHT_DEPTH } from '../kits/strawsInTheWind';
 import { pointAt } from '../tracks/spline';
 import type { Ribbon } from '../tracks/track';
 import { glowTexture } from './textures';

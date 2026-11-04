@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { seededRandom } from '../core/math';
-import { HOUND_STAGES, houndPack, type HazardPose } from '../items/hazards';
+import type { HazardPose } from '../items/hazards';
+import { HOUND_STAGES, houndPack } from '../kits/theGrimReaper';
 import type { PitDef } from '../tracks/builder';
 import { nearestOnSpline, pointAt } from '../tracks/spline';
 import type { Ribbon, Track } from '../tracks/track';
