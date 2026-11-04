@@ -4,8 +4,10 @@ import { seededRandom } from '../core/math';
 import { nearestOnSpline } from '../tracks/spline';
 import { inPit, type Ribbon, type Track } from '../tracks/track';
 import * as tex from './textures';
-import type { DecorKind, Theme } from './themes';
+import type { CoreDecor, DecorKind, Theme } from './themes';
+import { KIT_DECORS } from '../kits/views';
 import { densityScale } from './detail';
+import { atmosphere } from './atmosphere';
 
 /**
  * The trackside layer: paint and rubber on the road, posts and lamps along
@@ -15,9 +17,9 @@ import { densityScale } from './detail';
 
 export const CURB_WIDTH = 1.2;
 
-type Edge = 'pole' | 'fence' | 'torch' | 'lamp' | 'buoy' | 'star';
+export type Edge = 'pole' | 'fence' | 'torch' | 'lamp' | 'buoy' | 'star';
 
-interface DetailStyle {
+export interface DetailStyle {
   /** What stands along open road edges, how tall, how far apart, and its colours. */
   edge: { kind: Edge; height: number; spacing: number; color: number; stripe: number };
   /** Light on top of each edge post, if any. */
@@ -29,7 +31,8 @@ interface DetailStyle {
   crowd: boolean;
 }
 
-const STYLES: Record<DecorKind, DetailStyle> = {
+/** The game's own worlds' trackside styles; a kit's are in its view (styleOf finds either). */
+const STYLES: Record<CoreDecor, DetailStyle> = {
   desert: {
     edge: { kind: 'fence', height: 1.1, spacing: 9, color: 0x7a5232, stripe: 0xe8dcc0 },
     cover: { shape: 'tuft', colors: [0xb8a060, 0x8a7a40, 0xc8b070], count: 1400 },
@@ -420,75 +423,12 @@ const STYLES: Record<DecorKind, DetailStyle> = {
     boards: { words: ['RAPID ALPHA DECAY', 'KEEPER OF THE ENERGY', 'CLIMB THE WALLS', 'ENERGY AND HEAT'], bg: ['#0a120c', '#c09a08'], fg: '#a0ff70' },
     crowd: false,
   },
-  // Cyboogie: chrome posts with red lamps along the road inside him, his circuitry and brine scattered off it; boards of the song.
-  cyborg: {
-    edge: { kind: 'pole', height: 1.8, spacing: 16, color: 0xd0d4dc, stripe: 0xe8182c },
-    light: 0xff2a3c,
-    cover: { shape: 'pebble', colors: [0x1a2a26, 0x2a4a40, 0x3affa0, 0xc8ccd4], count: 1000 },
-    boards: { words: ['CYBOOGIE', 'BOOGIE BOOGIE BOOGIE', 'FISHING FOR FISHIES', 'RUN OVER THE TESTS', 'DE-BUG', 'HAN-TYUMI'], bg: ['#0a0a0e', '#e8182c'], fg: '#f0f0f0' },
-    crowd: false,
-  },
-  // Hot Wax: little candles burning along the road, drops of wax spattered on the boards.
-  waxworks: {
-    edge: { kind: 'torch', height: 1.6, spacing: 14, color: 0xf0e2c4, stripe: 0xb0201a },
-    light: 0xffa040,
-    cover: { shape: 'pebble', colors: [0xf0e2c4, 0xf0e2c4, 0xe8601a, 0xb0201a, 0xe0a020, 0x5a1a40], count: 1300 },
-    boards: { words: ['HOT WAX', "C'MON GET AROUND", "EVERYBODY'S LEARNING HOW", 'COME ON A SAFARI WITH ME', 'ODDMENTS', 'HOT WAX!'], bg: ['#e0601a', '#5a1a40', '#e0a020', '#6a7a26'], fg: '#fff4dc' },
-    crowd: false,
-  },
-  // Gaia: fires guttering in iron baskets along her skin, dead grass and thorns by the road, ash.
-  gaia: {
-    edge: { kind: 'torch', height: 1.6, spacing: 16, color: 0x1a1612, stripe: 0x3a2a20 },
-    light: 0xff5a24,
-    cover: { shape: 'tuft', colors: [0x3a3a2a, 0x4a4430, 0x2a2a20, 0x5a5040, 0x6a2a1a], count: 1600 },
-    boards: { words: ['I AM GAIA', 'GIANT BODY PARASITE', 'DIRT IS DECEASED', 'NO ONE SEES', 'GAIA DIES'], bg: ['#0c0a08', '#2a0e0a'], fg: '#d8ccb0' },
-    crowd: false,
-  },
   // The Wheel: old iron street lamps along the moor road, lit for nobody, everyone asleep; heather, and the lamplight in it.
   slumber: {
     edge: { kind: 'lamp', height: 4.8, spacing: 18, color: 0x2a242c, stripe: 0xe0b860 },
     light: 0xffb060,
     cover: { shape: 'tuft', colors: [0x6a3a48, 0x9a5a78, 0x6a6440, 0xc08ab0], count: 1400 },
     boards: { words: ['THE WHEEL', 'INTO OUR FUTURE', 'A BETTER THESIS', 'WAKE UP', 'GUMBOOT SOUP'], bg: ['#1a1028', '#2a1630'], fg: '#ffc070' },
-    crowd: false,
-  },
-  // The Grim Reaper: torches guttering on charred posts along the road; dead grass grey on the ash.
-  reaping: {
-    edge: { kind: 'torch', height: 1.8, spacing: 15, color: 0x1e1818, stripe: 0x4a0a08 },
-    light: 0xff4a18,
-    cover: { shape: 'tuft', colors: [0x6a6258, 0x4a4440, 0x3a3430, 0x8a8070], count: 1300 },
-    boards: { words: ['THE GRIM REAPER', 'ROTTING FLESH ODOROUS', 'HE CAME TO COLLECT', 'STITCHES FOR SNITCHES', 'TIME IS PRICELESS', 'REPENT'], bg: ['#050304', '#1a0404'], fg: '#c01a10' },
-    crowd: false,
-  },
-  // Straws in the Wind: white-washed fence posts along the farm track, wildflowers and straw in the verge, the media's hoardings never quitting.
-  // Billabong Valley: bush torches along the track, burning in the dark; dry grass; wanted notices for boards.
-  nightbush: {
-    edge: { kind: 'torch', height: 1.6, spacing: 16, color: 0x2a1c14, stripe: 0x4a3020 },
-    light: 0xff7a30,
-    cover: { shape: 'tuft', colors: [0x4a4a30, 0x6a5a38, 0x3a3a28, 0x8a7448, 0x5a3a28], count: 1500 },
-    boards: { words: ['WANTED', 'MAD DOG MORGAN', '£1000 REWARD', 'DEAD OR ALIVE', 'BILLABONG VALLEY', 'BAIL UP!'], bg: ['#2a1e14', '#3a2616'], fg: '#e8d4a8' },
-    crowd: false,
-  },
-  strawfield: {
-    edge: { kind: 'fence', height: 1.2, spacing: 10, color: 0xece6d8, stripe: 0x8a7a64 },
-    cover: { shape: 'tuft', colors: [0x4a9a3a, 0x6ab84a, 0xe0bc5c, 0xe8202a, 0xffd21a, 0xffffff, 0x9a4ad8], count: 1900 },
-    boards: { words: ['STRAWS IN THE WIND', 'IS IT ALL ENDING?', 'BREAKING NEWS', 'PANDEMONIUM', 'STAY OR GO', 'K.G.'], bg: ['#c8101a', '#f4ead0', '#1a3a8a'], fg: '#ffffff' },
-    crowd: true,
-  },
-  // Empty: old street lamps along the empty town's road, still lit in the dawn for nobody; pale grass and straw in the verge.
-  emptyTown: {
-    edge: { kind: 'lamp', height: 4.4, spacing: 24, color: 0x5e626a, stripe: 0xdcd8d0 },
-    light: 0xfff0d8,
-    cover: { shape: 'tuft', colors: [0x8a9480, 0xa8a890, 0x6a7a6a, 0xc8c4b0], count: 1300 },
-    boards: { words: ['EMPTY', 'FEELING SO EMPTY', 'WHO?', 'NEVER SET IN STONE', '3/4', "I'M IN YOUR MIND FUZZ"], bg: ['#ece8e0', '#c8ccd2'], fg: '#4a525e' },
-    crowd: false,
-  },
-  // Sadie Sorceress: crooked lamp posts with witch-hat shades along the rink road, lit violet-pink; dead heath and poison moss; boards of the song.
-  sorcery: {
-    edge: { kind: 'lamp', height: 4.2, spacing: 20, color: 0x1a1020, stripe: 0xff2a9a },
-    light: 0xff5ac0,
-    cover: { shape: 'tuft', colors: [0x3a2a44, 0x4a3a54, 0x2a4a24, 0x5a7a2a, 0x8aff2a], count: 1400 },
-    boards: { words: ['SADIE SORCERESS', 'WILD LIKE A WITCH', 'MORE FLY THAN QUIDDITCH', 'HELLO LOVE', 'ROLLER DISCO', 'OMNIUM GATHERUM'], bg: ['#0a0612', '#2a0a2a'], fg: '#ff3aa8' },
     crowd: false,
   },
   // The forge's own fires along the road, nobody out here among the stars but the smith: cinders, slag and stardust.
@@ -516,18 +456,24 @@ const STYLES: Record<DecorKind, DetailStyle> = {
   },
 };
 
-/** What the trackside layer knows about the race: the final lap lights everything up (set by trackView.update). */
-export const atmosphere = { finalLap: 0 };
+export { atmosphere };
 
 /** A theme's trackside style (trackLife.ts shares it). */
 export function detailStyle(decor: DecorKind): { crowd: boolean; light?: number; boards: { bg: string[]; fg: string } } {
-  return STYLES[decor];
+  return styleOf(decor);
+}
+
+/** A world's trackside style: the game's own, or a kit's. */
+function styleOf(decor: DecorKind): DetailStyle {
+  const style = decor in STYLES ? STYLES[decor as CoreDecor] : KIT_DECORS.get(decor)?.detail;
+  if (!style) throw new Error(`No trackside style for ${decor}`);
+  return style;
 }
 
 /** The trackside layer for a track; `animated` gets the per-frame updates. */
 export function trackDetail(track: Track, theme: Theme, animated: ((time: number) => void)[]): THREE.Group {
   const g = new THREE.Group();
-  const style = STYLES[theme.decor];
+  const style = styleOf(theme.decor);
   const abyss = !!track.def.abyss;
   const ribbons = [track.main, ...track.branches];
   // Clear of every road (by `margin` past its edge) and of every pit.

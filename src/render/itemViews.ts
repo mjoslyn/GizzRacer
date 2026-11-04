@@ -20,17 +20,11 @@ import { alphaParts, poseAlphas } from './rapidAlphaDecay';
 import { poseSweeper, sweeperParts } from './allIsKnown';
 import { poseShark, sharkParts } from './muddyWater';
 import { dozeParts, poseDoze } from './theWheel';
-import { houndParts, poseHounds } from './theGrimReaper';
-import { pistonParts, posePiston } from './cyboogie';
-import { breathParts, poseBreath } from './gaia';
-import { poseWaxFlow, waxFlowParts } from './hotWax';
-import { broomParts, poseBroom } from './sadieSorceress';
-import { poseTrafficLight, trafficLightParts } from './strawsInTheWind';
-import { gangParts, poseGang } from './billabongValley';
-import { poseWanderer, wandererParts } from './empty';
 import { BOX_RESPAWN, SHIELD_ITEMS, WAVE_RANGE, type ItemHolder, type ItemSystem } from '../items/items';
 import type { KartState } from '../physics/kart';
 import type { HazardSystem } from '../items/hazards';
+import { KIT_HAZARD_VIEWS } from '../kits/views';
+import type { KitHazardView } from '../kits/view';
 import { CUT_RIM } from '../tracks/track';
 import { CELLOPHANE_COLOURS, TETRA_COLOURS, basaltTexture, fuzzRoadTexture, meterTexture, castleWallTexture, dustTexture, wingTexture, flameTexture, furTexture, glowTexture, itemBoxTexture, scaleTexture, stoneTexture, warningTexture, woodTexture } from './textures';
 
@@ -464,7 +458,8 @@ function noteTexture(): THREE.CanvasTexture {
 /** Snakes, dust devils, tumbleweeds and boulders, posed from a HazardSystem each frame. */
 export class HazardsView {
   readonly group = new THREE.Group();
-  private readonly views: { pose: HazardPose; obj: THREE.Object3D; parts: THREE.Object3D[] }[] = [];
+  /** Each pose's look; `kit` for a kit's hazard (kits/view.ts), which builds and poses itself. */
+  private readonly views: { pose: HazardPose; obj: THREE.Object3D; parts: THREE.Object3D[]; kit?: KitHazardView }[] = [];
 
   constructor(hazards: HazardSystem) {
     const scales = scaleTexture('#c8a060', '#5a3a18');
@@ -647,7 +642,9 @@ export class HazardsView {
     for (const pose of hazards.poses) {
       const obj = new THREE.Group();
       const parts: THREE.Object3D[] = [];
-      switch (pose.kind) {
+      const kit = KIT_HAZARD_VIEWS.get(pose.kind);
+      if (kit) parts.push(...kit.parts(obj, pose));
+      else switch (pose.kind) {
         case 'snakes': {
           for (let i = 0; i < SNAKE_SEGMENTS; i++) {
             const seg = new THREE.Mesh(i === 0 ? headGeo : segGeo, snakeMat);
@@ -1469,38 +1466,6 @@ export class HazardsView {
           // A row of sleep: the haze of dream across the road, its Zs, and the rumble strip under it.
           parts.push(...dozeParts(obj));
           break;
-        case 'hellhounds':
-          // A pack of hellhounds, their dens in the pit's walls, and the stitches across the road they sniff out.
-          parts.push(...houndParts(obj));
-          break;
-        case 'pistons':
-          // A piston flush in the road: its red ring, its rod and head, and its steam.
-          parts.push(...pistonParts(obj));
-          break;
-        case 'breaths':
-          // One of Gaia's ribs: a ridge of her skin across the road, heaving with her breath.
-          parts.push(...breathParts(obj));
-          break;
-        case 'waxFlows':
-          // A tongue of hot wax creeping across the road, molten, cooling and set.
-          parts.push(...waxFlowParts(obj));
-          break;
-        case 'trafficLights':
-          // A gantry of mortal traffic lights over the road, its stop line, and the red curtain when it says stay.
-          parts.push(...trafficLightParts(obj));
-          break;
-        case 'wanderers':
-          // A coat and hat wandering with nobody in them, or the one you're with.
-          parts.push(...wandererParts(obj, pose.lane === 1));
-          break;
-        case 'bushrangers':
-          // Mad Dog Morgan and his gang at the gallop, and the dust they throw up.
-          parts.push(...gangParts(obj));
-          break;
-        case 'brooms':
-          // Sadie on her broomstick, her shadow on the road, the trail of sparks in her slipstream, and her line across the road before she swoops.
-          parts.push(...broomParts(obj));
-          break;
         case 'timber': {
           // A tree at the road's edge: its trunk, as long as the road is wide, and its crown; it leans, creaks and comes down across the road.
           const pivot = new THREE.Group();
@@ -1763,15 +1728,16 @@ export class HazardsView {
           break;
         }
       }
-      this.views.push({ pose, obj, parts });
+      this.views.push({ pose, obj, parts, kit });
       this.group.add(obj);
     }
   }
 
   update(elapsed: number): void {
-    for (const { pose: p, obj, parts } of this.views) {
+    for (const { pose: p, obj, parts, kit } of this.views) {
       obj.position.set(p.x, p.y, p.z);
-      switch (p.kind) {
+      if (kit) kit.pose(obj, parts, p, elapsed);
+      else switch (p.kind) {
         case 'snakes': {
           obj.rotation.y = p.heading;
           // The body trails behind the head in a travelling S-wave; the rattle shakes.
@@ -2396,30 +2362,6 @@ export class HazardsView {
           break;
         case 'dozes':
           poseDoze(obj, parts, p, elapsed);
-          break;
-        case 'hellhounds':
-          poseHounds(obj, parts, p, elapsed);
-          break;
-        case 'pistons':
-          posePiston(obj, parts, p, elapsed);
-          break;
-        case 'breaths':
-          poseBreath(obj, parts, p, elapsed);
-          break;
-        case 'waxFlows':
-          poseWaxFlow(obj, parts, p, elapsed);
-          break;
-        case 'trafficLights':
-          poseTrafficLight(obj, parts, p, elapsed);
-          break;
-        case 'wanderers':
-          poseWanderer(obj, parts, p);
-          break;
-        case 'bushrangers':
-          poseGang(obj, parts, p, elapsed);
-          break;
-        case 'brooms':
-          poseBroom(obj, parts, p, elapsed);
           break;
         case 'presents': {
           const [present, lid, inside, shadow, roofs, santa, arm] = parts;

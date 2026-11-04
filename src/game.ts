@@ -39,6 +39,8 @@ import { ASSIST_NORMAL, ASSIST_TOUCH } from './physics/steerAssist';
 import { DRIFT_TIERS, PHYSICS_VERSION, copyKartState, createKartState, driftTier, respawnKart, type KartState, type StepEvents } from './physics/kart';
 import { FIELD_SIZE, RACERS, pickRivals, type RacerDef } from './physics/racers';
 import { ALPHA_STATIC, DOZE_SLEEP, PILL_SWIM, SWEEP_DIGITISE, type HazardKind } from './items/hazards';
+import { KIT_HAZARDS } from './kits/index';
+import type { ScreenEffect } from './kits/kit';
 import { ITEMS, type ItemHolder, type ItemKind } from './items/items';
 import { ChaseCamera, DEFAULT_PLACEMENT, type CameraPlacement } from './render/chaseCamera';
 import { HazardsView, ItemsView } from './render/itemViews';
@@ -54,7 +56,7 @@ import { CUPS, TRACK_LIST, randomCupTracks } from './tracks/index';
 import { findBends, nextBend, type Bend } from './tracks/turns';
 import { pointAt } from './tracks/spline';
 import { GEN_COMPLEXITY_MAX, GEN_LENGTHS, GEN_THEMES, generateTrack, trackId, type GenParams } from './tracks/generator';
-import { Track, inPit, type TrackDef } from './tracks/track';
+import { Track, inPit, type CoreHazardKind, type TrackDef } from './tracks/track';
 import { Hud, SURGE_HOP_WINDOW, formatTime, type Callout, type HudData, type Table, type TableAction, type TableRow } from './ui/hud';
 import { Keyboard, SEAT_COLORS, SeatInput, remotePad, type RemotePad, type SeatSource } from './core/seatInput';
 import { PartyScreen, partyCup, settingsText, type PartySeat, type PartySettings } from './ui/party';
@@ -1473,7 +1475,7 @@ function seatStep(seat: Seat, ev: StepEvents, dt: number): void {
     }
     if (e.type === 'bonus') {
       if (mine) {
-        seatFlash(seat, BONUS_TEXT[e.by]);
+        seatFlash(seat, bonusText(e.by));
         sfx.boost(2);
         st?.add('hazard');
       }
@@ -1494,9 +1496,9 @@ function seatStep(seat: Seat, ev: StepEvents, dt: number): void {
     if (e.type !== 'hit') continue;
     const item = e.by in ITEMS ? (e.by as ItemKind) : null;
     if (mine) {
-      seatFlash(seat, HIT_TEXT[e.by]);
+      seatFlash(seat, hitText(e.by) ?? '');
       sfx.hurt(e.by);
-      if (HIT_TEXT[e.by]) seatBite(seat);
+      if (hitText(e.by)) seatBite(seat);
       // The wrong pill: the screen swims as long as the steering does.
       if (e.by === 'pills') fx.swim = 1;
       // Hit by an alpha: the screen crackles with static.
@@ -1505,8 +1507,9 @@ function seatStep(seat: Seat, ev: StepEvents, dt: number): void {
       if (e.by === 'sweepers') fx.digitise = 1;
       // Nodded off at the wheel: the screen's eyelids droop, and open again slowly.
       if (e.by === 'dozes') fx.doze = 1;
-      // Emptied by a wanderer: the colour drains out of everything, and comes back.
-      if (e.by === 'wanderers') fx.drain = Math.max(fx.drain, 0.9);
+      // A kit hazard's own mark on the screen (Empty's wanderers drain the colour out of everything).
+      const screen = KIT_HAZARDS.get(e.by)?.screen;
+      if (screen) for (const [k, v] of Object.entries(screen) as [ScreenEffect, number][]) fx[k] = Math.max(fx[k], v);
       buzz(seat, 160);
       if (e.by !== 'tempoShift' && e.by !== 'bassDrop') c.bump(0.5);
       if (e.by === 'bassDrop') c.bump(1.2);
@@ -1558,7 +1561,7 @@ function onEffects(fx: Effect[]): void {
       if (from) hud.callout({ from: who(from), to: 'you', by, kind: 'dodged' });
       continue;
     }
-    hud.flash(HIT_TEXT[by] ?? 'HIT!');
+    hud.flash(hitText(by) ?? 'HIT!');
     sfx.hurt(by);
     bite();
     if (e.k !== 'slow') chase.bump(0.5);
@@ -1947,7 +1950,7 @@ function finishCup(): string {
   return parts.join(' · ');
 }
 
-const HIT_TEXT: Record<ItemKind | HazardKind, string> = {
+const HIT_TEXT: Record<ItemKind | CoreHazardKind, string> = {
   fuzzPedal: '',
   microtonalMine: 'DETUNED!',
   feedbackWave: 'FUSED!',
@@ -2029,18 +2032,10 @@ const HIT_TEXT: Record<ItemKind | HazardKind, string> = {
   sharks: 'SHARK BITE!',
   rockyMeteors: 'PUSHED DOWN!',
   dozes: 'ASLEEP AT THE WHEEL!',
-  hellhounds: 'STITCHED UP!',
-  pistons: 'TERMINAL ERROR!',
-  brooms: 'NECK SNAPPED!',
-  waxFlows: 'HOT WAX!',
-  bushrangers: 'NEVER GAVE A WARNING!',
-  breaths: 'GAIA EXHALES!',
-  trafficLights: 'RED: STAY!',
-  wanderers: 'FEELING SO EMPTY!',
 };
 
 /** What a hazard used well says: the ones that can help. */
-const BONUS_TEXT: Record<HazardKind, string> = {
+const BONUS_TEXT: Record<CoreHazardKind, string> = {
   wisps: 'SPIRITED AWAY!',
   gliders: 'WRECK RAMP!',
   lavaBombs: 'LAVA RAMP!',
@@ -2107,16 +2102,18 @@ const BONUS_TEXT: Record<HazardKind, string> = {
   sweepers: 'SWEEP THE STREETS!',
   sharks: "I'M NOT A BUOY!",
   rockyMeteors: 'TRANSCEND!',
-  brooms: 'MORE FLY THAN QUIDDITCH!',
   dozes: 'INTO OUR FUTURE!',
-  waxFlows: "C'MON GET AROUND!",
-  hellhounds: 'FASTER THAN A CHEETAH!',
-  bushrangers: 'FASTER THAN A STOLEN GUN!',
-  pistons: 'CYBOOGIE!',
-  breaths: 'GAIA BREATHES!',
-  trafficLights: 'GREEN: GO!',
-  wanderers: "I DON'T FEEL EMPTY!",
 };
+
+/** What a hit says: an item's, a hazard's, or a kit hazard's (its callouts). */
+function hitText(by: ItemKind | HazardKind): string | undefined {
+  return by in HIT_TEXT ? HIT_TEXT[by as ItemKind | CoreHazardKind] : KIT_HAZARDS.get(by)?.callouts.hit;
+}
+
+/** What a hazard used well says. */
+function bonusText(by: HazardKind): string {
+  return (by in BONUS_TEXT ? BONUS_TEXT[by as CoreHazardKind] : KIT_HAZARDS.get(by)?.callouts.bonus) ?? '';
+}
 
 /** Takes a group out of the scene and frees what it built. */
 function dispose(group: THREE.Group): void {

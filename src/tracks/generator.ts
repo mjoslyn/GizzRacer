@@ -1,10 +1,11 @@
 import { clamp, seededRandom } from '../core/math';
 import { launchersFor } from './enrich';
 import { METEOR_CRUMBLE, METEOR_MARK, METEOR_ROLL } from '../items/hazards';
-import { PISTON_LANES } from '../items/hazards';
+import { KIT_HAZARDS, KIT_THEMES } from '../kits/index';
 import { TrackBuilder, dubins, offsetPose, type Pose, type RoadSurface, type SectionProps, ROAD_WIDTH_SCALE } from './builder';
 import { nearestOnSpline } from './spline';
-import { Track, inPit, type BranchDef, type HazardDef, type ItemBoxRow, type Landmark, type TrackDef } from './track';
+import { Track, inPit, type BranchDef, type CoreTheme, type HazardDef, type ItemBoxRow, type Landmark, type TrackDef } from './track';
+import type { KitTheme } from '../kits/kit';
 
 /**
  * Generated tracks: a seeded loop built from themed corner modules. The
@@ -14,7 +15,8 @@ import { Track, inPit, type BranchDef, type HazardDef, type ItemBoxRow, type Lan
 
 export type GenTheme = TrackDef['theme'];
 export const GEN_THEMES: readonly GenTheme[] = ['desert', 'speedway', 'volcano', 'jungle', 'lagoon', 'glacier', 'neon', 'dream', 'petro', 'mars', 'storm', 'void', 'phantom', 'airfield', 'grove', 'doubt', 'magenta', 'kepler', 'goblin', 'primeval', 'castle', 'skycastle', 'cell', 'prism', 'factory', 'gamma', 'carrion', 'wah', 'smog', 'dome', 'solar', 'inferno', 'mind', 'notmind', 'cellophane', 'mindfuzz'];
-export const GEN_THEME_NAMES: Record<GenTheme, string> = {
+/** Every theme's name in the generator: the game's own, then the kits'. */
+export const GEN_THEME_NAMES: Record<GenTheme, string> = withKits((k) => k.name, {
   desert: 'Desert',
   speedway: 'Speedway',
   volcano: 'Volcano',
@@ -75,15 +77,7 @@ export const GEN_THEME_NAMES: Record<GenTheme, string> = {
   scala: 'The Great Chain of Being',
   network: 'All Is Known',
   wheel: 'The Wheel',
-  windmill: 'Straws in the Wind',
-  cyborg: 'Cyboogie',
-  grimreaper: 'The Grim Reaper',
-  gaia: 'Gaia',
-  hotwax: 'Hot Wax',
-  sorceress: 'Sadie Sorceress',
-  emptiness: 'Empty',
-  bushranger: 'Billabong Valley',
-};
+});
 export type GenLength = 'short' | 'medium' | 'long';
 export const GEN_LENGTHS: readonly GenLength[] = ['short', 'medium', 'long'];
 export const GEN_COMPLEXITY_MAX = 5;
@@ -137,7 +131,15 @@ const SHORTCUT_NAMES = ['Gamma Knife', 'Robot Stop', 'Hot Water', 'Head On', 'Cu
 
 type HazardKind = HazardDef['kind'];
 
-interface Palette {
+/** A table over every theme: the game's own entries, and each kit theme's from `pick`. */
+function withKits<T>(pick: (k: KitTheme) => T, core: Record<CoreTheme, T>): Record<GenTheme, T> {
+  const all: Record<string, T> = { ...core };
+  for (const [theme, kit] of KIT_THEMES) all[theme] = pick(kit);
+  return all as Record<GenTheme, T>;
+}
+
+/** How the generator builds a track in a theme (a kit gives one for each of its themes). */
+export interface Palette {
   surface: RoadSurface;
   /** Bridges and jump approaches. */
   deck: RoadSurface;
@@ -154,7 +156,8 @@ interface Palette {
   music: { lap: string; finalLap?: string };
 }
 
-const PALETTES: Record<GenTheme, Palette> = {
+/** How each theme's tracks are built: the game's own, then the kits'. */
+const PALETTES: Record<GenTheme, Palette> = withKits((k) => k.palette, {
   desert: {
     surface: 'sand',
     deck: 'rock',
@@ -841,96 +844,7 @@ const PALETTES: Record<GenTheme, Palette> = {
     places: ['Stupor', 'Into Our Future', 'Without Mercy', 'Better Thesis', 'Pilgrim', 'Steeper Path', 'Reaper', 'Allegiance', 'Locked Groove'],
     music: { lap: 'the-wheel', finalLap: 'the-wheel-final-lap' },
   },
-  windmill: {
-    surface: 'farmtrack',
-    deck: 'farmtrack',
-    alt: 'gravel',
-    hazards: ['trafficLights'],
-    start: 'strawsGate',
-    landmarks: ['trashTornado', 'cheshireGrin'],
-    tallWalls: 6,
-    places: ['Straw', 'Black Heart', 'Brim', 'Cheshire', 'Pandemonium', 'Allegro', 'Expendable', "Hell's Kitchen", 'Omen', 'Forgotten Pier'],
-    music: { lap: 'straws-in-the-wind', finalLap: 'straws-in-the-wind-final-lap' },
-  },
-  cyborg: {
-    surface: 'graphene',
-    deck: 'graphene',
-    alt: 'steel',
-    hazards: ['pistons'],
-    start: 'cyboogieGate',
-    landmarks: ['cyboogieGate', 'hanTyumi'],
-    tallWalls: 6,
-    places: ['Grey Matter', 'Brine', 'Bouncy Ball', 'Cables', 'De-bug', 'Graphene', 'Palpitations', 'Binary Brook', 'Red-Bellied Trout'],
-    music: { lap: 'cyboogie', finalLap: 'cyboogie-final-lap' },
-  },
-  grimreaper: {
-    surface: 'cinder',
-    deck: 'cinder',
-    alt: 'sand',
-    hazards: ['hellhounds'],
-    start: 'scytheGate',
-    landmarks: ['scytheGate', 'reaperMC', 'chequeBank'],
-    tallWalls: 6,
-    places: ['Chimney', 'Gate Keeper', 'Cheetah', 'Point Blank', 'Hurricane', 'Scraps', 'Cactus', 'Hatchet', 'Hellhound', 'Cheque', 'Silhouette', 'Fortress', 'Homestead'],
-    music: { lap: 'the-grim-reaper', finalLap: 'the-grim-reaper-final-lap' },
-  },
-  gaia: {
-    surface: 'earth',
-    deck: 'earth',
-    alt: 'scorched',
-    liquid: 'oil',
-    hazards: ['breaths'],
-    start: 'gaiaHands',
-    landmarks: ['parasites', 'deadEarth'],
-    tallWalls: 6,
-    places: ['Gaia', 'Parasite', 'Dirt', 'Carrion', 'Eclipse', 'Downpour', 'Black Wave', 'Bequest', 'No One'],
-    music: { lap: 'gaia', finalLap: 'gaia-final-lap' },
-  },
-  hotwax: {
-    surface: 'wax',
-    deck: 'wax',
-    alt: 'boards',
-    liquid: 'lava',
-    hazards: ['waxFlows'],
-    start: 'waxDoor',
-    landmarks: ['armchair', 'glassHead', 'giantBed'],
-    tallWalls: 6,
-    places: ['Door', 'Floor', 'Sill', 'Safari', 'Seat', 'Sink', 'Drink', 'Maze', 'Leaves'],
-    music: { lap: 'hot-wax', finalLap: 'hot-wax-final-lap' },
-  },
-  sorceress: {
-    surface: 'rink',
-    deck: 'rink',
-    hazards: ['brooms'],
-    start: 'rinkGate',
-    landmarks: ['rinkGate', 'quidditchHoops'],
-    tallWalls: 6,
-    places: ['Witch', 'Quidditch', 'Tinnie', 'Rink', 'Masquerade', 'Cauldron', 'Handbag', 'Knapsack', 'Cardigan', 'Nightshade', 'Oleander', 'Buttercup', 'Broomstick', 'Pitchfork', 'Circus'],
-    music: { lap: 'sadie-sorceress', finalLap: 'sadie-sorceress-final-lap' },
-  },
-  emptiness: {
-    surface: 'pale',
-    deck: 'pale',
-    alt: 'gravel',
-    hazards: ['wanderers'],
-    start: 'metronome',
-    landmarks: ['metronome', 'shotClock'],
-    tallWalls: 6,
-    places: ['Empty', 'Nothing Deep', 'Used to Be', 'Life Is Death', 'Lazy', 'Unset Stone', 'Level', 'Who?', 'Waltz'],
-    music: { lap: 'empty', finalLap: 'empty-final-lap' },
-  },
-  bushranger: {
-    surface: 'redgum',
-    deck: 'redgum',
-    alt: 'scorched',
-    hazards: ['bushrangers'],
-    start: 'hideoutGate',
-    landmarks: ['wantedPoster', 'burningCamp'],
-    tallWalls: 6,
-    places: ['Outlaw', 'Stolen Gun', 'Red Gum', 'Billabong', 'Kyeamba', 'Trooper', 'Wanted', 'Bushranger', 'Ranges', 'Mad Dog', 'Morgan', 'Dawn'],
-    music: { lap: 'billabong-valley', finalLap: 'billabong-valley-final-lap' },
-  },
-};
+});
 
 const NAME_ADJECTIVES = ['Microtonal', 'Polygon', 'Infinite', 'Nonagon', 'Fuzz', 'Quarter-Tone', 'Psychedelic', 'Altered', 'Cosmic', 'Crumbling', 'Sleepy', 'Plastic', 'Gumboot', 'Robot', 'Hypertension'];
 const NAME_KINDS = ['Run', 'Loop', 'Circuit', 'Raceway', 'Speedway', 'Rally', 'Ring', 'Gauntlet', 'Drift', 'Dash', 'Boogie'];
@@ -1730,38 +1644,11 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
         // Rows of sleep across the stretch, settling one after another down it.
         hazards.push({ kind, at: at(count + 1), period: 4.2 });
         break;
-      case 'hellhounds':
-        // Packs of hellhounds crossing the stretch one after another, the way back the next time.
-        hazards.push({ kind, at: at(count), period: 4.4 });
-        break;
-      case 'pistons':
-        // Rows of pistons across the stretch, punching up through it on the boogie's beat, PISTON_LANES to a row.
-        hazards.push({ kind, at: at(count).flatMap((s) => Array.from({ length: PISTON_LANES }, () => s)), period: 2 });
-        break;
-      case 'breaths':
-        // Gaia's ribs across the stretch, all heaving in one breath.
-        hazards.push({ kind, at: at(count), period: 2.5 });
-        break;
-      case 'trafficLights':
-        // Gantries of traffic lights down the stretch, changing on the waltz one after another.
-        hazards.push({ kind, at: at(count), period: 2.4 });
-        break;
-      case 'wanderers':
-        // Rows of wanderers drifting across the stretch, three to a row.
-        hazards.push({ kind, at: at(count).flatMap((s) => [s, s, s]), period: 12 });
-        break;
-      case 'bushrangers':
-        // Mad Dog Morgan's gang riding across the stretch, never at quite the same moment twice.
-        hazards.push({ kind, at: at(count), period: 4.6 });
-        break;
-      case 'waxFlows':
-        // Tongues of hot wax creeping across the stretch one after another, setting as they cool.
-        hazards.push({ kind, at: at(count), period: 4.4 });
-        break;
-      case 'brooms':
-        // Sadie swooping across the stretch at one station after another, the other way each time.
-        hazards.push({ kind, at: at(count), period: 4.6 });
-        break;
+      default: {
+        // A kit's hazard lays itself.
+        const kit = KIT_HAZARDS.get(kind);
+        if (kit) hazards.push(kit.generate({ from, to, count, at }));
+      }
     }
     return true;
   }

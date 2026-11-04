@@ -1,4 +1,4 @@
-import { PISTON_LANES } from '../items/hazards';
+import { PISTON_LANES } from '../kits/cyboogie';
 import { TrackBuilder, offsetPose, type Pose } from './builder';
 import type { BranchDef, TrackDef } from './track';
 

@@ -146,6 +146,60 @@ Credits (title screen, and a page of Settings): the song behind each track, the 
 
 In a race: `R` restart (asks first; `R` or Enter again confirms, Esc keeps racing), `M` manual throttle, `N` music on/off, `B` sound effects on/off. In the picker, the racer screen shows the racer gallery, `R` picks a racer at random, and in Single Race `T` picks a random track. `?showroom` shows every racer on a turntable (`&racer=<id>&face` for a close-up of one driver's head). In the console, `gizz.warp(0.5)` jumps halfway round the lap and `gizz.autopilot()` lets the CPU drive your kart, `gizz.give('riffMissile')` fills the item slot.
 
+## Track kits
+
+A track adds a lot to the game: a hazard, a theme and its world, scenery, a road surface, landmarks, a generator palette. Each track (from the All Stars cups on) keeps all of it in a **kit**, its own files, and the shared systems (the HazardSystem, the generator, game.ts's callouts, sfx.ts, themes, trackView, trackDetail, trackLife, itemViews) ask the kit registry for whatever they don't handle themselves. So building a track doesn't edit any shared file, and tracks built in parallel don't conflict. The older tracks' hazards and worlds still live in the shared files; leave them there.
+
+A new track `<id>` (say `mad-dog`, files named `madDog`) is these files and one line:
+
+| File | What goes in it |
+| --- | --- |
+| `src/tracks/madDog.ts` | the layout (`TrackBuilder`), as before, and its line in `RAW_TRACK_LIST` and `CUPS` (`src/tracks/index.ts`) |
+| `src/render/madDog.ts` | the world's builders: textures, scenery features, landmarks, the hazard's parts and poses |
+| `src/kits/madDog.ts` | the kit: everything the race needs (no three.js: the PartyKit server runs it too) |
+| `src/kits/madDog.view.ts` | the kit's look: everything that's drawn |
+| `tests/tracks-<cup>-mad-dog.test.ts` | its tests |
+| `src/kits/list.ts` | **the one line**: `export { kit as madDog } from './madDog';` |
+
+The view is found by its file name (`src/kits/*.view.ts`, kits/views.ts), so it needs no line of its own.
+
+**The kit** (`src/kits/madDog.ts`, typed by `src/kits/kit.ts`) starts by declaring what it adds into the shared types, by declaration merging, each entry keyed by the kind and carrying the kit's id:
+
+```ts
+declare module '../tracks/track' {
+  interface KitHazards {
+    /** What the hazard is and does. */
+    gangs: { kit: 'mad-dog'; def: { kind: 'gangs'; at: number[]; period: number } };
+  }
+  interface KitLandmarks { hideout: 'mad-dog'; poster: 'mad-dog' }
+  interface KitThemes { maddog: 'mad-dog' }
+}
+declare module '../tracks/builder' {
+  interface KitRoadSurfaces { dirt: 'mad-dog' }
+}
+```
+
+Then the hazard's constants and pure functions of time (exported: the view and the tests use them), and `export const kit: Kit<'mad-dog'> = { id, hazards, themes }`:
+
+- `hazards.<kind>`: `pose(p, def, i, t, world)` sets station `i`'s pose at race time `t` (`world.place` puts it on the road, `world.halfWidth` measures it); `collide(hit, p, s, world)` hits a kart (`spinOut`/`wobble`, guarded by `world.cooling(s)` / `world.cool(s)`) or rewards it for playing the hazard right (`world.reward`); `threats(out, p, def)` the circles the CPUs steer round (left out: the pose's circle while it's active); `sheet: true` if it fills the road across; `generate` how the track generator lays it on a stretch; `callouts` (the hit flash and the bonus flash); `sound(v)` its hit sound (`v.tone`, `v.hit`, `v.whoosh`); `screen` a hit effect on your screen (`drain`, `doze`...). The rules every hazard plays by (`HOP_WINDOW`, `launch`, the cooldowns) are in `src/items/hazardBase.ts`.
+- `themes.<theme>`: its `name` in the generator and its `palette` (surfaces, hazards, landmarks, place names and music for a generated track in it).
+
+**The view** (`src/kits/madDog.view.ts`, typed by `src/kits/view.ts`) declares its decor kind (`declare module '../render/themes' { interface KitDecors { bush: 'mad-dog' } }`) and exports `view: KitView<'mad-dog'>`:
+
+- `themes.<theme>`: the world (a `Theme`, as the old ones in `render/themes.ts`);
+- `decors.<decor>`: the rock texture, how many rocks and features (`rocks`, `features`; 220 and 70 when unset), `feature(animated, track)` one piece of scenery, `detail` (edge posts, ground cover, boards: a trackDetail `DetailStyle`) and `life` (flock and motes: a trackLife `LifeSpec`);
+- `roads.<surface>`: its material, from `({ bumpy, lambert })`;
+- `landmarks.<kind>`: `({ track, ribbon, s, lm, animated }) => Object3D`;
+- `hazards.<kind>`: `parts(obj, pose)` built once, `pose(obj, parts, p, elapsed)` each frame.
+
+The compiler holds a kit to what it declared: a view missing a landmark builder, a theme's world or a hazard's look doesn't build, nor does a kit that declares kinds but isn't in `list.ts`, nor one that takes a kind the game already has (`src/kits/index.ts`). `tests/kits.test.ts` checks the rest (every kit has its view, every hazard its pose, collide, callouts and look, every theme its world and palette, and a generated track in each kit theme runs).
+
+Rules: the kit file imports no three.js and nothing from `src/render`; the render module imports no shared render system (`trackView`, `trackDetail`, `trackLife`, `itemViews`, `themes`; `render/atmosphere.ts` has the final-lap flag), since those import the kits and that would be a cycle; the kit's view and render module import its kit for constants, never the other way round.
+
+Example kits to read: `src/kits/billabongValley.ts` and `.view.ts` (a hazard with `threats` and a robbing hit, ten landmarks), `src/kits/cyboogie.ts` and `.view.ts` (a hazard you can hop onto, a glowing road material, scenery by zone). Every All Stars track is a kit: Straws in the Wind (a sheet hazard), Cyboogie, The Grim Reaper, Gaia, Hot Wax, Sadie Sorceress, Empty (a `screen` effect), Billabong Valley.
+
+Still shared, and rare: a new `Theme` flag with a post effect of its own (Gaia's `dies`, Billabong Valley's `dawn`: `render/postfx.ts` and `game.ts`), a new kind of hit result (Billabong Valley's `robbed`: `core/race.ts`, `items/items.ts`), and the songs (`audio/songs.ts`, `public/music`).
+
 ## Soundtrack
 
 The songs live in seqbaby. `public/music/*.mp3` are rendered from them by playing each song in headless Chromium through seqbaby's own engine:

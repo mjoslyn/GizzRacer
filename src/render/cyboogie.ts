@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { seededRandom } from '../core/math';
-import { PISTON_LIFT, PISTON_RADIUS, PISTON_STAGES, type HazardPose } from '../items/hazards';
+import type { HazardPose } from '../items/hazards';
+import { PISTON_LIFT, PISTON_RADIUS, PISTON_STAGES } from '../kits/cyboogie';
 import type { PitDef } from '../tracks/builder';
 import { PISTON_PERIOD } from '../tracks/cyboogie';
 import { nearestOnSpline, pointAt } from '../tracks/spline';

@@ -1,11 +1,12 @@
 import * as THREE from 'three';
 import { seededRandom } from '../core/math';
-import { GANG_STAGGER, gangRiders, type HazardPose } from '../items/hazards';
+import type { HazardPose } from '../items/hazards';
+import { GANG_STAGGER, gangRiders } from '../kits/billabongValley';
 import type { PitDef } from '../tracks/builder';
 import { nearestOnSpline, pointAt } from '../tracks/spline';
 import { BANK, type Ribbon, type Track } from '../tracks/track';
 import { glowTexture } from './textures';
-import { atmosphere } from './trackDetail';
+import { atmosphere } from './atmosphere';
 
 /**
  * Billabong Valley's world, the All Stars Cup #2's finale: Mad Dog Morgan's

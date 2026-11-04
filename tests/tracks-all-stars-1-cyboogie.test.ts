@@ -4,20 +4,8 @@ import { PHYSICS_DT } from '../src/core/loop';
 import { clamp, wrapAngle } from '../src/core/math';
 import { CPU_SKILL } from '../src/ai/cpuDriver';
 import { Race } from '../src/core/race';
-import {
-  HazardSystem,
-  PISTON_BOOST,
-  PISTON_BUMP_SLOW,
-  PISTON_LANES,
-  PISTON_LIFT,
-  PISTON_SLOW,
-  PISTON_STAGES,
-  isSheet,
-  pistonBeat,
-  pistonLift,
-  pistonPhase,
-  type HazardPose,
-} from '../src/items/hazards';
+import { HazardSystem, isSheet, type HazardPose } from '../src/items/hazards';
+import { PISTON_BOOST, PISTON_BUMP_SLOW, PISTON_LANES, PISTON_LIFT, PISTON_SLOW, PISTON_STAGES, pistonBeat, pistonLift, pistonPhase } from '../src/kits/cyboogie';
 import { createKartState, stepKart, type KartState } from '../src/physics/kart';
 import { RACERS, kartParams } from '../src/physics/racers';
 import { TRACK_SONGS } from '../src/audio/songs';

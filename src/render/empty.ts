@@ -1,11 +1,12 @@
 import * as THREE from 'three';
 import { seededRandom } from '../core/math';
-import { WANDER_BARS, type HazardPose } from '../items/hazards';
+import type { HazardPose } from '../items/hazards';
+import { WANDER_BARS } from '../kits/empty';
 import type { PitDef } from '../tracks/builder';
 import { pointAt } from '../tracks/spline';
 import type { Ribbon } from '../tracks/track';
 import { glowTexture } from './textures';
-import { atmosphere } from './trackDetail';
+import { atmosphere } from './atmosphere';
 
 /**
  * Empty's world (the All Stars Cup #2's third): an empty town on a pale

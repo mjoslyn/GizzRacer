@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { seededRandom } from '../core/math';
-import { WAX_DEPTH, WAX_STAGES, waxHeat, type HazardPose } from '../items/hazards';
+import type { HazardPose } from '../items/hazards';
+import { WAX_DEPTH, WAX_STAGES, waxHeat } from '../kits/hotWax';
 import { nearestOnSpline, pointAt } from '../tracks/spline';
 import { inPit, type Ribbon, type Track } from '../tracks/track';
 import type { PitDef } from '../tracks/builder';

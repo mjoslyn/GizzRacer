@@ -7,8 +7,17 @@ export interface Pose {
   h: number;
 }
 
-/** How the road looks; 'ice' and 'oil' also slide (physics/kart.ts). */
-export type RoadSurface =
+/** How the road looks; 'ice' and 'oil' also slide (physics/kart.ts). Kits add theirs (KitRoadSurfaces). */
+export type RoadSurface = CoreRoadSurface | Extract<keyof KitRoadSurfaces, string>;
+
+/**
+ * The road surfaces track kits add (src/kits), by declaration merging
+ * (`declare module '../tracks/builder'`): the surface, and its kit's id.
+ */
+export interface KitRoadSurfaces {}
+
+/** The game's own road surfaces. */
+export type CoreRoadSurface =
   | 'asphalt' | 'salt' | 'rock' | 'sand' | 'boards' | 'ice' | 'neon' | 'rainbow' | 'oil' | 'regolith' | 'wet' | 'cosmic'
   /** Magenta Mountain's glowing crystal road. */
   | 'crystal'
@@ -95,23 +104,7 @@ export type RoadSurface =
   /** All Is Known's road: a circuit board, its traces lit. */
   | 'circuit'
   /** The Wheel's road: a record's groove, black vinyl. */
-  | 'groove'
-  /** Straws in the Wind's road: a farm track through the flower fields, straw blown across it. */
-  | 'farmtrack'
-  /** Cyboogie's road: graphene lattice over the cyborg's pistons and pumps. */
-  | 'graphene'
-  /** The Grim Reaper's road: cinders, ash and scorched dirt. */
-  | 'cinder'
-  /** Gaia's road: the Earth's own skin, soil and rock. */
-  | 'earth'
-  /** Hot Wax's road: a slick of cooling wax, molten at the edges. */
-  | 'wax'
-  /** Sadie Sorceress's road: an 80s roller rink floor. */
-  | 'rink'
-  /** Empty's road: pale, worn, nothing left in it. */
-  | 'pale'
-  /** Billabong Valley's road: a bush track of red dirt. */
-  | 'redgum';
+  | 'groove';
 
 /**
  * Every road is built this much wider than its section says: the layouts

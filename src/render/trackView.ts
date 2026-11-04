@@ -1,12 +1,14 @@
 import * as THREE from 'three';
 import { seededRandom } from '../core/math';
 import { nearestOnSpline, pointAt } from '../tracks/spline';
-import type { PitDef, RoadSurface } from '../tracks/builder';
+import type { CoreRoadSurface, PitDef, RoadSurface } from '../tracks/builder';
 import { BANK, branchOpen, inPit, type BranchDef, type LapContext, type Launcher, type Ribbon, type Track } from '../tracks/track';
 import * as tex from './textures';
 import { trackLife } from './trackLife';
 import { DETAIL_SPEC, densityScale, graphicsDetail } from './detail';
-import { THEMES, type Theme } from './themes';
+import { themeOf, type CoreDecor, type Theme } from './themes';
+import { KIT_DECORS, KIT_LANDMARKS, KIT_ROADS } from '../kits/views';
+import type { RoadTools } from '../kits/view';
 import { CURB_WIDTH, atmosphere, roadPaint, trackDetail } from './trackDetail';
 import { colonyFeature, colonyGate, cosmosFeature, plainsFeature, rodGate, starGate, stormWeather, voidEye } from './apocalypse';
 import { alienSeaFeature, crystalGate, gardenFeature, goblinGate, jawsGate, keplerArch, magentaPeak, peaksFeature, shoreFeature } from './omnium';
@@ -26,14 +28,6 @@ import { acetone, busTrace, circuitGlowTexture, circuitRoadTexture, kingsEye, kn
 import { billabong, clayRoadTexture, coast, flagsGate, riverbed, sharkCopter, summerFeature, willowTree } from './muddyWater';
 import { brokenLink, burningChurch, chainGate, chainTiers, emptyThrone, greatChain, rockWithEyes, scalaFeature, strataRoadTexture } from './greatChainOfBeing';
 import { greatWheel, grooveRoadTexture, helmHandle, pilgrims, reaper, slumberFeature, steeperPath, wheelGate } from './theWheel';
-import { bodyBags, chequeBank, chimneys, cinderRoadTexture, fortress, homestead, keeperGate, openGrave, reaperMC, reapingFeature, scytheGate, wickedSun } from './theGrimReaper';
-import { binaryBrook, cyboogieGate, cyborgFeature, cyborgHead, cyborgHeart, cyborgZones, debugLane, fishHook, grapheneGlowTexture, grapheneRoadTexture, hanTyumi } from './cyboogie';
-import { deadEarth, earthRoadTexture, elements, gaiaFaceLand, gaiaFeature, gaiaHands, gaiaHeart, gaiaZones, luckyRainbow, parasites } from './gaia';
-import { armchair, floorJoists, giantBed, giantCandle, giantFeet, giantLeaves, giantLeg, glassHead, kitchenSink, lavaLamp, learningHow, lordShrine, rugHill, spiltDrink, springKing, waxDoor, waxGlowTexture, waxJungle, waxMaze, waxRoadTexture, waxworksFeature, windowSill } from './hotWax';
-import { bigTop, duckingStool, flightPath, grannyCottage, masquerade, pitchforkMob, poisonGarden, poisonPool, quidditchHoops, rinkGate, rinkRoadTexture, sadieColossus, sorceryFeature } from './sadieSorceress';
-import { companion, emptyFeature, emptyStage, metronome, paleRoadTexture, setInStone, shotClock } from './empty';
-import { cheshireGrin, farmTrackTexture, forgottenPier, hellsKitchen, shortStraw, strawFeature, strawsGate, trashTornado } from './strawsInTheWind';
-import { blackBillabong, burningCamp, hideoutGate, nightbushFeature, redDawn, redgumRoadTexture, ropeGums, stationHomestead, stolenGun, trestle, troopersCamp, wantedPoster } from './billabongValley';
 import { bandroomFeature, bentArm, canopyFeature, elbowGate, harmonicaGate, mirrorBall, partyFeature, powerStation, rakeGate, snowPeak, trunkGate, wetlandFeature } from './twelveBarBruise';
 import { arrowGate, cellophaneBloom, emptyHead, eyeGate, filmGate, fuzzGate, fuzzMeter, mindFace, neuronsFeature, opartFeature, panesFeature, staticFeature } from './mindfuzz';
 import { blightFeature, burningEarth, coronaFeature, domeGate, domesFeature, hellGate, pitFeature, ratsNest, richDome, shipGate, smogGate, theSun } from './infest';
@@ -82,7 +76,7 @@ function materials(theme: Theme): Materials {
   // Flying Microtonal Banana's worlds lay their roads in its cobalt and banana yellow.
   const banana = !!theme.banana;
   const sand = banana ? tex.sandTexture(tex.BANANA.sandDark, tex.BANANA.sandLight) : tex.sandTexture();
-  const rockMap: Record<Theme['decor'], () => THREE.Texture> = {
+  const rockMap: Record<CoreDecor, () => THREE.Texture> = {
     desert: theme.banana ? () => tex.stoneTexture([24, 40, 140], [70, 110, 220]) : tex.dirtTexture,
     meadow: () => tex.stoneTexture([96, 100, 92], [160, 164, 150]),
     volcanic: tex.basaltTexture,
@@ -143,15 +137,6 @@ function materials(theme: Theme): Materials {
     summer: () => tex.stoneTexture([150, 96, 56], [226, 190, 140]),
     scala: () => tex.stoneTexture([84, 58, 46], [168, 134, 104]),
     slumber: () => tex.stoneTexture([46, 38, 50], [110, 96, 112]),
-    reaping: () => tex.stoneTexture([46, 40, 40], [110, 102, 98]),
-    sorcery: () => tex.stoneTexture([40, 32, 48], [96, 84, 104]),
-    cyborg: () => tex.stoneTexture([30, 34, 40], [130, 136, 146]),
-    // Hot Wax: lumps of set wax on the floor.
-    waxworks: () => tex.stoneTexture([196, 150, 104], [250, 226, 190]),
-    gaia: () => tex.stoneTexture([96, 98, 86], [170, 166, 150]),
-    strawfield: () => tex.stoneTexture([130, 118, 100], [200, 190, 170]),
-    nightbush: () => tex.stoneTexture([52, 46, 42], [118, 104, 94]),
-    emptyTown: () => tex.stoneTexture([150, 150, 146], [214, 212, 206]),
   };
   const neon = banana ? tex.neonRoadTexture(tex.BANANA.neon) : tex.neonRoadTexture();
   const rainbow = banana ? tex.rainbowTexture(tex.BANANA.bands) : tex.rainbowTexture();
@@ -159,7 +144,7 @@ function materials(theme: Theme): Materials {
   const grain = DETAIL_SPEC[graphicsDetail()].grain;
   const bumpy = (map: THREE.Texture, scale: number, extra: THREE.MeshLambertMaterialParameters = {}) => lambert(map, grain ? { bumpMap: map, bumpScale: scale, ...extra } : extra);
   const m: Materials = {
-    road: {
+    road: withKitRoads({ lambert, bumpy }, {
       asphalt: bumpy(tex.asphaltTexture(), 0.08),
       salt: bumpy(tex.saltTexture(), 0.05),
       rock: bumpy(tex.dirtTexture(), 0.1),
@@ -264,33 +249,12 @@ function materials(theme: Theme): Materials {
       circuit: bumpy(circuitRoadTexture(), 0.05, { emissive: 0xffffff, emissiveMap: circuitGlowTexture(), emissiveIntensity: 1 }),
       // The Wheel's: a record's groove, black vinyl.
       groove: bumpy(grooveRoadTexture(), 0.04),
-      // The Grim Reaper's: black cinders and ash, a gold line down the middle.
-      cinder: bumpy(cinderRoadTexture(), 0.06),
-      // The All Stars Cup #1's roads (placeholders until each track's world is built).
-      // Straws in the Wind's: a farm track through the flowers, straw blown across it.
-      farmtrack: bumpy(farmTrackTexture(), 0.07),
-      // Cyboogie's: a graphene lattice over his pistons and pumps, its bonds lit faintly and a red line down the middle.
-      graphene: bumpy(grapheneRoadTexture(), 0.05, { emissive: 0xffffff, emissiveMap: grapheneGlowTexture(), emissiveIntensity: 0.6 }),
-      // Gaia's: the Earth's own skin, soil and pale stones.
-      earth: bumpy(earthRoadTexture(), 0.07),
-      // Billabong Valley's: a bush track of pale red dirt, worn into ruts.
-      redgum: bumpy(redgumRoadTexture(), 0.07),
-      // The All Stars Cup #2's roads (placeholders until each track's world is built).
-      // Hot Wax's: a slick of set wax, cream marbled with orange, molten and glowing down its edges.
-      wax: (() => {
-        const map = waxRoadTexture();
-        return new THREE.MeshPhongMaterial({ map, emissive: 0xffffff, emissiveMap: waxGlowTexture(), emissiveIntensity: 0.6, shininess: 45, specular: 0x5a4a38 });
-      })(),
-      // Sadie Sorceress's: an 80s roller rink's maple floor, its lines in neon.
-      rink: bumpy(rinkRoadTexture(), 0.04),
-      // Empty's: pale old concrete slabs, a slate kerb down each edge.
-      pale: bumpy(paleRoadTexture(), 0.05),
       gravel: bumpy(gravelTexture(), 0.1),
       cosmic: (() => {
         const map = tex.cosmicRoadTexture();
         return lambert(map, { emissive: 0xffffff, emissiveMap: map, emissiveIntensity: 0.55 });
       })(),
-    },
+    }),
     curb: (() => {
       const map = tex.curbTexture();
       const glow = (theme.roadGlow ?? 0) * 1.5;
@@ -301,7 +265,7 @@ function materials(theme: Theme): Materials {
     mud: lambert(tex.mudTexture()),
     bone: new THREE.MeshPhongMaterial({ map: tex.boneTexture(), shininess: 30, specular: 0x333322 }),
     cactus: lambert(tex.cactusTexture()),
-    rock: new THREE.MeshLambertMaterial({ map: rockMap[theme.decor](), flatShading: true }),
+    rock: new THREE.MeshLambertMaterial({ map: (theme.decor in rockMap ? rockMap[theme.decor as CoreDecor] : KIT_DECORS.get(theme.decor)!.rock)(), flatShading: true }),
     lava: new THREE.MeshBasicMaterial({ map: tex.lavaTexture(), side: THREE.DoubleSide }),
     water: new THREE.MeshPhongMaterial({ color: theme.murk ?? 0x2a7a8a, shininess: 120, specular: 0xffffff, transparent: true, opacity: theme.murk ? 0.92 : 0.85, side: THREE.DoubleSide }),
     oil: new THREE.MeshPhongMaterial({ color: 0x0a0608, emissive: 0x2a0800, shininess: 140, specular: 0xaa8866, side: THREE.DoubleSide }),
@@ -319,10 +283,17 @@ function materials(theme: Theme): Materials {
   return m;
 }
 
+/** The game's own road materials, and every kit's (kits/view.ts). */
+function withKitRoads(tools: RoadTools, core: Record<CoreRoadSurface, THREE.Material>): Record<RoadSurface, THREE.Material> {
+  const road: Record<string, THREE.Material> = { ...core };
+  for (const [surface, make] of KIT_ROADS) road[surface] = make(tools);
+  return road as Record<RoadSurface, THREE.Material>;
+}
+
 /** Textured visuals for a spline track, in a sharp early-2000s console style. */
 export function buildTrackView(track: Track): TrackView {
   const group = new THREE.Group();
-  const theme = THEMES[track.def.theme];
+  const theme = themeOf(track.def.theme);
   const mats = materials(theme);
 
   const abyss = !!track.def.abyss;
@@ -365,6 +336,12 @@ export function buildTrackView(track: Track): TrackView {
   for (const lm of track.def.landmarks) {
     const ribbon = track.ribbon(lm.ribbon);
     const s = lm.s * ribbon.scale;
+    // A kit's landmark builds itself.
+    const kit = KIT_LANDMARKS.get(lm.kind);
+    if (kit) {
+      group.add(kit({ track, ribbon, s, lm, animated }));
+      continue;
+    }
     if (lm.kind === 'skeletonArch') group.add(skeletonArch(ribbon, s, mats));
     if (lm.kind === 'fangs') group.add(snakeMouth(ribbon, s, mats));
     if (lm.kind === 'fortressGate') group.add(fortressGate(ribbon, s, mats));
@@ -493,86 +470,11 @@ export function buildTrackView(track: Track): TrackView {
     if (lm.kind === 'emptyThrone') group.add(emptyThrone(ribbon, s, lm.lateral ?? 0, animated));
     if (lm.kind === 'brokenLink') group.add(brokenLink(ribbon, s, animated));
     if (lm.kind === 'wheelGate') group.add(wheelGate(ribbon, s, animated));
-    if (lm.kind === 'cyboogieGate') group.add(cyboogieGate(ribbon, s, animated));
-    if (lm.kind === 'cyborgHead') group.add(cyborgHead(ribbon, s, lm.lateral ?? 0, animated));
-    if (lm.kind === 'cyborgHeart') group.add(cyborgHeart(ribbon, s, lm.lateral ?? 0, animated));
-    if (lm.kind === 'fishHook') group.add(fishHook(ribbon, s, lm.lateral ?? 0, animated));
-    if (lm.kind === 'binaryBrook') group.add(binaryBrook(ribbon, s, (lm.to ?? lm.s) * ribbon.scale, animated));
-    if (lm.kind === 'hanTyumi') group.add(hanTyumi(ribbon, s, lm.lateral ?? 0, animated));
-    if (lm.kind === 'debugLane') group.add(debugLane(ribbon, s, track.def.pits, animated));
     if (lm.kind === 'helmHandle') group.add(helmHandle(ribbon, s));
     if (lm.kind === 'greatWheel') group.add(greatWheel(ribbon, s, animated));
     if (lm.kind === 'pilgrims') group.add(pilgrims(ribbon, s, (lm.to ?? lm.s) * ribbon.scale, animated));
     if (lm.kind === 'reaper') group.add(reaper(ribbon, s, lm.lateral ?? 0, animated));
     if (lm.kind === 'steeperPath') group.add(steeperPath(ribbon, s, track.def.pits, animated));
-    if (lm.kind === 'scytheGate') group.add(scytheGate(ribbon, s, animated));
-    if (lm.kind === 'chimneys') group.add(chimneys(ribbon, s, (lm.to ?? lm.s + 100) * ribbon.scale, animated));
-    if (lm.kind === 'keeperGate') group.add(keeperGate(ribbon, s, animated));
-    if (lm.kind === 'reaperMC') group.add(reaperMC(ribbon, s, lm.lateral ?? 0, animated));
-    if (lm.kind === 'wickedSun') group.add(wickedSun(ribbon, s, animated));
-    if (lm.kind === 'chequeBank') group.add(chequeBank(ribbon, s, lm.lateral ?? 0, animated));
-    if (lm.kind === 'fortress') group.add(fortress(ribbon, s, (lm.to ?? lm.s + 80) * ribbon.scale, animated));
-    if (lm.kind === 'bodyBags') group.add(bodyBags(ribbon, s, (lm.to ?? lm.s + 100) * ribbon.scale, animated));
-    if (lm.kind === 'homestead') group.add(homestead(ribbon, s, lm.lateral ?? 0, animated));
-    if (lm.kind === 'openGrave') group.add(openGrave(ribbon, s, track.def.pits, animated));
-    if (lm.kind === 'gaiaHands') group.add(gaiaHands(ribbon, s, animated));
-    if (lm.kind === 'gaiaFace') group.add(gaiaFaceLand(track, ribbon, s, lm.lateral ?? 0, animated));
-    if (lm.kind === 'parasites') group.add(parasites(track, ribbon, s, (lm.to ?? lm.s + 90) * ribbon.scale, animated));
-    if (lm.kind === 'elements') group.add(elements(track, ribbon, s, (lm.to ?? lm.s + 200) * ribbon.scale, animated));
-    if (lm.kind === 'gaiaHeart') group.add(gaiaHeart(track, ribbon, s, (lm.to ?? lm.s) * ribbon.scale, animated));
-    if (lm.kind === 'deadEarth') group.add(deadEarth(track, ribbon, s, (lm.to ?? lm.s + 90) * ribbon.scale, animated));
-    if (lm.kind === 'luckyRainbow') group.add(luckyRainbow(ribbon, s, animated));
-    if (lm.kind === 'strawsGate') group.add(strawsGate(ribbon, s, animated));
-    if (lm.kind === 'trashTornado') group.add(trashTornado(ribbon, s, lm.lateral ?? 0, animated));
-    if (lm.kind === 'cheshireGrin') group.add(cheshireGrin(ribbon, s, animated));
-    if (lm.kind === 'hellsKitchen') group.add(hellsKitchen(ribbon, s, (lm.to ?? lm.s) * ribbon.scale, animated));
-    if (lm.kind === 'hideoutGate') group.add(hideoutGate(ribbon, s, animated));
-    if (lm.kind === 'blackBillabong') group.add(blackBillabong(ribbon, s, (lm.to ?? lm.s + 160) * ribbon.scale, track.def.pits, animated));
-    if (lm.kind === 'rinkGate') group.add(rinkGate(ribbon, s, animated));
-    if (lm.kind === 'sadieColossus') group.add(sadieColossus(ribbon, s, lm.lateral ?? 0, animated));
-    if (lm.kind === 'quidditchHoops') group.add(quidditchHoops(ribbon, s, animated));
-    if (lm.kind === 'masquerade') group.add(masquerade(ribbon, s, (lm.to ?? lm.s + 100) * ribbon.scale, animated));
-    if (lm.kind === 'flightPath') group.add(flightPath(ribbon, s, (lm.to ?? lm.s + 200) * ribbon.scale, animated));
-    if (lm.kind === 'poisonGarden') group.add(poisonGarden(ribbon, s, (lm.to ?? lm.s + 80) * ribbon.scale, animated));
-    if (lm.kind === 'grannyCottage') group.add(grannyCottage(ribbon, s, (lm.to ?? lm.s + 100) * ribbon.scale, animated));
-    if (lm.kind === 'pitchforkMob') group.add(pitchforkMob(ribbon, s, (lm.to ?? lm.s + 100) * ribbon.scale, animated));
-    if (lm.kind === 'duckingStool') group.add(duckingStool(ribbon, s, track.def.pits, animated));
-    if (lm.kind === 'bigTop') group.add(bigTop(ribbon, s, (lm.to ?? lm.s + 100) * ribbon.scale, animated));
-    if (lm.kind === 'poisonPool') group.add(poisonPool(ribbon, s, track.def.pits, animated));
-    if (lm.kind === 'waxDoor') group.add(waxDoor(ribbon, s, animated));
-    if (lm.kind === 'floorJoists') group.add(floorJoists(track, ribbon, s, (lm.to ?? lm.s + 150) * ribbon.scale));
-    if (lm.kind === 'rugHill') group.add(rugHill(ribbon, s));
-    if (lm.kind === 'windowSill') group.add(windowSill(ribbon, s, (lm.to ?? lm.s + 100) * ribbon.scale, animated));
-    if (lm.kind === 'giantCandle') group.add(giantCandle(ribbon, s, lm.lateral ?? 0, animated));
-    if (lm.kind === 'lavaLamp') group.add(lavaLamp(ribbon, s, lm.lateral ?? 0, animated));
-    if (lm.kind === 'waxJungle') group.add(waxJungle(track, ribbon, s, (lm.to ?? lm.s + 100) * ribbon.scale, animated));
-    if (lm.kind === 'armchair') group.add(armchair(ribbon, s, animated));
-    if (lm.kind === 'giantFeet') group.add(giantFeet(ribbon, s, animated));
-    if (lm.kind === 'kitchenSink') group.add(kitchenSink(ribbon, s, (lm.to ?? lm.s + 100) * ribbon.scale, animated));
-    if (lm.kind === 'spiltDrink') group.add(spiltDrink(ribbon, s, track.def.pits, animated));
-    if (lm.kind === 'lordShrine') group.add(lordShrine(ribbon, s, lm.lateral ?? 0, animated));
-    if (lm.kind === 'glassHead') group.add(glassHead(ribbon, s, animated));
-    if (lm.kind === 'waxMaze') group.add(waxMaze(track, ribbon, s, (lm.to ?? lm.s + 100) * ribbon.scale));
-    if (lm.kind === 'giantLeaves') group.add(giantLeaves(ribbon, s, (lm.to ?? lm.s + 80) * ribbon.scale, animated));
-    if (lm.kind === 'giantBed') group.add(giantBed(ribbon, s, animated));
-    if (lm.kind === 'giantLeg') group.add(giantLeg(ribbon, s, lm.lateral ?? 0, animated));
-    if (lm.kind === 'springKing') group.add(springKing(ribbon, s, lm.lateral ?? 0, animated));
-    if (lm.kind === 'learningHow') group.add(learningHow(ribbon, s, track.def.pits, animated));
-    if (lm.kind === 'ropeGums') group.add(ropeGums(ribbon, s, (lm.to ?? lm.s + 150) * ribbon.scale, animated));
-    if (lm.kind === 'burningCamp') group.add(burningCamp(ribbon, s, lm.lateral ?? -(ribbon.halfWidthAtS(s) + 34), animated));
-    if (lm.kind === 'troopersCamp') group.add(troopersCamp(ribbon, s, (lm.to ?? lm.s + 80) * ribbon.scale, track.def.pits, animated));
-    if (lm.kind === 'wantedPoster') group.add(wantedPoster(ribbon, s, lm.lateral, animated));
-    if (lm.kind === 'trestle') group.add(trestle(ribbon, s, (lm.to ?? lm.s + 60) * ribbon.scale));
-    if (lm.kind === 'stationHomestead') group.add(stationHomestead(ribbon, s, lm.lateral, animated));
-    if (lm.kind === 'redDawn') group.add(redDawn(ribbon, s, animated));
-    if (lm.kind === 'stolenGun') group.add(stolenGun(ribbon, s, animated));
-    if (lm.kind === 'forgottenPier') group.add(forgottenPier(ribbon, s, (lm.to ?? lm.s) * ribbon.scale, animated));
-    if (lm.kind === 'shortStraw') group.add(shortStraw(ribbon, s, animated));
-    if (lm.kind === 'metronome') group.add(metronome(ribbon, s, animated));
-    if (lm.kind === 'emptyStage') group.add(emptyStage(ribbon, s, lm.lateral ?? 45, animated));
-    if (lm.kind === 'shotClock') group.add(shotClock(ribbon, s, track.def.pits, animated));
-    if (lm.kind === 'companion') group.add(companion(ribbon, s, lm.lateral ?? -45, animated));
-    if (lm.kind === 'setInStone') group.add(setInStone(ribbon, s, track.def.pits, animated));
     if (lm.kind === 'dragonFlight') {
       const d = dragonFlight(track.def.bounds);
       group.add(d.group);
@@ -1765,8 +1667,9 @@ function decor(track: Track, mats: Materials, theme: Theme, animated: ((time: nu
     track.def.pits.every((p) => !inPit({ ...p, halfWidth: p.halfWidth + 6, halfLength: p.halfLength + 6 }, x, z));
 
   const scale = densityScale();
-  const rockCount = Math.round(scale * ({ jungle: 120, city: 0, sky: 0, lagoon: 60, glacier: 140, wasteland: 150, colony: 170, plains: 60, cosmos: 0, isle: 90, airstrip: 40, grove: 90, sea: 70, peaks: 120, alienSea: 40, garden: 30, shore: 110, ruins: 160, clouds: 0, cytoplasm: 60, spectrum: 40, foundry: 60, theatre: 30, boneyard: 140, pedalboard: 20, blight: 120, domes: 90, corona: 0, pit: 160, neurons: 50, opart: 0, panes: 20, static: 60, bandroom: 30, wetland: 60, party: 10, canopy: 90, hadean: 110, deshret: 60, moonpalace: 70, uruk: 90, nanshouse: 0, suburb: 30, headtrip: 40, paddock: 40, den: 0, alteredworld: 50, mudflat: 80, hollowness: 70, openCut: 140, forge: 50, driverless: 0, reactor: 60, network: 0, summer: 40, scala: 90, slumber: 40, cyborg: 0, gaia: 70, strawfield: 0, emptyTown: 30, waxworks: 90, sorcery: 30 }[theme.decor as string] ?? 220));
-  const featureCount = Math.round(scale * ({ jungle: 150, meadow: 110, lagoon: 120, glacier: 160, city: 90, sky: 90, wasteland: 110, colony: 110, plains: 140, cosmos: 110, isle: 140, airstrip: 110, grove: 170, sea: 120, peaks: 140, alienSea: 150, garden: 170, shore: 140, ruins: 120, clouds: 110, cytoplasm: 160, spectrum: 150, foundry: 150, theatre: 150, boneyard: 160, pedalboard: 160, blight: 150, domes: 140, corona: 160, pit: 160, neurons: 170, opart: 150, panes: 160, static: 170, bandroom: 160, wetland: 180, party: 160, canopy: 260, hadean: 170, deshret: 160, moonpalace: 170, uruk: 180, nanshouse: 190, suburb: 170, headtrip: 190, paddock: 170, den: 190, alteredworld: 180, mudflat: 180, hollowness: 160, openCut: 170, forge: 170, driverless: 170, reactor: 150, network: 170, summer: 230, scala: 190, slumber: 180, cyborg: 180, gaia: 240, strawfield: 200, emptyTown: 230, waxworks: 220, sorcery: 230 }[theme.decor as string] ?? 70));
+  const kit = KIT_DECORS.get(theme.decor);
+  const rockCount = Math.round(scale * (kit ? (kit.rocks ?? 220) : ({ jungle: 120, city: 0, sky: 0, lagoon: 60, glacier: 140, wasteland: 150, colony: 170, plains: 60, cosmos: 0, isle: 90, airstrip: 40, grove: 90, sea: 70, peaks: 120, alienSea: 40, garden: 30, shore: 110, ruins: 160, clouds: 0, cytoplasm: 60, spectrum: 40, foundry: 60, theatre: 30, boneyard: 140, pedalboard: 20, blight: 120, domes: 90, corona: 0, pit: 160, neurons: 50, opart: 0, panes: 20, static: 60, bandroom: 30, wetland: 60, party: 10, canopy: 90, hadean: 110, deshret: 60, moonpalace: 70, uruk: 90, nanshouse: 0, suburb: 30, headtrip: 40, paddock: 40, den: 0, alteredworld: 50, mudflat: 80, hollowness: 70, openCut: 140, forge: 50, driverless: 0, reactor: 60, network: 0, summer: 40, scala: 90, slumber: 40 }[theme.decor as string] ?? 220)));
+  const featureCount = Math.round(scale * (kit ? (kit.features ?? 70) : ({ jungle: 150, meadow: 110, lagoon: 120, glacier: 160, city: 90, sky: 90, wasteland: 110, colony: 110, plains: 140, cosmos: 110, isle: 140, airstrip: 110, grove: 170, sea: 120, peaks: 140, alienSea: 150, garden: 170, shore: 140, ruins: 120, clouds: 110, cytoplasm: 160, spectrum: 150, foundry: 150, theatre: 150, boneyard: 160, pedalboard: 160, blight: 150, domes: 140, corona: 160, pit: 160, neurons: 170, opart: 150, panes: 160, static: 170, bandroom: 160, wetland: 180, party: 160, canopy: 260, hadean: 170, deshret: 160, moonpalace: 170, uruk: 180, nanshouse: 190, suburb: 170, headtrip: 190, paddock: 170, den: 190, alteredworld: 180, mudflat: 180, hollowness: 160, openCut: 170, forge: 170, driverless: 170, reactor: 150, network: 170, summer: 230, scala: 190, slumber: 180 }[theme.decor as string] ?? 70)));
   // Sky and void scenery floats at all heights; city towers need room off the road.
   const floating = theme.decor === 'sky' || theme.decor === 'cosmos' || theme.decor === 'clouds';
   const rocks = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 1), mats.rock, rockCount);
@@ -1813,13 +1716,17 @@ const blobGeo = new THREE.IcosahedronGeometry(1, 1);
 
 /** Builds one piece of a theme's characteristic scenery; anything that moves registers in `animated`. `track`: for scenery that goes by which stretch of the lap it's beside. */
 function featureBuilder(theme: Theme, mats: Materials, animated: ((time: number) => void)[], track?: Track): Feature {
+  // A kit's scenery builds itself.
+  const kit = KIT_DECORS.get(theme.decor);
+  if (kit) return kit.feature(animated, track);
+  const decor = theme.decor as CoreDecor;
   const trunkGeo = new THREE.CylinderGeometry(0.45, 0.55, 1, 10);
   const at = (t: THREE.Object3D, x: number, z: number, rand: () => number, spin = true) => {
     t.position.set(x, 0, z);
     if (spin) t.rotation.y = rand() * Math.PI * 2;
     return t;
   };
-  switch (theme.decor) {
+  switch (decor) {
     case 'wasteland':
       return wastelandFeature(mats, animated, trunkGeo);
     case 'colony':
@@ -1904,9 +1811,6 @@ function featureBuilder(theme: Theme, mats: Materials, animated: ((time: number)
       return denFeature(animated);
     case 'alteredworld':
       return alteredFeature(animated);
-    case 'sorcery':
-      // Sadie's town by night, by the stretch of the pentagram it's beside.
-      return sorceryFeature(animated, track);
     case 'mudflat':
       return newWorldFeature(animated);
     case 'hollowness':
@@ -1929,25 +1833,6 @@ function featureBuilder(theme: Theme, mats: Materials, animated: ((time: number)
       return scalaFeature(animated, track && chainTiers(track));
     case 'slumber':
       return slumberFeature(animated);
-    case 'reaping':
-      // The frontier, dressed by which stretch of the reaper's round it's beside.
-      return reapingFeature(animated, track);
-    case 'cyborg':
-      // Cyboogie's: what's inside him, by the part of him the road is passing through.
-      return cyborgFeature(animated, track && cyborgZones(track));
-    case 'nightbush':
-      // Mad Dog Morgan's country, dressed by which stretch of the lap it's beside.
-      return nightbushFeature(animated, track);
-    case 'gaia':
-      // Her living land, her hair, her parasites and the dead earth, by the stretch of the lap it's nearest.
-      return gaiaFeature(animated, track && gaiaZones(track));
-    case 'waxworks':
-      // Hot Wax's floor: candles, bottles and drips everywhere, house plants and toy animals round the safari.
-      return waxworksFeature(animated, track);
-    case 'strawfield':
-      return strawFeature(animated);
-    case 'emptyTown':
-      return emptyFeature(animated);
     case 'lagoon': {
       const bark = lambert(0x9a7a52);
       const frond = lambert(0x3aa04a, { side: THREE.DoubleSide, flatShading: true });
