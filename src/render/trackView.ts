@@ -333,7 +333,13 @@ export function buildTrackView(track: Track): TrackView {
   for (const l of track.def.launchers ?? []) group.add(launcher(track, l, animated));
 
   group.add(startLine(track));
-  for (const lm of track.def.landmarks) {
+  // What each landmark added is tagged with its index in the track's list (tools/landmark-shots.mjs frames them by it).
+  let tagged = group.children.length;
+  const tagLandmark = (index: number) => {
+    for (; tagged < group.children.length; tagged++) group.children[tagged].userData.landmark = index;
+  };
+  for (const [index, lm] of track.def.landmarks.entries()) {
+    tagLandmark(index - 1);
     const ribbon = track.ribbon(lm.ribbon);
     const s = lm.s * ribbon.scale;
     // A kit's landmark builds itself.
@@ -491,6 +497,7 @@ export function buildTrackView(track: Track): TrackView {
       animated.push(w.update);
     }
   }
+  tagLandmark(track.def.landmarks.length - 1);
   // Where a road dives under water: kelp, fish, bubbles and light from the surface.
   const dives = abyss ? [] : track.def.pits.filter((p) => p.liquid === 'water' && divesInto(track, p));
   // Muddy water has its own riverbed under it: snags, reeds and catfish in the brown.
