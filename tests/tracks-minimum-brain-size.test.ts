@@ -184,6 +184,45 @@ describe('Minimum Brain Size', () => {
   });
 });
 
+describe('Minimum Brain Size walls', () => {
+  // Every pair of road samples near each other on different stretches, the upper first.
+  const pairs = () => {
+    const rs = [main, ...track.branches];
+    const out: { up: Ribbon; i: number; low: Ribbon; j: number; gap: number }[] = [];
+    rs.forEach((A, ai) => {
+      for (let i = 0; i < A.spline.count; i += 2) {
+        const ya = A.heightAt(A.spline.dist[i]);
+        rs.forEach((B, bi) => {
+          for (let j = 0; j < B.spline.count; j += 2) {
+            if (ai === bi) {
+              const d = Math.abs(A.spline.dist[i] - B.spline.dist[j]);
+              if (Math.min(d, A.spline.length - d) < 80) continue;
+            }
+            if (B.heightAt(B.spline.dist[j]) >= ya - 0.3) continue;
+            const gap = Math.hypot(A.spline.px[i] - B.spline.px[j], A.spline.pz[i] - B.spline.pz[j]) - A.halfWidth[i] - B.halfWidth[j];
+            if (gap < 2.5) out.push({ up: A, i, low: B, j, gap });
+          }
+        });
+      }
+    });
+    return out;
+  };
+  const all = pairs();
+
+  it('keeps every lower road and its walls well under any road over it', () => {
+    for (const { up, i, low, j, gap } of all.filter((p) => p.gap < 0)) {
+      const top = low.heightAt(low.spline.dist[j]) + low.wallHeight[j];
+      expect(up.heightAt(up.spline.dist[i]) - top, `${up.sectionName(i)} over ${low.sectionName(j)}`).toBeGreaterThan(2);
+      expect(gap).toBeLessThan(0);
+    }
+  });
+
+  it('walls the spiral high beside a road below, so no kart drops from one level to the next', () => {
+    for (const { up, i } of all.filter((p) => p.gap >= 0)) expect(up.wallHeight[i], up.sectionName(i)).toBeGreaterThanOrEqual(2.5);
+    for (const name of ['Sympathetic Crowds', "I'm So Lonely", 'Faceless Undertow', 'Radicalise', 'At the Center of It All']) expect(section(name).parts[0].wallHeight!).toBeGreaterThanOrEqual(2.5);
+  });
+});
+
 describe("Couldn't Hack It, the shortcut", () => {
   const k = def.branches.findIndex((b) => b.name === "Couldn't Hack It");
   const bdef = def.branches[k];

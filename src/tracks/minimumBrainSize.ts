@@ -26,9 +26,16 @@ const SLICE = 10;
 /** The opening straight from the bedroom to the rim, and the straight home before the line. */
 const OPENING = 150;
 const TAIL = 60;
-/** The centre's cut: the road sinks this far, walled this high. */
+/** The centre's cut: the road sinks this far; its walls (Track.cutInto) rise to the rim. */
 export const DEPTH = 7;
-const CUT_WALL = 6;
+const CUT_WALL = 2.6;
+/** The spiral's walls, high enough that a kart can't hop from one turn onto the next or into the cut. */
+const SPIRAL_WALL = 3;
+/** Lower where Couldn't Hack It leaves the way in and crosses and joins the way out, level with them: a wall there would stand up through the lane. */
+const LANE_WALL = 1.1;
+/** Where the way in starts down into the cut: past the lane, once it's clear overhead. */
+const DIVE_FROM = 26;
+const DIVE_LEN = 60;
 /** The long road back over the spiral: its deck this high over the ground it crosses. */
 export const DECK = 11;
 const CHORD_R = 70;
@@ -130,29 +137,29 @@ function lay(b: TrackBuilder, deck: Deck) {
   b.mark('rim');
 
   // The way in, tightening: the road narrows with every turn.
-  b.section('Sympathetic Crowds', props(10.5, 1.4));
+  b.section('Sympathetic Crowds', props(10.5, SPIRAL_WALL));
   b.mark('crowds');
   inArm(0, 60);
-  b.section('Dance Like Flies', props(9.5, 1.3));
+  b.section('Dance Like Flies', props(9.5, SPIRAL_WALL - 0.1));
   b.mark('flies');
   inArm(60, 130);
-  b.section('To All of the People Who Had It Coming', props(8.5, 1.2));
+  b.section('To All of the People Who Had It Coming', props(8.5, SPIRAL_WALL - 0.2));
   b.mark('coming');
   inArm(130, 200);
-  b.section('A Few Biccys Too Many', props(7.5, 1.1));
+  b.section('A Few Biccys Too Many', props(7.5, SPIRAL_WALL - 0.3));
   b.mark('biccys');
   inArm(200, 260);
-  b.section("I'm So Lonely", props(6.5, 1));
+  b.section("I'm So Lonely", props(6.5, SPIRAL_WALL - 0.4));
   b.mark('lonely');
   inArm(260, 320);
-  b.section('Open Their Eyes', props(5, 1));
+  b.section('Open Their Eyes', props(5, LANE_WALL));
   b.mark('eyes');
   inArm(320, LANE_FROM);
   b.mark('laneFrom');
   inArm(LANE_FROM, 360);
 
   // The centre, sunk: an S of two half-circles round two islands.
-  b.section('Minimum Brain Size', props(4, CUT_WALL));
+  b.section('Minimum Brain Size', props(4, LANE_WALL));
   b.mark('minimum');
   b.arc(HUB, 90);
   b.arc(HUB, 90);
@@ -171,27 +178,33 @@ function lay(b: TrackBuilder, deck: Deck) {
   b.section('You Will Not Be Missed', props(4.5, CUT_WALL));
   b.mark('missed');
   outArm(0, 30);
-  b.section('Said the Tear to the Eye', props(6, 1));
+  const outTo = (a: number, z: number) => {
+    // The lane's end, wherever it falls.
+    if (LANE_TO >= a && LANE_TO < z) {
+      outArm(a, LANE_TO);
+      b.mark('laneTo');
+      outArm(LANE_TO, z);
+    } else outArm(a, z);
+  };
+  b.section('Said the Tear to the Eye', props(6, LANE_WALL));
   b.mark('tear');
-  outArm(30, 80);
-  b.section('Pathetic, You’re Weaker Than You Know', props(7, 1.1));
+  outTo(30, 80);
+  b.section('Pathetic, You’re Weaker Than You Know', props(7, LANE_WALL));
   b.mark('pathetic');
-  outArm(80, LANE_TO);
-  b.mark('laneTo');
-  outArm(LANE_TO, 120);
-  b.section('Parasitic Mob', props(8.5, 1.2));
+  outTo(80, 120);
+  b.section('Parasitic Mob', props(8, LANE_WALL));
   b.mark('mob');
   outArm(120, 175);
-  b.section('Faceless Undertow', props(8.5, 1.2));
+  b.section('Faceless Undertow', props(8.5, SPIRAL_WALL - 0.2));
   b.mark('undertow');
   outArm(175, 225);
-  b.section('Himpathetic Bro', props(9.5, 1.3));
+  b.section('Himpathetic Bro', props(9.5, SPIRAL_WALL - 0.1));
   b.mark('bro');
   outArm(225, 270);
-  b.section("You Don't Have a Say Anymore", props(10, 1.4));
+  b.section("You Don't Have a Say Anymore", props(10, SPIRAL_WALL));
   b.mark('say');
   outArm(270, 325);
-  b.section('Radicalise', props(10.5, 1.4));
+  b.section('Radicalise', props(10.5, SPIRAL_WALL));
   b.mark('radicalise');
   outArm(325, 360);
   b.mark('exit');
@@ -215,7 +228,7 @@ function lay(b: TrackBuilder, deck: Deck) {
       }
       if (stage < cuts.length && at >= next - 1e-6) {
         stage++;
-        b.section(names[stage], props(10.5, 1.4, { bridge: stage < 4 }));
+        b.section(names[stage], props(10.5, stage < 4 ? SPIRAL_WALL : 1.4, { bridge: stage < 4 }));
         b.mark(['', 'deck', 'over', 'crest', 'ball'][stage]);
       }
     }
@@ -282,9 +295,9 @@ export function buildMinimumBrainSize(): TrackDef {
   lay(b, deck);
   const m = (name: string, d = 0) => b.marks[name].s + d;
   const ease = (s0: number, y0: number, s1: number, y1: number) => b.profile(s0, s1, (u) => y0 + (y1 - y0) * u * u * (3 - 2 * u));
-  // The centre's cut: down through the eyes, held through the S, and up out of it.
-  ease(m('eyes', 5), 0, m('minimum', 25), -DEPTH);
-  b.profile(m('minimum', 25), m('tear', -30), () => -DEPTH, 10);
+  // The centre's cut: down once the lane is clear of the way in, held through the S, and up out of it.
+  ease(m('minimum', DIVE_FROM), 0, m('minimum', DIVE_FROM + DIVE_LEN), -DEPTH);
+  b.profile(m('minimum', DIVE_FROM + DIVE_LEN), m('tear', -30), () => -DEPTH, 10);
   ease(m('tear', -30), -DEPTH, m('tear', 5), 0);
   // The deck over the spiral, and off its crest.
   ease(m('chord', deck.from - RAMP), 0, m('chord', deck.from + 10), DECK);
