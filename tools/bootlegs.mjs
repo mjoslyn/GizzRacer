@@ -29,6 +29,7 @@ const SHOWS_OUT = new URL('../public/music/shows.json', import.meta.url);
  * the tuning), later than a start may be.
  */
 const SKIP = new Set([
+  "kglw2022-05-22/kglw2022-05-22t09sadie sorceress.mp3",
   "KGLW2022-04-28/KG_TLW.2022-04-28.t08.mp3",
   "gizz2016-02-28/03-Robot Stop _.mp3",
   "gizz2016-02-28/16-I'm in Your Mind Fuzz.mp3",
