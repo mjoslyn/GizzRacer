@@ -453,6 +453,14 @@ const STYLES: Record<DecorKind, DetailStyle> = {
     crowd: false,
   },
   // Straws in the Wind: white-washed fence posts along the farm track, wildflowers and straw in the verge, the media's hoardings never quitting.
+  // Billabong Valley: bush torches along the track, burning in the dark; dry grass; wanted notices for boards.
+  nightbush: {
+    edge: { kind: 'torch', height: 1.6, spacing: 16, color: 0x2a1c14, stripe: 0x4a3020 },
+    light: 0xff7a30,
+    cover: { shape: 'tuft', colors: [0x4a4a30, 0x6a5a38, 0x3a3a28, 0x8a7448, 0x5a3a28], count: 1500 },
+    boards: { words: ['WANTED', 'MAD DOG MORGAN', '£1000 REWARD', 'DEAD OR ALIVE', 'BILLABONG VALLEY', 'BAIL UP!'], bg: ['#2a1e14', '#3a2616'], fg: '#e8d4a8' },
+    crowd: false,
+  },
   strawfield: {
     edge: { kind: 'fence', height: 1.2, spacing: 10, color: 0xece6d8, stripe: 0x8a7a64 },
     cover: { shape: 'tuft', colors: [0x4a9a3a, 0x6ab84a, 0xe0bc5c, 0xe8202a, 0xffd21a, 0xffffff, 0x9a4ad8], count: 1900 },

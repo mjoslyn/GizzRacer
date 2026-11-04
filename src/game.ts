@@ -285,7 +285,7 @@ let fieldSeed = 1;
 let intro = 0;
 /** Smoothed post effect levels. */
 /** Post effects, eased toward their targets each frame; `bite` is the red flash of a hit, decaying. */
-const fx = { haze: 0, kaleido: 0, vhs: 0, duo: 0, box: 0, bite: 0, water: 0, swim: 0, crackle: 0, digitise: 0, doze: 0, drain: 0 };
+const fx = { haze: 0, kaleido: 0, vhs: 0, duo: 0, box: 0, bite: 0, water: 0, swim: 0, crackle: 0, digitise: 0, doze: 0, drain: 0, dawn: 0 };
 
 /** The world's own fog, and the close blue-green of being under water, blended. */
 const SEA_FOG = new THREE.Color(0x0a5a6a);
@@ -2031,6 +2031,7 @@ const HIT_TEXT: Record<ItemKind | HazardKind, string> = {
   pistons: 'TERMINAL ERROR!',
   breaths: 'GAIA EXHALES!',
   trafficLights: 'RED: STAY!',
+  bushrangers: 'NEVER GAVE A WARNING!',
 };
 
 /** What a hazard used well says: the ones that can help. */
@@ -2106,6 +2107,7 @@ const BONUS_TEXT: Record<HazardKind, string> = {
   pistons: 'CYBOOGIE!',
   breaths: 'GAIA BREATHES!',
   trafficLights: 'GREEN: GO!',
+  bushrangers: 'FASTER THAN A STOLEN GUN!',
 };
 
 /** Takes a group out of the scene and frees what it built. */
@@ -2617,6 +2619,9 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
   // Gaia dies on the final lap and no one sees: the colour drains out of her world as the lap goes on, nearly grey at the line.
   const dying = finalLap && theme.dies ? 0.25 + 0.55 * clamp(player!.progressS / track.length, 0, 1) : 0;
   fx.drain += (dying - fx.drain) * damp(1.5, frameDt);
+  // Billabong Valley's dawn on the final lap: the night giving way to a blood-red morning as the lap goes on.
+  const dawning = finalLap && theme.dawn ? 0.2 + 0.8 * clamp(player!.progressS / track.length, 0, 1) : 0;
+  fx.dawn += (dawning - fx.dawn) * damp(1.5, frameDt);
   // The Rattlesnake video's look: full for the flyover and behind the title and menus, on tape through the race, a bite when hit.
   const look = VHS_LEVELS[settings().videoLook];
   const attract = !player && mode !== 'podium' && !watching;
@@ -2640,7 +2645,7 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
   if (mode === 'skill') return;
   if (splitView) return renderSplit(theme.skyCycle ? Math.PI * 2 * skyTurn : 0, drawn);
   const beat = music.beatPhase();
-  postFx.render(scene, camera, { haze: fx.haze, kaleido: fx.kaleido, beat: beat >= 0 ? beat : (elapsed * 2.4) % 1, time: elapsed, vhs: fx.vhs, duo: fx.duo, box: fx.box, palette: theme.duotone, water: fx.water, murk: theme.murk, swim: fx.swim, crackle: fx.crackle, digitise: fx.digitise, doze: fx.doze, drain: fx.drain });
+  postFx.render(scene, camera, { haze: fx.haze, kaleido: fx.kaleido, beat: beat >= 0 ? beat : (elapsed * 2.4) % 1, time: elapsed, vhs: fx.vhs, duo: fx.duo, box: fx.box, palette: theme.duotone, water: fx.water, murk: theme.murk, swim: fx.swim, crackle: fx.crackle, digitise: fx.digitise, doze: fx.doze, drain: fx.drain, dawn: fx.dawn });
 });
 
 /** The podium's extra line: the trophy and what it unlocked. */

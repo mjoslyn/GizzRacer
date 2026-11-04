@@ -21,9 +21,10 @@ import { adobeTexture, scorchedGroundTexture, waveformRailTexture } from './theG
 import { brineTankTexture, plateTexture, synthPanelTexture } from './cyboogie';
 import { blightTexture, rootBarrierTexture, strataTexture as gaiaStrataTexture } from './gaia';
 import { boardsTexture as barnBoardsTexture, fenceTexture as farmFenceTexture, flowerFieldTexture } from './strawsInTheWind';
+import { bushFloorTexture, rangeRockTexture, slabFenceTexture } from './billabongValley';
 
 export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism' | 'factory' | 'gamma' | 'carrion' | 'wah' | 'smog' | 'dome' | 'solar' | 'inferno' | 'mind' | 'notmind' | 'cellophane' | 'mindfuzz' | 'elbow' | 'muck' | 'boogie' | 'treesea' | 'theia' | 'set' | 'change' | 'uruk' | 'headon' | 'godcall' | 'nan' | 'float' | 'newworld' | 'foe' | 'altered' | 'hollow' | 'forge' | 'steelwar' | 'autonomy' | 'reactor' | 'muddy' | 'scala' | 'network' | 'wheel' | 'windmill' | 'cyborg' | 'grimreaper' | 'gaia' | 'hotwax' | 'sorceress' | 'emptiness' | 'bushranger';
-export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy' | 'hadean' | 'deshret' | 'moonpalace' | 'uruk' | 'nanshouse' | 'suburb' | 'headtrip' | 'paddock' | 'den' | 'alteredworld' | 'mudflat' | 'hollowness' | 'openCut' | 'forge' | 'driverless' | 'reactor' | 'network' | 'summer' | 'scala' | 'slumber' | 'reaping' | 'cyborg' | 'gaia' | 'strawfield';
+export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy' | 'hadean' | 'deshret' | 'moonpalace' | 'uruk' | 'nanshouse' | 'suburb' | 'headtrip' | 'paddock' | 'den' | 'alteredworld' | 'mudflat' | 'hollowness' | 'openCut' | 'forge' | 'driverless' | 'reactor' | 'network' | 'summer' | 'scala' | 'slumber' | 'reaping' | 'cyborg' | 'gaia' | 'strawfield' | 'nightbush';
 
 /** Everything that makes a track's world look like itself. */
 export interface Theme {
@@ -67,6 +68,8 @@ export interface Theme {
   murk?: number;
   /** Gaia: on the final lap the world dies, its colour draining away as the lap goes on, nearly grey at the line. */
   dies?: boolean;
+  /** Billabong Valley: on the final lap the night gives way to a blood-red dawn as the lap goes on. */
+  dawn?: boolean;
 }
 
 /** Flying Microtonal Banana's worlds through the tape: cobalt shadows, banana yellow, and highlights like the peel. */
@@ -1334,21 +1337,30 @@ export const THEMES: Record<ThemeId, Theme> = {
     dust: 0xd08050,
     barrier: { map: tex.templeWallTexture, crawl: false },
   },
-  // Billabong Valley: (placeholder, Set's look until its world is built).
+  // Billabong Valley: Mad Dog Morgan's country, a dark, violent bush night in the 1860s going to a blood-red dawn: a crescent moon and stars over the black ranges, the horizon glowing red where the dawn is coming and where the camp is burning, smoke lying through the valley; the dark bush floor, and a pale red dirt road through it.
   bushranger: {
-    sky: { zenith: '#0a0a34', high: '#262a78', low: '#c86a3a', horizon: '#ffd070', below: '#c06030', ground: '#6a2a14', cloud: '255,200,150', clouds: 12, stars: { count: 140, color: '#f0f0ff' }, moon: '#f4f4ff' },
-    fog: { color: 0xc07850, near: 160, far: 860 },
-    hemi: { sky: 0xffd0a0, ground: 0x8a3a1a, intensity: 1.5 },
-    sun: { color: 0xffd890, intensity: 2.3 },
-    ground: tex.redSandTexture,
-    groundTile: 20,
-    cliff: tex.templeWallTexture,
-    decor: 'deshret',
-    distant: { shape: 'mesa', color: 0x5a2414 },
-    haze: 0.8,
-    duotone: [0x0a0420, 0xd05a20, 0xffe890],
+    sky: { zenith: '#03040a', high: '#0a0c18', low: '#2a1014', horizon: '#7a2410', below: '#1e0c0a', ground: '#0c0806', cloud: '30,20,22', clouds: 28, stars: { count: 180, color: '#e8e0d0' }, moon: '#e8dcc0' },
+    fog: { color: 0x1e1412, near: 110, far: 640 },
+    hemi: { sky: 0x9098c0, ground: 0x3a2418, intensity: 1.45 },
+    sun: { color: 0xd06a48, intensity: 1.5 },
+    ground: bushFloorTexture,
+    groundTile: 18,
+    // Walls are the ranges' and the gully's: dark granite, iron-stained.
+    cliff: rangeRockTexture,
+    decor: 'nightbush',
+    // The ranges, old and worn round, black against the glow.
+    distant: { shape: 'hill', color: 0x080606 },
+    haze: 0,
+    duotone: [0x040202, 0x8a1a0a, 0xf0c070],
     skyCycle: false,
-    dust: 0xd08050,
-    barrier: { map: tex.templeWallTexture, crawl: false },
+    dust: 0x6a4a3a,
+    barrier: { map: slabFenceTexture, crawl: false },
+    // The billabong, black.
+    murk: 0x101820,
+    // A dark world: the pale dirt road lit a little by its own texture, a line of pale dust down each edge.
+    roadGlow: 0.12,
+    edgeLine: 0xf0d0a0,
+    edgeWidth: 0.5,
+    dawn: true,
   },
 };
