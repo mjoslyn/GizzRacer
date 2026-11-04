@@ -911,12 +911,12 @@ const PALETTES: Record<GenTheme, Palette> = {
   emptiness: {
     surface: 'pale',
     deck: 'pale',
-    alt: 'sand',
-    hazards: ['sunMoon'],
-    start: 'setGate',
-    landmarks: ['setGate'],
+    alt: 'gravel',
+    hazards: ['wanderers'],
+    start: 'metronome',
+    landmarks: ['metronome', 'shotClock'],
     tallWalls: 6,
-    places: ['Jackal', 'Snake', 'Tornado', 'Tomb', 'Duality', 'Sandstorm', 'Moonbeam', 'Hieroglyph', 'Reset'],
+    places: ['Empty', 'Nothing Deep', 'Used to Be', 'Life Is Death', 'Lazy', 'Unset Stone', 'Level', 'Who?', 'Waltz'],
     music: { lap: 'empty', finalLap: 'empty-final-lap' },
   },
   bushranger: {
@@ -1745,6 +1745,10 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
       case 'trafficLights':
         // Gantries of traffic lights down the stretch, changing on the waltz one after another.
         hazards.push({ kind, at: at(count), period: 2.4 });
+        break;
+      case 'wanderers':
+        // Rows of wanderers drifting across the stretch, three to a row.
+        hazards.push({ kind, at: at(count).flatMap((s) => [s, s, s]), period: 12 });
         break;
     }
     return true;

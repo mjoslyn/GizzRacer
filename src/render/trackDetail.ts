@@ -459,6 +459,14 @@ const STYLES: Record<DecorKind, DetailStyle> = {
     boards: { words: ['STRAWS IN THE WIND', 'IS IT ALL ENDING?', 'BREAKING NEWS', 'PANDEMONIUM', 'STAY OR GO', 'K.G.'], bg: ['#c8101a', '#f4ead0', '#1a3a8a'], fg: '#ffffff' },
     crowd: true,
   },
+  // Empty: old street lamps along the empty town's road, still lit in the dawn for nobody; pale grass and straw in the verge.
+  emptyTown: {
+    edge: { kind: 'lamp', height: 4.4, spacing: 24, color: 0x5e626a, stripe: 0xdcd8d0 },
+    light: 0xfff0d8,
+    cover: { shape: 'tuft', colors: [0x8a9480, 0xa8a890, 0x6a7a6a, 0xc8c4b0], count: 1300 },
+    boards: { words: ['EMPTY', 'FEELING SO EMPTY', 'WHO?', 'NEVER SET IN STONE', '3/4', "I'M IN YOUR MIND FUZZ"], bg: ['#ece8e0', '#c8ccd2'], fg: '#4a525e' },
+    crowd: false,
+  },
   // The forge's own fires along the road, nobody out here among the stars but the smith: cinders, slag and stardust.
   forge: {
     edge: { kind: 'torch', height: 1.5, spacing: 16, color: 0x1a1a22, stripe: 0x3a3a48 },

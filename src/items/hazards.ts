@@ -155,6 +155,7 @@ export const WAVE_SPIN = 1.0;
  * - slipped through the gap just behind a pack of hellhounds as the last of them crosses, faster than a cheetah: a boost
  * - hopped onto a piston at the top of its stroke (or as it punches up), ridden: up, and on with a boost
  * - over one of Gaia's ribs as it rises with her breath, thrown on: up, and a boost
+ * - through the one wanderer who isn't empty, the one you're with, drifting across the road with the empty ones: a boost
  */
 /** A reward can't pay out again to the same kart for this long. */
 export const REWARD_COOLDOWN = 1.5;
@@ -1259,6 +1260,52 @@ export function lightColour(u: number): 0 | 1 | 2 {
   return u < LIGHT_STAGES.amber ? 0 : u < LIGHT_STAGES.red ? 1 : 2;
 }
 
+/**
+ * Empty's wanderers: "I'm wandering around so lazily". Rows of figures
+ * drifting across the road in three-four, WANDER_COUNT to a row, spread
+ * evenly across it: on the one of each bar they take a step, on the two
+ * and three they sway where they stand, and they come out of nothing at
+ * one edge and fade to nothing at the other, the next wandering on behind
+ * them. All of them empty but one: coats and hats with nobody in them,
+ * pale as the morning, and in each row one who isn't, the one you're
+ * with, warm. Driven into an empty one you go right through it and it
+ * empties you: the colour drains out of everything, your speed bleeds
+ * away and the wheel wobbles. Through the one you're with, you don't feel
+ * empty: a boost.
+ */
+export const WANDER_COUNT = 3;
+/** Bars of the waltz a wanderer takes to cross: a step on the one of each. */
+export const WANDER_BARS = 8;
+/** How far past each edge of the road a wanderer comes out of nothing and fades back into it. */
+export const WANDER_OUT = 3;
+export const WANDER_RADIUS = 1.3;
+/** Each row down a stretch is this share of a crossing behind the one before. */
+export const WANDER_LAG = 0.29;
+/** Emptied: you keep this share of your speed, and the wheel wobbles this long. */
+export const WANDER_SLOW = 0.55;
+export const WANDER_WOBBLE = 0.9;
+/** Through the one you're with: a boost this long. */
+export const WANDER_WARM = 1.0;
+
+/** Where wanderer `k` of row `row` is in its crossing at race time `t`, 0 to 1. */
+export function wanderPhase(t: number, period: number, row: number, k: number): number {
+  const tt = (t + 10) / period + k / WANDER_COUNT - row * WANDER_LAG;
+  return tt - Math.floor(tt);
+}
+
+/** How far across a wanderer has come at crossing stage `u`, 0 to 1: a step on the one of each bar, standing on the two and three. */
+export function wanderStep(u: number): number {
+  const q = u * WANDER_BARS;
+  const bar = Math.floor(q);
+  const f = Math.min(1, (q - bar) * 3);
+  return (bar + f * f * (3 - 2 * f)) / WANDER_BARS;
+}
+
+/** Whether wanderer `k` of row `row` is the one you're with. */
+export function wanderYou(row: number, k: number): boolean {
+  return k === row % WANDER_COUNT;
+}
+
 /** How far a tree has toppled at cycle stage `u`: 0 upright, a lean while it creaks, 1 lying across the road. */
 export function timberFall(u: number): number {
   const T = TIMBER_STAGES;
@@ -1364,6 +1411,7 @@ const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds' | 'butterfli
   pistons: PISTON_SPIN,
   breaths: 0,
   trafficLights: LIGHT_SPIN,
+  wanderers: 0,
 };
 
 /** Kinds that fill the whole road across, on a rhythm: nothing to steer round, only to time. */
@@ -2180,6 +2228,24 @@ export class HazardSystem {
           p.phase = u;
           break;
         }
+        case 'wanderers': {
+          // A wanderer drifting across the road in three-four with the rest of its row, out of nothing at one edge and into nothing at the other; alternate rows the other way.
+          const at = def.at[i];
+          const row = Math.floor(i / WANDER_COUNT);
+          const k = i % WANDER_COUNT;
+          const u = wanderPhase(t, def.period, row, k);
+          const reach = this.halfWidth(at) + WANDER_OUT;
+          const dir = row % 2 ? -1 : 1;
+          const lat = dir * (-reach + 2 * reach * wanderStep(u));
+          this.place(p, at, lat, 0);
+          p.radius = WANDER_RADIUS;
+          p.side = dir;
+          p.lane = wanderYou(row, k) ? 1 : 0;
+          p.gap = Math.min(1, Math.max(0, (reach - Math.abs(lat)) / WANDER_OUT));
+          p.active = p.gap > 0.5;
+          p.phase = u;
+          break;
+        }
         case 'trafficLights': {
           // A gantry of lights over the road, changing on the waltz's beats a little after the one before it.
           const at = def.at[i];
@@ -2440,6 +2506,10 @@ export class HazardSystem {
         }
         if (p.kind === 'trafficLights') {
           this.trafficLight(hit, p, s);
+          continue;
+        }
+        if (p.kind === 'wanderers') {
+          this.wanderer(hit, p, s);
           continue;
         }
         if (p.kind === 'fuzz' && p.phase >= FUZZ_STAGES.gold && p.phase < FUZZ_STAGES.red) {
@@ -2831,6 +2901,12 @@ export class HazardSystem {
           // The first sheet runs to the right, the second to the left.
           out.push({ x, z, r: SHEET_HALF, vx: -fz * -side * speed, vz: fx * -side * speed });
         }
+        continue;
+      }
+      if (p.kind === 'wanderers') {
+        // An empty one, drifting across: steer round it (the one you're with is there to drive through).
+        if (!p.active || p.lane === 1) continue;
+        out.push({ x: p.x, z: p.z, r: p.radius + 0.4, vx: p.vx, vz: p.vz });
         continue;
       }
       if (p.kind === 'pistons') {
@@ -3611,6 +3687,24 @@ export class HazardSystem {
     this.cooldown.set(s, HIT_COOLDOWN);
     if (!spinOut(s, LIGHT_SPIN)) return;
     s.speed *= LIGHT_SLOW;
+    hit.push({ kart: s, by: p.kind });
+  }
+
+  /**
+   * A wanderer: driven into an empty one, you go right through it and it
+   * empties you, slowed, the wheel wobbling; through the one you're with,
+   * you don't feel empty, a boost.
+   */
+  private wanderer(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+    if (!p.active || Math.hypot(s.x - p.x, s.z - p.z) > p.radius + KART_RADIUS || Math.abs(s.y - p.ground) > 2.5) return;
+    if (p.lane === 1) {
+      this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, WANDER_WARM)));
+      return;
+    }
+    if (this.cooldown.has(s)) return;
+    this.cooldown.set(s, HIT_COOLDOWN);
+    if (!wobble(s, WANDER_WOBBLE)) return;
+    s.speed *= WANDER_SLOW;
     hit.push({ kart: s, by: p.kind });
   }
 

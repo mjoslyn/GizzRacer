@@ -1505,6 +1505,8 @@ function seatStep(seat: Seat, ev: StepEvents, dt: number): void {
       if (e.by === 'sweepers') fx.digitise = 1;
       // Nodded off at the wheel: the screen's eyelids droop, and open again slowly.
       if (e.by === 'dozes') fx.doze = 1;
+      // Emptied by a wanderer: the colour drains out of everything, and comes back.
+      if (e.by === 'wanderers') fx.drain = Math.max(fx.drain, 0.9);
       buzz(seat, 160);
       if (e.by !== 'tempoShift' && e.by !== 'bassDrop') c.bump(0.5);
       if (e.by === 'bassDrop') c.bump(1.2);
@@ -2031,6 +2033,7 @@ const HIT_TEXT: Record<ItemKind | HazardKind, string> = {
   pistons: 'TERMINAL ERROR!',
   breaths: 'GAIA EXHALES!',
   trafficLights: 'RED: STAY!',
+  wanderers: 'FEELING SO EMPTY!',
 };
 
 /** What a hazard used well says: the ones that can help. */
@@ -2106,6 +2109,7 @@ const BONUS_TEXT: Record<HazardKind, string> = {
   pistons: 'CYBOOGIE!',
   breaths: 'GAIA BREATHES!',
   trafficLights: 'GREEN: GO!',
+  wanderers: "I DON'T FEEL EMPTY!",
 };
 
 /** Takes a group out of the scene and frees what it built. */
