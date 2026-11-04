@@ -901,12 +901,11 @@ const PALETTES: Record<GenTheme, Palette> = {
   sorceress: {
     surface: 'rink',
     deck: 'rink',
-    alt: 'sand',
-    hazards: ['sunMoon'],
-    start: 'setGate',
-    landmarks: ['setGate'],
+    hazards: ['brooms'],
+    start: 'rinkGate',
+    landmarks: ['rinkGate', 'quidditchHoops'],
     tallWalls: 6,
-    places: ['Jackal', 'Snake', 'Tornado', 'Tomb', 'Duality', 'Sandstorm', 'Moonbeam', 'Hieroglyph', 'Reset'],
+    places: ['Witch', 'Quidditch', 'Tinnie', 'Rink', 'Masquerade', 'Cauldron', 'Handbag', 'Knapsack', 'Cardigan', 'Nightshade', 'Oleander', 'Buttercup', 'Broomstick', 'Pitchfork', 'Circus'],
     music: { lap: 'sadie-sorceress', finalLap: 'sadie-sorceress-final-lap' },
   },
   emptiness: {
@@ -1758,6 +1757,10 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
       case 'waxFlows':
         // Tongues of hot wax creeping across the stretch one after another, setting as they cool.
         hazards.push({ kind, at: at(count), period: 4.4 });
+        break;
+      case 'brooms':
+        // Sadie swooping across the stretch at one station after another, the other way each time.
+        hazards.push({ kind, at: at(count), period: 4.6 });
         break;
     }
     return true;

@@ -24,6 +24,7 @@ import { houndParts, poseHounds } from './theGrimReaper';
 import { pistonParts, posePiston } from './cyboogie';
 import { breathParts, poseBreath } from './gaia';
 import { poseWaxFlow, waxFlowParts } from './hotWax';
+import { broomParts, poseBroom } from './sadieSorceress';
 import { poseTrafficLight, trafficLightParts } from './strawsInTheWind';
 import { gangParts, poseGang } from './billabongValley';
 import { poseWanderer, wandererParts } from './empty';
@@ -1496,6 +1497,10 @@ export class HazardsView {
           // Mad Dog Morgan and his gang at the gallop, and the dust they throw up.
           parts.push(...gangParts(obj));
           break;
+        case 'brooms':
+          // Sadie on her broomstick, her shadow on the road, the trail of sparks in her slipstream, and her line across the road before she swoops.
+          parts.push(...broomParts(obj));
+          break;
         case 'timber': {
           // A tree at the road's edge: its trunk, as long as the road is wide, and its crown; it leans, creaks and comes down across the road.
           const pivot = new THREE.Group();
@@ -2412,6 +2417,9 @@ export class HazardsView {
           break;
         case 'bushrangers':
           poseGang(obj, parts, p, elapsed);
+          break;
+        case 'brooms':
+          poseBroom(obj, parts, p, elapsed);
           break;
         case 'presents': {
           const [present, lid, inside, shadow, roofs, santa, arm] = parts;

@@ -102,6 +102,8 @@ const LIFE: Record<DecorKind, LifeSpec> = {
   // Hot Wax: moths round the candles, and sparks rising off the flames.
   waxworks: { flock: { kind: 'moth', color: 0xe8d8b0, count: 18, height: 14, size: 0.9 }, motes: { color: 0xffa040, count: 340, size: 0.35, drift: 'rise', glow: true } },
   // Carrion birds wheeling low over her, and ash falling.
+  // Bats round Sadie's town, and sparks off her broomstick drifting down, pink and green.
+  sorcery: { flock: { kind: 'bat', color: 0x0a060e, count: 16, height: 22, size: 1 }, motes: { color: 0xff6ac8, count: 340, size: 0.35, drift: 'fall', glow: true } },
   gaia: { flock: { kind: 'vulture', color: 0x0e0c0a, count: 12, height: 22, size: 1.5 }, motes: { color: 0x8a8480, count: 300, size: 0.4, drift: 'fall' } },
   // Crows tossed about over the field, and straw blowing through the air.
   // Flying foxes over the valley, and embers rising from the burning camp into the smoke.

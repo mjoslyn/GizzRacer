@@ -24,9 +24,10 @@ import { boardsTexture as barnBoardsTexture, fenceTexture as farmFenceTexture, f
 import { bushFloorTexture, rangeRockTexture, slabFenceTexture } from './billabongValley';
 import { boardConcreteTexture, dewGroundTexture, picketTexture as whitePicketTexture } from './empty';
 import { floorboardTexture, wallpaperTexture, waxRailTexture } from './hotWax';
+import { cryptWallTexture, hexGroundTexture, rinkRailTexture } from './sadieSorceress';
 
 export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism' | 'factory' | 'gamma' | 'carrion' | 'wah' | 'smog' | 'dome' | 'solar' | 'inferno' | 'mind' | 'notmind' | 'cellophane' | 'mindfuzz' | 'elbow' | 'muck' | 'boogie' | 'treesea' | 'theia' | 'set' | 'change' | 'uruk' | 'headon' | 'godcall' | 'nan' | 'float' | 'newworld' | 'foe' | 'altered' | 'hollow' | 'forge' | 'steelwar' | 'autonomy' | 'reactor' | 'muddy' | 'scala' | 'network' | 'wheel' | 'windmill' | 'cyborg' | 'grimreaper' | 'gaia' | 'hotwax' | 'sorceress' | 'emptiness' | 'bushranger';
-export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy' | 'hadean' | 'deshret' | 'moonpalace' | 'uruk' | 'nanshouse' | 'suburb' | 'headtrip' | 'paddock' | 'den' | 'alteredworld' | 'mudflat' | 'hollowness' | 'openCut' | 'forge' | 'driverless' | 'reactor' | 'network' | 'summer' | 'scala' | 'slumber' | 'reaping' | 'cyborg' | 'gaia' | 'strawfield' | 'emptyTown' | 'nightbush' | 'waxworks';
+export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy' | 'hadean' | 'deshret' | 'moonpalace' | 'uruk' | 'nanshouse' | 'suburb' | 'headtrip' | 'paddock' | 'den' | 'alteredworld' | 'mudflat' | 'hollowness' | 'openCut' | 'forge' | 'driverless' | 'reactor' | 'network' | 'summer' | 'scala' | 'slumber' | 'reaping' | 'cyborg' | 'gaia' | 'strawfield' | 'emptyTown' | 'nightbush' | 'waxworks' | 'sorcery';
 
 /** Everything that makes a track's world look like itself. */
 export interface Theme {
@@ -1312,22 +1313,30 @@ export const THEMES: Record<ThemeId, Theme> = {
     edgeLine: 0xff8a2a,
     edgeWidth: 0.6,
   },
-  // Sadie Sorceress: (placeholder, Set's look until its world is built).
+  // Sadie Sorceress: Sadie's night out, 80s roller disco and witchcraft; a violet night, the town's neon glowing pink low down, a sickly moon over it, stars; dark heath, and the road a pale maple roller rink floor lit by its own neon, a pink line down each edge.
   sorceress: {
-    sky: { zenith: '#0a0a34', high: '#262a78', low: '#c86a3a', horizon: '#ffd070', below: '#c06030', ground: '#6a2a14', cloud: '255,200,150', clouds: 12, stars: { count: 140, color: '#f0f0ff' }, moon: '#f4f4ff' },
-    fog: { color: 0xc07850, near: 160, far: 860 },
-    hemi: { sky: 0xffd0a0, ground: 0x8a3a1a, intensity: 1.5 },
-    sun: { color: 0xffd890, intensity: 2.3 },
-    ground: tex.redSandTexture,
-    groundTile: 20,
-    cliff: tex.templeWallTexture,
-    decor: 'deshret',
-    distant: { shape: 'mesa', color: 0x5a2414 },
-    haze: 0.8,
-    duotone: [0x0a0420, 0xd05a20, 0xffe890],
+    sky: { zenith: '#07030f', high: '#1c0a30', low: '#4a1450', horizon: '#c02a7a', below: '#2a0c30', ground: '#0e0814', cloud: '60,30,70', clouds: 18, stars: { count: 160, color: '#f0e0ff' }, moon: '#d8ff9a' },
+    fog: { color: 0x2a1236, near: 140, far: 760 },
+    hemi: { sky: 0xb8a0e0, ground: 0x302040, intensity: 1.5 },
+    sun: { color: 0xd8c8ff, intensity: 1.6 },
+    ground: hexGroundTexture,
+    groundTile: 18,
+    // Walls are crypt brick, violet-black, moss down them: the masquerade's cut and the world's edge.
+    cliff: cryptWallTexture,
+    decor: 'sorcery',
+    distant: { shape: 'hill', color: 0x120818 },
+    haze: 0,
+    duotone: [0x08020e, 0xff2a9a, 0xb8ff5a],
     skyCycle: false,
-    dust: 0xd08050,
-    barrier: { map: tex.templeWallTexture, crawl: false },
+    dust: 0x6a5a7a,
+    // A roller rink's padded rail, its chase lights running along it.
+    barrier: { map: rinkRailTexture, crawl: true },
+    // A dark world: the pale rink floor lit by its own neon, a hot pink line down each edge.
+    roadGlow: 0.14,
+    edgeLine: 0xff3aa8,
+    edgeWidth: 0.5,
+    // The ducking pond: black-green, poisoned.
+    murk: 0x0e2414,
   },
   // Empty: an empty town on a pale plain at dawn, nobody about; a milky, faded sky, pale peach low down where the sun is coming up cold, a white moon still out; mist over everything; the plain grey-green with dew, the road pale old concrete with a slate kerb down each edge.
   emptiness: {
