@@ -29,6 +29,8 @@ const SHOWS_OUT = new URL('../public/music/shows.json', import.meta.url);
  * the tuning), later than a start may be.
  */
 const SKIP = new Set([
+  "kg2022-11-02/73. Hot Wax (Live At Red Rocks '22).mp3",
+  "kg2022-11-02/70. Sadie Sorceress (Live At Red Rocks '22).mp3",
   "KGATLW082319/19.Head On Pill.mp3",
   "kglw2014-10-31.nyctaper.matrix.flac16/KingGizzard2014-10-31_nyctaper_t01.mp3",
   "kglw2018-06-07.aud.flac.norm.16.44/08  Head On Pill.mp3",
