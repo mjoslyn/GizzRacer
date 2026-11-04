@@ -21,9 +21,10 @@ import { adobeTexture, scorchedGroundTexture, waveformRailTexture } from './theG
 import { brineTankTexture, plateTexture, synthPanelTexture } from './cyboogie';
 import { blightTexture, rootBarrierTexture, strataTexture as gaiaStrataTexture } from './gaia';
 import { boardsTexture as barnBoardsTexture, fenceTexture as farmFenceTexture, flowerFieldTexture } from './strawsInTheWind';
+import { boardConcreteTexture, dewGroundTexture, picketTexture as whitePicketTexture } from './empty';
 
 export type ThemeId = 'desert' | 'speedway' | 'volcano' | 'jungle' | 'lagoon' | 'glacier' | 'neon' | 'dream' | 'petro' | 'mars' | 'storm' | 'void' | 'phantom' | 'airfield' | 'grove' | 'doubt' | 'magenta' | 'kepler' | 'goblin' | 'primeval' | 'castle' | 'skycastle' | 'cell' | 'prism' | 'factory' | 'gamma' | 'carrion' | 'wah' | 'smog' | 'dome' | 'solar' | 'inferno' | 'mind' | 'notmind' | 'cellophane' | 'mindfuzz' | 'elbow' | 'muck' | 'boogie' | 'treesea' | 'theia' | 'set' | 'change' | 'uruk' | 'headon' | 'godcall' | 'nan' | 'float' | 'newworld' | 'foe' | 'altered' | 'hollow' | 'forge' | 'steelwar' | 'autonomy' | 'reactor' | 'muddy' | 'scala' | 'network' | 'wheel' | 'windmill' | 'cyborg' | 'grimreaper' | 'gaia' | 'hotwax' | 'sorceress' | 'emptiness' | 'bushranger';
-export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy' | 'hadean' | 'deshret' | 'moonpalace' | 'uruk' | 'nanshouse' | 'suburb' | 'headtrip' | 'paddock' | 'den' | 'alteredworld' | 'mudflat' | 'hollowness' | 'openCut' | 'forge' | 'driverless' | 'reactor' | 'network' | 'summer' | 'scala' | 'slumber' | 'reaping' | 'cyborg' | 'gaia' | 'strawfield';
+export type DecorKind = 'desert' | 'meadow' | 'volcanic' | 'jungle' | 'lagoon' | 'glacier' | 'city' | 'sky' | 'wasteland' | 'colony' | 'plains' | 'cosmos' | 'isle' | 'airstrip' | 'grove' | 'sea' | 'peaks' | 'alienSea' | 'garden' | 'shore' | 'ruins' | 'clouds' | 'cytoplasm' | 'spectrum' | 'foundry' | 'theatre' | 'boneyard' | 'pedalboard' | 'blight' | 'domes' | 'corona' | 'pit' | 'neurons' | 'opart' | 'panes' | 'static' | 'bandroom' | 'wetland' | 'party' | 'canopy' | 'hadean' | 'deshret' | 'moonpalace' | 'uruk' | 'nanshouse' | 'suburb' | 'headtrip' | 'paddock' | 'den' | 'alteredworld' | 'mudflat' | 'hollowness' | 'openCut' | 'forge' | 'driverless' | 'reactor' | 'network' | 'summer' | 'scala' | 'slumber' | 'reaping' | 'cyborg' | 'gaia' | 'strawfield' | 'emptyTown';
 
 /** Everything that makes a track's world look like itself. */
 export interface Theme {
@@ -1317,22 +1318,28 @@ export const THEMES: Record<ThemeId, Theme> = {
     dust: 0xd08050,
     barrier: { map: tex.templeWallTexture, crawl: false },
   },
-  // Empty: (placeholder, Set's look until its world is built).
+  // Empty: an empty town on a pale plain at dawn, nobody about; a milky, faded sky, pale peach low down where the sun is coming up cold, a white moon still out; mist over everything; the plain grey-green with dew, the road pale old concrete with a slate kerb down each edge.
   emptiness: {
-    sky: { zenith: '#0a0a34', high: '#262a78', low: '#c86a3a', horizon: '#ffd070', below: '#c06030', ground: '#6a2a14', cloud: '255,200,150', clouds: 12, stars: { count: 140, color: '#f0f0ff' }, moon: '#f4f4ff' },
-    fog: { color: 0xc07850, near: 160, far: 860 },
-    hemi: { sky: 0xffd0a0, ground: 0x8a3a1a, intensity: 1.5 },
-    sun: { color: 0xffd890, intensity: 2.3 },
-    ground: tex.redSandTexture,
-    groundTile: 20,
-    cliff: tex.templeWallTexture,
-    decor: 'deshret',
-    distant: { shape: 'mesa', color: 0x5a2414 },
-    haze: 0.8,
-    duotone: [0x0a0420, 0xd05a20, 0xffe890],
+    sky: { zenith: '#8c9eb2', high: '#b4c0cc', low: '#e2d8cc', horizon: '#f6e4cc', below: '#d6d0c6', ground: '#7c8a80', cloud: '238,234,228', clouds: 14, moon: '#f6f4f0' },
+    fog: { color: 0xdcd8d2, near: 100, far: 560 },
+    hemi: { sky: 0xeef2f6, ground: 0x66706a, intensity: 1.45 },
+    sun: { color: 0xfff0dc, intensity: 1.55 },
+    ground: dewGroundTexture,
+    groundTile: 18,
+    // Walls are the cut's and the world's edge: board-marked concrete, pale and stained.
+    cliff: boardConcreteTexture,
+    decor: 'emptyTown',
+    // An empty city on the horizon, pale in the mist.
+    distant: { shape: 'city', color: 0xa4aab2 },
+    haze: 0,
+    duotone: [0x2a2e38, 0x9aa4ae, 0xf6ece0],
     skyCycle: false,
-    dust: 0xd08050,
-    barrier: { map: tex.templeWallTexture, crawl: false },
+    dust: 0xc8c6c0,
+    barrier: { map: whitePicketTexture, crawl: false },
+    // A pale road on the grey-green plain, its slate kerb drawn on down each edge so the way reads far ahead in the mist.
+    edgeLine: 0x4a5464,
+    edgeWidth: 0.45,
+    murk: 0x9a968e,
   },
   // Billabong Valley: (placeholder, Set's look until its world is built).
   bushranger: {

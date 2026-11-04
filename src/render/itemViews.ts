@@ -24,6 +24,7 @@ import { houndParts, poseHounds } from './theGrimReaper';
 import { pistonParts, posePiston } from './cyboogie';
 import { breathParts, poseBreath } from './gaia';
 import { poseTrafficLight, trafficLightParts } from './strawsInTheWind';
+import { poseWanderer, wandererParts } from './empty';
 import { BOX_RESPAWN, SHIELD_ITEMS, WAVE_RANGE, type ItemHolder, type ItemSystem } from '../items/items';
 import type { KartState } from '../physics/kart';
 import type { HazardSystem } from '../items/hazards';
@@ -1481,6 +1482,10 @@ export class HazardsView {
           // A gantry of mortal traffic lights over the road, its stop line, and the red curtain when it says stay.
           parts.push(...trafficLightParts(obj));
           break;
+        case 'wanderers':
+          // A coat and hat wandering with nobody in them, or the one you're with.
+          parts.push(...wandererParts(obj, pose.lane === 1));
+          break;
         case 'timber': {
           // A tree at the road's edge: its trunk, as long as the road is wide, and its crown; it leans, creaks and comes down across the road.
           const pivot = new THREE.Group();
@@ -2388,6 +2393,9 @@ export class HazardsView {
           break;
         case 'trafficLights':
           poseTrafficLight(obj, parts, p, elapsed);
+          break;
+        case 'wanderers':
+          poseWanderer(obj, parts, p);
           break;
         case 'presents': {
           const [present, lid, inside, shadow, roofs, santa, arm] = parts;
