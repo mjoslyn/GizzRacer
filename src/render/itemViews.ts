@@ -23,6 +23,7 @@ import { dozeParts, poseDoze } from './theWheel';
 import { houndParts, poseHounds } from './theGrimReaper';
 import { pistonParts, posePiston } from './cyboogie';
 import { breathParts, poseBreath } from './gaia';
+import { poseWaxFlow, waxFlowParts } from './hotWax';
 import { poseTrafficLight, trafficLightParts } from './strawsInTheWind';
 import { gangParts, poseGang } from './billabongValley';
 import { poseWanderer, wandererParts } from './empty';
@@ -1479,6 +1480,10 @@ export class HazardsView {
           // One of Gaia's ribs: a ridge of her skin across the road, heaving with her breath.
           parts.push(...breathParts(obj));
           break;
+        case 'waxFlows':
+          // A tongue of hot wax creeping across the road, molten, cooling and set.
+          parts.push(...waxFlowParts(obj));
+          break;
         case 'trafficLights':
           // A gantry of mortal traffic lights over the road, its stop line, and the red curtain when it says stay.
           parts.push(...trafficLightParts(obj));
@@ -2395,6 +2400,9 @@ export class HazardsView {
           break;
         case 'breaths':
           poseBreath(obj, parts, p, elapsed);
+          break;
+        case 'waxFlows':
+          poseWaxFlow(obj, parts, p, elapsed);
           break;
         case 'trafficLights':
           poseTrafficLight(obj, parts, p, elapsed);

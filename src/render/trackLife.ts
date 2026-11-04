@@ -99,6 +99,8 @@ const LIFE: Record<DecorKind, LifeSpec> = {
   scala: { flock: { kind: 'bird', color: 0x120c0c, count: 14, height: 30, size: 1.1 }, motes: { color: 0xff9a40, count: 380, size: 0.35, drift: 'rise', glow: true } },
   // Red lights of his circuitry wheeling over him, and bubbles of brine rising.
   cyborg: { flock: { kind: 'orb', color: 0xff3a4a, count: 14, height: 18, size: 0.6, glow: true }, motes: { color: 0x8affc8, count: 380, size: 0.35, drift: 'rise', glow: true } },
+  // Hot Wax: moths round the candles, and sparks rising off the flames.
+  waxworks: { flock: { kind: 'moth', color: 0xe8d8b0, count: 18, height: 14, size: 0.9 }, motes: { color: 0xffa040, count: 340, size: 0.35, drift: 'rise', glow: true } },
   // Carrion birds wheeling low over her, and ash falling.
   gaia: { flock: { kind: 'vulture', color: 0x0e0c0a, count: 12, height: 22, size: 1.5 }, motes: { color: 0x8a8480, count: 300, size: 0.4, drift: 'fall' } },
   // Crows tossed about over the field, and straw blowing through the air.
