@@ -339,6 +339,8 @@ export class Race {
         this.events.push(h.good ? { type: 'bonus', kart, by: h.by } : { type: 'hit', kart, by: h.by });
         // An open present is a gift: an item too, if there's room for one.
         if (h.gift && !this.remoteItems) this.items.gift(kart, this.karts, this.events);
+        // Bailed up by Mad Dog Morgan's gang: robbed of the item in hand.
+        if (h.robbed && !this.remoteItems && this.items.rob(kart)) kart.driver?.forgetItem();
       }
     }
     return events;

@@ -24,6 +24,7 @@ import { houndParts, poseHounds } from './theGrimReaper';
 import { pistonParts, posePiston } from './cyboogie';
 import { breathParts, poseBreath } from './gaia';
 import { poseTrafficLight, trafficLightParts } from './strawsInTheWind';
+import { gangParts, poseGang } from './billabongValley';
 import { poseWanderer, wandererParts } from './empty';
 import { BOX_RESPAWN, SHIELD_ITEMS, WAVE_RANGE, type ItemHolder, type ItemSystem } from '../items/items';
 import type { KartState } from '../physics/kart';
@@ -1486,6 +1487,10 @@ export class HazardsView {
           // A coat and hat wandering with nobody in them, or the one you're with.
           parts.push(...wandererParts(obj, pose.lane === 1));
           break;
+        case 'bushrangers':
+          // Mad Dog Morgan and his gang at the gallop, and the dust they throw up.
+          parts.push(...gangParts(obj));
+          break;
         case 'timber': {
           // A tree at the road's edge: its trunk, as long as the road is wide, and its crown; it leans, creaks and comes down across the road.
           const pivot = new THREE.Group();
@@ -2396,6 +2401,9 @@ export class HazardsView {
           break;
         case 'wanderers':
           poseWanderer(obj, parts, p);
+          break;
+        case 'bushrangers':
+          poseGang(obj, parts, p, elapsed);
           break;
         case 'presents': {
           const [present, lid, inside, shadow, roofs, santa, arm] = parts;

@@ -406,6 +406,14 @@ export class ItemSystem {
     events.push({ type: 'pickup', kart: k });
   }
 
+  /** Robbed (by a bushranger): the item in hand is taken, the spare moving up into its place. Whether there was one to take. */
+  rob(k: ItemHolder): boolean {
+    if (!k.item) return false;
+    nextItem(k);
+    k.rolling = 0;
+    return true;
+  }
+
   /** An item for `k`: never a second Nonagon Infinity while one is out, nor the same thing twice from one box. */
   private roll(k: ItemHolder, karts: readonly ItemHolder[], not: ItemKind | null = null): ItemKind {
     const busy = this.surge || not === 'gizzardWave' ? 'gizzardWave' : null;

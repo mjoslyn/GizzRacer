@@ -102,6 +102,8 @@ const LIFE: Record<DecorKind, LifeSpec> = {
   // Carrion birds wheeling low over her, and ash falling.
   gaia: { flock: { kind: 'vulture', color: 0x0e0c0a, count: 12, height: 22, size: 1.5 }, motes: { color: 0x8a8480, count: 300, size: 0.4, drift: 'fall' } },
   // Crows tossed about over the field, and straw blowing through the air.
+  // Flying foxes over the valley, and embers rising from the burning camp into the smoke.
+  nightbush: { flock: { kind: 'bat', color: 0x140e0c, count: 16, height: 22, size: 1.1 }, motes: { color: 0xff7a30, count: 340, size: 0.35, drift: 'rise', glow: true } },
   // A few birds over the empty town, and pale dust hanging in the dawn light.
   emptyTown: { flock: { kind: 'bird', color: 0x4a4e56, count: 6, height: 20, size: 0.8 }, motes: { color: 0xf4f0e8, count: 220, size: 0.35, drift: 'float' } },
   strawfield: { flock: { kind: 'bird', color: 0x1a1a20, count: 14, height: 22, size: 0.9 }, motes: { color: 0xf0cc6a, count: 380, size: 0.5, drift: 'blow' } },

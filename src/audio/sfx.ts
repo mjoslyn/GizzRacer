@@ -629,6 +629,14 @@ export class Sfx {
       [0, 1, 2].forEach((k) => this.tone(2600, 0.02, 'square', k === 0 ? 0.06 : 0.035, undefined, 0.2 + k * 0.25));
       this.whoosh(0.8, 900, 250, 0.1);
     }
+    // Ridden down by Mad Dog Morgan's gang: two rifle cracks, hooves thundering past, and a horse screaming as it goes.
+    if (by === 'bushrangers') {
+      this.hit(0.09, 3200, 0.6);
+      this.whoosh(0.18, 4000, 900, 0.18);
+      [0.08, 0.17, 0.24, 0.33, 0.4, 0.49].forEach((d, k) => this.tone(70 - k * 3, 0.06, 'triangle', 0.12, 45, d));
+      this.tone(620, 0.7, 'sawtooth', 0.04, 380, 0.2);
+      this.tone(900, 0.25, 'sine', 0.03, 1300, 0.22);
+    }
     // A wave breaking over you: a crash of white noise; a glider comes in with a whistle of wind.
     if (by === 'waves') this.whoosh(0.8, 2400, 300, 0.35);
     if (by === 'gliders') this.whoosh(0.5, 1800, 500, 0.2);

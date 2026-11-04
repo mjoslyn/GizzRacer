@@ -26,6 +26,8 @@ export interface PostFxParams {
   doze?: number;
   /** Gaia dying on the final lap, 0..1: the colour drains out of the world, toward a cold grey that keeps the light and dark of it, and the dark closes in from the edges of the picture. */
   drain?: number;
+  /** Billabong Valley's dawn on the final lap, 0..1: the dark lifting into a blood-red morning, warmest low in the shadows, the sky glowing red over the top of the picture. */
+  dawn?: number;
   /** The duotone's shadows, body and highlights (the track theme's `duotone`). */
   palette?: readonly [number, number, number];
 }
@@ -54,6 +56,7 @@ uniform float uCrackle;
 uniform float uDigitise;
 uniform float uDoze;
 uniform float uDrain;
+uniform float uDawn;
 uniform vec3 uDuoDark;
 uniform vec3 uDuoMid;
 uniform vec3 uDuoHigh;
@@ -203,6 +206,13 @@ void main() {
     vec2 q = (vUv - 0.5) * vec2(1.2, 1.0);
     col.rgb *= 1.0 - 0.55 * d * smoothstep(0.25, 0.75, length(q));
   }
+  // The dawn: the shadows lifted and warmed toward blood red, the light gone gold, and the sky over the top of the picture glowing red.
+  if (uDawn > 0.0) {
+    float lum = dot(col.rgb, vec3(0.3, 0.59, 0.11));
+    vec3 warm = col.rgb * vec3(1.16, 0.98, 0.88) + vec3(0.05, 0.012, 0.006) * (1.0 - lum);
+    col.rgb = mix(col.rgb, warm, uDawn);
+    col.rgb += vec3(0.2, 0.04, 0.015) * uDawn * smoothstep(0.6, 1.0, vUv.y) * (1.0 - lum);
+  }
   // Letterbox bars, like the tape the video was shot on.
   if (uBox > 0.0 && abs(vUv.y - 0.5) > 0.5 - uBox * 0.11) col.rgb = vec3(0.0);
 
@@ -246,6 +256,7 @@ export class PostFx {
           uDigitise: { value: 0 },
           uDoze: { value: 0 },
           uDrain: { value: 0 },
+          uDawn: { value: 0 },
           uDuoDark: { value: new THREE.Color(0x0a0002) },
           uDuoMid: { value: new THREE.Color(0xc00410) },
           uDuoHigh: { value: new THREE.Color(0xf0c020) },
@@ -269,7 +280,8 @@ export class PostFx {
     const digitise = p.digitise ?? 0;
     const doze = p.doze ?? 0;
     const drain = p.drain ?? 0;
-    if (p.haze < 0.01 && p.kaleido < 0.01 && vhs < 0.01 && duo < 0.01 && box < 0.01 && water < 0.01 && swim < 0.01 && crackle < 0.01 && digitise < 0.01 && doze < 0.01 && drain < 0.01) {
+    const dawn = p.dawn ?? 0;
+    if (p.haze < 0.01 && p.kaleido < 0.01 && vhs < 0.01 && duo < 0.01 && box < 0.01 && water < 0.01 && swim < 0.01 && crackle < 0.01 && digitise < 0.01 && doze < 0.01 && drain < 0.01 && dawn < 0.01) {
       r.render(scene, camera);
       return;
     }
@@ -305,6 +317,7 @@ export class PostFx {
     u.uDigitise.value = digitise;
     u.uDoze.value = doze;
     u.uDrain.value = drain;
+    u.uDawn.value = dawn;
     if (p.palette) {
       (u.uDuoDark.value as THREE.Color).setHex(p.palette[0]);
       (u.uDuoMid.value as THREE.Color).setHex(p.palette[1]);

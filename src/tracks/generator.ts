@@ -922,12 +922,12 @@ const PALETTES: Record<GenTheme, Palette> = {
   bushranger: {
     surface: 'redgum',
     deck: 'redgum',
-    alt: 'sand',
-    hazards: ['sunMoon'],
-    start: 'setGate',
-    landmarks: ['setGate'],
+    alt: 'scorched',
+    hazards: ['bushrangers'],
+    start: 'hideoutGate',
+    landmarks: ['wantedPoster', 'burningCamp'],
     tallWalls: 6,
-    places: ['Jackal', 'Snake', 'Tornado', 'Tomb', 'Duality', 'Sandstorm', 'Moonbeam', 'Hieroglyph', 'Reset'],
+    places: ['Outlaw', 'Stolen Gun', 'Red Gum', 'Billabong', 'Kyeamba', 'Trooper', 'Wanted', 'Bushranger', 'Ranges', 'Mad Dog', 'Morgan', 'Dawn'],
     music: { lap: 'billabong-valley', finalLap: 'billabong-valley-final-lap' },
   },
 };
@@ -1749,6 +1749,10 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
       case 'wanderers':
         // Rows of wanderers drifting across the stretch, three to a row.
         hazards.push({ kind, at: at(count).flatMap((s) => [s, s, s]), period: 12 });
+        break;
+      case 'bushrangers':
+        // Mad Dog Morgan's gang riding across the stretch, never at quite the same moment twice.
+        hazards.push({ kind, at: at(count), period: 4.6 });
         break;
     }
     return true;

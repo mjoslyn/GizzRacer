@@ -31,6 +31,7 @@ import { binaryBrook, cyboogieGate, cyborgFeature, cyborgHead, cyborgHeart, cybo
 import { deadEarth, earthRoadTexture, elements, gaiaFaceLand, gaiaFeature, gaiaHands, gaiaHeart, gaiaZones, luckyRainbow, parasites } from './gaia';
 import { companion, emptyFeature, emptyStage, metronome, paleRoadTexture, setInStone, shotClock } from './empty';
 import { cheshireGrin, farmTrackTexture, forgottenPier, hellsKitchen, shortStraw, strawFeature, strawsGate, trashTornado } from './strawsInTheWind';
+import { blackBillabong, burningCamp, hideoutGate, nightbushFeature, redDawn, redgumRoadTexture, ropeGums, stationHomestead, stolenGun, trestle, troopersCamp, wantedPoster } from './billabongValley';
 import { bandroomFeature, bentArm, canopyFeature, elbowGate, harmonicaGate, mirrorBall, partyFeature, powerStation, rakeGate, snowPeak, trunkGate, wetlandFeature } from './twelveBarBruise';
 import { arrowGate, cellophaneBloom, emptyHead, eyeGate, filmGate, fuzzGate, fuzzMeter, mindFace, neuronsFeature, opartFeature, panesFeature, staticFeature } from './mindfuzz';
 import { blightFeature, burningEarth, coronaFeature, domeGate, domesFeature, hellGate, pitFeature, ratsNest, richDome, shipGate, smogGate, theSun } from './infest';
@@ -144,6 +145,7 @@ function materials(theme: Theme): Materials {
     cyborg: () => tex.stoneTexture([30, 34, 40], [130, 136, 146]),
     gaia: () => tex.stoneTexture([96, 98, 86], [170, 166, 150]),
     strawfield: () => tex.stoneTexture([130, 118, 100], [200, 190, 170]),
+    nightbush: () => tex.stoneTexture([52, 46, 42], [118, 104, 94]),
     emptyTown: () => tex.stoneTexture([150, 150, 146], [214, 212, 206]),
   };
   const neon = banana ? tex.neonRoadTexture(tex.BANANA.neon) : tex.neonRoadTexture();
@@ -266,12 +268,13 @@ function materials(theme: Theme): Materials {
       graphene: bumpy(grapheneRoadTexture(), 0.05, { emissive: 0xffffff, emissiveMap: grapheneGlowTexture(), emissiveIntensity: 0.6 }),
       // Gaia's: the Earth's own skin, soil and pale stones.
       earth: bumpy(earthRoadTexture(), 0.07),
+      // Billabong Valley's: a bush track of pale red dirt, worn into ruts.
+      redgum: bumpy(redgumRoadTexture(), 0.07),
       // The All Stars Cup #2's roads (placeholders until each track's world is built).
       wax: bumpy(tex.asphaltTexture(), 0.08),
       rink: bumpy(tex.asphaltTexture(), 0.08),
       // Empty's: pale old concrete slabs, a slate kerb down each edge.
       pale: bumpy(paleRoadTexture(), 0.05),
-      redgum: bumpy(tex.asphaltTexture(), 0.08),
       gravel: bumpy(gravelTexture(), 0.1),
       cosmic: (() => {
         const map = tex.cosmicRoadTexture();
@@ -513,6 +516,16 @@ export function buildTrackView(track: Track): TrackView {
     if (lm.kind === 'trashTornado') group.add(trashTornado(ribbon, s, lm.lateral ?? 0, animated));
     if (lm.kind === 'cheshireGrin') group.add(cheshireGrin(ribbon, s, animated));
     if (lm.kind === 'hellsKitchen') group.add(hellsKitchen(ribbon, s, (lm.to ?? lm.s) * ribbon.scale, animated));
+    if (lm.kind === 'hideoutGate') group.add(hideoutGate(ribbon, s, animated));
+    if (lm.kind === 'blackBillabong') group.add(blackBillabong(ribbon, s, (lm.to ?? lm.s + 160) * ribbon.scale, track.def.pits, animated));
+    if (lm.kind === 'ropeGums') group.add(ropeGums(ribbon, s, (lm.to ?? lm.s + 150) * ribbon.scale, animated));
+    if (lm.kind === 'burningCamp') group.add(burningCamp(ribbon, s, lm.lateral ?? -(ribbon.halfWidthAtS(s) + 34), animated));
+    if (lm.kind === 'troopersCamp') group.add(troopersCamp(ribbon, s, (lm.to ?? lm.s + 80) * ribbon.scale, track.def.pits, animated));
+    if (lm.kind === 'wantedPoster') group.add(wantedPoster(ribbon, s, lm.lateral, animated));
+    if (lm.kind === 'trestle') group.add(trestle(ribbon, s, (lm.to ?? lm.s + 60) * ribbon.scale));
+    if (lm.kind === 'stationHomestead') group.add(stationHomestead(ribbon, s, lm.lateral, animated));
+    if (lm.kind === 'redDawn') group.add(redDawn(ribbon, s, animated));
+    if (lm.kind === 'stolenGun') group.add(stolenGun(ribbon, s, animated));
     if (lm.kind === 'forgottenPier') group.add(forgottenPier(ribbon, s, (lm.to ?? lm.s) * ribbon.scale, animated));
     if (lm.kind === 'shortStraw') group.add(shortStraw(ribbon, s, animated));
     if (lm.kind === 'metronome') group.add(metronome(ribbon, s, animated));
@@ -1879,6 +1892,9 @@ function featureBuilder(theme: Theme, mats: Materials, animated: ((time: number)
     case 'cyborg':
       // Cyboogie's: what's inside him, by the part of him the road is passing through.
       return cyborgFeature(animated, track && cyborgZones(track));
+    case 'nightbush':
+      // Mad Dog Morgan's country, dressed by which stretch of the lap it's beside.
+      return nightbushFeature(animated, track);
     case 'gaia':
       // Her living land, her hair, her parasites and the dead earth, by the stretch of the lap it's nearest.
       return gaiaFeature(animated, track && gaiaZones(track));

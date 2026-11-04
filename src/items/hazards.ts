@@ -155,6 +155,7 @@ export const WAVE_SPIN = 1.0;
  * - slipped through the gap just behind a pack of hellhounds as the last of them crosses, faster than a cheetah: a boost
  * - hopped onto a piston at the top of its stroke (or as it punches up), ridden: up, and on with a boost
  * - over one of Gaia's ribs as it rises with her breath, thrown on: up, and a boost
+ * - slipped through the dust just behind Mad Dog Morgan's gang as the last of them rides across, faster than a stolen gun: a boost
  * - through the one wanderer who isn't empty, the one you're with, drifting across the road with the empty ones: a boost
  */
 /** A reward can't pay out again to the same kart for this long. */
@@ -1306,6 +1307,75 @@ export function wanderYou(row: number, k: number): boolean {
   return k === row % WANDER_COUNT;
 }
 
+/**
+ * Billabong Valley's bushrangers: Mad Dog Morgan and two of his gang
+ * galloping out of the dark bush and right across the road, rifles
+ * flashing, and gone into the dark on the other side. He never gave a
+ * warning: nothing on the road tells you they're coming, only the riders
+ * themselves out in the scrub, and they never come at quite the same
+ * moment twice (each time round, the ride starts somewhere in the first
+ * GANG_JITTER of the period) nor always from the same side. Ridden down by
+ * one, you're bailed up: robbed of the item in your hands and spun.
+ * Slipped through the dust just behind the last of them as they cross, a
+ * boost.
+ */
+export const GANG_COUNT = 3;
+/** Each ride takes this share of the period, starting somewhere in the first GANG_JITTER of it. */
+export const GANG_RIDE = 0.55;
+export const GANG_JITTER = 0.35;
+/** Out in the scrub this far past the road's edge: where they gallop in from and off to. */
+export const GANG_OUT = 18;
+/** Horse to horse along their line, and each one staggered this far along the road from Morgan's line (his first). */
+export const GANG_SPACING = 3.4;
+export const GANG_STAGGER = [0, 1.7, -1.5] as const;
+/** A horse and rider: the head this far ahead of its middle, the tail this far behind, this thick. */
+export const GANG_HEAD = 1.5;
+export const GANG_TAIL = 1.3;
+export const GANG_RADIUS = 0.8;
+/** The dust behind the last of them: this far back behind its tail, this far either side of its line. */
+export const GANG_GAP = 7;
+export const GANG_GAP_DEPTH = 2.8;
+export const GANG_SPIN = 1.2;
+export const GANG_BOOST = 1.0;
+
+/** A number from 0 to 1 for ride `k` of station `i`, the same every time it's asked: how late in the period that ride comes, and which way. */
+function gangDice(k: number, i: number, salt: number): number {
+  const v = Math.sin(k * 12.9898 + i * 78.233 + salt * 37.719) * 43758.5453;
+  return v - Math.floor(v);
+}
+
+/**
+ * Where the gang at station `i` is at race time `t`: `u` through their ride
+ * (0 as they set off from the scrub, 1 as the last is gone into it; below 0
+ * before it, above 1 after), and which way they ride this time (1 to the
+ * right).
+ */
+export function gangPhase(t: number, period: number, i: number): { u: number; side: number } {
+  const tt = (t + 10) / period;
+  const k = Math.floor(tt);
+  const start = GANG_JITTER * gangDice(k, i, 1);
+  const u = (tt - k - start) / GANG_RIDE;
+  return { u, side: gangDice(k, i, 2) < 0.5 ? 1 : -1 };
+}
+
+/**
+ * Where each rider is at ride stage `u`, in the road's frame at its station:
+ * `lateral` (to the right), `along` the road, and whether they're on their
+ * way across (`out`). `side` is the way they ride; the road is `reach` wide
+ * either side of its centre. Morgan is first.
+ */
+export function gangRiders(u: number, side: number, reach: number): { lateral: number; along: number; out: boolean }[] {
+  const edge = reach + GANG_OUT;
+  const back = (GANG_COUNT - 1) * GANG_SPACING;
+  const f = Math.max(0, Math.min(1, u));
+  const lead = -edge + (2 * edge + back) * f;
+  return Array.from({ length: GANG_COUNT }, (_, k) => {
+    const l = lead - k * GANG_SPACING;
+    const out = u >= 0 && u < 1 && l > -edge && l < edge;
+    return { lateral: side * Math.max(-edge, Math.min(edge, l)), along: GANG_STAGGER[k], out };
+  });
+}
+
 /** How far a tree has toppled at cycle stage `u`: 0 upright, a lean while it creaks, 1 lying across the road. */
 export function timberFall(u: number): number {
   const T = TIMBER_STAGES;
@@ -1411,6 +1481,7 @@ const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds' | 'butterfli
   pistons: PISTON_SPIN,
   breaths: 0,
   trafficLights: LIGHT_SPIN,
+  bushrangers: GANG_SPIN,
   wanderers: 0,
 };
 
@@ -2261,6 +2332,27 @@ export class HazardSystem {
           p.phase = u;
           break;
         }
+        case 'bushrangers': {
+          // Mad Dog Morgan's gang galloping out of the scrub on one side, right across the road, and off into the dark on the other.
+          const at = def.at[i];
+          const { u, side } = gangPhase(t, def.period, i);
+          const reach = this.halfWidth(at);
+          const riders = gangRiders(u, side, reach);
+          // The pose is Morgan's; ax, az is the road's centre at the station, its frame.
+          this.place(p, at, 0, 0);
+          const fx = Math.sin(p.heading);
+          const fz = Math.cos(p.heading);
+          p.x = p.ax - fz * riders[0].lateral + fx * riders[0].along;
+          p.z = p.az + fx * riders[0].lateral + fz * riders[0].along;
+          p.radius = GANG_RADIUS;
+          p.side = side;
+          p.gap = reach;
+          p.active = riders.some((r) => r.out && Math.abs(r.lateral) < reach + GANG_HEAD);
+          // Riding: the dust behind them is there to slip through.
+          p.lane = u >= 0 && u < 1 ? 1 : 0;
+          p.phase = u;
+          break;
+        }
         case 'dustDevils':
         case 'butterflies':
         case 'tornadoes':
@@ -2364,8 +2456,8 @@ export class HazardSystem {
    * (spun or slowed) and by what; `good` marks a hazard used well, which
    * helps rather than hurts (see the reward rules above).
    */
-  collide(karts: readonly KartState[], dt: number): { kart: KartState; by: HazardKind; good?: boolean; gift?: boolean }[] {
-    const hit: { kart: KartState; by: HazardKind; good?: boolean; gift?: boolean }[] = [];
+  collide(karts: readonly KartState[], dt: number): { kart: KartState; by: HazardKind; good?: boolean; gift?: boolean; robbed?: boolean }[] {
+    const hit: { kart: KartState; by: HazardKind; good?: boolean; gift?: boolean; robbed?: boolean }[] = [];
     for (const map of [this.cooldown, this.rewarded]) {
       for (const [k, v] of map) {
         if (v - dt <= 0) map.delete(k);
@@ -2510,6 +2602,10 @@ export class HazardSystem {
         }
         if (p.kind === 'wanderers') {
           this.wanderer(hit, p, s);
+          continue;
+        }
+        if (p.kind === 'bushrangers') {
+          this.bushranger(hit, p, s);
           continue;
         }
         if (p.kind === 'fuzz' && p.phase >= FUZZ_STAGES.gold && p.phase < FUZZ_STAGES.red) {
@@ -2869,6 +2965,20 @@ export class HazardSystem {
         for (const h of houndPack(Math.max(p.phase, HOUND_STAGES.run), p.side, p.gap)) {
           if (!h.out && p.phase >= HOUND_STAGES.run) continue;
           out.push({ x: p.ax - fz * h.lateral + fx * h.along, z: p.az + fx * h.lateral + fz * h.along, r: 1.6, vx: -fz * p.side * speed, vz: fx * p.side * speed });
+        }
+        continue;
+      }
+      if (p.kind === 'bushrangers') {
+        // From a moment before they gallop out until the last is gone: each rider on the way across, and where they'll be.
+        if (p.phase < -0.08 || p.phase >= 1) continue;
+        const fx = Math.sin(p.heading);
+        const fz = Math.cos(p.heading);
+        const { def } = this.slots[k];
+        const speed = (2 * (p.gap + GANG_OUT) + (GANG_COUNT - 1) * GANG_SPACING) / (GANG_RIDE * ('period' in def ? def.period : 5));
+        for (const r of gangRiders(Math.max(p.phase, 0), p.side, p.gap)) {
+          if (!r.out && p.phase >= 0) continue;
+          if (Math.abs(r.lateral) > p.gap + 8) continue;
+          out.push({ x: p.ax - fz * r.lateral + fx * r.along, z: p.az + fx * r.lateral + fz * r.along, r: 1.8, vx: -fz * p.side * speed, vz: fx * p.side * speed });
         }
         continue;
       }
@@ -3673,6 +3783,38 @@ export class HazardSystem {
    * on red, stay: stopped dead, spun round, most of your speed gone. Amber
    * only warns.
    */
+  /**
+   * Mad Dog Morgan's gang riding across: ridden down by a horse, head to
+   * tail, you're bailed up, robbed of your item and spun; slipped through
+   * the dust just behind the last of them as they cross, a boost.
+   */
+  private bushranger(hit: { kart: KartState; by: HazardKind; good?: boolean; robbed?: boolean }[], p: HazardPose, s: KartState): void {
+    if (p.lane !== 1) return;
+    const fx = Math.sin(p.heading);
+    const fz = Math.cos(p.heading);
+    // In the road's frame at the station: a lateral to the right is (-cos h, sin h).
+    const along = (s.x - p.ax) * fx + (s.z - p.az) * fz;
+    const lat = (s.x - p.ax) * -fz + (s.z - p.az) * fx;
+    const riders = gangRiders(p.phase, p.side, p.gap);
+    for (const r of riders) {
+      if (!r.out) continue;
+      // A horse: a segment across the road, tail to head the way they ride.
+      const mid = r.lateral + p.side * ((GANG_HEAD - GANG_TAIL) / 2);
+      const d = Math.hypot(Math.max(0, Math.abs(lat - mid) - (GANG_HEAD + GANG_TAIL) / 2), along - r.along);
+      if (d > GANG_RADIUS + KART_RADIUS) continue;
+      if (this.cooldown.has(s)) return;
+      this.cooldown.set(s, HIT_COOLDOWN);
+      if (spinOut(s, GANG_SPIN)) hit.push({ kart: s, by: p.kind, robbed: true });
+      return;
+    }
+    // The dust behind the last of them: the road they have this moment crossed.
+    const last = riders[riders.length - 1];
+    if (!last.out) return;
+    const behind = p.side * (last.lateral - lat) - GANG_TAIL - GANG_RADIUS;
+    if (behind < 0 || behind > GANG_GAP || Math.abs(along - last.along) > GANG_GAP_DEPTH || Math.abs(lat) > p.gap + 1 || s.speed < 8 || this.cooldown.has(s)) return;
+    this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, GANG_BOOST)));
+  }
+
   private trafficLight(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
     const fx = Math.sin(p.heading);
     const fz = Math.cos(p.heading);
