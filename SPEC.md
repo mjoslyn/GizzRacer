@@ -14,15 +14,19 @@
 - Out of scope for MVP: online, battle mode
 
 ## 3. Controls
-| Action | Keyboard | Gamepad |
+| Action | Keyboard | Controller (Mario Kart 8 Deluxe's layout, by place, Nintendo letters) |
 |---|---|---|
-| Accelerate | Automatic (M toggles manual: W / Up) | Automatic (manual: A) |
-| Brake / Reverse | S / Down | B |
-| Steer | Left, Right / A, D | Left stick |
-| Drift / Hop | Shift / Space | R1 |
-| Use item | E | L1 |
-| Look back | Q | Y |
-| Pause | Esc | Start |
+| Accelerate | Automatic | Automatic; A (right) or Y (left) held is accelerate, a no-op while auto-accelerate is the only throttle |
+| Brake / Reverse | S / Down | B (bottom) |
+| Steer | Left, Right / A, D | D-pad, or the left stick |
+| Drift / Hop | Shift / Space | R or ZR |
+| Use item | E (or Up) | L or ZL |
+| Look back | Q | X (top) or Minus |
+| Glider climb / dive | Up / Down | D-pad up / down (or the stick) |
+| Pause | Esc | Plus (opens and closes the pause menu) |
+| Menus | Arrows, Enter, Backspace | D-pad or left stick (repeats when held, with a dead zone), A (right) confirms, B (bottom) goes back, Plus confirms off the race; X a random racer, Y a random track on the picker |
+
+Controllers: any the browser sees through the Gamepad API, wired or Bluetooth (Switch Pro, 8BitDo, Xbox, PlayStation, generic), at any index and plugged in at any time; the one last pressed drives (`src/core/gamepad.ts`). Buttons go by their place on the pad, as a Switch controller's are printed: bottom B, right A, left Y, top X, then L/R, ZL/ZR, Minus and Plus. On standard-mapping pads that's buttons 0 bottom, 1 right, 2 left, 3 top, 4/5 L/R, 6/7 ZL/ZR, 8 Minus, 9 Plus, 12 to 15 the D-pad; an 8BitDo in D-input (no standard mapping) is read by its own numbering (B1 B, B0 A, B4 Y, B3 X, L B6, R B7, ZL B8, ZR B9, Minus B10, Plus B11) with the D-pad on the hat (axis 9) or on axes 0 and 1 (the Zero 2's D-pad-only report); a Switch Pro or anything else with no standard mapping by the standard numbering, the hat or axes 0/1 for its D-pad. So the D-pad, four face buttons, L/R, ZL/ZR, Plus and Minus play every screen and the race; a stick is used where there is one. The hints and HUD name the buttons with Nintendo letters (A/B/X/Y by place, L/R/ZL/ZR, + and −) while a pad is the last thing used, Xbox letters only when the pad's id says Xbox or X-input and it isn't an 8BitDo, and go back to the keyboard's on a key or touch. Screens of buttons (Settings, the pause menu, the restart question, the rooms, the name prompt, the buttons between races, the title's buttons) get a highlight the D-pad moves; in a text box (a name, a room code) up and down change the last letter, right adds one, left takes one off, A enters it and B leaves the box. Party's join screen reads each pad by place too (A joins and readies, B leaves). A toast says when a controller connects or disconnects, and a race pauses if the pad driving it disconnects.
 
 Touch: drag on the left half to steer (analog), DRIFT and BRAKE buttons on the right, pause at the bottom, and a tap anywhere else on the screen (or a quick tap on the steering side) hops, so a tap at a ramp lip is a trick; acceleration is automatic. The first tap also unlocks audio (iOS needs a gesture).
 

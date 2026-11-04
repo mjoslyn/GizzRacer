@@ -73,6 +73,8 @@ import { SaveTrackPanel } from './ui/saveTrack';
 import { Podium } from './render/podium';
 import { COARSE, ScreenFit } from './ui/screen';
 import { TouchControls } from './ui/touch';
+import { NAV_KEYS, PadNav, glyph, isDirection, padActive, type NavEvent } from './core/gamepad';
+import { FocusNav, InputMode, padName, toast } from './ui/padNav';
 const SUN_DIR = new THREE.Vector3(-0.5, 0.55, -0.65).normalize();
 
 const app = document.getElementById('app')!;
@@ -797,6 +799,7 @@ function fitRenderer(): void {
 }
 
 function setMode(next: Mode): void {
+  titleNav = false;
   if (next !== 'results' && next !== 'standings' && next !== 'podium') namePrompt.hide();
   mode = next;
   document.body.dataset.mode = next;
@@ -2531,9 +2534,11 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
   if (resolution.sample(frameDt)) applyPixelRatio();
   if (mode === 'party') party.poll(performance.now() / 1000);
   tellPads();
+  padFrame(performance.now() / 1000);
   // A Party player's Start (every seat's checked, so none is left pending).
   const seatPause = seats.map((x) => x.input?.consumePause() ?? false).some(Boolean);
-  if ((input.consumePause() || seatPause) && mode === 'race') {
+  // Start under Settings (opened from the pause menu) is Settings', not a resume.
+  if ((input.consumePause() || seatPause) && mode === 'race' && !settingsScreen.visible) {
     if (hud.confirmingRestart) hud.onPauseAction?.('keepRacing');
     else requestPause(!loop.paused);
   }
@@ -3043,6 +3048,136 @@ window.addEventListener('pointerup', (e) => {
   // Watching: a tap anywhere on the race picks another racer to follow.
   if (watching && mode === 'race' && !loop.paused) return switchWatch(1);
   advance();
+});
+
+// The way the player last played: a real key or a click, and the hints and glyphs go back to the keyboard's; a touch, to touch's.
+window.addEventListener('keydown', (e) => e.isTrusted && padMode.set('keys'), true);
+window.addEventListener('pointerdown', (e) => e.isTrusted && padMode.set(e.pointerType === 'mouse' ? 'keys' : 'touch'), true);
+
+/*
+ * Controllers on every screen (core/gamepad.ts has the map). The screens
+ * that read keys (the picker, story cards, skill games, past the title and
+ * results) get the pad's presses as those keys, dispatched as key events,
+ * so there's one way through them; the screens of buttons (Settings, the
+ * pause menu, the restart question, the rooms, the name prompt, the buttons
+ * between races, the title's buttons) get a highlight the D-pad moves
+ * (ui/padNav.ts). Party's join screen reads the pads itself, and in a race
+ * the pads drive (InputManager, SeatInput) and Start pauses.
+ */
+const padMode = new InputMode();
+padMode.onChange(() => hints.refresh());
+const padNav = new PadNav();
+const focusNav = new FocusNav();
+focusNav.onText = (el) => {
+  if (el.dataset.padTold) return;
+  el.dataset.padTold = '1';
+  const f = padMode.family;
+  toast(`Up/Down changes the letter, Right adds one, Left takes it off; ${glyph(f, 'right')} done, ${glyph(f, 'bottom')} leaves the box`, 5);
+};
+/** On the title, the D-pad has gone to its buttons (Settings, Credits, Manual): till then A starts. */
+let titleNav = false;
+
+/** A key as the pad's press: down, or up; or (`tap`) down and straight up again, so nothing reading held keys thinks it's still down. */
+function sendKey(code: string, repeat: boolean, type: 'keydown' | 'keyup' | 'tap' = 'tap'): void {
+  const key = code === 'Space' ? ' ' : code.replace(/^Key/, '');
+  if (type !== 'keyup') window.dispatchEvent(new KeyboardEvent('keydown', { code, key, repeat, bubbles: true }));
+  if (type !== 'keydown') window.dispatchEvent(new KeyboardEvent('keyup', { code, key, bubbles: true }));
+}
+
+/** The screen of buttons the D-pad moves over now, or null where the pad's presses go as keys. */
+function padRoots(): HTMLElement[] | null {
+  const q = (sel: string) => document.querySelector<HTMLElement>(sel);
+  const some = (els: (HTMLElement | null)[]) => {
+    const roots = els.filter((e): e is HTMLElement => !!e && !!e.querySelector('button, input, select'));
+    return roots.length ? roots : null;
+  };
+  if (settingsScreen.visible) return some([q('.settings')]);
+  if (namePrompt.visible) return some([q('.nameprompt')]);
+  if (mode === 'race' && hud.confirmingRestart) return some([q('.hud-confirm')]);
+  if (mode === 'race' && loop.paused) return some([q('.hud-pause')]);
+  if (mode === 'lobby') return some([q('.lobby')]);
+  if (mode === 'results' || mode === 'standings') return some([q('.hud-standings.show .hud-standings-actions'), q('.savetrack.show')]);
+  if (mode === 'title' && titleNav) return some([q('.hud-title-buttons')]);
+  return null;
+}
+
+/** B (the bottom button) on a screen of buttons: its back, close, resume or leave. */
+function padBack(): void {
+  const shown = (sel: string) => [...document.querySelectorAll<HTMLElement>(sel)].find((e) => e.getClientRects().length > 0 && !(e as HTMLButtonElement).disabled);
+  if (settingsScreen.visible) {
+    const back = shown('.settings [data-act="back"]');
+    if (back) back.click();
+    else settingsScreen.close();
+  } else if (namePrompt.visible) namePrompt.hide();
+  else if (mode === 'race' && hud.confirmingRestart) hud.onPauseAction?.('keepRacing');
+  else if (mode === 'race' && loop.paused) hud.onPauseAction?.('resume');
+  else if (mode === 'lobby') shown('.lobby [data-act="leave"], .lobby [data-act="back"]')?.click();
+  else if (mode === 'title') titleNav = false;
+}
+
+/** The keys a skill game reads (they hold and let go, so releases go too). */
+const SKILL_PAD_KEYS: Partial<Record<NavEvent['control'], string>> = { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight', confirm: 'Space', start: 'Enter', back: 'Escape' };
+
+function padEvent(ev: NavEvent, roots: HTMLElement[] | null): void {
+  const { control: c, kind } = ev;
+  const overlay = settingsScreen.visible || namePrompt.visible;
+  // Party's join screen reads every pad itself (a seat each).
+  if (mode === 'party' && !overlay) return;
+  if (mode === 'skill' && !overlay) {
+    const code = SKILL_PAD_KEYS[c];
+    if (code) sendKey(code, kind === 'repeat', kind === 'release' ? 'keyup' : 'keydown');
+    return;
+  }
+  if (kind === 'release') return;
+  if (kind === 'repeat' && !isDirection(c)) return;
+  if (mode === 'title' && !overlay && !titleNav) {
+    if (isDirection(c)) titleNav = true;
+    else if (c === 'confirm' || c === 'start') advance();
+    return;
+  }
+  if (roots) {
+    if (isDirection(c)) focusNav.move(c);
+    else if (c === 'confirm' || (c === 'start' && mode !== 'race')) {
+      if (!focusNav.confirm() && !overlay) advance();
+    } else if (c === 'back' && !focusNav.leaveText()) padBack();
+    return;
+  }
+  if (mode === 'race') {
+    // The pads drive; only the flyover is skipped (Start pauses through InputManager).
+    if (c === 'confirm' && kind === 'press') skipIntro();
+    return;
+  }
+  // Back from the picker's first screen: the title.
+  if (mode === 'menu' && c === 'back' && menu.atStart) return setMode('title');
+  const code = NAV_KEYS[c];
+  if (code) sendKey(code, kind === 'repeat');
+}
+
+/** Every frame: the pad in use, its presses, and the highlight. */
+function padFrame(now: number): void {
+  const state = input.pads.current();
+  if (state && padActive(state)) padMode.set('pad', state.family);
+  const events = padNav.update(state, now);
+  focusNav.shown = padMode.kind === 'pad';
+  let roots = padRoots();
+  focusNav.setRoots(roots);
+  for (const ev of events) {
+    padEvent(ev, roots);
+    // A press may open or close a screen (Settings from the pause menu): the next press goes to that.
+    roots = padRoots();
+    focusNav.setRoots(roots);
+  }
+}
+
+window.addEventListener('gamepadconnected', (e) => toast(`${padName(e.gamepad.id)} connected`));
+window.addEventListener('gamepaddisconnected', (e) => {
+  toast(`${padName(e.gamepad.id)} disconnected`);
+  const index = e.gamepad.index;
+  // The solo player's pad (the one in use), or a Party seat's: the race waits for it.
+  const solo = !partyOn && padMode.kind === 'pad' && input.pads.active === index;
+  const seat = seats.some((x) => x.input?.source.kind === 'pad' && x.input.source.index === index);
+  if (mode === 'race' && !loop.paused && (solo || seat)) requestPause(true);
+  if (solo && !input.pads.all().some((p) => p.index !== index)) padMode.set('keys');
 });
 
 window.addEventListener('keydown', (e) => {

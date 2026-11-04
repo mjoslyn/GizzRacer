@@ -1,4 +1,5 @@
 import { ITEMS, type ItemKind } from '../items/items';
+import { padControlLines, type PadFamily } from '../core/gamepad';
 
 /**
  * What each item does, in a line, for the hints ticker. Keyed by every
@@ -21,9 +22,13 @@ export const ITEM_HINTS: Record<ItemKind, string> = {
   gizzardWave: 'rolls down the road to the leader. Leading? Hop as it reaches you to ride over it',
 };
 
+/** How the player is playing: keys, touch, or a controller (named as its family names its buttons). */
+export type HintControls = boolean | { pad: PadFamily };
+
 /** The controls, for whichever way the player is steering. */
-function controls(touch: boolean): string[] {
-  if (touch) {
+function controls(how: HintControls): string[] {
+  if (typeof how === 'object') return padControlLines(how.pad);
+  if (how) {
     return [
       'Drag on the left half of the screen to steer (or turn on tilt in Settings)',
       'Tap anywhere to hop; hold DRIFT through a corner to drift',
@@ -37,7 +42,7 @@ function controls(touch: boolean): string[] {
     'Up (or E) fires your item, Q looks back, Down brakes and reverses',
     'Esc pauses, R restarts, N mutes the music',
     'Gliding? Up climbs (it fires no item with the glider open), Down dives',
-    'A gamepad works too: stick to steer, R1 drift, L1 item, B brake',
+    'A controller works too, laid out as Mario Kart 8 Deluxe has it: D-pad steers, R hops, L fires your item, B brakes',
   ];
 }
 
@@ -62,7 +67,7 @@ export const TIPS: readonly string[] = [
 ];
 
 /** Every hint, controls first, then the items and the tips shuffled together by `rand`. */
-export function buildHints(touch: boolean, rand: () => number = Math.random): string[] {
+export function buildHints(touch: HintControls, rand: () => number = Math.random): string[] {
   const items = (Object.keys(ITEM_HINTS) as ItemKind[]).map((k) => `${ITEMS[k].name}: ${ITEM_HINTS[k]}`);
   const rest = [...items, ...TIPS];
   for (let i = rest.length - 1; i > 0; i--) {
@@ -97,9 +102,18 @@ export class HintsTicker {
     if (on === this.shown) return;
     this.shown = on;
     this.el.classList.toggle('show', on);
-    if (!on) return;
-    const touch = document.body.classList.contains('touch-mode');
-    const line = buildHints(touch)
+    if (on) this.fill();
+  }
+
+  /** The way of playing changed (a controller picked up, the keyboard again): the controls lines follow, if it's showing. */
+  refresh(): void {
+    if (this.shown) this.fill();
+  }
+
+  private fill(): void {
+    const body = document.body.classList;
+    const how: HintControls = body.contains('pad-mode') ? { pad: body.contains('pad-x') ? 'xbox' : 'nintendo' } : body.contains('touch-mode');
+    const line = buildHints(how)
       .map((h) => `<span class="hint">${esc(h)}</span>`)
       .join('<span class="hint-sep">&#10022;</span>');
     // Twice over, so the loop has no seam: the animation runs it half its width.

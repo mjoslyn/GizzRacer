@@ -1,5 +1,6 @@
 import { clamp } from './math';
 import type { InputFrame } from './inputFrame';
+import { navigatorPads, padRace, readPad } from './gamepad';
 
 /**
  * Party mode (several players on one screen): where each seat's driving
@@ -18,10 +19,6 @@ export const SEAT_KEYS: Record<KeySide, { up: string[]; brake: string[]; left: s
 /** What a seat's keyboard half calls its keys, for the join screen. */
 export const SEAT_KEY_NAMES: Record<KeySide, string> = { left: 'WASD · Shift hop · E item', right: 'Arrows · Right Shift hop · Enter item' };
 
-/** Standard gamepad mapping indices (as core/input.ts). */
-export const PAD = { a: 0, b: 1, y: 3, l1: 4, r1: 5, l2: 6, r2: 7, start: 9, dUp: 12, dDown: 13, dLeft: 14, dRight: 15 } as const;
-const STICK_DEADZONE = 0.15;
-const PITCH_DEADZONE = 0.45;
 
 /** Keys held, and pressed since the last tick (so a tap between ticks still counts), shared by every keyboard seat. */
 export class Keyboard {
@@ -121,7 +118,8 @@ export class SeatInput {
   /** True once per Start press on this seat's gamepad. */
   consumePause(): boolean {
     if (this.source.kind !== 'pad') return false;
-    const start = this.pads()[this.source.index]?.buttons[PAD.start]?.pressed ?? false;
+    const pad = readPad(this.pads()[this.source.index]);
+    const start = pad ? padRace(pad).pause : false;
     const edge = start && !this.prevStart;
     this.prevStart = start;
     return edge;
@@ -152,33 +150,16 @@ export class SeatInput {
       p.itemTap = false;
       return raw;
     }
-    const pad = this.pads()[s.index];
+    const pad = readPad(this.pads()[s.index]);
     if (!pad) return { steer: 0, brake: 0, pitch: 0, drift: false, item: false, lookBack: false, up: false };
-    const btn = (i: number) => pad.buttons[i]?.pressed ?? false;
-    const val = (i: number) => pad.buttons[i]?.value ?? 0;
-    let steer = (btn(PAD.dRight) ? 1 : 0) - (btn(PAD.dLeft) ? 1 : 0);
-    const x = pad.axes[0] ?? 0;
-    if (Math.abs(x) > STICK_DEADZONE) steer += Math.sign(x) * ((Math.abs(x) - STICK_DEADZONE) / (1 - STICK_DEADZONE));
-    // The stick's up is negative.
-    const y = pad.axes[1] ?? 0;
-    let pitch = (btn(PAD.dUp) ? 1 : 0) - (btn(PAD.dDown) ? 1 : 0);
-    if (Math.abs(y) > PITCH_DEADZONE) pitch -= Math.sign(y) * ((Math.abs(y) - PITCH_DEADZONE) / (1 - PITCH_DEADZONE));
-    return {
-      steer,
-      brake: Math.max(btn(PAD.b) ? 1 : 0, val(PAD.l2)),
-      pitch,
-      drift: btn(PAD.r1) || btn(PAD.a),
-      item: btn(PAD.l1),
-      lookBack: btn(PAD.y),
-      up: false,
-    };
+    const p = padRace(pad);
+    return { steer: p.steer, brake: p.brake, pitch: p.pitch, drift: p.drift, item: p.item, lookBack: p.lookBack, up: false };
   }
 }
 
 /** The gamepads by index, as the browser numbers them (gaps where one was unplugged). */
 export function connectedPads(): readonly (Gamepad | null)[] {
-  if (typeof navigator === 'undefined' || !navigator.getGamepads) return [];
-  return navigator.getGamepads();
+  return navigatorPads();
 }
 
 /** Seat labels and colours: P1 to P4. */
