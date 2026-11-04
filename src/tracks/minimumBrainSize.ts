@@ -1,4 +1,4 @@
-import { TrackBuilder, dubins, offsetPose, type Pose, type SectionProps } from './builder';
+import { ROAD_WIDTH_SCALE, TrackBuilder, dubins, offsetPose, type Pose, type SectionProps } from './builder';
 import type { BranchDef, TrackDef } from './track';
 
 const rad = (d: number) => (d * Math.PI) / 180;
@@ -31,21 +31,27 @@ export const DEPTH = 7;
 const CUT_WALL = 2.6;
 /** The spiral's walls, high enough that a kart can't hop from one turn onto the next or into the cut. */
 const SPIRAL_WALL = 3;
-/** Lower where Couldn't Hack It leaves the way in and crosses and joins the way out, level with them: a wall there would stand up through the lane. */
-const LANE_WALL = 1.1;
-/** Where the way in starts down into the cut: past the lane, once it's clear overhead. */
+/** Where the way in starts down into the cut. */
 const DIVE_FROM = 26;
 const DIVE_LEN = 60;
 /** The long road back over the spiral: its deck this high over the ground it crosses. */
 export const DECK = 11;
 const CHORD_R = 70;
+/** Off the crest: the road falls from the deck to the ground over this far. */
+const CREST_DROP = 75;
+const crestDrop = (u: number) => (u >= 1 ? 0 : DECK * (1 - Math.sin((Math.PI * Math.max(0, u)) / 2)));
 const RAMP = 80;
 /** The mob: a row of them crosses the road every this many seconds, at three stations this far apart. */
 export const MOB_PERIOD = 4.8;
 const MOB_APART = 46;
-/** Couldn't Hack It, the lane over the top of the centre: where it leaves the way in and rejoins the way out (degrees along each turn). Its saving, about 2.3 s, is set by these and by the boost pads in the centre's cut, which only the long way drives over. */
-const LANE_FROM = 321;
-const LANE_TO = 110;
+/** Couldn't Hack It, the lane inside the last loop: it leaves the road this far past the crest, where the deck's way down meets the ground, cuts inside the loop on a tighter turn, and meets the road again this far before the line. Its saving, about 1.5 s at 150cc, is set by these and its radius. */
+const LANE_FROM = 75;
+const LANE_TO = 20;
+/** The last loop's half width (Standing on a Ball). */
+const LOOP_HW = 10.5;
+/** The lane is walled from where it's this clear of the road it leaves to where it's that clear of the road it joins. */
+const LANE_OPEN = 1;
+const LANE_R = 40;
 /** The giant eye stands in the big open pocket east of the centre, where the tear can fall in peace. */
 const EYE_AT = { x: 146, z: 44 };
 /** Open ground round the lap's rim where a giant can stand (found by plotting the lap): the bro takes the one nearest his stretch. */
@@ -152,14 +158,12 @@ function lay(b: TrackBuilder, deck: Deck) {
   b.section("I'm So Lonely", props(6.5, SPIRAL_WALL - 0.4));
   b.mark('lonely');
   inArm(260, 320);
-  b.section('Open Their Eyes', props(5, LANE_WALL));
+  b.section('Open Their Eyes', props(5, SPIRAL_WALL - 0.4));
   b.mark('eyes');
-  inArm(320, LANE_FROM);
-  b.mark('laneFrom');
-  inArm(LANE_FROM, 360);
+  inArm(320, 360);
 
   // The centre, sunk: an S of two half-circles round two islands.
-  b.section('Minimum Brain Size', props(4, LANE_WALL));
+  b.section('Minimum Brain Size', props(4, SPIRAL_WALL - 0.4));
   b.mark('minimum');
   b.arc(HUB, 90);
   b.arc(HUB, 90);
@@ -178,21 +182,13 @@ function lay(b: TrackBuilder, deck: Deck) {
   b.section('You Will Not Be Missed', props(4.5, CUT_WALL));
   b.mark('missed');
   outArm(0, 30);
-  const outTo = (a: number, z: number) => {
-    // The lane's end, wherever it falls.
-    if (LANE_TO >= a && LANE_TO < z) {
-      outArm(a, LANE_TO);
-      b.mark('laneTo');
-      outArm(LANE_TO, z);
-    } else outArm(a, z);
-  };
-  b.section('Said the Tear to the Eye', props(6, LANE_WALL));
+  b.section('Said the Tear to the Eye', props(6, SPIRAL_WALL - 0.4));
   b.mark('tear');
-  outTo(30, 80);
-  b.section('Pathetic, You’re Weaker Than You Know', props(7, LANE_WALL));
+  outArm(30, 80);
+  b.section('Pathetic, You’re Weaker Than You Know', props(7, SPIRAL_WALL - 0.4));
   b.mark('pathetic');
-  outTo(80, 120);
-  b.section('Parasitic Mob', props(8, LANE_WALL));
+  outArm(80, 120);
+  b.section('Parasitic Mob', props(8, SPIRAL_WALL - 0.4));
   b.mark('mob');
   outArm(120, 175);
   b.section('Faceless Undertow', props(8.5, SPIRAL_WALL - 0.2));
@@ -272,15 +268,50 @@ function measureDeck(): Deck {
   return { from: first - 8, centre, to: last + 8 };
 }
 
-/** The lane: a sweeping curve from the way in's `LANE_FROM`th degree, over the top of the centre, to the way out's `LANE_TO`th. */
-function buildLane(b: TrackBuilder) {
-  const a = b.marks.laneFrom;
-  const z = b.marks.laneTo;
-  const lane = new TrackBuilder(a.pose, "Couldn't Hack It", { halfWidth: 8, wallHeight: 0, surface: 'feed' });
-  lane.hermiteTo(z.pose, 4.6);
-  const mid = lane.s / 2;
-  const branch: BranchDef = { name: "Couldn't Hack It", mainFrom: a.s, mainTo: z.s, ...lane.finish(false), openOn: [2, 'final'], shut: { kind: 'vanish' } };
-  return { branch, pits: lane.pits, mid };
+/** A pose on a laid ribbon `s` metres along it. */
+function poseOn(points: readonly (readonly [number, number])[], s: number): Pose {
+  let d = 0;
+  for (let i = 1; i < points.length; i++) {
+    const [ax, az] = points[i - 1];
+    const [bx, bz] = points[i];
+    const l = Math.hypot(bx - ax, bz - az);
+    if (d + l >= s) {
+      const u = (s - d) / l;
+      return { x: ax + (bx - ax) * u, z: az + (bz - az) * u, h: Math.atan2(bx - ax, bz - az) };
+    }
+    d += l;
+  }
+  throw new Error('past the end');
+}
+
+/** The lane: a tighter line inside the last loop, from Standing on a Ball round to the straight home. */
+function buildLane(b: TrackBuilder, points: readonly (readonly [number, number])[], length: number) {
+  const from = b.marks.crest.s + LANE_FROM;
+  const to = length - LANE_TO;
+  const lane = new TrackBuilder(poseOn(points, from), "Couldn't Hack It", { halfWidth: 5, wallHeight: 2.6, surface: 'feed' });
+  for (const [kind, l] of dubins(lane.pose, poseOn(points, to), LANE_R)) {
+    if (kind === 'S') lane.straight(l);
+    else lane.arc(LANE_R, ((kind === 'L' ? 1 : -1) * l * 180) / (Math.PI * LANE_R));
+  }
+  const len = lane.s;
+  const mid = len / 2;
+  lane.profile(0, len, () => 0, 10);
+  const ribbon = lane.finish(false);
+  // Walled once it's off the road it leaves and until it meets it again: a wall over the road itself would catch karts going round the long way.
+  const [sec] = ribbon.sections;
+  const room = (q: readonly [number, number]) => Math.min(...points.map((m) => Math.hypot(m[0] - q[0], m[1] - q[1]))) - (sec.halfWidth + LOOP_HW) * ROAD_WIDTH_SCALE;
+  const cum = [0];
+  for (let i = 1; i < ribbon.points.length; i++) cum.push(cum[i - 1] + Math.hypot(ribbon.points[i][0] - ribbon.points[i - 1][0], ribbon.points[i][1] - ribbon.points[i - 1][1]));
+  const clear = ribbon.points.map((q, i) => (room(q) > LANE_OPEN ? cum[i] : NaN)).filter((d) => !Number.isNaN(d));
+  const [w0, w1] = [Math.min(...clear), Math.max(...clear)];
+  ribbon.sections = [
+    { ...sec, to: w0, wallHeight: 0 },
+    { ...sec, from: w0, to: w1 },
+    { ...sec, from: w1, wallHeight: 0 },
+  ];
+  const branch: BranchDef = { name: "Couldn't Hack It", mainFrom: from, mainTo: to, ...ribbon, openOn: [2, 'final'], shut: { kind: 'vanish' } };
+  // The road it leaves and joins is open on that side there, or its wall would stand across the lane's mouth.
+  return { branch, pits: lane.pits, mid, open: [[from - 5, from + w0 + 5], [to - (len - w1) - 5, to + 5]] as [number, number][] };
 }
 
 /**
@@ -302,10 +333,20 @@ export function buildMinimumBrainSize(): TrackDef {
   // The deck over the spiral, and off its crest.
   ease(m('chord', deck.from - RAMP), 0, m('chord', deck.from + 10), DECK);
   b.profile(m('chord', deck.from + 10), m('crest'), () => DECK, 10);
-  b.profile(m('crest'), m('crest', 75), (u) => DECK * (1 - Math.sin((Math.PI * u) / 2)), 4);
+  b.profile(m('crest'), m('crest', CREST_DROP), crestDrop, 4);
 
   const main = b.finish(true);
-  const lane = buildLane(b);
+  const lane = buildLane(b, main.points, main.length);
+  for (const [o0, o1] of lane.open) {
+    main.sections = main.sections.flatMap((q) => {
+      if (q.to <= o0 || q.from >= o1) return [q];
+      return [
+        ...(q.from < o0 ? [{ ...q, to: o0 }] : []),
+        { ...q, from: Math.max(q.from, o0), to: Math.min(q.to, o1), wallHeight: 0 },
+        ...(q.to > o1 ? [{ ...q, from: o1 }] : []),
+      ];
+    });
+  }
   const at = (mark: string, d = 0) => b.marks[mark].s + d;
   const stations = [0, 1, 2].map((k) => at('mob', 25 + k * MOB_APART));
   const broAt = at('bro', 60);

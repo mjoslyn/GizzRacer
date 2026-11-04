@@ -185,6 +185,15 @@ describe('Minimum Brain Size', () => {
 });
 
 describe('Minimum Brain Size walls', () => {
+  // A branch's ends and the road where it leaves and joins it are one surface, sloped or not.
+  const mouth = (r: Ribbon, i: number, m: Ribbon, j: number) => {
+    const k = track.branches.indexOf(r);
+    if (k < 0 || m !== main) return false;
+    const b = def.branches[k];
+    const s = r.spline.dist[i];
+    const near = (a: number) => Math.min(Math.abs(m.spline.dist[j] - track.mainS(a)), m.spline.length - Math.abs(m.spline.dist[j] - track.mainS(a))) < 60;
+    return (s < 60 && near(b.mainFrom)) || (s > r.spline.length - 60 && near(b.mainTo));
+  };
   // Every pair of road samples near each other on different stretches, the upper first.
   const pairs = () => {
     const rs = [main, ...track.branches];
@@ -199,6 +208,7 @@ describe('Minimum Brain Size walls', () => {
               if (Math.min(d, A.spline.length - d) < 80) continue;
             }
             if (B.heightAt(B.spline.dist[j]) >= ya - 0.3) continue;
+            if (mouth(A, i, B, j) || mouth(B, j, A, i)) continue;
             const gap = Math.hypot(A.spline.px[i] - B.spline.px[j], A.spline.pz[i] - B.spline.pz[j]) - A.halfWidth[i] - B.halfWidth[j];
             if (gap < 2.5) out.push({ up: A, i, low: B, j, gap });
           }
@@ -228,7 +238,7 @@ describe("Couldn't Hack It, the shortcut", () => {
   const bdef = def.branches[k];
   const branch = track.branches[k];
 
-  it('leaves the way in and meets it again, at the same pose, clear of every other road', () => {
+  it('leaves the deck\'s way down and meets the road again before the line, at the same pose, clear of every other road', () => {
     expect(k).toBeGreaterThanOrEqual(0);
     const sp = branch.spline;
     const ends: [number, number, number, number][] = [
@@ -240,7 +250,9 @@ describe("Couldn't Hack It, the shortcut", () => {
       expect(Math.hypot(x - p.x, z - p.z)).toBeLessThan(1);
       expect(Math.abs(wrapAngle(h - Math.atan2(p.tx, p.tz)))).toBeLessThan((3 * Math.PI) / 180);
     }
-    for (const s of [bdef.mainFrom, bdef.mainTo]) expect(sectionAt(s).wallHeight ?? 0).toBeGreaterThan(0);
+    // The road is open at the lane's mouth and walled either side of it.
+    for (const s of [bdef.mainFrom, bdef.mainTo]) expect(sectionAt(s).wallHeight ?? 0).toBe(0);
+    for (const s of [bdef.mainFrom - 20, bdef.mainTo + 20]) expect(sectionAt(s).wallHeight ?? 0).toBeGreaterThan(0);
     for (let i = 0; i < sp.count; i++) {
       expect(Math.max(Math.abs(sp.px[i]), Math.abs(sp.pz[i]))).toBeLessThan(def.bounds - 20);
       if (sp.dist[i] < 30 || sp.dist[i] > sp.length - 30) continue;
