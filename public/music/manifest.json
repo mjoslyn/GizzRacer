@@ -1209,5 +1209,19 @@
     "bars": 32,
     "loopSamples": 1885791,
     "sampleRate": 44100
+  },
+  "minimum-brain-size-remix": {
+    "title": "minimum brain size (remix)",
+    "bpm": 93.2,
+    "bars": 32,
+    "loopSamples": 3633991,
+    "sampleRate": 44100
+  },
+  "minimum-brain-size-remix-final-lap": {
+    "title": "minimum brain size (remix, final lap)",
+    "bpm": 101.2,
+    "bars": 32,
+    "loopSamples": 3346719,
+    "sampleRate": 44100
   }
 }

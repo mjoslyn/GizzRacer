@@ -174,6 +174,7 @@ export const TRANSCRIBED: Record<string, { recording: string; release: string }>
   'sadie-sorceress': { recording: 'Sadie Sorceress', release: "Live At Red Rocks '22" },
   empty: { recording: 'Empty', release: "Live at Field of Vision '25, the soundboard mix" },
   'billabong-valley': { recording: 'Billabong Valley', release: "Live in Sydney '25, the soundboard mix" },
+  'minimum-brain-size': { recording: 'Minimum Brain Size', release: "Live in New York City '25 (Rock Night), the soundboard mix" },
 };
 
 const FINAL = '-final-lap';
