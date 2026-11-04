@@ -1,0 +1,261 @@
+<title>Live Recording Starts</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a taper's log. Songs as sections, one row per show; the open row unfolds into a scrub strip with the start marker. */
+:root {
+  --bg: #eeeae1; --panel: #faf8f3; --ink: #1f1d19; --muted: #6a645a; --line: #d6cfc1;
+  --accent: #c2410c; --accent-ink: #ffffff; --wave: #8a8172; --wave-in: #1f1d19; --ok: #2f7d4f; --moved: #9a5b00; --zone: rgba(194,65,12,0.08);
+  --font-display: "Archivo Black", "Arial Black", Impact, sans-serif;
+  --font-body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #16150f; --panel: #201e18; --ink: #ede8dc; --muted: #a59e90; --line: #36332a;
+  --accent: #f97316; --accent-ink: #16150f; --wave: #6f685b; --wave-in: #ede8dc; --ok: #5ec48a; --moved: #e6a23c; --zone: rgba(249,115,22,0.12); color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #16150f; --panel: #201e18; --ink: #ede8dc; --muted: #a59e90; --line: #36332a;
+  --accent: #f97316; --accent-ink: #16150f; --wave: #6f685b; --wave-in: #ede8dc; --ok: #5ec48a; --moved: #e6a23c; --zone: rgba(249,115,22,0.12); color-scheme: dark; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 64px; }
+.wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 22px; }
+header { display: grid; gap: 6px; }
+h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(28px, 5vw, 44px); line-height: 1; margin: 0; letter-spacing: -0.01em; }
+.lede { margin: 0; color: var(--muted); max-width: 70ch; }
+.tally { display: flex; flex-wrap: wrap; gap: 8px 18px; font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+.tally b { color: var(--ink); font-weight: 600; }
+.notice { font-size: 13px; color: var(--moved); }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; }
+.filters button { font: 600 13px var(--font-body); padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
+.filters button[aria-pressed="true"] { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+h2 { font-family: var(--font-display); font-weight: 400; font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin: 10px 0 0; }
+section.song { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+section.song h3 { margin: 0; padding: 10px 14px; font-size: 17px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+section.song h3 span { font: 400 12px var(--font-mono); color: var(--muted); align-self: center; }
+.row { border-top: 1px solid var(--line); }
+.row:first-of-type { border-top: 0; }
+.row > button.head { width: 100%; display: grid; grid-template-columns: 7.5em 1fr auto auto; gap: 12px; align-items: center; padding: 9px 14px; background: none; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.row > button.head:hover { background: var(--zone); }
+.row > button.head:focus-visible, .ctl button:focus-visible, canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.date { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 13px; }
+.venue { color: var(--muted); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.st { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 13px; }
+.chip { font: 600 11px var(--font-body); text-transform: uppercase; letter-spacing: 0.08em; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.chip.ok { color: var(--ok); border-color: var(--ok); }
+.chip.moved { color: var(--moved); border-color: var(--moved); }
+.chip.drop { color: var(--muted); border-color: var(--muted); text-decoration: line-through; }
+.ctl button.danger { color: var(--accent); border-color: var(--accent); background: transparent; }
+.row.dropped .date, .row.dropped .venue { text-decoration: line-through; opacity: 0.6; }
+.editor { padding: 4px 14px 16px; display: grid; gap: 10px; }
+.strip { position: relative; }
+canvas { width: 100%; height: 96px; display: block; background: var(--bg); border-radius: 4px; cursor: crosshair; }
+.scale { display: flex; justify-content: space-between; font: 11px var(--font-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.ctl { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.ctl button { font: 600 13px var(--font-body); padding: 6px 11px; border-radius: 4px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
+.ctl button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.ctl .sep { width: 1px; align-self: stretch; background: var(--line); margin: 0 4px; }
+.ctl .val { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 14px; min-width: 7ch; }
+.hint { font-size: 12px; color: var(--muted); margin: 0; }
+@media (max-width: 560px) {
+  .row > button.head { grid-template-columns: 6.8em 1fr auto; }
+  .row > button.head .st { display: none; }
+}
+</style>
+<div class="wrap">
+  <header>
+    <h1>Live Recording Starts</h1>
+    <p class="lede">Two minutes of each recording around where the game starts playing it, from 40 seconds before. New at the top: the All Stars Cup #2, then the Mind Fuzz and Nonagon Infinity Cups; the cups below were checked already. Listen from the marker, move it if the band isn't playing yet (or if a quiet intro of the song got cut), then keep or save it. Claude reads your choices back into the game.</p>
+    <div class="tally" id="tally"></div>
+    <div class="notice" id="notice" hidden></div>
+  </header>
+  <div class="filters" role="group" aria-label="Show">
+    <button type="button" id="f-all" data-f="all" aria-pressed="true">All</button>
+    <button type="button" id="f-todo" data-f="todo" aria-pressed="false">Unchecked</button>
+    <button type="button" id="f-moved" data-f="moved" aria-pressed="false">Moved</button>
+    <button type="button" id="f-drop" data-f="drop" aria-pressed="false">Dropped</button>
+  </div>
+  <div id="list"></div>
+  <p class="hint">Keys in an open row: Space plays from the marker, ← and → move it half a second (Shift for 2 s), Enter keeps it. “Drop from the list” takes a recording out of the game (the wrong song, a bad tape); open it again and Keep to bring it back.</p>
+</div>
+<audio id="player" preload="auto"></audio>
+<script>
+const ITEMS = /*ITEMS*/[];
+const CLIP = 120;
+const state = {}; // key -> { start, status: 'ok'|'moved' }
+let filter = 'all', openKey = null, db = null, canWrite = true;
+const audio = document.getElementById('player');
+const listEl = document.getElementById('list');
+const fmt = (s) => { s = Math.max(0, s); const m = Math.floor(s / 60); return `${m}:${(s - m * 60).toFixed(1).padStart(4, '0')}`; };
+const cur = (it) => (state[it.key] ? state[it.key].start : it.start);
+const status = (it) => (state[it.key] ? state[it.key].status : 'todo');
+const peaks = {}; // key -> Float32Array
+let draft = {}; // key -> start being edited
+
+function tally() {
+  const done = ITEMS.filter((i) => state[i.key]).length;
+  const moved = ITEMS.filter((i) => status(i) === 'moved').length;
+  const dropped = ITEMS.filter((i) => status(i) === 'drop').length;
+  document.getElementById('tally').innerHTML = `<span><b>${ITEMS.length}</b> recordings</span><span><b>${done}</b> checked</span><span><b>${moved}</b> moved</span><span><b>${dropped}</b> dropped</span><span><b>${ITEMS.length - done}</b> to go</span>`;
+}
+function notice(msg) { const n = document.getElementById('notice'); n.textContent = msg; n.hidden = !msg; }
+
+function render() {
+  tally();
+  listEl.textContent = '';
+  let cup = null, song = null, sec = null;
+  for (const it of ITEMS) {
+    const st = status(it);
+    if (filter === 'todo' && st !== 'todo') continue;
+    if (filter === 'moved' && st !== 'moved') continue;
+    if (filter === 'drop' && st !== 'drop') continue;
+    if (it.cup !== cup) { cup = it.cup; const h = document.createElement('h2'); h.textContent = cup; listEl.append(h); song = null; }
+    if (it.song !== song) {
+      song = it.song; sec = document.createElement('section'); sec.className = 'song';
+      const n = ITEMS.filter((x) => x.song === song).length, c = ITEMS.filter((x) => x.song === song && state[x.key]).length;
+      sec.innerHTML = `<h3>${song}<span>${c} of ${n} checked</span></h3>`; listEl.append(sec);
+    }
+    const row = document.createElement('div'); row.className = st === 'drop' ? 'row dropped' : 'row'; row.dataset.key = it.key;
+    const label = st === 'ok' ? 'Kept' : st === 'moved' ? 'Moved' : st === 'drop' ? 'Dropped' : 'Unchecked';
+    row.innerHTML = `<button type="button" class="head" id="h-${it.key}" aria-expanded="${openKey === it.key}">
+      <span class="date">${it.date}</span><span class="venue"></span>
+      <span class="st">start ${fmt(cur(it))}</span><span class="chip ${st}">${label}</span></button>`;
+    row.querySelector('.venue').textContent = it.venue || '';
+    row.querySelector('.head').addEventListener('click', () => toggle(it.key));
+    sec.append(row);
+    if (openKey === it.key) row.append(editor(it));
+  }
+}
+
+function toggle(key) {
+  audio.pause();
+  openKey = openKey === key ? null : key;
+  if (openKey) draft[openKey] = cur(ITEMS.find((i) => i.key === openKey));
+  render();
+  if (openKey) document.getElementById('cv-' + openKey)?.focus();
+}
+
+function editor(it) {
+  const ed = document.createElement('div'); ed.className = 'editor';
+  ed.innerHTML = `<div class="strip"><canvas id="cv-${it.key}" tabindex="0" aria-label="Waveform; click to place the start"></canvas>
+      <div class="scale"><span>${fmt(it.clipStart)}</span><span>${fmt(it.clipStart + CLIP / 2)}</span><span>${fmt(it.clipStart + CLIP)}</span></div></div>
+    <div class="ctl">
+      <button type="button" id="pl-${it.key}" class="primary">Play from marker</button>
+      <button type="button" id="pb-${it.key}">From 5 s before</button>
+      <span class="sep"></span>
+      <button type="button" id="m2-${it.key}" aria-label="Back 2 seconds">−2 s</button>
+      <button type="button" id="m05-${it.key}" aria-label="Back half a second">−0.5</button>
+      <span class="val" id="v-${it.key}"></span>
+      <button type="button" id="p05-${it.key}" aria-label="On half a second">+0.5</button>
+      <button type="button" id="p2-${it.key}" aria-label="On 2 seconds">+2 s</button>
+      <span class="sep"></span>
+      <button type="button" id="keep-${it.key}">Keep</button>
+      <button type="button" id="save-${it.key}" class="primary">Save new start</button>
+      <span class="sep"></span>
+      <button type="button" id="drop-${it.key}" class="danger">Drop from the list</button>
+    </div>
+    <p class="hint">Was ${fmt(it.start)}${it.end ? ` · ends at ${fmt(it.end)}` : ''} · recording ${fmt(it.seconds || 0)} long</p>`;
+  const cv = ed.querySelector('canvas');
+  const val = ed.querySelector('.val');
+  const draw = () => {
+    val.textContent = fmt(draft[it.key]);
+    const dpr = window.devicePixelRatio || 1, w = cv.clientWidth || 600, h = 96;
+    cv.width = w * dpr; cv.height = h * dpr;
+    const g = cv.getContext('2d'); g.scale(dpr, dpr);
+    const css = getComputedStyle(document.documentElement);
+    const p = peaks[it.key], x0 = ((draft[it.key] - it.clipStart) / CLIP) * w;
+    if (p) {
+      for (let i = 0; i < w; i++) {
+        const v = p[Math.floor((i / w) * p.length)] || 0, hh = Math.max(1, v * (h - 8));
+        g.fillStyle = i >= x0 ? css.getPropertyValue('--wave-in') : css.getPropertyValue('--wave');
+        g.fillRect(i, (h - hh) / 2, 1, hh);
+      }
+    } else { g.fillStyle = css.getPropertyValue('--muted'); g.font = '12px sans-serif'; g.fillText('Loading waveform…', 10, h / 2); }
+    g.fillStyle = css.getPropertyValue('--accent'); g.fillRect(x0 - 1, 0, 2, h);
+    if (!audio.paused && audio.dataset.key === it.key) {
+      const xp = (audio.currentTime / CLIP) * w; g.fillStyle = css.getPropertyValue('--ok'); g.fillRect(xp, 0, 1, h);
+    }
+  };
+  const set = (t) => { draft[it.key] = Math.round(Math.min(it.clipStart + CLIP - 1, Math.max(it.clipStart, t)) * 2) / 2; draw(); };
+  const play = (from) => {
+    const t = Math.max(0, from - it.clipStart);
+    if (audio.dataset.key !== it.key) { audio.src = it.clip; audio.dataset.key = it.key; audio.load(); }
+    if (audio.readyState >= 1) audio.currentTime = t;
+    else audio.addEventListener('loadedmetadata', () => { audio.currentTime = t; }, { once: true });
+    audio.play().then(() => notice('')).catch((e) => notice('Couldn’t play this clip' + (e && e.name ? ` (${e.name})` : '') + '. Tap Play again.'));
+  };
+  cv.addEventListener('click', (e) => { const r = cv.getBoundingClientRect(); set(it.clipStart + ((e.clientX - r.left) / r.width) * CLIP); play(draft[it.key]); });
+  ed.querySelector(`#pl-${it.key}`).addEventListener('click', () => play(draft[it.key]));
+  ed.querySelector(`#pb-${it.key}`).addEventListener('click', () => play(draft[it.key] - 5));
+  for (const [id, d] of [['m2', -2], ['m05', -0.5], ['p05', 0.5], ['p2', 2]]) ed.querySelector(`#${id}-${it.key}`).addEventListener('click', () => set(draft[it.key] + d));
+  ed.querySelector(`#keep-${it.key}`).addEventListener('click', () => commit(it, it.start, 'ok'));
+  ed.querySelector(`#drop-${it.key}`).addEventListener('click', () => commit(it, it.start, 'drop'));
+  ed.querySelector(`#save-${it.key}`).addEventListener('click', () => commit(it, draft[it.key], Math.abs(draft[it.key] - it.start) < 0.25 ? 'ok' : 'moved'));
+  cv.addEventListener('keydown', (e) => {
+    const step = e.shiftKey ? 2 : 0.5;
+    if (e.key === 'ArrowLeft') { set(draft[it.key] - step); e.preventDefault(); }
+    else if (e.key === 'ArrowRight') { set(draft[it.key] + step); e.preventDefault(); }
+    else if (e.key === ' ') { audio.paused ? play(draft[it.key]) : audio.pause(); e.preventDefault(); }
+    else if (e.key === 'Enter') { commit(it, draft[it.key], Math.abs(draft[it.key] - it.start) < 0.25 ? 'ok' : 'moved'); e.preventDefault(); }
+  });
+  ed._draw = draw;
+  requestAnimationFrame(draw);
+  loadPeaks(it).then(draw);
+  return ed;
+}
+
+async function loadPeaks(it) {
+  if (peaks[it.key]) return;
+  try {
+    const buf = await (await fetch(it.clip)).arrayBuffer();
+    const ctx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(1, 1, 32000);
+    const ab = await ctx.decodeAudioData(buf);
+    const ch = ab.getChannelData(0), n = 1200, per = Math.floor(ch.length / n), out = new Float32Array(n);
+    let max = 1e-6;
+    for (let i = 0; i < n; i++) { let s = 0; for (let j = i * per; j < (i + 1) * per; j++) s += ch[j] * ch[j]; out[i] = Math.sqrt(s / per); max = Math.max(max, out[i]); }
+    for (let i = 0; i < n; i++) out[i] = Math.pow(out[i] / max, 0.6);
+    peaks[it.key] = out;
+  } catch { peaks[it.key] = new Float32Array(1); }
+}
+
+async function commit(it, start, st) {
+  const prev = state[it.key];
+  state[it.key] = { start, status: st };
+  const i = ITEMS.indexOf(it), next = ITEMS.slice(i + 1).find((x) => !state[x.key]);
+  audio.pause();
+  openKey = next ? next.key : null;
+  if (openKey) draft[openKey] = cur(next);
+  render();
+  if (openKey) document.getElementById('cv-' + openKey)?.focus();
+  if (!db) { notice('Not saved: sign in to claude.ai on this page so your choices reach Claude.'); return; }
+  try {
+    await db.collection('starts').doc(it.key).set({ start, status: st, was: it.start, song: it.song, date: it.date, at: Date.now() });
+    notice('');
+  } catch (e) {
+    if (prev) state[it.key] = prev; else delete state[it.key];
+    render();
+    notice(e && e.code === 'permission_denied' ? 'Only the owner can save starts on this page.' : 'Could not save that one; try again.');
+  }
+}
+
+let raf = 0;
+audio.addEventListener('play', () => { const tick = () => { const ed = document.querySelector('.editor'); ed && ed._draw && ed._draw(); if (!audio.paused) raf = requestAnimationFrame(tick); }; cancelAnimationFrame(raf); tick(); });
+for (const b of document.querySelectorAll('.filters button')) b.addEventListener('click', () => {
+  filter = b.dataset.f; for (const o of document.querySelectorAll('.filters button')) o.setAttribute('aria-pressed', String(o === b)); render();
+});
+render();
+
+(async () => {
+  const timer = setTimeout(() => notice('Saved choices didn’t load yet; you can still listen.'), 10000);
+  db = await window.claude?.use?.('db');
+  if (!db) { clearTimeout(timer); notice('Saving is off here: open this page on claude.ai, signed in, to save your choices.'); return; }
+  db.collection('starts').onSnapshot((snap) => {
+    clearTimeout(timer);
+    for (const d of snap.docs) { const v = d.data(); if (v && typeof v.start === 'number') state[d.id] = { start: v.start, status: v.status === 'moved' ? 'moved' : v.status === 'drop' ? 'drop' : 'ok' }; }
+    if (!document.querySelector('.editor')) render(); else tally();
+  }, () => { clearTimeout(timer); notice('Couldn’t load saved choices.'); });
+})();
+
+</script>
