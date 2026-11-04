@@ -155,6 +155,7 @@ export const WAVE_SPIN = 1.0;
  * - slipped through the gap just behind a pack of hellhounds as the last of them crosses, faster than a cheetah: a boost
  * - hopped onto a piston at the top of its stroke (or as it punches up), ridden: up, and on with a boost
  * - over one of Gaia's ribs as it rises with her breath, thrown on: up, and a boost
+ * - tucked into Sadie's slipstream just behind her broomstick as she swoops across the road, more fly than Quidditch: a boost
  */
 /** A reward can't pay out again to the same kart for this long. */
 export const REWARD_COOLDOWN = 1.5;
@@ -1132,6 +1133,84 @@ export function houndPack(u: number, side: number, reach: number): { lateral: nu
 }
 
 /**
+ * Sadie Sorceress's broomstick, "snapping necks with her broomstick getting
+ * tortuous": Sadie circling high over one side of the road, cackling (the
+ * warning: that's the side she'll come from), then swooping down out of the
+ * sky across the road at kart height on a slant, a trail of sparks in her
+ * slipstream, and up and away the other side, where she circles again until
+ * she comes back the other way. Caught by her broomstick, snapped and spun.
+ * Tucked into her slipstream just behind her as she crosses, a boost.
+ */
+export const BROOM_STAGES = { dive: 0.52, away: 0.8 } as const;
+/** She starts her swoop this far out past the road's edge, this high, and skims across it this high. */
+export const BROOM_OUT = 11;
+export const BROOM_HIGH = 12;
+export const BROOM_LOW = 1.1;
+/** She circles this wide while she waits. */
+export const BROOM_CIRCLE = 6;
+/** How far along the road her swoop slants, from one side to the other. */
+export const BROOM_SLANT = 8;
+/** The broomstick from her: its tip this far ahead, its bristles this far behind, this thick either side. */
+export const BROOM_HEAD = 2.1;
+export const BROOM_TAIL = 1.7;
+export const BROOM_RADIUS = 0.8;
+/** Her slipstream: this far back behind the bristles, this wide either side of her line. */
+export const BROOM_WAKE = 10;
+export const BROOM_WAKE_WIDTH = 2.6;
+export const BROOM_SPIN = 1.1;
+export const BROOM_BOOST = 1.0;
+/** Each station down the stretch swoops this share of a period after the one before, so a fast kart in one slipstream meets the next. */
+export const BROOM_LAG = 0.3;
+
+/** Where Sadie of station `i` is in her cycle at race time `t` (0 to 1), which cycle it is, and which way she crosses this time (1 to the right). */
+export function broomPhase(t: number, period: number, i: number): { u: number; cycle: number; side: number } {
+  const tt = (t + 10) / period - i * BROOM_LAG;
+  const cycle = Math.floor(tt);
+  return { u: tt - cycle, cycle, side: (cycle + i) % 2 === 0 ? 1 : -1 };
+}
+
+/** Her height over the road at `lateral`: skimming across it, climbing steeply out past its edges. */
+export function broomHeight(lateral: number, reach: number): number {
+  const out = Math.max(0, Math.abs(lateral) - reach - 1) / (BROOM_OUT - 1);
+  return BROOM_LOW + (BROOM_HIGH - BROOM_LOW) * Math.min(1, out) ** 2;
+}
+
+/**
+ * Where Sadie is at cycle stage `u` crossing toward `side`, in the road's
+ * frame at her station: `along` the road, `lateral` (to the right), `height`
+ * over the road, and whether she's swooping (`swoop`, and how far across, `f`
+ * from 0 to 1). The road is `reach` wide either side of its centre. Before
+ * her dive she circles high off the edge she'll come from; after it, off the
+ * edge she went to, until the next.
+ */
+export function broomCourse(u: number, side: number, reach: number): { along: number; lateral: number; height: number; swoop: boolean; f: number } {
+  const S = BROOM_STAGES;
+  const R = reach + BROOM_OUT;
+  const c = BROOM_CIRCLE;
+  const a0 = -BROOM_SLANT / 2;
+  if (u >= S.dive && u < S.away) {
+    const f = (u - S.dive) / (S.away - S.dive);
+    const lateral = side * (-R + 2 * R * f);
+    return { along: a0 + BROOM_SLANT * f, lateral, height: broomHeight(lateral, reach), swoop: true, f };
+  }
+  // Circling: from where the last swoop came out (the far end of its slant) twice round, to where this one sets off.
+  const span = 1 - S.away + S.dive;
+  const v = u < S.dive ? (u + 1 - S.away) / span : (u - S.away) / span;
+  // The edge she circles off: before the dive, the one she'll come from; after it, the one she went to.
+  const edge = u < S.dive ? -side : side;
+  const psi = 4 * Math.PI * v;
+  const from = -a0;
+  const to = a0;
+  return {
+    along: from + (to - from) * v + c * Math.sin(psi),
+    lateral: edge * (R + c - c * Math.cos(psi)),
+    height: BROOM_HIGH + 2 * Math.sin(Math.PI * v),
+    swoop: false,
+    f: u < S.dive ? 0 : 1,
+  };
+}
+
+/**
  * Cyboogie's pistons: "pistons and pumps under graphene lattice". Rows of
  * PISTON_LANES pistons across the road, flush in the graphene, that punch up
  * through it one after another on the four beats of the boogie's bar, left to
@@ -1364,6 +1443,7 @@ const SPIN: Record<Exclude<HazardKind, 'dustDevils' | 'tumbleweeds' | 'butterfli
   pistons: PISTON_SPIN,
   breaths: 0,
   trafficLights: LIGHT_SPIN,
+  brooms: BROOM_SPIN,
 };
 
 /** Kinds that fill the whole road across, on a rhythm: nothing to steer round, only to time. */
@@ -2180,6 +2260,28 @@ export class HazardSystem {
           p.phase = u;
           break;
         }
+        case 'brooms': {
+          // Sadie circling high off one edge, then swooping down across the road on her broomstick and up and away off the other.
+          const at = def.at[i];
+          const { u, side } = broomPhase(t, def.period, i);
+          const reach = this.halfWidth(at);
+          const c = broomCourse(u, side, reach);
+          // Which way she's flying: where she'll be a moment from now, in the road's frame.
+          const next = broomPhase(t + 0.02, def.period, i);
+          const d = broomCourse(next.u, next.side, reach);
+          this.place(p, at + c.along, c.lateral, c.height);
+          // Her heading: the road's, turned toward the way she's flying (a lateral to the right is a turn to the right, -h).
+          p.heading -= Math.atan2(d.lateral - c.lateral, d.along - c.along);
+          p.radius = BROOM_RADIUS;
+          p.side = side;
+          p.gap = c.lateral;
+          // Down skimming the road: snapping distance.
+          p.active = c.swoop && c.height < 2.6;
+          // Her slipstream, over the road behind her, while she swoops.
+          p.lane = c.swoop ? 1 : 0;
+          p.phase = u;
+          break;
+        }
         case 'trafficLights': {
           // A gantry of lights over the road, changing on the waltz's beats a little after the one before it.
           const at = def.at[i];
@@ -2440,6 +2542,10 @@ export class HazardSystem {
         }
         if (p.kind === 'trafficLights') {
           this.trafficLight(hit, p, s);
+          continue;
+        }
+        if (p.kind === 'brooms') {
+          this.broom(hit, p, s);
           continue;
         }
         if (p.kind === 'fuzz' && p.phase >= FUZZ_STAGES.gold && p.phase < FUZZ_STAGES.red) {
@@ -2800,6 +2906,14 @@ export class HazardSystem {
           if (!h.out && p.phase >= HOUND_STAGES.run) continue;
           out.push({ x: p.ax - fz * h.lateral + fx * h.along, z: p.az + fx * h.lateral + fz * h.along, r: 1.6, vx: -fz * p.side * speed, vz: fx * p.side * speed });
         }
+        continue;
+      }
+      if (p.kind === 'brooms') {
+        // Sadie skimming across the road, broomstick tip to bristles.
+        if (!p.active) continue;
+        const fx = Math.sin(p.heading);
+        const fz = Math.cos(p.heading);
+        for (const d of [BROOM_HEAD, 0, -BROOM_TAIL]) out.push({ x: p.x + fx * d, z: p.z + fz * d, r: 1.4, vx: p.vx, vz: p.vz });
         continue;
       }
       if (p.kind === 'sharks') {
@@ -3612,6 +3726,33 @@ export class HazardSystem {
     if (!spinOut(s, LIGHT_SPIN)) return;
     s.speed *= LIGHT_SLOW;
     hit.push({ kart: s, by: p.kind });
+  }
+
+  /**
+   * Sadie swooping across the road on her broomstick: caught by it, tip to
+   * bristles, as she skims across, snapped and spun; tucked into her
+   * slipstream just behind the bristles as she crosses, a boost.
+   */
+  private broom(hit: { kart: KartState; by: HazardKind; good?: boolean }[], p: HazardPose, s: KartState): void {
+    if (p.lane !== 1) return;
+    const fx = Math.sin(p.heading);
+    const fz = Math.cos(p.heading);
+    const along = (s.x - p.x) * fx + (s.z - p.z) * fz;
+    const across = Math.abs((s.x - p.x) * -fz + (s.z - p.z) * fx);
+    if (p.active && along >= -BROOM_TAIL - BROOM_RADIUS - KART_RADIUS && along <= BROOM_HEAD + BROOM_RADIUS + KART_RADIUS) {
+      const d = Math.hypot(Math.max(0, Math.abs(along - (BROOM_HEAD - BROOM_TAIL) / 2) - (BROOM_HEAD + BROOM_TAIL) / 2), across);
+      if (d <= BROOM_RADIUS + KART_RADIUS) {
+        if (this.cooldown.has(s)) return;
+        this.cooldown.set(s, HIT_COOLDOWN);
+        if (spinOut(s, BROOM_SPIN)) hit.push({ kart: s, by: p.kind });
+        return;
+      }
+    }
+    // Her slipstream: behind the bristles, along her line, while she's down skimming the road.
+    if (p.y - p.ground > 3) return;
+    const behind = -along - BROOM_TAIL - BROOM_RADIUS;
+    if (behind < 0 || behind > BROOM_WAKE || across > BROOM_WAKE_WIDTH || s.speed < 8 || this.cooldown.has(s)) return;
+    this.reward(hit, s, p.kind, () => (s.boostTime = Math.max(s.boostTime, BROOM_BOOST)));
   }
 
   /** Pays a kart for using a hazard well, once in a while. */

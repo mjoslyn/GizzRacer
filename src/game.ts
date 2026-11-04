@@ -2031,6 +2031,7 @@ const HIT_TEXT: Record<ItemKind | HazardKind, string> = {
   pistons: 'TERMINAL ERROR!',
   breaths: 'GAIA EXHALES!',
   trafficLights: 'RED: STAY!',
+  brooms: 'NECK SNAPPED!',
 };
 
 /** What a hazard used well says: the ones that can help. */
@@ -2106,6 +2107,7 @@ const BONUS_TEXT: Record<HazardKind, string> = {
   pistons: 'CYBOOGIE!',
   breaths: 'GAIA BREATHES!',
   trafficLights: 'GREEN: GO!',
+  brooms: 'MORE FLY THAN QUIDDITCH!',
 };
 
 /** Takes a group out of the scene and frees what it built. */

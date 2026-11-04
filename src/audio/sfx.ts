@@ -622,6 +622,12 @@ export class Sfx {
       this.whoosh(0.7, 600, 2600, 0.2);
       [0, 1, 2].forEach((k) => this.tone(880, 0.12, 'square', 0.06, undefined, 0.3 + k * 0.26));
     }
+    // Snapped by Sadie's broomstick: the whoosh of her coming down past you, the crack of the broom, and her cackle, a witch's laugh tumbling down in four notes.
+    if (by === 'brooms') {
+      this.whoosh(0.4, 600, 3200, 0.22);
+      this.hit(0.08, 2400, 0.5);
+      [1175, 988, 1175, 880].forEach((f, k) => this.tone(f, 0.08, 'square', 0.05, f * 0.8, 0.12 + k * 0.09));
+    }
     // A wave breaking over you: a crash of white noise; a glider comes in with a whistle of wind.
     if (by === 'waves') this.whoosh(0.8, 2400, 300, 0.35);
     if (by === 'gliders') this.whoosh(0.5, 1800, 500, 0.2);

@@ -459,6 +459,14 @@ const STYLES: Record<DecorKind, DetailStyle> = {
     boards: { words: ['STRAWS IN THE WIND', 'IS IT ALL ENDING?', 'BREAKING NEWS', 'PANDEMONIUM', 'STAY OR GO', 'K.G.'], bg: ['#c8101a', '#f4ead0', '#1a3a8a'], fg: '#ffffff' },
     crowd: true,
   },
+  // Sadie Sorceress: crooked lamp posts with witch-hat shades along the rink road, lit violet-pink; dead heath and poison moss; boards of the song.
+  sorcery: {
+    edge: { kind: 'lamp', height: 4.2, spacing: 20, color: 0x1a1020, stripe: 0xff2a9a },
+    light: 0xff5ac0,
+    cover: { shape: 'tuft', colors: [0x3a2a44, 0x4a3a54, 0x2a4a24, 0x5a7a2a, 0x8aff2a], count: 1400 },
+    boards: { words: ['SADIE SORCERESS', 'WILD LIKE A WITCH', 'MORE FLY THAN QUIDDITCH', 'HELLO LOVE', 'ROLLER DISCO', 'OMNIUM GATHERUM'], bg: ['#0a0612', '#2a0a2a'], fg: '#ff3aa8' },
+    crowd: false,
+  },
   // The forge's own fires along the road, nobody out here among the stars but the smith: cinders, slag and stardust.
   forge: {
     edge: { kind: 'torch', height: 1.5, spacing: 16, color: 0x1a1a22, stripe: 0x3a3a48 },
