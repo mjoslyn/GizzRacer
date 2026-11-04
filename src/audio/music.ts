@@ -128,6 +128,8 @@ const LIVE_TIMEOUT = 10000;
 
 interface Playing {
   cue: MusicCue | null;
+  /** What was asked for (play's or playLive's key), so a caller can tell the wanted music has started. */
+  key: string | null;
   /** 0 for a live recording: no beat to pulse to. */
   bpm: number;
   /** Stops the sound at a context time (after its fade). */
@@ -257,6 +259,16 @@ export class MusicPlayer {
   setVolume(v: number): void {
     this.volume = v;
     if (this.master && this.ctx && !this.muted) this.master.gain.setTargetAtTime(v, this.ctx.currentTime, 0.05);
+  }
+
+  /**
+   * Whether the music asked for last is playing: true too when nothing will
+   * play (no music asked for, no audio yet, muted or turned right down), so
+   * nothing waits on silence.
+   */
+  get wantedPlaying(): boolean {
+    if (!this.wantedKey || !this.ctx || this.ctx.state !== 'running' || this.muted || this.volume <= 0) return true;
+    return this.current?.key === this.wantedKey;
   }
 
   toggleMute(): boolean {
@@ -446,6 +458,7 @@ export class MusicPlayer {
         }
         this.current = {
           cue: null,
+          key,
           bpm: 0,
           gain,
           stop: (at) => {
@@ -502,7 +515,7 @@ export class MusicPlayer {
     gain.gain.linearRampToValueAtTime(1, ctx.currentTime + FADE);
     source.connect(gain).connect(this.master);
     source.start(ctx.currentTime, loop.start);
-    this.current = { cue, bpm: loop.bpm, stop: (at) => source.stop(at), gain, startedAt: ctx.currentTime, length: loop.end - loop.start };
+    this.current = { cue, key: this.wantedKey, bpm: loop.bpm, stop: (at) => source.stop(at), gain, startedAt: ctx.currentTime, length: loop.end - loop.start };
   }
 
   private fadeOut(): void {

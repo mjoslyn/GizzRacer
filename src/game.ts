@@ -161,6 +161,8 @@ const sfx = new Sfx(
 const PLAYER_SLOT = 4;
 /** Seconds after crossing the line before the results table. */
 const RESULTS_DELAY = 2.5;
+/** The longest the countdown waits (s) for the race's song to start playing. */
+const MUSIC_WAIT = 8;
 /** Seconds of camera flyover before the countdown. */
 const INTRO_TIME = 4.5;
 
@@ -285,6 +287,10 @@ let raceSeed = 1;
 let fieldSeed = 1;
 /** Flyover seconds left before the countdown starts. */
 let intro = 0;
+/** Seconds the countdown has been held for the race's song to start; it waits at most MUSIC_WAIT. */
+let musicWait = 0;
+/** The countdown is held for the song this frame: the HUD shows no number yet. */
+let musicHeld = false;
 /** Smoothed post effect levels. */
 /** Post effects, eased toward their targets each frame; `bite` is the red flash of a hit, decaying. */
 const fx = { haze: 0, kaleido: 0, vhs: 0, duo: 0, box: 0, bite: 0, water: 0, swim: 0, crackle: 0, digitise: 0, doze: 0, drain: 0, dawn: 0 };
@@ -1035,6 +1041,7 @@ function startRace(withPlayer: boolean, keepSong = false, seamless = false): voi
   // Straight ahead is however the phone is held as the race begins.
   if (withPlayer) tilt.recenter();
   intro = withPlayer && !net && !solo && !seamless ? INTRO_TIME : 0;
+  musicWait = 0;
   if (solo && player) beginDeadstick(player);
   // Online, everyone's GO is the room's: count down to it on the room clock.
   if (net) race.time = Math.max(-10, -(net.start.at - net.client.serverNow()) / 1000);
@@ -1322,6 +1329,12 @@ function step(dt: number): void {
       chase.snap();
       for (const seat of seats) seat.chase.snap();
     }
+    return;
+  }
+  // The countdown waits for the race's song to start (a live recording can take a few seconds to stream), up to MUSIC_WAIT.
+  musicHeld = !online && race.time < 0 && musicWait < MUSIC_WAIT && !music.wantedPlaying;
+  if (musicHeld) {
+    musicWait += dt;
     return;
   }
   // Online countdowns follow the room's clock, so a slow frame can't make anyone late to GO.
@@ -2591,7 +2604,7 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
       })(),
       position: f.position,
       karts: race.karts.length,
-      countdown: intro > 0 ? -1 : -race.time,
+      countdown: intro > 0 || musicHeld ? -1 : -race.time,
       intro: intro > 0 ? { name: track.def.name, sub: story ? storyIntro(story) : gp ? `Race ${gp.round + 1} of ${gp.tracks.length}${gp.rivals.length ? ` · your rivals: ${gp.rivals.map((r) => r.name).join(' and ')}` : ''}${mirrored() ? ' · Mirror' : ''}` : choice.mode === 'timeTrial' ? 'Time Trial' : choice.mode === 'infinite' ? `${watching ? 'Watching the CPUs' : 'Infinite'}${choice.switchEvery === 'never' ? '' : ` · ${choice.switchEvery === 'song' ? 'a new track each song' : `a new track every ${choice.switchEvery === 1 ? 'lap' : `${choice.switchEvery} laps`}`}`} · ${choice.engine}` : `${choice.engine}${mirrored() ? ' · Mirror' : ''}` } : null,
       table: table(),
       muted: musicMuted,
