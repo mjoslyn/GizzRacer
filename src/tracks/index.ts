@@ -62,6 +62,7 @@ import { buildHotWax } from './hotWax';
 import { buildSadieSorceress } from './sadieSorceress';
 import { buildEmpty } from './empty';
 import { buildBillabongValley } from './billabongValley';
+import { buildMinimumBrainSize } from './minimumBrainSize';
 import { buildCutThroatBoogie } from './cutThroatBoogie';
 import { buildSeaOfTrees } from './seaOfTrees';
 import { buildTheia } from './theia';
@@ -140,6 +141,8 @@ export const RAW_TRACK_LIST: { id: string; name: string; build: () => TrackDef }
   { id: 'sadie-sorceress', name: 'Sadie Sorceress', build: buildSadieSorceress },
   { id: 'empty', name: 'Empty', build: buildEmpty },
   { id: 'billabong-valley', name: 'Billabong Valley', build: buildBillabongValley },
+  // A test track, in no cup yet: Single Race and Time Trial only.
+  { id: 'minimum-brain-size', name: 'Minimum Brain Size', build: buildMinimumBrainSize },
 ];
 
 export const TRACK_LIST: { id: string; name: string; build: () => TrackDef }[] = RAW_TRACK_LIST.map((t) => ({ ...t, build: () => enrichTrack(t.build()) }));
