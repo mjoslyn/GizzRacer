@@ -1153,5 +1153,61 @@
     "bars": 32,
     "loopSamples": 2676670,
     "sampleRate": 44100
+  },
+  "hot-wax-remix": {
+    "title": "hot wax (remix)",
+    "bpm": 162.4,
+    "bars": 32,
+    "loopSamples": 2085517,
+    "sampleRate": 44100
+  },
+  "hot-wax-remix-final-lap": {
+    "title": "hot wax (remix, final lap)",
+    "bpm": 170.4,
+    "bars": 32,
+    "loopSamples": 1987606,
+    "sampleRate": 44100
+  },
+  "sadie-sorceress-remix": {
+    "title": "sadie sorceress (remix)",
+    "bpm": 98.9,
+    "bars": 32,
+    "loopSamples": 3424550,
+    "sampleRate": 44100
+  },
+  "sadie-sorceress-remix-final-lap": {
+    "title": "sadie sorceress (remix, final lap)",
+    "bpm": 106.9,
+    "bars": 32,
+    "loopSamples": 3168269,
+    "sampleRate": 44100
+  },
+  "empty-remix": {
+    "title": "empty (remix)",
+    "bpm": 172.5,
+    "bars": 32,
+    "loopSamples": 2945113,
+    "sampleRate": 44100
+  },
+  "empty-remix-final-lap": {
+    "title": "empty (remix, final lap)",
+    "bpm": 180.5,
+    "bars": 32,
+    "loopSamples": 2814582,
+    "sampleRate": 44100
+  },
+  "billabong-valley-remix": {
+    "title": "billabong valley (remix)",
+    "bpm": 171.6,
+    "bars": 32,
+    "loopSamples": 1973706,
+    "sampleRate": 44100
+  },
+  "billabong-valley-remix-final-lap": {
+    "title": "billabong valley (remix, final lap)",
+    "bpm": 179.6,
+    "bars": 32,
+    "loopSamples": 1885791,
+    "sampleRate": 44100
   }
 }
