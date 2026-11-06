@@ -865,7 +865,6 @@ const FIELDS: Record<string, (f: Field) => void> = {
   'Your New Best Mate'(f) {
     strew(f, [[4, f.P.arm], [2, f.P.forklift], [2, f.P.bot], [1, f.P.barrels]], 13);
     floor(f);
-    words(f, 0.08, ['YOUR NEW', 'BEST MATE']);
     robotRow(f, 'left', along(f, 0.3), along(f, 0.85), 7);
     robotRow(f, 'right', along(f, 0.3), along(f, 0.85), 7);
     chimney(f, along(f, 0.4), 50);
@@ -907,7 +906,6 @@ const FIELDS: Record<string, (f: Field) => void> = {
   'Super-Organism'(f) {
     strew(f, [[3, f.P.bot], [3, f.P.arm], [2, f.P.tank], [1, f.P.crates]], 16, { band: [6, 26], clear: 6 });
     floor(f, 0.7);
-    words(f, 0.15, ['SUPER-ORGANISM'], '#ff9a5a', ROBOT);
     chimney(f, along(f, 0.3), 44);
     coolingTower(f, along(f, 0.7), 60);
     const mid = kit.offRoad(f.ribbon, along(f, 0.5), 0);
@@ -967,7 +965,6 @@ const FIELDS: Record<string, (f: Field) => void> = {
   'Death Kiss'(f) {
     strew(f, [[4, f.P.bot], [2, f.P.screen], [2, f.P.forklift], [1, f.P.lamp]], 13);
     floor(f);
-    words(f, 0.35, ['DEATH KISS'], '#ff8a8a', STOP);
     midground(f, giantRobot(f), 0.6, 34, 14);
   },
   // Inside a simulation: the straight home, the grid showing through, the gate ahead.
@@ -1142,7 +1139,7 @@ export function primateKing(ribbon: Ribbon, s: number, lateral: number, animated
   const crownGlow = halo(p, GOLD, 10, 0.5);
   crownGlow.position.set(0, 21, -1.2);
   g.add(glow, crownGlow);
-  const plaque = kit.signPanel(14, kit.textFace(['KING OF A', 'BALD PRIMATE'], { style: 'neon', bg: '#120c04', fg: '#ffd25a', glow: '#ffc21a' }), { h: 4.5, depth: 0.3, frame: dark() });
+  const plaque = kit.signPanel(14, glyphFace('face', '#ffd25a'), { h: 4.5, depth: 0.3, frame: dark() });
   plaque.position.set(0, 4, 26);
   g.add(plaque, pole(2, 0.2, steel()).translateZ(26));
   animated.push((time) => {

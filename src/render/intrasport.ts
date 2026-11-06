@@ -860,7 +860,6 @@ const FIELDS: Record<string, (f: Field) => void> = {
   'Shatter the Static'(f) {
     strew(f, [[4, f.P.tv], [2, f.P.ball], [2, f.P.speakerProp], [1, f.P.cones]], 12);
     litter(f);
-    words(f, 0.1, ['SHATTER THE STATIC'], CYAN);
     midground(f, jumbotron(f, 'rings', 22, CYAN), 0.3, 40, 15);
     air(f, 0.4, 0xe8f8ff, 'swirl', 160, 34, 18);
   },
@@ -879,7 +878,6 @@ const FIELDS: Record<string, (f: Field) => void> = {
     strew(f, [[4, f.P.dancers], [2, f.P.glowsticks], [2, f.P.speakerProp], [1, f.P.flood]], 13);
     litter(f);
     ravers(f, 'right', f.from + 10, f.to - 40, 'wave', 7, 2);
-    words(f, 0.25, ['MY HANDS ARE DISAPPEARING'], VIOLET);
     midground(f, jumbotron(f, 'hand', 20, VIOLET), 0.6, 40, 15);
     air(f, 0.85, CYAN, 'fall', 200, 36, 30);
   },
@@ -905,7 +903,6 @@ const FIELDS: Record<string, (f: Field) => void> = {
   // I've got a bird's eye view, I have shed my skin, look at me now: the deck across the middle, high over the roads below.
   "I've Got a Bird's Eye View"(f) {
     strew(f, [[3, f.P.flood], [3, f.P.speakerProp], [2, f.P.laserRig]], 16, { band: [8, 30], clear: 6 });
-    words(f, 0.08, ["I'VE GOT A BIRD'S EYE VIEW"], CYAN);
     searchlights(f, 0.4, 20, CYAN);
     air(f, 0.5, CYAN, 'float', 220, 50, 30, 4);
   },
@@ -955,7 +952,6 @@ const FIELDS: Record<string, (f: Field) => void> = {
     strew(f, [[3, f.P.hurdle], [2, f.P.cones], [2, f.P.speakerProp], [1, f.P.flood], [1, f.P.ball]], 12);
     litter(f);
     ravers(f, 'right', f.to - 120, f.to - 10, 'jump', 7, 3);
-    words(f, 0.1, ["IT'S TRUE I AM EVOLVING"], ACID);
     midground(f, giantRunner(f, ACID), 0.2, 36, 14);
     air(f, 0.8, MAGENTA, 'fall', 220, 40, 30);
   },

@@ -772,7 +772,6 @@ const FIELDS: Record<string, (f: Field) => void> = {
   'Bad for My Ears'(f) {
     strew(f, [[4, f.P.amps], [2, f.P.truss], [2, f.P.bush], [1, f.P.cone]], 13);
     ground(f);
-    banner(f, 0.2, ['BAD FOR MY EARS'], hex(TEAL), TEAL);
     midground(f, bigStack(f, 20), 0.4, 32, 12);
     midground(f, bigEar(f, 10), 0.75, 32, 12);
     air(f, 0.6);
@@ -825,7 +824,6 @@ const FIELDS: Record<string, (f: Field) => void> = {
   'Energy Peaks'(f) {
     strew(f, [[4, f.P.truss], [2, f.P.sign], [2, f.P.bush]], 13);
     ground(f);
-    banner(f, 0.15, ['ENERGY PEAKS'], hex(TEAL), TEAL);
     midground(f, waterTower(f), 0.5, 34, 12);
     bats(f, 0.7, 12);
   },
@@ -837,7 +835,6 @@ const FIELDS: Record<string, (f: Field) => void> = {
   // Back to the bus for another round, high over the crossroad.
   'Back to the Bus'(f) {
     strew(f, [[3, f.P.van], [2, f.P.cone], [2, f.P.sign]], 14, { band: [10, 30] });
-    banner(f, 0.5, ['BACK TO THE BUS']);
   },
   'Another Round'(f) {
     strew(f, [[3, f.P.sign], [2, f.P.bush]], 14, { band: [10, 30] });
@@ -854,7 +851,6 @@ const FIELDS: Record<string, (f: Field) => void> = {
   'Head of the Hydra'(f) {
     strew(f, [[3, f.P.bush], [2, f.P.sign], [2, f.P.cone]], 12);
     ground(f);
-    banner(f, 0.08, ['HEAD OF THE HYDRA'], hex(GREEN), GREEN);
     midground(f, waterTower(f), 0.5, 30, 12);
     bats(f, 0.5);
   },
@@ -879,7 +875,6 @@ const FIELDS: Record<string, (f: Field) => void> = {
   // Boredom is what boredom breeds, you see: sunk in a cut, nothing to look at but the rock.
   'Boredom Breeds'(f) {
     strew(f, [[3, f.P.sofa], [2, f.P.sign], [2, f.P.bush]], 18, { band: [10, 26], clear: 9 });
-    banner(f, 0.25, ['BOREDOM IS WHAT', 'BOREDOM BREEDS'], '#b8b0d8', VIOLET);
     air(f, 0.5, 0xb8b0d8, 'float', 120);
   },
   // So deranged, life is strange.
@@ -900,7 +895,6 @@ const FIELDS: Record<string, (f: Field) => void> = {
   'Wire Walking Upon the Knife'(f) {
     strew(f, [[3, f.P.cone], [2, f.P.sign], [2, f.P.bush]], 12);
     ground(f);
-    banner(f, 0.3, ['ALL THIS WIRE WALKING', 'UPON THE KNIFE'], hex(GOLD), GOLD);
     midground(f, knife(f), 0.6, 30, 16);
   },
   // I wake up and I'm still fatigued; drinking 'til I'm dead asleep.
@@ -925,7 +919,6 @@ const FIELDS: Record<string, (f: Field) => void> = {
   'Another Carpark'(f) {
     strew(f, [[4, f.P.van], [3, f.P.lamp], [1, f.P.cone]], 10);
     ground(f);
-    banner(f, 0.3, ['ANOTHER CARPARK', 'IN THE MIDDLE OF NOWHERE']);
   },
   // Another promoter hanging in your hair; another backstage green room to prepare: road cases and the crowd waiting.
   'Another Promoter'(f) {
@@ -1023,7 +1016,7 @@ export function tourBus(ribbon: Ribbon, s: number, lateral: number, animated: ki
   bus.add(slab(9, 9, 30, paint, 0, 6.5, 0), slab(9.1, 1.6, 30.1, kit.matte(PINK, { emissive: 0x400820 }), 0, 4, 0), slab(9.1, 0.8, 30.1, kit.matte(TEAL, { emissive: 0x084030 }), 0, 5.4, 0));
   for (let k = 0; k < 6; k++) for (const x of [-4.56, 4.56]) bus.add(slab(0.05, 2.6, 3.4, glass(), x, 8, -11 + k * 4.4));
   bus.add(slab(8.4, 3.4, 0.1, glass(), 0, 8, 15.02));
-  const dest = kit.signPanel(6, words(['ANOTHER ROUND'], hex(GOLD), hex(ORANGE)), { h: 1.2, depth: 0.1, frame: black() });
+  const dest = kit.signPanel(6, arrowFace('up', '#1a1420', hex(GOLD)), { h: 1.2, depth: 0.1, frame: black() });
   dest.position.set(0, 10.6, 15.1);
   bus.add(dest);
   for (const x of [-3, 3]) bus.add(ball(0.6, kit.lit(0xfff4c0), x, 3.4, 15.05), halo(p, 0xfff4c0, 8, 0.6).translateX(x).translateY(3.4).translateZ(15.6));
@@ -1353,7 +1346,7 @@ export function tourPoster(ribbon: Ribbon, s: number, lateral: number, animated:
   const W = 34;
   const H = 18;
   for (const x of [-W / 3, W / 3]) g.add(pole(10, 0.5, metal()).translateX(x));
-  const face = kit.signPanel(W, kit.textFace(['ODDLIFE TOUR', 'ANOTHER CARPARK · ANOTHER ROUND', 'NOWHERE · NOWHERE · NOWHERE'], { style: 'poster', bg: '#ffd8a0', fg: '#2a0a2a', width: 1024, height: 512 }), { h: H, depth: 0.6, frame: black() });
+  const face = kit.signPanel(W, kit.textFace(['ODDLIFE'], { style: 'poster', bg: '#ffd8a0', fg: '#2a0a2a', width: 1024, height: 512 }), { h: H, depth: 0.6, frame: black() });
   face.position.y = 10 + H / 2;
   g.add(face);
   const bulbs: THREE.MeshBasicMaterial[] = [];

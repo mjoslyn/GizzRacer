@@ -1052,7 +1052,6 @@ const FIELDS: Record<string, (f: Field) => void> = {
   "Break the Spider's Legs"(f) {
     strew(f, [[3, f.P.cables], [2, f.P.litter], [2, f.P.popup], [2, f.P.monitor]], 13);
     pixels(f);
-    words(f, clearOf(f, 'spiderCrow', 75, 0.5), ["BREAK THE SPIDER'S LEGS"], '#ff8a8a', RED);
     const s = along(f, 0.4);
     const at = kit.offRoad(f.ribbon, s, 30);
     const crows = kit.flock({ count: 12, radius: 30, height: 26, color: 0x0a0c10, size: 2 }, f.animated);
@@ -1066,7 +1065,6 @@ const FIELDS: Record<string, (f: Field) => void> = {
     pixels(f);
     crowd(f, 'left', f.from, f.to, 'sway');
     crowd(f, 'right', f.from, f.to, 'bob');
-    words(f, 0.6, ['DANCE LIKE FLIES']);
     flies(f, along(f, 0.3), 0, 110, 18, 9);
     flies(f, along(f, 0.7), 0, 110, 18, 9);
     midground(f, giantScreen(f, 'heart', 22), 0.45, 36, 15);
@@ -1076,7 +1074,6 @@ const FIELDS: Record<string, (f: Field) => void> = {
     strew(f, [[3, f.P.biccys], [3, f.P.lone], [2, f.P.popup], [2, f.P.monitor], [1, f.P.lantern]], 14);
     pixels(f);
     badgeTruss(f, 0.3);
-    words(f, 0.9, ["I'M SO LONELY"], '#ffd25a', AMBER);
     midground(f, giantLone(f), 0.78, 38, 15);
     const sparks = kit.motes({ count: 120, radius: 36, height: 24, color: RED, drift: 'rise', speed: 2, size: 0.45, seed: f.seed }, f.animated);
     const at = kit.offRoad(f.ribbon, along(f, 0.5), 0);
@@ -1139,7 +1136,6 @@ const FIELDS: Record<string, (f: Field) => void> = {
   "You Don't Have a Say Anymore"(f) {
     strew(f, [[3, f.P.mute], [2, f.P.popup], [2, f.P.mast], [2, f.P.badges], [1, f.P.lantern]], 14);
     pixels(f);
-    words(f, 0.78, ['RADICALISE'], '#ff8a8a', RED);
     midground(f, giantMute(f), 0.35, 38, 16);
     bonfire(f, along(f, 0.6), 38, 4.5);
     bonfire(f, along(f, 0.88), 44, 3.5);

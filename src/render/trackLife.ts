@@ -153,7 +153,7 @@ export function trackLife(track: Track, theme: Theme, animated: ((time: number) 
  * the karts coming at it: signs are kept few (SPEC.md), so one at most every
  * BOARD_GAP metres, the rest of the sections left unmarked.
  */
-const BOARD_GAP = 300;
+const BOARD_GAP = 600;
 function sectionSigns(track: Track, boards: { bg: string[]; fg: string }, clear: (x: number, z: number, m: number) => boolean): THREE.Group {
   const g = new THREE.Group();
   const r = track.main;

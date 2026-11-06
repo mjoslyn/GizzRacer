@@ -214,7 +214,7 @@ A kit's render module is where a track looks rich or plain. The richest worlds (
 | Mid-ground | a set piece 30 to 80 m off: a body on a base, a glow, a slow movement, facing the karts; fires, crowds, camps | `setPiece`, `standBeside`, `fire`, `crowd`, `torch`, `lamp` |
 | Skyline | a ring of silhouettes outside the walls, lit in a dark world, beyond it the theme's `distant` | `skyline` |
 | In the air | a flock over the set piece, motes or embers, smoke, a swarm | `flock`, `motes`, `smokeColumn`, `swarm`, the decor's `life` |
-| Words, sparingly | the start gate's name, and a short lyric banner every two or three stretches at most (SPEC.md: signs are minimal) | `textFace`, `signPanel`, `roadBanner`, `buzz` |
+| Words, sparingly | the start gate's name, and two or three short lyric banners a lap at most (SPEC.md: signs are minimal) | `textFace`, `signPanel`, `roadBanner`, `buzz` |
 
 **The toolkit** is `src/render/scenery/` (import it as `import * as kit from './scenery'` in `src/render/<track>.ts`; `scenery/index.ts` lists every part). It imports no shared render system, so a render module may use it. Its parts are the patterns those worlds each wrote for themselves, made general: `scatter` keeps props off every road (the lap's other stretches too) and out of the pits; `crowd` is three InstancedMeshes however big; `matte` and `lit` share one material per colour; glows are sprites, not lights (no world uses real lights for scenery). Beat-synced motion takes a `beat(bpm)` at your song's tempo; `finalLap()` reads the final lap's look. `tests/scenery.test.ts` tests it without a GPU. To see every part at once, run `npm run dev` and open http://localhost:5173/scenery.html (`?seat` for the driver's eye; dev only, not built).
 
