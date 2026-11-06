@@ -148,7 +148,12 @@ export function trackLife(track: Track, theme: Theme, animated: ((time: number) 
 
 // ---- Section name boards ---------------------------------------------------------
 
-/** A board on a post at the start of every named section of the main road, facing the karts coming at it. */
+/**
+ * A board on a post at the start of a named section of the main road, facing
+ * the karts coming at it: signs are kept few (SPEC.md), so one at most every
+ * BOARD_GAP metres, the rest of the sections left unmarked.
+ */
+const BOARD_GAP = 300;
 function sectionSigns(track: Track, boards: { bg: string[]; fg: string }, clear: (x: number, z: number, m: number) => boolean): THREE.Group {
   const g = new THREE.Group();
   const r = track.main;
@@ -157,6 +162,7 @@ function sectionSigns(track: Track, boards: { bg: string[]; fg: string }, clear:
   const back = new THREE.MeshLambertMaterial({ color: 0x1a1420 });
   let last = '';
   let k = 0;
+  let lastBoard = -Infinity;
   for (const sec of r.def.sections) {
     const name = sec.name.trim();
     if (!name || name === last || sec.from < 20) {
@@ -166,6 +172,7 @@ function sectionSigns(track: Track, boards: { bg: string[]; fg: string }, clear:
     last = name;
     // A little way into the section, so the board stands where the section does.
     const s = (sec.from + 8) * r.scale;
+    if (s - lastBoard < BOARD_GAP) continue;
     if (r.inGap(s) || r.inGap(s + 6) || r.inGap(s - 6)) continue;
     const i = Math.min(sp.count - 1, Math.round((s / sp.length) * (sp.closed ? sp.count : sp.count - 1)));
     if (r.wallHeight[i] > 0.5) continue;
@@ -192,7 +199,10 @@ function sectionSigns(track: Track, boards: { bg: string[]; fg: string }, clear:
       placed = true;
       break;
     }
-    if (placed) k++;
+    if (placed) {
+      k++;
+      lastBoard = s;
+    }
   }
   return g;
 }
