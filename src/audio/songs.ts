@@ -99,6 +99,9 @@ export const TRACK_SONGS: Record<string, TrackSong> = {
   'empty': { title: 'Empty', album: "I'm in Your Mind Fuzz", year: 2014 },
   'billabong-valley': { title: 'Billabong Valley', ...FMB },
   'minimum-brain-size': { title: 'Minimum Brain Size', ...KG },
+  automation: { title: 'Automation', ...KG },
+  'some-of-us': { title: 'Some of Us', ...KG },
+  intrasport: { title: 'Intrasport', ...KG },
 };
 
 /**

@@ -63,6 +63,9 @@ import { buildSadieSorceress } from './sadieSorceress';
 import { buildEmpty } from './empty';
 import { buildBillabongValley } from './billabongValley';
 import { buildMinimumBrainSize } from './minimumBrainSize';
+import { buildAutomation } from './automation';
+import { buildSomeOfUs } from './someOfUs';
+import { buildIntrasport } from './intrasport';
 import { buildCutThroatBoogie } from './cutThroatBoogie';
 import { buildSeaOfTrees } from './seaOfTrees';
 import { buildTheia } from './theia';
@@ -109,6 +112,10 @@ export const RAW_TRACK_LIST: { id: string; name: string; build: () => TrackDef }
   { id: 'mars-for-the-rich', name: 'Mars for the Rich', build: buildMarsForTheRich },
   { id: 'perihelion', name: 'Perihelion', build: buildPerihelion },
   { id: 'hell', name: 'Hell', build: buildHell },
+  { id: 'automation', name: 'Automation', build: buildAutomation },
+  { id: 'minimum-brain-size', name: 'Minimum Brain Size', build: buildMinimumBrainSize },
+  { id: 'some-of-us', name: 'Some of Us', build: buildSomeOfUs },
+  { id: 'intrasport', name: 'Intrasport', build: buildIntrasport },
   { id: 'magenta-mountain', name: 'Magenta Mountain', build: buildMagentaMountain },
   { id: 'kepler-22b', name: 'Kepler-22b', build: buildKepler22b },
   { id: 'goblin-garden', name: 'The Garden Goblin', build: buildGoblinGarden },
@@ -141,8 +148,6 @@ export const RAW_TRACK_LIST: { id: string; name: string; build: () => TrackDef }
   { id: 'sadie-sorceress', name: 'Sadie Sorceress', build: buildSadieSorceress },
   { id: 'empty', name: 'Empty', build: buildEmpty },
   { id: 'billabong-valley', name: 'Billabong Valley', build: buildBillabongValley },
-  // A test track, in no cup yet: Single Race and Time Trial only.
-  { id: 'minimum-brain-size', name: 'Minimum Brain Size', build: buildMinimumBrainSize },
 ];
 
 export const TRACK_LIST: { id: string; name: string; build: () => TrackDef }[] = RAW_TRACK_LIST.map((t) => ({ ...t, build: () => enrichTrack(t.build()) }));
@@ -167,22 +172,24 @@ export const CUPS: { id: string; name: string; tracks: number[] }[] = [
   { id: 'gumboot-soup', name: 'Gumboot Soup Cup', tracks: [28, 29, 30, 31] },
   // Infest the Rats' Nest (2019), in album order: the burning Earth, the rich's colony on Mars, the ship falling at the sun, and down into Hell.
   { id: 'infest-the-rats-nest', name: "Infest the Rats' Nest Cup", tracks: [32, 33, 34, 35] },
+  // K.G. (November 2020), in album order, the four songs on it the band play most: the factory where the machines took the work, the echo chamber shrinking the mind, the friends who drifted apart, and the stadium where the losers play.
+  { id: 'kg', name: 'K.G. Cup', tracks: [36, 37, 38, 39] },
   // Omnium Gatherum (April 2022): the pink mountain, the ocean planet, the goblin's garden, and the pliosaur.
-  { id: 'omnium-gatherum', name: 'Omnium Gatherum Cup', tracks: [36, 37, 38, 39] },
+  { id: 'omnium-gatherum', name: 'Omnium Gatherum Cup', tracks: [40, 41, 42, 43] },
   // Ice, Death, Planets, Lungs, Mushrooms and Lava (October 2022), in album order: the glacier, the volcano, the jungle (the planet's lungs) overgrown with mushrooms, and the road of starlight.
-  { id: 'ice-death-planets', name: 'Ice, Death, Planets, Lungs, Mushrooms and Lava Cup', tracks: [40, 41, 42, 43] },
+  { id: 'ice-death-planets', name: 'Ice, Death, Planets, Lungs, Mushrooms and Lava Cup', tracks: [44, 45, 46, 47] },
   // PetroDragonic Apocalypse (2023), in album order: the speedway, the storm, the oil-field dragons, and Mars on fire.
-  { id: 'petrodragonic-apocalypse', name: 'PetroDragonic Apocalypse Cup', tracks: [44, 45, 46, 47] },
+  { id: 'petrodragonic-apocalypse', name: 'PetroDragonic Apocalypse Cup', tracks: [48, 49, 50, 51] },
   // The Silver Cord (October 2023), in album order: the young Earth and the planet that hits it, the god in the red land, the goddess on the Moon, and the hero's road out of Uruk.
-  { id: 'silver-cord', name: 'Silver Cord Cup', tracks: [48, 49, 50, 51] },
+  { id: 'silver-cord', name: 'Silver Cord Cup', tracks: [52, 53, 54, 55] },
   // Phantom Island (2025): the island in the mist, the plane with no engine, the forest that's awake, and the sea at night.
-  { id: 'phantom-island', name: 'Phantom Island Cup', tracks: [52, 53, 54, 55] },
+  { id: 'phantom-island', name: 'Phantom Island Cup', tracks: [56, 57, 58, 59] },
   // Alien Metal (August 2026), the EDM record in one tempo and key that loops back on itself: the life of the metal round one circuit. Forged by the astral blacksmith, fought over, built into the machines, and burnt down to energy in the core, whose finish runs into the forge's start.
-  { id: 'alien-metal', name: 'Alien Metal Cup', tracks: [56, 57, 58, 59] },
+  { id: 'alien-metal', name: 'Alien Metal Cup', tracks: [60, 61, 62, 63] },
   // The first All Stars Cup, after the album cups: four favourites from four years, each its own world. The trash tornado (K.G., 2020), the cyborg who can't dance (Fishing for Fishies, 2019), the reaper come to collect (Omnium Gatherum, 2022), and the Earth herself (Omnium Gatherum, 2022).
-  { id: 'all-stars-1', name: 'All Stars Cup #1', tracks: [60, 61, 62, 63] },
+  { id: 'all-stars-1', name: 'All Stars Cup #1', tracks: [64, 65, 66, 67] },
   // The second All Stars Cup: four more favourites. The hot wax creeping in under everything (Oddments, 2014), the 80s sorceress on rollerblades (Omnium Gatherum, 2022), the empty waltz (I'm in Your Mind Fuzz, 2014), and the bushranger's hideout (Flying Microtonal Banana, 2017).
-  { id: 'all-stars-2', name: 'All Stars Cup #2', tracks: [64, 65, 66, 67] },
+  { id: 'all-stars-2', name: 'All Stars Cup #2', tracks: [68, 69, 70, 71] },
 ];
 
 /** Cups that were retired when every cup became an album's, and the album cup that took most of each one's tracks: progress.ts carries their trophies over. */

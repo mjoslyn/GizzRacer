@@ -26,8 +26,8 @@ const first = RACERS[0];
 const sectionAt = (s: number) => def.main.sections.find((q) => s >= q.from && s <= q.to)!;
 
 describe('Minimum Brain Size', () => {
-  it('is in no cup, on a road of scrolling feed', () => {
-    expect(CUPS.some((c) => c.tracks.some((i) => TRACK_LIST[i].id === 'minimum-brain-size'))).toBe(false);
+  it("is the K.G. Cup's second, on a road of scrolling feed", () => {
+    expect(CUPS.find((c) => c.id === 'kg')!.tracks.map((i) => TRACK_LIST[i].id)[1]).toBe('minimum-brain-size');
     expect(TRACK_SONGS['minimum-brain-size']).toMatchObject({ title: 'Minimum Brain Size', year: 2020 });
     expect(def.theme).toBe('echochamber');
     expect(def.music).toEqual({ lap: 'minimum-brain-size', finalLap: 'minimum-brain-size-final-lap' });
