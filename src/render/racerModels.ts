@@ -3856,12 +3856,9 @@ function covenMother(r: RacerDef): KartModel {
     tube(stag, [[side * 0.18, 0.38, 0.06], [side * 0.12, 0.55, 0.18]], 0.018, antler);
   }
 
-  // The blood-moon behind her, on a pole off the back of the cart.
-  rod(body, [0, 0.9, -1.25], [0, 2.3, -1.25], 0.035, oak);
-  put(body, new THREE.CircleGeometry(0.85, 40), glow(0x8a0a14), [0, 2.45, -1.3]);
-  put(body, new THREE.CircleGeometry(0.75, 40), glow(0xd02a2a), [0, 2.45, -1.29]);
-  put(body, new THREE.CircleGeometry(0.85, 40), glow(0x8a0a14), [0, 2.45, -1.31], [0, Math.PI, 0]);
-  glowSprite(body, [0, 2.45, -1.35], 2.6, 0xff3a3a);
+  // The blood-moon, small, up by her raised hand: off the line the camera looks down past her.
+  put(body, ball(0.2, 16, 12), glow(0xd02a2a), [0.75, 2.5, -0.35]);
+  glowSprite(body, [0.75, 2.5, -0.35], 0.9, 0xff3a3a);
 
   // Her: tall and robed, stood in the circle, the robe pooling round her feet.
   const witch = new THREE.Group();
@@ -3979,9 +3976,9 @@ const BOSS_SCALE: Record<string, number> = {
   'altered-beast': 1.3,
   balrog: 1.15,
   'munt-machine': 1,
-  'castle-king': 1.05,
+  'castle-king': 0.8,
   'the-devil': 1.15,
-  'coven-mother': 1.1,
+  'coven-mother': 0.95,
 };
 
 export function buildKartModel(racer: RacerDef): KartModel {

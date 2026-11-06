@@ -179,7 +179,7 @@ describe('boss models', () => {
     }
   });
 
-  it('the bosses stand tall over the roster, and fit a road', async () => {
+  it('the bosses stand taller than the roster, and low enough to see the road past', async () => {
     const { buildKartModel } = await import('../src/render/racerModels');
     const median = (xs: number[]) => xs.sort((a, b) => a - b)[xs.length >> 1];
     const sizes = roster.map((r) => size(buildKartModel(r).body));
@@ -187,10 +187,10 @@ describe('boss models', () => {
     const bulk = median(sizes.map((s) => s.x * s.y * s.z));
     for (const r of bosses) {
       const s = size(buildKartModel(r).body);
-      expect(s.y, r.id).toBeGreaterThan(height * 1.2);
-      expect(s.x * s.y * s.z, r.id).toBeGreaterThan(bulk * 1.5);
+      expect(s.y, r.id).toBeGreaterThan(height * 1.1);
+      expect(s.x * s.y * s.z, r.id).toBeGreaterThan(bulk);
       // But not so tall the chase camera loses the road over it, nor wider than a lane or two.
-      expect(s.y, r.id).toBeLessThan(4);
+      expect(s.y, r.id).toBeLessThan(3.5);
       expect(s.x, r.id).toBeLessThan(6);
     }
   });
