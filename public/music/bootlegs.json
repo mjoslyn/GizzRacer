@@ -5835,7 +5835,7 @@
    "date": "2021-02-26",
    "venue": "Sidney Myer Music Bowl",
    "seconds": 219,
-   "start": 1.5,
+   "start": 3,
    "end": 205.5
   },
   {
@@ -5844,17 +5844,8 @@
    "date": "2022-04-20",
    "venue": "Rialto Theater",
    "seconds": 207,
-   "start": 0,
+   "start": 3.5,
    "end": 206.5
-  },
-  {
-   "id": "kglw2022-05-22",
-   "file": "kglw2022-05-22t12Automation.mp3",
-   "date": "2022-05-22",
-   "venue": "Mr. Smalls Theatre",
-   "seconds": 242,
-   "start": 0,
-   "end": 198.5
   },
   {
    "id": "kglw2022-10-05",
@@ -5875,15 +5866,6 @@
    "end": 197.5
   },
   {
-   "id": "kglw2023-03-03.fob.schoeps.mk41v.vms02ib.9624.flac",
-   "file": "kglw2023-03-03_fob mk41v_96k_14.mp3",
-   "date": "2023-03-03",
-   "venue": "gashouder, amsterdam, nl",
-   "seconds": 230,
-   "start": 4.5,
-   "end": 229.5
-  },
-  {
    "id": "kglw2023-03-20",
    "file": "kglw202303.mp3",
    "date": "2023-03-20",
@@ -5900,15 +5882,6 @@
    "seconds": 241,
    "start": 0,
    "end": 197.5
-  },
-  {
-   "id": "kglw2024-05-27.dankski",
-   "file": "kglw2024.05.27t17.mp3",
-   "date": "2024-05-27",
-   "venue": "The Usher Hall",
-   "seconds": 362,
-   "start": 11.5,
-   "end": 209.5
   },
   {
    "id": "kglw2024-08-17.bandcampbootlegger",
@@ -5987,21 +5960,12 @@
    "end": 601.9
   },
   {
-   "id": "kglw2024-11-15.bandcampbootlegger",
-   "file": "King Gizzard & The Lizard Wizard - Live in Austin '24 - 10 Intrasport (Live in Austin '24).mp3",
-   "date": "2024-11-15",
-   "venue": "Germania Insurance Amphitheater",
-   "seconds": 399,
-   "start": 13.5,
-   "end": 386.5
-  },
-  {
    "id": "kglw2024-11-19.bandcampbootlegger",
    "file": "King Gizzard & The Lizard Wizard - Live in Atlanta '24 - 15 Intrasport (Live in Atlanta '24).mp3",
    "date": "2024-11-19",
    "venue": "Fox Theatre",
    "seconds": 335,
-   "start": 27.5,
+   "start": 76.5,
    "end": 334.5
   },
   {
