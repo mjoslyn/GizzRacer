@@ -3,16 +3,18 @@ import { BPM } from '../kits/automation';
 import type { BranchDef, TrackDef } from './track';
 
 /**
- * Automation (K.G., 2020), seen from above: a figure of eight through a
- * factory where the machines have taken the work. The lap clocks in at the
- * gate and runs up the production line under the presses, hairpins round
- * the robot arms, snakes through the empty office and round the wall of
- * screens, then climbs onto the overhead assembly deck and crosses the
- * production line high over it. Off the deck it sweeps round the east
- * side, past the pink slips and through the server farm, and the last
- * turn, the lights-out factory, brings it round into the straight home,
- * clocking out. The override, a tighter lane inside that last turn, opens
- * from the second lap.
+ * Automation (K.G., 2020), seen from above: a figure of eight through the
+ * machine world the song sings of, its sections named for its lines in
+ * order. The lap joins the last migration at the gate and runs up the
+ * conveyor under the presses (your new best mate), hairpins round the
+ * crowned ape (king of a bald primate), chicanes past the heir's statue,
+ * loops round the overlord's wall of turning shapes (mental rotation), then
+ * climbs onto the overhead deck of the super-organism and crosses the
+ * conveyor high over it. Off the deck it bends past the great prism, the
+ * cyber-surgeon's theatre and the neural network, and the last U (prepare
+ * for mutation, the crack of doom, the death kiss) brings it into the
+ * straight home past the dinosaur in its simulation. The override, a
+ * tighter lane inside that U, opens from the second lap.
  */
 
 /** The overhead assembly deck: the road this high over the production line it crosses. */
@@ -40,7 +42,7 @@ const LANE_R = 55;
 const LANE_OPEN = 1;
 /** The last turn's half width, and the radius of its two corners. */
 const LAST_HW = 10.5;
-const LAST_R = 110;
+const LAST_R = 95;
 /** The straight home, from the last turn to the line. */
 const TAIL = 110;
 
@@ -51,53 +53,61 @@ const HOME: Pose = { x: START.x, z: START.z - TAIL, h: 0 };
 
 /** Lays the whole lap onto `b`, sections and marks too. */
 function lay(b: TrackBuilder, deskRun: number, slipRun: number) {
-  // Clocking in: out of the gate past the time clock.
+  // Join the last migration: out of the gate with everyone else.
   b.straight(110);
-  // The production line: straight up the factory floor, under the deck and then the presses.
-  b.section('The Production Line', props(11, 1.4));
+  // Your new best mate: straight up the conveyor, under the deck and then the presses.
+  b.section('Your New Best Mate', props(11, 1.4));
   b.mark('line');
   b.straight(LINE);
-  // The robot arms: a wide hairpin round the welding cell.
-  b.section('Arms That Never Tire', props(11, 1.4));
+  // King of a bald primate: a wide hairpin round his throne.
+  b.section('King of a Bald Primate', props(11, 1.4));
   b.mark('arms');
   b.arc(100, -180);
-  // The empty office: a chicane between the desks with nobody at them.
-  b.section('Nobody at the Desk', props(10, 1.4));
+  // Not worthy: a chicane past the heir's statue and the kneeling crowd.
+  b.section('Not Worthy', props(10, 1.4));
   b.mark('desk');
   b.straight(deskRun).arc(65, 30).arc(65, -60).arc(65, 30);
-  // The wall of screens: out west and round, the screens on both sides.
-  b.section('Screens Watching Screens', props(10.5, 1.4));
+  // Mental rotation for the overlord: out west and round, shapes turning on screens on both sides.
+  b.section('Mental Rotation', props(10.5, 1.4));
   b.mark('screens');
   b.arc(50, 90).straight(20).arc(52, -180);
   // Heading east now, straight at the production line: the deck's ramp starts so it's at full height FLAT before the crossing.
   b.straight(-b.pose.x - FLAT - RAMP);
-  // Onto the overhead deck, and across the line high over it.
-  b.section('Machines Building Machines', props(10.5, DECK_WALL, { bridge: true }));
+  // The super-organism: onto the overhead deck among its arms, and across the conveyor high over it.
+  b.section('Super-Organism', props(10.5, DECK_WALL, { bridge: true }));
   b.mark('machines');
   b.straight(RAMP + FLAT);
   b.mark('cross');
   b.straight(FLAT);
   b.mark('crest');
-  // Off the deck, and the long sweep round the east side.
-  b.section('The Algorithm Decides', props(10.5, DECK_WALL, { bridge: true }));
+  // Bending light through prisms: off the deck, and the long sweep round the east side.
+  b.section('Bending Light Through Prisms', props(10.5, DECK_WALL, { bridge: true }));
   b.mark('algorithm');
   b.straight(DECK_DROP);
-  b.section('The Algorithm Decides', props(11, 1.4));
+  b.section('Bending Light Through Prisms', props(11, 1.4));
   b.mark('decided');
   b.straight(35).arc(80, 90);
-  b.section('Pink Slips', props(11, 1.4));
+  // The cyber-surgeon's theatre, and the digital cleanse.
+  b.section('Cyber-Surgeon', props(11, 1.4));
   b.mark('slips');
   b.straight(slipRun).arc(50, -35).arc(50, 70).arc(50, -35);
-  // Heading south now: the server farm straight down the east side, as far as the straight home is long.
-  b.section('The Server Farm', props(10.5, 1.4));
+  // Heading south now: the neural network at work, straight down the east side, as far as the straight home is long.
+  b.section('The Neural Network', props(10.5, 1.4));
   b.mark('servers');
   b.straight(SERVER_RUN);
-  // The last turn, a wide U round into the straight home: a quarter, a straight along the bottom, and a quarter.
-  b.section('Lights-Out Factory', props(LAST_HW, 1.4));
+  // The last turn, a wide U round into the straight home: a quarter (prepare for mutation), a straight along the bottom (the crack of doom), and a quarter (the death kiss).
+  b.section('Prepare for Mutation', props(LAST_HW, 1.4));
   b.mark('lightsOut');
   const bottom = b.pose.x - 2 * LAST_R;
-  b.arc(LAST_R, 90).straight(bottom).arc(LAST_R, 90);
-  b.section('Clocking Out', props(11, 1.4));
+  b.arc(LAST_R, 90);
+  b.section('The Crack of Doom', props(LAST_HW, 1.4));
+  b.mark('doom');
+  b.straight(bottom);
+  b.section('Death Kiss', props(LAST_HW, 1.4));
+  b.mark('kiss');
+  b.arc(LAST_R, 90);
+  // Inside a simulation: the straight home past the dinosaur in its grid.
+  b.section('Inside a Simulation', props(11, 1.4));
   b.mark('home');
   b.straight(TAIL);
 }
@@ -171,16 +181,16 @@ function buildLane(b: TrackBuilder, points: readonly (readonly [number, number])
  */
 export function buildAutomation(): TrackDef {
   // A first laying finds how far the west side drops, and the desks' straight takes up the rest so the deck crosses CROSS_AT up the line.
-  const probe = new TrackBuilder(START, 'Clocking In', props(11, 1.4));
+  const probe = new TrackBuilder(START, 'Join the Last Migration', props(11, 1.4));
   lay(probe, 0, 0);
   const deskRun = probe.marks.machines.pose.z - (probe.marks.line.pose.z + CROSS_AT);
   if (deskRun < 0) throw new Error(`Automation: the west side drops ${-deskRun.toFixed(0)} m too far`);
   // And a second, how far the east side drops: the pink slips' straight takes up the rest down to the U.
-  const east = new TrackBuilder(START, 'Clocking In', props(11, 1.4));
+  const east = new TrackBuilder(START, 'Join the Last Migration', props(11, 1.4));
   lay(east, deskRun, 0);
   const slipRun = east.marks.servers.pose.z - SERVER_RUN - HOME.z;
   if (slipRun < 0) throw new Error(`Automation: the east side drops ${-slipRun.toFixed(0)} m too far`);
-  const b = new TrackBuilder(START, 'Clocking In', props(11, 1.4));
+  const b = new TrackBuilder(START, 'Join the Last Migration', props(11, 1.4));
   lay(b, deskRun, slipRun);
   const m = (name: string, d = 0) => b.marks[name].s + d;
   const ease = (s0: number, y0: number, s1: number, y1: number) => b.profile(s0, s1, (u) => y0 + (y1 - y0) * u * u * (3 - 2 * u));
@@ -215,21 +225,25 @@ export function buildAutomation(): TrackDef {
       { s: at('slips', 90), length: 8, lateral: 0, halfWidth: 2.5 },
       { s: at('home', 50), length: 8, lateral: 0, halfWidth: 3 },
     ],
-    checkpoints: ['line', 'arms', 'desk', 'screens', 'machines', 'cross', 'algorithm', 'decided', 'slips', 'servers', 'lightsOut', 'home'].map((k) => b.marks[k].s / main.length),
+    checkpoints: ['line', 'arms', 'desk', 'screens', 'machines', 'cross', 'algorithm', 'decided', 'slips', 'servers', 'lightsOut', 'doom', 'kiss', 'home'].map((k) => b.marks[k].s / main.length),
     laps: 3,
     bounds: 440,
     landmarks: [
-      { kind: 'timeClock', ribbon: -1, s: 6 },
-      // The welding cell in the middle of the hairpin it's named for.
-      { kind: 'robotArms', ribbon: -1, s: at('arms', 157), lateral: 100 },
-      { kind: 'emptyOffice', ribbon: -1, s: at('desk', 50), lateral: clearSide(main.points, at('desk', 50), 34) },
+      { kind: 'migrationGate', ribbon: -1, s: 6 },
+      // The ape king on his throne in the middle of the hairpin named for him.
+      { kind: 'primateKing', ribbon: -1, s: at('arms', 157), lateral: 100 },
+      { kind: 'heirStatue', ribbon: -1, s: at('desk', 50), lateral: clearSide(main.points, at('desk', 50), 34) },
       { kind: 'screenWall', ribbon: -1, s: at('screens', 40), to: at('screens', 260) },
+      // The overlord, watching the shapes turn, in the loop's middle.
+      { kind: 'overlord', ribbon: -1, s: at('screens', 160), lateral: clearSide(main.points, at('screens', 160), 40) },
       { kind: 'assemblyDeck', ribbon: -1, s: at('machines', 30), to: at('algorithm', 40) },
-      { kind: 'algorithm', ribbon: -1, s: at('decided', 60), lateral: clearSide(main.points, at('decided', 60), 40) },
-      { kind: 'pinkSlips', ribbon: -1, s: at('slips', 100), lateral: clearSide(main.points, at('slips', 100), 36) },
-      { kind: 'serverFarm', ribbon: -1, s: at('servers', 70), lateral: clearSide(main.points, at('servers', 70), 40) },
-      // The dark hall outside the U's first corner (the override runs inside it).
-      { kind: 'lightsOut', ribbon: -1, s: at('lightsOut', 90), lateral: 54 },
+      { kind: 'greatPrism', ribbon: -1, s: at('decided', 60), lateral: clearSide(main.points, at('decided', 60), 40) },
+      { kind: 'cyberSurgeon', ribbon: -1, s: at('slips', 100), lateral: clearSide(main.points, at('slips', 100), 36) },
+      { kind: 'serverFarm', ribbon: -1, s: at('servers', 30), lateral: clearSide(main.points, at('servers', 30), 40) },
+      // The crack of doom, glowing, outside the U's bottom (the override runs inside it).
+      { kind: 'crackOfDoom', ribbon: -1, s: at('doom', 40), lateral: 50 },
+      // The dinosaur in its simulation's grid, beside the straight home.
+      { kind: 'karmaDino', ribbon: -1, s: at('home', 40), lateral: -48 },
       // The lap dressed stretch by stretch (render/automation.ts, `FIELDS`), each from the section it starts in, and the skyline round the lot.
       { kind: 'factoryField', ribbon: -1, s: 24, to: at('line', 0) },
       { kind: 'factoryField', ribbon: -1, s: at('line', 2), to: at('arms', 0) },
@@ -240,7 +254,9 @@ export function buildAutomation(): TrackDef {
       { kind: 'factoryField', ribbon: -1, s: at('decided', 2), to: at('slips', 0) },
       { kind: 'factoryField', ribbon: -1, s: at('slips', 2), to: at('servers', 0) },
       { kind: 'factoryField', ribbon: -1, s: at('servers', 2), to: at('lightsOut', 0) },
-      { kind: 'factoryField', ribbon: -1, s: at('lightsOut', 2), to: at('home', 0) },
+      { kind: 'factoryField', ribbon: -1, s: at('lightsOut', 2), to: at('doom', 0) },
+      { kind: 'factoryField', ribbon: -1, s: at('doom', 2), to: at('kiss', 0) },
+      { kind: 'factoryField', ribbon: -1, s: at('kiss', 2), to: at('home', 0) },
       { kind: 'factoryField', ribbon: -1, s: at('home', 2), to: main.length - 10 },
       { kind: 'factorySkyline', ribbon: -1, s: 22 },
     ],

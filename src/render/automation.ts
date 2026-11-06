@@ -6,14 +6,16 @@ import type { Ribbon, Track } from '../tracks/track';
 import * as kit from './scenery';
 
 /**
- * Automation's world (K.G., 2020): a factory where the machines have taken
- * the work and run on by themselves, at dusk under its own smog. The road is
- * a conveyor belt, rolling; the factory floor is concrete painted with
- * safety lines; the walls are hazard stripes. Robot arms weld in their
- * cells, presses stamp on the beat, screens watch the empty desks, drones
- * and forklifts drive themselves, and the last few people stand outside
- * with their things in boxes. Its textures, scenery, landmarks and its
- * hazard's look (the presses stamping their lanes in turn).
+ * Automation's world (K.G., 2020): the machine world the song sings of, at
+ * dusk under its own smog. The road is a conveyor belt, rolling; the floor
+ * is concrete painted with safety lines; the walls are hazard stripes.
+ * Everyone joins the last migration through the gate, the bald ape king
+ * sits crowned on his throne, the heir stands gilded over the kneeling, the
+ * overlord sets its shapes to turn, the super-organism works as one, light
+ * bends through the great prism, the cyber-surgeon operates, the neural
+ * network fires, the floor cracks open, and a dinosaur walks in its
+ * simulation. Its textures, scenery, landmarks and its hazard's look (the
+ * presses stamping their lanes in turn).
  */
 
 export type Feature = (x: number, z: number, rand: () => number) => THREE.Object3D;
@@ -87,6 +89,7 @@ const ROBOT = 0xff6a1a;
 const PINK = 0xff8ab8;
 const GO = 0x6aff8a;
 const STOP = 0xff3a2a;
+const GOLD = 0xffc84a;
 
 /**
  * The road: a conveyor belt. Dark ribbed rubber over rollers, the seams of
@@ -236,8 +239,6 @@ function slab(w: number, h: number, d: number, mat: THREE.Material, x = 0, y = 0
 
 /** A screen's face: the words lit on dark glass. */
 const screenFace = (lines: string[], color = '#9aeaff', glow = '#5ad8ff') => kit.textFace(lines, { style: 'neon', bg: '#04121a', fg: color, glow });
-/** A notice: dark letters on a white board, a yellow rule. */
-const notice = (lines: string[]) => kit.textFace(lines, { style: 'board', bg: '#f0f0ea', fg: '#1a1c20', rule: '#ffc21a' });
 
 /** Everything that glows on the beat in one place, one callback between them. */
 interface Pulse {
@@ -541,11 +542,35 @@ function props(p: Pulse) {
     g.add(top, light);
     return g;
   };
-  return { crates, barrels, arm, bot, screen, rack, desk, drone, cones, slips, leavers, lamp, forklift, tank };
+  /** A mental rotation figure on a post, turning. */
+  const shape: kit.Prop = (rand) => {
+    const g = new THREE.Group();
+    const h = 3 + rand() * 4;
+    const sh = rotationShape(rand() < 0.5 ? SCREEN : GOLD, 0.8 + rand() * 0.4);
+    sh.position.y = h + 2;
+    const ph = rand() * 6;
+    p.animated.push((time) => sh.rotation.set(time * 0.6 + ph, time * 0.8 + ph, 0));
+    g.add(pole(h, 0.15, steel()), sh);
+    return g;
+  };
+  /** A shard of glass standing up, a colour thrown off it. */
+  const shard: kit.Prop = (rand) => {
+    const g = new THREE.Group();
+    const h = 3 + rand() * 5;
+    const glassM = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 1.4, h, 3), new THREE.MeshPhongMaterial({ color: 0xcfe8ff, transparent: true, opacity: 0.5, specular: 0xffffff, shininess: 120 }));
+    glassM.position.y = h / 2;
+    glassM.rotation.z = (rand() - 0.5) * 0.3;
+    const RAIN = [0xff3a3a, 0xffe03a, 0x5aff6a, 0x3ac8ff, 0xc05aff];
+    const lit = kit.glowSprite(RAIN[Math.floor(rand() * RAIN.length)], 4, 0.4);
+    lit.position.y = h * 0.6;
+    g.add(glassM, lit);
+    return g;
+  };
+  return { crates, barrels, arm, bot, screen, rack, desk, drone, cones, slips, leavers, lamp, forklift, tank, shape, shard };
 }
 
 /** What the screens say. */
-const SCREENS: string[][] = [['EFFICIENCY', '100%'], ['NO BREAKS'], ['UPTIME', '24/7'], ['HUMAN', 'NOT FOUND'], ['SHIFT', 'NEVER ENDS'], ['OPTIMISED'], ['TASK', 'COMPLETE'], ['RUNNING']];
+const SCREENS: string[][] = [['AUTOMATION'], ['OVERLORD'], ['NEURAL', 'NETWORK'], ['DIGITAL', 'CLEANSE'], ['MUTATION'], ['SIMULATION'], ['SUPER-', 'ORGANISM'], ['JOIN US']];
 
 // The LEDs on the racks blink from one callback, however many racks there are.
 const LED = [new THREE.MeshBasicMaterial({ color: GO }), new THREE.MeshBasicMaterial({ color: STOP }), new THREE.MeshBasicMaterial({ color: SCREEN })];
@@ -560,7 +585,7 @@ function blinkLeds(animated: kit.Animated): void {
 // Scenery.
 
 /** How much room each landmark wants kept clear round it, in metres. */
-const ROOM: Partial<Record<string, number>> = { robotArms: 44, emptyOffice: 30, algorithm: 30, pinkSlips: 28, serverFarm: 34, lightsOut: 36 };
+const ROOM: Partial<Record<string, number>> = { primateKing: 44, heirStatue: 30, overlord: 30, greatPrism: 30, cyberSurgeon: 30, serverFarm: 34, crackOfDoom: 40, karmaDino: 26 };
 
 /**
  * Off-road scenery by the stretch of the lap it's beside: crates, barrels,
@@ -578,18 +603,21 @@ export function factoryFeature(animated: kit.Animated, track?: Track): Feature {
     [0.8, P.cones],
   ];
   const bySection: Record<string, [number, kit.Prop][]> = {
-    'Clocking In': [[3, P.leavers], [2, P.screen]],
-    'The Production Line': [[4, P.arm], [2, P.forklift]],
-    'Arms That Never Tire': [[5, P.arm], [1, P.bot]],
-    'Nobody at the Desk': [[5, P.desk], [1, P.screen]],
-    'Screens Watching Screens': [[5, P.screen], [1, P.drone]],
-    'Machines Building Machines': [[4, P.bot], [2, P.arm]],
-    'The Algorithm Decides': [[3, P.screen], [3, P.rack]],
-    'Pink Slips': [[5, P.slips], [3, P.leavers]],
-    'The Server Farm': [[6, P.rack], [1, P.drone]],
-    'Lights-Out Factory': [[4, P.bot], [3, P.forklift]],
-    'Clocking Out': [[4, P.leavers], [2, P.slips]],
+    'Join the Last Migration': [[3, P.leavers], [2, P.screen]],
+    'Your New Best Mate': [[4, P.arm], [2, P.bot]],
+    'King of a Bald Primate': [[5, P.arm], [1, P.bot]],
+    'Not Worthy': [[4, P.leavers], [1, P.screen]],
+    'Mental Rotation': [[4, P.screen], [3, P.shape]],
+    'Super-Organism': [[4, P.bot], [2, P.arm]],
+    'Bending Light Through Prisms': [[4, P.shard], [2, P.screen]],
+    'Cyber-Surgeon': [[4, P.bot], [2, P.rack]],
+    'The Neural Network': [[6, P.rack], [1, P.drone]],
+    'Prepare for Mutation': [[4, P.bot], [3, P.forklift]],
+    'The Crack of Doom': [[3, P.barrels], [3, P.cones]],
+    'Death Kiss': [[4, P.bot], [2, P.screen]],
+    'Inside a Simulation': [[3, P.shape], [2, P.leavers]],
   };
+
   const noSite = {} as kit.Site;
   const kept = track ? track.def.landmarks.filter((l) => ROOM[l.kind] !== undefined).map((l) => ({ ...kit.offRoad(track.main, l.s * track.main.scale, l.lateral ?? 0), r: ROOM[l.kind]! })) : [];
   return (x, z, rand) => {
@@ -693,12 +721,6 @@ function giantScreen(f: Field, lines: string[], w = 22, color = SCREEN): THREE.O
   return kit.setPiece({ body, base: 'plinth', baseColor: 0x2a2e34, baseWidth: w * 0.9, glow: { color, size: w * 0.9, y: legs + h / 2, opacity: 0.12 }, beat: music }, f.animated);
 }
 
-/** A giant robot arm on a plinth, swinging on the beat, sparks at its tip. */
-function giantArm(f: Field): THREE.Object3D {
-  const body = robotArm(f.p, 4, f.seed % 4);
-  return kit.setPiece({ body, base: 'plinth', baseColor: 0x2a2e34, baseWidth: 14, glow: { color: ROBOT, size: 26, y: 12, opacity: 0.1 }, beat: music }, f.animated);
-}
-
 /** A giant robot, a screen for a face, standing watch. */
 function giantRobot(f: Field): THREE.Object3D {
   const body = robot(f.p, 7, seededRandom(f.seed));
@@ -730,18 +752,22 @@ function chimney(f: Field, s: number, away: number): void {
 }
 
 const FIELDS: Record<string, (f: Field) => void> = {
-  // Clocking in: the gate, the last people in the car park with their boxes, a screen at the gate.
-  'Clocking In'(f) {
+  // Join the last migration: everyone walking in through the gate with their things, birds going over the same way.
+  'Join the Last Migration'(f) {
     strew(f, [[3, f.P.leavers], [2, f.P.crates], [2, f.P.lamp], [1, f.P.screen]], 12);
     floor(f);
     queue(f, 'left', f.from, f.to, 9);
-    midground(f, giantScreen(f, ['SHIFT', 'STARTS NOW'], 22, SAFETY), 0.5, 36, 15);
+    midground(f, giantScreen(f, ['JOIN US'], 22, SAFETY), 0.5, 36, 15);
+    const birds = kit.flock({ count: 24, radius: 50, height: 40, color: 0x1a1c20, size: 1.4 }, f.animated);
+    const at = kit.offRoad(f.ribbon, along(f, 0.5), 0);
+    birds.position.set(at.x, 0, at.z);
+    f.g.add(birds);
   },
-  // The production line: arms at work either side of the belt, forklifts with no one in them.
-  'The Production Line'(f) {
-    strew(f, [[4, f.P.arm], [2, f.P.forklift], [2, f.P.crates], [1, f.P.barrels]], 13);
+  // Your new best mate: the conveyor up under the presses, robots either side waving you on.
+  'Your New Best Mate'(f) {
+    strew(f, [[4, f.P.arm], [2, f.P.forklift], [2, f.P.bot], [1, f.P.barrels]], 13);
     floor(f);
-    words(f, 0.08, ['THE LINE', 'NEVER STOPS']);
+    words(f, 0.08, ['YOUR NEW', 'BEST MATE']);
     words(f, 0.92, ['AUTOMATION'], '#ff9a5a', ROBOT);
     robotRow(f, 'left', along(f, 0.3), along(f, 0.85), 7);
     robotRow(f, 'right', along(f, 0.3), along(f, 0.85), 7);
@@ -751,93 +777,112 @@ const FIELDS: Record<string, (f: Field) => void> = {
     sparks.position.set(at.x, 0, at.z);
     f.g.add(sparks);
   },
-  // The robot arms' hairpin: arms all round the outside, sparks.
-  'Arms That Never Tire'(f) {
+  // King of a bald primate: round his throne, gold everywhere, his attendants working.
+  'King of a Bald Primate'(f) {
     strew(f, [[4, f.P.arm], [2, f.P.bot], [2, f.P.barrels], [1, f.P.tank]], 13, { side: 'right' });
     strew(f, [[3, f.P.crates], [2, f.P.lamp], [1, f.P.cones]], 16, { side: 'left', band: [3.5, 10] });
     floor(f);
-    words(f, 0.2, ['ARMS THAT', 'NEVER TIRE'], '#ff9a5a', ROBOT);
-    words(f, 0.8, ['NO BREAKS', 'NO SLEEP'], '#ff9a5a', ROBOT);
-    midground(f, giantArm(f), 0.55, 30, 14);
-  },
-  // Nobody at the desk: the empty office, rows of desks, screens on, chairs pushed back.
-  'Nobody at the Desk'(f) {
-    strew(f, [[5, f.P.desk], [2, f.P.screen], [1, f.P.crates]], 9);
-    floor(f, 1, true);
-    words(f, 0.3, ['NOBODY', 'AT THE DESK'], '#9aeaff', SCREEN);
-    const dust = kit.motes({ count: 90, radius: 30, height: 10, color: 0xd8dce0, drift: 'float', size: 0.3, seed: f.seed }, f.animated);
+    words(f, 0.2, ['KING OF A', 'BALD PRIMATE'], '#ffd25a', GOLD);
+    words(f, 0.8, ['ALL HAIL'], '#ffd25a', GOLD);
+    const dust = kit.motes({ count: 120, radius: 40, height: 20, color: GOLD, drift: 'float', size: 0.45, seed: f.seed }, f.animated);
     const at = kit.offRoad(f.ribbon, along(f, 0.5), 0);
     dust.position.set(at.x, 0, at.z);
     f.g.add(dust);
   },
-  // Screens watching screens: a gallery of screens, drones, a giant one watching.
-  'Screens Watching Screens'(f) {
-    strew(f, [[4, f.P.screen], [2, f.P.drone], [2, f.P.rack], [1, f.P.lamp]], 11);
+  // Not worthy: the chicane past the heir, the figures kneeling along it.
+  'Not Worthy'(f) {
+    strew(f, [[4, f.P.leavers], [2, f.P.screen], [1, f.P.lamp]], 10);
+    floor(f, 1, true);
+    words(f, 0.3, ['NOT WORTHY'], '#ffd25a', GOLD);
+    const dust = kit.motes({ count: 90, radius: 30, height: 10, color: 0xffe8b0, drift: 'float', size: 0.3, seed: f.seed }, f.animated);
+    const at = kit.offRoad(f.ribbon, along(f, 0.5), 0);
+    dust.position.set(at.x, 0, at.z);
+    f.g.add(dust);
+  },
+  // Mental rotation for the overlord: screens of turning shapes, drones, a giant robot keeping count.
+  'Mental Rotation'(f) {
+    strew(f, [[4, f.P.screen], [2, f.P.drone], [2, f.P.shape], [1, f.P.rack]], 11);
     floor(f);
-    words(f, 0.12, ['SCREENS', 'WATCHING SCREENS'], '#9aeaff', SCREEN);
-    words(f, 0.55, ['WE SEE', 'YOUR OUTPUT'], '#9aeaff', SCREEN);
-    words(f, 0.9, ['UPTIME 24/7'], '#9aeaff', SCREEN);
-    midground(f, giantScreen(f, ['HUMAN', 'NOT FOUND'], 24, STOP), 0.35, 38, 16);
+    words(f, 0.12, ['MENTAL ROTATION'], '#9aeaff', SCREEN);
+    words(f, 0.55, ['FOR THE', 'OVERLORD'], '#ff8a8a', STOP);
+    words(f, 0.9, ['SAME SHAPE?'], '#9aeaff', SCREEN);
     midground(f, giantRobot(f), 0.72, 36, 14);
   },
-  // Machines building machines: up on the deck, the robots on the factory floor below, cranes and chimneys.
-  'Machines Building Machines'(f) {
+  // The super-organism: up on the deck, robots below working as one, cranes and chimneys.
+  'Super-Organism'(f) {
     strew(f, [[3, f.P.bot], [3, f.P.arm], [2, f.P.tank], [1, f.P.crates]], 16, { band: [6, 26], clear: 6 });
     floor(f, 0.7);
-    words(f, 0.15, ['MACHINES', 'BUILDING MACHINES'], '#ff9a5a', ROBOT);
-    words(f, 0.85, ['NO HANDS', 'REQUIRED']);
+    words(f, 0.15, ['SUPER-ORGANISM'], '#ff9a5a', ROBOT);
+    words(f, 0.85, ['ALL AS ONE']);
     chimney(f, along(f, 0.3), 44);
     coolingTower(f, along(f, 0.7), 60);
     const mid = kit.offRoad(f.ribbon, along(f, 0.5), 0);
-    const flock = kit.flock({ count: 10, radius: 60, height: 34, color: 0x1a1c20, size: 1.6 }, f.animated);
-    flock.position.set(mid.x, 0, mid.z);
-    f.g.add(flock);
+    const swarmed = kit.swarm({ count: 160, radius: 50, height: 20, color: ROBOT, size: 0.7, speed: 0.12, seed: f.seed }, f.animated);
+    swarmed.position.set(mid.x, 14, mid.z);
+    f.g.add(swarmed);
   },
-  // The algorithm decides: off the deck past the racks, the screens reading out who goes.
-  'The Algorithm Decides'(f) {
-    strew(f, [[3, f.P.rack], [3, f.P.screen], [2, f.P.drone], [1, f.P.lamp]], 13);
+  // Bending light through prisms: off the deck past the great prism, colours thrown across the floor.
+  'Bending Light Through Prisms'(f) {
+    strew(f, [[3, f.P.shard], [3, f.P.screen], [2, f.P.drone], [1, f.P.lamp]], 13);
     floor(f);
-    words(f, 0.2, ['THE ALGORITHM', 'DECIDES'], '#9aeaff', SCREEN);
-    words(f, 0.75, ['YOUR ROLE', 'IS REDUNDANT'], '#ff8a8a', STOP);
-  },
-  // Pink slips: the people let go lining the road, slips blowing everywhere.
-  'Pink Slips'(f) {
-    strew(f, [[4, f.P.slips], [3, f.P.leavers], [2, f.P.crates], [1, f.P.lamp]], 12);
-    floor(f, 1, true);
-    queue(f, 'left', along(f, 0.1), along(f, 0.9), 9);
-    queue(f, 'right', along(f, 0.2), along(f, 0.7), 9);
-    words(f, 0.15, ['PINK SLIPS'], '#ffb0d0', PINK);
-    words(f, 0.65, ['THANK YOU', 'FOR YOUR SERVICE'], '#ffb0d0', PINK);
-    const blow = kit.motes({ count: 260, radius: 40, height: 22, color: PINK, drift: 'swirl', speed: 2, size: 0.6, seed: f.seed }, f.animated);
+    words(f, 0.2, ['A SCHISM'], '#e8f4ff', 0xffffff);
+    words(f, 0.75, ['THROUGH PRISMS'], '#c8a8ff', 0x6a5aff);
+    const light = kit.motes({ count: 200, radius: 40, height: 20, color: 0xc8a8ff, drift: 'swirl', speed: 1.4, size: 0.5, seed: f.seed }, f.animated);
     const at = kit.offRoad(f.ribbon, along(f, 0.5), 0);
-    blow.position.set(at.x, 0, at.z);
-    f.g.add(blow);
+    light.position.set(at.x, 0, at.z);
+    f.g.add(light);
   },
-  // The server farm: rows of racks, cooling towers steaming.
-  'The Server Farm'(f) {
-    strew(f, [[6, f.P.rack], [2, f.P.tank], [1, f.P.drone]], 9);
+  // The cyber-surgeon and the digital cleanse: the theatre, robots in white, the code raining.
+  'Cyber-Surgeon'(f) {
+    strew(f, [[4, f.P.bot], [3, f.P.screen], [2, f.P.rack], [1, f.P.lamp]], 12);
     floor(f);
-    words(f, 0.4, ['THE SERVER FARM'], '#a8ffb0', GO);
+    words(f, 0.15, ['CYBER-SURGEON'], '#a8ffb0', GO);
+    words(f, 0.65, ['DIGITAL CLEANSE'], '#9aeaff', SCREEN);
+    const code = kit.motes({ count: 260, radius: 40, height: 22, color: GO, drift: 'fall', speed: 4, size: 0.45, seed: f.seed }, f.animated);
+    const at = kit.offRoad(f.ribbon, along(f, 0.5), 0);
+    code.position.set(at.x, 0, at.z);
+    f.g.add(code);
+  },
+  // The neural network at work: racks either side, its nodes firing overhead.
+  'The Neural Network'(f) {
+    strew(f, [[6, f.P.rack], [1, f.P.drone], [1, f.P.tank]], 9);
+    floor(f);
+    words(f, 0.4, ["IT'S AT WORK"], '#a8ffb0', GO);
     coolingTower(f, along(f, 0.5), 46);
   },
-  // Lights out: the factory with no lights on, nobody needs them; only the robots' eyes and the beacons.
-  'Lights-Out Factory'(f) {
+  // Prepare for mutation: the first corner of the U, robots half-changed into something else, green motes.
+  'Prepare for Mutation'(f) {
     strew(f, [[4, f.P.bot], [3, f.P.forklift], [2, f.P.arm], [1, f.P.tank]], 13);
     floor(f);
-    words(f, 0.15, ['LIGHTS OUT'], '#ff8a8a', STOP);
-    words(f, 0.6, ['NO ONE', 'NEEDS TO SEE'], '#ff8a8a', STOP);
-    robotRow(f, 'right', along(f, 0.25), along(f, 0.6), 8);
-    midground(f, giantRobot(f), 0.8, 34, 14);
-    const eyes = kit.motes({ count: 120, radius: 50, height: 14, color: STOP, drift: 'float', size: 0.5, seed: f.seed }, f.animated);
-    const at = kit.offRoad(f.ribbon, along(f, 0.4), 0);
-    eyes.position.set(at.x, 0, at.z);
-    f.g.add(eyes);
+    words(f, 0.2, ['PREPARE FOR', 'MUTATION'], '#c8ff6a', 0x9aff3a);
+    robotRow(f, 'right', along(f, 0.25), along(f, 0.8), 8);
+    const ooze = kit.motes({ count: 160, radius: 40, height: 14, color: 0x9aff3a, drift: 'rise', speed: 1.2, size: 0.5, seed: f.seed }, f.animated);
+    const at = kit.offRoad(f.ribbon, along(f, 0.5), 0);
+    ooze.position.set(at.x, 0, at.z);
+    f.g.add(ooze);
   },
-  // Clocking out: the straight home, the gate ahead, the last of them walking out.
-  'Clocking Out'(f) {
-    strew(f, [[3, f.P.leavers], [2, f.P.slips], [2, f.P.lamp], [1, f.P.crates]], 12);
+  // The crack of doom: along the bottom of the U, the floor torn, embers in the air.
+  'The Crack of Doom'(f) {
+    strew(f, [[3, f.P.barrels], [3, f.P.cones], [2, f.P.tank], [1, f.P.lamp]], 13);
+    floor(f);
+    words(f, 0.75, ['DOOM'], '#ffb08a', 0xff5a1a);
+    const embers = kit.motes({ count: 200, radius: 50, height: 24, color: 0xffa040, drift: 'rise', speed: 3, size: 0.45, seed: f.seed }, f.animated);
+    const at = kit.offRoad(f.ribbon, along(f, 0.5), 0);
+    embers.position.set(at.x, 0, at.z);
+    f.g.add(embers);
+  },
+  // Death kiss: the last corner, a giant robot puckering a red glow, red light everywhere.
+  'Death Kiss'(f) {
+    strew(f, [[4, f.P.bot], [2, f.P.screen], [2, f.P.forklift], [1, f.P.lamp]], 13);
+    floor(f);
+    words(f, 0.35, ['DEATH KISS'], '#ff8a8a', STOP);
+    midground(f, giantRobot(f), 0.6, 34, 14);
+  },
+  // Inside a simulation: the straight home, the grid showing through, the gate ahead.
+  'Inside a Simulation'(f) {
+    strew(f, [[3, f.P.shape], [2, f.P.leavers], [2, f.P.lamp], [1, f.P.screen]], 12);
     floor(f, 1, true);
-    words(f, 0.3, ['CLOCK OUT'], '#ffd25a', SAFETY);
+    words(f, 0.3, ['INSIDE A', 'SIMULATION'], '#a8ffb0', GO);
     queue(f, 'right', f.from, f.to, 9);
   },
 };
@@ -883,8 +928,8 @@ function offRoadFacing(g: THREE.Group, ribbon: Ribbon, s: number, lateral: numbe
   return g;
 }
 
-/** The start: the factory gate, a giant time clock on its lintel ticking on the beat, card racks either side, the belt rolling in. */
-export function timeClock(ribbon: Ribbon, s: number, animated: kit.Animated): THREE.Group {
+/** The start: the gate everyone migrates through, a giant clock on its lintel ticking on the beat, card racks either side, the belt rolling in, birds going over. */
+export function migrationGate(ribbon: Ribbon, s: number, animated: kit.Animated): THREE.Group {
   rollBelt(animated);
   const g = new THREE.Group();
   const p = pulse(animated);
@@ -932,6 +977,9 @@ export function timeClock(ribbon: Ribbon, s: number, animated: kit.Animated): TH
   glow.position.set(0, 0, -1);
   clock.add(glow);
   g.add(clock, pole(4, 0.6, steel(), H + 5));
+  // The migration: a flock going over the gate, the same way as everyone.
+  const birds = kit.flock({ count: 18, radius: 30, height: 34, color: 0x1a1c20, size: 1.4 }, animated);
+  g.add(birds);
   animated.push((time) => {
     // A tick a beat: sixty to go round, snapping on each.
     const beats = (time * BPM) / 60;
@@ -942,100 +990,120 @@ export function timeClock(ribbon: Ribbon, s: number, animated: kit.Animated): TH
   return atRoad(g, ribbon, s);
 }
 
-/** Arms that never tire: a welding cell inside the hairpin, five giant arms round a car body on a jig, sparks flying, a safety fence round it. */
-export function robotArms(ribbon: Ribbon, s: number, lateral: number, animated: kit.Animated): THREE.Group {
+/** King of a bald primate: a giant ape, bald and crowned, on a throne in the middle of the hairpin, robot arms attending him on the beat. */
+export function primateKing(ribbon: Ribbon, s: number, lateral: number, animated: kit.Animated): THREE.Group {
   const g = new THREE.Group();
   const p = pulse(animated);
-  const floorPad = new THREE.Mesh(new THREE.CylinderGeometry(30, 31, 0.4, 40), kit.matte(0x4a4e56));
-  floorPad.position.y = 0.2;
-  const ring = new THREE.Mesh(new THREE.RingGeometry(27, 28.5, 48), new THREE.MeshBasicMaterial({ color: SAFETY, side: THREE.DoubleSide }));
+  const pad = new THREE.Mesh(new THREE.CylinderGeometry(30, 31, 0.4, 40), kit.matte(0x4a3a2a));
+  pad.position.y = 0.2;
+  const ring = new THREE.Mesh(new THREE.RingGeometry(27, 28.5, 48), new THREE.MeshBasicMaterial({ color: GOLD, side: THREE.DoubleSide }));
   ring.rotation.x = -Math.PI / 2;
   ring.position.y = 0.45;
-  g.add(floorPad, ring);
-  // The thing they're building: a kart's body on a jig, turning a step a bar.
-  const jig = new THREE.Group();
-  jig.add(slab(10, 1.2, 6, dark(), 0, 1.2, 0));
-  const shell = new THREE.Group();
-  shell.add(slab(8, 2, 4.4, kit.matte(0xc0c4ca), 0, 3, 0), slab(4, 1.6, 4, kit.matte(0xa0a4aa), -0.5, 4.6, 0));
-  jig.add(shell);
-  g.add(jig);
-  for (let k = 0; k < 5; k++) {
-    const a = (k / 5) * Math.PI * 2;
-    const arm = robotArm(p, 3.6, k * 0.37);
-    arm.position.set(Math.sin(a) * 15, 0.4, Math.cos(a) * 15);
+  g.add(pad, ring);
+  // The throne: steps, a seat and a tall back, gilt.
+  const gilt = kit.matte(GOLD, { emissive: 0x3a2400 });
+  g.add(slab(20, 1.5, 14, dark(), 0, 0.75, 0), slab(16, 1.5, 11, dark(), 0, 2.2, -1), slab(12, 3, 8, gilt, 0, 4.4, -2), slab(12, 18, 1.6, gilt, 0, 12, -6));
+  // The ape: a hulking grey-brown body, long arms, a bald head and a heavy brow.
+  const fur = kit.matte(0x5a4a3e, { emissive: 0x140c08 });
+  const skin = kit.matte(0xb08a78, { emissive: 0x2a1810 });
+  const ape = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.CapsuleGeometry(4, 5, 6, 14), fur);
+  body.position.set(0, 10.5, -2);
+  const head = new THREE.Mesh(BALL(), skin);
+  head.scale.set(3, 3.2, 3);
+  head.position.set(0, 17.6, -1.2);
+  const brow = slab(5.6, 0.9, 1.6, skin, 0, 18.4, 1.3);
+  const muzzle = new THREE.Mesh(BALL(), kit.matte(0x8a6a5a));
+  muzzle.scale.set(1.8, 1.3, 1.4);
+  muzzle.position.set(0, 16.4, 1.4);
+  ape.add(body, head, brow, muzzle);
+  for (const side of [-1, 1]) {
+    const arm = new THREE.Mesh(new THREE.CapsuleGeometry(1.3, 7, 4, 10), fur);
+    arm.position.set(side * 5.6, 9.5, 0);
+    arm.rotation.x = 0.5;
+    const eye = kit.glowSprite(SODIUM, 1.4, 0.9);
+    eye.position.set(side * 1.2, 17.8, 2.2);
+    ape.add(arm, eye);
+  }
+  // The crown on his bald head.
+  const crown = new THREE.Group();
+  crown.add(new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.6, 1.4, 12, 1, true), kit.matte(GOLD, { emissive: 0x4a3000, double: true })));
+  for (let k = 0; k < 6; k++) {
+    const spike = new THREE.Mesh(new THREE.ConeGeometry(0.45, 1.6, 5), gilt);
+    const a = (k / 6) * Math.PI * 2;
+    spike.position.set(Math.sin(a) * 2.4, 1.4, Math.cos(a) * 2.4);
+    crown.add(spike);
+  }
+  crown.position.set(0, 20.6, -1.2);
+  ape.add(crown);
+  g.add(ape);
+  // His robot attendants, working on the beat.
+  for (let k = 0; k < 4; k++) {
+    const a = -1.1 + (k / 3) * 2.2;
+    const arm = robotArm(p, 3.2, k * 0.5, false);
+    arm.position.set(Math.sin(a) * 16, 0.4, Math.cos(a) * 16 - 2);
     arm.rotation.y = a + Math.PI;
     g.add(arm);
   }
-  // The fence, posts and mesh.
-  for (let k = 0; k < 24; k++) {
-    const a = (k / 24) * Math.PI * 2;
-    g.add(pole(3, 0.12, yellow()).translateX(Math.sin(a) * 25).translateZ(Math.cos(a) * 25));
-  }
-  const fence = new THREE.Mesh(new THREE.CylinderGeometry(25, 25, 2.6, 48, 1, true), new THREE.MeshBasicMaterial({ color: 0x9aa0aa, transparent: true, opacity: 0.18, side: THREE.DoubleSide, depthWrite: false }));
-  fence.position.y = 1.5;
-  g.add(fence);
-  const sparks = kit.motes({ count: 160, radius: 10, height: 12, color: 0xffd080, drift: 'rise', speed: 4, size: 0.45, seed: 9201 }, animated);
-  sparks.position.y = 2;
-  g.add(sparks);
-  const glow = halo(p, 0xffe0a0, 40, 0.22);
-  glow.position.y = 6;
-  g.add(glow);
-  const plaque = kit.signPanel(12, notice(['WELDING CELL', 'NO HUMANS']), { h: 4, depth: 0.3, frame: dark() });
+  const glow = halo(p, GOLD, 40, 0.2);
+  glow.position.y = 14;
+  const crownGlow = halo(p, GOLD, 10, 0.5);
+  crownGlow.position.set(0, 21, -1.2);
+  g.add(glow, crownGlow);
+  const plaque = kit.signPanel(14, kit.textFace(['KING OF A', 'BALD PRIMATE'], { style: 'neon', bg: '#120c04', fg: '#ffd25a', glow: '#ffc21a' }), { h: 4.5, depth: 0.3, frame: dark() });
   plaque.position.set(0, 4, 26);
   g.add(plaque, pole(2, 0.2, steel()).translateZ(26));
-  for (let k = 0; k < 6; k++) {
-    const a = (k / 6) * Math.PI * 2 + 0.3;
-    const b = beacon(p, k % 2 ? SODIUM : ROBOT, 4);
-    b.position.set(Math.sin(a) * 25, 3.6, Math.cos(a) * 25);
-    g.add(b);
-  }
-  animated.push((time) => (jig.rotation.y = Math.floor((time * BPM) / 240) * (Math.PI / 4) + Math.min(1, ((time * BPM) / 240) % 1 * 6) * (Math.PI / 4)));
+  animated.push((time) => {
+    ape.rotation.y = 0.25 * Math.sin(time * 0.4);
+    head.rotation.z = 0.08 * music.sway(time, 4);
+    crown.rotation.y = time * 0.3;
+  });
   g.scale.setScalar(1.25);
   const at = kit.offRoad(ribbon, s, lateral);
   g.position.set(at.x, 0, at.z);
   return g;
 }
 
-/** Nobody at the desk: an open-plan office with its walls gone, rows of desks with their screens on and their chairs pushed back, a vacuum robot going round. */
-export function emptyOffice(ribbon: Ribbon, s: number, lateral: number, animated: kit.Animated): THREE.Group {
+/** Not worthy of the heir's glory: the heir, a gilded child of the machine on a tall plinth under a halo, rows of figures kneeling to it. */
+export function heirStatue(ribbon: Ribbon, s: number, lateral: number, animated: kit.Animated): THREE.Group {
   const g = new THREE.Group();
   const p = pulse(animated);
-  const P = props(p);
-  g.add(slab(40, 0.4, 28, kit.matte(0x5a6a7a, { emissive: 0x101820 }), 0, 0.2, 0));
-  const rand = seededRandom(9301);
-  for (let r = 0; r < 3; r++) for (let c = 0; c < 5; c++) {
-    const d = P.desk(rand, {} as kit.Site);
-    d.position.set(-14 + c * 7, 0.4, -8 + r * 8);
-    d.rotation.y = Math.PI;
-    g.add(d);
+  const gilt = kit.matte(GOLD, { emissive: 0x4a3000 });
+  g.add(slab(30, 0.4, 24, kit.matte(0x3a3e46), 0, 0.2, 0), slab(8, 3, 8, dark(), 0, 1.9, -4), slab(6, 6, 6, kit.matte(0xd8d4c8), 0, 6.4, -4));
+  const heir = robot(p, 3.4, seededRandom(9301));
+  heir.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if (m.isMesh && (m.material === white() || m.material === steel() || m.material === dark())) m.material = gilt;
+  });
+  heir.position.set(0, 9.4, -4);
+  g.add(heir);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(4, 0.35, 8, 32), kit.lit(GOLD));
+  ring.position.set(0, 22, -4);
+  g.add(ring);
+  const glow = halo(p, GOLD, 30, 0.3);
+  glow.position.set(0, 16, -4);
+  g.add(glow, kit.lightPool(GOLD, 16, 0.3));
+  // The kneeling: grey figures in rows, bowed low before it.
+  const rand = seededRandom(9302);
+  for (let r = 0; r < 3; r++) for (let c = 0; c < 6; c++) {
+    const l = leaver(1.4, rand);
+    l.rotation.set(0.9, Math.PI, 0);
+    l.position.set(-11 + c * 4.4, -0.3, 4 + r * 3.4);
+    g.add(l);
   }
-  // The ceiling's lights on poles, all on, for nobody.
-  for (const x of [-12, 0, 12]) {
-    const lamp = slab(8, 0.3, 1.2, kit.lit(0xf0f8ff), x, 9, 0);
-    g.add(lamp, pole(9, 0.12, steel()).translateX(x));
-    const pool = kit.lightPool(0xe0f0ff, 10, 0.25);
-    pool.position.set(x, 0.45, 0);
-    g.add(pool);
-  }
-  const board = kit.signPanel(14, notice(['EMPLOYEE OF', 'THE MONTH: A.I.']), { h: 5, depth: 0.3, frame: dark() });
-  board.position.set(0, 6, -13);
-  board.rotation.y = Math.PI;
-  g.add(board, pole(4, 0.2, steel()).translateZ(-13));
-  // The vacuum robot, going round and round.
-  const vac = new THREE.Group();
-  vac.add(pole(0.4, 1.1, dark()), new THREE.Mesh(BALL(), kit.lit(GO)).translateY(0.5).translateZ(0.8));
-  vac.children[1].scale.setScalar(0.18);
-  g.add(vac);
+  const plaque = kit.signPanel(12, kit.textFace(['NOT WORTHY'], { style: 'neon', bg: '#120c04', fg: '#ffd25a', glow: '#ffc21a' }), { h: 3, depth: 0.3, frame: dark() });
+  plaque.position.set(0, 3, 0.2);
+  g.add(plaque);
   animated.push((time) => {
-    const a = time * 0.4;
-    vac.position.set(Math.sin(a) * 12, 0.4, 2 + Math.cos(a * 1.3) * 4);
-    vac.rotation.y = a + Math.PI / 2;
+    heir.rotation.y = 0.4 * Math.sin(time * 0.3);
+    ring.rotation.x = Math.PI / 2 + 0.2 * Math.sin(time);
+    ring.scale.setScalar(1 + 0.08 * music.kick(time));
   });
   g.scale.setScalar(1.2);
   return offRoadFacing(g, ribbon, s, lateral);
 }
 
-/** Screens watching screens: a wall of screens down the stretch on both sides, big, each a camera or a graph, scanlines rolling. */
+/** Mental rotation: a wall of screens down the stretch on both sides, a turning block shape over each, the test set for the overlord. */
 export function screenWall(ribbon: Ribbon, s: number, to: number, animated: kit.Animated): THREE.Group {
   const g = new THREE.Group();
   const p = pulse(animated);
@@ -1058,14 +1126,11 @@ export function screenWall(ribbon: Ribbon, s: number, to: number, animated: kit.
       post.position.set(at.x, 0, at.z);
       const gl = halo(p, SCREEN, 12, 0.18);
       gl.position.copy(panel.position);
-      // A camera on top of each, watching the road.
-      const cam = new THREE.Group();
-      cam.add(slab(0.9, 0.7, 1.6, white()), new THREE.Mesh(BALL(), kit.lit(STOP)).translateZ(0.85));
-      (cam.children[1] as THREE.Mesh).scale.setScalar(0.22);
-      cam.position.set(at.x, f.y + 10, at.z);
-      cam.rotation.y = f.heading + side * Math.PI / 2;
-      g.add(panel, post, gl, cam);
-      animated.push((time) => (cam.rotation.y = f.heading + side * (Math.PI / 2) + 0.5 * Math.sin(time * 0.7 + d)));
+      // On top of each, the shape it's asking you to turn in your head, turning.
+      const sh = rotationShape(side > 0 ? GOLD : SCREEN, 0.9);
+      sh.position.set(at.x, f.y + 12, at.z);
+      g.add(panel, post, gl, sh);
+      animated.push((time) => sh.rotation.set(time * 0.5 + d, time * 0.7 + side, 0));
     }
   }
   kit.buzz(faces, animated, 0, 0.6);
@@ -1121,92 +1186,157 @@ export function assemblyDeck(ribbon: Ribbon, s: number, to: number, animated: ki
   return g;
 }
 
-/** The algorithm decides: a black monolith with a single eye, scanning, a ticker of names going green or red round its foot. */
-export function algorithm(ribbon: Ribbon, s: number, lateral: number, animated: kit.Animated): THREE.Group {
+/** The overlord: a black monolith with a single eye, scanning the road, the shapes it sets for the mental rotation turning round its foot. */
+export function overlord(ribbon: Ribbon, s: number, lateral: number, animated: kit.Animated): THREE.Group {
   const g = new THREE.Group();
   const p = pulse(animated);
-  const mono = slab(10, 34, 4, kit.matte(0x0e1014, { emissive: 0x04060a }), 0, 17, 0);
-  g.add(mono);
+  g.add(slab(10, 34, 4, kit.matte(0x0e1014, { emissive: 0x04060a }), 0, 17, 0));
   const eye = new THREE.Group();
   const ball = new THREE.Mesh(BALL(), kit.lit(STOP));
   ball.scale.setScalar(2.4);
-  const ringM = new THREE.Mesh(new THREE.TorusGeometry(3.2, 0.4, 8, 30), kit.matte(0x30343a));
-  eye.add(ball, ringM);
+  eye.add(ball, new THREE.Mesh(new THREE.TorusGeometry(3.2, 0.4, 8, 30), kit.matte(0x30343a)));
   eye.position.set(0, 26, 2.3);
   const glow = halo(p, STOP, 26, 0.35);
   glow.position.set(0, 26, 3);
   g.add(eye, glow);
-  // The scanning beam: a red fan sweeping the road.
+  // The scanning beam: a red cone sweeping the road.
   const beam = new THREE.Mesh(new THREE.ConeGeometry(14, 40, 24, 1, true), new THREE.MeshBasicMaterial({ color: STOP, transparent: true, opacity: 0.08, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
   beam.rotation.x = -Math.PI / 2 - 0.35;
-  beam.position.set(0, 20, 22);
   const pivot = new THREE.Group();
   pivot.position.set(0, 26, 2.3);
   beam.position.set(0, -6, 20);
   pivot.add(beam);
   g.add(pivot);
-  // The ticker: panels round the foot, each a verdict.
-  const verdicts: [string, string][] = [['KEEP', '#a8ffb0'], ['REPLACE', '#ff8a8a'], ['REPLACE', '#ff8a8a'], ['AUTOMATE', '#ffd25a'], ['REPLACE', '#ff8a8a'], ['OPTIMISE', '#9aeaff']];
-  verdicts.forEach(([w, c], k) => {
-    const a = (k / verdicts.length) * Math.PI * 2;
-    const panel = kit.signPanel(6, kit.textFace([w], { style: 'neon', bg: '#04060a', fg: c, glow: c }), { h: 2.4, depth: 0.2, frame: dark() });
-    panel.position.set(Math.sin(a) * 11, 2.4, Math.cos(a) * 11);
-    panel.rotation.y = a + Math.PI;
-    g.add(panel);
-  });
+  // The test: block shapes round its foot, the same shape turned every way, turning.
+  const shapes: THREE.Object3D[] = [];
+  for (let k = 0; k < 5; k++) {
+    const a = (k / 5) * Math.PI * 2;
+    const sh = rotationShape(k % 2 ? SCREEN : GOLD, 1.4);
+    sh.position.set(Math.sin(a) * 12, 5, Math.cos(a) * 12);
+    shapes.push(sh);
+    g.add(sh);
+  }
   g.add(kit.lightPool(STOP, 20, 0.3));
+  const plaque = kit.signPanel(12, kit.textFace(['OVERLORD'], { style: 'neon', bg: '#060608', fg: '#ff8a8a', glow: '#ff3a2a' }), { h: 3, depth: 0.3, frame: dark() });
+  plaque.position.set(0, 36, 0);
+  g.add(plaque);
   animated.push((time) => {
     pivot.rotation.y = 0.7 * Math.sin(time * 0.6);
     eye.rotation.y = pivot.rotation.y;
     ball.scale.setScalar(2.2 + 0.4 * music.kick(time));
+    shapes.forEach((sh, k) => sh.rotation.set(time * 0.5 + k, time * 0.7 + k * 2, 0));
   });
   g.scale.setScalar(1.1);
   return offRoadFacing(g, ribbon, s, lateral);
 }
 
-/** Pink slips: a printer the size of a house, spitting slips out on the beat into a storm of them, and the people let go queued at its foot. */
-export function pinkSlips(ribbon: Ribbon, s: number, lateral: number, animated: kit.Animated): THREE.Group {
+/** A mental rotation figure: cubes joined in a bent arm, as on the test, its edges lit. Built round its middle. */
+export function rotationShape(color: number, cube: number): THREE.Group {
+  const g = new THREE.Group();
+  const cells: [number, number, number][] = [[0, 0, 0], [1, 0, 0], [2, 0, 0], [2, 1, 0], [2, 2, 0], [2, 2, 1], [2, 2, 2]];
+  const mat = kit.matte(0xe8ecf0, { emissive: 0x202428 });
+  const edges = new THREE.LineBasicMaterial({ color });
+  const box = new THREE.BoxGeometry(cube, cube, cube);
+  const lines = new THREE.EdgesGeometry(box);
+  for (const [x, y, z] of cells) {
+    const m = new THREE.Mesh(box, mat);
+    m.position.set((x - 1) * cube, (y - 1) * cube, (z - 1) * cube);
+    const e = new THREE.LineSegments(lines, edges);
+    e.position.copy(m.position);
+    g.add(m, e);
+  }
+  return g;
+}
+
+/** Bending light through prisms: a great glass prism on a plinth, a white beam into it and a fan of colours out, turning slowly. */
+export function greatPrism(ribbon: Ribbon, s: number, lateral: number, animated: kit.Animated): THREE.Group {
   const g = new THREE.Group();
   const p = pulse(animated);
-  g.add(slab(18, 10, 12, kit.matte(0xd8dce0, { emissive: 0x1a1c20 }), 0, 5, 0), slab(14, 1, 6, dark(), 0, 10.5, -1));
-  const tray = slab(12, 0.5, 8, kit.matte(0xa0a4aa), 0, 6, 9);
-  tray.rotation.x = 0.2;
-  g.add(tray);
-  const lightP = beacon(p, GO, 2.4);
-  lightP.position.set(7, 9, 6.2);
-  g.add(lightP);
-  // The slip coming out, on every beat.
-  const out = new THREE.Mesh(new THREE.PlaneGeometry(6, 4), paper());
-  out.rotation.x = -Math.PI / 2 + 0.2;
-  g.add(out);
-  const storm = kit.motes({ count: 300, radius: 22, height: 30, color: PINK, drift: 'swirl', speed: 3, size: 0.8, seed: 9401 }, animated);
-  g.add(storm);
-  const rand = seededRandom(9402);
-  for (let k = 0; k < 14; k++) {
-    const l = leaver(1.6, rand);
-    l.position.set(-14 + k * 2.2, 0, 14 + (k % 2) * 1.5);
-    l.rotation.y = -Math.PI / 2 + (rand() - 0.5) * 0.6;
-    g.add(l);
-  }
-  // A heap of slips round the tray.
-  for (let k = 0; k < 40; k++) {
-    const sl = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.8), paper());
-    sl.rotation.set(-Math.PI / 2, 0, rand() * 6);
-    sl.position.set((rand() - 0.5) * 16, 0.06 + k * 0.01, 10 + rand() * 6);
-    g.add(sl);
-  }
-  const sign = kit.signPanel(14, notice(['YOUR POSITION', 'HAS BEEN AUTOMATED']), { h: 5, depth: 0.3, frame: dark() });
-  sign.position.set(0, 14, 0);
-  g.add(sign);
-  animated.push((time) => {
-    const ph = music.phase(time);
-    out.position.set(0, 6.5 - ph * 2, 6 + ph * 5);
-    out.visible = ph < 0.8;
+  g.add(slab(18, 2, 18, dark(), 0, 1, 0));
+  const turn = new THREE.Group();
+  turn.position.y = 2;
+  const glassGeo = new THREE.CylinderGeometry(8, 8, 16, 3);
+  const prism = new THREE.Mesh(glassGeo, new THREE.MeshPhongMaterial({ color: 0xcfe8ff, transparent: true, opacity: 0.45, specular: 0xffffff, shininess: 120, side: THREE.DoubleSide }));
+  prism.position.y = 8;
+  const edge = new THREE.LineSegments(new THREE.EdgesGeometry(glassGeo), new THREE.LineBasicMaterial({ color: 0xffffff }));
+  edge.position.y = 8;
+  turn.add(prism, edge);
+  const ray = (color: number, w: number, len: number, opacity: number) => new THREE.Mesh(new THREE.PlaneGeometry(len, w), new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
+  // The white beam in.
+  const beam = ray(0xffffff, 1.2, 40, 0.7);
+  beam.position.set(-24, 8, 0);
+  turn.add(beam);
+  // The fan of colours out.
+  [0xff3a3a, 0xff9a2a, 0xffe03a, 0x5aff6a, 0x3ac8ff, 0x6a5aff, 0xc05aff].forEach((c, k) => {
+    const r = ray(c, 1.4, 50, 0.55);
+    const fan = new THREE.Group();
+    fan.position.set(3, 8, 0);
+    fan.rotation.y = -0.15 + k * 0.05;
+    r.position.x = 25;
+    fan.add(r);
+    turn.add(fan);
   });
+  g.add(turn);
+  const glow = halo(p, 0xffffff, 30, 0.25);
+  glow.position.y = 10;
+  g.add(glow, kit.motes({ count: 120, radius: 30, height: 18, color: 0xe8f4ff, drift: 'float', size: 0.45, seed: 9701 }, animated));
+  animated.push((time) => (turn.rotation.y = time * 0.15));
+  const at = kit.offRoad(ribbon, s, lateral);
+  g.position.set(at.x, 0, at.z);
+  return g;
+}
+
+/** The cyber-surgeon: an operating theatre open to the road, a patient on the table under the lamp, a many-armed surgical robot working over them, the code on its screens. */
+export function cyberSurgeon(ribbon: Ribbon, s: number, lateral: number, animated: kit.Animated): THREE.Group {
+  const g = new THREE.Group();
+  const p = pulse(animated);
+  g.add(slab(30, 0.4, 22, kit.matte(0xd8e8e4, { emissive: 0x18282a }), 0, 0.2, 0), slab(30, 12, 0.5, kit.matte(0x9ab8b4), 0, 6, -11));
+  // The table and the patient on it.
+  g.add(slab(4, 3, 10, steel(), 0, 1.9, 0), slab(4.4, 0.4, 10.4, white(), 0, 3.6, 0));
+  const patient = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.CapsuleGeometry(1.1, 5.4, 4, 10), person());
+  body.rotation.x = Math.PI / 2;
+  const head = new THREE.Mesh(BALL(), person());
+  head.scale.setScalar(1);
+  head.position.z = -4;
+  patient.add(body, head);
+  patient.position.set(0, 4.8, 0.4);
+  g.add(patient);
+  // The robot: a column, a ring overhead, six arms hanging off it, working on the beat.
+  g.add(pole(14, 0.6, white()).translateX(-9), slab(9, 0.8, 0.8, white(), -4.5, 14, 0));
+  const ringM = new THREE.Mesh(new THREE.TorusGeometry(4, 0.5, 8, 30), white());
+  ringM.rotation.x = Math.PI / 2;
+  ringM.position.y = 13.5;
+  g.add(ringM);
+  for (let k = 0; k < 6; k++) {
+    const a = (k / 6) * Math.PI * 2;
+    const arm = robotArm(p, 1.1, k * 0.33);
+    arm.rotation.x = Math.PI;
+    arm.position.set(Math.sin(a) * 4, 13.2, Math.cos(a) * 4);
+    g.add(arm);
+  }
+  // The theatre lamp.
+  const lamp = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 3.4, 1, 20), white());
+  lamp.position.set(0, 17, 0);
+  const lit = halo(p, 0xe8fff8, 26, 0.4);
+  lit.position.set(0, 15, 0);
+  const pool = kit.lightPool(0xe8fff8, 10, 0.4);
+  pool.position.y = 0.45;
+  g.add(lamp, lit, pool);
+  // Its screens: the code, the cleanse.
+  const screens: [string[], number][] = [[['JAVASCRIPT', 'PERSON'], GO], [['DIGITAL', 'CLEANSE'], SCREEN], [['CYBER-', 'SURGEON'], GO]];
+  screens.forEach(([w, c], k) => {
+    const hex = `#${c.toString(16).padStart(6, '0')}`;
+    const sc = kit.signPanel(8, kit.textFace(w, { style: 'neon', bg: '#04120a', fg: hex, glow: hex }), { h: 4.8, depth: 0.3, frame: dark() });
+    sc.position.set(-10 + k * 10, 8, -10.4);
+    sc.rotation.y = Math.PI;
+    g.add(sc);
+  });
+  g.add(kit.motes({ count: 140, radius: 12, height: 14, color: GO, drift: 'fall', speed: 3, size: 0.4, seed: 9802 }, animated));
   return offRoadFacing(g, ribbon, s, lateral);
 }
 
-/** The server farm: a block of racks under a roof, its fans turning, its lights blinking, a cooling tower steaming. */
+/** The neural network at work: a block of racks under a roof, fans turning, lights blinking, and the network itself over it, firing. */
 export function serverFarm(ribbon: Ribbon, s: number, lateral: number, animated: kit.Animated): THREE.Group {
   const g = new THREE.Group();
   const p = pulse(animated);
@@ -1241,49 +1371,119 @@ export function serverFarm(ribbon: Ribbon, s: number, lateral: number, animated:
   const glow = halo(p, GO, 40, 0.16);
   glow.position.y = 6;
   g.add(glow);
-  animated.push((time) => fans.forEach((f, k) => (f.rotation.y = time * (6 + k))));
+  // The neural network over it: layers of nodes joined by threads, firing layer by layer on the beat.
+  const layers = [4, 6, 6, 3];
+  const nodes: THREE.Sprite[][] = [];
+  const thread = new THREE.LineBasicMaterial({ color: GO, transparent: true, opacity: 0.35 });
+  layers.forEach((n, l) => {
+    nodes.push([]);
+    for (let k = 0; k < n; k++) {
+      const node = kit.glowSprite(GO, 2.4, 0.4);
+      node.position.set(-15 + l * 10, 22 + (k - (n - 1) / 2) * 4, 0);
+      nodes[l].push(node);
+      g.add(node);
+      if (l > 0) for (const prev of nodes[l - 1]) g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([prev.position, node.position]), thread));
+    }
+  });
+  animated.push((time) => {
+    fans.forEach((f, k) => (f.rotation.y = time * (6 + k)));
+    const on = music.count(time, 4);
+    nodes.forEach((layer, l) => layer.forEach((n, k) => (n.material.opacity = l === on ? 0.95 : 0.25 + 0.1 * Math.sin(time * 3 + k))));
+  });
   return offRoadFacing(g, ribbon, s, lateral);
 }
 
-/** The lights-out factory: a dark hall open to the road, robots at work inside with no light on, only their eyes, the beacons and the welding glow. */
-export function lightsOut(ribbon: Ribbon, s: number, lateral: number, animated: kit.Animated): THREE.Group {
+/** The crack of doom: a long fissure torn in the floor outside the U, glowing from deep down and throbbing on the beat, smoke and embers rising out of it. */
+export function crackOfDoom(ribbon: Ribbon, s: number, lateral: number, animated: kit.Animated): THREE.Group {
   const g = new THREE.Group();
   const p = pulse(animated);
-  const hall = kit.matte(0x1a1c20);
-  g.add(slab(44, 0.4, 26, kit.matte(0x14161a), 0, 0.2, 0));
-  g.add(slab(44, 16, 0.6, hall, 0, 8, -13), slab(0.6, 16, 26, hall, -22, 8, 0), slab(0.6, 16, 26, hall, 22, 8, 0));
-  // The roof's trusses, open: you can see in, though there's no light on.
-  for (let k = 0; k < 5; k++) {
-    const r = slab(0.6, 0.6, 26, kit.matte(0x3a3e46), -18 + k * 9, 16.2, 0);
-    g.add(r, slab(0.5, 4, 0.5, kit.matte(0x3a3e46), -18 + k * 9, 18, -12.5));
+  const rand = seededRandom(9901);
+  const glowMats: THREE.MeshBasicMaterial[] = [];
+  // The crack: a jagged chain of glowing slots, its lips heaved up either side.
+  let x = -30;
+  let z = 0;
+  while (x < 30) {
+    const len = 4 + rand() * 5;
+    const a = (rand() - 0.5) * 0.9;
+    const w = 1.2 + rand() * 2.4;
+    const m = new THREE.MeshBasicMaterial({ color: 0xff5a1a });
+    glowMats.push(m);
+    const slot = new THREE.Mesh(new THREE.PlaneGeometry(len, w), m);
+    slot.rotation.set(-Math.PI / 2, 0, a);
+    slot.position.set(x + len / 2, 0.08, z);
+    g.add(slot);
+    for (const side of [-1, 1]) {
+      const lip = slab(len, 0.8 + rand() * 1.6, 1.4, kit.matte(0x5a5e64), x + len / 2, 0.4, z + side * (w / 2 + 0.6));
+      lip.rotation.set(side * 0.3, -a, 0);
+      g.add(lip);
+    }
+    x += len * Math.cos(a);
+    z += len * Math.sin(a) * 0.6;
   }
-  // The only light: the welding glow and the machines' own red, pulsing on the beat.
-  const inside = halo(p, STOP, 46, 0.32);
-  inside.position.set(0, 8, 0);
-  const pool = kit.lightPool(STOP, 22, 0.35);
-  pool.position.y = 0.45;
-  g.add(inside, pool);
-  const rand = seededRandom(9601);
-  for (let k = 0; k < 6; k++) {
-    const r = robot(p, 2.6, rand);
-    r.position.set(-16 + k * 6.4, 0.4, -4 + (k % 2) * 6);
-    r.rotation.y = rand() * 0.6 - 0.3;
-    g.add(r);
+  const glow = halo(p, 0xff5a1a, 60, 0.35);
+  glow.position.y = 4;
+  g.add(glow, kit.lightPool(0xff5a1a, 34, 0.4));
+  for (const sx of [-18, 2, 20]) {
+    const smoke = kit.smokeColumn({ height: 50, width: 6, under: 0xff5a1a, color: 0x2a2224 }, animated, sx);
+    smoke.position.set(sx, 0, 0);
+    g.add(smoke);
   }
-  for (let k = 0; k < 3; k++) {
-    const a = robotArm(p, 1.6, k * 0.4);
-    a.position.set(-12 + k * 12, 0.4, -9);
-    g.add(a);
+  g.add(kit.motes({ count: 220, radius: 30, height: 30, color: 0xffa040, drift: 'rise', speed: 4, size: 0.5, seed: 9902 }, animated));
+  const sign = kit.signPanel(18, kit.textFace(['THE CRACK OF DOOM'], { style: 'neon', bg: '#060608', fg: '#ffb08a', glow: '#ff5a1a' }), { h: 3.6, depth: 0.3, frame: dark() });
+  sign.position.set(0, 9, -10);
+  g.add(sign, pole(7, 0.3, steel()).translateZ(-10).translateX(-6), pole(7, 0.3, steel()).translateZ(-10).translateX(6));
+  animated.push((time) => {
+    const k = music.kick(time, 0, 4);
+    for (const m of glowMats) m.color.setRGB(1, 0.25 + 0.3 * k, 0.05);
+  });
+  return offRoadFacing(g, ribbon, s, lateral);
+}
+
+/** The dinosaur inside a simulation: a dinosaur drawn in green wireframe inside a cube of grid lines, walking on the spot on the beat, the grid scrolling under it. */
+export function karmaDino(ribbon: Ribbon, s: number, lateral: number, animated: kit.Animated): THREE.Group {
+  const g = new THREE.Group();
+  const p = pulse(animated);
+  const wire = new THREE.MeshBasicMaterial({ color: GO, wireframe: true });
+  const solid = new THREE.MeshBasicMaterial({ color: 0x0a2a14, transparent: true, opacity: 0.5, depthWrite: false });
+  const part = (geo: THREE.BufferGeometry, x: number, y: number, z: number, rx = 0) => {
+    const o = new THREE.Group();
+    o.add(new THREE.Mesh(geo, solid), new THREE.Mesh(geo, wire));
+    o.position.set(x, y, z);
+    o.rotation.x = rx;
+    return o;
+  };
+  const dino = new THREE.Group();
+  dino.add(part(new THREE.SphereGeometry(1, 10, 8).scale(4, 3.4, 7), 0, 9, 0));
+  dino.add(part(new THREE.CylinderGeometry(1.2, 2, 7, 8), 0, 13, 6, 0.9));
+  dino.add(part(new THREE.BoxGeometry(3, 2.6, 5, 2, 2, 2), 0, 16, 9));
+  dino.add(part(new THREE.ConeGeometry(2.4, 12, 8), 0, 8, -10, -Math.PI / 2 - 0.25));
+  const legs: THREE.Object3D[] = [];
+  for (const side of [-1, 1]) {
+    const leg = part(new THREE.CylinderGeometry(1, 1.4, 7, 8), side * 2.4, 3.6, -1);
+    legs.push(leg);
+    dino.add(leg, part(new THREE.CylinderGeometry(0.4, 0.5, 3, 6), side * 3, 10, 5, 1.2));
   }
-  for (let k = 0; k < 6; k++) {
-    const b = beacon(p, STOP, 3);
-    b.position.set(-20 + k * 8, 15, 12);
-    g.add(b);
-  }
-  const sign = kit.signPanel(18, kit.textFace(['LIGHTS OUT'], { style: 'neon', bg: '#060608', fg: '#ff8a8a', glow: '#ff3a2a' }), { h: 4.5, depth: 0.3, frame: dark() });
-  sign.position.set(0, 21, 12);
-  g.add(sign, pole(5, 0.3, steel(), 16.2).translateZ(12).translateX(-6), pole(5, 0.3, steel(), 16.2).translateZ(12).translateX(6));
-  g.scale.setScalar(1.2);
+  g.add(dino);
+  // The simulation: a cube of grid lines round it, and a grid on the floor.
+  const cube = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(30, 22, 30)), new THREE.LineBasicMaterial({ color: GO }));
+  cube.position.y = 11;
+  const grid = new THREE.GridHelper(30, 15, GO, 0x2a8a3a);
+  grid.position.y = 0.1;
+  g.add(cube, grid);
+  const glow = halo(p, GO, 40, 0.18);
+  glow.position.y = 11;
+  g.add(glow);
+  const sign = kit.signPanel(16, kit.textFace(['SIMULATION'], { style: 'neon', bg: '#020a04', fg: '#a8ffb0', glow: '#6aff8a' }), { h: 3.4, depth: 0.3, frame: dark() });
+  sign.position.set(0, 24, 15);
+  g.add(sign);
+  animated.push((time) => {
+    const step = music.sway(time, 2);
+    legs[0].rotation.x = 0.4 * step;
+    legs[1].rotation.x = -0.4 * step;
+    dino.position.y = 0.3 * Math.abs(step);
+    dino.rotation.y = 0.3 * Math.sin(time * 0.2);
+    cube.rotation.y = 0.05 * Math.sin(time * 0.3);
+  });
   return offRoadFacing(g, ribbon, s, lateral);
 }
 
