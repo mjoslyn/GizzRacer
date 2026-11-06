@@ -64,7 +64,7 @@ import { buildEmpty } from './empty';
 import { buildBillabongValley } from './billabongValley';
 import { buildMinimumBrainSize } from './minimumBrainSize';
 import { buildAutomation } from './automation';
-import { buildSomeOfUs } from './someOfUs';
+import { buildOddlife } from './oddlife';
 import { buildIntrasport } from './intrasport';
 import { buildCutThroatBoogie } from './cutThroatBoogie';
 import { buildSeaOfTrees } from './seaOfTrees';
@@ -114,7 +114,7 @@ export const RAW_TRACK_LIST: { id: string; name: string; build: () => TrackDef }
   { id: 'hell', name: 'Hell', build: buildHell },
   { id: 'automation', name: 'Automation', build: buildAutomation },
   { id: 'minimum-brain-size', name: 'Minimum Brain Size', build: buildMinimumBrainSize },
-  { id: 'some-of-us', name: 'Some of Us', build: buildSomeOfUs },
+  { id: 'oddlife', name: 'Oddlife', build: buildOddlife },
   { id: 'intrasport', name: 'Intrasport', build: buildIntrasport },
   { id: 'magenta-mountain', name: 'Magenta Mountain', build: buildMagentaMountain },
   { id: 'kepler-22b', name: 'Kepler-22b', build: buildKepler22b },
@@ -172,7 +172,7 @@ export const CUPS: { id: string; name: string; tracks: number[] }[] = [
   { id: 'gumboot-soup', name: 'Gumboot Soup Cup', tracks: [28, 29, 30, 31] },
   // Infest the Rats' Nest (2019), in album order: the burning Earth, the rich's colony on Mars, the ship falling at the sun, and down into Hell.
   { id: 'infest-the-rats-nest', name: "Infest the Rats' Nest Cup", tracks: [32, 33, 34, 35] },
-  // K.G. (November 2020), in album order, the four songs on it the band play most: the factory where the machines took the work, the echo chamber shrinking the mind, the friends who drifted apart, and the stadium where the losers play.
+  // K.G. (November 2020), in album order, the four songs on it the band play most: the factory where the machines took the work, the echo chamber shrinking the mind, the odd life on the road between the shows, and the stadium where the losers play.
   { id: 'kg', name: 'K.G. Cup', tracks: [36, 37, 38, 39] },
   // Omnium Gatherum (April 2022): the pink mountain, the ocean planet, the goblin's garden, and the pliosaur.
   { id: 'omnium-gatherum', name: 'Omnium Gatherum Cup', tracks: [40, 41, 42, 43] },
