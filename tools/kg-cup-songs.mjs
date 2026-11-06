@@ -1,19 +1,17 @@
 // The K.G. Cup's remixes, written in seqbaby (Minimum Brain Size's is in
 // tools/minimum-brain-size-songs.mjs).
 //
-// Six cues, the cup's three other songs from K.G. (2020), each a lap cut and a
+// Four cues, two of the cup's other songs from K.G. (2020), each a lap cut and a
 // faster final-lap cut (busier drums, the hook up front):
 //
 //   automation-remix(-final-lap)    "Automation"
-//   some-of-us-remix(-final-lap)    "Some of Us"
 //   intrasport-remix(-final-lap)    "Intrasport"
 //
 // Transcribed from the band's own live recordings, the ones the game streams
 // for Track song (public/music/bootlegs.json): Automation from Live in Athens
 // '25 (the soundboard of 4 June 2025, track 2, the music 3.5-220.5 s), with
 // Live at The Caverns '23 (2 June 2023, 0-197.5 s) as a check on the tempo;
-// Some of Us from Live In Sydney '21 (22 April 2021, track 12, 0-205.5 s, the
-// only recording of it the catalogue keeps); Intrasport from Live at Field of
+// Intrasport from Live at Field of
 // Vision '25 (the soundboard of 15 August 2025, track 7, 1.5-227.5 s). No tab
 // could be reached, so it is the recordings alone, and no audio from them
 // goes in: these are notes. K.G. is the second of the band's microtonal
@@ -300,86 +298,7 @@ const AUTOMATION = {
 };
 
 // ---------------------------------------------------------------------------
-// 2. Some of Us (remix): the slow sway, the riff turning in threes.
-//
-// Measured (Live In Sydney '21, 237 s, the music 0-205.5 s): 88.1 bpm (a
-// beat of 0.681 s over the whole song, 87.6 to 89.1 in 30 s windows; the
-// onset autocorrelation's sixteenth 0.174 s, beat 0.673 s, and peaks at three
-// beats, 2.043 s, and four, 2.728 s). The harmony repeats every six beats
-// (the beat-by-beat constant-Q spectrum's similarity peaks at lags of 6, 12,
-// 18, 24 and 30 beats, and the chroma changes fall on the first and fourth
-// beat of the six), the bass moves every three, and the snare hits two, four
-// and six: so a bar of 6/4, the riff turning in threes against the backbeat
-// in twos. Key: a drone round G, F#, G and G# almost equally strong (0.118,
-// 0.110, 0.101), C# next (0.098): the 24-tone guitars' G between F# and G#,
-// with the tritone C# and F under it in the bass (Krumhansl reads it as F#
-// minor, weakly, 0.55). Section map (bars of six beats):
-//   verse        1-54 s    the drone on G: the bass G-A-B-G | F#-G-C#-A#-G,
-//                          the guitar climbing E-F-F#-G-G#-A
-//   break       54-70 s    F# G B | C# F# E, the drums dropping out, the
-//                          voice F#4-B4-C#5
-//   verse      70-131 s    the drone again
-//   break     131-148 s    the same turn
-//   outro     148-205 s    the drone to the end
-// Lap 88.1 bpm, final lap 94.1. Six sections of four 6/4 bars (each eight of
-// the band's bars of three). A Motown bass, a jangle guitar on the riff, a
-// singing lead guitar on the voice's line, an electric piano on the chords,
-// "some of us" on the choir, the chip arp on the beats; the salamander kit.
-// ---------------------------------------------------------------------------
-
-const SU_T = {
-  verse: { bars: 1, chords: ['G'], tones: ['G F# G#'],
-    bass: { s: 'X__x___x_x__X_xx_xx_____', n: 'G1 A1 B1 G1 F#1 G1 C#2 A#1 G1' },
-    riff: { s: 'x_x_x_x__x__x_x_x_x__x__', n: 'G3 E3 F3 F#3 G#3 F#3 E3 G3 F#3 A3' },
-    lead: { s: 'X___________x_____x_____', n: 'G4 F#4 E4' },
-    chant: say('X_____x_x_______________', 'G4 F#4 E4', 'some of us') },
-  brk: { bars: 2, chords: ['F# G B', 'C# F# E'], tones: ['F# G B', 'C# F# E'],
-    bass: { s: 'X__x__x__X___x_x_x_x____ X__x_x__X___x_x_x_x__x__', n: 'F#1 G1 A1 B1 C#2 G1 D2 G1 B1 C#2 F#1 G1 C#2 G1 F1 G#1 E1' },
-    riff: { s: 'X___________X___________ X___________X___________', n: 'F#3 B3 C#4 E3' },
-    lead: { s: 'X_______x_____x_x_______ x___x_____x_____x_______', n: 'C#5 B4 B4 F#4 F#4 A4 C#5 C#5' } },
-};
-
-const SOME_OF_US = {
-  meter: '6/4', spb: 24, rot: 0, bpm: 88.1, finalPlus: 6, mix: 0.8, finalMix: 0.77,
-  arp: 'x...x...x...x...x...x...',
-  tracks: [
-    ...drums({ hihat: 0.6 }),
-    ebass('motown', 0.84),
-    { name: 'guitar', engine: 'dm:guitar', preset: 'jangle', params: { vol: 0.42, decay: 0.5 }, out: 'verb' },
-    { name: 'lead', engine: 'dm:guitar', preset: 'singing lead', params: { vol: 0.3 }, out: 'verb', glide: 0.05 },
-    choir(0.5, 'angel ooh'),
-    chip(0.13),
-    pad('epiano', 0.24),
-    verbBus(2.8, 0.32, 0.2),
-  ],
-  grooves: {
-    // The backbeat in twos under the riff's threes: the kick on one, three and five, the snare on two, four and six.
-    groove: (final) => final
-      ? { kick: 'X.......X.....x.X.....x.', snare: '....X.......X.......X..o', hat: 'x.xxx.xxx.xxx.xxx.xxx.xx', 'open hat': '..........x...........x.' }
-      : { kick: 'X.......X.......X.......', snare: '....X.......X.......X...', hat: 'x.x.x.x.x.x.x.x.x.x.x.x.' },
-    // The break: the drums thin out to the kick and the ride.
-    half: (final) => ({ kick: 'X...........X...........', snare: final ? '....X...........X.......' : '', ride: 'x.......x.......x.......' }),
-  },
-  fill: { kick: 'X.......X.......X.......', snare: '....X.......X.....x.rrRR', hat: 'x.x.x.x.x.x.x.x.........', 'open hat': '', ride: '', 'tom hi': '................x.x.....', 'tom lo': '..................x.x...' },
-  order: ['verse', 'verse2', 'brk', 'verse3', 'brk2', 'outro'],
-  finalOrder: ['verse2', 'brk', 'verse3', 'brk2', 'verse', 'outro'],
-  sections(final) {
-    const T = SU_T;
-    const s = (k, o) => sec(this, T, k, final, o);
-    const up1 = (k, line) => up(bare(tile4(this, T[k], line)), 1);
-    return {
-      verse: s('verse', { drums: final ? 'groove' : 'half', use: { lead: null }, extra: { voice: null } }),
-      verse2: s('verse', { use: { lead: null } }),
-      verse3: s('verse', { extra: { 'chip lead': up1('verse', 'riff') } }),
-      brk: s('brk', { drums: 'half' }),
-      brk2: s('brk', { extra: { 'chip lead': up1('brk', 'lead') } }),
-      outro: s('verse', { extra: { 'chip lead': up1('verse', 'lead') } }),
-    };
-  },
-};
-
-// ---------------------------------------------------------------------------
-// 3. Intrasport (remix): the house track, four on the floor.
+// 2. Intrasport (remix): the house track, four on the floor.
 //
 // Measured (Live at Field of Vision '25, the soundboard, 236 s, the music
 // 1.5-227.5 s): 110.8 bpm in 4/4 (a beat of 0.542 s over the whole song,
@@ -466,6 +385,5 @@ const INTRASPORT = {
 
 export const SONGS = [
   ...cue('automation', 'automation-remix', AUTOMATION),
-  ...cue('some of us', 'some-of-us-remix', SOME_OF_US),
   ...cue('intrasport', 'intrasport-remix', INTRASPORT),
 ];

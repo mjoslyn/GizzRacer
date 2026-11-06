@@ -1238,20 +1238,6 @@
     "loopSamples": 3204238,
     "sampleRate": 44100
   },
-  "some-of-us-remix": {
-    "title": "some of us (remix)",
-    "bpm": 88.1,
-    "bars": 24,
-    "loopSamples": 4324904,
-    "sampleRate": 44100
-  },
-  "some-of-us-remix-final-lap": {
-    "title": "some of us (remix, final lap)",
-    "bpm": 94.1,
-    "bars": 24,
-    "loopSamples": 4049139,
-    "sampleRate": 44100
-  },
   "intrasport-remix": {
     "title": "intrasport (remix)",
     "bpm": 110.8,

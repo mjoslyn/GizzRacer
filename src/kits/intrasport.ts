@@ -71,7 +71,7 @@ declare module '../tracks/builder' {
  * out of, the hole still open behind the needle: threaded, a boost.
  */
 /** The needles' tempo: the song's four on the floor, which the whole world pumps to too. */
-export const NEEDLE_BPM = 125;
+export const NEEDLE_BPM = 110.8;
 export const NEEDLE_STITCHES = 6;
 /** The share of each beat the needle is down in the road. */
 export const NEEDLE_DOWN = 0.36;
