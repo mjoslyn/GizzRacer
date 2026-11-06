@@ -100,7 +100,7 @@ export const TRACK_SONGS: Record<string, TrackSong> = {
   'billabong-valley': { title: 'Billabong Valley', ...FMB },
   'minimum-brain-size': { title: 'Minimum Brain Size', ...KG },
   automation: { title: 'Automation', ...KG },
-  'some-of-us': { title: 'Some of Us', ...KG },
+  oddlife: { title: 'Oddlife', ...KG },
   intrasport: { title: 'Intrasport', ...KG },
 };
 
