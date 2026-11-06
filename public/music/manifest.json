@@ -1251,5 +1251,19 @@
     "bars": 32,
     "loopSamples": 2850909,
     "sampleRate": 44100
+  },
+  "oddlife-remix": {
+    "title": "oddlife (remix)",
+    "bpm": 110.6,
+    "bars": 32,
+    "loopSamples": 3062278,
+    "sampleRate": 44100
+  },
+  "oddlife-remix-final-lap": {
+    "title": "oddlife (remix, final lap)",
+    "bpm": 118.6,
+    "bars": 32,
+    "loopSamples": 2855717,
+    "sampleRate": 44100
   }
 }
