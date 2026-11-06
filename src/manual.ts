@@ -37,7 +37,7 @@ fill(
 
 fill(
   'racers',
-  RACERS.map((r) => {
+  RACERS.filter((r) => !r.boss).map((r) => {
     const bars = STATS.map((k) => `<div class="stat"><span>${k}</span><i style="width:${r.stats[k] * 20}%;background:${hex(r.color)}"></i></div>`).join('');
     return `<article class="racer" style="--c:${hex(r.color)};--a:${hex(r.accent)}"><h3>${esc(r.name)}</h3><p>${esc(r.bio)}</p><div class="stats">${bars}</div></article>`;
   }).join(''),

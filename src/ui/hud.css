@@ -3847,6 +3847,29 @@ body:not(.split) .seat-hud {
   box-shadow: inset 0 3px 0 var(--racer), 0 0 0 3px #ffd23a, 0 0 14px 3px rgba(255, 210, 58, 0.7);
 }
 
+/* A story boss still locked: a black silhouette rimmed in its colour, and how to unlock it. */
+.menu .menu-racers .menu-tile.locked {
+  background: radial-gradient(ellipse at 50% 70%, color-mix(in srgb, var(--racer) 35%, transparent), rgba(12, 2, 20, 0.95) 70%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), 0 0 0 2px #3a0f45;
+  cursor: help;
+}
+
+.menu .menu-racers .menu-tile.locked img {
+  filter: brightness(0) drop-shadow(0 0 3px var(--racer));
+  opacity: 0.9;
+}
+
+.menu .menu-racers .menu-tile.locked span {
+  white-space: normal;
+  font-size: 8.5px;
+  line-height: 1.1;
+  color: #d8c8e8;
+}
+
+.menu .menu-locked-note {
+  color: #ffd23a;
+}
+
 /* Modes: an icon over the name. */
 .menu .menu-modes .menu-tile {
   flex-direction: column;

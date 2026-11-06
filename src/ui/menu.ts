@@ -1,5 +1,5 @@
 import { dailyLabel, dailyParams } from '../core/daily';
-import { cupTrophies, progress, raceKey, unlocks, type Unlocks } from '../core/progress';
+import { bossUnlocked, cupTrophies, playableRacers, progress, raceKey, unlocks, type Unlocks } from '../core/progress';
 import { g, kbOrPad } from './padNav';
 import { SONG_END_SOUNDTRACKS, SOUNDTRACKS, SOUNDTRACK_BLURBS, SOUNDTRACK_NAMES, VIDEO_LOOKS, settings, updateSettings } from '../core/settings';
 import type { SavedTrack } from '../core/savedTracks';
@@ -8,7 +8,7 @@ import { MODE_BLURBS, MODE_NAMES, type RaceMode } from './modes';
 import { MODE_ICONS, RANDOM_CUP_ICON } from './modeIcons';
 import { chosenShow, onShows, randomShow, showSelect, shows, stepShow } from '../audio/shows';
 import { formatTime } from './hud';
-import { ENGINE_CLASSES, RACERS, type EngineClass, type RacerDef } from '../physics/racers';
+import { ENGINE_CLASSES, RACERS, bossLockNote, type EngineClass, type RacerDef } from '../physics/racers';
 import { GEN_COMPLEXITY_MAX, GEN_LENGTHS, GEN_THEMES, GEN_THEME_NAMES, trackName, type GenParams } from '../tracks/generator';
 import { CUPS, RANDOM_CUP_ID, RANDOM_CUP_NAME, TRACK_LIST, randomCupTracks } from '../tracks/index';
 import { SKILLS, SKILL_KINDS, type SkillKind } from '../core/skills';
@@ -113,6 +113,8 @@ export class Menu {
   choice: MenuChoice;
   /** Each racer's picture for the grid (render/portraits.ts), as they arrive. */
   private readonly portraits = new Map<string, string>();
+  /** A locked boss's tile just tapped: its note shows under the stats until another pick. */
+  private lockedPeek: RacerDef | null = null;
 
   constructor(
     parent: HTMLElement,
@@ -319,6 +321,12 @@ export class Menu {
     if (!(i >= 0 && i < this.gridCount(row))) return;
     if (tapped && i === this.gridIndex(row)) return this.next();
     const c = this.choice;
+    this.lockedPeek = null;
+    if (row === 'racer' && !bossUnlocked(RACERS[i].id)) {
+      // A boss still locked: it says how to unlock it, and the pick stays where it was.
+      this.lockedPeek = RACERS[i];
+      return this.render();
+    }
     if (row === 'mode') {
       // Another mode has its own screens: back to the first.
       c.mode = MODES[i];
@@ -372,11 +380,11 @@ export class Menu {
    * it again to go on. `groups` puts a heading across the grid before the
    * tile at each index (the tracks, by album).
    */
-  private tiles(row: MenuRow, cls: string, items: { label: string; id?: string; img?: string; art?: string; style?: string; badge?: string }[], groups: { at: number; label: string }[] = []): string {
+  private tiles(row: MenuRow, cls: string, items: { label: string; id?: string; img?: string; art?: string; style?: string; badge?: string; cls?: string }[], groups: { at: number; label: string }[] = []): string {
     const on = this.gridIndex(row);
     const html = items.map((t, i) => {
       const group = groups.find((g) => g.at === i);
-      return `${group ? `<div class="menu-tiles-group">${esc(group.label)}</div>` : ''}<button class="menu-tile${i === on ? ' on' : ''}" data-pick="${row}:${i}"${t.id ? ` data-tile-id="${t.id}"` : ''}${t.style ? ` style="${t.style}"` : ''} title="${esc(t.label)}">${t.art ?? ''}${t.img ? `<img src="${t.img}" alt="" loading="lazy" onerror="this.remove()" />` : ''}<span>${esc(t.label)}</span>${t.badge ?? ''}</button>`;
+      return `${group ? `<div class="menu-tiles-group">${esc(group.label)}</div>` : ''}<button class="menu-tile${i === on ? ' on' : ''}${t.cls ? ` ${t.cls}` : ''}" data-pick="${row}:${i}"${t.id ? ` data-tile-id="${t.id}"` : ''}${t.style ? ` style="${t.style}"` : ''} title="${esc(t.label)}">${t.art ?? ''}${t.img ? `<img src="${t.img}" alt="" loading="lazy" onerror="this.remove()" />` : ''}<span>${esc(t.label)}</span>${t.badge ?? ''}</button>`;
     });
     return `<div class="menu-tiles ${cls}" data-grid="${row}">${html.join('')}</div>`;
   }
@@ -390,7 +398,7 @@ export class Menu {
 
   /** Picks a racer at random (the racer row's dice, or R). */
   randomRacer(): void {
-    const others = RACERS.filter((r) => r !== this.choice.racer);
+    const others = playableRacers().filter((r) => r !== this.choice.racer);
     this.choice.racer = others[Math.floor(Math.random() * others.length)];
     this.render();
     this.onChange(this.choice, 'racer');
@@ -423,6 +431,7 @@ export class Menu {
   private change(dir: number): void {
     const c = this.choice;
     const row = this.rows()[this.row];
+    this.lockedPeek = null;
     const step = <T>(list: readonly T[], v: T) => list[(list.indexOf(v) + dir + list.length) % list.length];
     const g = c.gen;
     // Turning a dial on a saved track starts a new one from it.
@@ -475,7 +484,7 @@ export class Menu {
     else if (row === 'complexity') dial(() => (g.params = { ...g.params, complexity: Math.min(GEN_COMPLEXITY_MAX, Math.max(1, g.params.complexity + dir)) }));
     else if (row === 'length') dial(() => (g.params = { ...g.params, length: step(GEN_LENGTHS, g.params.length) }));
     else if (row === 'track') c.track = (c.track + dir + TRACK_LIST.length) % TRACK_LIST.length;
-    else if (row === 'racer') c.racer = step(RACERS, c.racer);
+    else if (row === 'racer') c.racer = step(playableRacers(), c.racer);
     else c.engine = step(availableClasses(), c.engine);
     this.render();
     this.revealPicked();
@@ -551,11 +560,18 @@ export class Menu {
       const hex = (n: number) => `#${n.toString(16).padStart(6, '0')}`;
       const stats = STAT_NAMES.map((k) => `<div class="menu-stat"><span>${k}</span><i style="width:${c.racer.stats[k] * 20}%;background:${hex(c.racer.color)}"></i></div>`).join('');
       // Every racer at once, a tile each: its picture once drawn, its colour until then.
-      const tiles = this.tiles('racer', 'menu-racers', RACERS.map((r) => ({ label: r.name, id: r.id, img: this.portraits.get(r.id), style: `--racer:${hex(r.color)}` })));
+      // A boss still locked is a silhouette saying how to unlock it.
+      const tiles = this.tiles(
+        'racer',
+        'menu-racers',
+        RACERS.map((r) => (bossUnlocked(r.id) ? { label: r.name, id: r.id, img: this.portraits.get(r.id), style: `--racer:${hex(r.color)}` } : { label: bossLockNote(r), id: r.id, img: this.portraits.get(r.id), style: `--racer:${hex(r.accent)}`, cls: 'locked' })),
+      );
+      const peek = this.lockedPeek;
+      const bio = peek ? `<div class="menu-bio menu-locked-note">${esc(bossLockNote(peek))}</div>` : `<div class="menu-bio">${c.racer.bio}</div>`;
       body =
         (c.mode === 'infinite' && c.watch
           ? ''
-          : pickRow('racer', `${c.racer.name}${c.mode === 'online' ? '' : DICE('data-random', 'Random racer (R)')}`, `<div class="menu-stats">${stats}</div>`, tiles, `<div class="menu-bio">${c.racer.bio}</div>`)) +
+          : pickRow('racer', `${c.racer.name}${c.mode === 'online' ? '' : DICE('data-random', 'Random racer (R)')}`, `<div class="menu-stats">${stats}</div>`, tiles, bio)) +
         (c.mode === 'infinite'
           ? line('watch', 'Drive', c.watch ? 'Watch' : 'Race', `<div class="menu-cup-tracks">${c.watch ? 'The CPUs race, you watch: the camera follows one and moves on now and then; &larr;&rarr; or a tap picks another' : 'You race the CPUs, lap after lap. Or Watch: the CPUs race to the music'}</div>`, true)
           : '');

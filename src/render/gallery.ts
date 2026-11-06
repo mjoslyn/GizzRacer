@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { damp, wrapAngle } from '../core/math';
 import { createKartState, type KartState } from '../physics/kart';
+import { bossUnlocked } from '../core/progress';
 import { RACERS, type RacerDef } from '../physics/racers';
 import { KartView } from './kartView';
 import { glowTexture, skyTexture } from './textures';
@@ -72,6 +73,8 @@ export class RacerGallery {
 
   /** Turns the carousel to `racer` (the long way never: always the short way round). */
   focus(racer: RacerDef, snap = false): void {
+    // A story boss not yet beaten stands on its plinth in silhouette.
+    for (const s of this.stands) if (s.racer.boss) s.view.silhouette(!bossUnlocked(s.racer.id));
     const i = Math.max(0, this.stands.findIndex((s) => s.racer.id === racer.id));
     if (i !== this.selected) this.spin = 0;
     this.selected = i;

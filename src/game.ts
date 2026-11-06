@@ -19,8 +19,7 @@ import { LeaderboardPanel } from './ui/leaderboard';
 import { RecordsPanel } from './ui/recordsPanel';
 import { NamePrompt } from './ui/namePrompt';
 import { cupBoard, cupTimeBoard, postRecord, raceBoard } from './net/records';
-import * as progress from './core/progress';
-import { foundShortcut, recordCup, recordCupTime, recordRace, recordStyle } from './core/progress';
+import { beatBoss, bossUnlocked, foundShortcut, recordCup, recordCupTime, recordRace, recordStyle } from './core/progress';
 import { StyleMeter, driftMove } from './core/style';
 import { SURGE_CLOSE, SURGE_CLOSING, SURGE_FAST } from './items/items';
 import { LobbyScreen } from './ui/lobby';
@@ -891,16 +890,19 @@ function chooseInfiniteTrack(step: number): void {
   if (!generate) choice.track = menu.choice.track = (choice.track + step) % TRACK_LIST.length;
 }
 
+/** A story boss joins the CPU draw once this player has beaten it (core/progress.ts). */
+const unlockedBoss = (r: RacerDef) => bossUnlocked(r.id);
+
 /** CPUs drawn from the roster by `seed` fill the field; the player starts from PLAYER_SLOT. */
 function defaultGrid(racer: RacerDef | null, seed: number): RacerDef[] {
-  const grid = pickRivals(new Set(racer ? [racer.id] : []), racer ? FIELD_SIZE - 1 : FIELD_SIZE, seed);
+  const grid = pickRivals(new Set(racer ? [racer.id] : []), racer ? FIELD_SIZE - 1 : FIELD_SIZE, seed, unlockedBoss);
   if (racer) grid.splice(Math.min(PLAYER_SLOT, grid.length), 0, racer);
   return grid;
 }
 
 /** Party mode's grid: the players side by side from PLAYER_SLOT, CPUs drawn by `seed` round them. */
 function partyGrid(humans: RacerDef[], seed: number): RacerDef[] {
-  const grid = pickRivals(new Set(humans.map((r) => r.id)), Math.max(0, FIELD_SIZE - humans.length), seed);
+  const grid = pickRivals(new Set(humans.map((r) => r.id)), Math.max(0, FIELD_SIZE - humans.length), seed, unlockedBoss);
   grid.splice(Math.min(PLAYER_SLOT, grid.length), 0, ...humans);
   return grid;
 }
@@ -1786,14 +1788,9 @@ function newStory(id: string): StoryRun {
   return run;
 }
 
-/**
- * Unlocks a boss racer once it's beaten: progress.ts's beatBoss, from the
- * boss racers' workstream. Read off the module so this builds before that
- * lands (a no-op until it does).
- */
+/** Unlocks a boss racer once it's beaten: true if newly. */
 function unlockBoss(racerId: string): boolean {
-  const beat = (progress as unknown as { beatBoss?: (id: string) => boolean }).beatBoss;
-  return beat ? beat(racerId) : false;
+  return beatBoss(racerId);
 }
 
 /** Scores the stage just played and shows what comes of it: a boon to take, or straight on when there's none (a card read). */

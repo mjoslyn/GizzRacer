@@ -17,6 +17,25 @@ export interface RacerDef {
   accent: number;
   /** One line of who they are in the Gizzverse, for the picker. */
   bio: string;
+  /** A story suite's boss (its suite id): locked until beaten there (core/progress.ts bossUnlocked). */
+  boss?: string;
+}
+
+/** The story suites with a boss at the end, by id: for "Beat <suite> to unlock". */
+export const BOSS_SUITES: Readonly<Record<string, string>> = {
+  'mind-fuzz': 'The Mind Fuzz Suite',
+  'nonagon-infinity': 'Nonagon Infinity',
+  'altered-beast': 'The Tale of the Altered Beast',
+  'lord-of-lightning': 'The Lord of Lightning vs. Balrog',
+  'han-tyumi': 'Han-Tyumi and the Murder of the Universe',
+  polygondwanaland: 'Polygondwanaland',
+  'infest-the-rats-nest': "Infest the Rats' Nest",
+  'petrodragonic-apocalypse': 'PetroDragonic Apocalypse',
+};
+
+/** What a locked boss's tile says: "Beat <suite name> to unlock". */
+export function bossLockNote(r: RacerDef): string {
+  return r.boss ? `Beat ${BOSS_SUITES[r.boss] ?? r.boss} to unlock` : '';
 }
 
 export const RACERS: readonly RacerDef[] = [
@@ -45,14 +64,28 @@ export const RACERS: readonly RacerDef[] = [
   { id: 'joey-walker', name: 'Joey', stats: { speed: 3, accel: 3, weight: 2, handling: 4, drift: 3 }, color: 0xe85a9a, accent: 0x3adcff, bio: 'A modular-synth buggy patched up with the Silver Cord, signed Yikes' },
   { id: 'lucas-harwood', name: 'Lukey', stats: { speed: 4, accel: 2, weight: 4, handling: 2, drift: 3 }, color: 0x8a5a3a, accent: 0xd84a2a, bio: 'An 8x10 bass cab on wheels: superheavy, supercritical low end' },
   { id: 'stu-mackenzie', name: 'Stu', stats: { speed: 3, accel: 3, weight: 3, handling: 3, drift: 4 }, color: 0xf4d23a, accent: 0x7a2a8a, bio: 'On the Flying Microtonal Banana, a flute on his back for the Sleep Drifter' },
+  // The story suites' bosses, each locked until beaten. Bigger and stranger than the rest, but no faster on paper: a duel's edge is the story's CPU pace.
+  { id: 'mind-voice', name: 'The Voice in Your Mind', boss: 'mind-fuzz', stats: { speed: 3, accel: 3, weight: 2, handling: 5, drift: 3 }, color: 0xd83ab0, accent: 0x7aff5a, bio: 'A brain under glass with one great eye, riding a spinning spiral of fuzz: when I\'m in your mind, then I\'m in your mind' },
+  { id: 'people-vulture', name: 'The People-Vulture', boss: 'nonagon-infinity', stats: { speed: 4, accel: 3, weight: 2, handling: 3, drift: 4 }, color: 0x2a2230, accent: 0xe8a0a0, bio: 'A vulture with a man\'s bald head, perched on a stage monitor: waiting by your stage, crowding at your door' },
+  { id: 'altered-beast', name: 'The Altered Beast', boss: 'altered-beast', stats: { speed: 4, accel: 2, weight: 5, handling: 2, drift: 3 }, color: 0x6a3a8a, accent: 0xc8ff3a, bio: 'Half made of man, half of bear: nine white teeth, a knife for a left hand and a fork for the right, trampling the earth on all fours' },
+  { id: 'balrog', name: 'The Balrog', boss: 'lord-of-lightning', stats: { speed: 5, accel: 2, weight: 4, handling: 1, drift: 4 }, color: 0xc8260e, accent: 0x3a6aff, bio: 'Glowing red and lapis hot, screaming through the rift the split atom tore: it fears not the lightning lord' },
+  { id: 'munt-machine', name: 'The Soy-Protein Munt Machine', boss: 'han-tyumi', stats: { speed: 3, accel: 2, weight: 5, handling: 3, drift: 3 }, color: 0xd8c08a, accent: 0x7ad83a, bio: 'Han-Tyumi\'s human machine, made with steel and soy-protein: born from a test tube and into a vat, to live and to heave' },
+  { id: 'castle-king', name: 'The King of the Castle in the Air', boss: 'polygondwanaland', stats: { speed: 4, accel: 2, weight: 4, handling: 3, drift: 3 }, color: 0x5a4ac8, accent: 0xffd84a, bio: 'His head grows beneath his shoulders: smooth sailing through the castle in the air, over the monopods and the one-eyed people' },
+  { id: 'the-devil', name: 'The Devil', boss: 'infest-the-rats-nest', stats: { speed: 4, accel: 4, weight: 3, handling: 2, drift: 3 }, color: 0xb0141e, accent: 0xffa81a, bio: 'Pretty hot down here undersurface: wings and tail and spines, a thousand flies, and the door to hell is amber' },
+  { id: 'coven-mother', name: 'The Mother of the Coven', boss: 'petrodragonic-apocalypse', stats: { speed: 3, accel: 3, weight: 2, handling: 4, drift: 4 }, color: 0x2a1a3a, accent: 0xff3a3a, bio: 'Antlers draped in ribbons, the blood-moon at her back and taxidermy with eyes of fire on her altar: witchcraft' },
 ];
 
 /** Karts in one race: the player (or the room's players) and CPUs drawn from the roster. */
 export const FIELD_SIZE = 12;
 
-/** `count` racers not in `taken`, drawn and ordered by `seed`: a seed always draws the same rivals. */
-export function pickRivals(taken: ReadonlySet<string>, count: number, seed: number): RacerDef[] {
-  const pool = RACERS.filter((r) => !taken.has(r.id));
+/**
+ * `count` racers not in `taken`, drawn and ordered by `seed`: a seed always
+ * draws the same rivals. Bosses only where `boss` lets them in (the ones
+ * this player has beaten: core/progress.ts bossUnlocked); none by default,
+ * so a room's server never puts one on anyone's grid.
+ */
+export function pickRivals(taken: ReadonlySet<string>, count: number, seed: number, boss: (r: RacerDef) => boolean = () => false): RacerDef[] {
+  const pool = RACERS.filter((r) => !taken.has(r.id) && (!r.boss || boss(r)));
   const rand = seededRandom(seed);
   for (let i = pool.length - 1; i > 0; i--) {
     const j = Math.floor(rand() * (i + 1));
