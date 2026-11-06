@@ -1223,5 +1223,47 @@
     "bars": 32,
     "loopSamples": 3346719,
     "sampleRate": 44100
+  },
+  "automation-remix": {
+    "title": "automation (remix)",
+    "bpm": 97.7,
+    "bars": 32,
+    "loopSamples": 3466612,
+    "sampleRate": 44100
+  },
+  "automation-remix-final-lap": {
+    "title": "automation (remix, final lap)",
+    "bpm": 105.7,
+    "bars": 32,
+    "loopSamples": 3204238,
+    "sampleRate": 44100
+  },
+  "some-of-us-remix": {
+    "title": "some of us (remix)",
+    "bpm": 88.1,
+    "bars": 24,
+    "loopSamples": 4324904,
+    "sampleRate": 44100
+  },
+  "some-of-us-remix-final-lap": {
+    "title": "some of us (remix, final lap)",
+    "bpm": 94.1,
+    "bars": 24,
+    "loopSamples": 4049139,
+    "sampleRate": 44100
+  },
+  "intrasport-remix": {
+    "title": "intrasport (remix)",
+    "bpm": 110.8,
+    "bars": 32,
+    "loopSamples": 3056751,
+    "sampleRate": 44100
+  },
+  "intrasport-remix-final-lap": {
+    "title": "intrasport (remix, final lap)",
+    "bpm": 118.8,
+    "bars": 32,
+    "loopSamples": 2850909,
+    "sampleRate": 44100
   }
 }

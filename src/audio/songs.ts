@@ -178,6 +178,9 @@ export const TRANSCRIBED: Record<string, { recording: string; release: string }>
   empty: { recording: 'Empty', release: "Live at Field of Vision '25, the soundboard mix" },
   'billabong-valley': { recording: 'Billabong Valley', release: "Live in Sydney '25, the soundboard mix" },
   'minimum-brain-size': { recording: 'Minimum Brain Size', release: "Live in New York City '25 (Rock Night), the soundboard mix" },
+  automation: { recording: 'Automation', release: "Live in Athens '25, the soundboard mix" },
+  'some-of-us': { recording: 'Some of Us', release: "Live In Sydney '21" },
+  intrasport: { recording: 'Intrasport', release: "Live at Field of Vision '25, the soundboard mix" },
 };
 
 const FINAL = '-final-lap';
