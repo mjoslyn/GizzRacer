@@ -1,5 +1,6 @@
 import { RACERS, type RacerDef } from '../physics/racers';
 import { availableClasses } from './menu';
+import { playableRacers } from '../core/progress';
 import { identity, setName } from '../net/identity';
 import { isRoomCode, makeRoomCode, type RoomSettings, type RoomStart, type RoomState } from '../net/protocol';
 import { RoomClient } from '../net/room';
@@ -170,14 +171,15 @@ export class LobbyScreen {
     const host = me?.host ?? false;
     const dir = Number(t.closest<HTMLElement>('[data-dir]')?.dataset.dir ?? 0);
     if (act === 'racer' && me) {
-      // Step to the next racer nobody else has.
+      // Step to the next racer nobody else has, of the ones this player has (the bosses only once beaten).
+      const pool = playableRacers();
       const taken = new Set(s.members.filter((m) => m !== me).map((m) => m.racerId));
-      let i = RACERS.findIndex((r) => r.id === me.racerId);
-      for (let k = 0; k < RACERS.length; k++) {
-        i = (i + dir + RACERS.length) % RACERS.length;
-        if (!taken.has(RACERS[i].id)) break;
+      let i = pool.findIndex((r) => r.id === me.racerId);
+      for (let k = 0; k < pool.length; k++) {
+        i = (i + dir + pool.length) % pool.length;
+        if (!taken.has(pool[i].id)) break;
       }
-      c.send({ t: 'racer', racerId: RACERS[i].id });
+      c.send({ t: 'racer', racerId: pool[i].id });
     } else if (act === 'track' && host) {
       c.send({ t: 'settings', settings: { track: (s.settings.track + dir + TRACK_LIST.length) % TRACK_LIST.length } });
     } else if (act === 'engine' && host) {

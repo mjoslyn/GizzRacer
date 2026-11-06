@@ -177,7 +177,7 @@ export class Room extends Server<Env> {
     const wanted = existing?.racerId ?? msg.racerId;
     room.members[msg.playerId] = {
       name,
-      racerId: !taken.has(wanted) && RACERS.some((r) => r.id === wanted) ? wanted : (RACERS.find((r) => !taken.has(r.id))?.id ?? RACERS[0].id),
+      racerId: !taken.has(wanted) && RACERS.some((r) => r.id === wanted) ? wanted : (RACERS.find((r) => !r.boss && !taken.has(r.id))?.id ?? RACERS[0].id),
       ready: existing?.ready ?? false,
       joined: existing?.joined ?? Date.now(),
       ping: existing?.ping ?? 0,

@@ -64,6 +64,22 @@ const TRICKS: Record<string, TrickMove> = {
   'lord-of-lightning': (u, d) => [0, d * u * TAU * 3, Math.sin(u * TAU * 3) * 0.15, Math.sin(u * Math.PI) * 1.2],
   // A strike: it coils, springs up and spins.
   rattlesnake: (u, d) => [Math.sin(u * Math.PI) * 0.4, d * u * TAU * 2, 0, Math.sin(u * Math.PI) * 0.9],
+  // The story bosses. The Voice: a hypnotic spin, four slow turns with a swaying wobble.
+  'mind-voice': (u, d) => [Math.sin(u * TAU * 2) * 0.2, d * u * TAU * 4, Math.cos(u * TAU * 2) * 0.2, Math.sin(u * Math.PI) * 1.3],
+  // The People-Vulture: a swoop, banked right over and round.
+  'people-vulture': (u, d) => [-Math.sin(u * Math.PI) * 0.3, d * u * TAU, d * Math.sin(u * Math.PI) * 1.1, Math.sin(u * Math.PI) * 1.2],
+  // The Altered Beast: a lumbering pounce, up and slammed down, half a turn and back.
+  'altered-beast': (u, d) => [-Math.sin(u * Math.PI) * 0.5, d * Math.sin(u * Math.PI) * Math.PI, 0, Math.sin(u * Math.PI) * 0.8],
+  // The Balrog: up out of the rift in a slow backflip.
+  balrog: (u) => [-u * TAU, 0, 0, Math.sin(u * Math.PI) * 1.4],
+  // The Munt Machine: a heave, the whole vat rocked side to side.
+  'munt-machine': (u, d) => [0, 0, d * Math.sin(u * TAU * 2) * 0.5, Math.abs(Math.sin(u * Math.PI * 2)) * 0.7],
+  // The castle: it sails a full slow turn, pitching on the swell.
+  'castle-king': (u, d) => [Math.sin(u * TAU * 2) * 0.2, d * u * TAU, 0, Math.sin(u * Math.PI) * 1.2],
+  // The Devil: a front flip with a twist.
+  'the-devil': (u, d) => [u * TAU, d * u * TAU, 0, Math.sin(u * Math.PI) * 1.0],
+  // The Mother of the Coven: the cart turns widdershins, three times round the circle.
+  'coven-mother': (u, d) => [0, -d * u * TAU * 3, 0, Math.sin(u * Math.PI) * 1.1],
   // The band. A stage dive, all the way round.
   'stu-mackenzie': (u, d) => [-u * TAU, d * u * TAU, 0, Math.sin(u * Math.PI) * 1.1],
   // A harmonica blast that spins him like a top.
@@ -88,6 +104,8 @@ export function setDustColor(color: number): void {
 }
 
 let sharedGlow: THREE.Texture | null = null;
+/** The one flat black every silhouette shares (KartView.silhouette). */
+let silhouetteMat: THREE.MeshBasicMaterial | null = null;
 let sharedShadow: THREE.Texture | null = null;
 
 interface Spark {
@@ -165,6 +183,8 @@ export class KartView {
   private wasTrick = false;
   /** 0 gone .. 1 here: dissolves on a fall, grows back out of the gate. */
   private presence = 1;
+  /** Drawn as a silhouette (a locked boss). */
+  private dark = false;
   private vanished = false;
   readonly gate = new NonagonGate();
   private readonly trickMove: TrickMove;
@@ -286,6 +306,24 @@ export class KartView {
       this.fx.add(sprite);
       this.dust.push({ sprite, vel: new THREE.Vector3(), life: 0 });
     }
+  }
+
+  /** The racer as a flat black shape, its glows out: a story boss not yet beaten, in the gallery. Off puts its own materials back. */
+  silhouette(on: boolean): void {
+    if (on === this.dark) return;
+    this.dark = on;
+    silhouetteMat ??= new THREE.MeshBasicMaterial({ color: 0x07020c });
+    this.root.traverse((o) => {
+      if (o instanceof THREE.Sprite) {
+        if (on) o.userData.litVisible = o.visible;
+        o.visible = on ? false : ((o.userData.litVisible as boolean | undefined) ?? true);
+      } else if (o instanceof THREE.Mesh && !this.flames.some((f) => f.cone === o)) {
+        if (on) {
+          o.userData.litMaterial = o.material;
+          o.material = silhouetteMat!;
+        } else if (o.userData.litMaterial) o.material = o.userData.litMaterial as THREE.Material;
+      }
+    });
   }
 
   /** Kick the suspension, e.g. on landing; a hard one throws up dust. */

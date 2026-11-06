@@ -1,5 +1,5 @@
 import { CUPS, RETIRED_CUPS } from '../tracks/index';
-import type { EngineClass } from '../physics/racers';
+import { RACERS, type EngineClass, type RacerDef } from '../physics/racers';
 
 /**
  * What the player has done, kept in this browser: a trophy per cup and
@@ -37,6 +37,8 @@ export interface Progress {
   style: Record<string, number>;
   /** Shortcuts found, as `trackId:section`. */
   shortcuts: string[];
+  /** Story bosses beaten, by racer id: each one playable from then on. */
+  bosses: string[];
 }
 
 export interface Unlocks {
@@ -48,7 +50,7 @@ export interface Unlocks {
   mirror: boolean;
 }
 
-export const EMPTY_PROGRESS: Progress = { cups: {}, cupTimes: {}, races: {}, style: {}, shortcuts: [] };
+export const EMPTY_PROGRESS: Progress = { cups: {}, cupTimes: {}, races: {}, style: {}, shortcuts: [], bosses: [] };
 
 const KEY = 'gizzracer.progress';
 const TROPHY_FOR_PLACE: Record<number, Trophy> = { 1: 'gold', 2: 'silver', 3: 'bronze' };
@@ -139,6 +141,7 @@ function load(): Progress {
       races: raw.races && typeof raw.races === 'object' ? raw.races : {},
       style: raw.style && typeof raw.style === 'object' ? raw.style : {},
       shortcuts: Array.isArray(raw.shortcuts) ? raw.shortcuts.filter((s): s is string => typeof s === 'string') : [],
+      bosses: Array.isArray(raw.bosses) ? raw.bosses.filter((s): s is string => typeof s === 'string') : [],
     };
   } catch {
     return structuredClone(EMPTY_PROGRESS);
@@ -235,4 +238,29 @@ export function foundShortcut(trackId: string, section: string): boolean {
   p.shortcuts.push(key);
   save();
   return true;
+}
+
+/**
+ * A story boss beaten (core/story.ts): it's playable from now on. True the
+ * first time, when it's newly unlocked; false for one already beaten or a
+ * racer that isn't a boss.
+ */
+export function beatBoss(racerId: string): boolean {
+  const p = (current ??= load());
+  if (!RACERS.some((r) => r.id === racerId && r.boss) || p.bosses.includes(racerId)) return false;
+  p.bosses.push(racerId);
+  save();
+  return true;
+}
+
+/** Whether a racer can be picked and drawn: every racer that isn't a boss, a boss once beaten, all of them with ?unlock. */
+export function bossUnlocked(racerId: string): boolean {
+  const r = RACERS.find((x) => x.id === racerId);
+  if (!r?.boss) return true;
+  return unlockedAll() || progress().bosses.includes(racerId);
+}
+
+/** The racers the player can pick: the roster less the bosses still locked, in roster order. */
+export function playableRacers(): RacerDef[] {
+  return RACERS.filter((r) => bossUnlocked(r.id));
 }

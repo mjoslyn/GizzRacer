@@ -2,9 +2,9 @@ import { glyph, readPad, type PadButton } from '../core/gamepad';
 import { g } from './padNav';
 import { MAX_SEATS, SEAT_COLORS, SEAT_KEYS, SEAT_KEY_NAMES, connectedPads, sameSource, sourceName, type KeySide, type SeatSource } from '../core/seatInput';
 import { CPU_DIFFICULTIES, type CpuDifficulty } from '../ai/cpuDriver';
-import { progress, unlocks } from '../core/progress';
+import { playableRacers, progress, unlocks } from '../core/progress';
 import { SOUNDTRACKS, SOUNDTRACK_NAMES, settings as gameSettings, updateSettings } from '../core/settings';
-import { RACERS, type EngineClass, type RacerDef } from '../physics/racers';
+import { type EngineClass, type RacerDef } from '../physics/racers';
 import { CUPS, RANDOM_CUP_ID, RANDOM_CUP_NAME, TRACK_LIST, randomCupTracks } from '../tracks/index';
 import { availableClasses } from './menu';
 
@@ -221,9 +221,11 @@ export class PartyScreen {
   private join(source: SeatSource): boolean {
     if (this.seats.length >= MAX_SEATS) return false;
     const taken = new Set(this.seats.map((s) => s.racer));
-    const first = this.seats.length === 0 ? this.preferred() : RACERS[Math.floor(Math.random() * RACERS.length)];
-    const start = RACERS.indexOf(first);
-    const racer = RACERS.map((_, i) => RACERS[(start + i) % RACERS.length]).find((r) => !taken.has(r)) ?? first;
+    // The racers this browser has: the bosses only once beaten.
+    const pool = playableRacers();
+    const first = this.seats.length === 0 && pool.includes(this.preferred()) ? this.preferred() : pool[Math.floor(Math.random() * pool.length)];
+    const start = pool.indexOf(first);
+    const racer = pool.map((_, i) => pool[(start + i) % pool.length]).find((r) => !taken.has(r)) ?? first;
     this.seats.push({ source, racer, ready: false });
     this.startAt = null;
     return true;
@@ -267,12 +269,13 @@ export class PartyScreen {
     const s = this.seats[i];
     if (s.ready) return;
     const taken = new Set(this.seats.filter((_, j) => j !== i).map((x) => x.racer));
-    let at = RACERS.indexOf(s.racer);
-    for (let n = 0; n < RACERS.length; n++) {
-      at = (at + dir + RACERS.length) % RACERS.length;
-      if (!taken.has(RACERS[at])) break;
+    const pool = playableRacers();
+    let at = pool.indexOf(s.racer);
+    for (let n = 0; n < pool.length; n++) {
+      at = (at + dir + pool.length) % pool.length;
+      if (!taken.has(pool[at])) break;
     }
-    s.racer = RACERS[at];
+    s.racer = pool[at];
   }
 
   private toggleReady(i: number): void {

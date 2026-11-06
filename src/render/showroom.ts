@@ -31,6 +31,10 @@ export function startShowroom(app: HTMLElement): void {
   if (only && face) {
     camera.position.set(0, 2.4, 2.4);
     camera.lookAt(0, 2.05, 0);
+  } else if (only && shown[0]?.boss) {
+    // A story boss stands taller: further back.
+    camera.position.set(0, 3.4, 9);
+    camera.lookAt(0, 1.5, 0);
   } else if (only) {
     camera.position.set(0, 2.6, 6.5);
     camera.lookAt(0, 0.9, 0);
