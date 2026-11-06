@@ -127,3 +127,17 @@ describe('story run', () => {
     });
   });
 });
+
+describe('story mode generated tracks', () => {
+  it('start at twists 3 and climb to the most, short in Chapter I and medium after', () => {
+    const run = new StoryRun(4242);
+    const got: string[] = [];
+    while (!run.finished) {
+      const st = run.race;
+      if (st.gen) got.push(`${st.act}:${st.gen.complexity}:${st.gen.length}`);
+      run.record(true);
+      if (run.offer.length) run.take(run.offer[0]);
+    }
+    expect(got).toEqual(['0:3:short', '0:4:short', '1:4:medium', '1:5:medium', '2:5:medium', '2:5:medium']);
+  });
+});

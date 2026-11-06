@@ -73,6 +73,8 @@ export const CLEAR_PLACE = 4;
 /** One life; Planet B adds more. */
 export const START_LIVES = 1;
 export const BOON_CHOICES = 3;
+/** The first race's twists (generator complexity); each race after adds one, up to the most. */
+export const STORY_TWISTS = 3;
 /** The CPUs' pace by act, over the difficulty setting's. */
 const ACT_PACE = [1, 1.015, 1.03];
 
@@ -244,15 +246,20 @@ export class StoryRun {
     return out;
   }
 
-  /** A short track in one of the act's worlds, twistier as the run goes on. */
+  /**
+   * A track in one of the act's worlds, twistier as the run goes on: twists
+   * 3 and 4 in Chapter I, 4 and 5 in Chapter II, 5 in Chapter III (so every
+   * one has a coaster and a shortcut chord, and the hazards thicken), short
+   * in Chapter I and medium after, for more of it to get wrong.
+   */
   private genParams(act: number, index: number): GenParams {
     const r = seededRandom(this.seed + act * 7919 + index * 104729);
     const themes = ACTS[act].themes;
     return {
       seed: Math.floor(r() * 1e9),
       theme: themes[Math.floor(r() * themes.length)],
-      complexity: Math.min(GEN_COMPLEXITY_MAX, 2 + act + index),
-      length: 'short',
+      complexity: Math.min(GEN_COMPLEXITY_MAX, STORY_TWISTS + act + index),
+      length: act === 0 ? 'short' : 'medium',
     };
   }
 }
