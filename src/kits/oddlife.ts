@@ -46,7 +46,7 @@ declare module '../tracks/builder' {
  * cut (AcousticBrainz). Set it to the remix's measured tempo once it's
  * transcribed.
  */
-export const ODDLIFE_BPM = 108;
+export const ODDLIFE_BPM = 110.6;
 
 /**
  * The backstage doors, "another promoter hanging in your hair, another
