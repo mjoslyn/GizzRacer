@@ -67,7 +67,7 @@ canvas { width: 100%; height: 96px; display: block; background: var(--bg); borde
 <div class="wrap">
   <header>
     <h1>Live Recording Starts</h1>
-    <p class="lede">Two minutes of each recording around where the game starts playing it, from 40 seconds before. New at the top: the All Stars Cup #2, then the Mind Fuzz and Nonagon Infinity Cups; the cups below were checked already. Listen from the marker, move it if the band isn't playing yet (or if a quiet intro of the song got cut), then keep or save it. Claude reads your choices back into the game.</p>
+    <p class="lede">Two minutes of each recording around where the game starts playing it, from 40 seconds before. New at the top: the Story mode suites, one recording a song (from one show where the band played the suite back to back); the cups below were checked already. Listen from the marker, move it if the band isn't playing yet (or if a quiet intro of the song got cut), then keep or save it. Claude reads your choices back into the game.</p>
     <div class="tally" id="tally"></div>
     <div class="notice" id="notice" hidden></div>
   </header>
@@ -114,7 +114,7 @@ function render() {
     if (it.cup !== cup) { cup = it.cup; const h = document.createElement('h2'); h.textContent = cup; listEl.append(h); song = null; }
     if (it.song !== song) {
       song = it.song; sec = document.createElement('section'); sec.className = 'song';
-      const n = ITEMS.filter((x) => x.song === song).length, c = ITEMS.filter((x) => x.song === song && state[x.key]).length;
+      const mine = ITEMS.filter((x) => x.cup === cup && x.song === song), n = mine.length, c = mine.filter((x) => state[x.key]).length;
       sec.innerHTML = `<h3>${song}<span>${c} of ${n} checked</span></h3>`; listEl.append(sec);
     }
     const row = document.createElement('div'); row.className = st === 'drop' ? 'row dropped' : 'row'; row.dataset.key = it.key;
