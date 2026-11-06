@@ -144,23 +144,29 @@ export function standTexture(): THREE.CanvasTexture {
   return finish(c);
 }
 
-/** The barrier: the LED boards round the pitch, black, the song's word and its colours crawling along them. */
+/** The barrier: the LED boards round the pitch, black, the song's colours crawling along them in chevrons. */
 export function ledBoardTexture(): THREE.CanvasTexture {
   const W = 512;
   const H = 64;
   const [c, ctx] = kit.canvas(W, H);
   ctx.fillStyle = '#05040a';
   ctx.fillRect(0, 0, W, H);
-  const words = ['INTRASPORT', 'INTRA', 'INTRASPORT', 'LOOK AT ME NOW'];
-  ctx.font = "900 34px 'Arial Black', Impact, sans-serif";
-  ctx.textBaseline = 'middle';
-  words.forEach((w, k) => {
-    const color = hex(RAVE[k % RAVE.length]);
+  for (let k = 0; k < 16; k++) {
+    const color = hex(RAVE[Math.floor(k / 4) % RAVE.length]);
     ctx.fillStyle = color;
     ctx.shadowColor = color;
     ctx.shadowBlur = 10;
-    ctx.fillText(w, 8 + k * 128, H / 2 + 2, 120);
-  });
+    const x = 6 + k * 32;
+    ctx.beginPath();
+    ctx.moveTo(x, 10);
+    ctx.lineTo(x + 14, 10);
+    ctx.lineTo(x + 26, H / 2);
+    ctx.lineTo(x + 14, H - 10);
+    ctx.lineTo(x, H - 10);
+    ctx.lineTo(x + 12, H / 2);
+    ctx.closePath();
+    ctx.fill();
+  }
   ctx.shadowBlur = 0;
   // The LEDs' grid.
   ctx.fillStyle = 'rgba(0,0,0,0.35)';
@@ -337,7 +343,6 @@ function spool(color: number, r: number): THREE.Group {
   return g;
 }
 
-const STATIC_WORDS = ['NO SIGNAL', 'SHATTERED', 'STATIC', 'INPUT 1'];
 const hot = (rand: () => number) => RAVE[Math.floor(rand() * RAVE.length)];
 
 /** The roadside props, built for one place's pulse. Each is built at the origin, facing +z, its foot on the ground. */
@@ -407,11 +412,10 @@ function props(p: Pulse) {
     const face = new THREE.Mesh(new THREE.PlaneGeometry(w * 0.9, w * 0.66), new THREE.MeshBasicMaterial({ map: staticTexture() }));
     face.position.set(0, w * 0.43, w * 0.36);
     g.add(face);
-    if (rand() < 0.3) {
-      const words = kit.signPanel(w * 0.9, kit.textFace([STATIC_WORDS[Math.floor(rand() * STATIC_WORDS.length)]], { style: 'neon', fg: '#e8f8ff', glow: '#3af0ff', bg: '#101018' }), { h: w * 0.3, depth: 0.05 });
-      words.position.set(0, w * 0.95, 0);
-      g.add(words);
-    }
+    // An aerial on top, bent.
+    const aerial = pole(w * 0.6, 0.03, metal(), w * 0.85);
+    aerial.rotation.z = (rand() - 0.5) * 0.8;
+    g.add(aerial);
     return g;
   };
   const dancers: kit.Prop = (rand) => {
@@ -580,6 +584,36 @@ function words(f: Field, frac: number, lines: string[], color = MAGENTA): void {
   f.g.add(kit.roadBanner(f.ribbon, along(f, frac), lines, { style: 'neon', bg: '#08060e', fg: '#fff4fa', glow: c, glowColor: color, lift: 7, post: metal() }, f.animated));
 }
 
+/** A truss across the road `frac` of the way along the field, a mirror ball turning under it and lamps either side pumping on the beat: where a banner of words would hang, the rave's own lights. */
+function mirrorTruss(f: Field, frac: number, color = MAGENTA): void {
+  const s = along(f, frac);
+  const fr = kit.frameAt(f.ribbon, s);
+  const hw = f.ribbon.halfWidthAtS(s) + 2;
+  const H = 8.5;
+  const g = new THREE.Group();
+  for (const side of [-1, 1]) g.add(pole(H, 0.3, metal()).translateX(side * hw));
+  g.add(slab(2 * hw + 1, 0.6, 0.6, metal(), 0, H, 0));
+  const ball = new THREE.Mesh(new THREE.IcosahedronGeometry(1.3, 1), kit.matte(0xe8e8f0, { flat: true, emissive: 0x303040 }));
+  ball.position.y = H - 2.2;
+  g.add(pole(1, 0.04, metal(), H - 1), ball);
+  const lamps: THREE.Sprite[] = [];
+  for (const side of [-1, 1]) {
+    const lamp = kit.glowSprite(side < 0 ? color : CYAN, 3, 0.8);
+    lamp.position.set(side * (hw - 1.5), H - 0.6, 0.4);
+    lamps.push(lamp);
+    g.add(lamp);
+  }
+  const phase = s * 0.07;
+  f.animated.push((time) => {
+    ball.rotation.y = time * 0.8 + phase;
+    const k = music.kick(time);
+    lamps.forEach((l) => l.scale.setScalar(3 * (0.7 + 0.5 * k)));
+  });
+  g.position.set(fr.x, fr.y, fr.z);
+  g.rotation.y = fr.heading;
+  f.g.add(g);
+}
+
 /** Props strewn either side of the field, in the band 3 to 20 m off the road. */
 function strew(f: Field, kinds: [number, kit.Prop][], spacing = 14, o: Partial<kit.ScatterOptions> = {}): void {
   const clear = kinds.map(([w, prop]): [number, kit.Prop] => [w, (rand, site) => (f.stands.some((q) => Math.hypot(site.x - q.x, site.z - q.z) < q.r) ? new THREE.Group() : prop(rand, site))]);
@@ -614,12 +648,72 @@ function air(f: Field, frac: number, color: number, drift: 'fall' | 'rise' | 'fl
   f.g.add(m);
 }
 
-/** A giant screen on two legs, its words lit: a mid-ground set piece, pumping on the beat. */
-function jumbotron(f: Field, lines: string[], w = 22, color = MAGENTA): THREE.Object3D {
+/** What the VJ puts on a screen: an equaliser, rings going out, an eye, a tear, a hand held up. */
+type Visual = 'eq' | 'rings' | 'eye' | 'tear' | 'hand';
+const visuals = new Map<string, THREE.CanvasTexture>();
+/** A screen's face with no words on it: `visual` in glowing colour on black, made once per look. */
+function visualFace(visual: Visual, color: number): THREE.CanvasTexture {
+  const key = `${visual}|${color}`;
+  const made = visuals.get(key);
+  if (made) return made;
+  const W = 512;
+  const H = 256;
+  const [c, ctx] = kit.canvas(W, H);
+  ctx.fillStyle = '#06040c';
+  ctx.fillRect(0, 0, W, H);
+  const col = hex(color);
+  ctx.fillStyle = col;
+  ctx.strokeStyle = col;
+  ctx.shadowColor = col;
+  ctx.shadowBlur = 18;
+  ctx.lineWidth = 10;
+  ctx.lineCap = 'round';
+  const cx = W / 2;
+  const cy = H / 2;
+  ctx.beginPath();
+  if (visual === 'eq') {
+    for (let k = 0; k < 12; k++) {
+      const v = 0.25 + 0.7 * Math.abs(Math.sin(k * 1.7 + 0.4));
+      ctx.fillRect(28 + k * 39, H - 24 - v * 190, 26, v * 190);
+    }
+  } else if (visual === 'rings') {
+    for (const r of [24, 56, 88, 118]) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  } else if (visual === 'eye') {
+    ctx.ellipse(cx, cy, 170, 80, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx, cy, 44, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (visual === 'tear') {
+    ctx.moveTo(cx, 26);
+    ctx.bezierCurveTo(cx + 40, 110, cx + 70, 150, cx, H - 26);
+    ctx.bezierCurveTo(cx - 70, 150, cx - 40, 110, cx, 26);
+    ctx.fill();
+  } else {
+    // A hand held up: a palm and four fingers and a thumb.
+    ctx.fillRect(cx - 50, cy - 10, 100, 100);
+    for (let k = 0; k < 4; k++) ctx.fillRect(cx - 50 + k * 27, cy - 100, 20, 95);
+    ctx.save();
+    ctx.translate(cx + 50, cy + 30);
+    ctx.rotate(-0.7);
+    ctx.fillRect(0, -12, 70, 24);
+    ctx.restore();
+  }
+  const t = kit.canvasTexture(c, false);
+  visuals.set(key, t);
+  return t;
+}
+
+/** A giant screen on two legs, the VJ's visual lit: a mid-ground set piece, pumping on the beat. */
+function jumbotron(f: Field, visual: Visual, w = 22, color = MAGENTA): THREE.Object3D {
   const body = new THREE.Group();
   const h = w * 0.55;
   const legs = 6;
-  const face = kit.signPanel(w, kit.textFace(lines, { style: 'neon', bg: '#06040c', fg: '#fff4fa', glow: hex(color) }), { h, depth: 1, frame: metal() });
+  const face = kit.signPanel(w, visualFace(visual, color), { h, depth: 1, frame: metal() });
   face.position.y = legs + h / 2;
   body.add(face, pole(legs, 0.5, metal()).translateX(-w * 0.3), pole(legs, 0.5, metal()).translateX(w * 0.3));
   return kit.setPiece({ body, base: 'plinth', baseColor: 0x1a1824, baseWidth: w * 0.9, glow: { color, size: w * 0.9, y: legs + h / 2, opacity: 0.14 }, beat: music }, f.animated);
@@ -759,8 +853,7 @@ const FIELDS: Record<string, (f: Field) => void> = {
     ravers(f, 'left', f.from, f.from + 70, 'jump');
     ravers(f, 'right', f.from, f.from + 70, 'jump');
     words(f, 0.12, ["DON'T TAKE IT PERSONALLY"], MAGENTA);
-    words(f, 0.6, ['I BEGIN TO SLIDE INWARD'], CYAN);
-    midground(f, jumbotron(f, ['THIS IS NOT', 'ABOUT YOU'], 26), 0.3, 40, 16);
+    midground(f, jumbotron(f, 'eq', 26), 0.3, 40, 16);
     air(f, 0.3, MAGENTA, 'fall', 200, 36, 22);
   },
   // Shatter the static silencing my mind; find the rhythm: screens of snow along the road, then the speakers.
@@ -768,9 +861,7 @@ const FIELDS: Record<string, (f: Field) => void> = {
     strew(f, [[4, f.P.tv], [2, f.P.ball], [2, f.P.speakerProp], [1, f.P.cones]], 12);
     litter(f);
     words(f, 0.1, ['SHATTER THE STATIC'], CYAN);
-    words(f, 0.45, ['SILENCING MY MIND'], VIOLET);
-    words(f, 0.85, ['FIND THE RHYTHM'], ACID);
-    midground(f, jumbotron(f, ['NO SIGNAL'], 22, CYAN), 0.3, 40, 15);
+    midground(f, jumbotron(f, 'rings', 22, CYAN), 0.3, 40, 15);
     air(f, 0.4, 0xe8f8ff, 'swirl', 160, 34, 18);
   },
   // Set course to collide: round the loop, the balls swinging into each other inside it, speakers keeping the rhythm.
@@ -778,7 +869,7 @@ const FIELDS: Record<string, (f: Field) => void> = {
     strew(f, [[6, f.P.speakerProp], [2, f.P.laserRig], [1, f.P.flood]], 11);
     litter(f);
     ravers(f, 'left', f.from + 10, f.to - 10, 'jump', 6, 3);
-    words(f, 0.2, ['SET COURSE TO COLLIDE']);
+    mirrorTruss(f, 0.2);
     midground(f, noiseTower(f, MAGENTA), 0.6, 36, 14);
     searchlights(f, 0.5, 30, VIOLET);
     air(f, 0.5, VIOLET, 'float', 180, 40, 20);
@@ -789,25 +880,23 @@ const FIELDS: Record<string, (f: Field) => void> = {
     litter(f);
     ravers(f, 'right', f.from + 10, f.to - 40, 'wave', 7, 2);
     words(f, 0.25, ['MY HANDS ARE DISAPPEARING'], VIOLET);
-    words(f, 0.7, ['DISSOLVING IN A TEAR'], CYAN);
-    midground(f, jumbotron(f, ['I AM NOT', 'NEEDED HERE'], 20, VIOLET), 0.6, 40, 15);
+    midground(f, jumbotron(f, 'hand', 20, VIOLET), 0.6, 40, 15);
     air(f, 0.85, CYAN, 'fall', 200, 36, 30);
   },
   // Starting to feel something, I think I'm taking off: up the climb, searchlights pointing the way, lights rising.
   "I Think I'm Taking Off"(f) {
     strew(f, [[3, f.P.flood], [2, f.P.laserRig], [2, f.P.speakerProp], [1, f.P.cones]], 13);
     litter(f);
-    words(f, 0.2, ['STARTING TO FEEL SOMETHING'], ACID);
-    words(f, 0.7, ["I THINK I'M TAKING OFF"], ACID);
+    mirrorTruss(f, 0.2, ACID);
     searchlights(f, 0.6, 24, ACID);
-    midground(f, jumbotron(f, ["I THINK I'M", 'FEELING SOMETHING'], 20, ACID), 0.5, 40, 15);
+    midground(f, jumbotron(f, 'eye', 20, ACID), 0.5, 40, 15);
     air(f, 0.5, ACID, 'rise', 200, 40, 40);
   },
   // Will I evaporate? Round the top on the floating deck, vapour rising off it, the stadium's lights below.
   'Will I Evaporate?'(f) {
     strew(f, [[3, f.P.flood], [2, f.P.laserRig], [2, f.P.speakerProp]], 18, { band: [10, 30], clear: 6 });
     litter(f, 0.6);
-    words(f, 0.3, ['WILL I EVAPORATE?'], 0xe8e0ff);
+    mirrorTruss(f, 0.3, 0xe8e0ff);
     vapour(f, 0.3, 0);
     vapour(f, 0.75, 0);
     midground(f, wiltingThought(f), 0.6, 44, 16);
@@ -817,8 +906,6 @@ const FIELDS: Record<string, (f: Field) => void> = {
   "I've Got a Bird's Eye View"(f) {
     strew(f, [[3, f.P.flood], [3, f.P.speakerProp], [2, f.P.laserRig]], 16, { band: [8, 30], clear: 6 });
     words(f, 0.08, ["I'VE GOT A BIRD'S EYE VIEW"], CYAN);
-    words(f, 0.7, ['I HAVE SHED MY SKIN'], MAGENTA);
-    words(f, 0.95, ['LOOK AT ME NOW'], ACID);
     searchlights(f, 0.4, 20, CYAN);
     air(f, 0.5, CYAN, 'float', 220, 50, 30, 4);
   },
@@ -826,9 +913,7 @@ const FIELDS: Record<string, (f: Field) => void> = {
   'Perish to My Thoughts'(f) {
     strew(f, [[3, f.P.bubble], [2, f.P.hurdle], [2, f.P.speakerProp], [1, f.P.flood]], 13);
     litter(f);
-    words(f, 0.1, ['INTRA INTRASPORT'], MAGENTA);
-    words(f, 0.35, ['PERISH TO MY THOUGHTS'], VIOLET);
-    words(f, 0.8, ['MY HAND IS ON THE GUN'], ACID);
+    mirrorTruss(f, 0.1, MAGENTA);
     midground(f, wiltingThought(f), 0.3, 40, 16);
     air(f, 0.5, 0xe8e0ff, 'fall', 160, 40, 24);
   },
@@ -837,8 +922,7 @@ const FIELDS: Record<string, (f: Field) => void> = {
     strew(f, [[3, f.P.dancers], [2, f.P.speakerProp], [2, f.P.glowsticks], [1, f.P.laserRig]], 12);
     litter(f, 1.2);
     ravers(f, 'left', f.from + 60, f.to - 5, 'jump', 7, 3);
-    words(f, 0.05, ['GET TO ME BEFORE'], MAGENTA);
-    words(f, 0.62, ['I USED TO DREAM'], 0xff3a3a);
+    mirrorTruss(f, 0.05, MAGENTA);
     searchlights(f, 0.2, 26, MAGENTA);
     air(f, 0.3, MAGENTA, 'fall', 220, 36, 34);
     air(f, 0.8, ACID, 'float', 200, 36, 18);
@@ -847,9 +931,7 @@ const FIELDS: Record<string, (f: Field) => void> = {
   'Dreams That Sew Me Up'(f) {
     strew(f, [[4, f.P.spoolProp], [2, f.P.speakerProp], [2, f.P.cones], [1, f.P.flood]], 12);
     litter(f);
-    words(f, 0.08, ['DREAMS THAT SEW ME UP'], MAGENTA);
     words(f, 0.4, ['SLEEPING WITH A NEEDLE'], MAGENTA);
-    words(f, 0.9, ['BUILDING UP TO SOMETHING'], ACID);
     midground(f, giantNeedle(f), 0.65, 38, 16);
     air(f, 0.5, MAGENTA, 'swirl', 160, 36, 20);
   },
@@ -857,8 +939,6 @@ const FIELDS: Record<string, (f: Field) => void> = {
   'A Schism in the Rhythm'(f) {
     strew(f, [[3, f.P.speakerProp], [2, f.P.laserRig], [2, f.P.hurdle], [1, f.P.flood]], 12);
     litter(f);
-    words(f, 0.12, ['A SCHISM IN THE RHYTHM'], ACID);
-    words(f, 0.88, ["NOW I'M RUNNING"], CYAN);
     midground(f, giantRunner(f, CYAN), 0.5, 30, 14);
     air(f, 0.5, ACID, 'float', 200, 44, 24);
   },
@@ -866,9 +946,8 @@ const FIELDS: Record<string, (f: Field) => void> = {
   'My Hair Is Liquifying'(f) {
     strew(f, [[3, f.P.drip], [2, f.P.brazier], [2, f.P.speakerProp], [1, f.P.flood]], 12);
     litter(f);
-    words(f, 0.12, ['MY HAIR IS LIQUIFYING'], VIOLET);
-    words(f, 0.7, ['MY TASTEBUDS ARE IGNITING'], 0xff6a2a);
-    midground(f, jumbotron(f, ['LIQUIFYING'], 18, VIOLET), 0.4, 36, 14);
+    mirrorTruss(f, 0.12, VIOLET);
+    midground(f, jumbotron(f, 'tear', 18, VIOLET), 0.4, 36, 14);
     air(f, 0.75, 0xff8a3a, 'rise', 220, 40, 30);
   },
   // It's true I am evolving, it's all relative; the feeling's on the floor; don't do it: hurdles, the march, the floor, and the line.
@@ -877,9 +956,6 @@ const FIELDS: Record<string, (f: Field) => void> = {
     litter(f);
     ravers(f, 'right', f.to - 120, f.to - 10, 'jump', 7, 3);
     words(f, 0.1, ["IT'S TRUE I AM EVOLVING"], ACID);
-    words(f, 0.3, ["IT'S ALL RELATIVE"], ACID);
-    words(f, 0.5, ["THE FEELING'S ON THE FLOOR"], MAGENTA);
-    words(f, 0.75, ["DON'T DO IT"], 0xff3a3a);
     midground(f, giantRunner(f, ACID), 0.2, 36, 14);
     air(f, 0.8, MAGENTA, 'fall', 220, 40, 30);
   },

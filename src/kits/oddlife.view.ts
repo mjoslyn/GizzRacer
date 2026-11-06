@@ -55,7 +55,7 @@ export const view: KitView<'oddlife'> = {
         edge: { kind: 'lamp', height: 3, spacing: 22, color: 0x18161e, stripe: 0xff4fa8 },
         light: 0xff4fa8,
         cover: { shape: 'pebble', colors: [0x6a2a32, 0x8a4038, 0x4a1a28, 0x4a6a3a], count: 1100 },
-        boards: { words: ["IT'S AN ODD LIFE", 'ANOTHER ROUND', 'GOTTA BE AWARE', 'K.G.'], bg: ['#1a0a24', '#3a1040'], fg: '#ffd23a' },
+        boards: { words: [], bg: ['#1a0a24', '#3a1040'], fg: '#ffd23a' },
         crowd: true,
       },
       // Bats under the stars, and dust and confetti in the stage light.

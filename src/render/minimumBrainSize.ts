@@ -310,6 +310,137 @@ const label = (() => {
   };
 })();
 
+/** What a screen in the feed shows when it isn't words: a like, someone typing, a notification, loading, an eye, a faceless profile, a post, a mute, a warning. */
+export type Icon = 'heart' | 'dots' | 'bell' | 'spinner' | 'eye' | 'profile' | 'post' | 'mute' | 'warning';
+const ICONS: readonly Icon[] = ['heart', 'dots', 'bell', 'spinner', 'eye', 'profile', 'post'];
+
+/**
+ * A screen's face with no words on it: `icon` drawn flat and glowing on
+ * `bg`, made once per look. `window` puts it in a pop-up's chrome (a title
+ * bar, its three lights and a close box), `tall` paints it portrait.
+ */
+const icon = (() => {
+  const made = new Map<string, THREE.CanvasTexture>();
+  return (which: Icon, fg = '#bfe8ff', bg = '#0a1020', o: { window?: boolean; tall?: boolean } = {}): THREE.CanvasTexture => {
+    const key = `${which}|${fg}|${bg}|${!!o.window}|${!!o.tall}`;
+    let t = made.get(key);
+    if (t) return t;
+    const W = o.tall ? 256 : 512;
+    const H = o.tall ? 384 : 256;
+    const [c, ctx] = canvas(W, H);
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+    let top = 0;
+    if (o.window) {
+      ctx.fillStyle = '#26324a';
+      ctx.fillRect(0, 0, W, 44);
+      ['#ff5a5a', '#ffd25a', '#5aff8a'].forEach((col, k) => {
+        ctx.fillStyle = col;
+        ctx.beginPath();
+        ctx.arc(24 + k * 26, 22, 8, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.fillStyle = '#3a4660';
+      ctx.fillRect(110, 14, W - 180, 16);
+      ctx.fillStyle = '#ff2a3a';
+      ctx.fillRect(W - 44, 6, 34, 32);
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(W - 36, 14);
+      ctx.lineTo(W - 18, 30);
+      ctx.moveTo(W - 18, 14);
+      ctx.lineTo(W - 36, 30);
+      ctx.stroke();
+      top = 44;
+    }
+    ctx.strokeStyle = fg;
+    ctx.lineWidth = 6;
+    ctx.strokeRect(3, 3, W - 6, H - 6);
+    const cx = W / 2;
+    const cy = top + (H - top) / 2;
+    const r = Math.min(W, H - top) * 0.3;
+    ctx.fillStyle = fg;
+    ctx.strokeStyle = fg;
+    ctx.shadowColor = fg;
+    ctx.shadowBlur = 16;
+    ctx.lineWidth = 10;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    if (which === 'heart') {
+      ctx.moveTo(cx, cy + r);
+      ctx.bezierCurveTo(cx - r * 1.6, cy - r * 0.2, cx - r * 0.6, cy - r * 1.3, cx, cy - r * 0.4);
+      ctx.bezierCurveTo(cx + r * 0.6, cy - r * 1.3, cx + r * 1.6, cy - r * 0.2, cx, cy + r);
+      ctx.fill();
+    } else if (which === 'dots') {
+      for (const k of [-1, 0, 1]) ctx.arc(cx + k * r * 0.9, cy, r * 0.28, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (which === 'bell') {
+      ctx.moveTo(cx - r, cy + r * 0.6);
+      ctx.quadraticCurveTo(cx - r * 0.8, cy - r, cx, cy - r);
+      ctx.quadraticCurveTo(cx + r * 0.8, cy - r, cx + r, cy + r * 0.6);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
+      ctx.fillStyle = '#ff2a3a';
+      ctx.arc(cx + r * 0.8, cy - r * 0.8, r * 0.35, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (which === 'spinner') {
+      ctx.arc(cx, cy, r, 0, Math.PI * 1.5);
+      ctx.stroke();
+    } else if (which === 'eye') {
+      ctx.ellipse(cx, cy, r * 1.4, r * 0.7, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 0.35, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (which === 'profile') {
+      ctx.arc(cx, cy - r * 0.45, r * 0.45, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + r * 0.75, r * 0.85, r * 0.5, 0, Math.PI, 0);
+      ctx.fill();
+    } else if (which === 'post') {
+      // A post: a faceless avatar, grey lines where its words would be, a heart under them.
+      ctx.arc(W * 0.16, top + 50, 26, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = '#5a6680';
+      for (let k = 0; k < 3; k++) ctx.fillRect(W * 0.28, top + 34 + k * 34, W * (0.6 - k * 0.12), 16);
+      ctx.fillStyle = '#ff5a7a';
+      ctx.beginPath();
+      ctx.arc(W * 0.3, H - 34, 10, 0, Math.PI * 2);
+      ctx.arc(W * 0.3 + 14, H - 34, 10, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (which === 'mute') {
+      ctx.moveTo(cx - r, cy - r * 0.4);
+      ctx.lineTo(cx - r * 0.4, cy - r * 0.4);
+      ctx.lineTo(cx + r * 0.3, cy - r);
+      ctx.lineTo(cx + r * 0.3, cy + r);
+      ctx.lineTo(cx - r * 0.4, cy + r * 0.4);
+      ctx.lineTo(cx - r, cy + r * 0.4);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#ff2a3a';
+      ctx.beginPath();
+      ctx.moveTo(cx - r * 1.2, cy + r * 1.1);
+      ctx.lineTo(cx + r * 1.2, cy - r * 1.1);
+      ctx.stroke();
+    } else {
+      ctx.moveTo(cx, cy - r);
+      ctx.lineTo(cx + r * 1.1, cy + r * 0.8);
+      ctx.lineTo(cx - r * 1.1, cy + r * 0.8);
+      ctx.closePath();
+      ctx.stroke();
+      ctx.fillRect(cx - 5, cy - r * 0.35, 10, r * 0.65);
+      ctx.fillRect(cx - 5, cy + r * 0.45, 10, 10);
+    }
+    t = finish(c, false);
+    made.set(key, t);
+    return t;
+  };
+})();
+
 /** A panel `w` wide (half as high) showing `map`, unlit, facing both ways. */
 function panel(w: number, map: THREE.Texture, h = w / 2): THREE.Group {
   return kit.signPanel(w, map, { h, depth: 0.16, frame: metal() });
@@ -390,9 +521,6 @@ function blinkLeds(animated: kit.Animated): void {
   );
 }
 
-const SAYS = ['SO LONELY', 'NO ONE REPLIES', 'LOG IN', 'SCROLL', 'LIKE', 'REFRESH', 'RIDDLE ME THIS', 'DID YOU EVER GROW?'];
-const POPUPS = ['YOU WON!', 'HOT SINGLES', 'CLICK HERE', 'DOWNLOAD', 'VIRUS!', 'WAKE UP', 'JOIN US'];
-const BUBBLES = ['PATHETIC', 'HIMPATHETIC BRO', 'RATIO', 'NOBODY ASKED', 'THIS.', 'SAME', 'LOL', 'WAKE UP'];
 const hot = (rand: () => number) => rand() < 0.2;
 
 /** The roadside props, built for one place's pulse. Each is built at the origin, facing +z, its foot on the ground. */
@@ -403,7 +531,7 @@ function props(p: Pulse) {
     const h = w * 0.62;
     const post = 3 + rand() * 4;
     const red = hot(rand);
-    const face = kit.signPanel(w, kit.textFace([SAYS[Math.floor(rand() * SAYS.length)]], { style: 'neon', bg: '#050c16', fg: red ? '#ff8a8a' : '#bfe8ff', glow: red ? '#ff2a3a' : '#7ae8ff' }), { h, depth: 0.5, frame: metal() });
+    const face = kit.signPanel(w, icon(ICONS[Math.floor(rand() * ICONS.length)], red ? '#ff8a8a' : '#bfe8ff', '#050c16'), { h, depth: 0.5, frame: metal() });
     face.position.y = post + h / 2;
     face.rotation.x = -0.1;
     const lit = halo(p, red ? RED : GLOW, w * 1.2, 0.14);
@@ -414,7 +542,7 @@ function props(p: Pulse) {
   const popup: kit.Prop = (rand) => {
     const g = new THREE.Group();
     const w = 5 + rand() * 4;
-    const win = panel(w, label([POPUPS[Math.floor(rand() * POPUPS.length)]], rand() < 0.5 ? '#ffd25a' : '#ff8a8a', '#101826', 'ad.exe'));
+    const win = panel(w, icon(rand() < 0.5 ? 'warning' : 'bell', rand() < 0.5 ? '#ffd25a' : '#ff8a8a', '#101826', { window: true }));
     win.position.y = 5 + rand() * 7;
     win.rotation.set((rand() - 0.5) * 0.3, 0, (rand() - 0.5) * 0.25);
     g.add(win, pole(win.position.y - 1, 0.12, metal()));
@@ -423,7 +551,7 @@ function props(p: Pulse) {
   const bubble: kit.Prop = (rand) => {
     const g = new THREE.Group();
     const w = 4 + rand() * 3;
-    const face = kit.textFace([BUBBLES[Math.floor(rand() * BUBBLES.length)]], { style: 'board', bg: '#e8ecf4', fg: '#1a2030', rule: '#7ae8ff' });
+    const face = icon(rand() < 0.6 ? 'dots' : 'heart', '#1a2030', '#e8ecf4');
     const sign = kit.signPanel(w, face, { h: w * 0.5, depth: 0.3, frame: kit.matte(0xc8d0e0) });
     sign.position.y = 4 + rand() * 4;
     sign.rotation.z = (rand() - 0.5) * 0.2;
@@ -486,9 +614,9 @@ function props(p: Pulse) {
       const yaw = rand() * 6;
       const key = slab(3.2, 1.8, 3.2, plastic(), x, 0.9, z);
       key.rotation.y = yaw;
-      const top = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 2.2), new THREE.MeshBasicMaterial({ map: kit.textFace([String.fromCharCode(65 + Math.floor(rand() * 8))], { style: 'board', bg: '#e8ecf4', fg: '#22262e', rule: false, width: 128, height: 128 }) }));
-      top.rotation.set(-Math.PI / 2, 0, -yaw);
-      top.position.set(x, 1.82, z);
+      // The keycap's worn top, a shade lighter than its sides.
+      const top = slab(2.4, 0.08, 2.4, kit.matte(0xf4f6fa), x, 1.84, z);
+      top.rotation.y = yaw;
       g.add(key, top);
     }
     return g;
@@ -536,7 +664,7 @@ function props(p: Pulse) {
     const a = avatar(1.5);
     a.rotation.x = 0.3;
     a.position.z = 0.6;
-    const screen = panel(2.6, label([SAYS[Math.floor(rand() * 3)]], '#bfe8ff', '#06101c'), 1.6);
+    const screen = panel(2.6, icon(rand() < 0.5 ? 'post' : 'spinner', '#bfe8ff', '#06101c'), 1.6);
     screen.position.set(0, 1.5, -1.6);
     screen.rotation.x = -0.3;
     const lit = halo(p, GLOW, 8, 0.3);
@@ -572,7 +700,7 @@ function props(p: Pulse) {
     const w = 6 + rand() * 5;
     const h = w * 1.5;
     const post = 14 + rand() * 18;
-    const face = kit.signPanel(w, kit.textFace([SAYS[Math.floor(rand() * SAYS.length)]], { style: 'neon', bg: '#050c16', fg: '#bfe8ff', glow: '#7ae8ff', width: 256, height: 384 }), { h, depth: 0.6, frame: metal() });
+    const face = kit.signPanel(w, icon(ICONS[Math.floor(rand() * ICONS.length)], '#bfe8ff', '#050c16', { tall: true }), { h, depth: 0.6, frame: metal() });
     face.position.y = post + h / 2;
     const lit = halo(p, GLOW, w * 1.1, 0.1);
     lit.position.y = post + h / 2;
@@ -754,6 +882,35 @@ function words(f: Field, frac: number, lines: string[], color = '#bfe8ff', glow 
   f.g.add(kit.roadBanner(f.ribbon, along(f, frac), lines, { style: 'neon', bg: '#050c16', fg: color, glow: color, glowColor: glow, lift: 7 }, f.animated));
 }
 
+/** A truss across the road `frac` of the way along the field, a row of notification badges hanging off it, bobbing and pulsing on the beat: where a banner of words would hang, the feed's own glow instead. */
+function badgeTruss(f: Field, frac: number, color = RED): void {
+  const s = along(f, frac);
+  const fr = kit.frameAt(f.ribbon, s);
+  const hw = f.ribbon.halfWidthAtS(s) + 2;
+  const H = 8.5;
+  const g = new THREE.Group();
+  for (const side of [-1, 1]) g.add(pole(H, 0.35, metal(), 0).translateX(side * hw));
+  g.add(slab(2 * hw + 1, 0.8, 0.8, metal(), 0, H, 0));
+  const n = Math.max(3, Math.round(hw / 3));
+  const hung: THREE.Object3D[] = [];
+  for (let k = 0; k < n; k++) {
+    const x = -hw + ((k + 0.5) * 2 * hw) / n;
+    const drop = 1.2 + (k % 2) * 0.9;
+    const cord = pole(drop, 0.04, metal(), H - drop);
+    cord.position.x = x;
+    const badge = new THREE.Mesh(BALL(), kit.lit(k % 3 === 1 ? GLOW : color));
+    badge.scale.setScalar(0.9);
+    badge.position.set(x, H - drop - 0.8, 0);
+    f.p.badges.push(badge);
+    hung.push(badge);
+    g.add(cord, badge);
+  }
+  f.animated.push((time) => hung.forEach((b, k) => (b.position.y = H - 2 - (k % 2) * 0.9 + Math.sin(time * 2 + k) * 0.25)));
+  g.position.set(fr.x, fr.y, fr.z);
+  g.rotation.y = fr.heading;
+  f.g.add(g);
+}
+
 /** Props strewn either side of the field, in the band 3 to 18 m off the road. */
 function strew(f: Field, kinds: [number, kit.Prop][], spacing = 15, o: Partial<kit.ScatterOptions> = {}): void {
   const offIslands = kinds.map(([w, prop]): [number, kit.Prop] => [w, (rand, site) => (f.islands.some((i) => Math.hypot(site.x - i.x, site.z - i.z) < 32) || f.stands.some((q) => Math.hypot(site.x - q.x, site.z - q.z) < q.r) ? new THREE.Group() : prop(rand, site))]);
@@ -791,13 +948,13 @@ function flies(f: Field, s: number, lateral: number, count = 90, radius = 14, he
   }
 }
 
-/** A giant screen on two legs, its words lit: a mid-ground set piece, pulsing on the beat. */
-function giantScreen(f: Field, lines: string[], w = 20, color = GLOW): THREE.Object3D {
+/** A giant screen on two legs, its icon lit: a mid-ground set piece, pulsing on the beat. */
+function giantScreen(f: Field, which: Icon, w = 20, color = GLOW): THREE.Object3D {
   const body = new THREE.Group();
   const h = w * 0.6;
   const legs = 5;
   const hex = `#${color.toString(16).padStart(6, '0')}`;
-  const face = kit.signPanel(w, kit.textFace(lines, { style: 'neon', bg: '#050c16', fg: hex, glow: hex }), { h, depth: 1, frame: metal() });
+  const face = kit.signPanel(w, icon(which, hex, '#050c16'), { h, depth: 1, frame: metal() });
   face.position.y = legs + h / 2;
   body.add(face, pole(legs, 0.5, metal(), 0).translateX(-w * 0.3), pole(legs, 0.5, metal(), 0).translateX(w * 0.3));
   return kit.setPiece({ body, base: 'plinth', baseColor: 0x1a2234, baseWidth: w * 0.9, glow: { color, size: w * 0.9, y: legs + h / 2, opacity: 0.12 }, beat: music }, f.animated);
@@ -884,8 +1041,8 @@ const FIELDS: Record<string, (f: Field) => void> = {
   'Riddle Me This'(f) {
     strew(f, [[3, f.P.monitor], [2, f.P.keys], [2, f.P.litter], [1, f.P.popup]], 13);
     pixels(f);
-    words(f, clearOf(f, 'bedroom', -85, 0.15), ['DID YOU EVER GROW?']);
-    midground(f, giantScreen(f, ['ONLINE', 'ALL NIGHT'], 24), 0.55, 36, 15);
+    badgeTruss(f, clearOf(f, 'bedroom', -85, 0.15), GLOW);
+    midground(f, giantScreen(f, 'spinner', 24), 0.55, 36, 15);
     const dust = kit.motes({ count: 90, radius: 40, height: 16, color: 0x9adaff, drift: 'float', size: 0.35, seed: f.seed }, f.animated);
     const at = kit.offRoad(f.ribbon, along(f, 0.5), 0);
     dust.position.set(at.x, 0, at.z);
@@ -896,13 +1053,12 @@ const FIELDS: Record<string, (f: Field) => void> = {
     strew(f, [[3, f.P.cables], [2, f.P.litter], [2, f.P.popup], [2, f.P.monitor]], 13);
     pixels(f);
     words(f, clearOf(f, 'spiderCrow', 75, 0.5), ["BREAK THE SPIDER'S LEGS"], '#ff8a8a', RED);
-    words(f, clearOf(f, 'spiderCrow', 150, 0.85), ['JUST TO FEED THE CROW'], '#ff8a8a', RED);
     const s = along(f, 0.4);
     const at = kit.offRoad(f.ribbon, s, 30);
     const crows = kit.flock({ count: 12, radius: 30, height: 26, color: 0x0a0c10, size: 2 }, f.animated);
     crows.position.set(at.x, 0, at.z);
     f.g.add(crows);
-    midground(f, giantScreen(f, ['SO LONELY', 'NO ONE REPLIES'], 20, RED), 0.7, 38, 15);
+    midground(f, giantScreen(f, 'dots', 20, RED), 0.7, 38, 15);
   },
   // Sympathetic crowds are not well endowed; dance like flies on shit swarming in the clouds.
   'Sympathetic Crowds'(f) {
@@ -910,18 +1066,16 @@ const FIELDS: Record<string, (f: Field) => void> = {
     pixels(f);
     crowd(f, 'left', f.from, f.to, 'sway');
     crowd(f, 'right', f.from, f.to, 'bob');
-    words(f, 0.08, ['SYMPATHETIC CROWDS', 'ARE NOT WELL ENDOWED']);
     words(f, 0.6, ['DANCE LIKE FLIES']);
     flies(f, along(f, 0.3), 0, 110, 18, 9);
     flies(f, along(f, 0.7), 0, 110, 18, 9);
-    midground(f, giantScreen(f, ['LOL', 'PATHETIC'], 22), 0.45, 36, 15);
+    midground(f, giantScreen(f, 'heart', 22), 0.45, 36, 15);
   },
   // To all of the people who had it coming; a few biccys too many, I'm so lonely.
   'To All of the People Who Had It Coming'(f) {
     strew(f, [[3, f.P.biccys], [3, f.P.lone], [2, f.P.popup], [2, f.P.monitor], [1, f.P.lantern]], 14);
     pixels(f);
-    words(f, 0.12, ['THIS IS TO ALL OF THE', 'PEOPLE WHO HAD IT COMING']);
-    words(f, 0.55, ['A FEW BICCYS TOO MANY']);
+    badgeTruss(f, 0.3);
     words(f, 0.9, ["I'M SO LONELY"], '#ffd25a', AMBER);
     midground(f, giantLone(f), 0.78, 38, 15);
     const sparks = kit.motes({ count: 120, radius: 36, height: 24, color: RED, drift: 'rise', speed: 2, size: 0.45, seed: f.seed }, f.animated);
@@ -933,7 +1087,7 @@ const FIELDS: Record<string, (f: Field) => void> = {
   'Open Their Eyes'(f) {
     strew(f, [[4, f.P.eye], [2, f.P.popup], [2, f.P.monitor], [1, f.P.cables]], 11);
     pixels(f);
-    words(f, 0.35, ["I'LL OPEN THEIR EYES", 'TO MINIMUM BRAIN SIZE']);
+    badgeTruss(f, 0.35, GLOW);
     midground(f, eyeWall(f), 0.6, 36, 16);
     const glints = kit.motes({ count: 80, radius: 30, height: 14, color: 0xe8f4ff, drift: 'float', size: 0.4, seed: f.seed }, f.animated);
     const at = kit.offRoad(f.ribbon, along(f, 0.5), 0);
@@ -944,9 +1098,7 @@ const FIELDS: Record<string, (f: Field) => void> = {
   'Minimum Brain Size'(f) {
     strew(f, [[3, f.P.tall], [2, f.P.badges], [2, f.P.mast], [1, f.P.popup]], 24, { band: [12, 26], clear: 9 });
     words(f, 0.1, ['MINIMUM BRAIN SIZE'], '#ffd25a', AMBER);
-    words(f, 0.4, ['RE-ENTER THE UTERUS']);
-    words(f, 0.65, ['REFUND ALL YOUR CELLS'], '#ff8a8a', RED);
-    words(f, 0.9, ['DO IT BACK-TO-FRONT']);
+    badgeTruss(f, 0.65);
     const cells = kit.motes({ count: 220, radius: 46, height: 26, color: 0xff6a7a, drift: 'rise', speed: 1.6, size: 0.55, seed: f.seed }, f.animated);
     const mid = kit.offRoad(f.ribbon, along(f, 0.5), 0);
     cells.position.set(mid.x, -8, mid.z);
@@ -959,8 +1111,7 @@ const FIELDS: Record<string, (f: Field) => void> = {
   'You Will Not Be Missed'(f) {
     strew(f, [[3, f.P.puddle], [2, f.P.monitor], [2, f.P.popup], [1, f.P.lone]], 14, { band: [6, 20], clear: 9 });
     pixels(f);
-    words(f, 0.25, ['"YOU WILL NOT BE MISSED"'], '#9adaff', 0x9adaff);
-    words(f, 0.75, ['SAID THE TEAR TO THE EYE'], '#9adaff', 0x9adaff);
+    badgeTruss(f, 0.75, 0x9adaff);
     const rain = kit.motes({ count: 200, radius: 40, height: 32, color: 0x9adaff, drift: 'fall', speed: 6, size: 0.5, seed: f.seed }, f.animated);
     const mid = kit.offRoad(f.ribbon, along(f, 0.5), 0);
     rain.position.set(mid.x, 0, mid.z);
@@ -972,9 +1123,7 @@ const FIELDS: Record<string, (f: Field) => void> = {
     pixels(f);
     crowd(f, 'left', f.from, f.to, 'bob', 8);
     crowd(f, 'right', f.from, f.to, 'jump', 8);
-    words(f, 0.1, ['IT’S PATHETIC THOUGH', 'YOU’RE WEAKER THAN YOU KNOW'], '#ff8a8a', RED);
     words(f, 0.5, ['PARASITIC MOB'], '#ff8a8a', RED);
-    words(f, 0.9, ['FACELESS UNDERTOW'], '#ff8a8a', RED);
     midground(f, giantHead(f), 0.55, 42, 16);
     for (const frac of [0.25, 0.55, 0.85]) flies(f, along(f, frac), 0, 100, 16, 8, 6);
   },
@@ -982,16 +1131,14 @@ const FIELDS: Record<string, (f: Field) => void> = {
   'Himpathetic Bro'(f) {
     strew(f, [[3, f.P.hood], [2, f.P.monitor], [2, f.P.keys], [2, f.P.bubble], [1, f.P.badges]], 14);
     pixels(f);
-    words(f, 0.3, ['HIMPATHETIC BRO'], '#ffd25a', AMBER);
-    words(f, 0.8, ['YOU’RE WEAKER THAN YOU KNOW']);
-    midground(f, giantScreen(f, ['NOBODY', 'ASKED'], 20, AMBER), 0.5, 38, 15);
+    badgeTruss(f, 0.8, AMBER);
+    midground(f, giantScreen(f, 'profile', 20, AMBER), 0.5, 38, 15);
     flies(f, along(f, 0.5), 0, 60, 14, 6, 6);
   },
   // You don't have a say anymore; radicalise.
   "You Don't Have a Say Anymore"(f) {
     strew(f, [[3, f.P.mute], [2, f.P.popup], [2, f.P.mast], [2, f.P.badges], [1, f.P.lantern]], 14);
     pixels(f);
-    words(f, 0.12, ["YOU DON'T HAVE", 'A SAY ANYMORE'], '#ff8a8a', RED);
     words(f, 0.78, ['RADICALISE'], '#ff8a8a', RED);
     midground(f, giantMute(f), 0.35, 38, 16);
     bonfire(f, along(f, 0.6), 38, 4.5);
@@ -1004,11 +1151,9 @@ const FIELDS: Record<string, (f: Field) => void> = {
   // The road back over the spiral, high on its deck: screens and masts standing up to meet it, the words hung over it.
   'Radicalise to Minimum Brain Size'(f) {
     strew(f, [[3, f.P.tall], [2, f.P.mast], [2, f.P.rack], [1, f.P.popup]], 18, { band: [8, 30], clear: 6 });
-    words(f, 0.12, ['RADICALISE TO', 'MINIMUM BRAIN SIZE'], '#ff8a8a', RED);
-    words(f, 0.36, ['AT THE CENTER OF IT ALL'], '#ffd25a', AMBER);
-    words(f, 0.6, ["YOU AIN'T GOT THE GALL"], '#ffd25a', AMBER);
-    words(f, 0.82, ['PISSING ON A FLAME'], '#ff8a8a', RED);
-    midground(f, giantScreen(f, ['AT THE CENTER', 'OF IT ALL'], 26, AMBER), 0.4, 42, 16);
+    badgeTruss(f, 0.12);
+    badgeTruss(f, 0.6, AMBER);
+    midground(f, giantScreen(f, 'eye', 26, AMBER), 0.4, 42, 16);
     const mid = kit.offRoad(f.ribbon, along(f, 0.5), 0);
     const motes = kit.motes({ count: 260, radius: 70, height: 36, color: GLOW, drift: 'float', size: 0.5, seed: f.seed }, f.animated);
     motes.position.set(mid.x, 6, mid.z);
@@ -1021,7 +1166,6 @@ const FIELDS: Record<string, (f: Field) => void> = {
   'Standing on a Ball'(f) {
     strew(f, [[3, f.P.orb], [2, f.P.monitor], [2, f.P.keys], [1, f.P.badges]], 15);
     pixels(f);
-    words(f, 0.35, ['STANDING ON A BALL'], '#ffd25a', AMBER);
     midground(f, ballAndFlame(f), 0.55, 36, 16);
     const glints = kit.motes({ count: 100, radius: 40, height: 18, color: 0xffd090, drift: 'rise', speed: 1.2, size: 0.4, seed: f.seed }, f.animated);
     const at = kit.offRoad(f.ribbon, along(f, 0.55), 0);
@@ -1122,16 +1266,16 @@ export function bedroom(ribbon: Ribbon, s: number, lateral: number, animated: ki
   // A rug in the middle of the floor.
   room.add(slab(9, 0.1, 6, kit.matte(0x8a3a6a, { emissive: 0x3a1430 }), 1, 0.65, 3));
   // The poster wall: bands, a game, anime, over the bed and the desk.
-  const posters: [string[], string, string][] = [
-    [['K.G.'], '#ffd25a', '#2a0a3a'],
-    [['GIZZ'], '#a8ff8a', '#0a2a1a'],
-    [['ANIME', 'FOREVER'], '#ff8ac8', '#2a0a20'],
-    [['LEVEL 99'], '#7ae8ff', '#0a1a3a'],
-    [['NO FEAR'], '#ff8a5a', '#2a1006'],
-    [['HEAVY', 'METAL'], '#e8e8ff', '#101018'],
+  const posters: [Icon, string, string][] = [
+    ['heart', '#ffd25a', '#2a0a3a'],
+    ['eye', '#a8ff8a', '#0a2a1a'],
+    ['profile', '#ff8ac8', '#2a0a20'],
+    ['bell', '#7ae8ff', '#0a1a3a'],
+    ['warning', '#ff8a5a', '#2a1006'],
+    ['spinner', '#e8e8ff', '#101018'],
   ];
-  posters.forEach(([lines, fg, bg], k) => {
-    const pos = panel(4.2, label(lines, fg, bg), 2.8);
+  posters.forEach(([which, fg, bg], k) => {
+    const pos = panel(4.2, icon(which, fg, bg), 2.8);
     pos.position.set(-10 + (k % 3) * 5.8 + (k >= 3 ? 8.2 : 0), k % 3 === 1 ? 8.4 : 6.6, -D / 2 + 0.5);
     pos.rotation.z = (k - 2.5) * 0.02;
     room.add(pos);
@@ -1148,7 +1292,7 @@ export function bedroom(ribbon: Ribbon, s: number, lateral: number, animated: ki
   room.add(lump);
   // The desk, its monitor lighting the room, a keyboard, a chair and the one in it.
   room.add(slab(10, 0.5, 4, kit.matte(0x6a5440), 6, 3.4, -6.5), slab(0.5, 3.2, 3.6, kit.matte(0x4a3a2a), 1.4, 1.6, -6.5), slab(0.5, 3.2, 3.6, kit.matte(0x4a3a2a), 10.6, 1.6, -6.5));
-  const mon = panel(7, label(['ONLINE', 'ALL NIGHT'], '#bfe8ff', '#06101c'), 4.2);
+  const mon = panel(7, icon('spinner', '#bfe8ff', '#06101c'), 4.2);
   mon.position.set(5.2, 6.4, -7.5);
   room.add(mon, slab(1, 1.4, 1, metal(), 5.2, 4.3, -7.5));
   room.add(slab(3.4, 0.15, 1.1, kit.lit(0x4a7a9a), 5.4, 3.75, -5.4));
@@ -1195,7 +1339,7 @@ export function bedroom(ribbon: Ribbon, s: number, lateral: number, animated: ki
     room.add(m);
   }
   // A window onto the feed, the wall's one light.
-  const feed = panel(10, label(['LOG IN', 'SCROLL', 'REFRESH'], '#ffd25a', '#06101c', 'the-feed.com'), 6);
+  const feed = panel(10, icon('post', '#ffd25a', '#06101c', { window: true }), 6);
   feed.position.set(-W / 2 + 0.4, 6.4, 3);
   feed.rotation.y = Math.PI / 2;
   room.add(feed);
@@ -1298,14 +1442,14 @@ export function commentWall(ribbon: Ribbon, s: number, to: number, animated: kit
   const g = new THREE.Group();
   const p = pulse(animated);
   const rand = seededRandom(7501);
-  const texts = [['LOL', 'PATHETIC'], ['SAME', 'BRO'], ['NOBODY ASKED'], ['WAKE UP'], ['THIS.'], ['RATIO']];
   let k = 0;
   for (let d = s; d < to; d += 16, k++) {
     const f = kit.frameAt(ribbon, d);
     const hw = ribbon.halfWidthAtS(d);
     for (const side of [-1, 1]) {
       const at = kit.offRoad(ribbon, d + side * 2, side * (hw + 7));
-      const card = panel(7, label(texts[(k + (side > 0 ? 2 : 0)) % texts.length], '#bfe8ff', '#10182a', `@user${100 + k * 7}`), 4.4);
+      // Every card a post, and every sixth one's line the scorn itself.
+      const card = panel(7, k % 6 === 2 && side > 0 ? label(['LOL', 'PATHETIC'], '#bfe8ff', '#10182a') : icon('post', (k + (side > 0 ? 1 : 0)) % 3 ? '#bfe8ff' : '#ff8a8a', '#10182a'), 4.4);
       card.position.set(at.x, f.y + 4, at.z);
       card.rotation.y = f.heading + (side > 0 ? Math.PI / 2 : -Math.PI / 2) + (rand() - 0.5) * 0.3;
       const post = pole(f.y + 4, 0.15, metal());
@@ -1409,7 +1553,7 @@ export function brainBall(ribbon: Ribbon, s: number, lateral: number, animated: 
   g.add(flame);
   const sparks = kit.motes({ count: 60, radius: 18, height: 30, color: GLOW, drift: 'swirl', speed: 2, size: 0.4, seed: 7532 }, animated);
   g.add(sparks);
-  const plaque = panel(8, label(['AT THE CENTER', 'OF IT ALL'], '#ffd25a', '#0a1020'), 4);
+  const plaque = panel(8, icon('eye', '#ffd25a', '#0a1020'), 4);
   plaque.position.set(0, 3, -16);
   g.add(plaque);
   animated.push((time) => {
