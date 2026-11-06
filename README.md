@@ -54,7 +54,7 @@ No install and no account. It will always be free. **[The manual](https://www.gi
 - **Time Trial:** one lap alone. Online leaderboards, one ghost to chase each race (the next one up the board from you, or one you pick; beat it and the next is next), and the gap to it at every checkpoint.
 - **Between races:** the song plays on through the results and standings. Buttons there race on with the same song (S), go to the next race with its own song (N), or in Single Race take on the next track (T). In Story mode the same song plays on over the cards into the next race.
 - **Posting online:** the first time you have a run, a race time or a cup result worth posting, the results screen asks for a name. Until then the leaderboards just show.
-- **Infinite:** laps without end. **Switch tracks** never, every 1, 5, 10 or 20 laps, or with each song of a Full set, every track in turn; **Gen tracks** off (the game's own), on (a new generated one each time) or mix. Race the CPUs, or **Watch**: they race and you sit back, a visualizer for the music. The camera follows one racer and moves on now and then; left and right, or a tap, picks another
+- **Visualizer:** laps without end, the CPUs racing to the music by default (Watch), or race them yourself. **Switch tracks** never, every 1, 5, 10 or 20 laps, or with each song of a Full set, every track in turn; **Gen tracks** off (the game's own), on (a new generated one each time) or mix. Race the CPUs, or **Watch**: they race and you sit back, a visualizer for the music. The camera follows one racer and moves on now and then; left and right, or a tap, picks another
 - **Online:** make a room, share the four-letter code or link with friends, and race live. CPUs fill the empty grid slots.
 
 ## How to play

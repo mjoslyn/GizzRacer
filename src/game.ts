@@ -196,7 +196,7 @@ let choice: MenuChoice = {
   mirror: false,
   switchEvery: 'never',
   generative: 'off',
-  watch: false,
+  watch: true,
   skill: 'riff',
   skillLevel: 0,
 };
@@ -2722,7 +2722,7 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
       position: f.position,
       karts: race.karts.length,
       countdown: intro > 0 || musicHeld ? -1 : -race.time,
-      intro: intro > 0 ? { name: track.def.name, sub: story ? storyIntro(story) : gp ? `Race ${gp.round + 1} of ${gp.tracks.length}${gp.rivals.length ? ` · your rivals: ${gp.rivals.map((r) => r.name).join(' and ')}` : ''}${mirrored() ? ' · Mirror' : ''}` : choice.mode === 'timeTrial' ? 'Time Trial' : choice.mode === 'infinite' ? `${watching ? 'Watching the CPUs' : 'Infinite'}${choice.switchEvery === 'never' ? '' : ` · ${choice.switchEvery === 'song' ? 'a new track each song' : `a new track every ${choice.switchEvery === 1 ? 'lap' : `${choice.switchEvery} laps`}`}`} · ${choice.engine}` : `${choice.engine}${mirrored() ? ' · Mirror' : ''}` } : null,
+      intro: intro > 0 ? { name: track.def.name, sub: story ? storyIntro(story) : gp ? `Race ${gp.round + 1} of ${gp.tracks.length}${gp.rivals.length ? ` · your rivals: ${gp.rivals.map((r) => r.name).join(' and ')}` : ''}${mirrored() ? ' · Mirror' : ''}` : choice.mode === 'timeTrial' ? 'Time Trial' : choice.mode === 'infinite' ? `${watching ? 'Watching the CPUs' : 'Visualizer'}${choice.switchEvery === 'never' ? '' : ` · ${choice.switchEvery === 'song' ? 'a new track each song' : `a new track every ${choice.switchEvery === 1 ? 'lap' : `${choice.switchEvery} laps`}`}`} · ${choice.engine}` : `${choice.engine}${mirrored() ? ' · Mirror' : ''}` } : null,
       table: table(),
       muted: musicMuted,
       sfxMuted,
