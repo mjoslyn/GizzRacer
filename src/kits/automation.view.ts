@@ -54,7 +54,7 @@ export const view: KitView<'automation'> = {
         edge: { kind: 'lamp', height: 4, spacing: 26, color: 0x3a3e46, stripe: 0xffc21a },
         light: 0xffa040,
         cover: { shape: 'tuft', colors: [0x5a6068, 0x7a8088, 0x3a3e44, 0xffc21a, 0xb08850], count: 900 },
-        boards: { words: ['AUTOMATION', 'OVERLORD', 'SUPER-ORGANISM', 'NEURAL NETWORK', 'MUTATION', 'K.G.'], bg: ['#16161a', '#22252a'], fg: '#ffc21a' },
+        boards: { words: [], bg: ['#16161a', '#22252a'], fg: '#ffc21a' },
         crowd: false,
       },
       // Drones over the floor, and dust and sparks in the sodium light.

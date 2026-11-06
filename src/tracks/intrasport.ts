@@ -24,18 +24,28 @@ export const TUNNEL = 6;
 export const LOW_DECK = 4;
 /** I Think I'm Taking Off climbs to the floating deck this high, and I've Got a Bird's Eye View holds it over Find the Rhythm and My Hands Are Disappearing. */
 export const HIGH_DECK = 11;
+/** It's True I Am Evolving climbs to a crest this high. */
+export const EVOLVE = 4;
 /** The deck's walls, high enough that nothing hops off it onto the roads under it. */
 const DECK_WALL = 2.6;
-/** The needle gantries along Sleeping with a Needle, this far apart. */
-const NEEDLE_APART = 24;
+/** The four needle gantries along Sleeping with a Needle, this far apart. */
+const NEEDLE_APART = 18;
 /** Now I'm Running: it leaves the road at the end of Sleeping with a Needle and turns inside the hairpin on this radius. */
 const LANE_R = 36;
 /** The lane is walled from where it's this clear of the road it leaves to where it's that clear of the road it joins. */
 const LANE_OPEN = 1;
+/** The lane is one narrow strip of track with no walls: off its edge is the infield, and the time it saves is gone. */
+export const LANE_HW = 3.2;
 
 const props = (hw: number, wall: number, extra: Partial<SectionProps> = {}): SectionProps => ({ halfWidth: hw, wallHeight: wall, surface: 'tartan', ...extra });
 
 const START: Pose = { x: 0, z: -200, h: 0 };
+
+/** A turn of `deg` that a curve of radius `wide` would take, tightened to `tight` with straights either side: the road in and out where it was, the corner itself sharper. */
+function corner(b: TrackBuilder, wide: number, tight: number, deg: number) {
+  const x = (wide - tight) * Math.tan((Math.abs(deg) * Math.PI) / 360);
+  b.straight(x).arc(tight, deg).straight(x);
+}
 
 /** Lays the whole lap onto `b`, sections and marks too. */
 function lay(b: TrackBuilder) {
@@ -46,9 +56,10 @@ function lay(b: TrackBuilder) {
   b.section('Slide Inward', props(9.5, 1.4));
   b.mark('sliding');
   b.straight(130);
+  // Shatter the static: a hard corner at the tunnel's mouth.
   b.section('Shatter the Static', props(9.5, 1.4));
   b.mark('static');
-  b.arc(50, 90);
+  corner(b, 50, 30, 90);
   b.section('Find the Rhythm', props(9.5, 1.4));
   b.mark('collision');
   b.straight(45);
@@ -94,7 +105,7 @@ function lay(b: TrackBuilder) {
   b.mark('floor');
   b.straight(60);
   // I used to dream; dreams that sew me up like sleeping with a needle; a schism in the rhythm, now I'm running.
-  b.section('Dreams That Sew Me Up', props(10, 1.4));
+  b.section('Dreams That Sew Me Up', props(8, 1.4));
   b.mark('violence');
   b.straight(50);
   b.section('Sleeping with a Needle', props(10, 1.4));
@@ -106,12 +117,13 @@ function lay(b: TrackBuilder) {
   b.straight(30).arc(42.5, 180).straight(30);
   b.mark('join');
   // My hair is liquifying, my tastebuds are igniting, it's true I am evolving.
-  b.section('My Hair Is Liquifying', props(9.5, 1.4));
+  b.section('My Hair Is Liquifying', props(7.5, 1.4));
   b.mark('hair');
   b.straight(20).arc(150, -22).arc(150, 44).arc(150, -22).straight(70);
   b.section('My Tastebuds Are Igniting', props(9.5, 1.4));
   b.mark('taste');
-  b.straight(60).arc(50, 90);
+  b.straight(60);
+  corner(b, 50, 28, 90);
   b.section("It's True I Am Evolving", props(9.5, 1.4));
   b.mark('evolution');
   b.straight(60);
@@ -168,7 +180,7 @@ function poseOn(points: readonly (readonly [number, number])[], s: number): Pose
 
 /** Now I'm Running: a tighter hairpin inside A Schism in the Rhythm's, from the end of the needle round onto My Hair Is Liquifying. */
 function buildLane(points: readonly (readonly [number, number])[], from: number, to: number, roadHalfWidth: number) {
-  const lane = new TrackBuilder(poseOn(points, from), "Now I'm Running", { halfWidth: 5.5, wallHeight: 2, surface: 'tartan' });
+  const lane = new TrackBuilder(poseOn(points, from), "Now I'm Running", { halfWidth: LANE_HW, wallHeight: 0, surface: 'tartan' });
   for (const [kind, l] of dubins(lane.pose, poseOn(points, to), LANE_R)) {
     if (kind === 'S') lane.straight(l);
     else lane.arc(LANE_R, ((kind === 'L' ? 1 : -1) * l * 180) / (Math.PI * LANE_R));
@@ -176,7 +188,7 @@ function buildLane(points: readonly (readonly [number, number])[], from: number,
   const len = lane.s;
   lane.profile(0, len, () => 0, 10);
   const ribbon = lane.finish(false);
-  // Walled once it's clear of the road it leaves and until it meets it again, so neither wall stands across the other road.
+  // Where it's clear of the road it leaves and until it meets it again (the lane has no walls; the road's own are opened at its mouths).
   const [sec] = ribbon.sections;
   const room = (q: readonly [number, number]) => Math.min(...points.map((m) => Math.hypot(m[0] - q[0], m[1] - q[1]))) - (sec.halfWidth + roadHalfWidth) * ROAD_WIDTH_SCALE;
   const cum = cumulate(ribbon.points);
@@ -226,6 +238,9 @@ export function buildIntrasport(): TrackDef {
   ease(m('lift', 5), 0, m('evaporating', 10), HIGH_DECK);
   b.profile(m('evaporating', 10), overHands.a + 32, () => HIGH_DECK, 10);
   ease(overHands.a + 32, HIGH_DECK, m('gun', 80), 0);
+  // It's true I am evolving: a climb along the bottom to a crest, and off it airborne onto the floor.
+  ease(m('evolution', 0), 0, m('evolution', 50), EVOLVE);
+  b.profile(m('evolution', 50), m('floor2', 20), (u) => EVOLVE * (1 - Math.sin((Math.PI * u) / 2)), 3);
 
   const main = b.finish(true);
   const lane = buildLane(main.points, m('split'), m('join', 6), 9.5);
@@ -240,7 +255,7 @@ export function buildIntrasport(): TrackDef {
     });
   }
   const at = m;
-  const stations = [0, 1, 2].map((k) => at('needles', 18 + k * NEEDLE_APART));
+  const stations = [0, 1, 2, 3].map((k) => at('needles', 12 + k * NEEDLE_APART));
   return {
     id: 'intrasport',
     name: 'Intrasport',

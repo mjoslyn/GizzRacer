@@ -10,7 +10,8 @@ import { createKartState, stepKart, type KartState } from '../src/physics/kart';
 import { RACERS, kartParams } from '../src/physics/racers';
 import { TRACK_SONGS } from '../src/audio/songs';
 import { FIELD_SECTIONS } from '../src/render/intrasport';
-import { HIGH_DECK, LOW_DECK, TUNNEL, buildIntrasport } from '../src/tracks/intrasport';
+import { EVOLVE, HIGH_DECK, LANE_HW, LOW_DECK, TUNNEL, buildIntrasport } from '../src/tracks/intrasport';
+import { ROAD_WIDTH_SCALE } from '../src/tracks/builder';
 import { CUPS, TRACK_LIST } from '../src/tracks/index';
 import { nearestOnSpline, pointAt } from '../src/tracks/spline';
 import { Track, type LapContext, type Ribbon } from '../src/tracks/track';
@@ -257,6 +258,11 @@ describe("Now I'm Running, the shortcut", () => {
 
   it('is there from the second lap, and saves between one and two and a half seconds at 150cc', () => {
     expect(bdef.openOn).toEqual([2, 'final']);
+    // One narrow strip with no walls: it pays only taken clean.
+    for (const q of bdef.sections) {
+      expect(q.halfWidth).toBeCloseTo(LANE_HW * ROAD_WIDTH_SCALE);
+      expect(q.wallHeight ?? 0).toBe(0);
+    }
     const p = kartParams(first.stats, '150cc');
     const open: LapContext = { lap: 2, lastLap: false };
     const via = drive(branch, bdef.mainTo, p, undefined, open);
@@ -274,23 +280,28 @@ describe("Now I'm Running, the shortcut", () => {
 });
 
 describe('Intrasport driving', () => {
-  it('laps at 150cc with no falls, flying off the ramp', () => {
+  it("laps at 150cc with no falls, flying off the ramp and off the crest of It's True I Am Evolving", () => {
     const race = new Race(track);
     const kart = race.addKart(RACERS[0], '150cc', null);
     race.time = 0;
     let respawns = 0;
     let launched = false;
+    let crest = false;
     const [a, z] = def.main.gaps[0];
+    const evolving = section("It's True I Am Evolving");
+    expect(Math.max(...[40, 50, 55].map((d) => main.heightAtBuilder(evolving.from + d)))).toBeCloseTo(EVOLVE, 0);
     for (let t = 0; t < 200 && kart.laps.lap < 1; t += PHYSICS_DT) {
       const s = kart.state;
       const ev = race.step(PHYSICS_DT, [steerAlong(main, s, kart.progressS)])[0];
       if (kart.respawned) respawns++;
       const b = main.toBuilder(kart.progressS);
       if (ev.launched && b > a - 8 && b < z + 4) launched = true;
+      if (ev.launched && b > evolving.from + 30 && b < section("The Feeling's on the Floor").to) crest = true;
     }
     expect(kart.laps.lap).toBe(1);
     expect(respawns).toBe(0);
     expect(launched).toBe(true);
+    expect(crest).toBe(true);
   }, 30000);
 
   it('a full field of 150cc CPUs laps it, the leader in 60 to 70 seconds a lap', () => {
@@ -316,10 +327,10 @@ describe('dreams that sew me up like sleeping with a needle: stabbing the road o
   const h = new HazardSystem(track);
   const ndef = def.hazards.find((q) => q.kind === 'needles')!;
 
-  it("hangs three gantries over Sleeping with a Needle, on level road, at the song's tempo", () => {
+  it("hangs four gantries over Sleeping with a Needle, on level road, at the song's tempo", () => {
     expect(def.hazards.map((q) => q.kind)).toEqual(['needles']);
     if (!('at' in ndef) || !('bpm' in ndef)) throw new Error('no stations');
-    expect(ndef.at.length).toBe(3);
+    expect(ndef.at.length).toBe(4);
     expect(ndef.bpm).toBe(NEEDLE_BPM);
     for (const s of ndef.at) {
       expect(sectionAt(s).name).toBe('Sleeping with a Needle');
@@ -389,7 +400,7 @@ describe('dreams that sew me up like sleeping with a needle: stabbing the road o
     b.update(12.3);
     const pa = a.poses.filter((q) => q.kind === 'needles');
     const pb = b.poses.filter((q) => q.kind === 'needles');
-    expect(pa.length).toBe(3);
+    expect(pa.length).toBe(4);
     pa.forEach((p, i) => {
       expect(p.phase).toBeCloseTo(pb[i].phase, 6);
       expect(p.x).toBeCloseTo(pb[i].x, 6);

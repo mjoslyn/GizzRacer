@@ -10,7 +10,8 @@ import { createKartState, stepKart, type KartState } from '../src/physics/kart';
 import { RACERS, kartParams } from '../src/physics/racers';
 import { TRACK_SONGS } from '../src/audio/songs';
 import { FIELD_SECTIONS } from '../src/render/minimumBrainSize';
-import { DECK, DEPTH, MOB_PERIOD, buildMinimumBrainSize } from '../src/tracks/minimumBrainSize';
+import { DECK, DEPTH, LANE_HW, MOB_PERIOD, buildMinimumBrainSize } from '../src/tracks/minimumBrainSize';
+import { ROAD_WIDTH_SCALE } from '../src/tracks/builder';
 import { CUPS, TRACK_LIST } from '../src/tracks/index';
 import { nearestOnSpline, pointAt } from '../src/tracks/spline';
 import { Track, type LapContext, type Ribbon, type TrackDef } from '../src/tracks/track';
@@ -269,6 +270,11 @@ describe("Couldn't Hack It, the shortcut", () => {
 
   it('is there from the second lap, and saves between one and two and a half seconds at 150cc', () => {
     expect(bdef.openOn).toEqual([2, 'final']);
+    // One narrow strip with no walls: it pays only taken clean.
+    for (const q of bdef.sections) {
+      expect(q.halfWidth).toBeCloseTo(LANE_HW * ROAD_WIDTH_SCALE);
+      expect(q.wallHeight ?? 0).toBe(0);
+    }
     const p = kartParams(first.stats, '150cc');
     const open: LapContext = { lap: 2, lastLap: false };
     const via = drive(branch, bdef.mainTo, p, undefined, open);
@@ -336,10 +342,10 @@ describe('the mob: faceless avatars closing ranks across the road, and the one g
   const h = new HazardSystem(track);
   const bdef = def.hazards.find((q) => q.kind === 'mobs')!;
 
-  it('closes in across Parasitic Mob and Faceless Undertow at three stations, on level road', () => {
+  it('closes in across Parasitic Mob and Faceless Undertow at four stations, on level road', () => {
     expect(def.hazards.map((q) => q.kind)).toEqual(['mobs']);
     if (!('at' in bdef)) throw new Error('no stations');
-    expect(bdef.at.length).toBe(3);
+    expect(bdef.at.length).toBe(4);
     expect('period' in bdef && bdef.period).toBe(MOB_PERIOD);
     for (const s of bdef.at) {
       expect(['Parasitic Mob', 'Faceless Undertow']).toContain(sectionAt(s).name);
@@ -400,7 +406,7 @@ describe('the mob: faceless avatars closing ranks across the road, and the one g
     b.update(12.3);
     const pa = a.poses.filter((q) => q.kind === 'mobs');
     const pb = b.poses.filter((q) => q.kind === 'mobs');
-    expect(pa.length).toBe(3);
+    expect(pa.length).toBe(4);
     pa.forEach((p, i) => {
       expect(p.phase).toBeCloseTo(pb[i].phase, 6);
       expect(p.lane).toBe(pb[i].lane);

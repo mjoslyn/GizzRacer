@@ -237,8 +237,75 @@ function slab(w: number, h: number, d: number, mat: THREE.Material, x = 0, y = 0
   return m;
 }
 
-/** A screen's face: the words lit on dark glass. */
-const screenFace = (lines: string[], color = '#9aeaff', glow = '#5ad8ff') => kit.textFace(lines, { style: 'neon', bg: '#04121a', fg: color, glow });
+/** What a screen shows when it isn't words: a trace, a bar chart, a turning cube, a robot's face, the simulation's grid, a heartbeat. */
+export type Glyph = 'wave' | 'bars' | 'cube' | 'face' | 'grid' | 'pulse';
+export const GLYPHS: readonly Glyph[] = ['wave', 'bars', 'cube', 'face', 'grid', 'pulse'];
+
+const glyphs = new Map<string, THREE.CanvasTexture>();
+/** A screen's face with no words on it: `glyph` drawn in glowing lines on dark glass, made once per glyph and colour. */
+export function glyphFace(glyph: Glyph, color = '#9aeaff'): THREE.CanvasTexture {
+  const key = `${glyph}|${color}`;
+  const made = glyphs.get(key);
+  if (made) return made;
+  const W = 512;
+  const H = 256;
+  const [c, ctx] = kit.canvas(W, H);
+  ctx.fillStyle = '#04121a';
+  ctx.fillRect(0, 0, W, H);
+  // Scan lines on the glass.
+  ctx.fillStyle = 'rgba(255,255,255,0.04)';
+  for (let y = 0; y < H; y += 6) ctx.fillRect(0, y, W, 2);
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 14;
+  ctx.lineWidth = 8;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  const line = (pts: [number, number][]) => {
+    ctx.beginPath();
+    pts.forEach(([x, y], k) => (k ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+    ctx.stroke();
+  };
+  if (glyph === 'wave') {
+    line(Array.from({ length: 65 }, (_, k): [number, number] => [24 + k * 7.3, H / 2 + Math.sin(k * 0.35) * 70 * Math.sin(k * 0.05 + 0.3)]));
+  } else if (glyph === 'bars') {
+    [0.4, 0.7, 0.55, 0.9, 0.3, 0.75, 0.6].forEach((v, k) => ctx.fillRect(40 + k * 64, H - 30 - v * 180, 40, v * 180));
+  } else if (glyph === 'cube') {
+    // Two views of the same block shape: is it the same, turned?
+    for (const [cx, flip] of [[W * 0.28, 1], [W * 0.72, -1]] as const) {
+      const r = 62;
+      const a: [number, number] = [cx, H / 2 - r];
+      const b: [number, number] = [cx + flip * r * 0.9, H / 2 - r * 0.5];
+      const m: [number, number] = [cx, H / 2];
+      const d: [number, number] = [cx - flip * r * 0.9, H / 2 - r * 0.5];
+      line([a, b, m, d, a]);
+      line([d, [d[0], d[1] + r], [cx, H / 2 + r], [b[0], b[1] + r], b]);
+      line([m, [cx, H / 2 + r]]);
+    }
+  } else if (glyph === 'face') {
+    ctx.beginPath();
+    ctx.arc(W * 0.36, H * 0.42, 26, 0, Math.PI * 2);
+    ctx.arc(W * 0.64, H * 0.42, 26, 0, Math.PI * 2);
+    ctx.fill();
+    line([[W * 0.3, H * 0.72], [W * 0.7, H * 0.72]]);
+  } else if (glyph === 'grid') {
+    ctx.lineWidth = 3;
+    for (let x = 16; x < W; x += 40) line([[x, 0], [x, H]]);
+    for (let y = 8; y < H; y += 40) line([[0, y], [W, y]]);
+    ctx.beginPath();
+    ctx.arc(W * 0.6, H * 0.45, 18, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    line([[20, H / 2], [170, H / 2], [200, H / 2 - 90], [235, H / 2 + 80], [265, H / 2 - 30], [290, H / 2], [W - 20, H / 2]]);
+  }
+  const t = kit.canvasTexture(c, false);
+  glyphs.set(key, t);
+  return t;
+}
+
+/** A screen's face: a glyph lit on dark glass. */
+const screenFace = (glyph: Glyph, color = '#9aeaff') => glyphFace(glyph, color);
 
 /** Everything that glows on the beat in one place, one callback between them. */
 interface Pulse {
@@ -411,8 +478,7 @@ function props(p: Pulse) {
     const w = 4 + rand() * 4;
     const h = w * 0.6;
     const post = 2.5 + rand() * 4;
-    const words = SCREENS[Math.floor(rand() * SCREENS.length)];
-    const face = kit.signPanel(w, screenFace(words), { h, depth: 0.4, frame: dark() });
+    const face = kit.signPanel(w, screenFace(GLYPHS[Math.floor(rand() * GLYPHS.length)]), { h, depth: 0.4, frame: dark() });
     face.position.y = post + h / 2;
     const lit = halo(p, SCREEN, w * 1.2, 0.14);
     lit.position.y = post + h / 2;
@@ -435,7 +501,7 @@ function props(p: Pulse) {
   const desk: kit.Prop = (rand) => {
     const g = new THREE.Group();
     g.add(slab(3.2, 0.2, 1.6, wood(), 0, 1.6, 0), slab(0.2, 1.5, 1.4, dark(), -1.4, 0.75, 0), slab(0.2, 1.5, 1.4, dark(), 1.4, 0.75, 0));
-    const mon = kit.signPanel(1.6, screenFace([rand() < 0.5 ? 'IDLE' : 'NO USER']), { h: 1, depth: 0.1, frame: dark() });
+    const mon = kit.signPanel(1.6, screenFace(rand() < 0.5 ? 'wave' : 'face'), { h: 1, depth: 0.1, frame: dark() });
     mon.position.set(0, 2.3, -0.4);
     mon.rotation.y = Math.PI;
     g.add(mon);
@@ -570,7 +636,6 @@ function props(p: Pulse) {
 }
 
 /** What the screens say. */
-const SCREENS: string[][] = [['AUTOMATION'], ['OVERLORD'], ['NEURAL', 'NETWORK'], ['DIGITAL', 'CLEANSE'], ['MUTATION'], ['SIMULATION'], ['SUPER-', 'ORGANISM'], ['JOIN US']];
 
 // The LEDs on the racks blink from one callback, however many racks there are.
 const LED = [new THREE.MeshBasicMaterial({ color: GO }), new THREE.MeshBasicMaterial({ color: STOP }), new THREE.MeshBasicMaterial({ color: SCREEN })];
@@ -678,6 +743,39 @@ function words(f: Field, frac: number, lines: string[], color = '#ffd25a', glow 
   f.g.add(kit.roadBanner(f.ribbon, along(f, frac), lines, { style: 'neon', bg: '#0a0c10', fg: color, glow: color, glowColor: glow, lift: 7, post: steel() }, f.animated));
 }
 
+/** A crane gantry across the road `frac` of the way along the field: yellow legs, a beam with beacons, a crate swinging from its hook on the beat. Where a banner of words would hang, the machines' own work instead. */
+function gantry(f: Field, frac: number, load: number = SAFETY): void {
+  const s = along(f, frac);
+  const fr = kit.frameAt(f.ribbon, s);
+  const hw = f.ribbon.halfWidthAtS(s) + 2.5;
+  const H = 9;
+  const g = new THREE.Group();
+  for (const side of [-1, 1]) g.add(slab(1.2, H, 1.2, yellow(), side * hw, H / 2, 0));
+  g.add(slab(2 * hw + 2, 1.4, 1.6, kit.matte(0x3a3e46), 0, H + 0.7, 0));
+  for (let k = 0; k < 8; k++) g.add(slab(1.4, 0.12, 1.65, k % 2 ? yellow() : dark(), -hw + (k + 0.5) * (2 * hw / 8), H + 1.45, 0));
+  for (const side of [-1, 1]) {
+    const b = beacon(f.p, side < 0 ? STOP : SODIUM, 2.6);
+    b.position.set(side * (hw - 0.5), H + 2, 0);
+    g.add(b);
+  }
+  // The hoist and its load, swinging gently across the road.
+  const hoist = new THREE.Group();
+  hoist.position.set(0, H, 0);
+  const cable = pole(3, 0.06, steel());
+  cable.position.y = -3;
+  const crate = slab(2.2, 1.6, 1.6, kit.matte(load), 0, -3.9, 0);
+  hoist.add(cable, crate);
+  g.add(hoist);
+  const phase = s * 0.13;
+  f.animated.push((time) => {
+    hoist.rotation.z = Math.sin(time * 1.3 + phase) * 0.12;
+    hoist.position.x = Math.sin(time * 0.4 + phase) * hw * 0.5;
+  });
+  g.position.set(fr.x, Math.max(0, fr.y), fr.z);
+  g.rotation.y = fr.heading;
+  f.g.add(g);
+}
+
 /** Props strewn either side of the field, in the band 3 to 20 m off the road. */
 function strew(f: Field, kinds: [number, kit.Prop][], spacing = 14, o: Partial<kit.ScatterOptions> = {}): void {
   const clear = kinds.map(([w, prop]): [number, kit.Prop] => [w, (rand, site) => (f.stands.some((q) => Math.hypot(site.x - q.x, site.z - q.z) < q.r) ? new THREE.Group() : prop(rand, site))]);
@@ -709,13 +807,13 @@ function robotRow(f: Field, side: 'left' | 'right', from: number, to: number, ne
   f.g.add(kit.crowd({ track: f.track, ribbon: f.ribbon, from, to, side, rows: 1, spacing: 3, band: [near, near + 0.4], motion: 'jump', beat: music, clothes: [0xe4e6ea, 0xd0d4da], skin: 0x22252a, height: 2.4, lights: { color: STOP, every: 2, size: 0.8 }, seed: f.seed + (side === 'left' ? 3 : 4) }, f.animated).group);
 }
 
-/** A giant screen on two legs, its words lit: a mid-ground set piece, pulsing on the beat. */
-function giantScreen(f: Field, lines: string[], w = 22, color = SCREEN): THREE.Object3D {
+/** A giant screen on two legs, its glyph lit: a mid-ground set piece, pulsing on the beat. */
+function giantScreen(f: Field, glyph: Glyph, w = 22, color = SCREEN): THREE.Object3D {
   const body = new THREE.Group();
   const h = w * 0.6;
   const legs = 6;
   const hex = `#${color.toString(16).padStart(6, '0')}`;
-  const face = kit.signPanel(w, kit.textFace(lines, { style: 'neon', bg: '#04121a', fg: hex, glow: hex }), { h, depth: 1, frame: dark() });
+  const face = kit.signPanel(w, glyphFace(glyph, hex), { h, depth: 1, frame: dark() });
   face.position.y = legs + h / 2;
   body.add(face, pole(legs, 0.6, steel()).translateX(-w * 0.3), pole(legs, 0.6, steel()).translateX(w * 0.3));
   return kit.setPiece({ body, base: 'plinth', baseColor: 0x2a2e34, baseWidth: w * 0.9, glow: { color, size: w * 0.9, y: legs + h / 2, opacity: 0.12 }, beat: music }, f.animated);
@@ -757,7 +855,7 @@ const FIELDS: Record<string, (f: Field) => void> = {
     strew(f, [[3, f.P.leavers], [2, f.P.crates], [2, f.P.lamp], [1, f.P.screen]], 12);
     floor(f);
     queue(f, 'left', f.from, f.to, 9);
-    midground(f, giantScreen(f, ['JOIN US'], 22, SAFETY), 0.5, 36, 15);
+    midground(f, giantScreen(f, 'face', 22, SAFETY), 0.5, 36, 15);
     const birds = kit.flock({ count: 24, radius: 50, height: 40, color: 0x1a1c20, size: 1.4 }, f.animated);
     const at = kit.offRoad(f.ribbon, along(f, 0.5), 0);
     birds.position.set(at.x, 0, at.z);
@@ -768,7 +866,6 @@ const FIELDS: Record<string, (f: Field) => void> = {
     strew(f, [[4, f.P.arm], [2, f.P.forklift], [2, f.P.bot], [1, f.P.barrels]], 13);
     floor(f);
     words(f, 0.08, ['YOUR NEW', 'BEST MATE']);
-    words(f, 0.92, ['AUTOMATION'], '#ff9a5a', ROBOT);
     robotRow(f, 'left', along(f, 0.3), along(f, 0.85), 7);
     robotRow(f, 'right', along(f, 0.3), along(f, 0.85), 7);
     chimney(f, along(f, 0.4), 50);
@@ -782,8 +879,7 @@ const FIELDS: Record<string, (f: Field) => void> = {
     strew(f, [[4, f.P.arm], [2, f.P.bot], [2, f.P.barrels], [1, f.P.tank]], 13, { side: 'right' });
     strew(f, [[3, f.P.crates], [2, f.P.lamp], [1, f.P.cones]], 16, { side: 'left', band: [3.5, 10] });
     floor(f);
-    words(f, 0.2, ['KING OF A', 'BALD PRIMATE'], '#ffd25a', GOLD);
-    words(f, 0.8, ['ALL HAIL'], '#ffd25a', GOLD);
+    gantry(f, 0.8, GOLD);
     const dust = kit.motes({ count: 120, radius: 40, height: 20, color: GOLD, drift: 'float', size: 0.45, seed: f.seed }, f.animated);
     const at = kit.offRoad(f.ribbon, along(f, 0.5), 0);
     dust.position.set(at.x, 0, at.z);
@@ -793,7 +889,7 @@ const FIELDS: Record<string, (f: Field) => void> = {
   'Not Worthy'(f) {
     strew(f, [[4, f.P.leavers], [2, f.P.screen], [1, f.P.lamp]], 10);
     floor(f, 1, true);
-    words(f, 0.3, ['NOT WORTHY'], '#ffd25a', GOLD);
+    gantry(f, 0.3);
     const dust = kit.motes({ count: 90, radius: 30, height: 10, color: 0xffe8b0, drift: 'float', size: 0.3, seed: f.seed }, f.animated);
     const at = kit.offRoad(f.ribbon, along(f, 0.5), 0);
     dust.position.set(at.x, 0, at.z);
@@ -804,8 +900,7 @@ const FIELDS: Record<string, (f: Field) => void> = {
     strew(f, [[4, f.P.screen], [2, f.P.drone], [2, f.P.shape], [1, f.P.rack]], 11);
     floor(f);
     words(f, 0.12, ['MENTAL ROTATION'], '#9aeaff', SCREEN);
-    words(f, 0.55, ['FOR THE', 'OVERLORD'], '#ff8a8a', STOP);
-    words(f, 0.9, ['SAME SHAPE?'], '#9aeaff', SCREEN);
+    gantry(f, 0.9, SCREEN);
     midground(f, giantRobot(f), 0.72, 36, 14);
   },
   // The super-organism: up on the deck, robots below working as one, cranes and chimneys.
@@ -813,7 +908,6 @@ const FIELDS: Record<string, (f: Field) => void> = {
     strew(f, [[3, f.P.bot], [3, f.P.arm], [2, f.P.tank], [1, f.P.crates]], 16, { band: [6, 26], clear: 6 });
     floor(f, 0.7);
     words(f, 0.15, ['SUPER-ORGANISM'], '#ff9a5a', ROBOT);
-    words(f, 0.85, ['ALL AS ONE']);
     chimney(f, along(f, 0.3), 44);
     coolingTower(f, along(f, 0.7), 60);
     const mid = kit.offRoad(f.ribbon, along(f, 0.5), 0);
@@ -825,8 +919,7 @@ const FIELDS: Record<string, (f: Field) => void> = {
   'Bending Light Through Prisms'(f) {
     strew(f, [[3, f.P.shard], [3, f.P.screen], [2, f.P.drone], [1, f.P.lamp]], 13);
     floor(f);
-    words(f, 0.2, ['A SCHISM'], '#e8f4ff', 0xffffff);
-    words(f, 0.75, ['THROUGH PRISMS'], '#c8a8ff', 0x6a5aff);
+    gantry(f, 0.75, 0xc8a8ff);
     const light = kit.motes({ count: 200, radius: 40, height: 20, color: 0xc8a8ff, drift: 'swirl', speed: 1.4, size: 0.5, seed: f.seed }, f.animated);
     const at = kit.offRoad(f.ribbon, along(f, 0.5), 0);
     light.position.set(at.x, 0, at.z);
@@ -836,8 +929,7 @@ const FIELDS: Record<string, (f: Field) => void> = {
   'Cyber-Surgeon'(f) {
     strew(f, [[4, f.P.bot], [3, f.P.screen], [2, f.P.rack], [1, f.P.lamp]], 12);
     floor(f);
-    words(f, 0.15, ['CYBER-SURGEON'], '#a8ffb0', GO);
-    words(f, 0.65, ['DIGITAL CLEANSE'], '#9aeaff', SCREEN);
+    gantry(f, 0.65, 0xf0f4f8);
     const code = kit.motes({ count: 260, radius: 40, height: 22, color: GO, drift: 'fall', speed: 4, size: 0.45, seed: f.seed }, f.animated);
     const at = kit.offRoad(f.ribbon, along(f, 0.5), 0);
     code.position.set(at.x, 0, at.z);
@@ -847,7 +939,7 @@ const FIELDS: Record<string, (f: Field) => void> = {
   'The Neural Network'(f) {
     strew(f, [[6, f.P.rack], [1, f.P.drone], [1, f.P.tank]], 9);
     floor(f);
-    words(f, 0.4, ["IT'S AT WORK"], '#a8ffb0', GO);
+    gantry(f, 0.4, 0x2a6aaa);
     coolingTower(f, along(f, 0.5), 46);
   },
   // Prepare for mutation: the first corner of the U, robots half-changed into something else, green motes.
@@ -865,7 +957,7 @@ const FIELDS: Record<string, (f: Field) => void> = {
   'The Crack of Doom'(f) {
     strew(f, [[3, f.P.barrels], [3, f.P.cones], [2, f.P.tank], [1, f.P.lamp]], 13);
     floor(f);
-    words(f, 0.75, ['DOOM'], '#ffb08a', 0xff5a1a);
+    gantry(f, 0.75, 0xaa2a2a);
     const embers = kit.motes({ count: 200, radius: 50, height: 24, color: 0xffa040, drift: 'rise', speed: 3, size: 0.45, seed: f.seed }, f.animated);
     const at = kit.offRoad(f.ribbon, along(f, 0.5), 0);
     embers.position.set(at.x, 0, at.z);
@@ -882,7 +974,7 @@ const FIELDS: Record<string, (f: Field) => void> = {
   'Inside a Simulation'(f) {
     strew(f, [[3, f.P.shape], [2, f.P.leavers], [2, f.P.lamp], [1, f.P.screen]], 12);
     floor(f, 1, true);
-    words(f, 0.3, ['INSIDE A', 'SIMULATION'], '#a8ffb0', GO);
+    gantry(f, 0.75, GO);
     queue(f, 'right', f.from, f.to, 9);
   },
 };
@@ -1091,7 +1183,7 @@ export function heirStatue(ribbon: Ribbon, s: number, lateral: number, animated:
     l.position.set(-11 + c * 4.4, -0.3, 4 + r * 3.4);
     g.add(l);
   }
-  const plaque = kit.signPanel(12, kit.textFace(['NOT WORTHY'], { style: 'neon', bg: '#120c04', fg: '#ffd25a', glow: '#ffc21a' }), { h: 3, depth: 0.3, frame: dark() });
+  const plaque = kit.signPanel(12, glyphFace('bars', '#ffd25a'), { h: 3, depth: 0.3, frame: dark() });
   plaque.position.set(0, 3, 0.2);
   g.add(plaque);
   animated.push((time) => {
@@ -1107,7 +1199,7 @@ export function heirStatue(ribbon: Ribbon, s: number, lateral: number, animated:
 export function screenWall(ribbon: Ribbon, s: number, to: number, animated: kit.Animated): THREE.Group {
   const g = new THREE.Group();
   const p = pulse(animated);
-  const texts = SCREENS;
+  const shown: Glyph[] = ['cube', 'cube', 'wave', 'cube', 'grid'];
   const faces: THREE.MeshBasicMaterial[] = [];
   let k = 0;
   for (let d = s; d < to; d += 20, k++) {
@@ -1115,7 +1207,7 @@ export function screenWall(ribbon: Ribbon, s: number, to: number, animated: kit.
     const hw = ribbon.halfWidthAtS(d);
     for (const side of [-1, 1]) {
       const at = kit.offRoad(ribbon, d, side * (hw + 9));
-      const panel = kit.signPanel(9, screenFace(texts[(k + (side > 0 ? 3 : 0)) % texts.length]), { h: 5.4, depth: 0.5, frame: dark() });
+      const panel = kit.signPanel(9, screenFace(shown[(k + (side > 0 ? 2 : 0)) % shown.length], side > 0 ? '#ffd25a' : '#9aeaff'), { h: 5.4, depth: 0.5, frame: dark() });
       panel.position.set(at.x, f.y + 6.5, at.z);
       panel.rotation.y = f.heading + (side > 0 ? Math.PI / 2 : -Math.PI / 2) + side * 0.35;
       panel.traverse((o) => {
@@ -1217,7 +1309,7 @@ export function overlord(ribbon: Ribbon, s: number, lateral: number, animated: k
     g.add(sh);
   }
   g.add(kit.lightPool(STOP, 20, 0.3));
-  const plaque = kit.signPanel(12, kit.textFace(['OVERLORD'], { style: 'neon', bg: '#060608', fg: '#ff8a8a', glow: '#ff3a2a' }), { h: 3, depth: 0.3, frame: dark() });
+  const plaque = kit.signPanel(12, glyphFace('face', '#ff8a8a'), { h: 3, depth: 0.3, frame: dark() });
   plaque.position.set(0, 36, 0);
   g.add(plaque);
   animated.push((time) => {
@@ -1323,11 +1415,12 @@ export function cyberSurgeon(ribbon: Ribbon, s: number, lateral: number, animate
   const pool = kit.lightPool(0xe8fff8, 10, 0.4);
   pool.position.y = 0.45;
   g.add(lamp, lit, pool);
-  // Its screens: the code, the cleanse.
-  const screens: [string[], number][] = [[['JAVASCRIPT', 'PERSON'], GO], [['DIGITAL', 'CLEANSE'], SCREEN], [['CYBER-', 'SURGEON'], GO]];
+  // Its screens: the heartbeat, the code it writes you in, the trace.
+  const screens: [string[] | Glyph, number][] = [['pulse', GO], [['JAVASCRIPT', 'PERSON'], SCREEN], ['wave', GO]];
   screens.forEach(([w, c], k) => {
     const hex = `#${c.toString(16).padStart(6, '0')}`;
-    const sc = kit.signPanel(8, kit.textFace(w, { style: 'neon', bg: '#04120a', fg: hex, glow: hex }), { h: 4.8, depth: 0.3, frame: dark() });
+    const face = typeof w === 'string' ? glyphFace(w, hex) : kit.textFace(w, { style: 'neon', bg: '#04120a', fg: hex, glow: hex });
+    const sc = kit.signPanel(8, face, { h: 4.8, depth: 0.3, frame: dark() });
     sc.position.set(-10 + k * 10, 8, -10.4);
     sc.rotation.y = Math.PI;
     g.add(sc);
@@ -1429,7 +1522,7 @@ export function crackOfDoom(ribbon: Ribbon, s: number, lateral: number, animated
     g.add(smoke);
   }
   g.add(kit.motes({ count: 220, radius: 30, height: 30, color: 0xffa040, drift: 'rise', speed: 4, size: 0.5, seed: 9902 }, animated));
-  const sign = kit.signPanel(18, kit.textFace(['THE CRACK OF DOOM'], { style: 'neon', bg: '#060608', fg: '#ffb08a', glow: '#ff5a1a' }), { h: 3.6, depth: 0.3, frame: dark() });
+  const sign = kit.signPanel(18, glyphFace('pulse', '#ffb08a'), { h: 3.6, depth: 0.3, frame: dark() });
   sign.position.set(0, 9, -10);
   g.add(sign, pole(7, 0.3, steel()).translateZ(-10).translateX(-6), pole(7, 0.3, steel()).translateZ(-10).translateX(6));
   animated.push((time) => {
@@ -1473,7 +1566,7 @@ export function karmaDino(ribbon: Ribbon, s: number, lateral: number, animated: 
   const glow = halo(p, GO, 40, 0.18);
   glow.position.y = 11;
   g.add(glow);
-  const sign = kit.signPanel(16, kit.textFace(['SIMULATION'], { style: 'neon', bg: '#020a04', fg: '#a8ffb0', glow: '#6aff8a' }), { h: 3.4, depth: 0.3, frame: dark() });
+  const sign = kit.signPanel(16, glyphFace('grid', '#a8ffb0'), { h: 3.4, depth: 0.3, frame: dark() });
   sign.position.set(0, 24, 15);
   g.add(sign);
   animated.push((time) => {

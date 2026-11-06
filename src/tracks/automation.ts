@@ -25,9 +25,15 @@ const FLAT = 60;
 const DECK_DROP = 80;
 /** The deck's walls, high: nothing drops off the deck onto the line below. */
 export const DECK_WALL = 3;
-/** The presses: three gantries across the production line this far apart, the first this far up it. */
+/** The presses: four gantries across the production line this far apart, the first this far up it. */
 export const PRESS_APART = 50;
 const PRESS_FROM = 140;
+/** The hump in the belt past the presses: up this high from this far up the line to its crest, then down by the line's end. */
+export const HUMP = 3.5;
+const HUMP_FROM = 305;
+const HUMP_TOP = 345;
+/** The crack of doom: the road along the U's bottom sinks this far into it. */
+export const CRACK = 4;
 /** The production line's length, and how far up it the deck crosses (the desks' straight is laid to put it there). */
 const LINE = 370;
 const CROSS_AT = 84;
@@ -40,6 +46,8 @@ const LANE_FROM = 4;
 const LANE_TO = 25;
 const LANE_R = 55;
 const LANE_OPEN = 1;
+/** The override is a single narrow belt with no walls: off its edge is the factory floor, and the time it saves is gone. */
+export const LANE_HW = 3.2;
 /** The last turn's half width, and the radius of its two corners. */
 const LAST_HW = 10.5;
 const LAST_R = 95;
@@ -51,6 +59,16 @@ const props = (hw: number, wall: number, extra: Partial<SectionProps> = {}): Sec
 const START: Pose = { x: 0, z: -170, h: 0 };
 const HOME: Pose = { x: START.x, z: START.z - TAIL, h: 0 };
 
+/** The squared hairpin round the ape king: the U it fills (`HAIRPIN_R` across), turned in two corners this tight. */
+const HAIRPIN_R = 100;
+const KING_R = 42;
+
+/** A turn of `deg` that a curve of radius `wide` would take, tightened to `tight` with straights either side: the road in and out where it was, the corner itself sharper. */
+function corner(b: TrackBuilder, wide: number, tight: number, deg: number) {
+  const x = (wide - tight) * Math.tan((Math.abs(deg) * Math.PI) / 360);
+  b.straight(x).arc(tight, deg).straight(x);
+}
+
 /** Lays the whole lap onto `b`, sections and marks too. */
 function lay(b: TrackBuilder, deskRun: number, slipRun: number) {
   // Join the last migration: out of the gate with everyone else.
@@ -59,18 +77,19 @@ function lay(b: TrackBuilder, deskRun: number, slipRun: number) {
   b.section('Your New Best Mate', props(11, 1.4));
   b.mark('line');
   b.straight(LINE);
-  // King of a bald primate: a wide hairpin round his throne.
+  // King of a bald primate: a squared hairpin round his throne, two hard right-angle corners to brake for with a short straight across the top between them.
   b.section('King of a Bald Primate', props(11, 1.4));
   b.mark('arms');
-  b.arc(100, -180);
-  // Not worthy: a chicane past the heir's statue and the kneeling crowd.
-  b.section('Not Worthy', props(10, 1.4));
+  b.straight(HAIRPIN_R - KING_R).arc(KING_R, -90).straight(2 * (HAIRPIN_R - KING_R)).arc(KING_R, -90).straight(HAIRPIN_R - KING_R);
+  // Not worthy: a tight chicane past the heir's statue and the kneeling crowd, the road squeezed narrow between the kneelers.
+  b.section('Not Worthy', props(8, 1.4));
   b.mark('desk');
-  b.straight(deskRun).arc(65, 30).arc(65, -60).arc(65, 30);
-  // Mental rotation for the overlord: out west and round, shapes turning on screens on both sides.
-  b.section('Mental Rotation', props(10.5, 1.4));
+  b.straight(deskRun).arc(42, 30).arc(42, -60).arc(42, 30);
+  // Mental rotation for the overlord: out west and round, shapes turning on screens on both sides; the loop's far end a tight drift corner.
+  b.section('Mental Rotation', props(9, 1.4));
   b.mark('screens');
-  b.arc(50, 90).straight(20).arc(52, -180);
+  b.arc(50, 90).straight(20).arc(52, -90);
+  corner(b, 52, 34, -90);
   // Heading east now, straight at the production line: the deck's ramp starts so it's at full height FLAT before the crossing.
   b.straight(-b.pose.x - FLAT - RAMP);
   // The super-organism: onto the overhead deck among its arms, and across the conveyor high over it.
@@ -88,9 +107,9 @@ function lay(b: TrackBuilder, deskRun: number, slipRun: number) {
   b.mark('decided');
   b.straight(35).arc(80, 90);
   // The cyber-surgeon's theatre, and the digital cleanse.
-  b.section('Cyber-Surgeon', props(11, 1.4));
+  b.section('Cyber-Surgeon', props(8.5, 1.4));
   b.mark('slips');
-  b.straight(slipRun).arc(50, -35).arc(50, 70).arc(50, -35);
+  b.straight(slipRun).arc(40, -35).arc(40, 70).arc(40, -35);
   // Heading south now: the neural network at work, straight down the east side, as far as the straight home is long.
   b.section('The Neural Network', props(10.5, 1.4));
   b.mark('servers');
@@ -147,7 +166,7 @@ function clearSide(points: readonly (readonly [number, number])[], s: number, aw
 function buildLane(b: TrackBuilder, points: readonly (readonly [number, number])[], length: number) {
   const from = b.marks.lightsOut.s + LANE_FROM;
   const to = b.marks.home.s + LANE_TO;
-  const lane = new TrackBuilder(poseOn(points, from), 'The Override', { halfWidth: 5, wallHeight: 2.2, surface: 'conveyor' });
+  const lane = new TrackBuilder(poseOn(points, from), 'The Override', { halfWidth: LANE_HW, wallHeight: 0, surface: 'conveyor' });
   for (const [kind, l] of dubins(lane.pose, poseOn(points, to), LANE_R)) {
     if (kind === 'S') lane.straight(l);
     else lane.arc(LANE_R, ((kind === 'L' ? 1 : -1) * l * 180) / (Math.PI * LANE_R));
@@ -156,7 +175,7 @@ function buildLane(b: TrackBuilder, points: readonly (readonly [number, number])
   const mid = len / 2;
   lane.profile(0, len, () => 0, 10);
   const ribbon = lane.finish(false);
-  // Walled once it's off the road it leaves and until it meets it again: a wall over the road itself would catch karts going round the long way.
+  // Where it's off the road it leaves and until it meets it again (the lane has no walls; the road's own are opened at its mouths).
   const [sec] = ribbon.sections;
   const room = (q: readonly [number, number]) => Math.min(...points.map((m) => Math.hypot(m[0] - q[0], m[1] - q[1]))) - (sec.halfWidth + LAST_HW) * ROAD_WIDTH_SCALE;
   const cum = [0];
@@ -198,6 +217,12 @@ export function buildAutomation(): TrackDef {
   ease(m('machines'), 0, m('machines', RAMP), DECK);
   b.profile(m('machines', RAMP), m('crest'), () => DECK, 10);
   b.profile(m('crest'), m('decided'), (u) => DECK * (1 - Math.sin((Math.PI * u) / 2)), 4);
+  // Past the last press, a hump in the belt: up, and off its crest airborne into the braking for the ape king's first corner.
+  ease(m('line', HUMP_FROM), 0, m('line', HUMP_TOP), HUMP);
+  b.profile(m('line', HUMP_TOP), m('line', LINE), (u) => HUMP * (1 - Math.sin((Math.PI * u) / 2)), 3);
+  // The crack of doom: the road along the U's bottom drops into it and climbs back out.
+  ease(m('doom', 10), 0, m('doom', 60), -CRACK);
+  ease(m('doom', 60), -CRACK, m('kiss', 0), 0);
 
   const main = b.finish(true);
   const lane = buildLane(b, main.points, main.length);
@@ -212,7 +237,7 @@ export function buildAutomation(): TrackDef {
     });
   }
   const at = (mark: string, d = 0) => b.marks[mark].s + d;
-  const stations = [0, 1, 2].map((k) => at('line', PRESS_FROM + k * PRESS_APART));
+  const stations = [0, 1, 2, 3].map((k) => at('line', PRESS_FROM + k * PRESS_APART));
   return {
     id: 'automation',
     name: 'Automation',

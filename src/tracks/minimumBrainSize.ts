@@ -36,12 +36,13 @@ const DIVE_FROM = 26;
 const DIVE_LEN = 60;
 /** The long road back over the spiral: its deck this high over the ground it crosses. */
 export const DECK = 11;
-const CHORD_R = 70;
+/** The road back's turns: tight, a corner to brake for at each end of the deck. */
+const CHORD_R = 60;
 /** Off the crest: the road falls from the deck to the ground over this far. */
-const CREST_DROP = 75;
+const CREST_DROP = 50;
 const crestDrop = (u: number) => (u >= 1 ? 0 : DECK * (1 - Math.sin((Math.PI * Math.max(0, u)) / 2)));
 const RAMP = 80;
-/** The mob: a row of them crosses the road every this many seconds, at three stations this far apart. */
+/** The mob: a row of them crosses the road every this many seconds, at four stations this far apart. */
 export const MOB_PERIOD = 4.8;
 const MOB_APART = 46;
 /** Couldn't Hack It, the lane inside the last loop: it leaves the road this far past the crest, where the deck's way down meets the ground, cuts inside the loop on a tighter turn, and meets the road again this far before the line. Its saving, about 1.5 s at 150cc, is set by these and its radius. */
@@ -52,6 +53,8 @@ const LOOP_HW = 10.5;
 /** The lane is walled from where it's this clear of the road it leaves to where it's that clear of the road it joins. */
 const LANE_OPEN = 1;
 const LANE_R = 40;
+/** The lane is one narrow strip with no walls: off its edge, the time it saves is gone. */
+export const LANE_HW = 3.2;
 /** The giant eye stands in the big open pocket east of the centre, where the tear can fall in peace. */
 const EYE_AT = { x: 146, z: 44 };
 /** Open ground round the lap's rim where a giant can stand (found by plotting the lap): the bro takes the one nearest his stretch. */
@@ -127,17 +130,18 @@ function lay(b: TrackBuilder, deck: Deck) {
   // Riddle me this: out of the bedroom, two kickers.
   b.straight(12).mark('kick1').kicker().straight(14).mark('kick2').kicker();
   b.straight(60 - b.s);
-  b.section('Did You Ever Grow?', props(11, 1.4));
+  b.section('Did You Ever Grow?', props(9.5, 1.4));
   b.mark('grow');
   b.straight(40);
   // Break the spider's legs: a leap over the road broken off.
-  b.section("Break the Spider's Legs", props(11, 1.4));
+  // The leap is narrow: a spider's leg's width, the gap's edges either side.
+  b.section("Break the Spider's Legs", props(8, 1.4));
   b.mark('legs');
   b.straight(4).mark('ramp').elevate(0).rise(18, 3);
   b.gap(12, 20);
   b.mark('landing');
   b.elevate(0);
-  b.section('Just to Feed the Crow', props(11, 1.4));
+  b.section('Just to Feed the Crow', props(9.5, 1.4));
   b.mark('crow');
   b.straight(OPENING - b.s);
   b.mark('rim');
@@ -206,7 +210,7 @@ function lay(b: TrackBuilder, deck: Deck) {
   b.mark('exit');
 
   // The road back across the whole thing, on a deck over every turn.
-  b.section('Radicalise to Minimum Brain Size', props(10.5, 1.4));
+  b.section('Radicalise to Minimum Brain Size', props(9, 1.4));
   b.mark('chord');
   const names = ['Radicalise to Minimum Brain Size', 'At the Center of It All', "You Ain't Got the Gall", 'Pissing on a Flame', 'Standing on a Ball'];
   const cuts = [deck.from, deck.centre, deck.to, deck.to + 75];
@@ -224,7 +228,7 @@ function lay(b: TrackBuilder, deck: Deck) {
       }
       if (stage < cuts.length && at >= next - 1e-6) {
         stage++;
-        b.section(names[stage], props(10.5, stage < 4 ? SPIRAL_WALL : 1.4, { bridge: stage < 4 }));
+        b.section(names[stage], props(stage < 4 ? 9 : LOOP_HW, stage < 4 ? SPIRAL_WALL : 1.4, { bridge: stage < 4 }));
         b.mark(['', 'deck', 'over', 'crest', 'ball'][stage]);
       }
     }
@@ -288,7 +292,7 @@ function poseOn(points: readonly (readonly [number, number])[], s: number): Pose
 function buildLane(b: TrackBuilder, points: readonly (readonly [number, number])[], length: number) {
   const from = b.marks.crest.s + LANE_FROM;
   const to = length - LANE_TO;
-  const lane = new TrackBuilder(poseOn(points, from), "Couldn't Hack It", { halfWidth: 5, wallHeight: 2.6, surface: 'feed' });
+  const lane = new TrackBuilder(poseOn(points, from), "Couldn't Hack It", { halfWidth: LANE_HW, wallHeight: 0, surface: 'feed' });
   for (const [kind, l] of dubins(lane.pose, poseOn(points, to), LANE_R)) {
     if (kind === 'S') lane.straight(l);
     else lane.arc(LANE_R, ((kind === 'L' ? 1 : -1) * l * 180) / (Math.PI * LANE_R));
@@ -297,7 +301,7 @@ function buildLane(b: TrackBuilder, points: readonly (readonly [number, number])
   const mid = len / 2;
   lane.profile(0, len, () => 0, 10);
   const ribbon = lane.finish(false);
-  // Walled once it's off the road it leaves and until it meets it again: a wall over the road itself would catch karts going round the long way.
+  // Where it's off the road it leaves and until it meets it again (the lane has no walls; the road's own are opened at its mouths).
   const [sec] = ribbon.sections;
   const room = (q: readonly [number, number]) => Math.min(...points.map((m) => Math.hypot(m[0] - q[0], m[1] - q[1]))) - (sec.halfWidth + LOOP_HW) * ROAD_WIDTH_SCALE;
   const cum = [0];
@@ -348,7 +352,7 @@ export function buildMinimumBrainSize(): TrackDef {
     });
   }
   const at = (mark: string, d = 0) => b.marks[mark].s + d;
-  const stations = [0, 1, 2].map((k) => at('mob', 25 + k * MOB_APART));
+  const stations = [0, 1, 2, 3].map((k) => at('mob', 25 + k * MOB_APART));
   const broAt = at('bro', 60);
   const bro = (() => {
     let d = 0;

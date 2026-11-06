@@ -164,12 +164,11 @@ export function cuttingTexture(): THREE.CanvasTexture {
   return kit.canvasTexture(c);
 }
 
-/** The barrier: road cases end to end, black with aluminium edges and stencilled names, a gaffer-tape label on each. */
+/** The barrier: road cases end to end, black with aluminium edges, a blank gaffer-tape label on each. */
 export function roadCaseTexture(): THREE.CanvasTexture {
   const W = 256;
   const H = 64;
   const [c, ctx] = kit.canvas(W, H);
-  const names = ['K.G.', 'ODDLIFE', 'FRAGILE', 'STAGE L', 'AMP 2', 'DRUMS'];
   for (let k = 0; k < 4; k++) {
     const x = k * 64;
     ctx.fillStyle = '#18161e';
@@ -180,11 +179,9 @@ export function roadCaseTexture(): THREE.CanvasTexture {
     ctx.fillRect(x, 0, 3, H);
     ctx.fillStyle = '#e8e2c8';
     ctx.fillRect(x + 12, 20, 40, 14);
-    ctx.fillStyle = '#18161e';
-    ctx.font = 'bold 10px Arial, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(names[k % names.length], x + 32, 27);
+    // A strip of black marker across the tape where a name would be.
+    ctx.fillStyle = '#4a4440';
+    ctx.fillRect(x + 18, 26, 28, 2);
     ctx.fillStyle = hex([PINK, TEAL, GOLD, ORANGE][k]);
     ctx.fillRect(x + 6, 44, 52, 4);
   }
@@ -298,6 +295,44 @@ function cabinet(p: Pulse, w: number, h = w, cones = 2): THREE.Group {
   return g;
 }
 
+/** Which way a road sign out here points: none of them agree. */
+type Way = 'left' | 'right' | 'up' | 'back';
+const WAYS: readonly Way[] = ['left', 'right', 'up', 'back'];
+
+const arrows = new Map<string, THREE.CanvasTexture>();
+/** A road sign's face with no words on it: a white arrow pointing `way` on `bg`, a white rule round it. */
+function arrowFace(way: Way, bg = '#1a6a3a', fg = '#ffffff'): THREE.CanvasTexture {
+  const key = `${way}|${bg}|${fg}`;
+  const made = arrows.get(key);
+  if (made) return made;
+  const W = 256;
+  const H = 128;
+  const [c, ctx] = kit.canvas(W, H);
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = fg;
+  ctx.lineWidth = 5;
+  ctx.strokeRect(8, 8, W - 16, H - 16);
+  ctx.fillStyle = fg;
+  ctx.save();
+  ctx.translate(W / 2, H / 2);
+  ctx.rotate({ left: Math.PI, right: 0, up: -Math.PI / 2, back: Math.PI / 2 }[way]);
+  ctx.beginPath();
+  ctx.moveTo(-60, -10);
+  ctx.lineTo(20, -10);
+  ctx.lineTo(20, -32);
+  ctx.lineTo(62, 0);
+  ctx.lineTo(20, 32);
+  ctx.lineTo(20, 10);
+  ctx.lineTo(-60, 10);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+  const t = kit.canvasTexture(c, false);
+  arrows.set(key, t);
+  return t;
+}
+
 /** A sign of the song's words, lit. */
 function words(lines: string[], fg = hex(GOLD), glow = hex(PINK)): THREE.CanvasTexture {
   return kit.textFace(lines, { style: 'neon', bg: '#120a1c', fg, glow });
@@ -354,10 +389,9 @@ function props(p: Pulse) {
     return g;
   };
   const sign: kit.Prop = (rand) => {
-    // A road sign out here in the middle of nowhere, the song's words on it.
+    // A road sign out here in the middle of nowhere, pointing somewhere else.
     const g = new THREE.Group();
-    const lines = SIGNS[Math.floor(rand() * SIGNS.length)];
-    const board = kit.signPanel(3.6, kit.textFace(lines, { style: 'board', bg: '#1a6a3a', fg: '#ffffff' }), { h: 1.8, depth: 0.1, frame: metal(), glows: false });
+    const board = kit.signPanel(3.6, arrowFace(WAYS[Math.floor(rand() * WAYS.length)]), { h: 1.8, depth: 0.1, frame: metal(), glows: false });
     board.position.y = 3.2;
     g.add(pole(4, 0.08, metal()).translateX(-1.2), pole(4, 0.08, metal()).translateX(1.2), board);
     return g;
@@ -450,8 +484,6 @@ function props(p: Pulse) {
   return { amps, roadCase, truss, sign, cone, bush, bottles, mic, van, lamp, sparkle, sofa };
 }
 
-/** The road signs' words: the song's lines out in the middle of nowhere. */
-const SIGNS = [['NOWHERE', '12 KM'], ['ANOTHER ROUND'], ['HALLOWED GROUND'], ['GREEN ROOM', '→'], ['BACK TO', 'THE BUS'], ['NO CONCEPT OF', 'GEOGRAPHY'], ['ODD LIFE', 'NEXT EXIT'], ['GOTTA BE', 'AWARE']];
 
 // Scenery.
 
@@ -537,6 +569,27 @@ function midground(f: Field, piece: THREE.Object3D, frac: number, away: number, 
   return piece;
 }
 
+/** A lighting rig across the road `frac` of the way along the field: a truss on two towers, its lamps chasing on the beat, where a banner of words would hang. */
+function rig(f: Field, frac: number, color = PINK): void {
+  const s = along(f, frac);
+  const fr = kit.frameAt(f.ribbon, s);
+  const hw = f.ribbon.halfWidthAtS(s) + 2;
+  const H = 8;
+  const g = new THREE.Group();
+  for (const side of [-1, 1]) for (const [x, z] of [[-0.3, -0.3], [0.3, -0.3], [-0.3, 0.3], [0.3, 0.3]]) g.add(pole(H, 0.06, metal()).translateX(side * hw + x).translateZ(z));
+  g.add(slab(2 * hw + 1, 0.5, 0.5, metal(), 0, H, 0), slab(2 * hw + 1, 0.5, 0.5, metal(), 0, H - 0.8, 0));
+  const cols = [color, TEAL, GOLD];
+  const n = Math.max(4, Math.round(hw / 2.2));
+  for (let k = 0; k < n; k++) {
+    const l = stageLight(f.p, cols[k % 3], k, 0.5);
+    l.position.set(-hw + ((k + 0.5) * 2 * hw) / n, H - 1.3, 0.3);
+    g.add(l);
+  }
+  g.position.set(fr.x, fr.y, fr.z);
+  g.rotation.y = fr.heading;
+  f.g.add(g);
+}
+
 /** A banner of the song's words across the road `frac` of the way along the field. */
 function banner(f: Field, frac: number, lines: string[], color = hex(GOLD), glow = PINK): void {
   f.g.add(kit.roadBanner(f.ribbon, along(f, frac), lines, { style: 'neon', bg: '#120a1c', fg: color, glow: color, glowColor: glow, lift: 7, post: metal() }, f.animated));
@@ -613,8 +666,8 @@ function waterTower(f: Field): THREE.Object3D {
   for (const [x, z] of [[-3, -3], [3, -3], [-3, 3], [3, 3]]) body.add(pole(14, 0.3, metal()).translateX(x).translateZ(z));
   const tank = pole(7, 5, kit.matte(0xb8b0a8, { emissive: 0x141010 }), 14);
   body.add(tank, new THREE.Mesh(new THREE.ConeGeometry(5.4, 2.4, 16), kit.matte(0x8a8078)).translateY(22.2));
-  const face = kit.signPanel(8, words(['NOWHERE'], '#ffffff', hex(TEAL)), { h: 2.2, depth: 0.1 });
-  face.position.set(0, 17.5, 5.1);
+  // Where the town's name was, a painted band, long faded.
+  const face = pole(2.2, 5.08, kit.matte(0x8aa8a8, { emissive: 0x0a1414 }), 16.4);
   body.add(face, ball(0.5, kit.lit(0xff3030), 0, 23.6, 0));
   return kit.setPiece({ body, base: false, glow: { color: 0xff3030, size: 6, y: 23.6, opacity: 0.4 }, beat: music }, f.animated);
 }
@@ -691,8 +744,8 @@ function crossSign(f: Field): THREE.Object3D {
   const body = new THREE.Group();
   body.add(pole(12, 0.3, metal()));
   const arms: THREE.Object3D[] = [];
-  ['THIS WAY', 'THAT WAY', 'NOWHERE', 'BACK HOME'].forEach((w, k) => {
-    const arm = kit.signPanel(7, kit.textFace([w], { style: 'board', bg: '#ffffff', fg: '#1a1420' }), { h: 1.4, depth: 0.1, frame: metal(), glows: false });
+  WAYS.forEach((w, k) => {
+    const arm = kit.signPanel(7, arrowFace(w, '#ffffff', '#1a1420'), { h: 1.4, depth: 0.1, frame: metal(), glows: false });
     arm.position.set(3.5, 0, 0);
     const holder = new THREE.Group();
     holder.position.y = 7 + k * 1.6;
@@ -712,7 +765,7 @@ const FIELDS: Record<string, (f: Field) => void> = {
     ground(f);
     crowd(f, 'left', f.from + 10, f.to, 'jump', 8);
     crowd(f, 'right', f.from + 10, f.to, 'jump', 8);
-    banner(f, 0.85, ['LEMME TELL YOU', 'ONE THING ABOUT MY LIFE']);
+    rig(f, 0.85);
     air(f, 0.5, 0xffd8f0, 'fall', 200);
   },
   // Bad for my ears: the stacks, a giant ear ringing.
@@ -729,20 +782,20 @@ const FIELDS: Record<string, (f: Field) => void> = {
   "It's Weird"(f) {
     strew(f, [[3, f.P.sign], [2, f.P.cone], [2, f.P.bush]], 13, { band: [6, 22] });
     ground(f);
-    banner(f, 0.1, ["IT'S WEIRD"]);
+    rig(f, 0.1);
     midground(f, crossSign(f), 0.5, 26, 10);
   },
   // All this headbanging: the stacks, the headbanger (his landmark).
   'All This Headbanging'(f) {
     strew(f, [[4, f.P.amps], [2, f.P.truss], [1, f.P.mic]], 11);
     ground(f);
-    banner(f, 0.4, ['ALL THIS HEADBANGING'], hex(PINK), PINK);
+    rig(f, 0.4, PINK);
     crowd(f, 'left', f.from, f.to, 'bob', 8);
   },
   'Bad for My Brain'(f) {
     strew(f, [[3, f.P.amps], [2, f.P.sign], [2, f.P.bush]], 12);
     ground(f);
-    banner(f, 0.3, ['BAD FOR MY BRAIN', "IT'S STRANGE"], hex(PINK), PINK);
+    rig(f, 0.3, PINK);
     midground(f, bigStack(f, 16), 0.65, 30, 10);
   },
   // Sugarplum fairy dances now: sugarplums glowing, the leap.
@@ -758,14 +811,14 @@ const FIELDS: Record<string, (f: Field) => void> = {
     ground(f);
     crowd(f, 'left', f.from, f.to, 'jump', 8);
     crowd(f, 'right', f.from, f.to, 'jump', 8);
-    banner(f, 0.4, ['ECHOED FEET']);
+    rig(f, 0.4);
     midground(f, stage(f, 26), 0.7, 34, 18);
   },
   'Hallowed Ground'(f) {
     strew(f, [[3, f.P.truss], [2, f.P.amps], [2, f.P.bush]], 12, { band: [10, 24] });
     ground(f);
     crowd(f, 'left', f.from, f.to, 'wave', 8);
-    banner(f, 0.4, ['ON THE HALLOWED GROUND'], hex(GOLD), GOLD);
+    rig(f, 0.4, GOLD);
     air(f, 0.5, GOLD, 'fall', 200);
   },
   // Energy peaks on the voyager's crown: the climb, light towers rising with it.
@@ -778,7 +831,7 @@ const FIELDS: Record<string, (f: Field) => void> = {
   },
   "The Voyager's Crown"(f) {
     strew(f, [[3, f.P.truss], [2, f.P.sign]], 14, { band: [8, 26] });
-    banner(f, 0.5, ["ON THE VOYAGER'S CROWN"], hex(GOLD), GOLD);
+    rig(f, 0.5, GOLD);
     air(f, 0.5, GOLD, 'rise', 180);
   },
   // Back to the bus for another round, high over the crossroad.
@@ -788,14 +841,14 @@ const FIELDS: Record<string, (f: Field) => void> = {
   },
   'Another Round'(f) {
     strew(f, [[3, f.P.sign], [2, f.P.bush]], 14, { band: [10, 30] });
-    banner(f, 0.7, ['FOR ANOTHER ROUND'], hex(PINK), PINK);
+    rig(f, 0.7, PINK);
     air(f, 0.5, 0xffd8f0, 'float', 160);
   },
   // Managing feats by managing feet: off the deck.
   'Managing Feats'(f) {
     strew(f, [[3, f.P.roadCase], [2, f.P.cone], [2, f.P.bush]], 12, { band: [6, 22] });
     ground(f);
-    banner(f, 0.75, ['MANAGING FEATS', 'BY MANAGING FEET']);
+    rig(f, 0.75);
   },
   // Head of the hydra tastes the breeze: the hydra is its own landmark; scrub and signs round the U.
   'Head of the Hydra'(f) {
@@ -808,19 +861,19 @@ const FIELDS: Record<string, (f: Field) => void> = {
   'Tastes the Breeze'(f) {
     strew(f, [[3, f.P.bush], [2, f.P.sign], [1, f.P.cone]], 12);
     ground(f);
-    banner(f, 0.4, ['TASTES THE BREEZE'], hex(GREEN), GREEN);
+    rig(f, 0.4, GREEN);
     air(f, 0.5, 0xd8ffe8, 'swirl', 220);
   },
   // Conduit sees from the living room suite.
   'Conduit Sees'(f) {
     strew(f, [[3, f.P.sofa], [2, f.P.sign], [2, f.P.bush]], 12);
     ground(f);
-    banner(f, 0.4, ['CONDUIT SEES'], hex(TEAL), TEAL);
+    rig(f, 0.4, TEAL);
   },
   'The Living Room Suite'(f) {
     strew(f, [[4, f.P.sofa], [2, f.P.bottles], [1, f.P.lamp]], 12);
     ground(f);
-    banner(f, 0.3, ['FROM THE LIVING ROOM SUITE'], hex(TEAL), TEAL);
+    rig(f, 0.3, TEAL);
     midground(f, bigSuite(f), 0.5, 26, 14);
   },
   // Boredom is what boredom breeds, you see: sunk in a cut, nothing to look at but the rock.
@@ -833,14 +886,14 @@ const FIELDS: Record<string, (f: Field) => void> = {
   'So Deranged'(f) {
     strew(f, [[3, f.P.sign], [2, f.P.truss], [2, f.P.bush]], 12);
     ground(f);
-    banner(f, 0.4, ['SO DERANGED', 'LIFE IS STRANGE'], hex(PINK), PINK);
+    rig(f, 0.4, PINK);
     air(f, 0.5, PINK, 'swirl', 200);
   },
   // All this indecision in anthropoids: signs every way, the apes (their landmark) dithering.
   'Indecision in Anthropoids'(f) {
     strew(f, [[4, f.P.sign], [2, f.P.bush], [1, f.P.cone]], 11);
     ground(f);
-    banner(f, 0.2, ['ALL THIS INDECISION', 'IN ANTHROPOIDS']);
+    rig(f, 0.2);
     midground(f, crossSign(f), 0.6, 28, 10);
   },
   // All this wire walking upon the knife.
@@ -854,19 +907,19 @@ const FIELDS: Record<string, (f: Field) => void> = {
   'Still Fatigued'(f) {
     strew(f, [[3, f.P.bottles], [2, f.P.lamp], [2, f.P.bush]], 12);
     ground(f);
-    banner(f, 0.4, ["I WAKE UP AND", "I'M STILL FATIGUED"], '#b8b0d8', VIOLET);
+    rig(f, 0.4, VIOLET);
   },
   'Dead Asleep'(f) {
     strew(f, [[4, f.P.bottles], [2, f.P.sofa], [1, f.P.lamp]], 11);
     ground(f);
-    banner(f, 0.4, ["DRINKING 'TIL", "I'M DEAD ASLEEP"], '#b8b0d8', VIOLET);
+    rig(f, 0.4, VIOLET);
     midground(f, bigBottle(f), 0.6, 22, 10);
   },
   // Riding high 'til I'm back home in one piece.
   'Riding High'(f) {
     strew(f, [[3, f.P.sign], [2, f.P.truss], [2, f.P.van]], 12);
     ground(f);
-    banner(f, 0.4, ["RIDING HIGH 'TIL I'M", 'BACK HOME IN ONE PIECE'], hex(TEAL), TEAL);
+    rig(f, 0.4, TEAL);
   },
   // Another carpark in the middle of nowhere.
   'Another Carpark'(f) {
@@ -880,14 +933,14 @@ const FIELDS: Record<string, (f: Field) => void> = {
     ground(f);
     crowd(f, 'left', f.from, f.to, 'wave', 8);
     crowd(f, 'right', f.from, f.to, 'bob', 8);
-    banner(f, 0.05, ['ANOTHER PROMOTER', 'HANGING IN YOUR HAIR'], hex(PINK), PINK);
+    air(f, 0.5, PINK, 'float', 160);
   },
   'Another Green Room'(f) {
     strew(f, [[3, f.P.roadCase], [2, f.P.amps], [2, f.P.truss]], 12, { band: [10, 24] });
     ground(f);
     crowd(f, 'left', f.from, f.to, 'jump', 8);
     crowd(f, 'right', f.from, f.to, 'jump', 8);
-    banner(f, 0.5, ['ANOTHER BACKSTAGE', 'GREEN ROOM TO PREPARE'], hex(GREEN), GREEN);
+    air(f, 0.5, GREEN, 'rise', 160);
   },
   // It's an odd life 'til you get in the stride: round to the line.
   'Get in the Stride'(f) {
@@ -1217,8 +1270,8 @@ export function anthropoids(ribbon: Ribbon, s: number, lateral: number, animated
   const face = kit.matte(0xa07a60, { emissive: 0x181008 });
   g.add(pole(16, 0.4, metal()));
   const arrows: THREE.Object3D[] = [];
-  ['LEFT?', 'RIGHT?', 'BACK?', 'ON?'].forEach((w, k) => {
-    const arm = kit.signPanel(6, kit.textFace([w], { style: 'board', bg: '#ffffff', fg: '#1a1420' }), { h: 1.3, depth: 0.1, frame: metal(), glows: false });
+  WAYS.forEach((w, k) => {
+    const arm = kit.signPanel(6, arrowFace(w, '#ffffff', '#1a1420'), { h: 1.3, depth: 0.1, frame: metal(), glows: false });
     arm.position.x = 3;
     const holder = new THREE.Group();
     holder.position.y = 10 + k * 1.6;
@@ -1267,7 +1320,7 @@ export function motel(ribbon: Ribbon, s: number, lateral: number, animated: kit.
   const signMat = new THREE.MeshBasicMaterial({ map: words(['MOTEL'], hex(PINK), hex(PINK)) });
   const sign = new THREE.Mesh(new THREE.PlaneGeometry(10, 5), signMat);
   sign.position.set(-24, 14, 0);
-  const vacancy = new THREE.Mesh(new THREE.PlaneGeometry(8, 2.4), new THREE.MeshBasicMaterial({ map: words(['NO VACANCY'], hex(TEAL), hex(TEAL)) }));
+  const vacancy = new THREE.Mesh(new THREE.PlaneGeometry(8, 2.4), new THREE.MeshBasicMaterial({ map: arrowFace('back', '#120a1c', hex(TEAL)) }));
   vacancy.position.set(-24, 10, 0);
   g.add(pole(12, 0.4, metal()).translateX(-24), sign, vacancy, halo(p, PINK, 18, 0.35).translateX(-24).translateY(14));
   // The bed out front, its sleeper dead asleep, Zs rising.

@@ -56,7 +56,7 @@ export const view: KitView<'minimum-brain-size'> = {
         edge: { kind: 'lamp', height: 3.4, spacing: 24, color: 0x1a2030, stripe: 0x7ae8ff },
         light: 0x7ae8ff,
         cover: { shape: 'tuft', colors: [0x1a2434, 0x2a3a50, 0x3a5a6a, 0x7ae8ff, 0xff2a3a], count: 900 },
-        boards: { words: ['MINIMUM BRAIN SIZE', 'RIDDLE ME THIS', 'PATHETIC', 'HIMPATHETIC BRO', 'RADICALISE', 'K.G.'], bg: ['#06101c', '#101826'], fg: '#7ae8ff' },
+        boards: { words: [], bg: ['#06101c', '#101826'], fg: '#7ae8ff' },
         crowd: false,
       },
       // Flies round the screens, and dust drifting in the monitor light.

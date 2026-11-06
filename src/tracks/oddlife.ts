@@ -33,19 +33,23 @@ const DECK_TO = 45;
 const BRIDGE = 72;
 /** Off the deck: the road falls to the ground over this far, faster than a kart, for the airtime. */
 const DROP = 60;
+/** Riding High climbs to a crest this high. */
+export const RIDE = 4;
 /** The cut in the bottom loop: the road sinks this far into the boredom. */
 export const DEPTH = 7;
 const CUT_WALL = 2.6;
 const DECK_WALL = 3;
-/** The backstage doors: a row of them rises across the road every this many seconds, at three stations this far apart. */
+/** The backstage doors: a row of them rises across the road every this many seconds, at four stations this far apart. */
 export const DOOR_PERIOD = 4.4;
-const DOOR_APART = 36;
+const DOOR_APART = 25;
 /** Head of the Hydra swings round a wide U (`HYDRA_R`); No Concept of Geography, the shortcut, cuts across inside it on a tighter turn, leaving the road this far before the U and meeting it this far after. */
 const HYDRA_R = 60;
 const CUT_FROM = 10;
 const CUT_TO = 10;
 const CUT_R = 25;
 const CUT_OPEN = 1;
+/** The cut is one narrow strip of bitumen with no walls: off its edge is the dirt, and the time it saves is gone. */
+export const CUT_HW = 3.2;
 
 /** Open ground where the giant landmarks stand (found by plotting the lap): each faces the nearest road. */
 const BUS_AT = { x: 170, z: 40 };
@@ -84,6 +88,12 @@ function toward(b: TrackBuilder, to: Pose, r: number) {
   }
 }
 
+/** A turn of `deg` that a curve of radius `wide` would take, tightened to `tight` with straights either side: the road in and out where it was, the corner itself sharper. */
+function corner(b: TrackBuilder, wide: number, tight: number, deg: number) {
+  const x = (wide - tight) * Math.tan((Math.abs(deg) * Math.PI) / 360);
+  b.straight(x).arc(tight, deg).straight(x);
+}
+
 /** Lays the whole lap onto `b`, sections and marks too. */
 function lay(b: TrackBuilder) {
   // All this rock n roll: off the stage, two kickers.
@@ -101,16 +111,18 @@ function lay(b: TrackBuilder) {
   b.section('All This Headbanging', props(10.5, 1.4));
   b.mark('headbanging');
   b.straight(10).arc(80, -30).straight(20);
+  // Bad for my brain: a sharp corner to brake for.
   b.section('Bad for My Brain', props(10, 1.4));
   b.mark('brain');
-  b.arc(65, -50).straight(10);
+  corner(b, 65, 34, -50);
+  b.straight(10);
   b.section('Sugarplum Fairy', props(10, 1.4));
   b.mark('fairy');
   b.arc(110, 40).straight(15);
   // The sugarplum fairy dances: a leap.
   b.mark('ramp').elevate(0).rise(18, 3);
   b.gap(12, 20);
-  b.section('Echoed Feet', props(10, 1.4));
+  b.section('Echoed Feet', props(8.5, 1.4));
   b.mark('feet');
   b.elevate(0);
   b.straight(25).arc(45, -80);
@@ -164,14 +176,18 @@ function lay(b: TrackBuilder) {
   b.straight(85);
   b.section('So Deranged', props(10, 1.4));
   b.mark('deranged');
-  b.straight(5).arc(55, 90).straight(5);
+  b.straight(5);
+  corner(b, 55, 34, 90);
+  b.straight(5);
   // All this indecision in anthropoids: the road can't make up its mind, and turns back.
   b.section('Indecision in Anthropoids', props(10, 1.4));
   b.mark('indecision');
   b.arc(50, -180);
-  b.section('Wire Walking Upon the Knife', props(9.5, 1.4));
+  // Wire walking upon the knife: the road a thin wire, round a knife-edge corner.
+  b.section('Wire Walking Upon the Knife', props(7, 1.4));
   b.mark('wire');
-  b.straight(5).arc(55, 90);
+  b.straight(5);
+  corner(b, 55, 32, 90);
   b.section('Still Fatigued', props(10, 1.4));
   b.mark('fatigued');
   b.straight(5).arc(60, 90);
@@ -224,7 +240,7 @@ function poseOn(points: readonly (readonly [number, number])[], s: number): Pose
 function buildCut(b: TrackBuilder, points: readonly (readonly [number, number])[]) {
   const from = b.marks.uIn.s - CUT_FROM;
   const to = b.marks.uOut.s + CUT_TO;
-  const lane = new TrackBuilder(poseOn(points, from), 'No Concept of Geography', { halfWidth: 5.5, wallHeight: 2, surface: 'tourRoad' });
+  const lane = new TrackBuilder(poseOn(points, from), 'No Concept of Geography', { halfWidth: CUT_HW, wallHeight: 0, surface: 'tourRoad' });
   // Straight off the road and straight onto it, turning between.
   lane.straight(8);
   toward(lane, poseOn(points, to - 8), CUT_R);
@@ -232,7 +248,7 @@ function buildCut(b: TrackBuilder, points: readonly (readonly [number, number])[
   const len = lane.s;
   lane.profile(0, len, () => 0, 10);
   const ribbon = lane.finish(false);
-  // Walled once it's off the road it leaves and until it meets it again.
+  // Where it's off the road it leaves and until it meets it again (the cut has no walls; the road's own are opened at its mouths).
   const [sec] = ribbon.sections;
   const room = (q: readonly [number, number]) => Math.min(...points.map((m) => Math.hypot(m[0] - q[0], m[1] - q[1]))) - (sec.halfWidth + 10 * ROAD_WIDTH_SCALE);
   const cum = [0];
@@ -270,6 +286,9 @@ export function buildOddlife(): TrackDef {
   ease(m('suite', 10), 0, m('boredom', 10), -DEPTH);
   b.profile(m('boredom', 10), m('deranged', -10), () => -DEPTH, 10);
   ease(m('deranged', -10), -DEPTH, m('deranged', 40), 0);
+  // Riding high 'til I'm back home: a climb through the dead-asleep esses to a crest, and off it airborne into the carpark.
+  ease(m('asleep', 0), 0, m('riding', 14), RIDE);
+  b.profile(m('riding', 14), m('carpark', 8), (u) => RIDE * (1 - Math.sin((Math.PI * u) / 2)), 3);
 
   const main = b.finish(true);
   const cut = buildCut(b, main.points);
@@ -288,7 +307,7 @@ export function buildOddlife(): TrackDef {
   const named = main.sections.filter((q, k, all) => k === 0 || q.name !== all[k - 1].name);
   const fields = named.map((q, k) => ({ kind: 'tourField' as const, ribbon: -1, s: q.from + 2, to: k + 1 < named.length ? named[k + 1].from : main.length - 4 }));
   const stand = (p: { x: number; z: number }) => standAt(main.points, p.x, p.z);
-  const stations = [0, 1, 2].map((k) => at('promoter', 12 + k * DOOR_APART));
+  const stations = [0, 1, 2, 3].map((k) => at('promoter', 8 + k * DOOR_APART));
   return {
     id: 'oddlife',
     name: 'Oddlife',

@@ -10,7 +10,8 @@ import { createKartState, stepKart, type KartState } from '../src/physics/kart';
 import { RACERS, kartParams } from '../src/physics/racers';
 import { TRACK_SONGS } from '../src/audio/songs';
 import { FIELD_SECTIONS } from '../src/render/oddlife';
-import { DECK, DEPTH, DOOR_PERIOD, buildOddlife } from '../src/tracks/oddlife';
+import { CUT_HW, DECK, DEPTH, DOOR_PERIOD, RIDE, buildOddlife } from '../src/tracks/oddlife';
+import { ROAD_WIDTH_SCALE } from '../src/tracks/builder';
 import { CUPS, TRACK_LIST } from '../src/tracks/index';
 import { nearestOnSpline, pointAt } from '../src/tracks/spline';
 import { Track, type LapContext, type Ribbon } from '../src/tracks/track';
@@ -264,6 +265,11 @@ describe('No Concept of Geography, the shortcut', () => {
 
   it('is there from the second lap, and saves between one and two and a half seconds at 150cc', () => {
     expect(bdef.openOn).toEqual([2, 'final']);
+    // One narrow strip with no walls: it pays only taken clean.
+    for (const q of bdef.sections) {
+      expect(q.halfWidth).toBeCloseTo(CUT_HW * ROAD_WIDTH_SCALE);
+      expect(q.wallHeight ?? 0).toBe(0);
+    }
     const p = kartParams(first.stats, '150cc');
     const open: LapContext = { lap: 2, lastLap: false };
     const via = drive(branch, bdef.mainTo, p, undefined, open);
@@ -306,6 +312,9 @@ describe('Oddlife elevation and driving', () => {
     expect(respawns).toBe(0);
     const off = section('Managing Feats');
     expect(crests.some((b) => b > off.from - 10 && b < off.to + 30)).toBe(true);
+    // And off Riding High's crest into the carpark.
+    expect(Math.max(...[0, 10, 14, 20].map((d) => main.heightAtBuilder(section('Riding High').from + d)))).toBeCloseTo(RIDE, 0);
+    expect(crests.some((b) => b > section('Riding High').from && b < section('Another Carpark').to)).toBe(true);
   }, 30000);
 
   it('a full field of 150cc CPUs laps it, the leader in 60 to 70 seconds a lap', () => {
@@ -331,10 +340,10 @@ describe('the backstage doors: another promoter hanging in your hair, another gr
   const h = new HazardSystem(track);
   const pdef = def.hazards.find((q) => q.kind === 'backstageDoors')!;
 
-  it('rises across Another Promoter and Another Green Room at three stations, on level road', () => {
+  it('rises across Another Promoter and Another Green Room at four stations, on level road', () => {
     expect(def.hazards.map((q) => q.kind)).toEqual(['backstageDoors']);
     if (!('at' in pdef)) throw new Error('no stations');
-    expect(pdef.at.length).toBe(3);
+    expect(pdef.at.length).toBe(4);
     expect('period' in pdef && pdef.period).toBe(DOOR_PERIOD);
     for (const s of pdef.at) {
       expect(['Another Promoter', 'Another Green Room']).toContain(sectionAt(s).name);
@@ -404,7 +413,7 @@ describe('the backstage doors: another promoter hanging in your hair, another gr
     b.update(12.3);
     const pa = a.poses.filter((q) => q.kind === 'backstageDoors');
     const pb = b.poses.filter((q) => q.kind === 'backstageDoors');
-    expect(pa.length).toBe(3);
+    expect(pa.length).toBe(4);
     pa.forEach((p, i) => {
       expect(p.phase).toBeCloseTo(pb[i].phase, 6);
       expect(p.lane).toBe(pb[i].lane);
