@@ -34,28 +34,32 @@ describe('Automation', () => {
     for (const s of [...def.main.sections, ...def.branches.flatMap((b) => b.sections)]) expect(s.surface, s.name).toBe('conveyor');
   });
 
-  it('runs through the song in order, from clocking in to clocking out', () => {
+  it('runs through the song in order, from the last migration to the simulation', () => {
     const names = def.main.sections.map((s) => s.name).filter((n, k, all) => n !== all[k - 1]);
     expect(names).toEqual([
-      'Clocking In',
-      'The Production Line',
-      'Arms That Never Tire',
-      'Nobody at the Desk',
-      'Screens Watching Screens',
-      'Machines Building Machines',
-      'The Algorithm Decides',
-      'Pink Slips',
-      'The Server Farm',
-      'Lights-Out Factory',
-      'Clocking Out',
+      'Join the Last Migration',
+      'Your New Best Mate',
+      'King of a Bald Primate',
+      'Not Worthy',
+      'Mental Rotation',
+      'Super-Organism',
+      'Bending Light Through Prisms',
+      'Cyber-Surgeon',
+      'The Neural Network',
+      'Prepare for Mutation',
+      'The Crack of Doom',
+      'Death Kiss',
+      'Inside a Simulation',
     ]);
+    // Family-friendly: no swearing on the course.
+    for (const n of names) expect(n.toLowerCase()).not.toMatch(/fuck|system/);
     console.log(`Automation: ${track.length.toFixed(0)} m a lap`);
     expect(track.length).toBeGreaterThan(2400);
     expect(track.length).toBeLessThan(2700);
     expect(def.laps).toBe(3);
   });
 
-  it('crosses the production line once, on the overhead deck high over it', () => {
+  it('crosses the conveyor once, on the overhead deck high over it', () => {
     const sp = track.spline;
     const found: { i: number; j: number; dy: number }[] = [];
     for (let i = 0; i < sp.count; i += 2) {
@@ -73,13 +77,13 @@ describe('Automation', () => {
     const [c] = found;
     expect(c.dy).toBeGreaterThan(DECK - 1);
     const [upper, lower] = main.heightAt(sp.dist[c.i]) > main.heightAt(sp.dist[c.j]) ? [c.i, c.j] : [c.j, c.i];
-    expect(sectionAt(main.toBuilder(sp.dist[upper])).name).toBe('Machines Building Machines');
+    expect(sectionAt(main.toBuilder(sp.dist[upper])).name).toBe('Super-Organism');
     expect(sectionAt(main.toBuilder(sp.dist[upper])).bridge).toBe(true);
-    expect(sectionAt(main.toBuilder(sp.dist[lower])).name).toBe('The Production Line');
+    expect(sectionAt(main.toBuilder(sp.dist[lower])).name).toBe('Your New Best Mate');
     // The deck is level over the line, and only the deck and its ramps leave the ground.
-    for (let s = section('Machines Building Machines').from + 100; s < section('Machines Building Machines').to - 5; s += 10) expect(main.heightAtBuilder(s)).toBeCloseTo(DECK, 0);
+    for (let s = section('Super-Organism').from + 100; s < section('Super-Organism').to - 5; s += 10) expect(main.heightAtBuilder(s)).toBeCloseTo(DECK, 0);
     for (const q of def.main.sections) {
-      if (q.name === 'Machines Building Machines' || q.name === 'The Algorithm Decides') continue;
+      if (q.name === 'Super-Organism' || q.name === 'Bending Light Through Prisms') continue;
       for (let s = q.from; s < q.to; s += 10) expect(Math.abs(main.heightAtBuilder(s)), q.name).toBeLessThan(0.5);
     }
   });
@@ -104,8 +108,8 @@ describe('Automation', () => {
     expect(def.landmarks.filter((l) => l.kind === 'factorySkyline').length).toBe(1);
   });
 
-  it('has its landmarks off the road, the time clock at the line', () => {
-    expect(def.landmarks.filter((l) => l.s < 20).map((l) => l.kind)).toEqual(['timeClock']);
+  it('has its landmarks off the road, the migration gate at the line', () => {
+    expect(def.landmarks.filter((l) => l.s < 20).map((l) => l.kind)).toEqual(['migrationGate']);
     for (const lm of def.landmarks) {
       if (!lm.lateral) continue;
       const p = pointAt(track.spline, track.mainS(lm.s));
@@ -155,7 +159,7 @@ describe('Automation walls', () => {
   };
   const all = pairs();
 
-  it('keeps the production line and its walls well under the deck', () => {
+  it('keeps the conveyor below and its walls well under the deck', () => {
     expect(all.filter((p) => p.gap < 0).length).toBeGreaterThan(0);
     for (const { up, i, low, j } of all.filter((p) => p.gap < 0)) {
       const top = low.heightAt(low.spline.dist[j]) + low.wallHeight[j];
@@ -163,7 +167,7 @@ describe('Automation walls', () => {
     }
   });
 
-  it('walls the deck high beside the road below, so no kart drops off it onto the line', () => {
+  it('walls the deck high beside the road below, so no kart drops off it onto the conveyor', () => {
     for (const { up, i } of all) expect(up.wallHeight[i], up.sectionName(i)).toBeGreaterThanOrEqual(2.5);
   });
 
@@ -188,10 +192,10 @@ describe('The Override, the shortcut', () => {
   const bdef = def.branches[k];
   const branch = track.branches[k];
 
-  it('cuts inside the lights-out turn into the straight home, at the same pose at both ends, clear of every other road', () => {
+  it('cuts inside the last U into the straight home, at the same pose at both ends, clear of every other road', () => {
     expect(k).toBeGreaterThanOrEqual(0);
-    expect(sectionAt(bdef.mainFrom).name).toBe('Lights-Out Factory');
-    expect(sectionAt(bdef.mainTo).name).toBe('Clocking Out');
+    expect(sectionAt(bdef.mainFrom).name).toBe('Prepare for Mutation');
+    expect(sectionAt(bdef.mainTo).name).toBe('Inside a Simulation');
     const sp = branch.spline;
     const ends: [number, number, number, number][] = [
       [sp.px[0], sp.pz[0], Math.atan2(sp.tx[0], sp.tz[0]), bdef.mainFrom],
@@ -247,7 +251,7 @@ describe('Automation driving', () => {
     console.log(`Automation: airtime at ${launches.map((b) => b.toFixed(0)).join(', ')}`);
     expect(kart.laps.lap).toBe(1);
     expect(respawns).toBe(0);
-    const down = section('The Algorithm Decides');
+    const down = section('Bending Light Through Prisms');
     expect(launches.some((b) => b > down.from - 10 && b < down.from + 60)).toBe(true);
   }, 30000);
 
@@ -270,19 +274,19 @@ describe('Automation driving', () => {
   }, 120000);
 });
 
-describe('the presses: heads stamping the production line lane by lane, on the beat', () => {
+describe('the presses: heads stamping the conveyor lane by lane, on the beat', () => {
   const h = new HazardSystem(track);
   const pdef = def.hazards.find((q) => q.kind === 'presses')!;
 
-  it('stands three gantries up the production line, on level road clear of the deck, a bar of the song round', () => {
+  it('stands three gantries up the conveyor, on level road clear of the deck, a bar of the song round', () => {
     expect(def.hazards.map((q) => q.kind)).toEqual(['presses']);
     if (!('at' in pdef)) throw new Error('no stations');
     expect(pdef.at.length).toBe(3);
     expect('period' in pdef && pdef.period).toBe(PRESS_PERIOD);
     expect(PRESS_PERIOD).toBeCloseTo((60 / BPM) * 4);
-    const cross = section('The Production Line').from;
+    const cross = section('Your New Best Mate').from;
     for (const s of pdef.at) {
-      expect(sectionAt(s).name).toBe('The Production Line');
+      expect(sectionAt(s).name).toBe('Your New Best Mate');
       expect(main.heightAtBuilder(s)).toBeCloseTo(0, 1);
       expect(s - cross).toBeGreaterThan(110);
     }
@@ -335,11 +339,14 @@ describe('the presses: heads stamping the production line lane by lane, on the b
     expect(kart.spinTime).toBe(0);
   });
 
-  it('is harmless in a lane whose head is up, and to a kart past the gantry', () => {
+  it('is harmless in a lane whose head is up, to a kart past the gantry, and off the road beside it', () => {
     const p = when(h, (q) => [0, 1, 2, 3].some((k) => pressDown(q.phase * 4, k) === 0 && !pressDared(q.phase * 4, k)));
     const k = [0, 1, 2, 3].find((l) => pressDown(p.phase * 4, l) === 0 && !pressDared(p.phase * 4, l))!;
     expect(fresh().collide([kartOn(p, pressLane(k, p.radius), 0)], PHYSICS_DT)).toEqual([]);
     for (let l = 0; l < PRESS_LANES; l++) expect(fresh().collide([kartOn(p, pressLane(l, p.radius), 8)], PHYSICS_DT)).toEqual([]);
+    // Nor to a kart off the road on the gantry's line: another stretch of the lap crosses it further along.
+    const d = when(h, (q) => [0, 1, 2, 3].every((k) => pressDown(q.phase * 4, k) > 0.99 || pressDown(q.phase * 4, k) === 0) && [0, 1, 2, 3].some((k) => pressDown(q.phase * 4, k) > 0.99));
+    for (const lat of [d.radius + 4, -d.radius - 4, 200, -270]) expect(fresh().collide([kartOn(d, lat, 0)], PHYSICS_DT), `${lat}`).toEqual([]);
   });
 
   it('is where it is by race time alone, and shows the CPUs the heads coming down', () => {

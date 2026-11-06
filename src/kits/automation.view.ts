@@ -1,5 +1,5 @@
 import * as tex from '../render/textures';
-import { algorithm, assemblyDeck, claddingTexture, concreteGroundTexture, conveyorRoadTexture, emptyOffice, factoryFeature, factoryField, factorySkyline, hazardRailTexture, lightsOut, pinkSlips, posePress, pressParts, robotArms, screenWall, serverFarm, timeClock } from '../render/automation';
+import { assemblyDeck, claddingTexture, concreteGroundTexture, conveyorRoadTexture, crackOfDoom, cyberSurgeon, factoryFeature, factoryField, factorySkyline, greatPrism, hazardRailTexture, heirStatue, karmaDino, migrationGate, overlord, posePress, pressParts, primateKing, screenWall, serverFarm } from '../render/automation';
 import type { Ribbon } from '../tracks/track';
 import type { KitView } from './view';
 
@@ -17,7 +17,7 @@ const sectionAt = (ribbon: Ribbon, s: number): string => ribbon.def.sections.fin
 export const view: KitView<'automation'> = {
   id: 'automation',
   themes: {
-    // Automation: a factory at dusk under its own smog, sodium lamps coming on, the sky orange over steel.
+    // Automation: the machine world at dusk under its own smog, sodium lamps coming on, the sky orange over steel.
     automated: {
       sky: { zenith: '#1a2230', high: '#3a4250', low: '#a86a40', horizon: '#e89a50', below: '#3a3030', ground: '#2a2a2e', cloud: '120,100,90', clouds: 30 },
       fog: { color: 0x7a6a60, near: 140, far: 720 },
@@ -47,14 +47,14 @@ export const view: KitView<'automation'> = {
       rock: () => tex.stoneTexture([80, 80, 86], [140, 140, 146]),
       rocks: 40,
       features: 130,
-      // The factory: crates, barrels, arms, robots, screens and racks by the stretch they're beside.
+      // The machine world: crates, arms, robots, screens, racks, turning shapes and glass by the stretch they're beside.
       feature: (animated, track) => factoryFeature(animated, track),
       // Automation: sodium lamp posts along the belt, nuts and bolts for ground cover, notices.
       detail: {
         edge: { kind: 'lamp', height: 4, spacing: 26, color: 0x3a3e46, stripe: 0xffc21a },
         light: 0xffa040,
         cover: { shape: 'tuft', colors: [0x5a6068, 0x7a8088, 0x3a3e44, 0xffc21a, 0xb08850], count: 900 },
-        boards: { words: ['AUTOMATION', 'NO BREAKS', 'SHIFT NEVER ENDS', 'EFFICIENCY 100%', 'NO HUMANS', 'K.G.'], bg: ['#16161a', '#22252a'], fg: '#ffc21a' },
+        boards: { words: ['AUTOMATION', 'OVERLORD', 'SUPER-ORGANISM', 'NEURAL NETWORK', 'MUTATION', 'K.G.'], bg: ['#16161a', '#22252a'], fg: '#ffc21a' },
         crowd: false,
       },
       // Drones over the floor, and dust and sparks in the sodium light.
@@ -66,17 +66,19 @@ export const view: KitView<'automation'> = {
     conveyor: ({ bumpy }) => bumpy(conveyorRoadTexture(), 0.05),
   },
   landmarks: {
-    timeClock: ({ ribbon, s, animated }) => timeClock(ribbon, s, animated),
+    migrationGate: ({ ribbon, s, animated }) => migrationGate(ribbon, s, animated),
     factorySkyline: ({ track, animated }) => factorySkyline(track, animated),
     factoryField: ({ track, ribbon, s, lm, animated }) => factoryField(track, ribbon, s, (lm.to ?? lm.s + 100) * ribbon.scale, sectionAt(ribbon, s), animated),
-    robotArms: ({ ribbon, s, lm, animated }) => robotArms(ribbon, s, lm.lateral ?? 0, animated),
-    emptyOffice: ({ ribbon, s, lm, animated }) => emptyOffice(ribbon, s, lm.lateral ?? 0, animated),
+    primateKing: ({ ribbon, s, lm, animated }) => primateKing(ribbon, s, lm.lateral ?? 0, animated),
+    heirStatue: ({ ribbon, s, lm, animated }) => heirStatue(ribbon, s, lm.lateral ?? 0, animated),
+    overlord: ({ ribbon, s, lm, animated }) => overlord(ribbon, s, lm.lateral ?? 0, animated),
     screenWall: ({ ribbon, s, lm, animated }) => screenWall(ribbon, s, (lm.to ?? lm.s + 100) * ribbon.scale, animated),
     assemblyDeck: ({ ribbon, s, lm, animated }) => assemblyDeck(ribbon, s, (lm.to ?? lm.s + 100) * ribbon.scale, animated),
-    algorithm: ({ ribbon, s, lm, animated }) => algorithm(ribbon, s, lm.lateral ?? 0, animated),
-    pinkSlips: ({ ribbon, s, lm, animated }) => pinkSlips(ribbon, s, lm.lateral ?? 0, animated),
+    greatPrism: ({ ribbon, s, lm, animated }) => greatPrism(ribbon, s, lm.lateral ?? 0, animated),
+    cyberSurgeon: ({ ribbon, s, lm, animated }) => cyberSurgeon(ribbon, s, lm.lateral ?? 0, animated),
     serverFarm: ({ ribbon, s, lm, animated }) => serverFarm(ribbon, s, lm.lateral ?? 0, animated),
-    lightsOut: ({ ribbon, s, lm, animated }) => lightsOut(ribbon, s, lm.lateral ?? 0, animated),
+    crackOfDoom: ({ ribbon, s, lm, animated }) => crackOfDoom(ribbon, s, lm.lateral ?? 0, animated),
+    karmaDino: ({ ribbon, s, lm, animated }) => karmaDino(ribbon, s, lm.lateral ?? 0, animated),
   },
   hazards: {
     presses: {

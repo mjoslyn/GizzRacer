@@ -13,18 +13,20 @@ declare module '../tracks/track' {
     presses: { kit: 'automation'; def: { kind: 'presses'; at: number[]; period: number } };
   }
   interface KitLandmarks {
-    timeClock: 'automation';
-    robotArms: 'automation';
-    emptyOffice: 'automation';
+    migrationGate: 'automation';
+    primateKing: 'automation';
+    heirStatue: 'automation';
     screenWall: 'automation';
+    overlord: 'automation';
     assemblyDeck: 'automation';
-    algorithm: 'automation';
-    pinkSlips: 'automation';
+    greatPrism: 'automation';
+    cyberSurgeon: 'automation';
     serverFarm: 'automation';
-    lightsOut: 'automation';
+    crackOfDoom: 'automation';
+    karmaDino: 'automation';
     /** A stretch of the lap dressed in layers: props, set piece, air and words (by the section it starts in). */
     factoryField: 'automation';
-    /** The ring of chimneys and lit factory blocks standing round the world. */
+    /** The ring of chimneys and lit blocks standing round the world. */
     factorySkyline: 'automation';
   }
   interface KitThemes {
@@ -48,8 +50,8 @@ declare module '../tracks/builder' {
  * clock. Under a head as it's down, stamped: spun and slowed. Through a lane
  * in the half beat before its head comes down, beating the machine: a boost.
  */
-/** The song's tempo: the presses and the whole world move on it. */
-export const BPM = 120;
+/** The song's tempo, as the remix measured it: the presses and the whole world move on it. */
+export const BPM = 97.7;
 export const PRESS_LANES = 4;
 /** The lane whose head comes down on each beat of the bar. */
 export const PRESS_ORDER = [0, 2, 1, 3] as const;
@@ -126,7 +128,8 @@ export const kit: Kit<'automation'> = {
         const fz = Math.cos(p.heading);
         const along = (s.x - p.x) * fx + (s.z - p.z) * fz;
         const lat = (s.x - p.x) * -fz + (s.z - p.z) * fx;
-        if (Math.abs(along) > PRESS_DEPTH + KART_RADIUS || Math.abs(s.y - p.ground) > 2.5) return;
+        // Only under the gantry: across the road and its edges, not anywhere on the line through it (another stretch of road can cross that line).
+        if (Math.abs(along) > PRESS_DEPTH + KART_RADIUS || Math.abs(lat) > p.radius + KART_RADIUS || Math.abs(s.y - p.ground) > 2.5) return;
         const beat = p.phase * 4;
         const k = laneAt(lat, p.radius);
         if (pressDown(beat, k) > PRESS_HIT) {
@@ -171,10 +174,10 @@ export const kit: Kit<'automation'> = {
         surface: 'conveyor',
         deck: 'conveyor',
         hazards: ['presses'],
-        start: 'timeClock',
-        landmarks: ['timeClock', 'robotArms', 'serverFarm'],
+        start: 'migrationGate',
+        landmarks: ['migrationGate', 'greatPrism', 'serverFarm'],
         tallWalls: 6,
-        places: ['Press', 'Belt', 'Shift', 'Gantry', 'Weld', 'Rack', 'Servo', 'Clock', 'Assembly', 'Line', 'Spindle', 'Relay'],
+        places: ['Press', 'Belt', 'Overlord', 'Prism', 'Primate', 'Network', 'Servo', 'Mutation', 'Simulation', 'Migration', 'Circuit', 'Relay'],
         music: { lap: 'automation', finalLap: 'automation-final-lap' },
       },
     },
