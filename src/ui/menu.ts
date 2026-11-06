@@ -466,7 +466,7 @@ export class Menu {
         g.params = { seed: t.seed, theme: t.theme, complexity: t.complexity, length: t.length };
       }
     } else if (row === 'mirror') c.mirror = !c.mirror;
-    else if (row === 'sound') updateSettings({ soundtrack: step(SOUNDTRACKS, settings().soundtrack) });
+    else if (row === 'sound') updateSettings({ soundtrack: step(SOUNDTRACKS, settings().soundtrack), soundtrackChosen: true });
     else if (row === 'songEnd') updateSettings({ raceToSongEnd: !settings().raceToSongEnd });
     else if (row === 'cpus') updateSettings({ cpuDifficulty: step(CPU_DIFFICULTIES, settings().cpuDifficulty) });
     else if (row === 'vhs') updateSettings({ videoLook: step(VIDEO_LOOKS, settings().videoLook), videoLookChosen: true });

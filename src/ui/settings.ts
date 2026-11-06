@@ -145,7 +145,7 @@ export class SettingsScreen {
       case 'soundtrack': {
         const i = SOUNDTRACKS.indexOf(s.soundtrack);
         const next = SOUNDTRACKS[(Math.max(0, i) + dir + SOUNDTRACKS.length) % SOUNDTRACKS.length];
-        updateSettings({ soundtrack: next });
+        updateSettings({ soundtrack: next, soundtrackChosen: true });
         this.status = `${SOUNDTRACK_NAMES[next]}: ${SOUNDTRACK_BLURBS[next]}${next === 'remix' ? '' : ". From the band's shows on the Internet Archive; needs a connection"}${next === 'song' || next === 'random' ? '; from the next race' : ''}`;
         break;
       }

@@ -256,7 +256,7 @@ export class PartyScreen {
       s.cup = (s.cup + dir + n) % n;
       if (s.cup === CUPS.length) s.randomTracks = randomCupTracks();
     } else if (row === 'engine') s.engine = step(availableClasses(), s.engine);
-    else if (row === 'sound') updateSettings({ soundtrack: step(SOUNDTRACKS, gameSettings().soundtrack) });
+    else if (row === 'sound') updateSettings({ soundtrack: step(SOUNDTRACKS, gameSettings().soundtrack), soundtrackChosen: true });
     else s.cpus = step(CPU_DIFFICULTIES, s.cpus);
     for (const x of this.seats) x.ready = false;
     this.onSettings({ ...s });
