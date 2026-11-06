@@ -9,3 +9,4 @@ export { kit as sadieSorceress } from './sadieSorceress';
 export { kit as empty } from './empty';
 export { kit as billabongValley } from './billabongValley';
 export { kit as minimumBrainSize } from './minimumBrainSize';
+export { kit as automation } from './automation';
