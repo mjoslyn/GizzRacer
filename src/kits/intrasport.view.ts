@@ -56,7 +56,7 @@ export const view: KitView<'intrasport'> = {
         edge: { kind: 'lamp', height: 3.2, spacing: 22, color: 0x1a1824, stripe: 0xff3aa8 },
         light: 0xfff0fa,
         cover: { shape: 'tuft', colors: [0x1a4a2a, 0x2a6a3a, 0xff3aa8, 0x3af0ff, 0xd8ff3a], count: 900 },
-        boards: { words: ['INTRASPORT', 'K.G.', 'FEELING ON THE FLOOR', 'RUNNING AWAY', 'STOP'], bg: ['#08060e', '#140a24'], fg: '#ff3aa8' },
+        boards: { words: ['INTRA INTRASPORT', 'LOOK AT ME NOW', "THE FEELING'S ON THE FLOOR", "NOW I'M RUNNING", "DON'T DO IT"], bg: ['#08060e', '#140a24'], fg: '#ff3aa8' },
         crowd: true,
       },
       // Glowing orbs of light over the floor, and confetti drifting down.

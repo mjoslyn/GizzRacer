@@ -4,29 +4,31 @@ import type { BranchDef, TrackDef } from './track';
 
 /**
  * The stadium inside the head, seen from above: the lap is a run through
- * the song, in its order, round a night stadium turned rave. It slides
- * inside first, down a players' tunnel sunk under the road it will come
- * back along; winds clockwise through the static and the noise; lifts off
- * on a long climb onto a deck that floats round the top of the map and
- * comes back down across the middle, high over two of its own roads,
- * looking down on them; sheds its skin on the way down; leaps off a ramp
- * into the sky past the face, lands on the dance floor; runs up through
- * the dreams and the needles to the schism, where the road splits (the long
- * way round a hairpin, or Running Away, a tighter one inside it); and comes
- * down the far side, melting and burning, back along the bottom to the line.
+ * the song, line by line in its order, round a night stadium turned rave.
+ * It slides inward first, down a players' tunnel sunk under the road it
+ * will come back along; winds clockwise through the static to the rhythm
+ * and the collision; takes off on a long climb onto a deck that floats
+ * round the top of the map and comes back down across the middle, high
+ * over two of its own roads, a bird's eye view of them; sheds its skin on
+ * the way down; the hand on the gun, then off a ramp past the face
+ * splashing in the sky; runs up through the dreams and the needle to the
+ * schism in the rhythm, where the road splits (the long way round a
+ * hairpin, or Now I'm Running, a tighter one inside it); and comes down
+ * the far side, liquifying and igniting, evolving along the bottom, the
+ * feeling's on the floor, to the line: don't do it.
  */
 const SCALE = 0.92;
-/** Sliding Inside: the start straight sinks this far into a tunnel under Vanishing Hands. */
+/** Slide Inward: the start straight sinks this far into a tunnel under My Hands Are Disappearing. */
 export const TUNNEL = 6;
-/** Vanishing Hands crosses the tunnel on a low deck this high. */
+/** My Hands Are Disappearing crosses the tunnel on a low deck this high. */
 export const LOW_DECK = 4;
-/** Lifting Off climbs to the floating deck this high, and Looking Down holds it over Collision Course and Vanishing Hands. */
+/** I Think I'm Taking Off climbs to the floating deck this high, and I've Got a Bird's Eye View holds it over Find the Rhythm and My Hands Are Disappearing. */
 export const HIGH_DECK = 11;
 /** The deck's walls, high enough that nothing hops off it onto the roads under it. */
 const DECK_WALL = 2.6;
-/** The needle gantries along Needle Sewing Dreams, this far apart. */
+/** The needle gantries along Sleeping with a Needle, this far apart. */
 const NEEDLE_APART = 24;
-/** Running Away: it leaves the road at the end of Needle Sewing Dreams and turns inside the hairpin on this radius. */
+/** Now I'm Running: it leaves the road at the end of Sleeping with a Needle and turns inside the hairpin on this radius. */
 const LANE_R = 36;
 /** The lane is walled from where it's this clear of the road it leaves to where it's that clear of the road it joins. */
 const LANE_OPEN = 1;
@@ -40,81 +42,85 @@ function lay(b: TrackBuilder) {
   b.scale = SCALE;
   b.mark('line');
   b.straight(40);
-  // Verse one: the slide inside, the static, the collision and the noise.
-  b.section('Sliding Inside', props(9.5, 1.4));
+  // Don't take it personally. Verse one: slide inward, shatter the static silencing my mind, find the rhythm and set course to collide.
+  b.section('Slide Inward', props(9.5, 1.4));
   b.mark('sliding');
   b.straight(130);
-  b.section('Shattered Static', props(9.5, 1.4));
+  b.section('Shatter the Static', props(9.5, 1.4));
   b.mark('static');
   b.arc(50, 90);
-  b.section('Collision Course', props(9.5, 1.4));
+  b.section('Find the Rhythm', props(9.5, 1.4));
   b.mark('collision');
   b.straight(45);
-  b.section('Silenced by the Noise', props(9.5, 1.4));
+  b.section('Set Course to Collide', props(9.5, 1.4));
   b.mark('noise');
   b.arc(55, 180);
-  // Verse two: the hands gone, the tear.
-  b.section('Vanishing Hands', props(9.5, DECK_WALL, { bridge: true }));
+  // My hands are disappearing, dissolving in a tear.
+  b.section('My Hands Are Disappearing', props(9.5, DECK_WALL, { bridge: true }));
   b.mark('hands');
   b.straight(150);
-  b.section('A Tear Dissolving', props(9.5, 1.4));
+  b.section('Dissolving in a Tear', props(9.5, 1.4));
   b.mark('tear');
   b.straight(10).arc(60, 90);
-  // Floating: up, up and away, looking down on it all, out of your skin.
-  b.section('Lifting Off', props(9, 1.4));
+  // Starting to feel something: taking off, will I evaporate, a bird's eye view, I have shed my skin.
+  b.section("I Think I'm Taking Off", props(9, 1.4));
   b.mark('lift');
   b.straight(130);
-  b.section('Evaporating', props(9, DECK_WALL, { bridge: true }));
+  b.section('Will I Evaporate?', props(9, DECK_WALL, { bridge: true }));
   b.mark('evaporating');
   b.arc(85, 180);
-  b.section('Looking Down', props(9, DECK_WALL, { bridge: true }));
+  b.section("I've Got a Bird's Eye View", props(9, DECK_WALL, { bridge: true }));
   b.mark('down');
   b.straight(200);
-  b.section('Shedding Skin', props(9, DECK_WALL, { bridge: true }));
+  b.section('I Have Shed My Skin', props(9, DECK_WALL, { bridge: true }));
   b.mark('skin');
   b.straight(50);
-  // The chorus: the gun, the thoughts dying, the face splashed in the sky, the floor.
-  b.section('Gun in Hand', props(9.5, 1.4));
+  // Intra intrasport: perish to my thoughts, my hand is on the gun, my face splashes in the sky.
+  b.section('Perish to My Thoughts', props(9.5, 1.4));
   b.mark('gun');
   b.arc(80, -90);
-  b.section('Dying Thoughts', props(9.5, 1.4));
+  b.section('My Hand Is on the Gun', props(9.5, 1.4));
   b.mark('dying');
   b.arc(80, -90);
   b.straight(10);
-  b.section('Face Splashing in the Sky', props(9.5, 1.4));
+  b.section('My Face Splashes in the Sky', props(9.5, 1.4));
   b.mark('face');
   b.straight(8).mark('ramp').elevate(0).rise(18, 3);
   b.gap(14, 20);
   b.mark('landing');
   b.elevate(0);
   b.straight(26);
-  b.section('Feeling on the Floor', props(10, 1.4));
+  b.section('I Used to Dream', props(10, 1.4));
   b.mark('floor');
   b.straight(60);
-  // Verse three: the dreams, the needles, the schism, running away.
-  b.section('Dreams of Violence', props(10, 1.4));
+  // I used to dream; dreams that sew me up like sleeping with a needle; a schism in the rhythm, now I'm running.
+  b.section('Dreams That Sew Me Up', props(10, 1.4));
   b.mark('violence');
   b.straight(50);
-  b.section('Needle Sewing Dreams', props(10, 1.4));
+  b.section('Sleeping with a Needle', props(10, 1.4));
   b.mark('needles');
   b.straight(80);
   b.mark('split');
-  b.section('Rhythm Schism', props(9.5, 1.4));
+  b.section('A Schism in the Rhythm', props(9.5, 1.4));
   b.mark('schism');
   b.straight(30).arc(42.5, 180).straight(30);
   b.mark('join');
-  // Verse four: the hair melting, the taste buds alight, the evolution.
-  b.section('Liquefying Hair', props(9.5, 1.4));
+  // My hair is liquifying, my tastebuds are igniting, it's true I am evolving.
+  b.section('My Hair Is Liquifying', props(9.5, 1.4));
   b.mark('hair');
   b.straight(20).arc(150, -22).arc(150, 44).arc(150, -22).straight(70);
-  b.section('Taste Buds Igniting', props(9.5, 1.4));
+  b.section('My Tastebuds Are Igniting', props(9.5, 1.4));
   b.mark('taste');
   b.straight(60).arc(50, 90);
-  b.section('Relative Evolution', props(9.5, 1.4));
+  b.section("It's True I Am Evolving", props(9.5, 1.4));
   b.mark('evolution');
-  b.straight(120);
-  // And the last word.
-  b.section('Stop', props(9.5, 1.4));
+  b.straight(60);
+  // The last chorus's floor, and the last word.
+  b.section("The Feeling's on the Floor", props(9.5, 1.4));
+  b.mark('floor2');
+  b.straight(60);
+  // Don't do it.
+  b.section("Don't Do It", props(9.5, 1.4));
   b.mark('stop');
   for (const [kind, len] of dubins(b.pose, START, 50 * SCALE)) {
     if (kind === 'S') b.straight(len / SCALE);
@@ -160,9 +166,9 @@ function poseOn(points: readonly (readonly [number, number])[], s: number): Pose
   throw new Error('past the end');
 }
 
-/** Running Away: a tighter hairpin inside Rhythm Schism's, from the end of the needles round onto Liquefying Hair. */
+/** Now I'm Running: a tighter hairpin inside A Schism in the Rhythm's, from the end of the needle round onto My Hair Is Liquifying. */
 function buildLane(points: readonly (readonly [number, number])[], from: number, to: number, roadHalfWidth: number) {
-  const lane = new TrackBuilder(poseOn(points, from), 'Running Away', { halfWidth: 5.5, wallHeight: 2, surface: 'tartan' });
+  const lane = new TrackBuilder(poseOn(points, from), "Now I'm Running", { halfWidth: 5.5, wallHeight: 2, surface: 'tartan' });
   for (const [kind, l] of dubins(lane.pose, poseOn(points, to), LANE_R)) {
     if (kind === 'S') lane.straight(l);
     else lane.arc(LANE_R, ((kind === 'L' ? 1 : -1) * l * 180) / (Math.PI * LANE_R));
@@ -181,40 +187,42 @@ function buildLane(points: readonly (readonly [number, number])[], from: number,
     { ...sec, from: w0, to: w1 },
     { ...sec, from: w1, wallHeight: 0 },
   ];
-  const branch: BranchDef = { name: 'Running Away', mainFrom: from, mainTo: to, ...ribbon, openOn: [2, 'final'], shut: { kind: 'vanish' } };
+  const branch: BranchDef = { name: "Now I'm Running", mainFrom: from, mainTo: to, ...ribbon, openOn: [2, 'final'], shut: { kind: 'vanish' } };
   return { branch, pits: lane.pits, mid: len / 2, open: [[from - 5, from + w0 + 5], [to - (len - w1) - 5, to + 5]] as [number, number][] };
 }
 
 /**
  * Intrasport (K.G., 2020): the K.G. Cup's last, a microtonal house track
- * sung from somewhere outside the body, a night in the stadium of the head
- * where the losers play. The lap runs the song in order: in through the
- * tunnel, the static and the noise, lifting off and looking down on it all,
- * the gun and the face in the sky, the floor, the needles sewing dreams,
- * the schism, and the melting, burning way home to the last word.
+ * sung from somewhere outside the body, a night in the stadium of the head.
+ * The lap runs the song in order: slide inward, shatter the static, find
+ * the rhythm and collide, the hands disappearing in a tear, taking off to a
+ * bird's eye view, the thoughts and the gun and the face in the sky, the
+ * dreams that sew me up like sleeping with a needle, the schism in the
+ * rhythm, liquifying and igniting and evolving, the feeling on the floor,
+ * and the last words: don't do it.
  */
 export function buildIntrasport(): TrackDef {
-  const first = new TrackBuilder(START, 'Intrasport', props(10, 1.4));
+  const first = new TrackBuilder(START, "Don't Take It Personally", props(10, 1.4));
   lay(first);
   const pts = first.finish(true).points;
   const mk = first.marks;
-  // Where Vanishing Hands crosses the tunnel, and where Looking Down crosses Vanishing Hands (its last crossing).
+  // Where My Hands Are Disappearing crosses the tunnel, and where the bird's eye deck crosses it (its last crossing).
   const tunnel = crossing(pts, mk.hands.s, mk.tear.s + 40, mk.sliding.s, mk.static.s + 20);
   const overHands = crossing(pts, mk.down.s, mk.gun.s, mk.hands.s, mk.tear.s);
 
-  const b = new TrackBuilder(START, 'Intrasport', props(10, 1.4));
+  const b = new TrackBuilder(START, "Don't Take It Personally", props(10, 1.4));
   lay(b);
   const m = (name: string, d = 0) => b.marks[name].s + d;
   const ease = (s0: number, y0: number, s1: number, y1: number) => b.profile(s0, s1, (u) => y0 + (y1 - y0) * u * u * (3 - 2 * u));
-  // Sliding Inside: down into the tunnel under Vanishing Hands, and up out of it.
+  // Slide Inward: down into the tunnel under My Hands Are Disappearing, and up out of it.
   ease(tunnel.b - 60, 0, tunnel.b - 26, -TUNNEL);
   b.profile(tunnel.b - 26, tunnel.b + 22, () => -TUNNEL, 8);
   ease(tunnel.b + 22, -TUNNEL, tunnel.b + 54, 0);
-  // Vanishing Hands on its low deck over the tunnel.
+  // My Hands Are Disappearing on its low deck over the tunnel.
   ease(m('noise', 60), 0, m('hands', 10), LOW_DECK);
   b.profile(m('hands', 10), tunnel.a + 22, () => LOW_DECK, 8);
   ease(tunnel.a + 22, LOW_DECK, tunnel.a + 50, 0);
-  // Lifting Off up onto the floating deck, round the top, across the middle over two roads, and down out of the skin.
+  // Taking off up onto the floating deck, round the top, across the middle over two roads, and down out of the skin.
   ease(m('lift', 5), 0, m('evaporating', 10), HIGH_DECK);
   b.profile(m('evaporating', 10), overHands.a + 32, () => HIGH_DECK, 10);
   ease(overHands.a + 32, HIGH_DECK, m('gun', 80), 0);
@@ -246,23 +254,23 @@ export function buildIntrasport(): TrackDef {
       { s: at('schism', 60), length: 8, lateral: 4, halfWidth: 2.5 },
       { s: at('evolution', 40), length: 8, lateral: 0, halfWidth: 3 },
     ],
-    checkpoints: ['sliding', 'static', 'noise', 'hands', 'tear', 'lift', 'evaporating', 'down', 'skin', 'gun', 'face', 'floor', 'needles', 'schism', 'hair', 'taste', 'evolution', 'stop'].map((k) => b.marks[k].s / main.length),
+    checkpoints: ['sliding', 'static', 'noise', 'hands', 'tear', 'lift', 'evaporating', 'down', 'skin', 'gun', 'face', 'floor', 'needles', 'schism', 'hair', 'taste', 'evolution', 'floor2', 'stop'].map((k) => b.marks[k].s / main.length),
     laps: 3,
     bounds: 340,
     landmarks: [
       { kind: 'stadiumGate', ribbon: -1, s: 6 },
       { kind: 'staticWall', ribbon: -1, s: at('static', 10), lateral: 34 },
-      { kind: 'ballCollision', ribbon: -1, s: at('collision', 20), lateral: 36 },
-      { kind: 'speakerStack', ribbon: -1, s: at('noise', 80), lateral: -48 },
+      { kind: 'speakerStack', ribbon: -1, s: at('collision', 20), lateral: 36 },
+      { kind: 'ballCollision', ribbon: -1, s: at('noise', 80), lateral: -48 },
       { kind: 'raveHands', ribbon: -1, s: at('hands', 130), lateral: 40 },
       { kind: 'tearDrop', ribbon: -1, s: at('tear', 50), lateral: 36 },
       { kind: 'skyFace', ribbon: -1, s: at('face', 36), lateral: 0 },
-      { kind: 'starterPistol', ribbon: -1, s: at('gun', 40), lateral: 30 },
-      { kind: 'mirrorFloor', ribbon: -1, s: at('floor', 30), lateral: -40 },
-      { kind: 'boxingRing', ribbon: -1, s: at('violence', 30), lateral: -40 },
+      { kind: 'starterPistol', ribbon: -1, s: at('dying', 40), lateral: 30 },
+      { kind: 'boxingRing', ribbon: -1, s: at('floor', 30), lateral: -40 },
+      { kind: 'mirrorFloor', ribbon: -1, s: at('floor2', 20), lateral: 40 },
       { kind: 'spoolTower', ribbon: -1, s: at('needles', 50), lateral: 34 },
       { kind: 'meltingHead', ribbon: -1, s: at('hair', 80), lateral: 38 },
-      { kind: 'evolutionMarch', ribbon: -1, s: at('evolution', 50), lateral: -34 },
+      { kind: 'evolutionMarch', ribbon: -1, s: at('evolution', 30), lateral: -34 },
       { kind: 'stopHand', ribbon: -1, s: at('stop', 20), lateral: -34 },
       { kind: 'floatDeck', ribbon: -1, s: at('evaporating', 0), to: at('skin', 0) },
       // The lap dressed stretch by stretch (render/intrasport.ts, `FIELDS`), each from the section it starts in, and the stadium round the lot.

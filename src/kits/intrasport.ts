@@ -9,39 +9,39 @@ import type { Kit } from './kit';
 
 declare module '../tracks/track' {
   interface KitHazards {
-    /** Intrasport: the needle sewing dreams, a giant sewing-machine needle on a gantry over the road, stabbing down on every beat of the four on the floor and stepping one stitch across the road between beats; stitched to the road, spun; through the stitch it has just pulled out of, a boost. */
+    /** Intrasport: dreams that sew me up like sleeping with a needle, a giant sewing-machine needle on a gantry over the road, stabbing down on every beat of the four on the floor and stepping one stitch across the road between beats; sewn up, spun; through the stitch it has just pulled out of, a boost. */
     needles: { kit: 'intrasport'; def: { kind: 'needles'; at: number[]; bpm: number } };
   }
   interface KitLandmarks {
     /** The start: a stadium gate, its scoreboard reading INTRASPORT, floodlights and lasers. */
     stadiumGate: 'intrasport';
-    /** Shattered Static: a wall of screens full of snow, cracked across. */
+    /** Shatter the Static: a wall of screens full of snow, cracked across. */
     staticWall: 'intrasport';
-    /** Collision Course: two giant balls swinging into each other on the beat. */
+    /** Set Course to Collide: two giant balls swinging into each other on the beat. */
     ballCollision: 'intrasport';
-    /** Silenced by the Noise: the stacks of speakers in the loop, cones pumping. */
+    /** Find the Rhythm: a wall of speakers, cones pumping. */
     speakerStack: 'intrasport';
-    /** Vanishing Hands: giant hands raised out of the floor, fading in and out. */
+    /** My Hands Are Disappearing: giant hands raised out of the floor, fading in and out. */
     raveHands: 'intrasport';
-    /** A Tear Dissolving: a giant tear hanging in the air, coming apart into drops. */
+    /** Dissolving in a Tear: a giant tear hanging in the air, coming apart into drops. */
     tearDrop: 'intrasport';
-    /** The floating deck's lights, from Evaporating to Shedding Skin. */
+    /** The floating deck's lights, from Will I Evaporate? to I Have Shed My Skin. */
     floatDeck: 'intrasport';
-    /** Gun in Hand: the starter's pistol, held up, smoke puffing on the beat. */
+    /** My Hand Is on the Gun: the starter's pistol, held up, smoke puffing on the beat. */
     starterPistol: 'intrasport';
-    /** Face Splashing in the Sky: a giant face of light over the ramp, splashing. */
+    /** My Face Splashes in the Sky: a giant face of light over the ramp, splashing. */
     skyFace: 'intrasport';
-    /** Feeling on the Floor: a lit dance floor and the mirror ball over it. */
+    /** The Feeling's on the Floor: a lit dance floor and the mirror ball over it. */
     mirrorFloor: 'intrasport';
-    /** Dreams of Violence: a boxing ring, two fighters trading blows on the beat. */
+    /** I Used to Dream (about killing certain people): a boxing ring, two fighters trading blows on the beat. */
     boxingRing: 'intrasport';
-    /** Needle Sewing Dreams: a tower of thread spools, spinning. */
+    /** Sleeping with a Needle: a tower of thread spools, spinning. */
     spoolTower: 'intrasport';
-    /** Liquefying Hair, Taste Buds Igniting: a giant head, its hair running off it, its tongue alight. */
+    /** My Hair Is Liquifying, My Tastebuds Are Igniting: a giant head, its hair running off it, its tongue alight. */
     meltingHead: 'intrasport';
-    /** Relative Evolution: the march of progress, from crawling to running. */
+    /** It's True I Am Evolving (it's all relative): the march of progress, from crawling to running. */
     evolutionMarch: 'intrasport';
-    /** Stop: a giant hand held up, STOP. */
+    /** Don't Do It: a giant hand held up, DON'T DO IT. */
     stopHand: 'intrasport';
     /** A stretch of the lap dressed in layers: props, set piece, air and the song's words (by the section it starts in). */
     raveField: 'intrasport';
@@ -61,12 +61,12 @@ declare module '../tracks/builder' {
 }
 
 /**
- * The needle sewing dreams: a giant sewing-machine needle hung from a
+ * Dreams that sew me up like sleeping with a needle: a giant sewing-machine needle hung from a
  * gantry over the road, its thread trailing. On every beat (the song's four
  * on the floor) it stabs down into the road at a stitch, holds there for
  * NEEDLE_DOWN of the beat, pulls out and slides one stitch across while
  * it's up; back and forth across the road, NEEDLE_STITCHES of them, each
- * gantry a beat behind the one before so the seams run in a wave. Stitched
+ * gantry each a beat behind the one before so the seams run in a wave. Sewn up
  * to the road by it: spun and slowed. Through the stitch it has just pulled
  * out of, the hole still open behind the needle: threaded, a boost.
  */
@@ -176,7 +176,7 @@ export const kit: Kit<'intrasport'> = {
       },
       // A row of gantries along the stretch, a beat apart.
       generate: ({ at, count }) => ({ kind: 'needles', at: at(count), bpm: NEEDLE_BPM }),
-      callouts: { hit: 'STITCHED!', bonus: 'THREADED!' },
+      callouts: { hit: 'SEWN UP!', bonus: 'THREADED!' },
       sound(v) {
         // Stitched: the needle's thunk into the road, a sewing machine's rattle, and a kick drum.
         v.hit(0.1, 220, 0.55);

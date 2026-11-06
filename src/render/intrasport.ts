@@ -12,12 +12,15 @@ import * as kit from './scenery';
  * confetti and glowsticks; the walls are the stands; the barrier is the
  * LED boards round the pitch. Speakers, lasers and floodlights everywhere,
  * all of it pumping on the song's four on the floor (NEEDLE_BPM), and the
- * song's images set up along the lap in its order: the screens of static,
- * the balls colliding, the stacks of noise, the hands fading, the tear, the
- * floating deck, the starter's pistol, the face splashed over the sky, the
- * floor and its mirror ball, the boxing ring, the spools of thread, the
- * melting head with its tongue alight, the march of evolution, and the
- * hand that says stop. On the final lap the stadium lets off fireworks.
+ * song's images set up along the lap in its order: the static shattered,
+ * the speakers' rhythm, the balls set to collide, the hands disappearing,
+ * the tear, the floating deck and its bird's eye view, the thoughts
+ * perishing, the hand on the gun (a starter's pistol), the face splashing
+ * in the sky, the boxing ring of the dreams about killing, the needle and
+ * its spools of thread, the runner, the head with its hair liquifying and
+ * its tastebuds alight, the march of evolution, the feeling on the floor
+ * under its mirror ball, and the hand held up: don't do it. On the final
+ * lap the stadium lets off fireworks.
  */
 
 export type Feature = (x: number, z: number, rand: () => number) => THREE.Object3D;
@@ -148,7 +151,7 @@ export function ledBoardTexture(): THREE.CanvasTexture {
   const [c, ctx] = kit.canvas(W, H);
   ctx.fillStyle = '#05040a';
   ctx.fillRect(0, 0, W, H);
-  const words = ['INTRASPORT', 'K.G.', 'INTRASPORT', 'FEEL IT'];
+  const words = ['INTRASPORT', 'INTRA', 'INTRASPORT', 'LOOK AT ME NOW'];
   ctx.font = "900 34px 'Arial Black', Impact, sans-serif";
   ctx.textBaseline = 'middle';
   words.forEach((w, k) => {
@@ -486,16 +489,16 @@ export function raveFeature(animated: kit.Animated, track?: Track): Feature {
     [0.6, P.laserRig],
   ];
   const bySection: Record<string, [number, kit.Prop][]> = {
-    'Shattered Static': [[5, P.tv]],
-    'Collision Course': [[4, P.ball]],
-    'Silenced by the Noise': [[6, P.speakerProp]],
-    'Vanishing Hands': [[4, P.dancers]],
-    'Dying Thoughts': [[5, P.bubble]],
-    'Feeling on the Floor': [[5, P.dancers]],
-    'Needle Sewing Dreams': [[5, P.spoolProp]],
-    'Liquefying Hair': [[5, P.drip]],
-    'Taste Buds Igniting': [[4, P.brazier]],
-    'Relative Evolution': [[4, P.hurdle]],
+    'Shatter the Static': [[5, P.tv]],
+    'Find the Rhythm': [[6, P.speakerProp]],
+    'Set Course to Collide': [[4, P.ball]],
+    'My Hands Are Disappearing': [[4, P.dancers]],
+    'Perish to My Thoughts': [[5, P.bubble]],
+    'Sleeping with a Needle': [[5, P.spoolProp]],
+    'My Hair Is Liquifying': [[5, P.drip]],
+    'My Tastebuds Are Igniting': [[4, P.brazier]],
+    "It's True I Am Evolving": [[4, P.hurdle]],
+    "The Feeling's on the Floor": [[5, P.dancers]],
   };
   const noSite = {} as kit.Site;
   const kept = track ? track.def.landmarks.filter((l) => ROOM[l.kind] !== undefined).map((l) => ({ ...kit.offRoad(track.main, l.s * track.main.scale, l.lateral ?? 0), r: ROOM[l.kind]! })) : [];
@@ -679,7 +682,7 @@ function searchlights(f: Field, frac: number, away: number, color: number): void
   }
 }
 
-/** A giant thought bubble wilting on its stalk: Dying Thoughts. */
+/** A giant thought bubble wilting on its stalk: perish to my thoughts. */
 function wiltingThought(f: Field): THREE.Object3D {
   const body = new THREE.Group();
   const mat = own(0xe8e0ff, 0.7);
@@ -749,126 +752,135 @@ function giantRunner(f: Field, color: number): THREE.Object3D {
 }
 
 const FIELDS: Record<string, (f: Field) => void> = {
-  // Intrasport, sliding inside: the stadium's mouth, floodlights and speakers, the crowd either side, and down into the tunnel.
-  Intrasport(f) {
+  // Don't take it personally, I begin to slide inward: the stadium's mouth, floodlights and speakers, the crowd either side, and down into the tunnel.
+  "Don't Take It Personally"(f) {
     strew(f, [[3, f.P.speakerProp], [2, f.P.flood], [2, f.P.glowsticks], [1, f.P.laserRig]], 13);
     litter(f);
     ravers(f, 'left', f.from, f.from + 70, 'jump');
     ravers(f, 'right', f.from, f.from + 70, 'jump');
-    words(f, 0.45, ['SLIDING INSIDE'], CYAN);
-    midground(f, jumbotron(f, ['INTRASPORT', 'K.G.'], 26), 0.3, 40, 16);
+    words(f, 0.12, ["DON'T TAKE IT PERSONALLY"], MAGENTA);
+    words(f, 0.6, ['I BEGIN TO SLIDE INWARD'], CYAN);
+    midground(f, jumbotron(f, ['THIS IS NOT', 'ABOUT YOU'], 26), 0.3, 40, 16);
     air(f, 0.3, MAGENTA, 'fall', 200, 36, 22);
   },
-  // Shattered static, collision course: screens of snow along the road, balls everywhere.
-  'Shattered Static'(f) {
+  // Shatter the static silencing my mind; find the rhythm: screens of snow along the road, then the speakers.
+  'Shatter the Static'(f) {
     strew(f, [[4, f.P.tv], [2, f.P.ball], [2, f.P.speakerProp], [1, f.P.cones]], 12);
     litter(f);
-    words(f, 0.1, ['SHATTERED STATIC'], CYAN);
-    words(f, 0.75, ['COLLISION COURSE'], ACID);
-    midground(f, jumbotron(f, ['NO SIGNAL'], 22, CYAN), 0.45, 40, 15);
+    words(f, 0.1, ['SHATTER THE STATIC'], CYAN);
+    words(f, 0.45, ['SILENCING MY MIND'], VIOLET);
+    words(f, 0.85, ['FIND THE RHYTHM'], ACID);
+    midground(f, jumbotron(f, ['NO SIGNAL'], 22, CYAN), 0.3, 40, 15);
     air(f, 0.4, 0xe8f8ff, 'swirl', 160, 34, 18);
   },
-  // Silenced by the noise: the loop walled with speakers, towers of them, and the air shaking.
-  'Silenced by the Noise'(f) {
+  // Set course to collide: round the loop, the balls swinging into each other inside it, speakers keeping the rhythm.
+  'Set Course to Collide'(f) {
     strew(f, [[6, f.P.speakerProp], [2, f.P.laserRig], [1, f.P.flood]], 11);
     litter(f);
     ravers(f, 'left', f.from + 10, f.to - 10, 'jump', 6, 3);
-    words(f, 0.2, ['SILENCED BY THE NOISE']);
+    words(f, 0.2, ['SET COURSE TO COLLIDE']);
     midground(f, noiseTower(f, MAGENTA), 0.6, 36, 14);
     searchlights(f, 0.5, 30, VIOLET);
     air(f, 0.5, VIOLET, 'float', 180, 40, 20);
   },
-  // Vanishing hands, a tear dissolving: dancers with their hands up, the hands fading, drops falling.
-  'Vanishing Hands'(f) {
+  // My hands are disappearing, dissolving in a tear, I am not needed here: dancers with their hands up, the hands fading, drops falling.
+  'My Hands Are Disappearing'(f) {
     strew(f, [[4, f.P.dancers], [2, f.P.glowsticks], [2, f.P.speakerProp], [1, f.P.flood]], 13);
     litter(f);
     ravers(f, 'right', f.from + 10, f.to - 40, 'wave', 7, 2);
-    words(f, 0.25, ['VANISHING HANDS'], VIOLET);
-    words(f, 0.85, ['A TEAR DISSOLVING'], CYAN);
-    midground(f, jumbotron(f, ['HANDS UP'], 20, VIOLET), 0.6, 40, 15);
+    words(f, 0.25, ['MY HANDS ARE DISAPPEARING'], VIOLET);
+    words(f, 0.7, ['DISSOLVING IN A TEAR'], CYAN);
+    midground(f, jumbotron(f, ['I AM NOT', 'NEEDED HERE'], 20, VIOLET), 0.6, 40, 15);
     air(f, 0.85, CYAN, 'fall', 200, 36, 30);
   },
-  // Lifting off: up the climb, searchlights pointing the way, balloons of light rising.
-  'Lifting Off'(f) {
+  // Starting to feel something, I think I'm taking off: up the climb, searchlights pointing the way, lights rising.
+  "I Think I'm Taking Off"(f) {
     strew(f, [[3, f.P.flood], [2, f.P.laserRig], [2, f.P.speakerProp], [1, f.P.cones]], 13);
     litter(f);
-    words(f, 0.35, ['LIFTING OFF'], ACID);
+    words(f, 0.2, ['STARTING TO FEEL SOMETHING'], ACID);
+    words(f, 0.7, ["I THINK I'M TAKING OFF"], ACID);
     searchlights(f, 0.6, 24, ACID);
-    midground(f, jumbotron(f, ['UP', 'UP', 'AWAY'], 20, ACID), 0.5, 40, 15);
+    midground(f, jumbotron(f, ["I THINK I'M", 'FEELING SOMETHING'], 20, ACID), 0.5, 40, 15);
     air(f, 0.5, ACID, 'rise', 200, 40, 40);
   },
-  // Evaporating: round the top on the floating deck, vapour rising off it, the stadium's lights below.
-  Evaporating(f) {
+  // Will I evaporate? Round the top on the floating deck, vapour rising off it, the stadium's lights below.
+  'Will I Evaporate?'(f) {
     strew(f, [[3, f.P.flood], [2, f.P.laserRig], [2, f.P.speakerProp]], 18, { band: [10, 30], clear: 6 });
     litter(f, 0.6);
-    words(f, 0.3, ['EVAPORATING'], 0xe8e0ff);
+    words(f, 0.3, ['WILL I EVAPORATE?'], 0xe8e0ff);
     vapour(f, 0.3, 0);
     vapour(f, 0.75, 0);
     midground(f, wiltingThought(f), 0.6, 44, 16);
     air(f, 0.5, 0xffffff, 'rise', 260, 60, 40);
   },
-  // Looking down: the deck across the middle, high over the floor, the lights and the crowd below.
-  'Looking Down'(f) {
+  // I've got a bird's eye view, I have shed my skin, look at me now: the deck across the middle, high over the roads below.
+  "I've Got a Bird's Eye View"(f) {
     strew(f, [[3, f.P.flood], [3, f.P.speakerProp], [2, f.P.laserRig]], 16, { band: [8, 30], clear: 6 });
-    words(f, 0.08, ['LOOKING DOWN'], CYAN);
-    words(f, 0.85, ['SHEDDING MY SKIN'], MAGENTA);
+    words(f, 0.08, ["I'VE GOT A BIRD'S EYE VIEW"], CYAN);
+    words(f, 0.7, ['I HAVE SHED MY SKIN'], MAGENTA);
+    words(f, 0.95, ['LOOK AT ME NOW'], ACID);
     searchlights(f, 0.4, 20, CYAN);
     air(f, 0.5, CYAN, 'float', 220, 50, 30, 4);
   },
-  // Gun in hand, dying thoughts: the starter's pistol up, the thoughts wilting.
-  'Gun in Hand'(f) {
+  // Intra intrasport, perish to my thoughts, my hand is on the gun: the thoughts wilting, the starter's pistol up.
+  'Perish to My Thoughts'(f) {
     strew(f, [[3, f.P.bubble], [2, f.P.hurdle], [2, f.P.speakerProp], [1, f.P.flood]], 13);
     litter(f);
-    words(f, 0.15, ['GUN IN MY HAND'], ACID);
-    words(f, 0.6, ['DYING THOUGHTS'], VIOLET);
-    midground(f, wiltingThought(f), 0.75, 40, 16);
+    words(f, 0.1, ['INTRA INTRASPORT'], MAGENTA);
+    words(f, 0.35, ['PERISH TO MY THOUGHTS'], VIOLET);
+    words(f, 0.8, ['MY HAND IS ON THE GUN'], ACID);
+    midground(f, wiltingThought(f), 0.3, 40, 16);
     air(f, 0.5, 0xe8e0ff, 'fall', 160, 40, 24);
   },
-  // Face splashing in the sky, feeling on the floor: off the ramp under the face, down onto the floor, the crowd going off.
-  'Face Splashing in the Sky'(f) {
+  // Get to me before my face splashes in the sky; I used to dream: off the ramp under the face, down past the ring, the crowd going off.
+  'My Face Splashes in the Sky'(f) {
     strew(f, [[3, f.P.dancers], [2, f.P.speakerProp], [2, f.P.glowsticks], [1, f.P.laserRig]], 12);
     litter(f, 1.2);
     ravers(f, 'left', f.from + 60, f.to - 5, 'jump', 7, 3);
-    words(f, 0.62, ['FEELING ON THE FLOOR'], MAGENTA);
+    words(f, 0.05, ['GET TO ME BEFORE'], MAGENTA);
+    words(f, 0.62, ['I USED TO DREAM'], 0xff3a3a);
     searchlights(f, 0.2, 26, MAGENTA);
     air(f, 0.3, MAGENTA, 'fall', 220, 36, 34);
     air(f, 0.8, ACID, 'float', 200, 36, 18);
   },
-  // Dreams of violence, needle sewing dreams: the ring, spools of thread, needles stuck in the turf.
-  'Dreams of Violence'(f) {
+  // Dreams that sew me up like sleeping with a needle: spools of thread, a needle stuck in the turf.
+  'Dreams That Sew Me Up'(f) {
     strew(f, [[4, f.P.spoolProp], [2, f.P.speakerProp], [2, f.P.cones], [1, f.P.flood]], 12);
     litter(f);
-    words(f, 0.08, ['DREAMS OF VIOLENCE'], 0xff3a3a);
-    words(f, 0.4, ['NEEDLE SEWING DREAMS'], MAGENTA);
+    words(f, 0.08, ['DREAMS THAT SEW ME UP'], MAGENTA);
+    words(f, 0.4, ['SLEEPING WITH A NEEDLE'], MAGENTA);
+    words(f, 0.9, ['BUILDING UP TO SOMETHING'], ACID);
     midground(f, giantNeedle(f), 0.65, 38, 16);
     air(f, 0.5, MAGENTA, 'swirl', 160, 36, 20);
   },
-  // Rhythm schism: the road splits round the hairpin, running away inside it.
-  'Rhythm Schism'(f) {
+  // I feel a schism in the rhythm, now I'm running: the road splits round the hairpin, the runner inside it.
+  'A Schism in the Rhythm'(f) {
     strew(f, [[3, f.P.speakerProp], [2, f.P.laserRig], [2, f.P.hurdle], [1, f.P.flood]], 12);
     litter(f);
-    words(f, 0.12, ['RHYTHM SCHISM'], ACID);
-    words(f, 0.88, ['RUNNING AWAY'], CYAN);
+    words(f, 0.12, ['A SCHISM IN THE RHYTHM'], ACID);
+    words(f, 0.88, ["NOW I'M RUNNING"], CYAN);
     midground(f, giantRunner(f, CYAN), 0.5, 30, 14);
     air(f, 0.5, ACID, 'float', 200, 44, 24);
   },
-  // Liquefying hair, taste buds igniting: lava lamps and braziers, the head melting, sparks rising.
-  'Liquefying Hair'(f) {
+  // My hair is liquifying, my tastebuds are igniting: lava lamps and braziers, the head melting, sparks rising.
+  'My Hair Is Liquifying'(f) {
     strew(f, [[3, f.P.drip], [2, f.P.brazier], [2, f.P.speakerProp], [1, f.P.flood]], 12);
     litter(f);
-    words(f, 0.12, ['LIQUEFYING HAIR'], VIOLET);
-    words(f, 0.7, ['TASTE BUDS IGNITING'], 0xff6a2a);
-    midground(f, jumbotron(f, ['MELT'], 18, VIOLET), 0.4, 36, 14);
+    words(f, 0.12, ['MY HAIR IS LIQUIFYING'], VIOLET);
+    words(f, 0.7, ['MY TASTEBUDS ARE IGNITING'], 0xff6a2a);
+    midground(f, jumbotron(f, ['LIQUIFYING'], 18, VIOLET), 0.4, 36, 14);
     air(f, 0.75, 0xff8a3a, 'rise', 220, 40, 30);
   },
-  // Relative evolution, and stop: hurdles down the straight, the march, and the line.
-  'Relative Evolution'(f) {
+  // It's true I am evolving, it's all relative; the feeling's on the floor; don't do it: hurdles, the march, the floor, and the line.
+  "It's True I Am Evolving"(f) {
     strew(f, [[3, f.P.hurdle], [2, f.P.cones], [2, f.P.speakerProp], [1, f.P.flood], [1, f.P.ball]], 12);
     litter(f);
     ravers(f, 'right', f.to - 120, f.to - 10, 'jump', 7, 3);
-    words(f, 0.15, ['RELATIVE EVOLUTION'], ACID);
-    words(f, 0.6, ['STOP'], 0xff3a3a);
-    midground(f, giantRunner(f, ACID), 0.35, 36, 14);
+    words(f, 0.1, ["IT'S TRUE I AM EVOLVING"], ACID);
+    words(f, 0.3, ["IT'S ALL RELATIVE"], ACID);
+    words(f, 0.5, ["THE FEELING'S ON THE FLOOR"], MAGENTA);
+    words(f, 0.75, ["DON'T DO IT"], 0xff3a3a);
+    midground(f, giantRunner(f, ACID), 0.2, 36, 14);
     air(f, 0.8, MAGENTA, 'fall', 220, 40, 30);
   },
 };
@@ -1003,7 +1015,7 @@ export function stadiumGate(ribbon: Ribbon, s: number, animated: kit.Animated): 
   return atRoad(g, ribbon, s);
 }
 
-/** Shattered static: a wall of screens full of snow, seething, one cracked across, on a gantry. */
+/** Shatter the static: a wall of screens full of snow, seething, one cracked across, on a gantry. */
 export function staticWall(ribbon: Ribbon, s: number, lateral: number, animated: kit.Animated): THREE.Group {
   const g = new THREE.Group();
   const p = pulse(animated);
@@ -1080,7 +1092,7 @@ export function ballCollision(ribbon: Ribbon, s: number, lateral: number, animat
   return offRoadFacing(g, ribbon, s, lateral, 1.5);
 }
 
-/** Silenced by the noise: a wall of speakers in the loop, three high and five across, cones pumping, a laser off the top. */
+/** Find the rhythm: a wall of speakers, three high and five across, cones pumping, a laser off the top. */
 export function speakerStack(ribbon: Ribbon, s: number, lateral: number, animated: kit.Animated): THREE.Group {
   const g = new THREE.Group();
   const p = pulse(animated);
@@ -1100,7 +1112,7 @@ export function speakerStack(ribbon: Ribbon, s: number, lateral: number, animate
   return offRoadFacing(g, ribbon, s, lateral, 1.5);
 }
 
-/** Vanishing hands: five giant hands raised out of the turf, each fading away and back in turn. */
+/** My hands are disappearing: five giant hands raised out of the turf, each fading away and back in turn. */
 export function raveHands(ribbon: Ribbon, s: number, lateral: number, animated: kit.Animated): THREE.Group {
   const g = new THREE.Group();
   const p = pulse(animated);
@@ -1363,7 +1375,7 @@ export function spoolTower(ribbon: Ribbon, s: number, lateral: number, animated:
   return offRoadFacing(g, ribbon, s, lateral, 2);
 }
 
-/** Liquefying hair, taste buds igniting: a giant head, its hair running off it in long drips, its tongue out and alight. */
+/** My hair is liquifying, my tastebuds are igniting: a giant head, its hair running off it in long drips, its tongue out and alight. */
 export function meltingHead(ribbon: Ribbon, s: number, lateral: number, animated: kit.Animated): THREE.Group {
   const g = new THREE.Group();
   const p = pulse(animated);
@@ -1439,13 +1451,13 @@ export function evolutionMarch(ribbon: Ribbon, s: number, lateral: number, anima
   return offRoadFacing(g, ribbon, s, lateral, 1.4);
 }
 
-/** Stop: a giant hand held up beside the line, STOP on the sign over it, throbbing red. */
+/** Don't do it: a giant hand held up beside the line, the song's last words on the sign over it, throbbing red. */
 export function stopHand(ribbon: Ribbon, s: number, lateral: number, animated: kit.Animated): THREE.Group {
   const g = new THREE.Group();
   const p = pulse(animated);
   const palm = hand(kit.matte(0xe0a888, { emissive: 0x402018 }), 18);
   g.add(palm);
-  const sign = kit.signPanel(14, kit.textFace(['STOP'], { style: 'neon', bg: '#1a0408', fg: '#ffe8e8', glow: '#ff2a3a' }), { h: 7, depth: 0.6, frame: metal() });
+  const sign = kit.signPanel(14, kit.textFace(["DON'T", 'DO IT'], { style: 'neon', bg: '#1a0408', fg: '#ffe8e8', glow: '#ff2a3a' }), { h: 7, depth: 0.6, frame: metal() });
   sign.position.y = 26;
   g.add(sign, pole(26, 0.4, metal()).translateX(8));
   const glow = halo(p, 0xff2a3a, 34, 0.3);
@@ -1457,7 +1469,7 @@ export function stopHand(ribbon: Ribbon, s: number, lateral: number, animated: k
 // The hazard.
 
 /**
- * The needle sewing dreams: a gantry over the road, a spool of thread on
+ * Dreams that sew me up like sleeping with a needle: a gantry over the road, a spool of thread on
  * it, and the giant needle hung under it, stabbing down into the road on
  * the beat and stepping across between beats, its thread trailing to the
  * spool; the stitch it has just pulled out of glows to be threaded.

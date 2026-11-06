@@ -54,31 +54,32 @@ describe('Intrasport', () => {
     for (const s of [...def.main.sections, ...def.branches.flatMap((b) => b.sections)]) expect(s.surface, s.name).toBe('tartan');
   });
 
-  it('runs through the song in order, from sliding inside to the last word', () => {
+  it("runs through the song's lines in order, from don't take it personally to don't do it", () => {
     const names = def.main.sections.map((s) => s.name).filter((n, k, all) => n !== all[k - 1]);
     expect(names).toEqual([
-      'Intrasport',
-      'Sliding Inside',
-      'Shattered Static',
-      'Collision Course',
-      'Silenced by the Noise',
-      'Vanishing Hands',
-      'A Tear Dissolving',
-      'Lifting Off',
-      'Evaporating',
-      'Looking Down',
-      'Shedding Skin',
-      'Gun in Hand',
-      'Dying Thoughts',
-      'Face Splashing in the Sky',
-      'Feeling on the Floor',
-      'Dreams of Violence',
-      'Needle Sewing Dreams',
-      'Rhythm Schism',
-      'Liquefying Hair',
-      'Taste Buds Igniting',
-      'Relative Evolution',
-      'Stop',
+      "Don't Take It Personally",
+      'Slide Inward',
+      'Shatter the Static',
+      'Find the Rhythm',
+      'Set Course to Collide',
+      'My Hands Are Disappearing',
+      'Dissolving in a Tear',
+      "I Think I'm Taking Off",
+      'Will I Evaporate?',
+      "I've Got a Bird's Eye View",
+      'I Have Shed My Skin',
+      'Perish to My Thoughts',
+      'My Hand Is on the Gun',
+      'My Face Splashes in the Sky',
+      'I Used to Dream',
+      'Dreams That Sew Me Up',
+      'Sleeping with a Needle',
+      'A Schism in the Rhythm',
+      'My Hair Is Liquifying',
+      'My Tastebuds Are Igniting',
+      "It's True I Am Evolving",
+      "The Feeling's on the Floor",
+      "Don't Do It",
     ]);
     console.log(`Intrasport: ${track.length.toFixed(0)} m a lap`);
     expect(track.length).toBeGreaterThan(2400);
@@ -86,33 +87,33 @@ describe('Intrasport', () => {
     expect(def.laps).toBe(3);
   });
 
-  it('slides inside down a tunnel under Vanishing Hands, and floats round on a deck high over Collision Course and Vanishing Hands, in tiers', () => {
+  it("slides inward down a tunnel under My Hands Are Disappearing, and floats round on a deck high over Find the Rhythm and My Hands Are Disappearing, in tiers", () => {
     const found = crossings();
     console.log(`Intrasport crossings: ${found.map((c) => `${c.upper} over ${c.lower} (${c.dy.toFixed(1)} m)`).join(', ')}`);
     const pairs = found.map((c) => `${c.upper} / ${c.lower}`);
-    expect(pairs).toContain('Vanishing Hands / Sliding Inside');
-    expect(pairs.some((p) => p === 'Looking Down / Collision Course' || p === 'Looking Down / Shattered Static')).toBe(true);
-    expect(pairs.some((p) => p === 'Looking Down / Vanishing Hands' || p === 'Shedding Skin / Vanishing Hands')).toBe(true);
+    expect(pairs).toContain('My Hands Are Disappearing / Slide Inward');
+    expect(pairs.some((p) => p === "I've Got a Bird's Eye View / Find the Rhythm" || p === "I've Got a Bird's Eye View / Shatter the Static")).toBe(true);
+    expect(pairs.some((p) => p === "I've Got a Bird's Eye View / My Hands Are Disappearing" || p === 'I Have Shed My Skin / My Hands Are Disappearing')).toBe(true);
     for (const c of found) {
       expect(c.dy, `${c.upper} over ${c.lower}`).toBeGreaterThan(6);
       // The road over is on a deck.
       expect(sectionAt(main.toBuilder(track.spline.dist[c.i])).bridge, c.upper).toBe(true);
     }
     // The tunnel is sunk, in a cut, and the decks hold their heights over it all.
-    const tunnel = found.find((c) => c.lower === 'Sliding Inside')!;
+    const tunnel = found.find((c) => c.lower === 'Slide Inward')!;
     expect(main.heightAt(track.spline.dist[tunnel.j])).toBeCloseTo(-TUNNEL, 1);
     expect(main.cut[tunnel.j]).toBe(1);
     expect(main.heightAt(track.spline.dist[tunnel.i])).toBeCloseTo(LOW_DECK, 1);
-    for (let s = section('Evaporating').from + 15; s < section('Looking Down').to - 5; s += 10) expect(main.heightAtBuilder(s)).toBeCloseTo(HIGH_DECK, 0);
+    for (let s = section('Will I Evaporate?').from + 15; s < section("I've Got a Bird's Eye View").to - 5; s += 10) expect(main.heightAtBuilder(s)).toBeCloseTo(HIGH_DECK, 0);
     // Nothing else is cut.
     const sp = main.spline;
-    for (let k = 0; k < sp.count; k++) if (main.cut[k]) expect(main.sectionName(k)).toBe('Sliding Inside');
+    for (let k = 0; k < sp.count; k++) if (main.cut[k]) expect(main.sectionName(k)).toBe('Slide Inward');
   });
 
   it('splashes into the sky off a ramp over a gap a 100cc kart at full speed clears', () => {
     expect(def.main.gaps.length).toBe(1);
     const [a, z] = def.main.gaps[0];
-    const face = section('Face Splashing in the Sky');
+    const face = section('My Face Splashes in the Sky');
     expect(a > face.from && z <= face.to).toBe(true);
     for (const r of RACERS) {
       const p = kartParams(r.stats, '100cc');
@@ -141,19 +142,19 @@ describe('Intrasport', () => {
 
   it('stands each of the song\'s images beside its own stretch, off the road', () => {
     const where: Record<string, string> = {
-      staticWall: 'Shattered Static',
-      ballCollision: 'Collision Course',
-      speakerStack: 'Silenced by the Noise',
-      raveHands: 'Vanishing Hands',
-      tearDrop: 'A Tear Dissolving',
-      starterPistol: 'Gun in Hand',
-      skyFace: 'Face Splashing in the Sky',
-      mirrorFloor: 'Feeling on the Floor',
-      boxingRing: 'Dreams of Violence',
-      spoolTower: 'Needle Sewing Dreams',
-      meltingHead: 'Liquefying Hair',
-      evolutionMarch: 'Relative Evolution',
-      stopHand: 'Stop',
+      staticWall: 'Shatter the Static',
+      speakerStack: 'Find the Rhythm',
+      ballCollision: 'Set Course to Collide',
+      raveHands: 'My Hands Are Disappearing',
+      tearDrop: 'Dissolving in a Tear',
+      starterPistol: 'My Hand Is on the Gun',
+      skyFace: 'My Face Splashes in the Sky',
+      boxingRing: 'I Used to Dream',
+      spoolTower: 'Sleeping with a Needle',
+      meltingHead: 'My Hair Is Liquifying',
+      evolutionMarch: "It's True I Am Evolving",
+      mirrorFloor: "The Feeling's on the Floor",
+      stopHand: "Don't Do It",
     };
     for (const [kind, name] of Object.entries(where)) expect(sectionAt(def.landmarks.find((l) => l.kind === kind)!.s).name, kind).toBe(name);
     expect(def.landmarks.filter((l) => l.s < 20).map((l) => l.kind)).toEqual(['stadiumGate']);
@@ -216,19 +217,19 @@ describe('Intrasport walls', () => {
 
   it('walls the decks high beside a road below, so no kart drops from one level to the next', () => {
     for (const { up, i } of all.filter((p) => p.gap >= 0)) expect(up.wallHeight[i], up.sectionName(i)).toBeGreaterThanOrEqual(2.5);
-    for (const name of ['Vanishing Hands', 'Evaporating', 'Looking Down', 'Shedding Skin']) expect(section(name).parts[0].wallHeight!).toBeGreaterThanOrEqual(2.5);
+    for (const name of ['My Hands Are Disappearing', 'Will I Evaporate?', "I've Got a Bird's Eye View", 'I Have Shed My Skin']) expect(section(name).parts[0].wallHeight!).toBeGreaterThanOrEqual(2.5);
   });
 });
 
-describe('Running Away, the shortcut', () => {
-  const k = def.branches.findIndex((b) => b.name === 'Running Away');
+describe("Now I'm Running, the shortcut", () => {
+  const k = def.branches.findIndex((b) => b.name === "Now I'm Running");
   const bdef = def.branches[k];
   const branch = track.branches[k];
 
   it('leaves the road at the schism and meets it again round the hairpin, at the same pose, clear of every other road', () => {
     expect(k).toBeGreaterThanOrEqual(0);
-    expect(sectionAt(bdef.mainFrom - 1).name).toBe('Needle Sewing Dreams');
-    expect(sectionAt(bdef.mainTo).name).toBe('Liquefying Hair');
+    expect(sectionAt(bdef.mainFrom - 1).name).toBe('Sleeping with a Needle');
+    expect(sectionAt(bdef.mainTo).name).toBe('My Hair Is Liquifying');
     const sp = branch.spline;
     const ends: [number, number, number, number][] = [
       [sp.px[0], sp.pz[0], Math.atan2(sp.tx[0], sp.tz[0]), bdef.mainFrom],
@@ -260,7 +261,7 @@ describe('Running Away, the shortcut', () => {
     const open: LapContext = { lap: 2, lastLap: false };
     const via = drive(branch, bdef.mainTo, p, undefined, open);
     const round = drive(main, bdef.mainTo, p, bdef.mainFrom, open);
-    console.log(`Intrasport: Running Away ${via.time.toFixed(2)} s, the long way ${round.time.toFixed(2)} s, saves ${(round.time - via.time).toFixed(2)} s`);
+    console.log(`Intrasport: Now I'm Running ${via.time.toFixed(2)} s, the long way ${round.time.toFixed(2)} s, saves ${(round.time - via.time).toFixed(2)} s`);
     expect(via.fell).toBe(false);
     expect(round.fell).toBe(false);
     expect(round.time - via.time).toBeGreaterThan(1);
@@ -311,17 +312,17 @@ describe('Intrasport driving', () => {
   }, 120000);
 });
 
-describe('the needle sewing dreams: stabbing the road on the beat, stepping across it between beats', () => {
+describe('dreams that sew me up like sleeping with a needle: stabbing the road on the beat, stepping across it between beats', () => {
   const h = new HazardSystem(track);
   const ndef = def.hazards.find((q) => q.kind === 'needles')!;
 
-  it('hangs three gantries over Needle Sewing Dreams, on level road, at the song\'s tempo', () => {
+  it("hangs three gantries over Sleeping with a Needle, on level road, at the song's tempo", () => {
     expect(def.hazards.map((q) => q.kind)).toEqual(['needles']);
     if (!('at' in ndef) || !('bpm' in ndef)) throw new Error('no stations');
     expect(ndef.at.length).toBe(3);
     expect(ndef.bpm).toBe(NEEDLE_BPM);
     for (const s of ndef.at) {
-      expect(sectionAt(s).name).toBe('Needle Sewing Dreams');
+      expect(sectionAt(s).name).toBe('Sleeping with a Needle');
       expect(main.heightAtBuilder(s)).toBeCloseTo(0, 1);
     }
     expect(isSheet('needles')).toBe(false);
@@ -357,7 +358,7 @@ describe('the needle sewing dreams: stabbing the road on the beat, stepping acro
     expect(stitchOpen(0.95)).toBe(false);
   });
 
-  it('stitches a kart under it to the road: spun and slowed', () => {
+  it('sews up a kart under it: spun and slowed', () => {
     const p = when(h, (q) => q.active && q.phase < NEEDLE_DOWN - 0.1);
     const kart = kartOn(p, p.gap, 0);
     kart.speed = 30;
