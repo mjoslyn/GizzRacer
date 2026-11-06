@@ -2,10 +2,11 @@ import { seededRandom } from './math';
 import type { ItemKind } from '../items/items';
 import { RACERS, type KartParams, type RacerDef } from '../physics/racers';
 import { GEN_COMPLEXITY_MAX, type GenParams, type GenTheme } from '../tracks/generator';
-import { SKILL_KINDS, type SkillKind } from './skills';
+import { SKILLS, SKILL_KINDS, type SkillKind } from './skills';
 
 /**
- * Story mode: Murder of the Universe (2017) as a roguelike run. Its three
+ * Story mode's album run: Murder of the Universe (2017) as a roguelike run
+ * (the pick's last story; the band's suites, core/suites.ts, are the rest). Its three
  * chapters are the acts, each two races on new generated tracks, a skill
  * game (core/skills.ts) and a one-on-one duel with the chapter's boss on a
  * hand-built track. Clear a stage to pick a boon. There is one life: a
@@ -17,7 +18,7 @@ import { SKILL_KINDS, type SkillKind } from './skills';
 export interface StoryBoss {
   /** The hand-built track the chapter ends on. */
   trackId: string;
-  /** The racer model the boss drives, and another for when the player has picked that one. */
+  /** The boss racer (its own, unlocked by beating it), and a model for when the player is driving that one. */
   racerId: string;
   altRacerId: string;
   name: string;
@@ -44,7 +45,7 @@ export const ACTS: readonly StoryAct[] = [
     intro: 'Nonagon Infinity opens the door. Past it, in the wilds, a voice promises you everything if you will only let it in. It is the Altered Beast, and it wants to wear you.',
     themes: ['jungle', 'carrion', 'goblin'],
     launchTracks: ['goblin-garden', 'people-vultures'],
-    boss: { trackId: 'inner-cell', racerId: 'gator-drummer', altRacerId: 'fuzz-golem', name: 'The Altered Beast', taunt: 'Alter me, it says. Down here, in the cell, it alters you.' },
+    boss: { trackId: 'inner-cell', racerId: 'altered-beast', altRacerId: 'fuzz-golem', name: 'The Altered Beast', taunt: 'Alter me, it says. Down here, in the cell, it alters you.' },
   },
   {
     chapter: 'Chapter II',
@@ -52,7 +53,7 @@ export const ACTS: readonly StoryAct[] = [
     intro: 'Two powers at war over a burning world. The Lord of Lightning splits the sky, the Balrog answers from the fire below, and you are racing across the battlefield.',
     themes: ['storm', 'volcano', 'mars'],
     launchTracks: ['petrodragonic-apocalypse', 'crumbling-castle'],
-    boss: { trackId: 'supercell', racerId: 'fuzz-golem', altRacerId: 'gator-drummer', name: 'The Balrog', taunt: 'The Lord of Lightning strikes the storm. The Balrog outruns it. Can you, one on one?' },
+    boss: { trackId: 'supercell', racerId: 'balrog', altRacerId: 'gator-drummer', name: 'The Balrog', taunt: 'The Lord of Lightning strikes the storm. The Balrog outruns it. Can you, one on one?' },
   },
   {
     chapter: 'Chapter III',
@@ -60,7 +61,7 @@ export const ACTS: readonly StoryAct[] = [
     intro: 'Han-Tyumi, the confused cyborg, wants the two things no cyborg can have: to die, and to vomit. He has made a way to get both, and it is eating everything there is.',
     themes: ['neon', 'factory', 'void'],
     launchTracks: ['robot-stop', 'gamma-knife', 'tetrachromacy'],
-    boss: { trackId: 'murder-of-the-universe', racerId: 'cyborg-gourmand', altRacerId: 'octo-organist', name: 'Han-Tyumi', taunt: 'I am Han-Tyumi. Beat me to the line, or be the last thing the universe sees.' },
+    boss: { trackId: 'murder-of-the-universe', racerId: 'munt-machine', altRacerId: 'octo-organist', name: 'The Soy-Protein Munt Machine', taunt: 'Han-Tyumi built a machine of steel and soy-protein, and it is eating everything. Beat it to the line, or be the last thing the universe sees.' },
   },
 ];
 
@@ -105,7 +106,8 @@ export interface StoryStage {
   act: number;
   /** 0-based within the act: two races, the skill game, the boss. */
   index: number;
-  kind: 'race' | 'skill' | 'boss';
+  /** A suite's card stage ('card') reads a spoken song's words. */
+  kind: 'race' | 'skill' | 'boss' | 'card';
   boss: boolean;
   /** The race's generated track, or null. */
   gen: GenParams | null;
@@ -113,9 +115,42 @@ export interface StoryStage {
   skill: SkillKind | null;
   /** Seeds the skill game: the same on a retry. */
   seed: number;
+  /** How hard the skill game is (0..2); the act's when absent. */
+  level?: number;
+  /** A suite's stage: its song, its hand-built track (null: generated, or a card), a card's words. */
+  song?: string;
+  trackId?: string | null;
+  words?: readonly string[];
 }
 
-export type StoryOutcome = 'cleared' | 'failed' | 'over' | 'won';
+/** 'next': passed with no boon to take (a suite's card), straight on. */
+export type StoryOutcome = 'cleared' | 'next' | 'failed' | 'over' | 'won';
+
+/**
+ * Racer models for the boss racers until they're in RACERS (the boss
+ * racers' own workstream adds them): each boss drives one of these, under
+ * its own name. Once its own racer is there, that's used.
+ */
+export const BOSS_STAND_INS: Record<string, string> = {
+  'mind-voice': 'fuzz-golem',
+  'people-vulture': 'gator-drummer',
+  'altered-beast': 'gator-drummer',
+  balrog: 'fuzz-golem',
+  'munt-machine': 'cyborg-gourmand',
+  'castle-king': 'lizard-warlock',
+  'the-devil': 'skeleton-dragon',
+  'coven-mother': 'swamp-witch',
+};
+/** The model when the player is driving the boss's own (or its stand-in). */
+export const BOSS_ALT = 'octo-organist';
+
+/** The kart a boss drives against `player`: its own racer, else its stand-in, never the player's own model; named as the boss. */
+export function bossRacer(racerId: string, name: string, player: RacerDef, standIn = BOSS_STAND_INS[racerId]): RacerDef {
+  const own = RACERS.find((r) => r.id === racerId);
+  const find = (id: string | undefined) => RACERS.find((r) => r.id === id && r.id !== player.id);
+  const base = (own && own.id !== player.id ? own : undefined) ?? find(standIn) ?? find(BOSS_ALT) ?? RACERS.find((r) => r.id !== player.id) ?? RACERS[0];
+  return { ...base, name };
+}
 
 export class StoryRun {
   lives = START_LIVES;
@@ -135,6 +170,11 @@ export class StoryRun {
     const draw = seededRandom(seed * 31 + 17);
     const pool = [...SKILL_KINDS];
     this.skills = ACTS.map(() => pool.splice(Math.floor(draw() * pool.length), 1)[0]);
+  }
+
+  /** Which story this is on the pick. */
+  get id(): string {
+    return 'motu';
   }
 
   get total(): number {
@@ -176,10 +216,19 @@ export class StoryRun {
   /** The boss for the player's racer: never the same model as the player's. */
   bossRacer(player: RacerDef): RacerDef {
     const b = this.actDef.boss;
-    const id = player.id === b.racerId ? b.altRacerId : b.racerId;
-    const base = RACERS.find((r) => r.id === id) ?? RACERS[0];
-    return { ...base, name: b.name };
+    return bossRacer(b.racerId, b.name, player, BOSS_STAND_INS[b.racerId] ?? b.altRacerId);
   }
+
+  /** The stage as the results and race intro name it. */
+  stageLabel(): string {
+    const r = this.race;
+    return r.boss ? 'Boss' : r.skill ? SKILLS[r.skill].name : `Race ${r.index + 1}`;
+  }
+
+  /** Boss racers beaten this run, and whether each was newly unlocked. */
+  readonly beaten: { racerId: string; name: string; fresh: boolean }[] = [];
+  /** Unlocks a boss racer once beaten (progress.ts's beatBoss): true if newly. */
+  unlock: (racerId: string) => boolean = () => false;
 
   /** Whether a finish clears a race: placed high enough, or on a boss duel, ahead of the boss. */
   passes(place: number, bossPlace: number | null): boolean {
@@ -193,11 +242,26 @@ export class StoryRun {
       this.tries++;
       return this.lives <= 0 ? 'over' : 'failed';
     }
+    const n = Math.min(this.cleared, this.total - 1);
+    if (this.race.boss) this.bossBeaten();
     this.cleared++;
     this.tries = 0;
     if (this.cleared >= this.total) return 'won';
+    if (!this.offersBoon(n)) return 'next';
     this.offer = this.drawOffer();
     return 'cleared';
+  }
+
+  /** Records the boss just beaten, unlocking its racer. */
+  protected bossBeaten(): void {
+    const b = this.actDef.boss;
+    if (this.beaten.some((x) => x.racerId === b.racerId)) return;
+    this.beaten.push({ racerId: b.racerId, name: b.name, fresh: this.unlock(b.racerId) });
+  }
+
+  /** Whether clearing stage `n` offers a boon: always, on the album run. */
+  protected offersBoon(_n: number): boolean {
+    return true;
   }
 
   take(id: BoonId): void {

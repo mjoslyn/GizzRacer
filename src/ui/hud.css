@@ -818,6 +818,39 @@ body.touch-mode .hud-help {
   }
 }
 
+/* A long list (the pick of stories): closer together, so all of it fits. */
+.story-opts.many {
+  gap: 6px;
+}
+
+.menu .story-opts.many .story-opt {
+  padding: 6px 12px;
+}
+
+.story-opts.many .story-opt-name {
+  font-size: clamp(15px, min(3vh, 4.4vw), 20px);
+}
+
+.story-opts.many .story-opt-blurb {
+  font-size: 13px;
+}
+
+/* A spoken song's words on a suite's card: a line each, as a verse. */
+.story-verse {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 16px;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-style: italic;
+  font-size: clamp(15px, 2.6vh, 19px);
+  line-height: 1.35;
+  color: #fff6d0;
+  text-shadow: 1px 1px 0 #2a0636;
+  background: rgba(20, 0, 30, 0.35);
+  box-shadow: inset 4px 0 0 #ff5ad0;
+}
+
 /* Story mode's skill games: a canvas over the whole game. */
 .skill {
   position: fixed;

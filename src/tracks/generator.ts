@@ -88,6 +88,14 @@ export interface GenParams {
   /** 1 (wide, sweeping, forgiving) .. 5 (narrow, twisty, hazards everywhere). */
   complexity: number;
   length: GenLength;
+  /**
+   * A given name for the track (Story mode's suite stages, from the song's
+   * lyrics) in place of the one drawn from its seed; and the places its
+   * sections are named after, in place of its world's. Neither changes what
+   * gets built: the draws are the same.
+   */
+  name?: string;
+  places?: readonly string[];
 }
 
 /** Rough lap lengths, metres. */
@@ -1005,7 +1013,7 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
   const H = per / (2 * (1 + aspect));
   const W = H * aspect;
   const start: Pose = { x: -W / 2 + R + FINISH, z: H / 2, h: Math.PI / 2 };
-  const place = () => pick(pal.places);
+  const place = () => pick(p.places?.length ? p.places : pal.places);
   const surface = () => (pal.alt && rand() < (pal.alt === 'ice' ? 0.6 : 0.3) ? pal.alt : pal.surface);
 
   const b = new TrackBuilder(start, `${place()} Straight`, { halfWidth, wallHeight: abyss ? 1.2 : 0, surface: pal.surface });
@@ -1364,7 +1372,7 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
   const uniqueMarks = [...new Set(marks)];
   const def: TrackDef = {
     id: trackId(p),
-    name: trackName(p),
+    name: p.name ?? trackName(p),
     main,
     branches,
     pits,

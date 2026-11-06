@@ -114,10 +114,21 @@ describe('story run', () => {
     const run = new StoryRun(4);
     for (let act = 0; act < ACTS.length; act++) {
       run.cleared = act * STAGES_PER_ACT + STAGES_PER_ACT - 1;
-      const own = RACERS.find((r) => r.id === ACTS[act].boss.racerId)!;
+      // The model the boss drives against anyone else, then picked by the player.
+      const own = RACERS.find((r) => r.id === run.bossRacer(RACERS.find((x) => x.id === 'arlo')!).id)!;
       expect(run.bossRacer(own).id).not.toBe(own.id);
       expect(run.bossRacer(own).name).toBe(ACTS[act].boss.name);
     }
+  });
+
+  it("the chapter bosses are the new boss racers, and beating one unlocks it", () => {
+    expect(ACTS.map((a) => a.boss.racerId)).toEqual(['altered-beast', 'balrog', 'munt-machine']);
+    const run = new StoryRun(10);
+    const got: string[] = [];
+    run.unlock = (id) => (got.push(id), true);
+    clearAll(run);
+    expect(got).toEqual(['altered-beast', 'balrog', 'munt-machine']);
+    expect(run.beaten.every((b) => b.fresh)).toBe(true);
   });
 
   it('builds every generated story track', () => {

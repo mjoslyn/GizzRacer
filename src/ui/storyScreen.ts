@@ -1,5 +1,6 @@
 import { SKILLS, explainsItself, skillRules, type SkillKind } from '../core/skills';
-import { BOONS, CLEAR_PLACE, type StoryRun } from '../core/story';
+import { ACTS, BOONS, CLEAR_PLACE, type StoryRun } from '../core/story';
+import { ALBUM_STORY, SUITES, SuiteRun } from '../core/suites';
 import type { RacerDef } from '../physics/racers';
 
 /** A story card: a chapter opening, a boon to pick, or how the run ended. */
@@ -8,6 +9,8 @@ export interface StoryCard {
   kicker: string;
   title: string;
   body: string;
+  /** A song's words, a line each (a suite's card), under the body. */
+  verse?: readonly string[];
   /** Exactly what to do, under the body (a skill game's rules). */
   detail?: string;
   /** What can be picked; the first is lit to start. */
@@ -77,9 +80,10 @@ export class StoryScreen {
       <div class="menu-panel">
         <div class="story-kicker">${esc(c.kicker)}</div>
         <div class="menu-title hud-big">${esc(c.title)}</div>
-        <div class="story-body">${esc(c.body)}</div>
+        ${c.body ? `<div class="story-body">${esc(c.body)}</div>` : ''}
+        ${c.verse ? `<div class="story-verse">${c.verse.map((l) => `<span>${esc(l)}</span>`).join('')}</div>` : ''}
         ${c.detail ? `<div class="story-rules">${esc(c.detail)}</div>` : ''}
-        <div class="story-opts">${opts}</div>
+        <div class="story-opts${c.opts.length > 5 ? ' many' : ''}">${opts}</div>
         ${c.deck ? deckHtml(c.deck) : ''}
         ${c.footer ? `<div class="story-footer">${esc(c.footer)}</div>` : ''}
         <div class="menu-hint">${c.opts.length > 1 ? '&uarr;&darr; choose &middot; ' : ''}Enter to go on</div>
@@ -99,7 +103,20 @@ function esc(s: string): string {
   return s.replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`);
 }
 
-export type StoryPhase = 'chapter' | 'skill' | 'boss' | 'boon' | 'failed' | 'over' | 'won';
+export type StoryPhase = 'chapter' | 'card' | 'skill' | 'boss' | 'boon' | 'failed' | 'over' | 'won';
+
+/** Story mode's first card: which story to play, the band's suites in order and the album run last. */
+export function storyPickCard(): StoryCard {
+  return {
+    kicker: 'Story mode',
+    title: 'Pick a story',
+    body: 'Each is a run: one stage a song, in the order the band play them, a boss at the end. One life, and a boon for every stage cleared.',
+    opts: [
+      ...SUITES.map((s) => ({ id: s.id, name: s.name, blurb: `${s.year} · ${s.stages.length} songs · boss: ${s.boss.name}` })),
+      { id: ALBUM_STORY, name: 'Murder of the Universe', blurb: `The whole album, 2017 · ${ACTS.length} chapters, a boss each` },
+    ],
+  };
+}
 
 /** Lives as hearts, for the cards and the race intro. */
 export function hearts(lives: number): string {
@@ -115,10 +132,39 @@ export function storyCard(run: StoryRun, phase: StoryPhase, player: RacerDef, no
   const go = (name: string, blurb: string) => [{ id: 'go', name, blurb }];
   const ends = [
     { id: 'again', name: 'Loop again', blurb: 'A new run from Chapter I, with the same racer' },
+    { id: 'stories', name: 'Another story', blurb: 'Back to the pick of stories' },
     { id: 'menu', name: 'Back to the picker', blurb: 'Leave the loop for now' },
   ];
   const lead = (text: string) => (note ? `${note}. ${text}` : text);
+  if (run instanceof SuiteRun) {
+    const s = run.suite;
+    const again = [
+      { id: 'again', name: 'Play it again', blurb: `${s.name} from the top, with the same racer` },
+      { id: 'stories', name: 'Another story', blurb: 'Back to the pick of stories' },
+      { id: 'menu', name: 'Back to the picker', blurb: 'Leave the stories for now' },
+    ];
+    const unlocked = run.beaten.map((b) => (b.fresh ? `${b.name} is unlocked: pick them from the racers.` : `${b.name} is beaten again.`)).join(' ');
+    switch (phase) {
+      case 'chapter':
+        return { kicker: `${s.album} (${s.year}) · ${hearts(run.lives)}`, title: s.name, body: s.intro, opts: go('Begin', `${run.outline}. Finish each race in the top ${CLEAR_PLACE}.`), footer };
+      case 'card':
+        return { kicker: `${s.name} · ${hearts(run.lives)}`, title: race.song ?? '', body: '', verse: race.words, opts: go('Continue', 'On with the story'), footer };
+      case 'over':
+        return {
+          kicker: `${s.name} · ${run.stageLabel()}`,
+          title: 'The story ends here',
+          body: lead(`Out of lives, ${run.cleared} of ${run.total} stages in.`),
+          opts: again,
+          footer,
+        };
+      case 'won':
+        return { kicker: s.name, title: 'The story is told', body: [s.ending, unlocked].filter(Boolean).join(' '), opts: again, footer };
+      default:
+        break;
+    }
+  }
   switch (phase) {
+    case 'card':
     case 'chapter':
       return { kicker, title: act.title, body: act.intro, opts: go('Begin', `Two races, a skill game, then the boss one on one. Finish each race in the top ${CLEAR_PLACE}.`), footer };
     case 'skill': {
@@ -157,7 +203,7 @@ export function storyCard(run: StoryRun, phase: StoryPhase, player: RacerDef, no
       return {
         kicker: 'Murder of the Universe',
         title: 'The universe is murdered',
-        body: 'Han-Tyumi got what he wanted, and everything else went with it. The loop closes on itself, and somewhere Nonagon Infinity opens the door again.',
+        body: ['Han-Tyumi got what he wanted, and everything else went with it. The loop closes on itself, and somewhere Nonagon Infinity opens the door again.', ...run.beaten.filter((b) => b.fresh).map((b) => `${b.name} is unlocked.`)].join(' '),
         opts: ends,
         footer,
       };

@@ -19,6 +19,7 @@ import { LeaderboardPanel } from './ui/leaderboard';
 import { RecordsPanel } from './ui/recordsPanel';
 import { NamePrompt } from './ui/namePrompt';
 import { cupBoard, cupTimeBoard, postRecord, raceBoard } from './net/records';
+import * as progress from './core/progress';
 import { foundShortcut, recordCup, recordCupTime, recordRace, recordStyle } from './core/progress';
 import { StyleMeter, driftMove } from './core/style';
 import { SURGE_CLOSE, SURGE_CLOSING, SURGE_FAST } from './items/items';
@@ -31,9 +32,10 @@ import type { Effect, RoomStart } from './net/protocol';
 import type { RoomClient } from './net/room';
 import { GrandPrix } from './core/grandPrix';
 import { ACTS, CLEAR_PLACE, SKILL_STAGE, STAGES_PER_ACT, StoryRun, type BoonId } from './core/story';
+import { ALBUM_STORY, SuiteRun, suiteById, suiteMusic } from './core/suites';
 import { DEADSTICK_LAUNCH, DEADSTICK_RUNUP, DEADSTICK_SHOTS, DEADSTICK_SHOT_TIME, planDeadstick, type DeadstickPlan, type SkillKind } from './core/skills';
 import { SkillScreen, type SkillResult } from './ui/skillScreen';
-import { StoryScreen, hearts, practiceCard, practiceRulesCard, storyCard, type StoryPhase } from './ui/storyScreen';
+import { StoryScreen, hearts, practiceCard, practiceRulesCard, storyCard, storyPickCard, type StoryPhase } from './ui/storyScreen';
 import { Race, TOUCH_CPU_PACE, ordinal, type RaceKart } from './core/race';
 import { ASSIST_NORMAL, ASSIST_TOUCH } from './physics/steerAssist';
 import { DRIFT_TIERS, PHYSICS_VERSION, copyKartState, createKartState, driftTier, respawnKart, type KartState, type StepEvents } from './physics/kart';
@@ -235,6 +237,8 @@ let tourSong: string | null = null;
 let gp: GrandPrix | null = null;
 /** The story run in progress, its card showing between races, and the boss's kart on a boss race. */
 let story: StoryRun | null = null;
+/** Story mode's first card is up: which story to play. */
+let storyPicking = false;
 let storyPhase: StoryPhase = 'chapter';
 let storyBoss: RaceKart | null = null;
 /** Skill Games: the game played on its own, how hard (0..2, a story chapter's), and its draw (new each go). */
@@ -464,7 +468,8 @@ const menu = new Menu(
       return;
     }
     gp = c.mode === 'grandPrix' ? new GrandPrix(defaultGrid(c.racer, fieldSeed), chosenCup(c).tracks) : null;
-    story = c.mode === 'story' ? new StoryRun(fieldSeed) : null;
+    story = null;
+    storyPicking = c.mode === 'story';
     gpTimes = [];
     gpPlaces = [];
     gpSongRace = false;
@@ -473,7 +478,7 @@ const menu = new Menu(
     // Infinite starts on the picked track, or with Generative on (or mix, by the toss) a generated one.
     infiniteGen = null;
     if (c.mode === 'infinite' && c.generative !== 'off') chooseInfiniteTrack(0);
-    if (story) showStory('chapter');
+    if (storyPicking) showStoryPick();
     else if (practice) playPractice();
     else startRace(true);
   },
@@ -1714,10 +1719,16 @@ function finishStoryRace(p: RaceKart): void {
   trialNote = parts.join(' · ');
 }
 
-/** The race intro's line in story mode: the chapter, the race or the boss, the lives. */
+/** The race intro's line in story mode: the chapter (a suite's name), the race (its song) or the boss, the lives. */
 function storyIntro(run: StoryRun): string {
   const r = run.race;
-  return `${run.actDef.chapter} · ${r.boss ? `Boss: ${run.bossRacer(choice.racer).name}, one on one` : `Race ${r.index + 1}`} · ${hearts(run.lives)}`;
+  if (run instanceof SuiteRun && !r.boss) {
+    // The song, unless the track's named for it already: then where it comes in the suite.
+    const songs = run.suite.stages;
+    const at = songs.findIndex((s) => s.song === r.song) + 1;
+    return `${run.suite.name} · ${r.song === track.def.name ? `Song ${at} of ${songs.length}` : r.song} · ${hearts(run.lives)}`;
+  }
+  return `${run.actDef.chapter} · ${r.boss ? `Boss: ${run.bossRacer(choice.racer).name}, one on one` : run.stageLabel()} · ${hearts(run.lives)}`;
 }
 
 /** A story race's track: a new one in the chapter's worlds, the boss's own, or one to fly the Deadstick Landing on. */
@@ -1731,7 +1742,8 @@ function storyTrack(): TrackEntry {
     const params = r.gen;
     return { id: trackId(params), build: () => generateTrack(params) };
   }
-  const id = story!.actDef.boss.trackId;
+  // A suite's stage on its song's own track.
+  const id = r.trackId ?? story!.actDef.boss.trackId;
   return TRACK_LIST.find((t) => t.id === id) ?? TRACK_LIST[0];
 }
 
@@ -1748,16 +1760,46 @@ function storyBoons(k: RaceKart, run: StoryRun): void {
   if (run.startItem) k.item = run.startItem;
 }
 
-/** Shows a story card between stages; `note` says how the last one went. */
+/** Shows a story card between stages; `note` says how the last one went. A suite's song card plays its recording. */
 function showStory(phase: StoryPhase, note = ''): void {
   storyPhase = phase;
+  storyPicking = false;
   setMode('story');
   storyScreen.show(storyCard(story!, phase, choice.racer, note));
+  if (phase === 'card') suiteStageMusic(null);
 }
 
-/** Scores the stage just played and shows what comes of it. */
+/** Story mode's first card: the pick of stories. */
+function showStoryPick(): void {
+  storyPicking = true;
+  story = null;
+  setMode('story');
+  storyScreen.show(storyPickCard());
+}
+
+/** A new run of the story picked (a suite's id, or the album run's). */
+function newStory(id: string): StoryRun {
+  const seed = Math.floor(Math.random() * 2 ** 31);
+  const suite = id === ALBUM_STORY ? undefined : suiteById(id);
+  const run = suite ? new SuiteRun(seed, suite) : new StoryRun(seed);
+  run.unlock = unlockBoss;
+  return run;
+}
+
+/**
+ * Unlocks a boss racer once it's beaten: progress.ts's beatBoss, from the
+ * boss racers' workstream. Read off the module so this builds before that
+ * lands (a no-op until it does).
+ */
+function unlockBoss(racerId: string): boolean {
+  const beat = (progress as unknown as { beatBoss?: (id: string) => boolean }).beatBoss;
+  return beat ? beat(racerId) : false;
+}
+
+/** Scores the stage just played and shows what comes of it: a boon to take, or straight on when there's none (a card read). */
 function storyResult(passed: boolean, note = ''): void {
   const out = story!.record(passed);
+  if (out === 'next') return storyNext();
   showStory(out === 'cleared' ? 'boon' : out, note);
 }
 
@@ -1766,12 +1808,14 @@ function storyNext(): void {
   const run = story!;
   const r = run.race;
   if (run.actStart && storyPhase !== 'chapter') return showStory('chapter');
+  // A suite's spoken song: its words on a card, its recording playing.
+  if (r.kind === 'card') return showStory('card');
   if (r.skill && storyPhase !== 'skill') return showStory('skill');
   if (r.boss && storyPhase !== 'boss') return showStory('boss');
   // A skill game makes its own sound, and the Deadstick Landing flies to its own: no song carries into those.
   const keep = storySameSong && !r.skill;
   storySameSong = false;
-  if (r.skill && r.skill !== 'deadstick') return startSkillScreen(r.skill, r.seed, r.act);
+  if (r.skill && r.skill !== 'deadstick') return startSkillScreen(r.skill, r.seed, r.level ?? r.act);
   startRace(true, keep);
 }
 
@@ -1790,7 +1834,7 @@ function startSkillScreen(kind: SkillKind, seed: number, level: number): void {
 /** The skill game being played, a story stage's or Skill Games', with its draw and how hard. */
 function skillStage(): { kind: SkillKind; seed: number; level: number } | null {
   const r = story?.race;
-  if (r?.skill) return { kind: r.skill, seed: r.seed, level: r.act };
+  if (r?.skill) return { kind: r.skill, seed: r.seed, level: r.level ?? r.act };
   return practice;
 }
 
@@ -1937,12 +1981,22 @@ storyScreen.onPick = (id) => {
     practice.seed = newSeed();
     return playPractice();
   }
-  if (!story) return;
-  if (id === 'menu') return toMenu();
-  if (id === 'again') {
-    story = new StoryRun(Math.floor(Math.random() * 2 ** 31));
+  if (storyPicking) {
+    story = newStory(id);
     return showStory('chapter');
   }
+  if (!story) return;
+  if (id === 'menu') return toMenu();
+  if (id === 'stories') {
+    menuMusic();
+    return showStoryPick();
+  }
+  if (id === 'again') {
+    story = newStory(story.id);
+    return showStory('chapter');
+  }
+  // A song's card read: on with the story (no boon for it).
+  if (storyPhase === 'card') return storyResult(true);
   if (storyPhase === 'boon') story.take(id as BoonId);
   storyNext();
 };
@@ -2319,6 +2373,8 @@ function raceSongs(): string[] {
   const own = song ? (song.also ? [songTitles(song), ...(Math.random() < 0.5 ? [song.title, song.also] : [song.also, song.title])] : [song.title]) : [];
   const r = story?.race;
   if (!r) return own;
+  // A suite's stage: its own song, then the track's.
+  if (r.song) return [...new Set([r.song, ...own])];
   const list = (STORY_SONGS[r.act] ?? []).map((s) => s.title);
   const lead = r.boss ? [STORY_BOSS_SONGS[r.act]] : [];
   const chapter = [...lead, ...list.map((_, i) => list[(r.index + i) % list.length])];
@@ -2352,6 +2408,49 @@ function startRaceMusic(): void {
     music.play(remixCues(DEADSTICK_CUE));
     return;
   }
+  if (story instanceof SuiteRun && story.race.song) return suiteStageMusic(trackMusic);
+  trackMusic();
+}
+
+/**
+ * A Story suite's stage's music, whatever the Soundtrack setting (but a
+ * Full set, which plays on): its song's recording from suites.json, from
+ * where the music starts; with none, the live recording playing holds on
+ * (carried over the cards); with nothing live playing either (or offline),
+ * `fallback` (a race's own: its song by the setting, or its remix). A card
+ * passes null: whatever is playing plays on.
+ */
+function suiteStageMusic(fallback: (() => void) | null): void {
+  if (setPlaying() || !(story instanceof SuiteRun)) return;
+  const run = story;
+  const song = run.race.song;
+  if (!song) return;
+  const ticket = ++suiteMusicTicket;
+  const at = run.cleared;
+  const forRace = fallback ? race : null;
+  if (forRace) liveRace = true;
+  void radio.suiteRecording(run.suite.id, song).then((rec) => {
+    if (ticket !== suiteMusicTicket || story !== run || run.cleared !== at || (forRace && race !== forRace)) return;
+    const plan = suiteMusic(rec, !!(radio.playing && music.live));
+    if (plan === 'entry') {
+      liveRace = !!forRace;
+      return radio.playRecording(rec!, song, remixCues(forRace ? track.def.music.lap : 'title'));
+    }
+    if (plan === 'hold') {
+      // The recording before plays on through this stage, as a same-song hold: no final-lap cut.
+      if (forRace) heldSong = true;
+      return;
+    }
+    if (forRace) liveRace = false;
+    fallback?.();
+  });
+}
+
+/** Bumped by every suite stage's music request, so a late answer is dropped. */
+let suiteMusicTicket = 0;
+
+/** A race's own music by the Soundtrack setting: its song live, any song live, or its remix. */
+function trackMusic(): void {
   const cues = remixCues(track.def.music.lap);
   const mode = settings().soundtrack;
   const songs = raceSongs();
@@ -2720,7 +2819,7 @@ function table(): Table | null {
         player: partyOn ? !!humanLabel(e.racer) : e.racer === choice.racer,
       }));
   if (mode === 'results') {
-    const title = online ? `ROOM ${online.client.code} RESULTS` : story ? `${story.actDef.chapter.toUpperCase()} · ${story.race.boss ? 'BOSS DUEL' : `RACE ${story.race.index + 1}`}` : gp ? `RACE ${gp.round + 1}/${gp.tracks.length} RESULTS` : choice.mode === 'timeTrial' ? 'TIME TRIAL' : partyOn ? 'PARTY RESULTS' : 'RESULTS';
+    const title = online ? `ROOM ${online.client.code} RESULTS` : story ? `${story.actDef.chapter.toUpperCase()} · ${story.race.boss ? 'BOSS DUEL' : story instanceof SuiteRun ? story.stageLabel().toUpperCase() : `RACE ${story.race.index + 1}`}` : gp ? `RACE ${gp.round + 1}/${gp.tracks.length} RESULTS` : choice.mode === 'timeTrial' ? 'TIME TRIAL' : partyOn ? 'PARTY RESULTS' : 'RESULTS';
     const rows = online ? onlineRows(kartRow) : finishOrder().map(kartRow);
     return { kind: 'results', title, note: trialNote || undefined, rows, actions: betweenActions() };
   }
@@ -2863,6 +2962,7 @@ function toMenu(): void {
   infiniteGen = null;
   gp = null;
   story = null;
+  storyPicking = false;
   practice = null;
   endDeadstickRing();
   endPodium();
@@ -3312,6 +3412,16 @@ Object.assign(window, {
       story.cleared = act * STAGES_PER_ACT + SKILL_STAGE;
       story.skills[act] = kind;
       showStory('skill');
+    },
+    /** Opens Story mode's pick of stories, or starts story `id` at stage `stage` (its card first when that's a card; testing). */
+    story(id?: string, stage = 0) {
+      choice = { ...choice, mode: 'story' };
+      if (!id) return showStoryPick();
+      story = newStory(id);
+      story.cleared = stage;
+      if (stage === 0) return showStory('chapter');
+      storyPhase = 'boon';
+      storyNext();
     },
     /** Starts a Party race for `n` players on the keyboard halves and the first gamepads (testing). */
     party(n = 2) {

@@ -49,6 +49,7 @@ const OPENING_BYTES = 2_500_000;
 export class LiveRadio {
   private bootlegs: Promise<Record<string, LiveRecording[]>> | null = null;
   private showList: Promise<Show[]> | null = null;
+  private suiteList: Promise<Record<string, Record<string, LiveRecording>>> | null = null;
   private now: Playing | null = null;
   /** Track song and Random song: what was played, to step back through. */
   private history: { rec: LiveRecording; title: string; mode: LiveMode }[] = [];
@@ -114,6 +115,31 @@ export class LiveRadio {
     else this.music.playLive(rec, this.fallback);
     this.changed();
     return true;
+  }
+
+  /**
+   * A given live recording of `song`, looping from where its music starts
+   * (a Story suite's stage, public/music/suites.json). `fallback` plays when
+   * it won't stream.
+   */
+  playRecording(rec: LiveRecording, song: string, fallback: readonly MusicCue[]): void {
+    const t = ++this.ticket;
+    this.fallback = fallback;
+    if (this.now && this.now.mode !== 'show' && this.now.rec !== rec) this.history.push({ rec: this.now.rec, title: this.now.title, mode: this.now.mode });
+    this.now = { rec, title: song, mode: 'song' };
+    if (rec.then) this.playPair(rec, t);
+    else this.music.playLive(rec, this.fallback);
+    this.changed();
+  }
+
+  /** A Story suite's recording of `song` (public/music/suites.json), or null: none, or offline. */
+  async suiteRecording(suite: string, song: string): Promise<LiveRecording | null> {
+    this.suiteList ??= fetchJson<Record<string, Record<string, LiveRecording>>>(`${BASE}suites.json`).catch(() => {
+      this.suiteList = null;
+      return {};
+    });
+    const rec = (await this.suiteList)[suite]?.[song];
+    return rec?.id && rec.file ? rec : null;
   }
 
   /** Two songs the band played back to back: the first, straight on into the second, and round again. */
