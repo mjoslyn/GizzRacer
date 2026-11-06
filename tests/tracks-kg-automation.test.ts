@@ -10,7 +10,8 @@ import { createKartState, stepKart, type KartState } from '../src/physics/kart';
 import { RACERS, kartParams } from '../src/physics/racers';
 import { TRACK_SONGS } from '../src/audio/songs';
 import { FIELD_SECTIONS } from '../src/render/automation';
-import { DECK, PRESS_PERIOD, buildAutomation } from '../src/tracks/automation';
+import { CRACK, DECK, HUMP, LANE_HW, PRESS_PERIOD, buildAutomation } from '../src/tracks/automation';
+import { ROAD_WIDTH_SCALE } from '../src/tracks/builder';
 import { CUPS, TRACK_LIST } from '../src/tracks/index';
 import { nearestOnSpline, pointAt } from '../src/tracks/spline';
 import { Track, type LapContext, type Ribbon } from '../src/tracks/track';
@@ -80,12 +81,19 @@ describe('Automation', () => {
     expect(sectionAt(main.toBuilder(sp.dist[upper])).name).toBe('Super-Organism');
     expect(sectionAt(main.toBuilder(sp.dist[upper])).bridge).toBe(true);
     expect(sectionAt(main.toBuilder(sp.dist[lower])).name).toBe('Your New Best Mate');
-    // The deck is level over the line, and only the deck and its ramps leave the ground.
+    // The deck is level over the line; off it, the road only humps past the presses and sinks into the crack of doom, the conveyor under the deck flat.
     for (let s = section('Super-Organism').from + 100; s < section('Super-Organism').to - 5; s += 10) expect(main.heightAtBuilder(s)).toBeCloseTo(DECK, 0);
     for (const q of def.main.sections) {
       if (q.name === 'Super-Organism' || q.name === 'Bending Light Through Prisms') continue;
-      for (let s = q.from; s < q.to; s += 10) expect(Math.abs(main.heightAtBuilder(s)), q.name).toBeLessThan(0.5);
+      for (let s = q.from; s < q.to; s += 10) {
+        const y = main.heightAtBuilder(s);
+        expect(y, q.name).toBeLessThan(q.name === 'Your New Best Mate' ? HUMP + 0.1 : 0.5);
+        expect(y, q.name).toBeGreaterThan(q.name === 'The Crack of Doom' || q.name === 'Death Kiss' ? -CRACK - 0.1 : -0.5);
+      }
     }
+    expect(main.heightAtBuilder(section('Your New Best Mate').from + 345)).toBeCloseTo(HUMP, 0);
+    expect(Math.min(...[0, 40, 60, 80].map((d) => main.heightAtBuilder(section('The Crack of Doom').from + d)))).toBeCloseTo(-CRACK, 0);
+    expect(Math.abs(main.heightAtBuilder(section('Your New Best Mate').from + 84))).toBeLessThan(0.5);
   });
 
   it('lays its full rows of item boxes eight across, and a double box on the override', () => {
@@ -223,6 +231,11 @@ describe('The Override, the shortcut', () => {
 
   it('is there from the second lap, and saves between one and two and a half seconds at 150cc', () => {
     expect(bdef.openOn).toEqual([2, 'final']);
+    // One narrow belt with no walls: it pays only taken clean.
+    for (const q of bdef.sections) {
+      expect(q.halfWidth).toBeCloseTo(LANE_HW * ROAD_WIDTH_SCALE);
+      expect(q.wallHeight ?? 0).toBe(0);
+    }
     const p = kartParams(first.stats, '150cc');
     const open: LapContext = { lap: 2, lastLap: false };
     const via = drive(branch, bdef.mainTo, p, undefined, open);
@@ -278,10 +291,10 @@ describe('the presses: heads stamping the conveyor lane by lane, on the beat', (
   const h = new HazardSystem(track);
   const pdef = def.hazards.find((q) => q.kind === 'presses')!;
 
-  it('stands three gantries up the conveyor, on level road clear of the deck, a bar of the song round', () => {
+  it('stands four gantries up the conveyor, on level road clear of the deck, a bar of the song round', () => {
     expect(def.hazards.map((q) => q.kind)).toEqual(['presses']);
     if (!('at' in pdef)) throw new Error('no stations');
-    expect(pdef.at.length).toBe(3);
+    expect(pdef.at.length).toBe(4);
     expect('period' in pdef && pdef.period).toBe(PRESS_PERIOD);
     expect(PRESS_PERIOD).toBeCloseTo((60 / BPM) * 4);
     const cross = section('Your New Best Mate').from;
@@ -357,12 +370,12 @@ describe('the presses: heads stamping the conveyor lane by lane, on the beat', (
     b.update(12.3);
     const pa = a.poses.filter((q) => q.kind === 'presses');
     const pb = b.poses.filter((q) => q.kind === 'presses');
-    expect(pa.length).toBe(3);
+    expect(pa.length).toBe(4);
     pa.forEach((p, i) => expect(p.phase).toBeCloseTo(pb[i].phase, 6));
     h.update(3);
     const out: { x: number; z: number; r: number; vx: number; vz: number }[] = [];
     h.obstacles(out);
-    expect(out.length).toBeGreaterThanOrEqual(3);
+    expect(out.length).toBeGreaterThanOrEqual(4);
   });
 });
 
