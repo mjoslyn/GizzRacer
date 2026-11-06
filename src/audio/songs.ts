@@ -179,6 +179,7 @@ export const TRANSCRIBED: Record<string, { recording: string; release: string }>
   'billabong-valley': { recording: 'Billabong Valley', release: "Live in Sydney '25, the soundboard mix" },
   'minimum-brain-size': { recording: 'Minimum Brain Size', release: "Live in New York City '25 (Rock Night), the soundboard mix" },
   automation: { recording: 'Automation', release: "Live in Athens '25, the soundboard mix" },
+  oddlife: { recording: 'Oddlife', release: "Live in Athens '25, the soundboard mix" },
   intrasport: { recording: 'Intrasport', release: "Live at Field of Vision '25, the soundboard mix" },
 };
 

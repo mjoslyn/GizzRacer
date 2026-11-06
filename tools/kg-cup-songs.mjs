@@ -1,18 +1,22 @@
 // The K.G. Cup's remixes, written in seqbaby (Minimum Brain Size's is in
 // tools/minimum-brain-size-songs.mjs).
 //
-// Four cues, two of the cup's other songs from K.G. (2020), each a lap cut and a
+// Six cues, the cup's other three songs from K.G. (2020), each a lap cut and a
 // faster final-lap cut (busier drums, the hook up front):
 //
 //   automation-remix(-final-lap)    "Automation"
 //   intrasport-remix(-final-lap)    "Intrasport"
+//   oddlife-remix(-final-lap)       "Oddlife"
 //
 // Transcribed from the band's own live recordings, the ones the game streams
 // for Track song (public/music/bootlegs.json): Automation from Live in Athens
 // '25 (the soundboard of 4 June 2025, track 2, the music 3.5-220.5 s), with
 // Live at The Caverns '23 (2 June 2023, 0-197.5 s) as a check on the tempo;
 // Intrasport from Live at Field of
-// Vision '25 (the soundboard of 15 August 2025, track 7, 1.5-227.5 s). No tab
+// Vision '25 (the soundboard of 15 August 2025, track 7, 1.5-227.5 s);
+// Oddlife from Live in Athens '25 too (track 3, 19.5-322.5 s), with Live in
+// New York City '25 (Rock Night, 2 August 2025, 1.5-293.5 s) as a check on
+// the tempo. No tab
 // could be reached, so it is the recordings alone, and no audio from them
 // goes in: these are notes. K.G. is the second of the band's microtonal
 // records (the 24-tone guitars and keys): its quarter-tones read as the
@@ -33,7 +37,7 @@
 // bar from the lag at which the beat-by-beat constant-Q spectrum of the
 // harmonic stem repeats best, and from where the harmony and the bass change
 // when folded on the bar; the downbeat from those changes (the kick band, 30
-// to 70 Hz, folded on the bar, was blurred by the bass in all three mixes);
+// to 70 Hz, folded on the bar, was blurred by the bass in every mix);
 // the key from chroma (Krumhansl, the tuning pinned to 0); a bar-by-bar map
 // of each song's bass and three strongest pitch classes for its sections; and
 // per section, folded over every repeat of its bar or bars, each sixteenth's
@@ -383,7 +387,111 @@ const INTRASPORT = {
   },
 };
 
+// ---------------------------------------------------------------------------
+// 3. Oddlife (remix): life on the road, the riff in dotted eighths.
+//
+// Measured (Live in Athens '25, the soundboard, 351 s, the music 19.5-322.5
+// s): 110.6 bpm in 4/4 (a beat of 0.5425 s over the whole song; the tracker's
+// median 0.546 s, 110.0, pushing to 112.4 in the 30 s windows from 229 to
+// 289 s; the onset autocorrelation's sixteenth 0.136 s, peaks every 0.136 s
+// out to 1.22 s, and its beat 0.546 s; the 137.5 and 165 bpm the search also
+// finds are five and six to the bar of the same pulse, the riff's dotted
+// eighths smearing between them). Live in New York City '25 runs it at 110.5
+// on the same grid. The beat-by-beat spectrum repeats best at 4, 8 and 16
+// beats; the bass and the harmony change on the beat after the kick's
+// strongest, the downbeat put there; the kick and the hats peak a sixteenth
+// after the tracker's beats (steps 1, 5, 9 and 13), so the folds are read a
+// step later. Key: F# (F# by far the strongest pitch class, Krumhansl F#
+// minor 0.65 and major 0.57, New York's 0.63 and 0.63, the A# in the guitar
+// making it major); a 24-tone constant-Q puts the bass between F# and the F#
+// half-sharp, and the turnaround on the A# half-sharp (A#, B and A almost
+// equal) and the A half-sharp, so the F, the G and the G# round the F#.
+// Section map:
+//   intro     21-45 s    the F# pedal, the guitar climbing B4-F#5-G5-A5-A#5,
+//                        thinning out at 38 s
+//   verse    45-111 s    the riff in dotted eighths, the bass G | F# F# F# |
+//                        G-G#-G-F# a bar, the guitar's F# and C# over it
+//                        (again 180-225 s); the turnaround B | A# | G# at
+//                        59-65 s, F | A# | G# at 111-117 s
+//   groove  119-156 s    the bass walking F#, dropping to the F and the E,
+//                        the guitar F#3-G#3-G3-A3 (the jam 230-277 s)
+//   chorus  156-178 s    F# | F# | A# | A, the bass's figure on each, the
+//                        lead on F#5-G5-C#6 (the outro 277-318 s: "it's an
+//                        odd life")
+// Lap 110.6 bpm, final lap 118.6. A fingered bass (motown), the riff on a
+// British stack, a Moog lead gliding over the quarter-tones, the organ on
+// the chords, "odd life" on the choir, G to F# (the song's own quarter-tone
+// step), the chip arp in sixteenths; the salamander kit, the open hat on the
+// ands (where the hats peak in the recording).
+// ---------------------------------------------------------------------------
+
+const OD_T = {
+  intro: { bars: 2, chords: ['F#', 'F#'], tones: ['F# G F', 'F# G F'],
+    bass: { s: 'X_______________ X_______x_______', n: 'F#1 F#1 G1' },
+    gtr: { s: 'x_x__x____x_x___ _x_x___x__xx__x_', n: 'B4 F#5 G5 A5 A#5 F5 G5 G5 B4 A#4 G5' } },
+  verse: { bars: 2, chords: ['F#', 'F#'], tones: ['F# G F', 'F# G F'],
+    bass: { s: 'X__x__x__x_xxxx_ X__x__x__x_xxxx_', n: 'G1 F#1 F#1 F#1 G1 G#1 G1 F#1' },
+    gtr: power('x__x__x__x_xx_x_ x__x__x__x_xx_x_', 'F#3 F#3 F#3 F#3 G3 G#3 F#3'),
+    lead: { s: 'X_______x___x___ x_x_X_______x___', n: 'C#5 F#5 C#5 C#5 D5 D5 C#5' } },
+  groove: { bars: 2, chords: ['F#', 'F#'], tones: ['F# G F', 'F# G F'],
+    bass: { s: 'x_x_xx_xx_xx_xx_ x_x_xx_xx_xx_xx_', n: 'G1 F#1 E1 F#1 F1 F#1 F1 F#1 G#1 G1 G1 F#1 F1 F#1 F1 F#1 F1 F#1 G#1 G1' },
+    gtr: { s: 'x_x____x__x_____ x_xx___x__xx____', n: 'F#3 F#3 E3 F3 G#3 G3 A3 A3 A3 A3' },
+    lead: { s: 'X_x_x___________ x___x___x_______', n: 'F#5 A#5 G5 F#5 G5 C#5' } },
+  chorus: { bars: 4, chords: ['F#', 'F#', 'A#', 'A'], tones: ['F# G F', 'F# G F', 'A# B A', 'A G# G'],
+    bass: { s: 'x_x_xx_xx__x_x__ x_x_xx_xx__xx_x_ x_x_xx_xx_xx_x__ x_x__x_xx_x__x__',
+      n: 'G1 F#1 E1 F#1 E1 F#1 F#1 G1 G1 F#1 E1 F#1 E1 F#1 F#1 B1 A#1 B1 B1 A1 B1 A1 B1 A1 B1 A#1 A1 A1 A1 G#1 G#1 G#1 G1' },
+    gtr: power(rep('X__x__x__x__x___', 4), 'F#3 F#3 F#3 F#3 G3 F#3 F#3 F#3 F#3 G3 B2 B2 A2 B2 A#2 A2 A2 G#2 G#2 G2'),
+    lead: { s: 'X_x_x_______x___ X_x_x___________ X_x_x_____x_____ __x_x_______x___', n: 'F#5 C#6 G5 G5 F#5 C#5 G5 F#5 F5 C#6 C#6 E5 G5 G5' },
+    chant: say('X___X___________ X___X___________', 'G4 F#4', 'odd life') },
+};
+
+const ODDLIFE = {
+  meter: '4/4', spb: 16, rot: 0, bpm: 110.6, finalPlus: 8, mix: 0.84, finalMix: 0.81,
+  arp: 'x.xx.x.xx.x.xx.x',
+  use: { guitar: 'gtr' },
+  tracks: [
+    ...drums({ hihat: 0.6, openhat: 0.45 }),
+    ebass('motown', 0.86),
+    { name: 'guitar', engine: 'dm:guitar', preset: 'brit stack', params: { vol: 0.4 }, out: 'verb' },
+    // The lead line on a Moog voice, gliding over the quarter-tones.
+    { name: 'lead', engine: 'dm:ladder', preset: 'funk lead', params: { vol: 0.3 }, out: 'verb', glide: 0.04, fx: { chorus: { wet: 0.2 } } },
+    choir(0.52),
+    chip(0.13),
+    pad('eorgan', 0.18),
+    verbBus(2.2, 0.26, 0.2),
+  ],
+  grooves: {
+    // The kick on the riff's dotted eighths, the snare on two and four, the open hat on the ands.
+    groove: (final) => final
+      ? { kick: 'X..x..x.X..x..x.', snare: '....X.......X..o', hat: 'xxxxxxxxxxxxxxxx', 'open hat': '..x...x...x...x.' }
+      : { kick: 'X.....x.X..x....', snare: '....X.......X...', hat: 'x...x...x...x...', 'open hat': '..x...x...x...x.' },
+    // The intro: the kick on one and three, the ride.
+    half: (final) => ({ kick: 'X.......X.......', snare: final ? '....X.......X...' : '', ride: 'x.x.x.x.x.x.x.x.' }),
+  },
+  fill: { kick: 'X.x.....X.......', snare: '....X...x.x.rrRR', hat: 'x.x.x.x.........', 'open hat': '', ride: '', 'tom hi': '........x.x.....', 'tom lo': '............x.x.' },
+  order: ['intro', 'verse', 'verse2', 'groove', 'chorus', 'verse3', 'groove2', 'outro'],
+  finalOrder: ['chorus', 'verse', 'groove', 'verse2', 'chorus2', 'groove2', 'intro', 'outro'],
+  sections(final) {
+    const T = OD_T;
+    const s = (k, o) => sec(this, T, k, final, o);
+    const up1 = (k, line) => up(bare(tile4(this, T[k], line)), 1);
+    return {
+      intro: s('intro', { drums: final ? 'groove' : 'half', use: { lead: null } }),
+      verse: s('verse', { use: { lead: null } }),
+      verse2: s('verse', { use: { lead: 'lead' } }),
+      verse3: s('verse', { use: { lead: 'lead' }, extra: { 'chip lead': up1('verse', 'lead') } }),
+      groove: s('groove', { use: { lead: 'lead' } }),
+      groove2: s('groove', { use: { lead: 'lead' }, extra: { 'chip lead': up1('groove', 'lead') } }),
+      chorus: s('chorus', { use: { lead: 'lead' } }),
+      chorus2: s('chorus', { use: { lead: 'lead' }, extra: { 'chip lead': up1('chorus', 'lead') } }),
+      // The outro: the chorus again, the chip doubling the lead an octave up.
+      outro: s('chorus', { use: { lead: 'lead' }, extra: { 'chip lead': up1('chorus', 'lead') } }),
+    };
+  },
+};
+
 export const SONGS = [
   ...cue('automation', 'automation-remix', AUTOMATION),
   ...cue('intrasport', 'intrasport-remix', INTRASPORT),
+  ...cue('oddlife', 'oddlife-remix', ODDLIFE),
 ];
