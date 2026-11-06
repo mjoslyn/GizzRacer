@@ -68,3 +68,38 @@ describe('starts-player apply', () => {
     expect(r.stdout).toContain('Song: 0 moved, 0 dropped, 2 left');
   });
 });
+
+describe('starts-player apply, for the story suites', () => {
+  const base = join(dir, 'suites');
+  const saved = join(base, 'saved');
+  mkdirSync(saved, { recursive: true });
+  const files = {
+    bootlegs: join(base, 'bootlegs.json'),
+    suites: join(base, 'suites.json'),
+    skip: join(base, 'bootlegs.mjs'),
+    items: join(base, 'items.json'),
+  };
+  const bootlegsText = `${JSON.stringify({ Song: [rec('a', 'a.mp3', 0)] }, null, 1)}\n`;
+  const skipText = 'const SKIP = new Set([\n  "x/old.mp3",\n]);\n';
+  writeFileSync(files.bootlegs, bootlegsText);
+  writeFileSync(files.skip, skipText);
+  writeFileSync(files.suites, `${JSON.stringify({ s: { Song: { ...rec('a', 'a.mp3', 0), end: null }, Next: rec('n', 'n.mp3', 2) } }, null, 1)}\n`);
+  const suiteItem = (key: string, song: string, id: string, file: string) => ({ ...item(key, song, id, file), cup: 'Story: S', suite: 's' });
+  // The same song and file as a bootlegs.json recording: the suite's item changes the suite's.
+  writeFileSync(files.items, JSON.stringify([suiteItem('yy00', 'Song', 'a', 'a.mp3'), suiteItem('yy01', 'Next', 'n', 'n.mp3'), item('zz00', 'Song', 'a', 'a.mp3')]));
+  writeFileSync(join(saved, 'yy00.json'), JSON.stringify({ data: { start: 4.04, status: 'moved', was: 0 } }));
+  writeFileSync(join(saved, 'yy01.json'), JSON.stringify({ start: 2, status: 'drop' }));
+
+  it('moves starts and drops entries in suites.json, leaving bootlegs.json and SKIP alone', () => {
+    const r = spawnSync('node', [TOOL, 'apply', saved, '--bootlegs', files.bootlegs, '--suites', files.suites, '--skip-file', files.skip, '--items', files.items], { encoding: 'utf8' });
+    expect(r.status, r.stderr).toBe(0);
+    const s = JSON.parse(readFileSync(files.suites, 'utf8'));
+    expect(s.s.Song.start).toBe(4);
+    expect(s.s.Song.end).toBeNull();
+    expect(Object.keys(s.s)).toEqual(['Song']);
+    expect(readFileSync(files.bootlegs, 'utf8')).toBe(bootlegsText);
+    expect(readFileSync(files.skip, 'utf8')).toBe(skipText);
+    expect(r.stdout).toContain('Story: S: Song: 1 moved, 0 dropped, 0 left');
+    expect(r.stdout).toContain('Story: S: Next: 0 moved, 1 dropped, 0 left');
+  });
+});

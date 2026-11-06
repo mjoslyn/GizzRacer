@@ -18,16 +18,28 @@
  *     <out>/index.html. Prints the new clip paths, to publish with the page;
  *     the downloads are deleted at the end.
  *
+ *   node tools/starts-player.mjs add-suite <suite id> [<suite id> ...] --slugs <slug> [<slug> ...]
+ *        --cups <name> [<name> ...] --out <dir> [--tmp <dir>] [--python <python>]
+ *
+ *     The same for Story mode's suites (public/music/suites.json, one
+ *     recording a song): each suite's recordings in its order, keys slug +
+ *     index, cup the suite's name as the player shows it ("Story: Nonagon
+ *     Infinity"). Edges are read for entries with no `start` yet and written
+ *     to suites.json; the items carry `suite`, so apply writes back there.
+ *
  *   node tools/starts-player.mjs apply <saved-dir>
  *
  *     <saved-dir> holds the player's saved docs (its `starts` collection),
  *     one <key>.json each, {data: {...}} or the plain {start, status, ...}.
  *     moved and ok starts become the recording's `start` in bootlegs.json;
  *     `drop` takes the recording out and adds it to SKIP in
- *     tools/bootlegs.mjs, so a re-run of that leaves it out. Safe to run
- *     again. Prints, per song, what moved, was dropped and was left.
+ *     tools/bootlegs.mjs, so a re-run of that leaves it out. A suite's
+ *     recording (an item with `suite`) is in public/music/suites.json
+ *     instead: moved starts land there, and `drop` takes the song's entry
+ *     out (its stage then plays on the recording before it; no SKIP). Safe
+ *     to run again. Prints, per song, what moved, was dropped and was left.
  *
- * Options for tests: --bootlegs, --skip-file, --items replace the repo's files.
+ * Options for tests: --bootlegs, --suites, --skip-file, --items replace the repo's files.
  */
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
@@ -71,35 +83,29 @@ function run(cmd, args, opts = {}) {
   return r.stdout;
 }
 
-function add(pos, flags) {
-  const songs = pos;
-  const slugs = flags.slugs ?? [];
-  if (!songs.length) fail('add: name at least one song');
-  if (slugs.length !== songs.length) fail(`add: ${songs.length} song(s) need ${songs.length} slug(s) after --slugs, got ${slugs.length}`);
-  if (!flags.out?.[0]) fail('add: --out <dir> is required');
-  const out = resolve(flags.out[0]);
-  const cup = flags.cup?.[0] ?? 'New songs';
-  const python = flags.python?.[0] ?? 'python3';
-  const bootlegsPath = flags.bootlegs?.[0] ?? join(HERE, '..', 'public', 'music', 'bootlegs.json');
-  const itemsPath = flags.items?.[0] ?? join(PLAYER, 'items.json');
-
-  const catalogue = readJson(bootlegsPath);
-  const items = readJson(itemsPath);
+/** Two-letter slugs, not used in items.json yet, one for each of `names`. */
+function checkSlugs(cmd, slugs, names, items, itemsPath) {
+  if (slugs.length !== names.length) fail(`${cmd}: ${names.length} name(s) need ${names.length} slug(s) after --slugs, got ${slugs.length}`);
   const used = new Set(items.map((i) => i.key.replace(/\d+$/, '')));
   for (const [n, slug] of slugs.entries()) {
-    if (!/^[a-z]{2}$/.test(slug)) fail(`add: slug "${slug}" is not two lowercase letters`);
-    if (used.has(slug)) fail(`add: slug "${slug}" is already used in ${itemsPath}`);
-    if (slugs.indexOf(slug) !== n) fail(`add: slug "${slug}" given twice`);
+    if (!/^[a-z]{2}$/.test(slug)) fail(`${cmd}: slug "${slug}" is not two lowercase letters`);
+    if (used.has(slug)) fail(`${cmd}: slug "${slug}" is already used in ${itemsPath}`);
+    if (slugs.indexOf(slug) !== n) fail(`${cmd}: slug "${slug}" given twice`);
   }
-  for (const song of songs) {
-    if (!catalogue[song]?.length) fail(`add: no recordings of "${song}" in ${bootlegsPath}`);
-    if (items.some((i) => i.song === song)) fail(`add: "${song}" is already in ${itemsPath}`);
-  }
+}
 
-  const dl = mkdtempSync(join(resolve(flags.tmp?.[0] ?? tmpdir()), 'starts-'));
+/**
+ * What add and add-suite share. `recs` are { key, cup, song, r, suite? }, r a
+ * recording in bootlegs.json's shape that gets its edges in place: downloads
+ * them, reads the edges of those with no start (then `save()` writes them
+ * back), cuts the clips, puts the items at the top of items.json and writes
+ * the page.
+ */
+function build(recs, { out, python, tmp, itemsPath, items, save }) {
+  const dl = mkdtempSync(join(resolve(tmp ?? tmpdir()), 'starts-'));
   try {
-    const recs = songs.flatMap((song, n) => catalogue[song].map((r, i) => ({ song, r, key: `${slugs[n]}${String(i).padStart(2, '0')}`, path: join(dl, `${slugs[n]}${String(i).padStart(2, '0')}.mp3`) })));
     for (const x of recs) {
+      x.path = join(dl, `${x.key}.mp3`);
       console.log(`download ${x.key} ${x.r.id}/${x.r.file}`);
       run('curl', ['-sSfL', '--retry', '5', '--retry-all-errors', '--retry-delay', '3', '-o', x.path, archiveUrl(x.r.id, x.r.file)]);
     }
@@ -124,10 +130,10 @@ function add(pos, flags) {
         x.r.end = Number(m[2]);
         console.log(`  ${x.key}: ${m[1]} s to ${m[2]} s`);
       }
-      if (broken.length) throw new Error(`unreadable recordings (the Archive does not serve them: take them out of bootlegs.json and add them to SKIP in tools/bootlegs.mjs, then run again):\n${broken.join('\n')}`);
+      if (broken.length) throw new Error(`unreadable recordings (the Archive does not serve them: take them out, and add a bootlegs.json one to SKIP in tools/bootlegs.mjs, then run again):\n${broken.join('\n')}`);
       const missing = fresh.filter((x) => x.r.start === undefined);
       if (missing.length) throw new Error(`no edges read for ${missing.map((x) => x.key).join(', ')}`);
-      writeJson(bootlegsPath, catalogue);
+      save();
     }
 
     mkdirSync(join(out, 'clips'), { recursive: true });
@@ -138,15 +144,16 @@ function add(pos, flags) {
       const clip = `clips/${x.key}.mp3`;
       run('ffmpeg', ['-y', '-v', 'error', '-ss', String(clipStart), '-t', String(CLIP_SECONDS), '-i', x.path, '-vn', '-ac', '1', '-ar', '24000', '-c:a', 'libmp3lame', '-b:a', '40k', join(out, clip)]);
       clips.push(join(out, clip));
-      added.push({ key: x.key, cup, song: x.song, date: x.r.date, venue: x.r.venue ?? '', id: x.r.id, file: x.r.file, start: x.r.start, end: x.r.end, seconds: x.r.seconds, clip, clipStart });
+      // A segue's end is null (it runs to the file's end): the item has none.
+      added.push({ key: x.key, cup: x.cup, song: x.song, ...(x.suite ? { suite: x.suite } : {}), date: x.r.date, venue: x.r.venue ?? '', id: x.r.id, file: x.r.file, start: x.r.start, end: x.r.end ?? undefined, seconds: x.r.seconds, clip, clipStart });
     }
 
     const all = [...added, ...items];
     writeJson(itemsPath, all);
     const html = readFileSync(join(PLAYER, 'index.html'), 'utf8');
     if (!html.includes('/*ITEMS*/[]')) throw new Error('player template has no /*ITEMS*/ placeholder');
-    // The page needs no ids or file names.
-    const shown = all.map(({ id, file, ...rest }) => rest);
+    // The page needs no ids, file names or suite ids.
+    const shown = all.map(({ id, file, suite, ...rest }) => rest);
     writeFileSync(join(out, 'index.html'), html.replace('/*ITEMS*/[]', () => JSON.stringify(shown)));
     console.log(`\nwrote ${join(out, 'index.html')} (${all.length} recordings, ${added.length} new)`);
     console.log('new clips:');
@@ -156,14 +163,58 @@ function add(pos, flags) {
   }
 }
 
+function add(pos, flags) {
+  const songs = pos;
+  const slugs = flags.slugs ?? [];
+  if (!songs.length) fail('add: name at least one song');
+  if (!flags.out?.[0]) fail('add: --out <dir> is required');
+  const bootlegsPath = flags.bootlegs?.[0] ?? join(HERE, '..', 'public', 'music', 'bootlegs.json');
+  const itemsPath = flags.items?.[0] ?? join(PLAYER, 'items.json');
+
+  const catalogue = readJson(bootlegsPath);
+  const items = readJson(itemsPath);
+  checkSlugs('add', slugs, songs, items, itemsPath);
+  for (const song of songs) {
+    if (!catalogue[song]?.length) fail(`add: no recordings of "${song}" in ${bootlegsPath}`);
+    if (items.some((i) => i.song === song && !i.suite)) fail(`add: "${song}" is already in ${itemsPath}`);
+  }
+  const cup = flags.cup?.[0] ?? 'New songs';
+  const recs = songs.flatMap((song, n) => catalogue[song].map((r, i) => ({ key: `${slugs[n]}${String(i).padStart(2, '0')}`, cup, song, r })));
+  build(recs, { out: resolve(flags.out[0]), python: flags.python?.[0] ?? 'python3', tmp: flags.tmp?.[0], itemsPath, items, save: () => writeJson(bootlegsPath, catalogue) });
+}
+
+function addSuite(pos, flags) {
+  const suites = pos;
+  const slugs = flags.slugs ?? [];
+  const cups = flags.cups ?? [];
+  if (!suites.length) fail('add-suite: name at least one suite');
+  if (cups.length !== suites.length) fail(`add-suite: ${suites.length} suite(s) need ${suites.length} name(s) after --cups, got ${cups.length}`);
+  if (!flags.out?.[0]) fail('add-suite: --out <dir> is required');
+  const suitesPath = flags.suites?.[0] ?? join(HERE, '..', 'public', 'music', 'suites.json');
+  const itemsPath = flags.items?.[0] ?? join(PLAYER, 'items.json');
+
+  const catalogue = readJson(suitesPath);
+  const items = readJson(itemsPath);
+  checkSlugs('add-suite', slugs, suites, items, itemsPath);
+  for (const suite of suites) {
+    if (!Object.keys(catalogue[suite] ?? {}).length) fail(`add-suite: no recordings for suite "${suite}" in ${suitesPath}`);
+    if (items.some((i) => i.suite === suite)) fail(`add-suite: suite "${suite}" is already in ${itemsPath}`);
+  }
+  const recs = suites.flatMap((suite, n) => Object.entries(catalogue[suite]).map(([song, r], i) => ({ key: `${slugs[n]}${String(i).padStart(2, '0')}`, cup: cups[n], song, suite, r })));
+  build(recs, { out: resolve(flags.out[0]), python: flags.python?.[0] ?? 'python3', tmp: flags.tmp?.[0], itemsPath, items, save: () => writeJson(suitesPath, catalogue) });
+}
+
 function apply(pos, flags) {
   const dir = pos[0];
   if (!dir || !existsSync(dir)) fail('apply: give the folder of saved docs');
   const bootlegsPath = flags.bootlegs?.[0] ?? join(HERE, '..', 'public', 'music', 'bootlegs.json');
   const skipPath = flags['skip-file']?.[0] ?? join(HERE, 'bootlegs.mjs');
   const itemsPath = flags.items?.[0] ?? join(PLAYER, 'items.json');
+  const suitesPath = flags.suites?.[0] ?? join(HERE, '..', 'public', 'music', 'suites.json');
 
   const catalogue = readJson(bootlegsPath);
+  /** suites.json, read when a saved doc is a suite's recording. */
+  let suites = null;
   const byKey = new Map(readJson(itemsPath).map((i) => [i.key, i]));
   let skipText = readFileSync(skipPath, 'utf8');
   const open = skipText.indexOf('const SKIP = new Set([');
@@ -184,11 +235,36 @@ function apply(pos, flags) {
       console.warn(`${key}: not in ${itemsPath}, skipped`);
       continue;
     }
+    const label = `${key} (${item.date})`;
+    if (item.suite) {
+      // Story mode's suites: one recording a song, in suites.json.
+      suites ??= readJson(suitesPath);
+      const r = note(`${item.cup}: ${item.song}`);
+      const entry = suites[item.suite]?.[item.song];
+      const here = entry?.id === item.id && entry?.file === item.file;
+      if (doc.status === 'drop') {
+        if (!here) continue; // Already dropped.
+        delete suites[item.suite][item.song];
+        r.dropped.push(label);
+      } else if ((doc.status === 'ok' || doc.status === 'moved') && typeof doc.start === 'number') {
+        if (!here) {
+          r.notes.push(`${label} was dropped, but the owner now has it ${doc.status} at ${doc.start} s: put it back in suites.json by hand`);
+          continue;
+        }
+        const start = round1(doc.start);
+        if (entry.start !== start) {
+          r.moved.push(`${label} ${entry.start ?? '-'} -> ${start}`);
+          entry.start = start;
+        } else r.left++;
+      } else {
+        r.notes.push(`${label}: unreadable doc (status ${doc.status})`);
+      }
+      continue;
+    }
     const r = note(item.song);
     const list = catalogue[item.song] ?? [];
     const at = list.findIndex((x) => x.id === item.id && x.file === item.file);
     const path = `${item.id}/${item.file}`;
-    const label = `${key} (${item.date})`;
     if (doc.status === 'drop') {
       if (at < 0) continue; // Already dropped.
       list.splice(at, 1);
@@ -211,6 +287,7 @@ function apply(pos, flags) {
   }
 
   writeJson(bootlegsPath, catalogue);
+  if (suites) writeJson(suitesPath, suites);
   if (newSkips.length) {
     const lines = newSkips.map((k) => `  ${JSON.stringify(k)},\n`).join('');
     skipText = `${skipText.slice(0, close + 1)}${lines}${skipText.slice(close + 1)}`;
@@ -230,5 +307,6 @@ function apply(pos, flags) {
 const [cmd, ...rest] = process.argv.slice(2);
 const { pos, flags } = parse(rest);
 if (cmd === 'add') add(pos, flags);
+else if (cmd === 'add-suite') addSuite(pos, flags);
 else if (cmd === 'apply') apply(pos, flags);
-else fail('usage: node tools/starts-player.mjs add <song> ... --slugs <slug> ... --out <dir> | apply <saved-dir>');
+else fail('usage: node tools/starts-player.mjs add <song> ... --slugs <slug> ... --out <dir> | add-suite <suite> ... --slugs <slug> ... --cups <name> ... --out <dir> | apply <saved-dir>');

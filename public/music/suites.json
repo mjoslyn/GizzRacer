@@ -1,0 +1,333 @@
+{
+ "mind-fuzz": {
+  "I'm in Your Mind": {
+   "id": "kglw2025-12-04.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live in Sydney '25 - 13 I'm In Your Mind (Live In Sydney '25).mp3",
+   "date": "2025-12-04",
+   "venue": "Enmore Theatre, Sydney, NSW, Australia",
+   "seconds": 225,
+   "start": 25.5,
+   "end": null
+  },
+  "I'm Not in Your Mind": {
+   "id": "kglw2025-12-04.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live in Sydney '25 - 14 I'm Not In Your Mind (Live In Sydney '25).mp3",
+   "date": "2025-12-04",
+   "venue": "Enmore Theatre, Sydney, NSW, Australia",
+   "seconds": 432,
+   "start": 0,
+   "end": null
+  },
+  "Cellophane": {
+   "id": "kglw2025-12-04.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live in Sydney '25 - 15 Cellophane (Live In Sydney '25).mp3",
+   "date": "2025-12-04",
+   "venue": "Enmore Theatre, Sydney, NSW, Australia",
+   "seconds": 287,
+   "start": 0,
+   "end": null
+  },
+  "I'm in Your Mind Fuzz": {
+   "id": "kglw2025-12-04.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live in Sydney '25 - 16 I'm In Your Mind Fuzz (Live In Sydney '25).mp3",
+   "date": "2025-12-04",
+   "venue": "Enmore Theatre, Sydney, NSW, Australia",
+   "seconds": 170,
+   "start": 0,
+   "end": 156.5
+  }
+ },
+ "nonagon-infinity": {
+  "Robot Stop": {
+   "id": "kglw2024-09-01.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live at Northerly Island- Chicago- IL (9-1-24)/King Gizzard & The Lizard Wizard - Live at Northerly Island, Chicago, IL (9-1-24) - 01 Robot Stop (Live).mp3",
+   "date": "2024-09-01",
+   "venue": "Northerly Island",
+   "seconds": 548,
+   "start": 55.5,
+   "end": null
+  },
+  "Big Fig Wasp": {
+   "id": "kglw2024-09-01.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live at Northerly Island- Chicago- IL (9-1-24)/King Gizzard & The Lizard Wizard - Live at Northerly Island, Chicago, IL (9-1-24) - 02 Big Fig Wasp (Live).mp3",
+   "date": "2024-09-01",
+   "venue": "Northerly Island",
+   "seconds": 274,
+   "start": 0,
+   "end": null
+  },
+  "Gamma Knife": {
+   "id": "kglw2024-09-01.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live at Northerly Island- Chicago- IL (9-1-24)/King Gizzard & The Lizard Wizard - Live at Northerly Island, Chicago, IL (9-1-24) - 03 Gamma Knife (Live).mp3",
+   "date": "2024-09-01",
+   "venue": "Northerly Island",
+   "seconds": 286,
+   "start": 0,
+   "end": null
+  },
+  "People-Vultures": {
+   "id": "kglw2024-09-01.SBD",
+   "file": "King Gizzard & The Lizard Wizard - Live at Northerly Island- Chicago- IL (9-1-24)/King Gizzard & The Lizard Wizard - Live at Northerly Island, Chicago, IL (9-1-24) - 04 People-Vultures (Live).mp3",
+   "date": "2024-09-01",
+   "venue": "Northerly Island",
+   "seconds": 411,
+   "start": 0,
+   "end": null
+  }
+ },
+ "altered-beast": {
+  "A New World": {
+   "id": "kglw2022-10-10.bootlegger",
+   "file": "46. A New World (Live At Red Rocks '22).mp3",
+   "date": "2022-10-11",
+   "venue": "Red Rocks Amphitheatre",
+   "seconds": 68,
+   "start": 0,
+   "end": null
+  },
+  "Altered Beast I": {
+   "id": "kglw2022-10-10.bootlegger",
+   "file": "47. Altered Beast I (Live At Red Rocks '22).mp3",
+   "date": "2022-10-11",
+   "venue": "Red Rocks Amphitheatre",
+   "seconds": 142,
+   "start": 7.5,
+   "then": {
+    "file": "48. Alter Me I (Live At Red Rocks '22).mp3",
+    "seconds": 54
+   }
+  },
+  "Altered Beast II": {
+   "id": "kglw2022-10-10.bootlegger",
+   "file": "49. Altered Beast II (Live At Red Rocks '22).mp3",
+   "date": "2022-10-11",
+   "venue": "Red Rocks Amphitheatre",
+   "seconds": 274,
+   "start": 24.5,
+   "then": {
+    "file": "50. Alter Me II (Live At Red Rocks '22).mp3",
+    "seconds": 53
+   }
+  },
+  "Altered Beast III": {
+   "id": "kglw2017-10-12.ccm4.flac1644",
+   "file": "kglw2017-10-12t16.mp3",
+   "date": "2017-10-12",
+   "venue": "The Fillmore",
+   "seconds": 162,
+   "start": 0,
+   "then": {
+    "file": "kglw2017-10-12t17.mp3",
+    "seconds": 55
+   }
+  },
+  "Altered Beast IV": {
+   "id": "kglw2017-10-12.ccm4.flac1644",
+   "file": "kglw2017-10-12t18.mp3",
+   "date": "2017-10-12",
+   "venue": "The Fillmore",
+   "seconds": 295,
+   "start": 10.5,
+   "end": 270.5
+  }
+ },
+ "lord-of-lightning": {
+  "Some Context": {
+   "id": "kglw2017-09-27.mysteryjack",
+   "file": "02 Some Context.mp3",
+   "date": "2017-09-27",
+   "venue": "Variety Playhouse",
+   "seconds": 32,
+   "start": 3,
+   "end": null
+  },
+  "The Reticent Raconteur": {
+   "id": "kglw2024-09-11.bandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live at Edgefield Amphiteater- Troutdale- OR (9-11-24)/King Gizzard & The Lizard Wizard - Live at Edgefield Amphiteater, Troutdale, OR (9-11-24) - 13 The Reticent Raconteur (Live).mp3",
+   "date": "2024-09-11",
+   "venue": "Edgefield Amphiteater",
+   "seconds": 59,
+   "start": 0,
+   "end": null
+  },
+  "The Lord of Lightning": {
+   "id": "kglw2024-09-11.bandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live at Edgefield Amphiteater- Troutdale- OR (9-11-24)/King Gizzard & The Lizard Wizard - Live at Edgefield Amphiteater, Troutdale, OR (9-11-24) - 14 The Lord of Lightning (Live).mp3",
+   "date": "2024-09-11",
+   "venue": "Edgefield Amphiteater",
+   "seconds": 312,
+   "start": 0,
+   "end": null
+  },
+  "The Balrog": {
+   "id": "kglw2024-09-11.bandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live at Edgefield Amphiteater- Troutdale- OR (9-11-24)/King Gizzard & The Lizard Wizard - Live at Edgefield Amphiteater, Troutdale, OR (9-11-24) - 15 The Balrog (Live).mp3",
+   "date": "2024-09-11",
+   "venue": "Edgefield Amphiteater",
+   "seconds": 213,
+   "start": 0,
+   "end": null
+  }
+ },
+ "han-tyumi": {
+  "Welcome to an Altered Future": {
+   "id": "kglw2025-08-16.SBD.wav",
+   "file": "King Gizzard & The Lizard Wizard - Live at Field of Vision '25 - 36 Welcome to an Altered Future (Live at Field of Vision '25).mp3",
+   "date": "2025-08-16",
+   "venue": "Field of Vision at Meadow Creek",
+   "seconds": 51,
+   "start": 2.5,
+   "end": null
+  },
+  "Digital Black": {
+   "id": "kglw2025-08-16.SBD.wav",
+   "file": "King Gizzard & The Lizard Wizard - Live at Field of Vision '25 - 37 Digital Black (Live at Field of Vision '25).mp3",
+   "date": "2025-08-16",
+   "venue": "Field of Vision at Meadow Creek",
+   "seconds": 164,
+   "start": 2.5,
+   "end": null
+  },
+  "Han-Tyumi, the Confused Cyborg": {
+   "id": "kglw2025-08-16.SBD.wav",
+   "file": "King Gizzard & The Lizard Wizard - Live at Field of Vision '25 - 38 Han-Tyumi, The Confused Cyborg (Live at Field of Vision '25).mp3",
+   "date": "2025-08-16",
+   "venue": "Field of Vision at Meadow Creek",
+   "seconds": 141,
+   "start": 0,
+   "end": null
+  },
+  "Soy-Protein Munt Machine": {
+   "id": "kglw2025-08-16.SBD.wav",
+   "file": "King Gizzard & The Lizard Wizard - Live at Field of Vision '25 - 39 Soy-Protein Munt Machine (Live at Field of Vision '25).mp3",
+   "date": "2025-08-16",
+   "venue": "Field of Vision at Meadow Creek",
+   "seconds": 28,
+   "start": 0,
+   "end": null
+  },
+  "Vomit Coffin": {
+   "id": "kglw2025-08-16.SBD.wav",
+   "file": "King Gizzard & The Lizard Wizard - Live at Field of Vision '25 - 40 Vomit Coffin (Live at Field of Vision '25).mp3",
+   "date": "2025-08-16",
+   "venue": "Field of Vision at Meadow Creek",
+   "seconds": 121,
+   "start": 0,
+   "end": null
+  },
+  "Murder of the Universe": {
+   "id": "kglw2025-08-16.SBD.wav",
+   "file": "King Gizzard & The Lizard Wizard - Live at Field of Vision '25 - 41 Murder of the Universe (Live at Field of Vision '25).mp3",
+   "date": "2025-08-16",
+   "venue": "Field of Vision at Meadow Creek",
+   "seconds": 344,
+   "start": 0,
+   "end": 247.5
+  }
+ },
+ "polygondwanaland": {
+  "Crumbling Castle": {
+   "id": "kglw2019-10-14",
+   "file": "04. Crumbling Castle.mp3",
+   "date": "2019-10-14",
+   "venue": "L'Olympia",
+   "seconds": 505,
+   "start": 0,
+   "end": null
+  },
+  "The Castle in the Air": {
+   "id": "kglw2019-10-14",
+   "file": "07. The Castle In The Air.mp3",
+   "date": "2019-10-14",
+   "venue": "L'Olympia",
+   "seconds": 78,
+   "start": 0,
+   "end": null
+  }
+ },
+ "infest-the-rats-nest": {
+  "Planet B": {
+   "id": "kglw2022-04-22",
+   "file": "kgatlw-2022-04-22-coachella-aud-16bit-t06-planet-b.mp3",
+   "date": "2022-04-22",
+   "venue": "Coachella",
+   "seconds": 268,
+   "start": 22,
+   "end": null
+  },
+  "Mars for the Rich": {
+   "id": "kglw2022-04-22",
+   "file": "kgatlw-2022-04-22-coachella-aud-16bit-t07-mars-for-the-rich.mp3",
+   "date": "2022-04-22",
+   "venue": "Coachella",
+   "seconds": 260,
+   "start": 6.5,
+   "end": null
+  },
+  "Organ Farmer": {
+   "id": "kglw2022-04-22",
+   "file": "kgatlw-2022-04-22-coachella-aud-16bit-t08-organ-farmer.mp3",
+   "date": "2022-04-22",
+   "venue": "Coachella",
+   "seconds": 184,
+   "start": 0,
+   "end": 142.5
+  },
+  "Self-Immolate": {
+   "id": "kglw2023-08-15",
+   "file": "06-Self-Immolate.mp3",
+   "date": "2023-08-15",
+   "venue": "E-Werk Cologne",
+   "seconds": 445,
+   "start": 3.5,
+   "end": null
+  },
+  "Hell": {
+   "id": "kglw2023-08-15",
+   "file": "07-Hell.mp3",
+   "date": "2023-08-15",
+   "venue": "E-Werk Cologne",
+   "seconds": 283,
+   "start": 4.5,
+   "end": 219.5
+  }
+ },
+ "petrodragonic-apocalypse": {
+  "Motor Spirit": {
+   "id": "kglw2024-11-13.bandcampbootlegger",
+   "file": "15 Motor Spirit (Live in Arkansas '24).mp3",
+   "date": "2024-11-13",
+   "venue": "JJ's Live",
+   "seconds": 593,
+   "start": 0,
+   "end": 585.5
+  },
+  "Supercell": {
+   "id": "kglw2024-11-12.bandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live in Oklahoma City '24 - 02 Supercell (Live in Oklahoma City '24).mp3",
+   "date": "2024-11-12",
+   "venue": "The Criterion",
+   "seconds": 338,
+   "start": 0,
+   "end": 300.5
+  },
+  "Converge": {
+   "id": "kglw2024-11-12.bandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live in Oklahoma City '24 - 03 Converge (Live in Oklahoma City '24).mp3",
+   "date": "2024-11-12",
+   "venue": "The Criterion",
+   "seconds": 376,
+   "start": 0,
+   "end": null
+  },
+  "Witchcraft": {
+   "id": "kglw2024-11-12.bandcampbootlegger",
+   "file": "King Gizzard & The Lizard Wizard - Live in Oklahoma City '24 - 04 Witchcraft (Live in Oklahoma City '24).mp3",
+   "date": "2024-11-12",
+   "venue": "The Criterion",
+   "seconds": 359,
+   "start": 18,
+   "end": 293.5
+  }
+ }
+}
