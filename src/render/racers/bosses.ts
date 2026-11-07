@@ -21,13 +21,11 @@ import {
   put,
   ring,
   rod,
-  sideDecal,
-  steeringWheel,
   tex,
   tri,
   tube,
 } from '../racerModels';
-import { flameDecalTexture, scaleTexture, stoneTexture, woodTexture } from '../textures';
+import { scaleTexture, stoneTexture, woodTexture } from '../textures';
 
 // ==== The story bosses ==========================================================
 // One for each story suite's end (core/story.ts), each from its song's
@@ -1539,197 +1537,161 @@ export function castleKing(r: RacerDef): KartModel {
 // "God, it's pretty hot down here undersurface", "the door to hell is
 // amber", "I see a thousand flies and wings and tail and spines", "Satan
 // points me to the rats' nest": the Devil himself, crimson and muscled,
-// ridged horns, slit yellow eyes and a fanged grin, wings and a swishing
-// spined tail, a barbed trident up, at the wheel of a hot rod with a ram's
-// skull on its nose, headers and a blower, the studded amber door to hell
-// built into its back, rats riding on the deck, a thousand flies whirling.
+// ridged horns, slit yellow eyes and a fanged grin, flying low over the road
+// the way the Skeleton Dragon does, leant into it on great two-jointed bat
+// wings, the barbed trident held out ahead, its points glowing hot, the
+// spined tail swishing behind, his goat's legs trailing with fire off the
+// hooves, a thousand flies whirling round him.
 
 export function theDevil(r: RacerDef): KartModel {
   const body = new THREE.Group();
-  const paint = gloss(0x6a0a12, { shininess: 120 });
   const skin = matte(r.color, { shininess: 50, specular: 0x663333 });
   const muscle = matte(0xa01818, { shininess: 50, specular: 0x663333 });
   const dark = matte(0x14080a);
+  const goat = matte(0x2a1012, { shininess: 8 });
   const hornMat = matte(0x1a1012, { shininess: 70, specular: 0x886666 });
-  const amber = pulsing(glow(r.accent), 0.7, 0.4);
+  const hoof = matte(0x0a0606, { shininess: 90, specular: 0x664444 });
   const ember = pulsing(glow(0xff6a10), 1.4, 0.6);
+  const fire = pulsing(glow(0xffa81a), 2.4, 0.4);
   const eyeGlow = pulsing(glow(0xffd23a), 1.8, 0.4);
-  const stone = matte(0xffffff, { map: tex('hell-stone', () => stoneTexture([60, 34, 30], [110, 70, 56])) });
-  const iron = matte(0x2a2224, { shininess: 50, specular: 0x666666 });
-  const metal = chrome();
+  const hot = pulsing(glow(r.accent), 1.1, 0.45);
   const gold = brass();
-  const bone = matte(0xece0c4);
-  const fur = matte(0x4a4044, { shininess: 10 });
-  const pinkTail = matte(0xd08a8a);
-  const ratEye = pulsing(glow(0xff2020), 2, 0.6);
   const tooth = matte(0xfff8e8);
   const black = matte(0x050505);
-
-  // The rod: long and low, a blower out of the bonnet with its butterflies, headers out of the flanks, flames down them, a ram's skull on the nose.
-  put(body, box(1.3, 0.38, 2.9), paint, [0, 0.6, 0.05]);
-  put(body, box(1.0, 0.3, 1.1), paint, [0, 0.85, 0.85]);
-  put(body, box(0.5, 0.25, 0.5), metal, [0, 1.12, 0.95]);
-  for (let k = 0; k < 4; k++) put(body, box(0.52, 0.02, 0.03), dark, [0, 1.02 + k * 0.05, 1.205]);
-  put(body, box(0.55, 0.06, 0.2), metal, [0, 1.28, 1.05]);
-  for (let k = 0; k < 4; k++) {
-    put(body, cyl(0.04, 0.04, 0.25, 8), metal, [-0.18 + k * 0.12, 1.4, 0.9]);
-    put(body, box(0.07, 0.005, 0.02), dark, [-0.18 + k * 0.12, 1.52, 0.9], [0, 0, 0.5]);
-  }
-  for (const side of [-1, 1]) for (let k = 0; k < 3; k++) {
-    line(body, [[side * 0.5, 0.82, 0.6 + k * 0.17], [side * 0.72, 0.72, 0.55 + k * 0.17], [side * 0.74, 0.45, 0.2 + k * 0.05], [side * 0.72, 0.35, -0.5]], 0.035, metal, 6);
-  }
-  studs(body, [-1, 1].flatMap((side) => Array.from({ length: 10 }, (_, k) => [side * 0.655, 0.78, -1.15 + k * 0.25] as V)), 0.02, metal);
-  sideDecal(body, tex('flames', () => flameDecalTexture()), 0.66, 0.6, 0.2, 2.2, 0.36);
-  headlights(body, 0.42, 0.66, 1.5, 0.09, 0xffc84a);
-  put(body, box(0.6, 0.2, 0.04), metal, [0, 0.62, 1.51]);
-  for (let k = 0; k < 6; k++) put(body, box(0.03, 0.18, 0.03), dark, [-0.25 + k * 0.1, 0.62, 1.53]);
-  put(body, sph(0.1, 10, 8), bone, [0, 1.03, 1.42], [0, 0, 0], [1, 0.9, 1.2]);
-  put(body, box(0.1, 0.06, 0.1), bone, [0, 0.96, 1.5]);
-  for (const side of [-1, 1]) {
-    put(body, sph(0.025, 6, 4), ember, [side * 0.04, 1.05, 1.53]);
-    horn(body, [[side * 0.07, 1.08, 1.4], [side * 0.18, 1.12, 1.35], [side * 0.22, 1.02, 1.45], [side * 0.15, 0.96, 1.5]], 0.03, hornMat);
-  }
-  for (const side of [-1, 1]) {
-    put(body, box(0.22, 0.1, 0.04), ratEye, [side * 0.42, 0.66, -1.43]);
-    put(body, box(0.26, 0.14, 0.03), metal, [side * 0.42, 0.66, -1.415]);
-  }
-  put(body, box(0.34, 0.14, 0.02), bone, [0, 0.52, -1.415]);
-  for (let k = 0; k < 3; k++) put(body, box(0.06, 0.09, 0.01), dark, [-0.1 + k * 0.1, 0.52, -1.43]);
-  studs(body, Array.from({ length: 6 }, (_, k) => [-0.55 + k * 0.22, 0.76, -1.405] as V), 0.022, metal);
-  const grips = steeringWheel(body, 1.1, 0.35, 0.18, matte(0x14080a));
-
-  // The door to hell at the back: a stone arch, a skull for its keystone, the door in it glowing amber, banded in iron and studded, a ring for a knocker.
-  const door = new THREE.Group();
-  door.position.set(0, 0.8, -1.05);
-  door.scale.set(0.8, 1, 1);
-  body.add(door);
-  const arch = new THREE.Shape();
-  arch.moveTo(-0.65, 0);
-  arch.lineTo(-0.65, 1.1);
-  arch.absarc(0, 1.1, 0.65, Math.PI, 0, true);
-  arch.lineTo(0.65, 0);
-  arch.closePath();
-  const hole = new THREE.Path();
-  hole.moveTo(-0.45, 0.05);
-  hole.lineTo(-0.45, 1.1);
-  hole.absarc(0, 1.1, 0.45, Math.PI, 0, true);
-  hole.lineTo(0.45, 0.05);
-  hole.closePath();
-  arch.holes.push(hole);
-  put(door, new THREE.ExtrudeGeometry(arch, { depth: 0.22, bevelEnabled: false, curveSegments: 10 }), stone, [0, 0, -0.11]);
-  for (let k = 0; k < 7; k++) {
-    const a = (k / 6) * Math.PI;
-    put(door, box(0.025, 0.2, 0.24), dark, [Math.cos(a) * 0.55, 1.1 + Math.sin(a) * 0.55, 0], [0, 0, a - Math.PI / 2]);
-  }
-  put(door, sph(0.1, 10, 8), bone, [0, 1.72, 0.1], [0, 0, 0], [1, 1, 0.8]);
-  for (const s of [-1, 1]) put(door, sph(0.025, 6, 4), ember, [s * 0.035, 1.73, 0.18]);
-  put(door, box(0.08, 0.04, 0.04), bone, [0, 1.64, 0.14]);
-  const panel = new THREE.Shape();
-  panel.moveTo(-0.45, 0.05);
-  panel.lineTo(-0.45, 1.1);
-  panel.absarc(0, 1.1, 0.45, Math.PI, 0, true);
-  panel.lineTo(0.45, 0.05);
-  panel.closePath();
-  const panelGeo = new THREE.ShapeGeometry(panel);
-  put(door, panelGeo, amber, [0, 0, -0.02]);
-  put(door, panelGeo, amber, [0, 0, -0.02], [0, Math.PI, 0]);
-  const slat = matte(0xa85a10);
-  for (let k = 0; k < 3; k++) put(door, box(0.04, 1.3, 0.03), slat, [-0.25 + k * 0.25, 0.75, 0.0]);
-  for (const y of [0.3, 0.75, 1.2]) {
-    for (const z of [-0.04, 0.04]) {
-      put(door, box(0.88, 0.05, 0.02), iron, [0, y, z]);
-      studs(door, [-0.33, -0.11, 0.11, 0.33].map((x) => [x, y, z * 1.6] as V), 0.022, iron);
-    }
-  }
-  put(door, ring(0.08, 0.018), gold, [0.25, 0.7, -0.05]);
-  put(door, ring(0.08, 0.018), gold, [0.25, 0.7, 0.05]);
-  throb(glowSprite(door, [0, 0.8, -0.2], 2.0, r.accent), 0.7, 0.2);
-  glowSprite(door, [0, 0.8, 0.2], 1.4, r.accent);
-  // Rats riding on the deck either side of the door, red-eyed, tails hanging.
-  for (const side of [-1, 1]) {
-    const c: V = [side * 0.56, 0.88, -1.28];
-    put(body, sph(0.1, 10, 8), fur, c, [0, side * 0.4, 0], [0.8, 0.7, 1.4]);
-    put(body, sph(0.06, 8, 6), fur, [c[0] - side * 0.04, c[1] + 0.03, c[2] + 0.16]);
-    prong(body, [c[0] - side * 0.05, c[1] + 0.02, c[2] + 0.2], [c[0] - side * 0.07, c[1], c[2] + 0.3], 0.035, fur, 6);
-    put(body, sph(0.012, 4, 3), pinkTail, [c[0] - side * 0.07, c[1], c[2] + 0.3]);
-    for (const e of [-1, 1]) {
-      put(body, sph(0.03, 8, 4), pinkTail, [c[0] - side * 0.04 + e * 0.04, c[1] + 0.09, c[2] + 0.13], [0, 0, 0], [1, 1, 0.35]);
-      put(body, sph(0.013, 4, 3), ratEye, [c[0] - side * 0.04 + e * 0.028, c[1] + 0.05, c[2] + 0.21]);
-    }
-    line(body, [[c[0], c[1] - 0.02, c[2] - 0.13], [c[0] + side * 0.12, c[1] - 0.05, c[2] - 0.3], [c[0] + side * 0.2, c[1] - 0.25, c[2] - 0.35]], 0.012, pinkTail, 3);
-  }
-
-  // The Devil at the wheel, sat tall, his chest and belly cut in muscle.
-  const devil = new THREE.Group();
-  devil.position.set(0, 0.8, -0.35);
-  body.add(devil);
-  put(devil, box(0.65, 0.12, 0.6), dark, [0, 0.05, 0]);
-  put(devil, ball(0.34, 18, 14), skin, [0, 0.62, 0], [0, 0, 0], [1.15, 1.25, 0.85]);
-  for (const side of [-1, 1]) {
-    put(devil, sph(0.16, 10, 8), muscle, [side * 0.14, 0.8, 0.2], [0, 0, side * 0.25], [1.25, 0.5, 0.42]);
-    for (let k = 0; k < 3; k++) put(devil, sph(0.065, 8, 6), muscle, [side * 0.07, 0.6 - k * 0.11, 0.26 - k * 0.02], [0, 0, 0], [1.1, 0.8, 0.5]);
-  }
-  put(devil, sph(0.22, 12, 10), dark, [0, 0.2, 0.15], [0, 0, 0], [1.3, 0.7, 1.2]);
-  // Spines down his back.
-  for (let k = 0; k < 6; k++) prong(devil, [0, 0.98 - k * 0.15, -0.25 + k * 0.01], [0, 1.03 - k * 0.15, -0.48 + k * 0.02], 0.05, hornMat, 5);
-  for (const side of [-1, 1]) {
-    const grip = grips[side < 0 ? 0 : 1];
-    arm(devil, [side * 0.36, 0.85, 0.05], [grip[0], grip[1] - 0.8, grip[2] + 0.35], 0.08, skin, skin);
-    for (let k = 0; k < 3; k++) prong(devil, [grip[0] + (k - 1) * 0.04, grip[1] - 0.75, grip[2] + 0.42], [grip[0] + (k - 1) * 0.05, grip[1] - 0.8, grip[2] + 0.5], 0.015, hornMat, 4);
-  }
-  // The trident, held up in the left hand above the wheel: barbed tines, a gold collar, its points glowing hot.
-  rod(devil, [-0.55, 0.2, 0.35], [-0.55, 2.0, 0.35], 0.03, gold);
-  for (const y of [0.6, 1.2, 1.85]) put(devil, hoop(0.04, 0.012, TAU, 8), gold, [-0.55, y, 0.35], [Math.PI / 2, 0, 0]);
-  put(devil, box(0.4, 0.05, 0.05), gold, [-0.55, 1.95, 0.35]);
-  for (const x of [-0.2, 0, 0.2]) {
-    const len = x === 0 ? 0.3 : 0.22;
-    const base: V = [-0.55 + x, 1.95, 0.35];
-    rod(devil, base, [base[0], base[1] + len * 0.4, base[2]], 0.025, gold);
-    prong(devil, [base[0], base[1] + len * 0.4, base[2]], [base[0], base[1] + len + 0.04, base[2]], 0.045, gold, 4);
-    prong(devil, [base[0], base[1] + len * 0.5, base[2]], [base[0] + (x === 0 ? 0.05 : Math.sign(x) * 0.05), base[1] + len * 0.3, base[2]], 0.018, gold, 4);
-    put(devil, sph(0.025, 6, 4), ember, [base[0], base[1] + len + 0.02, base[2]]);
-  }
-  put(devil, ball(0.09, 10, 8), skin, [-0.5, 0.95, 0.35]);
-  rod(devil, [-0.36, 0.85, 0.05], [-0.5, 0.95, 0.35], 0.07, skin);
-  // Bat wings off his shoulders, beating: bony fingers, a claw at the wrist, the web between.
-  const flappers: THREE.Object3D[] = [];
   const web = matte(0x5a0a10, { side: THREE.DoubleSide, emissive: 0x200204 });
+
+  // He flies like the Skeleton Dragon: everything a metre off the road, the body leant forward into the wind.
+  const devil = new THREE.Group();
+  devil.position.set(0, 1.0, -0.15);
+  body.add(devil);
+  const lean = 1.0;
+  const torso = new THREE.Group();
+  torso.rotation.x = lean;
+  devil.add(torso);
+  /** A point on the leant torso (built upright, hips at the origin) in the devil's own space. */
+  const tilt = new THREE.Euler(lean, 0, 0);
+  const T = (p: V): V => new THREE.Vector3(...p).applyEuler(tilt).toArray() as V;
+
+  // The torso: chest and belly cut in muscle, a goat's shaggy haunches under, spines down his back.
+  put(torso, ball(0.34, 18, 14), skin, [0, 0.6, 0], [0, 0, 0], [1.15, 1.25, 0.85]);
+  for (const side of [-1, 1]) {
+    put(torso, sph(0.16, 10, 8), muscle, [side * 0.14, 0.8, 0.2], [0, 0, side * 0.25], [1.25, 0.5, 0.42]);
+    for (let k = 0; k < 3; k++) put(torso, sph(0.065, 8, 6), muscle, [side * 0.07, 0.6 - k * 0.11, 0.26 - k * 0.02], [0, 0, 0], [1.1, 0.8, 0.5]);
+    put(torso, sph(0.13, 10, 8), muscle, [side * 0.36, 0.86, 0], [0, 0, 0], [1, 0.9, 1]);
+    put(torso, sph(0.14, 10, 8), muscle, [side * 0.16, 0.75, -0.2], [0, 0, side * 0.3], [1.2, 0.8, 0.5]);
+  }
+  put(torso, sph(0.22, 12, 10), goat, [0, 0.12, 0], [0, 0, 0], [1.3, 0.8, 1.1]);
+  tufts(torso, [0, 0.1, 0], [0.28, 0.18, 0.24], 18, rng(41), [goat, dark], 0.12, 0.04, [0, -0.6, 0], (_a, e) => e < 0.3);
+  for (let k = 0; k < 7; k++) prong(torso, [0, 1.0 - k * 0.15, -0.24 + k * 0.01], [0, 1.05 - k * 0.15, -0.5 + k * 0.02], 0.055, hornMat, 5);
+  rod(torso, [0, 0.9, 0.02], [0, 1.12, 0.06], 0.11, skin);
+
+  // The trident, held out ahead in his right hand like a lance: barbed tines, gold collars, the points glowing hot.
+  const grip: V = [0.42, 0.45, 1.05];
+  arm(devil, T([0.36, 0.86, 0.05]), grip, 0.08, skin, skin);
+  const fork = new THREE.Group();
+  fork.position.set(...grip);
+  fork.quaternion.setFromUnitVectors(UP, new THREE.Vector3(0.02, 0.1, 1).normalize());
+  devil.add(fork);
+  rod(fork, [0, -0.85, 0], [0, 0.95, 0], 0.03, gold);
+  for (const y of [-0.6, 0.1, 0.8]) put(fork, hoop(0.04, 0.012, TAU, 8), gold, [0, y, 0], [Math.PI / 2, 0, 0]);
+  put(fork, sph(0.05, 8, 6), gold, [0, -0.88, 0]);
+  put(fork, box(0.42, 0.05, 0.05), gold, [0, 0.95, 0]);
+  for (const x of [-0.2, 0, 0.2]) {
+    const len = x === 0 ? 0.34 : 0.26;
+    const base: V = [x, 0.95, 0];
+    rod(fork, base, [x, 0.95 + len * 0.4, 0], 0.025, gold);
+    prong(fork, [x, 0.95 + len * 0.4, 0], [x, 0.95 + len + 0.04, 0], 0.045, hot, 4);
+    prong(fork, [x, 0.95 + len * 0.5, 0], [x + (x === 0 ? 0.05 : Math.sign(x) * 0.05), 0.95 + len * 0.3, 0], 0.018, hot, 4);
+  }
+  throb(glowSprite(fork, [0, 1.15, 0], 0.9, r.accent), 1.1, 0.3);
+  for (let k = 0; k < 3; k++) prong(devil, [grip[0] + (k - 1) * 0.04, grip[1] + 0.05, grip[2] - 0.02], [grip[0] + (k - 1) * 0.05, grip[1] + 0.02, grip[2] + 0.1], 0.015, hornMat, 4);
+  // The left hand thrown out ahead, its claws spread.
+  const claw: V = [-0.62, 0.5, 0.95];
+  arm(devil, T([-0.36, 0.86, 0.05]), claw, 0.08, skin, skin);
+  for (let k = 0; k < 4; k++) prong(devil, [claw[0] + (k - 1.5) * 0.04, claw[1], claw[2] + 0.06], [claw[0] + (k - 1.5) * 0.08, claw[1] - 0.04, claw[2] + 0.2], 0.016, hornMat, 4);
+
+  // The legs: a goat's, trailing out behind, shaggy, bent back at the hock, cloven hooves with fire coming off them.
+  const pads: THREE.Object3D[] = [];
+  const hooves: V[] = [];
+  for (const side of [-1, 1]) {
+    const hip: V = [side * 0.17, 0.05, 0];
+    const knee: V = [side * 0.24, -0.3, -0.3];
+    const hock: V = [side * 0.22, -0.42, -0.72];
+    const foot: V = [side * 0.2, -0.68, -0.82];
+    put(devil, sph(0.16, 10, 8), goat, [side * 0.17, -0.08, -0.12], [0, 0, 0], [1, 1.1, 1.4]);
+    rod(devil, hip, knee, 0.12, goat, 0.09);
+    tufts(devil, [side * 0.21, -0.15, -0.16], [0.11, 0.2, 0.18], 8, rng(43 + side), [goat, dark], 0.1, 0.035, [0, -0.5, -0.5]);
+    put(devil, sph(0.085, 8, 6), goat, knee);
+    rod(devil, knee, hock, 0.075, goat, 0.055);
+    put(devil, sph(0.06, 8, 6), goat, hock);
+    rod(devil, hock, foot, 0.05, goat, 0.045);
+    for (const t of [-1, 1]) put(devil, box(0.055, 0.1, 0.12), hoof, [foot[0] + t * 0.032, foot[1] - 0.04, foot[2] + 0.02], [0.3, 0, 0]);
+    put(devil, spike(0.07, 0.3, 6), fire, [foot[0], foot[1] - 0.06, foot[2] - 0.2], [-Math.PI / 2 - 0.25, 0, 0]);
+    for (let k = 0; k < 4; k++) put(devil, new THREE.OctahedronGeometry(0.025), ember, [foot[0] + Math.sin(k * 2.3 + side) * 0.08, foot[1] - 0.05 + k * 0.03, foot[2] - 0.35 - k * 0.17]);
+    throb(glowSprite(devil, [foot[0], foot[1] - 0.05, foot[2] - 0.12], 0.5, 0xff7a1a), 2.4, 0.3, side);
+    hooves.push([foot[0], foot[1] - 0.05, foot[2] - 0.2]);
+  }
+  // The fire under him: it swells as he flies, like the dragon's.
+  pads.push(glowSprite(devil, [0, -0.6, -0.6], 0.9, 0xff6a1a));
+
+  // The wings: two joints that each beat like the Vulture's, spread wide off his shoulder blades like the dragon's,
+  // a bony arm to the wrist with a claw on it, long fingers fanning back from the wrist and the web scalloped between them.
+  const flappers: THREE.Object3D[] = [];
   for (const side of [-1, 1]) {
     const wing = new THREE.Group();
-    wing.position.set(side * 0.25, 0.9, -0.25);
+    wing.position.set(...T([side * 0.2, 0.85, -0.22]));
     wing.userData.side = side;
-    const wrist: V = [side * 0.7, 0.55, -0.2];
-    const fingers: V[] = [[side * 1.35, 0.35, -0.35], [side * 1.25, -0.05, -0.45], [side * 0.95, -0.3, -0.42], [side * 0.55, -0.35, -0.35]];
-    rod(wing, [0, 0, 0], wrist, 0.035, hornMat);
-    prong(wing, wrist, [wrist[0] + side * 0.02, wrist[1] + 0.18, wrist[2]], 0.035, hornMat, 5);
-    for (const f of fingers) {
-      rod(wing, wrist, f, 0.02, hornMat, 0.01);
-      prong(wing, f, [f[0] + side * 0.03, f[1] - 0.08, f[2]], 0.015, hornMat, 4);
+    const elbow: V = [side * 0.6, 0.18, -0.08];
+    const wrist: V = [side * 1.05, 0.26, 0.08];
+    rod(wing, [0, 0, 0], elbow, 0.05, hornMat, 0.04);
+    put(wing, sph(0.055, 8, 6), hornMat, elbow);
+    rod(wing, elbow, wrist, 0.04, hornMat, 0.03);
+    put(wing, sph(0.05, 8, 6), hornMat, wrist);
+    prong(wing, wrist, [wrist[0] + side * 0.03, wrist[1] + 0.2, wrist[2] + 0.06], 0.035, hornMat, 5);
+    const trail: V = [side * 0.85, 0.1, -0.85];
+    tri(wing, [0, 0, 0], elbow, wrist, web);
+    tri(wing, [0, 0, 0], wrist, trail, web);
+    tri(wing, [0, 0, 0], trail, [side * 0.1, -0.12, -0.75], web);
+    const hand = new THREE.Group();
+    hand.position.set(...wrist);
+    hand.userData.side = side;
+    const tips: V[] = [[side * 0.85, 0.02, -0.12], [side * 0.75, -0.08, -0.55], [side * 0.45, -0.12, -0.88], [side * -0.2, -0.16, -0.93]];
+    for (const tip of tips) {
+      rod(hand, [0, 0, 0], tip, 0.022, hornMat, 0.01);
+      prong(hand, tip, [tip[0] + side * 0.03, tip[1] - 0.08, tip[2] - 0.03], 0.015, hornMat, 4);
     }
-    tri(wing, [0, 0, 0], wrist, fingers[3], web);
-    for (let k = 0; k < 3; k++) tri(wing, wrist, fingers[k], fingers[k + 1], web);
+    for (let k = 0; k < tips.length - 1; k++) {
+      const a = tips[k];
+      const b = tips[k + 1];
+      const mid: V = [(a[0] + b[0]) * 0.36, (a[1] + b[1]) * 0.36, (a[2] + b[2]) * 0.36];
+      tri(hand, [0, 0, 0], a, mid, web);
+      tri(hand, [0, 0, 0], mid, b, web);
+    }
+    wing.add(hand);
     devil.add(wing);
-    flappers.push(wing);
+    flappers.push(wing, hand);
   }
-  // The tail: up over the door and back, spined, an arrowhead on the end, swishing.
+
+  // The tail: out behind from the base of his spine, spined all down it, an arrowhead on the end, swishing.
   const sweepers: THREE.Object3D[] = [];
   const tail = new THREE.Group();
-  tail.position.set(0, 0.15, -0.3);
+  tail.position.set(...T([0, 0.12, -0.22]));
   tail.userData.phase = 0;
-  const tailPts: V[] = [[0, 0, 0], [0.2, -0.05, -0.4], [0.4, 0.45, -0.6], [0.55, 1.25, -0.45], [0.45, 1.6, -0.25]];
-  tube(tail, tailPts, 0.04, skin);
+  const tailPts: V[] = [[0, 0, 0], [0.06, -0.12, -0.45], [-0.06, -0.12, -0.95], [0.08, 0.02, -1.4], [0.02, 0.2, -1.75]];
+  tube(tail, tailPts, 0.045, skin);
   const tailCurve = new THREE.CatmullRomCurve3(tailPts.map((p) => new THREE.Vector3(...p)));
-  for (let k = 2; k < 9; k++) {
-    const p = tailCurve.getPoint(k / 10);
-    prong(tail, p.toArray() as V, [p.x + 0.03, p.y + 0.06, p.z - 0.1], 0.025, hornMat, 4);
+  for (let k = 1; k < 10; k++) {
+    const p = tailCurve.getPoint(k / 11);
+    prong(tail, p.toArray() as V, [p.x, p.y + 0.1, p.z - 0.07], 0.028, hornMat, 4);
   }
-  put(tail, spike(0.12, 0.22, 4), skin, [0.42, 1.7, -0.2], [0.4, 0, 0], [1, 1, 0.3]);
+  put(tail, spike(0.13, 0.26, 4), skin, [0.02, 0.24, -1.92], [-Math.PI / 2 + 0.3, 0, 0], [1, 1, 0.3]);
   devil.add(tail);
   sweepers.push(tail);
 
-  // The head: a fanged grin, slit yellow eyes under arched brows, pointed ears, a goatee, a widow's peak and two great ridged curling horns.
+  // The head: held up to look where he's going, a fanged grin, slit yellow eyes under arched brows, pointed ears, a goatee, a widow's peak and two great ridged curling horns.
   const head = new THREE.Group();
-  head.position.set(0, 1.25, 0.02);
+  head.position.set(...T([0, 1.24, 0.12]));
+  devil.add(head);
   put(head, ball(0.26, 20, 16), skin, [0, 0.05, 0], [0, 0, 0], [0.92, 1.05, 0.95]);
   put(head, ball(0.15, 14, 10), skin, [0, -0.12, 0.12], [0, 0, 0], [1, 0.8, 0.9]);
   for (const side of [-1, 1]) {
@@ -1755,20 +1717,19 @@ export function theDevil(r: RacerDef): KartModel {
       m.quaternion.setFromUnitVectors(Z, curve.getTangent(k / 6));
     }
   }
-  devil.add(head);
 
-  // The flies: a thousand (well, forty) whirling round over his head.
+  // The flies: a thousand (well, forty) whirling round him.
   const rotors: THREE.Object3D[] = [];
   const swarm = new THREE.Group();
-  swarm.position.set(0, 2.1, -0.4);
+  swarm.position.set(0, 1.0, -0.1);
   const flyWing = new THREE.MeshBasicMaterial({ color: 0xd8e8ff, transparent: true, opacity: 0.55, side: THREE.DoubleSide, depthWrite: false });
   const flyEye = matte(0x8a1010);
   const wingGeo = new THREE.CircleGeometry(0.045, 6);
   for (let k = 0; k < 40; k++) {
     const a = (k / 40) * TAU * 3 + Math.sin(k) * 0.3;
-    const rad = 0.65 + (k % 5) * 0.16;
+    const rad = 0.7 + (k % 5) * 0.16;
     const f = new THREE.Group();
-    f.position.set(Math.cos(a) * rad, Math.sin(k * 1.9) * 0.45, Math.sin(a) * rad);
+    f.position.set(Math.cos(a) * rad, Math.sin(k * 1.9) * 0.5, Math.sin(a) * rad);
     f.rotation.y = -a;
     put(f, sph(0.045, 6, 4), black, [0, 0, 0], [0, 0, 0], [1, 0.9, 1.5]);
     put(f, sph(0.03, 5, 3), flyEye, [0, 0.01, 0.055]);
@@ -1780,22 +1741,24 @@ export function theDevil(r: RacerDef): KartModel {
       swarm.add(m);
     }
   }
-  body.add(swarm);
+  devil.add(swarm);
   rotors.push(swarm);
 
   finish(body);
+  const at = devil.position;
   return {
     body,
-    wheels: [-1, 1].flatMap((side) => [
-      { x: side * 0.68, z: 1.1, radius: 0.32, width: 0.24, front: true },
-      { x: side * 0.78, z: -0.95, radius: 0.56, width: 0.46, front: false },
-    ]),
-    exhausts: pipes(body, 0.45, 0.55, -1.45),
-    rearTrack: 0.78,
-    rearZ: -0.95,
+    wheels: [],
+    // Boost fire off his hooves.
+    exhausts: hooves.map(([x, y, z]) => new THREE.Vector3(x + at.x, y + at.y, z + at.z)),
+    rearTrack: 0.5,
+    rearZ: -0.8,
     spinners: [],
     rotors,
-    shadow: [2.6, 3.6],
+    // The spread wings' shadow on the road under him.
+    shadow: [4.0, 3.4],
+    // Like the dragon: he holds himself up and bobs, the fire under him swelling.
+    hover: { bob: 0.14, pads },
     head,
     flappers,
     sweepers,
@@ -1804,23 +1767,25 @@ export function theDevil(r: RacerDef): KartModel {
 
 // ---- The Mother of the Coven: PetroDragonic Apocalypse's boss ---------------------
 // "Antlers shed ribbons of blood, draped like thorns upon the brow",
-// "taxidermy with eyes of fire, chanting songs above the lyre", "I've laid
-// the altar, charged the crystals, the circle I have blessed", "timbers of
-// oak with knots so tight", "I am cat, black", "snakes slither by", "lizard
-// and bat take wing in the night": a tall gaunt witch in a ragged robe
-// stitched with glowing runes, chanting, blood running from a crown of thorns,
-// great antlers hung with red ribbons, a bat hung from them, a lyre in her
-// hand, on a knotted oak altar cart with a pentagram blazing in its circle,
-// guttering candles, crystals, a snake round the altar, a black cat on the
-// tailboard, a stag's head with fire for eyes on the front, the blood-moon at
-// her raised hand.
+// "chanting songs above the lyre", "I've laid the altar, charged the
+// crystals, the circle I have blessed", "I am cat, black", "lizard and bat
+// take wing in the night": a tall gaunt witch in a ragged robe stitched with
+// glowing runes, chanting, blood running from a crown of thorns, great
+// antlers hung with red ribbons, a bat hung from them, a lyre in her hand,
+// flying low over the road astride a long gnarled broomstick, its bristles
+// bound with cord and smouldering, her charged crystals hung on cords all
+// along it, swinging and glowing, a black cat riding the tail, the
+// blood-moon at her raised hand.
 
 export function covenMother(r: RacerDef): KartModel {
   const body = new THREE.Group();
   const oak = matte(0xffffff, { map: tex('wood', woodTexture), color: 0xb08a6a });
   const knot = matte(0x4a2a14);
+  const straw = matte(0xc8a050, { shininess: 6 });
+  const strawDark = matte(0x8a6a2a, { shininess: 6 });
   const robe = matte(r.color, { shininess: 15 });
   const robeDark = matte(0x1a0e26);
+  const robeOpen = matte(r.color, { shininess: 15, side: THREE.DoubleSide });
   const veil = matte(0x1a1420, { side: THREE.DoubleSide, transparent: true, opacity: 0.85 });
   const skin = matte(0xe8ddd0);
   const hollow = matte(0x9a8a90);
@@ -1828,97 +1793,105 @@ export function covenMother(r: RacerDef): KartModel {
   const ribbon = matte(r.accent, { side: THREE.DoubleSide, emissive: 0x3a0606 });
   const blood = matte(0x8a0a12, { shininess: 90, specular: 0xff6a6a });
   const thorn = matte(0x2a1a10);
-  const fire = pulsing(glow(0xff7a1a), 2.6, 0.35);
   const rune = pulsing(glow(r.accent), 0.5, 0.6);
-  const chalk = pulsing(glow(0xf8f0ff), 0.4, 0.5);
-  const wax = matte(0xf4ecd8);
+  const ember = pulsing(glow(0xff6a1a), 1.7, 0.6);
   const gold = brass();
-  const fur = matte(0x7a5a3a, { shininess: 5 });
-  const furDark = matte(0x4a3420, { shininess: 5 });
+  const silver = chrome();
   const catFur = matte(0x101014, { shininess: 30, specular: 0x333344 });
   const catEye = pulsing(glow(0x7aff3a), 1.1, 0.6);
-  const snake = matte(0x3a5a2a, { shininess: 70, specular: 0x8aaa6a });
   const bone = matte(0xece2c8);
   const black = matte(0x050505);
   const eyeMat = pulsing(glow(r.accent), 0.9, 0.5);
-  const peg = matte(0x5a3a20);
   const cordMat = matte(0x3a2a1a);
   const scab = matte(0x8a1010);
   const lips = matte(0x5a1020);
 
-  // The cart: an oak platform, its timbers knotted, a rail with iron pegs, on four great cart wheels.
-  put(body, box(1.75, 0.22, 2.8), oak, [0, 0.82, 0]);
-  for (const side of [-1, 1]) {
-    put(body, box(0.08, 0.3, 2.7), oak, [side * 0.84, 1.06, 0]);
-    for (let k = 0; k < 4; k++) put(body, sph(0.05, 8, 6), peg, [side * 0.88, 1.06, -1.0 + k * 0.66]);
-    for (const [y, z] of [[0.82, -0.7], [1.06, 0.35], [0.82, 0.9]]) {
-      put(body, hoop(0.06, 0.015, TAU, 10), knot, [side * 0.885, y, z], [0, Math.PI / 2, 0]);
-      put(body, sph(0.03, 6, 4), knot, [side * 0.885, y, z], [0, 0, 0], [0.4, 1, 1]);
-    }
+  // The broomstick: long and gnarled, knotted and twig-stubbed, its nose curling up, a metre off the road.
+  const Y = 1.0;
+  const shaft: V[] = [[0, Y - 0.02, -1.15], [0.03, Y + 0.02, -0.6], [-0.02, Y, 0], [0.03, Y + 0.03, 0.6], [-0.01, Y + 0.05, 1.1], [0.0, Y + 0.14, 1.42], [0.0, Y + 0.28, 1.5]];
+  tube(body, shaft, 0.06, oak);
+  put(body, sph(0.06, 8, 6), oak, shaft[shaft.length - 1], [0, 0, 0], [1, 1.2, 1]);
+  const along = new THREE.CatmullRomCurve3(shaft.map((p) => new THREE.Vector3(...p)));
+  const gn = rng(81);
+  for (let k = 0; k < 9; k++) {
+    const p = along.getPoint(0.06 + k * 0.1);
+    const a = gn() * TAU;
+    put(body, sph(0.065, 8, 6), oak, [p.x + Math.cos(a) * 0.02, p.y + Math.sin(a) * 0.02, p.z], [0, 0, a], [1, 0.8, 1.6]);
+    put(body, hoop(0.04, 0.01, TAU, 8), knot, [p.x + Math.cos(a) * 0.06, p.y + Math.sin(a) * 0.06, p.z], [0, Math.PI / 2, 0]);
+    if (k % 3 === 1) prong(body, [p.x, p.y, p.z], [p.x + Math.cos(a) * 0.14, p.y + Math.sin(a) * 0.14, p.z + 0.08], 0.022, oak, 5);
   }
-  // The circle chalked on the deck and the pentagram in it, glowing, and a crystal at each corner on a stand.
-  put(body, ring(0.62, 0.02), chalk, [0, 0.94, -0.35], [Math.PI / 2, 0, 0]);
-  for (let k = 0; k < 5; k++) {
-    const a = (k / 5) * TAU;
-    const b = ((k + 2) / 5) * TAU;
-    rod(body, [Math.sin(a) * 0.6, 0.935, -0.35 + Math.cos(a) * 0.6], [Math.sin(b) * 0.6, 0.935, -0.35 + Math.cos(b) * 0.6], 0.012, chalk);
+  // A silver band at the grip and another at the nose.
+  for (const t of [0.66, 0.9]) {
+    const p = along.getPoint(t);
+    put(body, hoop(0.055, 0.014, TAU, 12), silver, [p.x, p.y, p.z]);
   }
-  const crystalColors = [0x9a5aff, 0x5ad8ff, 0xff5a9a, 0x7aff9a];
-  [[-0.6, 1.2], [0.6, 1.2], [-0.6, -1.25], [0.6, -1.25]].forEach(([x, z], k) => {
-    put(body, cyl(0.06, 0.08, 0.3, 8), oak, [x, 1.08, z]);
-    const cmat = pulsing(glow(crystalColors[k]), 0.7, 0.5, k * 1.6);
-    put(body, new THREE.OctahedronGeometry(0.14), cmat, [x, 1.38, z], [0, k, 0], [0.7, 1.4, 0.7]);
-    for (const s of [-1, 1]) put(body, new THREE.OctahedronGeometry(0.06), cmat, [x + s * 0.07, 1.28, z + s * 0.03], [0, k, s * 0.4], [0.7, 1.4, 0.7]);
-    glowSprite(body, [x, 1.38, z], 0.6, crystalColors[k]);
+
+  // The brush at the back: bound three times with cord, the bristles splayed out behind, some of them smouldering.
+  const bz = -1.1;
+  put(body, can(0.09, 0.07, 0.3, 10), strawDark, [0, Y - 0.02, bz - 0.12], [Math.PI / 2, 0, 0]);
+  for (let k = 0; k < 3; k++) put(body, hoop(0.095 + k * 0.006, 0.018, TAU, 12), cordMat, [0, Y - 0.02, bz - 0.04 - k * 0.1]);
+  const br = rng(83);
+  const smoulder: V[] = [];
+  for (let k = 0; k < 44; k++) {
+    const a = (k / 44) * TAU + br() * 0.2;
+    const ring0 = 0.05 + (k % 3) * 0.02;
+    const spread = 0.2 + br() * 0.16;
+    const len = 0.7 + br() * 0.25;
+    const tip: V = [Math.cos(a) * spread, Y - 0.04 + Math.sin(a) * spread * 0.85 - 0.04, bz - 0.25 - len];
+    prong(body, [Math.cos(a) * ring0, Y - 0.02 + Math.sin(a) * ring0, bz - 0.2], tip, 0.03, k % 3 ? straw : strawDark, 4);
+    if (k % 5 === 0) smoulder.push(tip);
+  }
+  for (const p of smoulder) put(body, new THREE.OctahedronGeometry(0.03), ember, [p[0], p[1], p[2] + 0.02]);
+  throb(glowSprite(body, [0, Y - 0.05, bz - 0.95], 0.8, 0xff6a1a), 1.7, 0.35);
+
+  // Her charged crystals: amethyst, quartz, rose, citrine, aqua and green, faceted, glowing and pulsing, hung on cords
+  // and little silver caps from the shaft, swinging together as she flies.
+  const crystalColors = [0x9a5aff, 0xe8f0ff, 0xff6aa8, 0xffc84a, 0x5ad8ff, 0x7aff9a];
+  const crystalMats = crystalColors.map((c, k) => pulsing(new THREE.MeshPhongMaterial({ color: c, emissive: new THREE.Color(c).multiplyScalar(0.55), shininess: 120, specular: 0xffffff, flatShading: true, transparent: true, opacity: 0.92 }), 0.6 + k * 0.13, 0.55, k * 1.3));
+  const prism = can(0.05, 0.05, 0.14, 6);
+  const point = spike(0.05, 0.11, 6);
+  const crown = spike(0.05, 0.05, 6);
+  const flappers: THREE.Object3D[] = [];
+  // Four ahead of her knees, one behind her skirt, two off the cord binding the brush (where the chase camera sees them): z, x, cord, size.
+  const hung: [number, number, number, number][] = [
+    [1.3, 0, 0.16, 1.2],
+    [1.08, 0, 0.24, 1.45],
+    [0.88, 0, 0.14, 1.25],
+    [0.68, 0, 0.26, 1.4],
+    [-0.66, 0, 0.2, 1.3],
+    [-1.16, -0.12, 0.16, 1.3],
+    [-1.16, 0.12, 0.26, 1.45],
+  ];
+  hung.forEach(([z, x, len, s], k) => {
+    const p = along.getPointAt(Math.min(1, Math.max(0, (z + 1.15) / 2.75)));
+    const pivot = new THREE.Group();
+    pivot.position.set(p.x + x, p.y - (x ? 0.1 : 0.045), z);
+    pivot.userData.side = 1;
+    const hang = new THREE.Group();
+    // The kart view swings it 0.12 rad off true on average: hang it that much back, so it swings about straight down.
+    hang.rotation.z = -0.12;
+    pivot.add(hang);
+    line(hang, [[0, 0, 0], [0, -len * 0.5, 0.01], [0, -len, 0]], 0.006, cordMat, 3);
+    put(hang, sph(0.025, 6, 4), silver, [0, -len - 0.01, 0], [0, 0, 0], [1, 0.7, 1]);
+    const mat = crystalMats[k % crystalMats.length];
+    const c: V = [0, -len - 0.1 * s, 0];
+    put(hang, crown, mat, [c[0], c[1] + 0.095 * s, 0], [0, k * 0.4, 0], [s, s, s]);
+    put(hang, prism, mat, c, [0, k * 0.4, 0], [s, s, s]);
+    put(hang, point, mat, [c[0], c[1] - 0.125 * s, 0], [Math.PI, k * 0.4, 0], [s, s, s]);
+    throb(glowSprite(hang, c, 0.42 * s, crystalColors[k % crystalColors.length]), 0.6 + k * 0.13, 0.3, k * 1.3);
+    body.add(pivot);
+    flappers.push(pivot);
   });
-  // The altar at the front: a stone slab, candles guttering on it, wax run down them, a snake coiled round it.
-  put(body, box(1.0, 0.35, 0.5), matte(0x6a6070), [0, 1.11, 0.85]);
-  for (let k = 0; k < 5; k++) {
-    const x = -0.4 + k * 0.2;
-    const z = 0.85 + (k % 2) * 0.1;
-    const h = 0.18 + (k % 3) * 0.08;
-    put(body, cyl(0.04, 0.045, h, 10), wax, [x, 1.3 + h / 2, z]);
-    for (let d = 0; d < 2; d++) put(body, sph(0.018, 5, 4), wax, [x + (d ? 0.035 : -0.03), 1.3 + h * (0.5 + d * 0.3), z + 0.02], [0, 0, 0], [0.7, 1.8, 0.7]);
-    put(body, sph(0.05, 6, 4), wax, [x, 1.31, z], [0, 0, 0], [1.2, 0.3, 1.2]);
-    put(body, spike(0.03, 0.08, 6), fire, [x, 1.32 + h + 0.03, z]);
-    glowSprite(body, [x, 1.32 + h + 0.04, z], 0.25, 0xffa040);
-  }
-  const coil: V[] = [];
-  for (let k = 0; k <= 20; k++) {
-    const a = (k / 20) * TAU * 1.1;
-    coil.push([Math.sin(a) * 0.56, 1.0 + k * 0.012, 0.85 + Math.cos(a) * 0.3]);
-  }
-  line(body, coil, 0.04, snake, 6);
-  const sh: V = coil[coil.length - 1];
-  put(body, sph(0.06, 8, 6), snake, [sh[0], sh[1] + 0.02, sh[2] + 0.04], [0, 0, 0], [0.9, 0.6, 1.4]);
-  for (const s of [-1, 1]) put(body, sph(0.012, 4, 3), fire, [sh[0] + s * 0.03, sh[1] + 0.04, sh[2] + 0.09]);
-  // The figurehead: a stuffed stag's head on a shield, shaggy, its eyes on fire, its antlers branching.
-  const stag = new THREE.Group();
-  stag.position.set(0, 1.05, 1.5);
-  body.add(stag);
-  put(stag, cyl(0.38, 0.38, 0.06, 6), oak, [0, 0, -0.04], [Math.PI / 2, 0, 0]);
-  put(stag, hoop(0.38, 0.02, TAU, 6), gold, [0, 0, -0.005], [0, 0, Math.PI / 6]);
-  put(stag, sph(0.2, 14, 10), fur, [0, 0.05, 0.12], [0.4, 0, 0], [0.9, 1.1, 1.0]);
-  put(stag, cyl(0.07, 0.12, 0.3, 10), fur, [0, -0.08, 0.3], [1.2, 0, 0]);
-  tufts(stag, [0, -0.08, 0.12], [0.18, 0.12, 0.14], 14, rng(71), [fur, furDark], 0.1, 0.03, [0, -1, 0], (_a, e) => e < 0.2);
-  put(stag, sph(0.05, 8, 6), matte(0x14100c), [0, -0.12, 0.45]);
-  for (const side of [-1, 1]) {
-    put(stag, sph(0.045, 10, 8), fire, [side * 0.1, 0.08, 0.27]);
-    throb(glowSprite(stag, [side * 0.1, 0.08, 0.3], 0.35, 0xff6a1a), 2.2, 0.3, side);
-    put(stag, spike(0.05, 0.14, 4), fur, [side * 0.2, 0.18, 0.08], [0, 0, -side * 1.0], [1, 1, 0.4]);
-    tube(stag, [[side * 0.08, 0.22, 0.1], [side * 0.22, 0.42, 0.05], [side * 0.3, 0.6, 0.12]], 0.025, antler);
-    tube(stag, [[side * 0.18, 0.38, 0.06], [side * 0.12, 0.55, 0.18]], 0.018, antler);
-    prong(stag, [side * 0.25, 0.5, 0.08], [side * 0.38, 0.58, 0.1], 0.014, antler, 4);
-    prong(stag, [side * 0.29, 0.58, 0.12], [side * 0.27, 0.7, 0.16], 0.012, antler, 4);
-  }
-  // The black cat on the tailboard, sat up, its eyes green fire, its tail flicking.
-  const cat: V = [0.5, 0.93, -1.2];
+
+  // The black cat riding the broom's tail, sat up, its eyes green fire, its tail flicking.
+  const cat: V = [0, Y + 0.04, -0.92];
   put(body, sph(0.1, 10, 8), catFur, [cat[0], cat[1] + 0.1, cat[2]], [0, 0, 0], [0.9, 1.2, 1]);
   put(body, sph(0.07, 10, 8), catFur, [cat[0], cat[1] + 0.27, cat[2] + 0.03]);
   for (const s of [-1, 1]) {
     prong(body, [cat[0] + s * 0.035, cat[1] + 0.31, cat[2] + 0.02], [cat[0] + s * 0.05, cat[1] + 0.39, cat[2] + 0.02], 0.025, catFur, 4);
     put(body, sph(0.017, 6, 4), catEye, [cat[0] + s * 0.027, cat[1] + 0.285, cat[2] + 0.09], [0, 0, 0], [1, 0.7, 0.5]);
     put(body, box(0.005, 0.02, 0.005), black, [cat[0] + s * 0.027, cat[1] + 0.285, cat[2] + 0.098]);
+    put(body, sph(0.03, 6, 4), catFur, [cat[0] + s * 0.05, cat[1] + 0.01, cat[2] + 0.07]);
   }
   const sweepers: THREE.Object3D[] = [];
   const catTail = new THREE.Group();
@@ -1928,59 +1901,69 @@ export function covenMother(r: RacerDef): KartModel {
   body.add(catTail);
   sweepers.push(catTail);
 
-  // The blood-moon, small, up by her raised hand: off the line the camera looks down past her.
-  put(body, ball(0.2, 16, 12), pulsing(glow(0xd02a2a), 0.3, 0.3), [0.75, 2.5, -0.35]);
-  for (let k = 0; k < 5; k++) put(body, sph(0.035 + (k % 2) * 0.02, 6, 4), scab, onBall([0.75, 2.5, -0.35], [0.2, 0.2, 0.2], 0.3 + k * 0.4, -0.5 + k * 0.3, 0.92), [0, 0, 0], [1, 1, 0.5]);
-  throb(glowSprite(body, [0.75, 2.5, -0.35], 0.9, 0xff3a3a), 0.3, 0.2);
-
-  // Her: tall and gaunt in a ragged robe stitched with runes, stood in the circle, the hem in tatters round her feet.
+  // Her: tall and gaunt in a ragged robe stitched with runes, sat astride the broom, the skirt draped over it and blown
+  // back in tatters, the toes of her boots poking out in front.
   const witch = new THREE.Group();
-  witch.position.set(0, 0.93, -0.35);
-  witch.scale.setScalar(0.92);
+  witch.position.set(0, Y + 0.02, 0.05);
+  witch.rotation.x = 0.08;
+  witch.scale.setScalar(1.0);
   body.add(witch);
-  put(witch, cyl(0.2, 0.55, 1.45, 20), robe, [0, 0.72, 0]);
-  put(witch, cyl(0.58, 0.58, 0.06, 20), robe, [0, 0.03, 0]);
+  const skirt = new THREE.Group();
+  skirt.position.set(0, 0.12, -0.05);
+  skirt.rotation.x = 0.35;
+  witch.add(skirt);
+  put(skirt, cyl(0.24, 0.46, 0.66, 20), robeOpen, [0, -0.27, 0]);
   for (let k = 0; k < 8; k++) {
     const a = (k / 8) * TAU;
-    put(witch, box(0.04, 1.3, 0.02), robeDark, [Math.cos(a) * 0.36, 0.68, Math.sin(a) * 0.36], [0, -a + Math.PI / 2, Math.cos(a) * 0.12]);
+    put(skirt, box(0.04, 0.66, 0.02), robeDark, [Math.cos(a) * 0.365, -0.3, Math.sin(a) * 0.365], [0, -a + Math.PI / 2, Math.cos(a) * 0.32]);
   }
   for (let k = 0; k < 16; k++) {
     const a = (k / 16) * TAU;
-    prong(witch, [Math.cos(a) * 0.55, 0.12, Math.sin(a) * 0.55], [Math.cos(a) * 0.62, -0.02 - (k % 3) * 0.03, Math.sin(a) * 0.62], 0.07, k % 2 ? robe : robeDark, 3);
+    prong(skirt, [Math.cos(a) * 0.44, -0.55, Math.sin(a) * 0.44], [Math.cos(a) * 0.52, -0.72 - (k % 3) * 0.05, Math.sin(a) * 0.52], 0.07, k % 2 ? robe : robeDark, 3);
   }
-  // Runes down the front of the robe, glowing and fading.
-  for (let k = 0; k < 6; k++) {
-    const y = 0.3 + k * 0.17;
-    const rad = 0.55 - (y / 1.45) * 0.35 + 0.01;
-    const z = rad;
-    put(witch, box(0.012, 0.09, 0.01), rune, [0, y, z], [-0.25, 0, 0]);
-    put(witch, box(0.05, 0.012, 0.01), rune, [0, y + (k % 2 ? 0.03 : -0.02), z + 0.005], [-0.25, 0, (k % 3) * 0.6 - 0.6]);
-    put(witch, box(0.03, 0.012, 0.01), rune, [k % 2 ? 0.02 : -0.02, y - 0.035, z], [-0.25, 0, 0.8]);
-    put(witch, box(0.012, 0.09, 0.01), rune, [0, y + 0.05, -z], [0.25, 0, 0]);
-    put(witch, box(0.06, 0.012, 0.01), rune, [0, y + 0.07 - (k % 2) * 0.05, -z - 0.005], [0.25, 0, (k % 3) * 0.7 - 0.7]);
+  for (const s of [-1, 1]) {
+    put(witch, sph(0.06, 8, 6), black, [s * 0.16, -0.5, 0.42], [0, 0, 0], [0.8, 0.7, 1.6]);
+    prong(witch, [s * 0.16, -0.5, 0.5], [s * 0.17, -0.42, 0.66], 0.04, black, 5);
   }
-  put(witch, ball(0.25, 14, 10), robe, [0, 1.42, 0], [0, 0, 0], [1.35, 0.6, 1]);
-  put(witch, ring(0.22, 0.03), gold, [0, 1.35, 0.02], [Math.PI / 2, 0, 0]);
+  // The body above the broom.
+  put(witch, cyl(0.2, 0.3, 0.7, 20), robe, [0, 0.35, 0]);
+  for (let k = 0; k < 4; k++) {
+    const y = 0.15 + k * 0.15;
+    const z = 0.3 - (y / 0.7) * 0.1 + 0.01;
+    put(witch, box(0.012, 0.09, 0.01), rune, [0, y, z], [-0.14, 0, 0]);
+    put(witch, box(0.05, 0.012, 0.01), rune, [0, y + (k % 2 ? 0.03 : -0.02), z + 0.005], [-0.14, 0, (k % 3) * 0.6 - 0.6]);
+    put(witch, box(0.012, 0.09, 0.01), rune, [0, y + 0.03, -z], [0.14, 0, 0]);
+    put(witch, box(0.06, 0.012, 0.01), rune, [0, y + 0.05 - (k % 2) * 0.05, -z - 0.005], [0.14, 0, (k % 3) * 0.7 - 0.7]);
+    put(witch, box(0.03, 0.012, 0.01), rune, [k % 2 ? 0.02 : -0.02, y - 0.035, -z], [0.14, 0, 0.8]);
+  }
+  // Runes round the skirt's back too, where the chase camera sees them.
+  for (let k = 0; k < 5; k++) {
+    const a = Math.PI * (1.25 + k * 0.125);
+    put(skirt, box(0.014, 0.12, 0.01), rune, [Math.cos(a) * 0.41, -0.42, Math.sin(a) * 0.41], [0, -a + Math.PI / 2, 0]);
+    put(skirt, box(0.07, 0.014, 0.01), rune, [Math.cos(a) * 0.41, -0.4 + (k % 2) * 0.04, Math.sin(a) * 0.41], [0, -a + Math.PI / 2, (k % 3) * 0.6 - 0.6]);
+  }
+  put(witch, ball(0.25, 14, 10), robe, [0, 0.7, 0], [0, 0, 0], [1.35, 0.6, 1]);
+  put(witch, ring(0.22, 0.03), gold, [0, 0.63, 0.02], [Math.PI / 2, 0, 0]);
   // A cord belt hung with bones and charms; a necklace of teeth.
-  put(witch, hoop(0.37, 0.018, TAU, 18), cordMat, [0, 0.95, 0], [Math.PI / 2, 0, 0]);
+  put(witch, hoop(0.3, 0.018, TAU, 18), cordMat, [0, 0.12, 0], [Math.PI / 2, 0, 0]);
   for (let k = 0; k < 5; k++) {
     const a = 0.6 + k * 0.5;
-    const at: V = [Math.cos(a) * 0.38, 0.93, Math.sin(a) * 0.38];
+    const at: V = [Math.cos(a) * 0.31, 0.1, Math.sin(a) * 0.31];
     line(witch, [at, [at[0] * 1.05, at[1] - 0.1, at[2] * 1.05]], 0.006, cordMat, 3);
     put(witch, k % 2 ? can(0.015, 0.015, 0.08, 5) : sph(0.03, 6, 4), k % 2 ? bone : gold, [at[0] * 1.06, at[1] - 0.14, at[2] * 1.06]);
   }
   for (let k = 0; k < 9; k++) {
     const a = Math.PI * 0.2 + (k / 8) * Math.PI * 0.6;
-    const p: V = [Math.cos(a) * 0.2, 1.47 - Math.sin(a) * 0.1, Math.sin(a) * 0.24];
+    const p: V = [Math.cos(a) * 0.2, 0.75 - Math.sin(a) * 0.1, Math.sin(a) * 0.24];
     prong(witch, p, [p[0], p[1] - 0.06, p[2] + 0.01], 0.012, bone, 4);
   }
   // One arm raised to the moon, the other holding the lyre, its strings glowing.
-  arm(witch, [0.3, 1.42, 0], [0.55, 2.05, 0.15], 0.07, robe, skin);
-  for (let k = 0; k < 4; k++) prong(witch, [0.55 + (k - 1.5) * 0.03, 2.1, 0.15], [0.55 + (k - 1.5) * 0.05, 2.22, 0.17], 0.012, skin, 4);
-  throb(glowSprite(witch, [0.56, 2.15, 0.15], 0.5, r.accent), 0.5, 0.35);
-  arm(witch, [-0.3, 1.42, 0], [-0.45, 1.05, 0.38], 0.07, robe, skin);
+  arm(witch, [0.3, 0.7, 0], [0.55, 1.33, 0.15], 0.07, robe, skin);
+  for (let k = 0; k < 4; k++) prong(witch, [0.55 + (k - 1.5) * 0.03, 1.38, 0.15], [0.55 + (k - 1.5) * 0.05, 1.5, 0.17], 0.012, skin, 4);
+  throb(glowSprite(witch, [0.56, 1.43, 0.15], 0.5, r.accent), 0.5, 0.35);
+  arm(witch, [-0.3, 0.7, 0], [-0.5, 0.38, 0.36], 0.07, robe, skin);
   const lyre = new THREE.Group();
-  lyre.position.set(-0.45, 1.15, 0.42);
+  lyre.position.set(-0.52, 0.48, 0.4);
   lyre.rotation.set(0, 0.3, 0.15);
   tube(lyre, [[-0.12, -0.15, 0], [-0.18, 0.05, 0], [-0.1, 0.25, 0], [-0.16, 0.38, 0]], 0.025, gold);
   tube(lyre, [[0.12, -0.15, 0], [0.18, 0.05, 0], [0.1, 0.25, 0], [0.16, 0.38, 0]], 0.025, gold);
@@ -1991,9 +1974,15 @@ export function covenMother(r: RacerDef): KartModel {
   for (let k = 0; k < 5; k++) rod(lyre, [-0.08 + k * 0.04, -0.13, 0.01], [-0.08 + k * 0.04, 0.29, 0.01], 0.004, strings);
   witch.add(lyre);
 
+  // The blood-moon, small, up by her raised hand: off the line the camera looks down past her.
+  const moon: V = [0.78, 1.62, 0.05];
+  put(witch, ball(0.2, 16, 12), pulsing(glow(0xd02a2a), 0.3, 0.3), moon);
+  for (let k = 0; k < 5; k++) put(witch, sph(0.035 + (k % 2) * 0.02, 6, 4), scab, onBall(moon, [0.2, 0.2, 0.2], 0.3 + k * 0.4, -0.5 + k * 0.3, 0.92), [0, 0, 0], [1, 1, 0.5]);
+  throb(glowSprite(witch, moon, 0.9, 0xff3a3a), 0.3, 0.2);
+
   // The head: pale and gaunt, hollow-cheeked, glowing eyes, her mouth open in the chant, blood running from a crown of thorns, under a veil of long dark hair, crowned with great antlers hung with red ribbons.
   const head = new THREE.Group();
-  head.position.set(0, 1.72, 0.02);
+  head.position.set(0, 1.0, 0.02);
   put(head, sph(0.2, 18, 14), skin, [0, 0, 0], [0, 0, 0], [0.88, 1.1, 0.95]);
   for (const side of [-1, 1]) {
     put(head, sph(0.045, 8, 6), hollow, [side * 0.1, -0.06, 0.13], [0, 0, 0], [0.7, 1.3, 0.5]);
@@ -2013,12 +2002,12 @@ export function covenMother(r: RacerDef): KartModel {
     const p: V = [Math.sin(a) * 0.17, 0.14 + Math.cos(a) * 0.017, Math.cos(a) * 0.18];
     prong(head, p, [p[0] * 1.35, p[1] + (k % 2 ? 0.05 : -0.03), p[2] * 1.35], 0.01, thorn, 3);
   }
-  // The hair: a long dark veil falling from the crown down past the shoulders.
+  // The hair: a long dark veil falling from the crown down past the shoulders, streaming back.
   put(head, new THREE.SphereGeometry(0.23, 24, 14, Math.PI * 0.15, Math.PI * 1.7, 0, Math.PI * 0.6), veil, [0, 0.02, -0.01], [0, Math.PI, 0]);
-  put(head, new THREE.CylinderGeometry(0.22, 0.38, 0.9, 20, 1, true, Math.PI * 0.65, Math.PI * 0.7), veil, [0, -0.4, -0.04]);
+  put(head, new THREE.CylinderGeometry(0.22, 0.4, 0.9, 20, 1, true, Math.PI * 0.65, Math.PI * 0.7), veil, [0, -0.36, -0.14], [0.35, 0, 0]);
   // The antlers: great branching racks, the tines curving up, red ribbons hanging from them dripping blood, a bat hung asleep from one.
   const rack = new THREE.Group();
-  rack.scale.setScalar(0.68);
+  rack.scale.setScalar(0.7);
   head.add(rack);
   for (const side of [-1, 1]) {
     const beam: V[] = [[side * 0.12, 0.15, 0], [side * 0.35, 0.35, -0.05], [side * 0.55, 0.65, -0.1], [side * 0.62, 0.98, -0.05], [side * 0.55, 1.22, 0.02]];
@@ -2037,7 +2026,7 @@ export function covenMother(r: RacerDef): KartModel {
       put(rack, hoop(0.03, 0.01, TAU, 8), ribbon, [b[0], b[1] - 0.01, b[2]], [Math.PI / 2, 0, 0]);
     }
   }
-  const bat: V = [0.55 * 0.68, 0.48 * 0.68, -0.08];
+  const bat: V = [0.55 * 0.7, 0.48 * 0.7, -0.08];
   put(head, sph(0.04, 8, 6), catFur, [bat[0], bat[1] - 0.05, bat[2]], [0, 0, 0], [0.9, 1.4, 0.9]);
   put(head, sph(0.025, 6, 4), catFur, [bat[0], bat[1] - 0.12, bat[2] + 0.01]);
   for (const s of [-1, 1]) {
@@ -2049,16 +2038,18 @@ export function covenMother(r: RacerDef): KartModel {
   finish(body);
   return {
     body,
-    wheels: [-1, 1].flatMap((side) => [
-      { x: side * 1.0, z: 0.95, radius: 0.5, width: 0.14, front: true, material: oak },
-      { x: side * 1.0, z: -0.95, radius: 0.5, width: 0.14, front: false, material: oak },
-    ]),
-    exhausts: [new THREE.Vector3(-0.4, 0.75, -1.45), new THREE.Vector3(0.4, 0.75, -1.45)],
-    rearTrack: 1.0,
-    rearZ: -0.95,
+    wheels: [],
+    // Boost fire out of the bristles.
+    exhausts: [new THREE.Vector3(-0.12, Y - 0.05, -2.0), new THREE.Vector3(0.12, Y - 0.05, -2.0)],
+    rearTrack: 0.5,
+    rearZ: -1.2,
     spinners: [],
-    shadow: [2.8, 3.6],
+    // The broom's shadow on the road under her: long and narrow.
+    shadow: [2.0, 3.8],
+    // No pads: the broom holds her up, bobbing.
+    hover: { bob: 0.1, pads: [] },
     head,
+    flappers,
     sweepers,
   };
 }
