@@ -123,8 +123,8 @@ describe('race', () => {
     const race = cpuRace('100cc');
     for (let t = 0; t < COUNTDOWN + 20; t += PHYSICS_DT) race.step(PHYSICS_DT, []);
     const k = race.karts[0];
-    const back = pointAt(track.spline, k.progressS - 300);
-    Object.assign(k.state, { x: back.x, z: back.z, heading: Math.atan2(back.tx, back.tz), trackHint: -1 });
+    const back = track.respawnPose(k.progressS - 300);
+    Object.assign(k.state, { x: back.x, y: back.y, groundY: back.y, z: back.z, heading: back.heading, vy: 0, grounded: true, trackHint: -1 });
     k.stuckTime = 2;
     let respawns = 0;
     for (let t = 0; t < 10; t += PHYSICS_DT) {

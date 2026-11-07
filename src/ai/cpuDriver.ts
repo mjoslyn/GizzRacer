@@ -345,7 +345,9 @@ function dodge(s: KartState, obstacles: readonly Obstacle[], lateral: number, pr
   const fz = Math.cos(s.heading);
   const span = 6 + Math.max(s.speed, 0) * 1.1;
   const speed = Math.max(s.speed, 5);
-  let best: { ahead: number; x: number; z: number; r: number; vx: number; vz: number } | null = null;
+  // The nearest obstacle ON the line: one just off it (the next row of pistons, say) mustn't hide one further on
+  // that is right on it (a mine dropped between them).
+  let best: { ahead: number; obsLat: number; clear: number; latVel: number } | null = null;
   for (const o of obstacles) {
     const ahead0 = (o.x - s.x) * fx + (o.z - s.z) * fz;
     if (ahead0 < -o.r || ahead0 > span) continue;
@@ -355,21 +357,21 @@ function dodge(s: KartState, obstacles: readonly Obstacle[], lateral: number, pr
     const x = o.x + o.vx * eta;
     const z = o.z + o.vz * eta;
     const ahead = (x - s.x) * fx + (z - s.z) * fz;
-    if (ahead < 1 || ahead > span) continue;
-    if (!best || ahead < best.ahead) best = { ahead, x, z, r: o.r, vx: o.vx, vz: o.vz };
+    if (ahead < 1 || ahead > span || (best && ahead >= best.ahead)) continue;
+    // Where it sits across the road, in the same terms as `lateral` (positive = right).
+    const a = pointAt(ribbon.spline, progress + ahead);
+    const tl = Math.hypot(a.tx, a.tz) || 1;
+    const obsLat = ((x - a.x) * -a.tz + (z - a.z) * a.tx) / tl;
+    const clear = o.r + 2.4;
+    if (Math.abs(lateral - obsLat) > clear) continue;
+    best = { ahead, obsLat, clear, latVel: (o.vx * -a.tz + o.vz * a.tx) / tl };
   }
   if (!best) return 0;
-  // Where the obstacle sits across the road, in the same terms as `lateral` (positive = right).
-  const a = pointAt(ribbon.spline, progress + best.ahead);
-  const tl = Math.hypot(a.tx, a.tz) || 1;
-  const obsLat = ((best.x - a.x) * -a.tz + (best.z - a.z) * a.tx) / tl;
-  const clear = best.r + 2.4;
+  const { obsLat, clear } = best;
   const gap = lateral - obsLat;
-  if (Math.abs(gap) > clear) return 0;
   const hw = ribbon.halfWidthAtS(progress + best.ahead);
   // Pass behind something crossing the road, else on the side we're already on.
-  const latVel = (best.vx * -a.tz + best.vz * a.tx) / tl;
-  let dir = Math.abs(latVel) > 1 ? -Math.sign(latVel) : gap >= 0 ? 1 : -1;
+  let dir = Math.abs(best.latVel) > 1 ? -Math.sign(best.latVel) : gap >= 0 ? 1 : -1;
   if (obsLat + dir * clear > hw - 1.5) dir = -1;
   else if (obsLat + dir * clear < -(hw - 1.5)) dir = 1;
   return (obsLat + dir * clear - lateral) * keen;
