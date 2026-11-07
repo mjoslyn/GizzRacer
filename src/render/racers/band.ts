@@ -1224,7 +1224,7 @@ export function joeyWalker(r: RacerDef): KartModel {
 // ---- Lukey: the 8x10 bass cab ----------------------------------------------------------
 
 // Lucas Harwood: bass, driving an 8x10 bass cabinet on wheels: eight speakers facing out behind,
-// an amp head on top glowing, and his bass standing up off the cab as a whip aerial.
+// an amp head on top glowing, and his bass in a stand against the cab's side, swaying.
 export function lucasHarwood(r: RacerDef): KartModel {
   const body = new THREE.Group();
   const tolex = phong(0x161616, { shine: 30 });
@@ -1279,13 +1279,15 @@ export function lucasHarwood(r: RacerDef): KartModel {
   rod(body, [-0.25, 2.07, -0.85], [0.25, 2.07, -0.85], 0.02, matte(0x111111));
   // A speaker cable from the head down into the cab.
   cable(body, [[-0.45, 1.85, -0.6], [-0.6, 1.6, -0.45], [-0.5, 1.4, -0.48]], 0.015, matte(0x111111), 10, 4);
-  // The bass guitar standing up off the head, a whip aerial swaying (the kart view beats it about z).
+  // The bass in a stand clamped to the cab's side, swaying as it drives (the kart view beats it about z).
   const bass = new THREE.Group();
-  bass.position.set(0.32, 2.06, -0.85);
+  bass.position.set(0.78, 0.58, -0.85);
+  put(body, box(0.16, 0.06, 0.3), chrome, [0.76, 0.58, -0.85]);
+  put(body, box(0.04, 0.5, 0.04), chrome, [0.73, 1.2, -0.85]);
   bass.userData.side = 1;
   const bassBody = new THREE.Group();
-  bassBody.rotation.z = -0.25;
-  bassBody.scale.setScalar(0.88);
+  bassBody.rotation.z = -0.08;
+  bassBody.scale.setScalar(0.85);
   bass.add(bassBody);
   const sunburst = phong(r.accent, { shine: 90, spec: 0x666666, env: 0.25 });
   put(bassBody, sph(0.18, 14, 8), sunburst, [0, 0.2, 0], [0, 0, 0], [1.0, 1.0, 0.3]);
