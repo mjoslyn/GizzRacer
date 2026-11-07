@@ -141,11 +141,22 @@ function load(): Progress {
       races: raw.races && typeof raw.races === 'object' ? raw.races : {},
       style: raw.style && typeof raw.style === 'object' ? raw.style : {},
       shortcuts: Array.isArray(raw.shortcuts) ? raw.shortcuts.filter((s): s is string => typeof s === 'string') : [],
-      bosses: Array.isArray(raw.bosses) ? raw.bosses.filter((s): s is string => typeof s === 'string') : [],
+      bosses: Array.isArray(raw.bosses) ? renamedBosses(raw.bosses.filter((s): s is string => typeof s === 'string')) : [],
     };
   } catch {
     return structuredClone(EMPTY_PROGRESS);
   }
+}
+
+/** Bosses replaced by new ones for the same suite: beating the old one keeps the new one unlocked. */
+export const RENAMED_BOSSES: Readonly<Record<string, string>> = {
+  'the-devil': 'rat-king',
+  'castle-king': 'fourth-colour',
+};
+
+/** Beaten bosses with the replaced ones under their new ids, once each. */
+export function renamedBosses(ids: string[]): string[] {
+  return [...new Set(ids.map((id) => RENAMED_BOSSES[id] ?? id))];
 }
 
 /** Trophies won on a retired cup, moved to the album cup that took its tracks, unless that one has its own. */

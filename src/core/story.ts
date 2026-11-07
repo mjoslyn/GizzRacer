@@ -139,8 +139,8 @@ export const BOSS_STAND_INS: Record<string, string> = {
   'altered-beast': 'gator-drummer',
   balrog: 'fuzz-golem',
   'munt-machine': 'cyborg-gourmand',
-  'castle-king': 'lizard-warlock',
-  'the-devil': 'skeleton-dragon',
+  'fourth-colour': 'lizard-warlock',
+  'rat-king': 'gila-rider',
   'coven-mother': 'swamp-witch',
 };
 /** The model when the player is driving the boss's own (or its stand-in). */

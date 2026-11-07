@@ -6,7 +6,7 @@ import { fuzzGolem, lordOfLightning, microtonalMonk, mushroomSage, swampWitch } 
 import { gatorDrummer, gilaRider, lizardWarlock, rattlesnake, skeletonDragon } from './racers/reptiles';
 import { glowTexture, skyEnvMap } from './textures';
 import { ambroseKennySmith, cookCraig, jasonGalea, joeyWalker, lucasHarwood, michaelCavanagh, stuMackenzie } from './racers/band';
-import { alteredBeast, balrog, castleKing, covenMother, mindVoice, muntMachine, peopleVulture, theDevil } from './racers/bosses';
+import { alteredBeast, balrog, covenMother, fourthColour, mindVoice, muntMachine, peopleVulture, ratKing } from './racers/bosses';
 
 /**
  * One original character and vehicle per racer. Not every one is a kart:
@@ -58,6 +58,9 @@ export interface KartModel {
    * axis in a gait that quickens with speed; `userData.side` is -1 or 1,
    * `userData.phase` the leg's place in the stride. `sway` turns with the
    * stride (a lizard's body snaking), `tail` against it. Built unrotated.
+   * A leg with `userData.gallop` hangs straight under its hip instead and
+   * swings fore and aft about its x axis, folding `userData.lower` (its lower
+   * leg) as it comes forward; a `sway` with `userData.bound` rocks nose to tail.
    */
   legs?: THREE.Object3D[];
   sway?: THREE.Object3D;
@@ -258,8 +261,8 @@ const BUILDERS: Record<string, (r: RacerDef) => KartModel> = {
   'altered-beast': alteredBeast,
   balrog,
   'munt-machine': muntMachine,
-  'castle-king': castleKing,
-  'the-devil': theDevil,
+  'fourth-colour': fourthColour,
+  'rat-king': ratKing,
   'coven-mother': covenMother,
 };
 
@@ -270,8 +273,8 @@ const BOSS_SCALE: Record<string, number> = {
   'altered-beast': 1.3,
   balrog: 0.9,
   'munt-machine': 1,
-  'castle-king': 0.8,
-  'the-devil': 1.15,
+  'fourth-colour': 1,
+  'rat-king': 1.15,
   'coven-mother': 0.95,
 };
 

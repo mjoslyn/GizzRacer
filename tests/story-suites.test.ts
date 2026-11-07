@@ -16,8 +16,8 @@ const CONTRACT: [string, string, string, string[]][] = [
   ['altered-beast', 'The Tale of the Altered Beast', 'altered-beast', ['C:A New World', 'R:Altered Beast I:altered-beast-i', 'R:Altered Beast II:altered-beast-ii', 'R:Altered Beast III:altered-beast-iii', 'B:Altered Beast IV:altered-beast-iv', 'C:Life / Death']],
   ['lord-of-lightning', 'The Lord of Lightning vs. Balrog', 'balrog', ['C:Some Context', 'C:The Reticent Raconteur', 'R:The Lord of Lightning', 'B:The Balrog', 'C:The Floating Fire', 'C:The Acrid Corpse']],
   ['han-tyumi', 'Han-Tyumi and the Murder of the Universe', 'munt-machine', ['C:Welcome to an Altered Future', 'R:Digital Black', 'R:Han-Tyumi, the Confused Cyborg', 'C:Soy-Protein Munt Machine', 'R:Vomit Coffin', 'B:Murder of the Universe']],
-  ['polygondwanaland', 'Polygondwanaland', 'castle-king', ['R:Crumbling Castle:crumbling-castle', 'R:Polygondwanaland', 'B:The Castle in the Air:castle-in-the-air']],
-  ['infest-the-rats-nest', "Infest the Rats' Nest", 'the-devil', ['R:Planet B:planet-b', 'R:Mars for the Rich:mars-for-the-rich', 'R:Organ Farmer', 'R:Self-Immolate', 'B:Hell:hell']],
+  ['polygondwanaland', 'Polygondwanaland', 'fourth-colour', ['R:Crumbling Castle:crumbling-castle', 'R:Polygondwanaland', 'B:The Castle in the Air:castle-in-the-air']],
+  ['infest-the-rats-nest', "Infest the Rats' Nest", 'rat-king', ['R:Planet B:planet-b', 'R:Mars for the Rich:mars-for-the-rich', 'R:Organ Farmer', 'R:Self-Immolate', 'B:Hell:hell']],
   ['petrodragonic-apocalypse', 'PetroDragonic Apocalypse', 'coven-mother', ['R:Motor Spirit:infinite-loop-speedway', 'R:Supercell:supercell', 'R:Converge', 'B:Witchcraft']],
 ];
 

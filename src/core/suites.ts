@@ -227,9 +227,9 @@ export const SUITES: readonly Suite[] = [
     album: 'Polygondwanaland',
     year: 2017,
     intro: 'Goodbye, kinsman: off to a land grand and never been seen by man, past the crumbling castle, down the river and up to the castle in the air.',
-    ending: 'You got there. The King of the Castle in the Air hands over the keys, and the clouds close behind you.',
+    ending: 'You got there. The Fourth Colour folds itself away into a colour you can almost name, and the clouds close behind you.',
     minutes: 15,
-    boss: { racerId: 'castle-king', name: 'The King of the Castle in the Air', taunt: 'He looks down from above the clouds. Race him round his castle, with nothing below but air.' },
+    boss: { racerId: 'fourth-colour', name: 'The Fourth Colour', taunt: 'Something waits at the castle in the air, a cube of a colour no eye has seen. Can you see the eye that sees you? Race it round the clouds, with nothing below but air.' },
     skill: 'castle',
     stages: [
       { kind: 'R', song: 'Crumbling Castle', trackId: 'crumbling-castle' },
@@ -243,9 +243,9 @@ export const SUITES: readonly Suite[] = [
     album: "Infest the Rats' Nest",
     year: 2019,
     intro: 'There is no Planet B. The rich have gone to Mars, the rest farm what is left, Venus burns, and at the bottom of it all is Hell.',
-    ending: 'The Devil is beaten in his own place. Up you climb, out of the rats’ nest, with him in the passenger seat.',
+    ending: 'The Rat King is beaten in its own nest. Up you climb, out of Hell, with the rats scattering behind you.',
     minutes: 23,
-    boss: { racerId: 'the-devil', name: 'The Devil', taunt: 'The Devil waits at the bottom. Beat him at his own game, on his own road.' },
+    boss: { racerId: 'rat-king', name: 'The Rat King', taunt: 'Satan points you to the rats’ nest, and the Rat King is at the bottom of it. Outrun it on its own road.' },
     skill: 'rattlesnake',
     stages: [
       { kind: 'R', song: 'Planet B', trackId: 'planet-b' },
