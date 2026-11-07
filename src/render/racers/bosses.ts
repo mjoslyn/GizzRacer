@@ -1380,10 +1380,6 @@ export function fourthColour(r: RacerDef): KartModel {
   const inner = edge(0.4, 0.22);
   const core = cycling(glow(r.accent), 0.3, 0.45, 1, 0.6);
   const facet = matte(0x1a1030, { shininess: 100, specular: 0x9a8aff });
-  const white = matte(0xf8f8ff, { shininess: 90 });
-  const black = matte(0x020204);
-  const iris = cycling(glow(r.accent), 0.15, 0.1, 1, 0.5);
-  const shine = glow(0xffffff);
 
   /** The twelve edges of a cube of half-edge `h` round `c`, glowing, each axis its own colour. */
   const frame = (parent: THREE.Object3D, c: V, h: number, rad: number, mats: THREE.Material[]) => {
@@ -1422,27 +1418,10 @@ export function fourthColour(r: RacerDef): KartModel {
   for (const x of [-H, H]) for (const y of [-H, H]) for (const z of [-H, H]) put(shell, sph(0.075, 8, 6), core, [x, y, z]);
   pane(shell, [0, 0, H], 1.5, 'z', edges[3]);
   pane(shell, [0, -H, 0], 1.5, 'y', edges[1]);
-  // Under it, a point of glass it hovers on, glowing at the tip.
-  put(shell, new THREE.ConeGeometry(H * Math.SQRT2, 0.6, 4).rotateY(Math.PI / 4).rotateX(Math.PI), facet, [0, -H - 0.3, 0]);
-  for (const [k, [x, z]] of [[-1, -1], [1, -1], [1, 1], [-1, 1]].entries()) rod(shell, [x * H, -H, z * H], [0, -H - 0.6, 0], 0.02, edges[k]);
-  put(shell, new THREE.OctahedronGeometry(0.09), core, [0, -H - 0.62, 0]);
-  // Shards of the shape broken off, hanging just off each corner.
-  for (const x of [-1, 1]) for (const y of [-1, 1]) for (const z of [-1, 1]) {
-    put(shell, box(0.16, 0.16, 0.16), facet, [x * (H + 0.24), y * (H + 0.2), z * (H + 0.24)], [x * 0.5, y * 0.7, z * 0.3]);
-    put(shell, new THREE.OctahedronGeometry(0.05), edges[(x + 1 + (y + 1) / 2) % 4], [x * (H + 0.34), y * (H + 0.3), z * (H + 0.34)]);
-  }
-
-  // The side faces: hinged at the top, they swing open and shut like wings beating.
-  const flappers: THREE.Object3D[] = [];
+  // Just a cube: no stand under it, nothing hanging off it. The side faces are panes like the front, a nest of squares one in another.
   for (const side of [-1, 1]) {
-    const flap = new THREE.Group();
-    flap.position.set(C[0] + side * (H + 0.03), C[1] + H, C[2]);
-    flap.userData.side = side;
-    pane(flap, [0, -H, 0], 1.5, 'x', edges[side < 0 ? 0 : 2]);
-    // Facets on it, a nest of squares one in another.
-    pane(flap, [side * 0.03, -H, 0], 0.9, 'x', edges[1]);
-    body.add(flap);
-    flappers.push(flap);
+    pane(shell, [side * (H + 0.01), 0, 0], 1.5, 'x', edges[side < 0 ? 0 : 2]);
+    pane(shell, [side * (H + 0.03), 0, 0], 0.9, 'x', edges[1]);
   }
   // The lid: two halves sliding apart and back.
   for (const side of [-1, 1]) {
@@ -1504,19 +1483,9 @@ export function fourthColour(r: RacerDef): KartModel {
     g.rotation.y = t * 0.8;
   }));
 
-  // The eye on its front, that sees you: lidless, the iris running through every colour and the fourth.
+  // No face: the kart view's head part is an empty mark at the cube's middle.
   const head = new THREE.Group();
-  head.position.set(C[0], C[1], C[2] + H + 0.03);
-  put(head, sph(0.32, 20, 14), white, [0, 0, 0], [0, 0, 0], [1, 1, 0.42]);
-  put(head, can(0.19, 0.19, 0.02, 24), iris, [0, 0, 0.13], [Math.PI / 2, 0, 0]);
-  put(head, can(0.09, 0.09, 0.025, 20), black, [0, 0, 0.135], [Math.PI / 2, 0, 0]);
-  put(head, sph(0.03, 6, 4), shine, [0.06, 0.06, 0.15]);
-  put(head, hoop(0.33, 0.035, TAU, 24), facet, [0, 0, 0.02]);
-  for (let k = 0; k < 4; k++) {
-    const a = Math.PI / 4 + (k * Math.PI) / 2;
-    prong(head, [Math.cos(a) * 0.36, Math.sin(a) * 0.36, 0.02], [Math.cos(a) * 0.5, Math.sin(a) * 0.5, 0.02], 0.04, edges[k], 4);
-  }
-  glowSprite(head, [0, 0, 0.16], 0.6, r.accent);
+  head.position.set(...C);
   body.add(head);
 
   const pads = [glowSprite(body, [0, 0.45, 0], 2.0, r.accent), glowSprite(body, [0, 0.3, 0], 1.1, 0xff4af0)];
@@ -1532,7 +1501,7 @@ export function fourthColour(r: RacerDef): KartModel {
     shadow: [2.8, 2.8],
     hover: { bob: 0.14, pads },
     head,
-    flappers,
+    flappers: [],
     sweepers,
   };
 }
