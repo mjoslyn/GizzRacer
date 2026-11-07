@@ -1855,6 +1855,7 @@ function unlockBoss(racerId: string): boolean {
 /** Scores the stage just played and shows what comes of it: a boon to take, or straight on when there's none (a card read). */
 function storyResult(passed: boolean, note = ''): void {
   const out = story!.record(passed);
+  if (out === 'failed' && story instanceof SuiteRun) restartSuiteSong = true;
   if (out === 'next') return storyNext();
   showStory(out === 'cleared' ? 'boon' : out, note);
   // A suite goes straight on into the next song while the boon is picked: a race or a duel next starts with it playing, and runs on what's left of it.
@@ -1891,9 +1892,9 @@ function storyNext(): void {
         return showStory('card');
       }
       storyPhase = 'card';
+      // Its song may have come on already (over the stage before's results and boon): the game runs on what's left, ending with it; a retry starts it over.
+      const heard = restartSuiteSong ? null : cardSongProgress(song);
       suiteStageMusic(null);
-      // Its song may have come on already (over the stage before's results and boon): the game runs on what's left, ending with it.
-      const heard = cardSongProgress(song);
       const length = heard != null ? Math.max(CARD_GAME_LEFT_MIN, plan.length * (1 - heard)) : plan.length;
       startSkillScreen(game, r.seed, r.level ?? r.act, { lines: r.words ?? [], song: () => cardSongProgress(song), length });
     });
@@ -2547,6 +2548,12 @@ function suiteStageMusic(fallback: (() => void) | null, songOf: string | null = 
       liveRace = !!forRace;
       // A plain lyric card's own song: the card moves on when it ends.
       if (!forRace) cardClock?.song(`${rec!.id}/${rec!.file}`, rec!.end);
+      // A retry after a life lost starts its song again from the top.
+      if (restartSuiteSong) {
+        restartSuiteSong = false;
+        radio.stop();
+        music.stop();
+      }
       return radio.playRecording(rec!, song, remixCues(forRace ? track.def.music.lap : 'title'));
     }
     if (plan === 'hold') {
@@ -2558,6 +2565,9 @@ function suiteStageMusic(fallback: (() => void) | null, songOf: string | null = 
     fallback?.();
   });
 }
+
+/** A life was lost on a suite's stage: its retry starts the song over (the one playing carries on over the card till then). */
+let restartSuiteSong = false;
 
 /** Bumped by every suite stage's music request, so a late answer is dropped. */
 let suiteMusicTicket = 0;
