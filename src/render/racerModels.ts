@@ -273,6 +273,7 @@ const BOSS_SCALE: Record<string, number> = {
   'castle-king': 0.8,
   'the-devil': 1.15,
   'coven-mother': 0.95,
+  'cyborg-gourmand': 1.1,
 };
 
 export function buildKartModel(racer: RacerDef): KartModel {

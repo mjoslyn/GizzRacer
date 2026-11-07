@@ -278,7 +278,7 @@ export const SUITES: readonly Suite[] = [
 export const ALBUM_STORY = 'motu';
 /** About how long the album run takes: three chapters of two races, a skill game and a boss. */
 export const ALBUM_MINUTES = 35;
-/** The album run's face on the pick of stories. */
+/** The album run's face on the pick of stories: Han-Tyumi, its last boss (a silhouette till beaten). */
 export const ALBUM_FACE = 'cyborg-gourmand';
 
 export function suiteById(id: string): Suite | undefined {

@@ -19,7 +19,7 @@ function letteringTexture(text: string, color: string, w = 256, h = 64, font = '
   });
 }
 
-// ---- Han-Tyumi: the Fishing for Fishies robot in a clinker dinghy on wheels -----
+// ---- Han-Tyumi: the Fishing for Fishies robot in a leaky clinker dinghy, floating over the road ----
 
 /** A fish crate's end: pale slats stencilled FISH FO FISH, as on the Fishing for Fishies crate. */
 function crateTexture(): THREE.CanvasTexture {
@@ -174,13 +174,35 @@ export function cyborgGourmand(r: RacerDef): KartModel {
   put(body, ball(0.04, 8, 6), matte(0xf4a0c0), [strakes[1].hw + 0.06, strakes[1].y, 0.1]);
   for (let k = 0; k < 3; k++) put(body, cone(0.025, 0.22, 5), matte(0x3a7a2a), [-0.02 + k * 0.02, 0.5, 1.22 + k * 0.04], [Math.PI, 0, 0.2 - k * 0.2]);
 
-  // Stub axles out to the wheels, red mudguards over them.
+  // No wheels: she floats a hand over the road, a keel along her bottom, the sea she left still running off her.
+  put(body, box(0.08, 0.08, 2.1), rail, [0, 0.33, -0.15]);
+  rod(body, [0, 0.31, 0.9], [0, 0.4, 1.18], 0.04, rail);
+  const water = M.haze(0x8ad8ff, 0.75);
+  const spray = M.haze(0xd8f4ff, 0.45);
+  // Drips off the bottom boards and the keel, each a bead on the wood and a drop or two falling under it.
+  for (const [x, z, n] of [[0.3, 0.2, 2], [-0.28, -0.5, 3], [0.18, -0.9, 2], [-0.12, 0.55, 1], [0, -0.2, 2], [0.32, -0.6, 1]] as const) {
+    put(body, ball(0.024, 6, 5), water, [x, 0.325, z], [0, 0, 0], [1, 1.5, 1]);
+    for (let k = 0; k < n; k++) put(body, ball(0.018, 6, 5), water, [x, 0.24 - k * 0.09, z], [0, 0, 0], [1, 1.7, 1]);
+  }
+  // Sheets of spray off her chines either side, and a faint glimmer of water on the road where she drips.
   for (const side of [-1, 1]) {
-    for (const z of [0.85, -0.85]) {
-      rod(body, [side * (z > 0 ? 0.2 : 0.38), 0.36, z], [side * 0.86, 0.36, z], 0.04, steel);
-      put(body, ring(0.42, 0.035, Math.PI), gloss(r.accent), [side * 0.9, 0.36, z], [0, Math.PI / 2, 0]);
+    for (let k = 0; k < 4; k++) {
+      const z = 0.3 - k * 0.38;
+      put(body, ball(0.07 - k * 0.008, 8, 6), spray, [side * (0.58 + k * 0.04), 0.3 - k * 0.04, z], [0, 0, 0], [1.6, 0.5, 1]);
+      put(body, ball(0.016, 5, 4), water, [side * (0.7 + k * 0.05), 0.4 - k * 0.03, z - 0.12]);
     }
   }
+  const pads = [
+    [0, 0.06, -0.3, 2.4, 0x6ac8ff],
+    [0, 0.12, 0.6, 1.1, 0xbfefff],
+    [0, 0.12, -1.0, 1.1, 0xbfefff],
+  ].map(([x, y, z, size, color]) => {
+    const pad = new THREE.Group();
+    pad.position.set(x, y, z);
+    glowSprite(pad, [0, 0, 0], size, color);
+    body.add(pad);
+    return pad;
+  });
   // The cast: a bobber where the line ends.
   put(body, ball(0.05, 10, 8), gloss(0xd8302a), [0.8, 2.08, -1.15]);
   put(body, ball(0.05, 10, 8), gloss(0xffffff), [0.8, 2.12, -1.15], [0, 0, 0], [1, 0.4, 1]);
@@ -255,7 +277,6 @@ export function cyborgGourmand(r: RacerDef): KartModel {
   put(body, box(0.05, 0.16, 0.3), patch, [-(strakes[1].hw + 0.04), strakes[1].y, -0.55], [0, 0, FLARE]);
   rivets(body, M.matte(0x3a3a3a), [-(strakes[1].hw + 0.07), strakes[1].y + 0.06, -0.68], [-(strakes[1].hw + 0.07), strakes[1].y + 0.06, -0.42], 4, 0.012);
   rivets(body, M.matte(0x3a3a3a), [-(strakes[1].hw + 0.03), strakes[1].y - 0.06, -0.68], [-(strakes[1].hw + 0.03), strakes[1].y - 0.06, -0.42], 4, 0.012);
-  const water = M.haze(0x8ad8ff, 0.75);
   for (const [z, up] of [[-0.25, 0.1], [0.2, 0.05]] as const) {
     const pts: V3[] = Array.from({ length: 5 }, (_, k) => [-(strakes[1].hw + 0.05) - k * 0.07, strakes[1].y + up * k - 0.025 * k * k, z - k * 0.04]);
     tube(body, pts, 0.014, water, 0.006, 5);
@@ -286,17 +307,15 @@ export function cyborgGourmand(r: RacerDef): KartModel {
 
   return {
     body,
-    wheels: [0.9, -0.9].flatMap((x) => [
-      { x, z: 0.85, radius: 0.36, width: 0.28, front: true },
-      { x, z: -0.85, radius: 0.36, width: 0.28, front: false },
-    ]),
+    wheels: [],
     // The outboard's propeller hub is the exhaust.
     exhausts: [new THREE.Vector3(0, 0.3, -1.66)],
-    rearTrack: 0.9,
-    rearZ: -0.9,
+    rearTrack: 0.7,
+    rearZ: -1.1,
     spinners: [prop, reel],
     flappers: [fish],
-    shadow: [2.3, 3.3],
+    shadow: [2.0, 3.4],
+    hover: { bob: 0.08, pads },
     head,
   };
 }
