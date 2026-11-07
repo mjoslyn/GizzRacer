@@ -2237,7 +2237,7 @@ const BOSS_SCALE: Record<string, number> = {
   'mind-voice': 1.25,
   'people-vulture': 1.15,
   'altered-beast': 1.3,
-  balrog: 1.15,
+  balrog: 0.9,
   'munt-machine': 1,
   'castle-king': 0.8,
   'the-devil': 1.15,
