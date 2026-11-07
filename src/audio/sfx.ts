@@ -265,10 +265,13 @@ export class Sfx implements SfxVoice {
     }
   }
 
-  /** Kart on kart: a thud with a clank of metal. */
+  /** Kart on kart: a thud with a clank of metal, the thud deeper and longer the harder they met, and a scrape on a hard one. */
   bump(intensity: number): void {
-    this.hit(0.12, 320, 0.2 + intensity * 0.3);
-    this.tone(1900 + Math.random() * 400, 0.07, 'square', 0.03 + intensity * 0.04, 900);
+    const k = Math.min(1, Math.max(0, intensity));
+    this.hit(0.12 + k * 0.08, 320 - k * 120, 0.2 + k * 0.3);
+    this.tone(110 + k * 30, 0.1 + k * 0.12, 'sine', 0.06 + k * 0.14, 42);
+    this.tone(1900 + Math.random() * 400, 0.07, 'square', 0.03 + k * 0.04, 900);
+    if (k > 0.55) this.whoosh(0.18, 3600, 1400, 0.08 * k);
   }
 
   /** Drove through an item box: glass breaking and a sparkle; a double box sparkles twice. */
@@ -596,6 +599,29 @@ export class Sfx implements SfxVoice {
       [1047, 831, 659, 523].forEach((f, k) => this.tone(f, 0.6, 'sine', 0.05 - k * 0.008, undefined, 0.15 + k * 0.28));
       this.whoosh(0.9, 900, 200, 0.08);
     }
+    // The items each land with their own sound under the hurt: the wasp's crunch and buzz, the banana's squelch bent out of tune,
+    // the fusion's zap, the Nonagon Infinity's boom, the beam's sear, a ram's thud, the flute's trill, the wail's shove.
+    if (by === 'riffMissile') {
+      this.hit(0.25, 900, 0.5);
+      this.tone(220, 0.3, 'sawtooth', 0.06, 110, 0, true);
+    }
+    if (by === 'microtonalMine') {
+      this.whoosh(0.25, 700, 200, 0.2);
+      this.tone(620, 0.4, 'triangle', 0.08, 560);
+      this.tone(640, 0.4, 'triangle', 0.06, 548);
+    }
+    if (by === 'feedbackWave') this.tone(1600, 0.4, 'sine', 0.1, 200);
+    if (by === 'gizzardWave') {
+      this.hit(0.6, 90, 0.8);
+      this.whoosh(0.6, 2400, 300, 0.25);
+    }
+    if (by === 'keytarLaser') this.tone(3000, 0.25, 'sawtooth', 0.06, 600);
+    if (by === 'wooCannon' || by === 'drumRoll') {
+      this.hit(0.35, 140, 0.7);
+      this.tone(80, 0.3, 'sine', 0.14, 40);
+    }
+    if (by === 'fluteFlurry') [1760, 1865, 1760, 1865].forEach((f, i) => this.tone(f, 0.06, 'sine', 0.05, undefined, i * 0.05));
+    if (by === 'harmonicaWail') this.whoosh(0.35, 900, 2200, 0.2);
     // A kit hazard's own sound (kits/kit.ts).
     KIT_HAZARDS.get(by)?.sound(this);
     // A wave breaking over you: a crash of white noise; a glider comes in with a whistle of wind.

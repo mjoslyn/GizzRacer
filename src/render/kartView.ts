@@ -6,14 +6,23 @@ import type { RacerDef } from '../physics/racers';
 import { buildGlider, buildKartModel, buildWooCannon, type GliderModel, type WooCannonModel } from './racerModels';
 import { NonagonGate } from './nonagonGate';
 import { blobShadowTexture, glowTexture } from './textures';
+import type { ItemKind } from '../items/items';
+import type { HazardKind } from '../items/hazards';
+import { FxSystem } from './fx/fxSystem';
+import { TILE } from './fx/particles';
+import { ring } from './fx/envelopes';
+import { ITEM_COLOR, cannonBlast, contact, debris, dustRing, embers, flash, shockRing, smoke, sparks } from './fx/effects';
 
 const SPARK_COLORS = [0xfff2a8, 0x3fa9ff, 0xff8a1f, 0xc04bff, 0xffffff];
 /** The most the drawn nose may point off the direction of travel (rad): sideways enough to read as a drift, never a right angle. */
 const NOSE_MAX = 0.6;
-const SPARK_POOL = 48;
 const SPARK_LIFE = 0.28;
-const DUST_POOL = 28;
 const DUST_LIFE = 0.75;
+/** How long a hit's whip, tumble and hop take to ring out, and the dizzy swirl outlasts the spin. */
+const REACT_TIME = 1.2;
+const DIZZY_AFTER = 0.5;
+/** Seconds after `used` or `struck` that a boost or a spin-out still counts as theirs. */
+const CAUSE_TIME = 0.4;
 const HIT_TIME = 0.35;
 const TRICK_TIME = 0.55;
 /** Below this height a kart has gone over the edge: it dissolves until the gate brings it back. */
@@ -108,12 +117,6 @@ let sharedGlow: THREE.Texture | null = null;
 let silhouetteMat: THREE.MeshBasicMaterial | null = null;
 let sharedShadow: THREE.Texture | null = null;
 
-interface Spark {
-  sprite: THREE.Sprite;
-  vel: THREE.Vector3;
-  life: number;
-}
-
 /**
  * A racer's own kart and character, with body roll, landing bounce,
  * particle sparks, boost flames and a blob shadow; a jolt on collisions,
@@ -153,9 +156,17 @@ export class KartView {
   /** Where in its stride a runner is (radians). */
   private gait = 0;
   private readonly sweepers: THREE.Object3D[];
-  private readonly sparks: Spark[] = [];
-  private readonly dust: Spark[] = [];
-  private dustCursor = 0;
+  /**
+   * The race's particles, shared by every kart (set by the game before the
+   * karts are built); a kart shown on its own (the gallery, the podium)
+   * keeps its own, drawn in `fx`.
+   */
+  static effects: FxSystem | null = null;
+  private readonly particles: FxSystem;
+  private readonly ownParticles: boolean;
+  private readonly exhausts: THREE.Vector3[];
+  /** The driver's head height over the road (m), for what circles it. */
+  private readonly headY: number;
   private dustAccum = 0;
   private readonly flames: { cone: THREE.Mesh; glow: THREE.Sprite }[] = [];
   private readonly shadow: THREE.Mesh;
@@ -170,7 +181,6 @@ export class KartView {
   private bounceVel = 0;
   private lastSpeed = 0;
   private wheelTravel = 0;
-  private sparkCursor = 0;
   private sparkAccum = 0;
   private readonly tmp = new THREE.Vector3();
   /** Collision jolt: time left and how hard, and which way it came from (world). */
@@ -203,6 +213,38 @@ export class KartView {
   private markAccum = 0;
   private readonly m4 = new THREE.Matrix4();
   private readonly q = new THREE.Quaternion();
+  private readonly unit = new THREE.Vector3();
+
+  /** Last frame's state, to see a hit, a wobble, a slow, a boost or a drift tier arrive. */
+  private prevSpin = 0;
+  private prevWobble = 0;
+  private prevSlow = 0;
+  private prevBoost = 0;
+  private prevTier = 0;
+  /** Seconds since the last spin-out began (REACT_TIME and over: none), and which way it whips. */
+  private react = REACT_TIME;
+  private reactDir = 1;
+  /** Seconds since robbed, and since an item was used (for the pose it strikes). */
+  private robbedAge = REACT_TIME;
+  private useAge = REACT_TIME;
+  private useKind: ItemKind | null = null;
+  /** What last hit this kart and when (the race says, `struck`): it colours the spin-out and what circles the head. */
+  private cause: ItemKind | HazardKind | null = null;
+  private causeAt = -1;
+  private now = 0;
+  /** What the current boost is from, coloured to match: an item's, a drift's tier, a pad's. */
+  private boostColor = 0xffa040;
+  private boostFrom: ItemKind | null = null;
+  /** Squash and stretch: a spring of its own (+ squashed flat, - stretched long). */
+  private squash = 0;
+  private squashVel = 0;
+  /** Horology's shrink, eased in and out. */
+  private shrink = 1;
+  /** A tumble while thrown up spinning (rad), unwound on landing. */
+  private tumble = 0;
+  private flameAccum = 0;
+  private lineAccum = 0;
+  private trailAccum = 0;
 
   constructor(racer: RacerDef) {
     sharedGlow ??= glowTexture();
@@ -225,6 +267,16 @@ export class KartView {
     this.sweepers = model.sweepers ?? [];
     this.rearTrack = model.rearTrack;
     this.rearZ = model.rearZ;
+    this.exhausts = model.exhausts.slice(0, 2);
+    this.ownParticles = !KartView.effects;
+    this.particles = KartView.effects ?? new FxSystem();
+    if (this.ownParticles) this.fx.add(this.particles.group);
+    let headY = 1.6;
+    if (this.head) {
+      model.body.updateMatrixWorld(true);
+      headY = this.head.getWorldPosition(new THREE.Vector3()).y + 0.45;
+    }
+    this.headY = headY;
 
     const rubber = new THREE.MeshPhongMaterial({ color: 0x1c1c1c, shininess: 12, specular: 0x222222 });
     const hubMat = new THREE.MeshPhongMaterial({ color: 0xcfd6e0, shininess: 120, specular: 0xffffff });
@@ -294,18 +346,6 @@ export class KartView {
     }
     this.fx.add(this.marks);
 
-    for (let k = 0; k < SPARK_POOL; k++) {
-      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: sharedGlow, color: SPARK_COLORS[0], blending: THREE.AdditiveBlending, depthWrite: false }));
-      sprite.visible = false;
-      this.fx.add(sprite);
-      this.sparks.push({ sprite, vel: new THREE.Vector3(), life: 0 });
-    }
-    for (let k = 0; k < DUST_POOL; k++) {
-      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: sharedGlow, color: dustColor, transparent: true, depthWrite: false }));
-      sprite.visible = false;
-      this.fx.add(sprite);
-      this.dust.push({ sprite, vel: new THREE.Vector3(), life: 0 });
-    }
   }
 
   /** The racer as a flat black shape, its glows out: a story boss not yet beaten, in the gallery. Off puts its own materials back. */
@@ -326,10 +366,18 @@ export class KartView {
     });
   }
 
-  /** Kick the suspension, e.g. on landing; a hard one throws up dust. */
+  /** Kick the suspension, e.g. on landing: it squashes into the road, and a hard one throws up a ring of dust (and a scrape of sparks on the hardest). */
   impact(strength: number): void {
-    this.bounceVel -= clamp(strength, 0, 12) * 0.6;
-    for (let i = 0; i < Math.min(10, strength); i++) this.emitDust(0, (Math.random() - 0.5) * 7, 1 + Math.random() * 2);
+    const k = clamp(strength, 0, 12);
+    this.bounceVel -= k * 0.6;
+    this.squashVel += k * 0.35;
+    const p = this.root.position;
+    const ground = p.y;
+    dustRing(this.particles, p.x, ground, p.z, Math.min(14, 3 + k), dustColor, 2 + k * 0.5, 0.7 + k * 0.05);
+    if (k > 7) {
+      shockRing(this.particles, p.x, ground, p.z, 2 + k * 0.15, 0xfff4e0, 0.3);
+      sparks(this.particles, p.x, ground + 0.2, p.z, 8, 0xffc040, 5, ground);
+    }
   }
 
   /**
@@ -344,8 +392,97 @@ export class KartView {
     // Which side, in the kart's frame: +1 right, -1 left, 0 dead ahead.
     const right = dirX * -Math.cos(yaw) + dirZ * Math.sin(yaw);
     this.hitSide = Math.abs(right) > 0.3 ? Math.sign(right) : 0;
-    const n = Math.round(4 + strength * 8);
-    for (let i = 0; i < n; i++) this.emitHitSpark(dirX, dirZ);
+    // A knock: the kart squashes on the struck side and the paint chips fly.
+    this.squashVel += Math.min(1.5, strength) * 1.6;
+    const len = Math.hypot(dirX, dirZ);
+    const p = this.root.position;
+    if (len > 0) {
+      const nx = dirX / len;
+      const nz = dirZ / len;
+      // Each kart of a pair draws half the sparks at the point they met.
+      contact(this.particles, p.x + nx * 1.1, p.y + 0.55, p.z + nz * 1.1, p.y, strength * 0.7, this.racer.color, nx, nz);
+    } else {
+      // A wall knock: sparks off the nose.
+      const n = Math.round(4 + strength * 8);
+      for (let i = 0; i < n; i++) this.emitHitSpark(0, 0);
+    }
+  }
+
+  /** The race says what hit this kart (an item or a hazard): the spin-out, wobble or slow it sets off is drawn in its colour. */
+  struck(by: ItemKind | HazardKind): void {
+    this.cause = by;
+    this.causeAt = this.now;
+  }
+
+  /** This kart used `item`: the pose it strikes as it goes, and the boost it gives drawn in its colour. */
+  used(item: ItemKind): void {
+    this.useKind = item;
+    this.useAge = 0;
+    this.boostFrom = item;
+    const fx = this.particles;
+    const p = this.root.position;
+    const yaw = this.root.rotation.y;
+    const fx_ = Math.sin(yaw);
+    const fz = Math.cos(yaw);
+    const c = ITEM_COLOR[item];
+    switch (item) {
+      case 'fuzzPedal':
+        // Stomped on: a ring of fuzz and a crackle.
+        shockRing(fx, p.x, p.y, p.z, 3.2, c, 0.35);
+        sparks(fx, p.x, p.y + 0.6, p.z, 12, c, 5, p.y, 0, 0, 0xffd0ff);
+        break;
+      case 'drippingTap': {
+        // The tap turned on: a splash of water off the back.
+        const n = fx.n(12);
+        for (let i = 0; i < n; i++) {
+          const a = Math.random() * Math.PI * 2;
+          fx.alpha.spawn(TILE.drop).at(p.x - fx_ * 1.2, p.y + 1, p.z - fz * 1.2).vel(Math.cos(a) * 3 - fx_ * 2, 3 + Math.random() * 3, Math.sin(a) * 3 - fz * 2).life(0.8).size(0.3).color(0x9ad8ff, 0x60a8ff, 0.85).physics(16).floor(p.y + 0.05, 0).fade(0, 0.5);
+        }
+        shockRing(fx, p.x, p.y, p.z, 2.6, c, 0.35);
+        break;
+      }
+      case 'tempoShift':
+        // A clock face thrown out over the field, hands going backwards.
+        fx.add.spawn(TILE.clock).at(p.x, p.y + 0.2, p.z).life(0.8).size(2, 7).color(0xffffff, c, 0.9).spin(0, -6).flat().fade(0, 0.3);
+        shockRing(fx, p.x, p.y, p.z, 10, c, 0.6);
+        flash(fx, p.x, p.y + 1.2, p.z, 3, c, 0.25);
+        break;
+      case 'wooCannon':
+        cannonBlast(fx, p.x, p.y, p.z, p.y, yaw);
+        break;
+      case 'bassDrop':
+        // The whole rig drops on the beat.
+        this.squashVel += 4;
+        this.bounceVel -= 4;
+        break;
+      case 'drumRoll':
+        this.bounceVel += 3;
+        break;
+      case 'gizzardWave':
+        flash(fx, p.x, p.y + 1, p.z, 3.5, c, 0.3);
+        shockRing(fx, p.x, p.y, p.z, 4, c, 0.4);
+        break;
+      case 'feedbackWave':
+        this.squashVel += 2.5;
+        break;
+    }
+  }
+
+  /** Robbed of the item in hand: it flies up out of the kart and away into the dark, and the driver's head whips round after it. */
+  robbed(item: ItemKind | null): void {
+    const fx = this.particles;
+    const p = this.root.position;
+    const c = item ? ITEM_COLOR[item] : 0xffe060;
+    const side = Math.random() < 0.5 ? -1 : 1;
+    const yaw = this.root.rotation.y;
+    const vx = Math.cos(yaw) * side * 5 - Math.sin(yaw) * 3;
+    const vz = -Math.sin(yaw) * side * 5 - Math.cos(yaw) * 3;
+    fx.add.spawn(TILE.glow).at(p.x, p.y + this.headY, p.z).vel(vx, 9, vz).life(1.1).size(1.3, -0.3).color(0xffffff, c).physics(12);
+    fx.add.spawn(TILE.star).at(p.x, p.y + this.headY, p.z).vel(vx, 9, vz).life(1.1).size(0.9, -0.4).color(c).physics(12).spin(0, side * 9);
+    embers(fx, TILE.star, p.x, p.y + this.headY, p.z, 6, 0xffe060, c, 0.5, 0.35, 0.7);
+    smoke(fx, p.x, p.y + 0.6, p.z, 3, 0xd8c8a8, 1, 1, 1.5, 0.7, 0.5);
+    this.robbedAge = 0;
+    this.reactDir = side;
   }
 
   /** Back on the road after a fall: the gate opens just behind the kart and it grows out of it. */
@@ -398,11 +535,15 @@ export class KartView {
 
   /** `s` is an interpolated render snapshot; `frameDt` is real time since the last frame; `fell` is the race's call that it's gone over an edge. */
   update(s: KartState, topSpeed: number, frameDt: number, time: number, fell = false): void {
+    this.now = time;
+    if (this.ownParticles) this.particles.begin(frameDt);
     this.root.position.set(s.x, s.y, s.z);
     this.updateSkid(s, topSpeed, frameDt, time);
     this.root.rotation.y = s.heading - this.noseYaw + s.spinAngle;
-    // Horology shrinks you a little while it lasts.
-    this.body.scale.setScalar(s.slowTime > 0 ? 0.8 : 1);
+    // Horology shrinks you a little while it lasts; squash and stretch on top.
+    this.shrink += ((s.slowTime > 0 ? 0.8 : 1) - this.shrink) * damp(10, frameDt);
+    const sq = clamp(this.squash, -0.3, 0.35);
+    this.body.scale.set(this.shrink * (1 + sq * 0.5), this.shrink * (1 - sq), this.shrink * (1 + sq * 0.5));
     this.updatePresence(fell, frameDt, time);
     this.animateCannon(s, frameDt, time);
     this.animateGlider(s, frameDt, time);
@@ -422,6 +563,8 @@ export class KartView {
       const h = Math.min(left, 1 / 120);
       this.bounceVel += (-120 * this.bounce - 10 * this.bounceVel) * h;
       this.bounce += this.bounceVel * h;
+      this.squashVel += (-260 * this.squash - 13 * this.squashVel) * h;
+      this.squash += this.squashVel * h;
     }
     // Flyers float over rough ground; they bank harder instead.
     const rumble = !this.hover && s.surface === 'offroad' && s.grounded && Math.abs(s.speed) > 2 ? Math.sin(time * 55) * 0.03 : 0;
@@ -435,6 +578,7 @@ export class KartView {
     this.body.rotation.z += -this.skidYaw * 0.35;
     this.animateHit(frameDt, time);
     this.animateTrick(s, frameDt);
+    this.animateReactions(s, frameDt, time);
 
     this.wheelTravel += s.speed * frameDt;
     for (const w of this.wheels) w.mesh.rotation.x = this.wheelTravel / w.radius;
@@ -454,6 +598,7 @@ export class KartView {
     if (this.head) {
       // Lean into the turn and look along it; tucked back under boost.
       this.head.rotation.set(s.boostTime > 0 ? -0.18 : 0, -s.steer * 0.35 - s.driftDir * 0.15, this.roll * 1.6);
+      this.animateHead(s, time);
     }
 
     // The flames point back at the camera: they stand down while a trick plays, so it can be seen, and burn small in the air.
@@ -478,6 +623,215 @@ export class KartView {
 
     this.updateSparks(s, frameDt);
     this.updateDust(s, speedRatio, frameDt);
+    this.updateBoostFx(s, frameDt);
+    this.updateMarks(s, time);
+    this.prevSpin = s.spinTime;
+    this.prevWobble = s.wobbleTime;
+    this.prevSlow = s.slowTime;
+    this.prevBoost = s.boostTime;
+    if (this.ownParticles) this.particles.end();
+  }
+
+  /**
+   * A hit arriving: a spin-out (a flash in what hit it, a puff, chips of
+   * paint, stars), a wobble, a slow. The body tumbles and hops, the driver's
+   * head whips (animateHead), and it squashes; thrown into the air
+   * spinning, it tumbles end over end until it lands.
+   */
+  private animateReactions(s: KartState, dt: number, time: number): void {
+    const fx = this.particles;
+    const p = this.root.position;
+    const recent = this.cause && time - this.causeAt < CAUSE_TIME ? this.cause : null;
+    const color = recent && recent in ITEM_COLOR ? ITEM_COLOR[recent as ItemKind] : 0xffffff;
+    if (s.spinTime > 0 && this.prevSpin === 0) {
+      this.react = 0;
+      this.reactDir = Math.random() < 0.5 ? -1 : 1;
+      this.squashVel += 3;
+      this.bounceVel += 3.5;
+      flash(fx, p.x, p.y + 0.9, p.z, 3.4, color, 0.22);
+      dustRing(fx, p.x, s.groundY, p.z, 7, 0xe8e0d8, 4, 0.9);
+      debris(fx, TILE.chunk, p.x, p.y + 0.8, p.z, 4, this.racer.color, 4, s.groundY, 0.16, this.racer.accent);
+      for (let i = 0; i < 8; i++) this.emitStar(0.8);
+    }
+    if (s.wobbleTime > 0 && this.prevWobble === 0) {
+      smoke(fx, p.x, p.y + this.headY, p.z, 2, color === 0xffffff ? 0xfff0c0 : color, 0.7, 0.8, 0.8, 0.5, 0.5);
+      this.squashVel += 1.5;
+    }
+    if (s.slowTime > this.prevSlow + 0.05) {
+      flash(fx, p.x, p.y + 1, p.z, 2.6, recent === 'bassDrop' ? 0x9a40ff : recent === 'patchCable' ? 0xc0d0ff : 0xffd890, 0.25);
+      this.squashVel += recent === 'bassDrop' ? 4 : 1.5;
+    }
+    this.react = Math.min(REACT_TIME, this.react + dt);
+    this.robbedAge = Math.min(REACT_TIME, this.robbedAge + dt);
+    this.useAge = Math.min(REACT_TIME, this.useAge + dt);
+    if (this.react < REACT_TIME) {
+      // Knocked sideways and back: a roll that rings out, a nod, a little hop.
+      const t = this.react;
+      this.body.rotation.z += ring(t, 14, 3.5) * 0.45 * this.reactDir;
+      this.body.rotation.x += ring(t, 11, 4) * 0.2;
+      this.body.position.y += Math.max(0, ring(t, 8, 5)) * 0.35;
+    }
+    // Thrown up spinning: end over end until it comes down, then it rights itself.
+    if (!s.grounded && s.spinTime > 0 && this.trickTime >= TRICK_TIME) this.tumble += dt * 9;
+    else if (this.tumble !== 0) {
+      const rest = Math.atan2(Math.sin(this.tumble), Math.cos(this.tumble));
+      this.tumble = Math.abs(rest) < 0.02 ? 0 : rest * (1 - damp(14, dt));
+    }
+    this.body.rotation.x += this.tumble;
+    // The pose an item's use strikes: a recoil from a shot, a lean into a pull.
+    if (this.useAge < 0.6) {
+      const t = this.useAge;
+      const k = this.useKind;
+      if (k === 'keytarLaser' || k === 'riffMissile' || k === 'wooCannon') this.body.rotation.x += -Math.max(0, ring(t, 18, 7)) * 0.18;
+      else if (k === 'patchCable') this.body.rotation.x += Math.max(0, ring(t, 10, 5)) * 0.15;
+      else if (k === 'microtonalMine') this.body.rotation.z += ring(t, 16, 7) * 0.08;
+    }
+    // While spinning on the road: tyre smoke.
+    if (s.spinTime > 0 && s.grounded && Math.abs(s.speed) > 3 && Math.random() < dt * 20 * fx.scale) this.emitDust(Math.random() < 0.5 ? -this.rearTrack : this.rearTrack, (Math.random() - 0.5) * 3, 0.6, undefined, 0xe8e8e8);
+  }
+
+  /**
+   * The driver's head: whipped round by a hit and rolling dizzily while the
+   * spin lasts, lolling with a wobble, thrown back for a harmonica's wail,
+   * nodding along to a flute, and turned after an item as it's robbed.
+   */
+  private animateHead(s: KartState, time: number): void {
+    const h = this.head!;
+    if (this.react < REACT_TIME) {
+      const t = this.react;
+      h.rotation.y += ring(t, 24, 5) * 0.9 * this.reactDir;
+      h.rotation.z += ring(t, 18, 4) * 0.35 * this.reactDir;
+    }
+    const dizzy = s.spinTime > 0 ? 1 : this.react < REACT_TIME ? Math.max(0, 1 - (this.react - 0.4) / DIZZY_AFTER) : 0;
+    if (dizzy > 0) {
+      h.rotation.z += Math.sin(time * 8) * 0.22 * dizzy;
+      h.rotation.x += Math.cos(time * 8) * 0.12 * dizzy;
+    }
+    if (s.wobbleTime > 0) h.rotation.z += Math.sin(time * 11) * 0.2 * Math.min(1, s.wobbleTime * 2);
+    if (this.robbedAge < REACT_TIME) h.rotation.y += Math.max(0, ring(this.robbedAge, 9, 3)) * 0.9 * this.reactDir;
+    if (this.useAge < 0.7) {
+      if (this.useKind === 'harmonicaWail') h.rotation.x -= Math.sin((this.useAge / 0.7) * Math.PI) * 0.4;
+      if (this.useKind === 'fluteFlurry') h.rotation.z += Math.sin(this.useAge * 22) * 0.18 * (1 - this.useAge / 0.7);
+    }
+  }
+
+  /**
+   * What circles a kart while a hit lasts, drawn for the one frame: stars
+   * round the head while it's dizzy, notes or motes while it wobbles, a
+   * clock face over it while Horology holds it (rings pressing down for
+   * Superheavy).
+   */
+  private updateMarks(s: KartState, time: number): void {
+    const fx = this.particles;
+    const p = this.root.position;
+    const top = p.y + this.headY;
+    const dizzy = s.spinTime > 0 || this.react < 0.4 + DIZZY_AFTER;
+    if (dizzy && this.presence > 0.5) {
+      const fade = s.spinTime > 0 ? 1 : Math.max(0, 1 - (this.react - 0.4) / DIZZY_AFTER);
+      for (let k = 0; k < 4; k++) {
+        const a = time * 7 + (k * Math.PI) / 2;
+        fx.add.spawn(TILE.star).at(p.x + Math.cos(a) * 0.75, top + 0.3 + Math.sin(a * 2) * 0.08, p.z + Math.sin(a) * 0.75).life(0).size(0.45).color(STAR_COLORS[k + 1], STAR_COLORS[k + 1], fade).spin(a * 2);
+      }
+    }
+    const cause = this.cause;
+    if (s.wobbleTime > 0) {
+      const musical = cause === 'microtonalMine' || cause === 'fluteFlurry' || cause === 'harmonicaWail';
+      const c = cause && cause in ITEM_COLOR ? ITEM_COLOR[cause as ItemKind] : 0xfff0a0;
+      for (let k = 0; k < 2; k++) {
+        const a = -time * 4 + k * Math.PI;
+        fx.add.spawn(musical ? TILE.note : TILE.glow).at(p.x + Math.cos(a) * 0.9, top + 0.15 + Math.sin(time * 6 + k) * 0.15, p.z + Math.sin(a) * 0.9).life(0).size(musical ? 0.55 : 0.4).color(c, c, Math.min(1, s.wobbleTime * 2)).spin(Math.sin(time * 5 + k) * 0.5);
+      }
+    }
+    if (s.slowTime > 0) {
+      const fade = Math.min(1, s.slowTime * 2);
+      if (cause === 'bassDrop') {
+        // A weight on it: rings of purple pressing down over the kart.
+        for (let k = 0; k < 2; k++) {
+          const ph = (time * 1.6 + k * 0.5) % 1;
+          fx.add.spawn(TILE.ring).at(p.x, p.y + 2.2 * (1 - ph), p.z).life(0).size(3.4 - ph * 1.2).color(0xc080ff, 0xc080ff, 0.6 * fade * Math.sin(ph * Math.PI)).flat();
+        }
+      } else if (cause === 'tempoShift') {
+        fx.add.spawn(TILE.clock).at(p.x, top + 0.5, p.z).life(0).size(1.1).color(0xffd890, 0xffd890, 0.9 * fade).spin(-time * 3);
+      }
+    }
+  }
+
+  /**
+   * A boost: a pulse as it kicks in (a ring on the road, a stretch), flames
+   * licking out of the exhausts in its colour, speed lines whipping past,
+   * and the item's own trimmings: the Mind Fuzz crackles, the Dripping Tap
+   * drips. Drift tiers flare as they're reached.
+   */
+  private updateBoostFx(s: KartState, dt: number): void {
+    const fx = this.particles;
+    const p = this.root.position;
+    const yaw = this.root.rotation.y;
+    const fx_ = Math.sin(yaw);
+    const fz = Math.cos(yaw);
+    const tier = s.driftDir !== 0 && s.grounded ? driftTier(s.driftCharge) : 0;
+    if (tier > this.prevTier && tier > 0) {
+      // A tier reached: a flare at each rear wheel.
+      for (let side = -1; side <= 1; side += 2) {
+        this.unit.set(side * this.rearTrack, 0.3, this.rearZ).applyAxisAngle(THREE.Object3D.DEFAULT_UP, yaw).add(p);
+        fx.add.spawn(TILE.flare).at(this.unit.x, this.unit.y, this.unit.z).life(0.25).size(1.6, 0.5).color(0xffffff, SPARK_COLORS[tier]).spin(Math.random() * 3);
+        embers(fx, TILE.star, this.unit.x, this.unit.y, this.unit.z, 3, SPARK_COLORS[tier], SPARK_COLORS[tier], 0.2, 0.3, 0.5);
+      }
+    }
+    const released = this.prevTier;
+    this.prevTier = tier;
+    if (s.boostTime > this.prevBoost + 0.05) {
+      const from = this.boostFrom && this.useAge < CAUSE_TIME ? this.boostFrom : null;
+      this.boostColor = from ? ITEM_COLOR[from] : released > 0 && s.driftDir === 0 ? SPARK_COLORS[released] : 0xffa040;
+      if (!from) this.boostFrom = null;
+      shockRing(fx, p.x, s.groundY, p.z, 2.8, this.boostColor, 0.3);
+      this.squashVel -= 2.4;
+      for (const e of this.exhausts) {
+        this.exhaustAt(e);
+        flash(fx, this.unit.x, this.unit.y, this.unit.z, 1.6, this.boostColor, 0.16);
+      }
+    }
+    if (s.boostTime <= 0 || this.trickTime < TRICK_TIME || s.cannonTime > 0 || this.presence < 0.5) {
+      this.flameAccum = this.lineAccum = this.trailAccum = 0;
+      return;
+    }
+    const vx = Math.sin(s.heading) * s.speed;
+    const vz = Math.cos(s.heading) * s.speed;
+    // Flames off each exhaust, hot white to the boost's colour, trailing.
+    this.flameAccum += dt * 45 * fx.scale;
+    while (this.flameAccum >= 1) {
+      this.flameAccum -= 1;
+      for (const e of this.exhausts) {
+        this.exhaustAt(e);
+        fx.add.spawn(TILE.glow).at(this.unit.x, this.unit.y, this.unit.z).vel(vx * 0.75 - fx_ * 5 + (Math.random() - 0.5), (Math.random() - 0.2) * 1.5, vz * 0.75 - fz * 5 + (Math.random() - 0.5)).life(0.16 + Math.random() * 0.08).size(0.55, -0.6).color(0xfff4c0, this.boostColor).fade(0, 0.3);
+      }
+    }
+    // Speed lines: still in the world, so they streak past the camera as the kart tears through them.
+    this.lineAccum += dt * 26 * fx.scale;
+    while (this.lineAccum >= 1) {
+      this.lineAccum -= 1;
+      const side = Math.random() < 0.5 ? -1 : 1;
+      const out = 1.4 + Math.random() * 1.8;
+      const ahead = Math.random() * 5;
+      fx.add.spawn(TILE.streak).at(p.x + fz * side * out + fx_ * ahead, p.y + 0.3 + Math.random() * 2.2, p.z - fx_ * side * out + fz * ahead).life(0.2).size(0.12).color(0xffffff, this.boostColor, 0.55).stretch(0.06).fade(0.03, 0.3);
+    }
+    const from = this.boostFrom;
+    this.trailAccum += dt * 22 * fx.scale;
+    while (this.trailAccum >= 1) {
+      this.trailAccum -= 1;
+      if (from === 'drippingTap') {
+        // The tap keeps dripping off the back.
+        fx.alpha.spawn(TILE.drop).at(p.x - fx_ * 1.2 + (Math.random() - 0.5), p.y + 0.9, p.z - fz * 1.2 + (Math.random() - 0.5)).vel(vx * 0.5, 0, vz * 0.5).life(0.7).size(0.24).color(0x9ad8ff, 0x60a8ff, 0.8).physics(18, 0.5).floor(s.groundY + 0.04, 0).fade(0, 0.6);
+      } else if (from === 'fuzzPedal') {
+        // Fuzz crackling over the bodywork.
+        const a = Math.random() * Math.PI * 2;
+        fx.add.spawn(TILE.flare).at(p.x + Math.cos(a) * 0.9, p.y + 0.5 + Math.random(), p.z + Math.sin(a) * 0.9).vel(vx, 0, vz).life(0.08).size(0.6 + Math.random() * 0.4).color(0xffffff, ITEM_COLOR.fuzzPedal).spin(Math.random() * 3);
+      }
+    }
+  }
+
+  /** An exhaust's place in the world, into `unit`. */
+  private exhaustAt(e: THREE.Vector3): void {
+    this.unit.copy(e).applyAxisAngle(THREE.Object3D.DEFAULT_UP, this.root.rotation.y).multiplyScalar(this.root.scale.x).add(this.root.position);
   }
 
   /** In the Woo Cannon: the vehicle is swapped for the shell, which wobbles, spins its fins and trails stars. */
@@ -602,32 +956,41 @@ export class KartView {
   }
 
   private emitHitSpark(dirX: number, dirZ: number): void {
-    const p = this.sparks[this.sparkCursor];
-    this.sparkCursor = (this.sparkCursor + 1) % SPARK_POOL;
     const len = Math.hypot(dirX, dirZ);
     const yaw = this.root.rotation.y;
     // Toward what was hit; a wall knock with no direction sparks off the nose.
     const fx = len > 0 ? dirX / len : Math.sin(yaw);
     const fz = len > 0 ? dirZ / len : Math.cos(yaw);
-    p.sprite.position.set(this.root.position.x + fx * 1.1, this.root.position.y + 0.5, this.root.position.z + fz * 1.1);
+    const p = this.root.position;
     const sp = 4 + Math.random() * 6;
-    p.vel.set(-fz * (Math.random() - 0.5) * 8 + fx * sp * 0.3, 2 + Math.random() * 4, fx * (Math.random() - 0.5) * 8 + fz * sp * 0.3);
-    p.sprite.material.color.setHex(Math.random() < 0.5 ? 0xffffff : 0xffd23a);
-    p.sprite.visible = true;
-    p.life = SPARK_LIFE * (0.8 + Math.random() * 0.6);
+    this.particles.add
+      .spawn(TILE.glow)
+      .at(p.x + fx * 1.1, p.y + 0.5, p.z + fz * 1.1)
+      .vel(-fz * (Math.random() - 0.5) * 8 + fx * sp * 0.3, 2 + Math.random() * 4, fx * (Math.random() - 0.5) * 8 + fz * sp * 0.3)
+      .life(SPARK_LIFE * (0.8 + Math.random() * 0.6))
+      .size(0.2, -0.5)
+      .color(0xffffff, Math.random() < 0.5 ? 0xffffff : 0xffd23a)
+      .physics(18)
+      .floor(p.y + 0.05, 0.4)
+      .stretch(0.035);
   }
 
   /** A rainbow star off the kart, `force` how far it flies. */
   private emitStar(force: number): void {
-    const p = this.sparks[this.sparkCursor];
-    this.sparkCursor = (this.sparkCursor + 1) % SPARK_POOL;
-    p.sprite.position.copy(this.root.position).add(this.tmp.set((Math.random() - 0.5) * 1.5, 0.6 + Math.random(), (Math.random() - 0.5) * 1.5));
     const a = Math.random() * Math.PI * 2;
     const sp = (2 + Math.random() * 4) * force;
-    p.vel.set(Math.cos(a) * sp, (3 + Math.random() * 3) * force, Math.sin(a) * sp);
-    p.sprite.material.color.setHex(STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)]);
-    p.sprite.visible = true;
-    p.life = SPARK_LIFE * 2;
+    const c = STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)];
+    const p = this.root.position;
+    this.particles.add
+      .spawn(TILE.star)
+      .at(p.x + (Math.random() - 0.5) * 1.5, p.y + 0.6 + Math.random(), p.z + (Math.random() - 0.5) * 1.5)
+      .vel(Math.cos(a) * sp, (3 + Math.random() * 3) * force, Math.sin(a) * sp)
+      .life(SPARK_LIFE * 2)
+      .size(0.55, -0.5)
+      .color(c)
+      .physics(18)
+      .spin(a, (Math.random() - 0.5) * 12)
+      .fade(0, 0.3);
   }
 
   /**
@@ -692,7 +1055,7 @@ export class KartView {
   /** Dust plumes behind the rear wheels off-road. */
   private updateDust(s: KartState, speedRatio: number, dt: number): void {
     if (s.grounded && s.surface === 'offroad' && Math.abs(s.speed) > 5) {
-      this.dustAccum += dt * 26 * speedRatio;
+      this.dustAccum += dt * 26 * speedRatio * this.particles.scale;
       while (this.dustAccum >= 1) {
         this.dustAccum -= 1;
         this.emitDust(Math.random() < 0.5 ? -this.rearTrack : this.rearTrack, (Math.random() - 0.5) * 2, 0.6 + Math.random(), s);
@@ -700,43 +1063,35 @@ export class KartView {
     } else {
       this.dustAccum = 0;
     }
-    for (const p of this.dust) {
-      if (p.life <= 0) continue;
-      p.life -= dt;
-      if (p.life <= 0) {
-        p.sprite.visible = false;
-        continue;
-      }
-      p.vel.multiplyScalar(Math.exp(-1.6 * dt));
-      p.sprite.position.addScaledVector(p.vel, dt);
-      const k = p.life / DUST_LIFE;
-      p.sprite.material.opacity = 0.75 * k;
-      p.sprite.scale.setScalar(1.2 + 2.6 * (1 - k));
-    }
   }
 
   /** `s` given, the puff keeps some of the kart's speed so it trails as a plume. */
   private emitDust(lateral: number, spread: number, up: number, s?: KartState, color = dustColor): void {
-    const p = this.dust[this.dustCursor];
-    this.dustCursor = (this.dustCursor + 1) % DUST_POOL;
     const yaw = this.root.rotation.y;
     this.tmp.set(lateral, 0.3, this.rearZ).applyAxisAngle(THREE.Object3D.DEFAULT_UP, yaw).add(this.root.position);
-    p.sprite.position.copy(this.tmp);
     const back = -(1.5 + Math.random() * 2);
-    p.vel.set(Math.sin(yaw) * back + Math.cos(yaw) * spread, up, Math.cos(yaw) * back - Math.sin(yaw) * spread);
+    let vx = Math.sin(yaw) * back + Math.cos(yaw) * spread;
+    let vz = Math.cos(yaw) * back - Math.sin(yaw) * spread;
     if (s) {
-      p.vel.x += Math.sin(s.heading) * s.speed * 0.55;
-      p.vel.z += Math.cos(s.heading) * s.speed * 0.55;
+      vx += Math.sin(s.heading) * s.speed * 0.55;
+      vz += Math.cos(s.heading) * s.speed * 0.55;
     }
-    p.sprite.material.color.setHex(color);
-    p.sprite.visible = true;
-    p.life = DUST_LIFE * (0.7 + Math.random() * 0.3);
+    this.particles.alpha
+      .spawn(TILE.puff)
+      .at(this.tmp.x, this.tmp.y, this.tmp.z)
+      .vel(vx, up, vz)
+      .life(DUST_LIFE * (0.7 + Math.random() * 0.3))
+      .size(1, 2)
+      .color(color, color, 0.5)
+      .physics(0, 1.6)
+      .spin(Math.random() * 6, (Math.random() - 0.5) * 2)
+      .fade(0.04, 0);
   }
 
   private updateSparks(s: KartState, dt: number): void {
     const tier = s.driftDir !== 0 && s.grounded ? driftTier(s.driftCharge) : -1;
     if (tier >= 0) {
-      this.sparkAccum += dt * (tier === 0 ? 40 : 90);
+      this.sparkAccum += dt * (tier === 0 ? 40 : 70 + tier * 20) * this.particles.scale;
       while (this.sparkAccum >= 1) {
         this.sparkAccum -= 1;
         this.emitSpark(s, SPARK_COLORS[tier], tier);
@@ -744,36 +1099,24 @@ export class KartView {
     } else {
       this.sparkAccum = 0;
     }
-    for (const p of this.sparks) {
-      if (p.life <= 0) continue;
-      p.life -= dt;
-      if (p.life <= 0) {
-        p.sprite.visible = false;
-        continue;
-      }
-      p.vel.y -= 18 * dt;
-      p.sprite.position.addScaledVector(p.vel, dt);
-      const k = p.life / SPARK_LIFE;
-      p.sprite.material.opacity = k;
-      p.sprite.scale.setScalar(0.25 + 0.45 * k);
-    }
   }
 
   private emitSpark(s: KartState, color: number, tier: number): void {
-    const p = this.sparks[this.sparkCursor];
-    this.sparkCursor = (this.sparkCursor + 1) % SPARK_POOL;
     const yaw = this.root.rotation.y;
     const side = Math.random() < 0.5 ? -this.rearTrack : this.rearTrack;
     // Rear wheel contact point in world space.
     this.tmp.set(side, 0.1, this.rearZ).applyAxisAngle(THREE.Object3D.DEFAULT_UP, yaw).add(this.root.position);
-    p.sprite.position.copy(this.tmp);
     const back = -(4 + Math.random() * 4);
     const spread = (Math.random() - 0.5) * 5;
-    p.vel.set(Math.sin(yaw) * back + Math.cos(yaw) * spread, 2 + Math.random() * (2 + tier), Math.cos(yaw) * back - Math.sin(yaw) * spread);
-    p.vel.x += Math.sin(s.heading) * s.speed * 0.6;
-    p.vel.z += Math.cos(s.heading) * s.speed * 0.6;
-    p.sprite.material.color.setHex(color);
-    p.sprite.visible = true;
-    p.life = SPARK_LIFE * (0.6 + Math.random() * 0.4);
+    this.particles.add
+      .spawn(TILE.glow)
+      .at(this.tmp.x, this.tmp.y, this.tmp.z)
+      .vel(Math.sin(yaw) * back + Math.cos(yaw) * spread + Math.sin(s.heading) * s.speed * 0.6, 2 + Math.random() * (2 + tier), Math.cos(yaw) * back - Math.sin(yaw) * spread + Math.cos(s.heading) * s.speed * 0.6)
+      .life(SPARK_LIFE * (0.6 + Math.random() * 0.4))
+      .size(0.16 + tier * 0.04, -0.4)
+      .color(0xffffff, color)
+      .physics(18)
+      .floor(s.groundY + 0.04, 0.5)
+      .stretch(0.03);
   }
 }

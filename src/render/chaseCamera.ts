@@ -27,6 +27,11 @@ export class ChaseCamera {
   private shake = 0;
   /** Extra field of view (degrees) from a boost kicking in, easing back out. */
   private punch = 0;
+  /** A knock's shove (m, world), sprung back to nothing; and a lurch of roll (rad). */
+  private readonly nudged = new THREE.Vector3();
+  private readonly nudgeVel = new THREE.Vector3();
+  private roll = 0;
+  private rollVel = 0;
   /** 0..1, eased: how far the camera has drawn back and up to see past an open glider. */
   private glide = 0;
 
@@ -40,6 +45,19 @@ export class ChaseCamera {
 
   bump(amount: number): void {
     this.shake = Math.max(this.shake, amount);
+  }
+
+  /** Shoves the camera `amount` metres along (x, z) (a kart knocked that way), springing back. */
+  nudge(x: number, z: number, amount: number): void {
+    const len = Math.hypot(x, z);
+    if (len < 1e-6 || amount <= 0) return;
+    this.nudgeVel.x += (x / len) * amount * 14;
+    this.nudgeVel.z += (z / len) * amount * 14;
+  }
+
+  /** A lurch of roll (rad) that rings out: a spin-out. */
+  tilt(rad: number): void {
+    this.rollVel += rad * 18;
   }
 
   /** A kick of field of view (degrees): the rush of a boost kicking in. */
@@ -82,7 +100,17 @@ export class ChaseCamera {
       this.pos.y + (Math.random() - 0.5) * jitter,
       this.pos.z + (Math.random() - 0.5) * jitter,
     );
+    // The knock and the lurch: springs, in small steps so a long frame can't fling them.
+    for (let left = Math.min(dt, 0.1); left > 0; left -= 1 / 120) {
+      const h = Math.min(left, 1 / 120);
+      this.nudgeVel.addScaledVector(this.nudged, -160 * h).multiplyScalar(1 - Math.min(1, 14 * h));
+      this.nudged.addScaledVector(this.nudgeVel, h);
+      this.rollVel += (-140 * this.roll - 9 * this.rollVel) * h;
+      this.roll += this.rollVel * h;
+    }
+    this.camera.position.add(this.nudged);
     this.camera.lookAt(this.target);
+    if (this.roll !== 0) this.camera.rotateZ(this.roll);
 
     this.punch = Math.max(0, this.punch - dt * 14);
     const fov = pl.fov + speedRatio * 10 + (s.boostTime > 0 ? 8 : 0);

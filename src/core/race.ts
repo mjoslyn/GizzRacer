@@ -344,11 +344,16 @@ export class Race {
       const local = this.karts.filter((k) => !k.remote).map((k) => k.state);
       for (const h of this.hazards.collide(local, dt)) {
         const kart = this.karts.find((k) => k.state === h.kart)!;
-        this.events.push(h.good ? { type: 'bonus', kart, by: h.by } : { type: 'hit', kart, by: h.by });
+        const ev: ItemEvent = h.good ? { type: 'bonus', kart, by: h.by } : { type: 'hit', kart, by: h.by };
+        this.events.push(ev);
         // An open present is a gift: an item too, if there's room for one.
         if (h.gift && !this.remoteItems) this.items.gift(kart, this.karts, this.events);
-        // Bailed up by Mad Dog Morgan's gang: robbed of the item in hand.
-        if (h.robbed && !this.remoteItems && this.items.rob(kart)) kart.driver?.forgetItem();
+        // Bailed up by Mad Dog Morgan's gang: robbed of the item in hand (the hit says what, for the view).
+        const had = kart.item;
+        if (h.robbed && !this.remoteItems && this.items.rob(kart)) {
+          kart.driver?.forgetItem();
+          if (ev.type === 'hit' && had) ev.robbed = had;
+        }
       }
     }
     return events;
