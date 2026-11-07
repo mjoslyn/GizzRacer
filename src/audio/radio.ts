@@ -105,16 +105,34 @@ export class LiveRadio {
       this.changed();
       return false;
     }
-    const last = this.now && this.now.title === song ? this.now.rec : null;
-    // Not the one just played, when there's a choice.
-    const pool = list.length > 1 && last ? list.filter((r) => r.file !== last.file || r.id !== last.id) : list;
-    const rec = pool[Math.floor(this.rand() * pool.length)];
+    // Picked and loaded ahead (preloadSong), else one at random.
+    const rec = this.picked.get(song) ?? this.pick(list, song);
+    this.picked.delete(song);
     if (this.now && this.now.mode !== 'show') this.history.push({ rec: this.now.rec, title: this.now.title, mode: this.now.mode });
     this.now = { rec, title: song, mode };
     if (rec.then) this.playPair(rec, t);
     else this.music.playLive(rec, this.fallback);
     this.changed();
     return true;
+  }
+
+  /** Recordings picked ahead for a song (the next race's), by song: playSong plays that one. */
+  private readonly picked = new Map<string, LiveRecording>();
+
+  /** One of `list` at random: not the one just played of `song`, when there's a choice. */
+  private pick(list: readonly LiveRecording[], song: string): LiveRecording {
+    const last = this.now && this.now.title === song ? this.now.rec : null;
+    const pool = list.length > 1 && last ? list.filter((r) => r.file !== last.file || r.id !== last.id) : list;
+    return pool[Math.floor(this.rand() * pool.length)];
+  }
+
+  /** Picks a recording of `song` now and starts loading it, so its race starts with it at once (a cup's next race). */
+  async preloadSong(song: string): Promise<void> {
+    const list = (await this.loadBootlegs())[song] ?? [];
+    if (!list.length) return;
+    const rec = this.picked.get(song) ?? this.pick(list, song);
+    this.picked.set(song, rec);
+    this.music.preloadLive(rec);
   }
 
   /**
@@ -132,6 +150,12 @@ export class LiveRadio {
     if (rec.then) this.playPair(rec, t);
     else this.music.playLive(rec, this.fallback);
     this.changed();
+  }
+
+  /** Loads a Story suite's recording of `song` ahead, so it starts at once when its stage comes. */
+  async preloadSuite(suite: string, song: string): Promise<void> {
+    const rec = await this.suiteRecording(suite, song);
+    if (rec) this.music.preloadLive(rec);
   }
 
   /** A Story suite's recording of `song` (public/music/suites.json), or null: none, or offline. */

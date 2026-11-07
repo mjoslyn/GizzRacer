@@ -1833,6 +1833,8 @@ function showStoryPick(): void {
   storyPicking = true;
   story = null;
   setMode('story');
+  // The picker's title music stops: story mode is the band only.
+  menuMusic();
   storyScreen.show(storyPickCard());
 }
 
@@ -2519,6 +2521,11 @@ function startRaceMusic(): void {
   // A Full set is all the music, the Deadstick Landing's too.
   if (setPlaying()) return ensureSet();
   if (deadstickMusic()) {
+    // In a story the song playing flies on with you; the remix only in Skill Games.
+    if (inStory()) {
+      liveRace = true;
+      return;
+    }
     liveRace = false;
     if (radio.playing) radio.stop();
     music.play(remixCues(DEADSTICK_CUE));
@@ -2526,6 +2533,7 @@ function startRaceMusic(): void {
   }
   if (story instanceof SuiteRun && story.race.song) return suiteStageMusic(trackMusic);
   trackMusic();
+  preloadNextCupSong();
 }
 
 /**
@@ -2546,6 +2554,9 @@ function suiteStageMusic(fallback: (() => void) | null, songOf: string | null = 
   const forRace = fallback ? race : null;
   if (forRace) liveRace = true;
   void radio.suiteRecording(run.suite.id, song).then((rec) => {
+    // The song after this one loads meanwhile, so it comes on at once.
+    const after = run.songAfter();
+    if (after && after !== song) void radio.preloadSuite(run.suite.id, after);
     if (ticket !== suiteMusicTicket || story !== run || run.cleared !== at || (forRace && race !== forRace)) return;
     const plan = suiteMusic(rec, !!(radio.playing && music.live));
     if (plan === 'entry') {
@@ -2558,7 +2569,7 @@ function suiteStageMusic(fallback: (() => void) | null, songOf: string | null = 
         radio.stop();
         music.stop();
       }
-      return radio.playRecording(rec!, song, remixCues(forRace ? track.def.music.lap : 'title'));
+      return radio.playRecording(rec!, song, []);
     }
     if (plan === 'hold') {
       // The recording before plays on through this stage, as a same-song hold: no final-lap cut.
@@ -2578,8 +2589,10 @@ let suiteMusicTicket = 0;
 
 /** A race's own music by the Soundtrack setting: its song live, any song live, or its remix. */
 function trackMusic(): void {
-  const cues = remixCues(track.def.music.lap);
-  const mode = settings().soundtrack;
+  // Story mode plays the band only: a live recording whatever the setting, and quiet rather than the game's remix.
+  const quiet = inStory();
+  const cues = quiet ? [] : remixCues(track.def.music.lap);
+  const mode = quiet ? 'song' : settings().soundtrack;
   const songs = raceSongs();
   if (mode === 'random') {
     liveRace = true;
@@ -2600,9 +2613,14 @@ function trackMusic(): void {
         if (race !== forRace || (await radio.playSong(song, cues))) return;
       }
       if (race !== forRace) return;
+      if (quiet) return music.stop();
       liveRace = false;
       music.play(cues);
     })();
+    return;
+  }
+  if (quiet) {
+    if (!music.live) music.stop();
     return;
   }
   liveRace = false;
@@ -2610,10 +2628,29 @@ function trackMusic(): void {
   music.play(cues);
 }
 
+/** A cup on Track song: the next race's song picked and loading meanwhile, so it starts at once. */
+function preloadNextCupSong(): void {
+  if (!gp || settings().soundtrack !== 'song') return;
+  const next = gp.tracks[gp.round + 1];
+  const entry = next !== undefined ? TRACK_LIST[next] : undefined;
+  const song = entry ? TRACK_SONGS[entry.id] : undefined;
+  if (song) void radio.preloadSong(song.also ? songTitles(song) : song.title);
+}
+
+/** In Story mode (a run, or its pick of stories): the band only, never the game's own music. */
+function inStory(): boolean {
+  return !!story || storyPicking;
+}
+
 /** The menus' music: the title remix, unless a Full set is playing on. */
 function menuMusic(): void {
   music.setLiveEnd(null);
   if (setPlaying()) return ensureSet();
+  // Story mode plays the band only: a live song on plays on, else quiet.
+  if (inStory()) {
+    if (!music.live) music.stop();
+    return;
+  }
   if (radio.playing) radio.stop();
   music.play(remixCues('title'));
 }

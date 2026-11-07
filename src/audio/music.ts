@@ -329,6 +329,35 @@ export class MusicPlayer {
     if (this.ctx) this.startLive(rec, opts);
   }
 
+  /** Recordings loaded ahead of playing them (the next song in a story suite), by key; the newest few. */
+  private readonly preloaded = new Map<string, HTMLAudioElement>();
+
+  /**
+   * Starts loading a live recording (and the song it runs into) so playLive
+   * later starts it with no wait: the next song while a stage plays.
+   */
+  preloadLive(rec: LiveRecording): void {
+    const files = [{ rec, from: rec.start ?? 0 }, ...(rec.then ? [{ rec: { ...rec, file: rec.then.file, start: 0, then: undefined }, from: 0 }] : [])];
+    for (const { rec: r, from } of files) {
+      const key = `live:${r.id}/${r.file}`;
+      if (this.preloaded.has(key) || this.wantedKey === key) continue;
+      const audio = new Audio();
+      audio.crossOrigin = 'anonymous';
+      audio.preload = 'auto';
+      audio.dataset.from = String(from);
+      audio.src = from > 0 ? `${liveUrl(r)}#t=${from}` : liveUrl(r);
+      audio.load();
+      this.preloaded.set(key, audio);
+    }
+    // Keep a few: let the oldest go.
+    while (this.preloaded.size > 4) {
+      const [k, a] = this.preloaded.entries().next().value!;
+      a.removeAttribute('src');
+      a.load();
+      this.preloaded.delete(k);
+    }
+  }
+
   /**
    * What a looping live recording does when it ends: `fn` instead of going
    * round again (a race's song held into the next race goes on through its
@@ -366,9 +395,13 @@ export class MusicPlayer {
     const ctx = this.ctx;
     if (!ctx || !this.master) return;
     const key = `live:${rec.id}/${rec.file}`;
-    const audio = new Audio();
-    audio.crossOrigin = 'anonymous';
     const from = opts.start ?? rec.start ?? 0;
+    // Loaded ahead (preloadLive) from where its music starts: it's buffered already and starts at once.
+    const pre = attempt === 0 ? this.preloaded.get(key) : undefined;
+    if (pre) this.preloaded.delete(key);
+    const ready = !!pre && pre.dataset.from === String(from);
+    const audio = ready ? pre! : new Audio();
+    audio.crossOrigin = 'anonymous';
     const until = rec.end !== undefined && rec.end > from ? rec.end : 0;
     // Looping without the talk: round to where the music starts, not the top; or on to whatever setLiveEnd asks.
     audio.loop = !opts.onEnded && from === 0 && !this.liveEnd && !until;
@@ -389,7 +422,7 @@ export class MusicPlayer {
     }
     audio.preload = 'auto';
     // A media fragment starts it there, before a byte of the talk plays.
-    audio.src = from > 0 ? `${liveUrl(rec)}#t=${from}` : liveUrl(rec);
+    if (!ready) audio.src = from > 0 ? `${liveUrl(rec)}#t=${from}` : liveUrl(rec);
     const node = ctx.createMediaElementSource(audio);
     // Brought to the remixes' loudness, its peaks held under full scale, then the fade.
     const prior = DEFAULT_LIVE_GAIN;
