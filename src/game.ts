@@ -1274,30 +1274,21 @@ function watchSong(dt: number): void {
 }
 
 /**
- * Where the song the radio asked for is, counted as one song even when it's
- * a pair played back to back (an Altered Beast into its Alter Me: two files,
- * the second straight after the first): `at` runs on through the second
- * file, and `left` counts what's left of both. Null while it isn't the one
- * playing (another still on while it buffers, or nothing).
+ * Where the song the radio asked for is, as the mini player shows it: the
+ * file playing, its time left to its `end` (or the file's end). A pair the
+ * band played back to back (an Altered Beast into its Alter Me) is two songs
+ * here: the second coming on ends the race, as any song ending does. Null
+ * while it isn't the one playing (another still on while it buffers, or nothing).
  */
 function songPosition(): { key: string; at: number; left: number } | null {
   const p = radio.playing;
   const rec = music.live;
   const prog = music.liveProgress();
   if (!p || !rec || !prog || rec.id !== p.rec.id) return null;
-  const key = `${p.rec.id}/${p.rec.file}`;
-  const then = p.rec.then;
-  const firstEnd = p.rec.end ?? p.rec.seconds;
-  if (rec.file === p.rec.file) {
-    const end = rec.end ?? (prog.length || rec.seconds);
-    const rest = then ? (then.end ?? then.seconds) : 0;
-    return { key, at: prog.at, left: Math.max(0, end - prog.at) + rest };
-  }
-  if (then && rec.file === then.file) {
-    const end = then.end ?? (prog.length || then.seconds);
-    return { key, at: firstEnd + prog.at, left: Math.max(0, end - prog.at) };
-  }
-  return null;
+  const isFirst = rec.file === p.rec.file;
+  if (!isFirst && rec.file !== p.rec.then?.file) return null;
+  const end = (isFirst ? rec.end : p.rec.then?.end) ?? (prog.length || rec.seconds);
+  return { key: `${rec.id}/${rec.file}`, at: prog.at, left: Math.max(0, end - prog.at) };
 }
 
 /** Race to the song's end: the song over (and the race long enough), everyone finishes where they are; no song to hear, it's laps again. */
