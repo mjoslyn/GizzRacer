@@ -85,9 +85,9 @@ const TRICKS: Record<string, TrickMove> = {
   'munt-machine': (u, d) => [0, 0, d * Math.sin(u * TAU * 2) * 0.5, Math.abs(Math.sin(u * Math.PI * 2)) * 0.7],
   // The castle: it sails a full slow turn, pitching on the swell.
   'castle-king': (u, d) => [Math.sin(u * TAU * 2) * 0.2, d * u * TAU, 0, Math.sin(u * Math.PI) * 1.2],
-  // The Devil: a front flip with a twist.
-  'the-devil': (u, d) => [u * TAU, d * u * TAU, 0, Math.sin(u * Math.PI) * 1.0],
-  // The Mother of the Coven: the cart turns widdershins, three times round the circle.
+  // The Devil: the Skeleton Dragon's wing-over, banked up, right round in the air and down out of it.
+  'the-devil': (u, d) => [-Math.sin(u * Math.PI) * 0.5, d * u * TAU, d * Math.sin(u * TAU) * 0.7, Math.sin(u * Math.PI) * 1.4],
+  // The Mother of the Coven: the broom turns widdershins, three times round the circle.
   'coven-mother': (u, d) => [0, -d * u * TAU * 3, 0, Math.sin(u * Math.PI) * 1.1],
   // The band. A stage dive, all the way round.
   'stu-mackenzie': (u, d) => [-u * TAU, d * u * TAU, 0, Math.sin(u * Math.PI) * 1.1],
