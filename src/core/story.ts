@@ -1,7 +1,7 @@
 import { seededRandom } from './math';
 import type { ItemKind } from '../items/items';
 import { RACERS, type KartParams, type RacerDef } from '../physics/racers';
-import { GEN_COMPLEXITY_MAX, type GenParams, type GenTheme } from '../tracks/generator';
+import { GEN_COMPLEXITY_MAX, GEN_LAYOUT, type GenParams, type GenTheme } from '../tracks/generator';
 import { SKILLS, SKILL_KINDS, type SkillKind } from './skills';
 
 /**
@@ -324,6 +324,7 @@ export class StoryRun {
       theme: themes[Math.floor(r() * themes.length)],
       complexity: Math.min(GEN_COMPLEXITY_MAX, STORY_TWISTS + act + index),
       length: 'medium',
+      layout: GEN_LAYOUT,
     };
   }
 }

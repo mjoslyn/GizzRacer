@@ -1,7 +1,7 @@
 import { GP_POINTS } from '../core/grandPrix';
 import { BOOST_SPEED_MUL, PHYSICS_VERSION } from '../physics/kart';
 import { ENGINE_CLASSES, RACERS, kartParams, type EngineClass } from '../physics/racers';
-import { generateTrack, GEN_LENGTHS, GEN_THEMES, type GenLength, type GenParams, type GenTheme } from '../tracks/generator';
+import { generateTrack, GEN_LAYOUT, GEN_LENGTHS, GEN_THEMES, type GenLength, type GenParams, type GenTheme } from '../tracks/generator';
 import { CUPS, RANDOM_CUP_ID, TRACK_LIST } from '../tracks/index';
 import { Track } from '../tracks/track';
 import { recordId } from './runCheck';
@@ -64,11 +64,18 @@ export function cupTimeBoardName(sub: CupRecordSubmission, version = PHYSICS_VER
 
 /** A generated track's dials from its id (`trackId` in tracks/generator.ts), or null if it isn't one. */
 export function parseGenId(id: string): GenParams | null {
-  const m = /^gen-([a-z]+)-(\d)-(short|medium|long)-(\d+)$/.exec(id);
+  const m = /^gen-([a-z]+)-(\d)-(short|medium|long)-(\d+)(?:-l(\d+))?$/.exec(id);
   if (!m) return null;
   const theme = m[1] as GenTheme;
   if (!GEN_THEMES.includes(theme) || !GEN_LENGTHS.includes(m[3] as GenLength)) return null;
-  return { theme, complexity: Number(m[2]), length: m[3] as GenLength, seed: Number(m[4]) };
+  const p: GenParams = { theme, complexity: Number(m[2]), length: m[3] as GenLength, seed: Number(m[4]) };
+  // A layout past the first (an old id has none, and builds the rectangle it always did).
+  if (m[5]) {
+    const layout = Number(m[5]);
+    if (layout < 2 || layout > GEN_LAYOUT) return null;
+    p.layout = layout;
+  }
+  return p;
 }
 
 const tracks = new Map<string, Track | null>();

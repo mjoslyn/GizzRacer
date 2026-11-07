@@ -10,7 +10,8 @@ export interface SavedTrack extends GenParams {
 const KEY = 'gizzracer.tracks';
 const MAX_NAME = 32;
 
-const same = (a: GenParams, b: GenParams) => a.seed === b.seed && a.theme === b.theme && a.complexity === b.complexity && a.length === b.length;
+/** The same track: dials, seed and layout (none is the first, the rectangle). */
+const same = (a: GenParams, b: GenParams) => a.seed === b.seed && a.theme === b.theme && a.complexity === b.complexity && a.length === b.length && (a.layout ?? 1) === (b.layout ?? 1);
 
 export function savedTracks(): SavedTrack[] {
   try {
@@ -31,6 +32,7 @@ export function saveTrack(p: GenParams, name: string): number {
   const list = savedTracks();
   const clean = name.replace(/\s+/g, ' ').trim().slice(0, MAX_NAME) || 'Untitled Track';
   const entry: SavedTrack = { seed: p.seed, theme: p.theme, complexity: p.complexity, length: p.length, name: clean, saved: Date.now() };
+  if ((p.layout ?? 1) > 1) entry.layout = p.layout;
   const i = list.findIndex((t) => same(t, p));
   if (i >= 0) list[i] = { ...entry, saved: list[i].saved };
   else list.push(entry);

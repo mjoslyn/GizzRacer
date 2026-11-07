@@ -6,14 +6,14 @@ import { Race } from '../src/core/race';
 import { ItemSystem } from '../src/items/items';
 import { createKartState, stepKart, type KartState } from '../src/physics/kart';
 import { RACERS, kartParams } from '../src/physics/racers';
-import { GEN_COMPLEXITY_MAX, GEN_LENGTHS, GEN_THEMES, SHORTCUT_JUNCTION, generateTrack, isPlayable, selfGap, type GenParams } from '../src/tracks/generator';
+import { GEN_COMPLEXITY_MAX, GEN_LAYOUT, GEN_LENGTHS, GEN_THEMES, SHORTCUT_JUNCTION, generateTrack, isPlayable, selfGap, type GenParams } from '../src/tracks/generator';
 import { nearestOnSpline, pointAt } from '../src/tracks/spline';
 import { Track, inPit, type Ribbon, type TrackDef } from '../src/tracks/track';
 
-/** Every theme, twist and length, a few seeds each (`k` says which of the two seed sets a dial is from). */
+/** Every theme, twist and length, a few seeds each (`k` says which of the two seed sets a dial is from), laid out as new tracks are (old ones are kept byte for byte: generator-layout.test.ts). */
 const DIALS: (GenParams & { k: number })[] = GEN_THEMES.flatMap((theme, t) =>
   Array.from({ length: GEN_COMPLEXITY_MAX }, (_, i) => i + 1).flatMap((complexity) =>
-    GEN_LENGTHS.flatMap((length, l) => [0, 1].map((k) => ({ seed: 100 + t * 37 + complexity * 11 + l * 5 + k * 1000, theme, complexity, length, k }))),
+    GEN_LENGTHS.flatMap((length, l) => [0, 1].map((k) => ({ seed: 100 + t * 37 + complexity * 11 + l * 5 + k * 1000, theme, complexity, length, layout: GEN_LAYOUT, k }))),
   ),
 );
 const BUILT = DIALS.map((p) => ({ p, def: generateTrack(p) }));
@@ -93,9 +93,9 @@ function drive(track: Track, r: Ribbon, s0: number, s1: number, p: ReturnType<ty
 }
 
 describe('generated tracks: kickers, double boxes and shortcuts', () => {
-  it('builds every dial into a closed loop that never crosses itself, inside its bounds', () => {
+  it('builds every dial into a closed loop that never crosses itself (but on a flyover), inside its bounds', () => {
     for (const { p, def } of BUILT) {
-      expect(isPlayable(def), label(p)).toBe(true);
+      expect(isPlayable(def, true), label(p)).toBe(true);
       const track = new Track(def);
       const sp = track.spline;
       expect(Math.abs(wrapAngle(Math.atan2(sp.tx[0], sp.tz[0]) - Math.atan2(sp.tx[sp.count - 1], sp.tz[sp.count - 1]))), label(p)).toBeLessThan(0.1);
@@ -302,7 +302,7 @@ function autopilotLap(def: TrackDef, racer: (typeof RACERS)[number], engine: '10
 /** More seeds for the elevation checks: every theme, twist and length, three more each. */
 const MORE = GEN_THEMES.flatMap((theme, t) =>
   Array.from({ length: GEN_COMPLEXITY_MAX }, (_, i) => i + 1).flatMap((complexity) =>
-    GEN_LENGTHS.flatMap((length, l) => [0, 1, 2].map((k) => ({ seed: 5000 + t * 101 + complexity * 13 + l * 7 + k * 977, theme, complexity, length }))),
+    GEN_LENGTHS.flatMap((length, l) => [0, 1, 2].map((k) => ({ seed: 5000 + t * 101 + complexity * 13 + l * 7 + k * 977, theme, complexity, length, layout: GEN_LAYOUT }))),
   ),
 ).map((p) => ({ p, def: generateTrack(p) }));
 const ALL = [...BUILT, ...MORE];
@@ -339,12 +339,12 @@ function crestLaunches(track: Track, def: TrackDef, p: ReturnType<typeof kartPar
 }
 
 describe('generated tracks: hills, coasters and cuts', () => {
-  it('every dial still builds a closed loop that never crosses itself, even flat on the map', () => {
+  it('every dial still builds a closed loop that never crosses itself, even flat on the map, but where a deck flies over', () => {
     for (const { p, def } of ALL) {
-      expect(isPlayable(def), label(p)).toBe(true);
+      expect(isPlayable(def, true), label(p)).toBe(true);
       const track = new Track(def);
-      // Measured flat on the map: a deck high over another stretch of road would count.
-      expect(selfGap(track), label(p)).toBeGreaterThanOrEqual(5);
+      // Measured flat on the map: a deck high over another stretch of road counts, unless it's a flyover (OVERPASS above).
+      expect(selfGap(track, true), label(p)).toBeGreaterThanOrEqual(5);
       // Level over the grid and through the line.
       for (let s = -50; s <= 6; s += 2) expect(Math.abs(track.main.heightAt((s + track.length) % track.length)), label(p)).toBeLessThan(0.01);
     }

@@ -5,7 +5,7 @@ import { LiveRadio } from '../src/audio/radio';
 import type { LiveRecording, MusicPlayer } from '../src/audio/music';
 import { RACERS } from '../src/physics/racers';
 import { TRACK_LIST } from '../src/tracks/index';
-import { generateTrack, type GenParams } from '../src/tracks/generator';
+import { GEN_LAYOUT, generateTrack, type GenParams } from '../src/tracks/generator';
 import { storyCard, storyPickCard } from '../src/ui/storyScreen';
 
 /** The shared contract (scratchpad suites/CONTRACT.md): id, name, boss racer, and each stage as kind:song[:track]. */
@@ -78,7 +78,7 @@ describe('story suites', () => {
   });
 
   it('a given name and places change nothing that gets built', () => {
-    const p: GenParams = { seed: 4242, theme: 'storm', complexity: 4, length: 'medium' };
+    const p: GenParams = { seed: 4242, theme: 'storm', complexity: 4, length: 'medium', layout: GEN_LAYOUT };
     const plain = generateTrack(p);
     const named = generateTrack({ ...p, name: 'The Electric Snare', places: ['Golden Wire'] });
     expect(named.main.length).toBeCloseTo(plain.main.length, 6);

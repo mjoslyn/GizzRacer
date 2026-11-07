@@ -56,7 +56,7 @@ import { WATER_LEVEL, buildTrackView, type TrackView } from './render/trackView'
 import { CUPS, TRACK_LIST, randomCupTracks } from './tracks/index';
 import { findBends, nextBend, type Bend } from './tracks/turns';
 import { pointAt } from './tracks/spline';
-import { GEN_COMPLEXITY_MAX, GEN_LENGTHS, GEN_THEMES, generateTrack, trackId, type GenParams } from './tracks/generator';
+import { GEN_COMPLEXITY_MAX, GEN_LAYOUT, GEN_LENGTHS, GEN_THEMES, generateTrack, trackId, type GenParams } from './tracks/generator';
 import { Track, inPit, type CoreHazardKind, type TrackDef } from './tracks/track';
 import { Hud, SURGE_HOP_WINDOW, formatTime, type Callout, type HudData, type Table, type TableAction, type TableRow } from './ui/hud';
 import { Keyboard, SEAT_COLORS, SeatInput, remotePad, type RemotePad, type SeatSource } from './core/seatInput';
@@ -190,7 +190,7 @@ let choice: MenuChoice = {
   track: 8,
   cup: 0,
   randomTracks: randomCupTracks(),
-  gen: { slot: -1, params: { seed: newSeed(), theme: 'lagoon', complexity: 3, length: 'medium' } },
+  gen: { slot: -1, params: { seed: newSeed(), theme: 'lagoon', complexity: 3, length: 'medium', layout: GEN_LAYOUT } },
   racer: RACERS[0],
   engine: '100cc',
   mirror: false,
@@ -879,7 +879,7 @@ function raceTrack(): TrackEntry {
 /** A new track to generate: any world, shape and length. */
 function randomGen(): GenParams {
   const pick = <T>(list: readonly T[]) => list[Math.floor(Math.random() * list.length)];
-  return { seed: newSeed(), theme: pick(GEN_THEMES), complexity: 1 + Math.floor(Math.random() * GEN_COMPLEXITY_MAX), length: pick(GEN_LENGTHS) };
+  return { seed: newSeed(), theme: pick(GEN_THEMES), complexity: 1 + Math.floor(Math.random() * GEN_COMPLEXITY_MAX), length: pick(GEN_LENGTHS), layout: GEN_LAYOUT };
 }
 
 /** Infinite's next track by its Generative setting: a generated one (on, or mix at a coin toss), else the game's own (`step` on from the last). */

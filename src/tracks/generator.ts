@@ -96,7 +96,19 @@ export interface GenParams {
    */
   name?: string;
   places?: readonly string[];
+  /**
+   * How the layout's skeleton is drawn. Absent (or 1): the first
+   * generator's rectangle, kept exactly so players' saved tracks, past
+   * dailies and their boards still build what they did. GEN_LAYOUT (2): a
+   * shape drawn from the seed (an L, a U, a T, a zigzag, stairs, a
+   * triangle, a kite, a figure of eight over a flyover, a lollipop; now and
+   * then at low twists still a rectangle). New tracks carry it.
+   */
+  layout?: number;
 }
+
+/** The layout new tracks are built with (see GenParams.layout). */
+export const GEN_LAYOUT = 2;
 
 /** Rough lap lengths, metres. */
 const LENGTH_M: Record<GenLength, number> = { short: 950, medium: 1350, long: 1800 };
@@ -133,7 +145,16 @@ const COASTER_OUT = 25;
 const COASTER_LIFT = 2.5;
 const COASTER_DROP_SLOPE = 0.45;
 const COASTER_MIN = 8;
+/** Leg a shaped layout keeps clear for its coaster (it needs about 152 m to reach COASTER_MIN). */
+const COASTER_ROOM = 156;
+const COASTER_ROOM_ABYSS = 240;
 const DECK_LINE = 4;
+/** A flyover, where a figure of eight crosses itself: its deck's height, the ramps up to it and down, and the flat road either end, metres. */
+const FLY_HEIGHT = 8.5;
+const FLY_RAMP = 60;
+const FLY_IN = 6;
+/** How far a deck must be above another stretch of road to pass over it (the deck is 1.3 m deep). */
+export const OVERPASS = 7;
 const COASTER_DECKS = ['Skyway', 'Coaster', 'Viaduct', 'Highline', 'Big Dipper', 'Rollercoaster'];
 const SHORTCUT_NAMES = ['Gamma Knife', 'Robot Stop', 'Hot Water', 'Head On', 'Cut Throat Boogie', 'Mind Fuzz', 'Planet B', 'Doom City', 'Nuclear Fusion', 'Crumbling Castle'];
 
@@ -864,19 +885,22 @@ export function trackName(p: Pick<GenParams, 'seed' | 'theme'>): string {
   return `${pick(NAME_ADJECTIVES)} ${pick(PALETTES[p.theme].places)} ${pick(NAME_KINDS)}`;
 }
 
+/** A generated track's id, for its records: a layout past the first has its own (`-l2`), so old boards stay with old tracks. */
 export function trackId(p: GenParams): string {
-  return `gen-${p.theme}-${p.complexity}-${p.length}-${p.seed}`;
+  const layout = p.layout ?? 1;
+  return `gen-${p.theme}-${p.complexity}-${p.length}-${p.seed}${layout > 1 ? `-l${layout}` : ''}`;
 }
 
-/** How the last generation went (tests and tuning). */
-export const generatorStats = { attempts: 0, fallbacks: 0, rejects: { closure: 0, overlap: 0, coaster: 0 } };
+/** How the last generation went (tests and tuning): attempts, rejects, and the shape the track was laid round. */
+export const generatorStats = { attempts: 0, fallbacks: 0, rejects: { closure: 0, overlap: 0, coaster: 0, flyover: 0, kicker: 0 }, shape: 'rectangle' as GenShape };
 
 /** Builds the track for these dials; a layout that fails its checks is re-rolled from the same seed. */
 export function generateTrack(p: GenParams): TrackDef {
+  const overpasses = (p.layout ?? 1) > 1;
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     const def = attemptTrack(p, attempt);
     generatorStats.attempts = attempt + 1;
-    if (def && isPlayable(def)) return def;
+    if (def && isPlayable(def, overpasses)) return def;
     if (def) generatorStats.rejects.overlap++;
   }
   generatorStats.fallbacks++;
@@ -884,10 +908,14 @@ export function generateTrack(p: GenParams): TrackDef {
   return attemptTrack({ ...p, complexity: 1 }, 0, true)!;
 }
 
-/** Road that doesn't cross itself (overpasses aside), shortcuts clear of the rest of the road, and checkpoints on solid road. */
-export function isPlayable(def: TrackDef): boolean {
+/**
+ * Road that doesn't cross itself, shortcuts clear of the rest of the road,
+ * and checkpoints on solid road. With `overpasses` (the shaped layouts) the
+ * road may cross itself where one stretch is a deck high over the other.
+ */
+export function isPlayable(def: TrackDef, overpasses = false): boolean {
   const track = new Track(def);
-  if (selfGap(track) < 5) return false;
+  if (selfGap(track, overpasses) < 5) return false;
   if (track.branches.some((_, k) => branchGap(track, k) < 5)) return false;
   return def.checkpoints.every((cp) => {
     const pose = track.respawnPose(cp * track.length + 2);
@@ -895,15 +923,22 @@ export function isPlayable(def: TrackDef): boolean {
   });
 }
 
-/** Closest the road comes to itself, edge to edge, away from where it's the same stretch. */
-export function selfGap(track: Track): number {
+/**
+ * Closest the road comes to itself, edge to edge, away from where it's the
+ * same stretch. Flat on the map: a deck high over another stretch of road
+ * still counts as a crossing, unless `overpasses` lets a deck pass over road
+ * at least OVERPASS below it (a flyover).
+ */
+export function selfGap(track: Track, overpasses = false): number {
   const sp = track.spline;
+  const main = track.main;
+  const deck = (i: number) => !!main.def.sections[main.sectionIndex[i]]?.bridge;
   let min = Infinity;
   for (let i = 0; i < sp.count; i += 2) {
     for (let j = i + 2; j < sp.count; j += 2) {
       const along = Math.abs(sp.dist[i] - sp.dist[j]);
-      // Flat on the map: a deck high over another stretch of road would still be a crossing.
       if (Math.min(along, sp.length - along) < 120) continue;
+      if (overpasses && (deck(i) || deck(j)) && Math.abs(main.heightAt(sp.dist[i]) - main.heightAt(sp.dist[j])) >= OVERPASS) continue;
       const gap = Math.hypot(sp.px[i] - sp.px[j], sp.pz[i] - sp.pz[j]) - track.main.halfWidth[i] - track.main.halfWidth[j];
       if (gap < min) min = gap;
     }
@@ -997,6 +1032,382 @@ interface RiskySpot extends ItemBoxRow {
   rank: number;
 }
 
+/**
+ * The shapes a layout's skeleton is drawn round (GEN_LAYOUT): not the old
+ * box (four sides round the edge of the map, the middle empty) but a shape
+ * with corners turning both ways, legs across the middle, or a crossing on
+ * a flyover. Each leg is filled with modules as the rectangle's sides were.
+ */
+export type GenShape = 'rectangle' | 'L' | 'U' | 'T' | 'zigzag' | 'stairs' | 'triangle' | 'kite' | 'eight' | 'lollipop';
+export const GEN_SHAPES: readonly GenShape[] = ['rectangle', 'L', 'U', 'T', 'zigzag', 'stairs', 'triangle', 'kite', 'eight', 'lollipop'];
+
+/** How likely each shape is at a twists setting (relative odds): the rectangle rare and only at low twists, the busier shapes likelier as twists rise. */
+export function shapeOdds(c: number): Record<GenShape, number> {
+  return {
+    rectangle: c <= 2 ? 0.4 : c === 3 ? 0.15 : 0,
+    L: 1,
+    triangle: 1,
+    kite: 1,
+    lollipop: 1,
+    U: 0.6 + 0.15 * c,
+    T: 0.6 + 0.15 * c,
+    stairs: 0.4 + 0.2 * c,
+    zigzag: 0.4 + 0.2 * c,
+    eight: 0.4 + 0.25 * c,
+  };
+}
+
+type UV = [number, number];
+
+/** A shape's outline, unscaled, as (u, v) corners with v to the left of u, run anticlockwise (left turns); its proportions from `r`. */
+function outline(kind: GenShape, r: (a: number, b: number) => number): UV[] {
+  switch (kind) {
+    case 'rectangle': {
+      const a = r(1, 1.6);
+      return [[0, 0], [a, 0], [a, 1], [0, 1]];
+    }
+    case 'L': {
+      // A notch out of one corner.
+      const a = r(1.5, 2.1);
+      const b = r(1.3, 1.8);
+      const x = a * r(0.42, 0.6);
+      const y = b * r(0.4, 0.6);
+      return [[0, 0], [a, 0], [a, y], [x, y], [x, b], [0, b]];
+    }
+    case 'U': {
+      // A horseshoe: two arms and the bay between them.
+      const a = r(1.7, 2.3);
+      const b = r(1.1, 1.5);
+      const arm = a * r(0.28, 0.36);
+      const d = b * r(0.35, 0.55);
+      return [[0, 0], [a, 0], [a, b], [a - arm, b], [a - arm, d], [arm, d], [arm, b], [0, b]];
+    }
+    case 'T': {
+      // A bar across the top on a stem.
+      const a = r(1.9, 2.5);
+      const b = r(1.4, 1.8);
+      const stem = a * r(0.34, 0.46);
+      const y = b * r(0.45, 0.6);
+      const s0 = (a - stem) / 2 + a * r(-0.08, 0.08);
+      return [[s0, 0], [s0 + stem, 0], [s0 + stem, y], [a, y], [a, b], [0, b], [0, y], [s0, y]];
+    }
+    case 'stairs': {
+      // Three steps up a diagonal.
+      const x1 = r(0.8, 1.2);
+      const x2 = x1 + r(0.8, 1.2);
+      const x3 = x2 + r(0.8, 1.2);
+      const y1 = r(0.6, 0.9);
+      const y2 = y1 + r(0.6, 0.9);
+      const y3 = y2 + r(0.6, 0.9);
+      return [[0, 0], [x3, 0], [x3, y1], [x2, y1], [x2, y2], [x1, y2], [x1, y3], [0, y3]];
+    }
+    case 'zigzag': {
+      // A saw-toothed side: in, out, in again across the top.
+      const a = r(2.4, 3);
+      const b = r(1.1, 1.4);
+      const d = b * r(0.4, 0.55);
+      return [[0, 0], [a, 0], [a, b], [0.75 * a, b - d], [0.5 * a, b], [0.25 * a, b - d], [0, b]];
+    }
+    case 'triangle': {
+      const x = r(0.2, 0.8);
+      return [[0, 0], [1, 0], [x, r(0.75, 1)]];
+    }
+    case 'kite': {
+      // Long below its crossbar, short above, a little lopsided.
+      return [[0, 0], [r(0.26, 0.34), r(0.6, 0.72)], [r(-0.05, 0.05), 1], [-r(0.26, 0.34), r(0.6, 0.72)]];
+    }
+    case 'eight': {
+      // Two loops, the road crossing itself between them: one diagonal over the other on a flyover.
+      const h = r(0.65, 0.85);
+      const w = r(0.26, 0.34);
+      return [[0, 0], [1, h], [1 + w, h], [1 + w, 0], [1, 0], [0, h], [-w, h], [-w, 0]];
+    }
+    case 'lollipop': {
+      // A loop on the end of a stem, out on one lane and back on the other.
+      const L = r(1, 1.4);
+      const S = r(0.55, 0.75);
+      const D = r(1, 1.3);
+      const e = r(0.6, 0.8);
+      return [[0, 0], [L, 0], [L, -e], [L + D, -e], [L + D, S + e], [L, S + e], [L, S], [0, S]];
+    }
+  }
+}
+
+/** A skeleton fitted to a lap: its corners (metres), the turn and cut-back at each, and how each leg is to be filled. */
+interface Skeleton {
+  shape: GenShape;
+  /** Corner k starts leg k. */
+  pts: UV[];
+  dirs: UV[];
+  len: number[];
+  /** The turn at corner k (radians, left positive), and how far its bend reaches back along each leg. */
+  turns: number[];
+  tan: number[];
+  /** Legs near another leg: nothing that shifts the road sideways (S-bends, hairpins, swings). */
+  calm: boolean[];
+  /** Which way a swing goes out of the shape: 1 right, -1 left, 0 none. */
+  out: number[];
+  /** The quarter of the lap each leg starts in. */
+  phase: number[];
+  /** The leg the coaster goes on (from twists 3): the longest past the first quarter of the lap (first thing on it), else the first (at its end). */
+  coaster: number;
+  /** A figure of eight: the leg laid first, kept level and straight where it's crossed, and the leg that flies over it. */
+  cross: { lower: number; upper: number; at: UV; sin: number } | null;
+  /** Centre of its bounds, put at the middle of the map. */
+  centre: UV;
+}
+
+const sub = (a: UV, b: UV): UV => [a[0] - b[0], a[1] - b[1]];
+const crossUV = (a: UV, b: UV) => a[0] * b[1] - a[1] * b[0];
+const dotUV = (a: UV, b: UV) => a[0] * b[0] + a[1] * b[1];
+const wrapPi = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
+
+function pointSeg(p: UV, a: UV, b: UV): number {
+  const ab = sub(b, a);
+  const t = clamp(dotUV(sub(p, a), ab) / dotUV(ab, ab), 0, 1);
+  return Math.hypot(p[0] - a[0] - t * ab[0], p[1] - a[1] - t * ab[1]);
+}
+
+/** Where two segments cross, or null. */
+function segCross(a: UV, b: UV, c: UV, d: UV): UV | null {
+  const r = sub(b, a);
+  const s = sub(d, c);
+  const den = crossUV(r, s);
+  if (Math.abs(den) < 1e-9) return null;
+  const t = crossUV(sub(c, a), s) / den;
+  const u = crossUV(sub(c, a), r) / den;
+  return t > 0 && t < 1 && u > 0 && u < 1 ? [a[0] + t * r[0], a[1] + t * r[1]] : null;
+}
+
+function segDist(a: UV, b: UV, c: UV, d: UV): number {
+  if (segCross(a, b, c, d)) return 0;
+  return Math.min(pointSeg(a, c, d), pointSeg(b, c, d), pointSeg(c, a, b), pointSeg(d, a, b));
+}
+
+/**
+ * How far either side of the crossing, along either road, the other road is
+ * near enough to count (roads this wide, half width in metres, crossing at
+ * this angle): the flyover stays high and the road under it level that far.
+ */
+const clearOf = (hw: number, sin: number) => (2 * hw + 5) / sin + 8;
+const underHalf = (hw: number, sin: number) => clearOf(hw, sin) + 12;
+
+/** A flyover's heights: its length, how far in it crosses the road below, its height profile and where its deck (on pillars) starts and ends. */
+interface FlyoverPlan {
+  len: number;
+  at: number;
+  shapes: Shape[];
+  deckFrom: number;
+  deckTo: number;
+}
+
+/**
+ * The road over the crossing: a ramp up onto a deck high over the other
+ * road and down again; or, with a `top` (from twists 3), a coaster that
+ * crosses it: a climb to `top`, level over the crossing, the lead up to the
+ * crest and the plunge.
+ */
+function flyoverPlan(clear: number, top: number | null): FlyoverPlan {
+  const high = OVERPASS + 0.5;
+  if (top === null) {
+    const rampTop = FLY_IN + FLY_RAMP;
+    const len = 2 * (rampTop + clear);
+    const ramp = (x: number) => (FLY_HEIGHT * (1 - Math.cos((Math.PI * x) / FLY_RAMP))) / 2;
+    const deckFrom = FLY_IN + (FLY_RAMP * Math.acos(1 - (2 * DECK_LINE) / FLY_HEIGHT)) / Math.PI;
+    return {
+      len,
+      at: len / 2,
+      shapes: [
+        [FLY_IN, rampTop, (x) => ramp(x - FLY_IN), 4],
+        [rampTop, len - rampTop, () => FLY_HEIGHT, 4],
+        [len - rampTop, len - FLY_IN, (x) => ramp(len - FLY_IN - x), 4],
+      ],
+      deckFrom,
+      deckTo: len - deckFrom,
+    };
+  }
+  const climb = top * 5;
+  const peak = top + COASTER_LIFT;
+  const drop = (2 * peak) / COASTER_DROP_SLOPE;
+  // High enough over the road below from the top of the climb until the plunge has dropped this far.
+  const tail = COASTER_LEAD + drop * (1 - Math.sqrt(high / peak));
+  const level = Math.max(0, 2 * clear - tail);
+  const lead = COASTER_IN + climb + level;
+  const crest = lead + COASTER_LEAD;
+  return {
+    len: crest + drop + COASTER_OUT,
+    at: COASTER_IN + climb + (level + tail) / 2,
+    shapes: [
+      [COASTER_IN, COASTER_IN + climb, (x) => (top * (1 - Math.cos((Math.PI * (x - COASTER_IN)) / climb))) / 2, 4],
+      [COASTER_IN + climb, lead, () => top, 4],
+      [lead, crest, (x) => top + (COASTER_LIFT * (x - lead)) / COASTER_LEAD, 4],
+      [crest, crest + drop, (x) => peak * (1 - (x - crest) / drop) ** 2, 2],
+    ],
+    deckFrom: COASTER_IN + (climb * Math.acos(1 - (2 * DECK_LINE) / top)) / Math.PI,
+    deckTo: crest + drop * (1 - Math.sqrt(DECK_LINE / peak)),
+  };
+}
+
+/**
+ * Scales an outline to the lap, picks the leg the finish line goes on and
+ * checks it can be built: every turn a real corner and none too sharp, room
+ * on every leg between its bends, legs that don't meet kept well apart, at
+ * most one crossing, steep enough and with room for the flyover.
+ */
+function fitSkeleton(shape: GenShape, raw: UV[], per: number, R: number, hw: number, coasterRoom: number, rand: () => number): Skeleton | null {
+  // From twists 3 a figure of eight's flyover is its coaster.
+  const flyTop = coasterRoom > 0 ? COASTER_MIN : null;
+  let n = raw.length;
+  let total = 0;
+  for (let k = 0; k < n; k++) total += Math.hypot(...sub(raw[(k + 1) % n], raw[k]));
+  let pts = raw.map(([u, v]): UV => [(u * per) / total, (v * per) / total]);
+  // Mirrored half the time (and run backwards, so it still turns left).
+  if (rand() < 0.5) pts = pts.map(([u, v]): UV => [-u, v]).reverse();
+  n = pts.length;
+  const geometry = (q: UV[]) => {
+    const len = q.map((p, k) => Math.hypot(...sub(q[(k + 1) % n], p)));
+    const dirs = q.map((p, k): UV => {
+      const d = sub(q[(k + 1) % n], p);
+      return [d[0] / len[k], d[1] / len[k]];
+    });
+    const turns = dirs.map((d, k) => wrapPi(Math.atan2(d[1], d[0]) - Math.atan2(dirs[(k + n - 1) % n][1], dirs[(k + n - 1) % n][0])));
+    const tan = turns.map((t) => R * Math.tan(Math.abs(t) / 2));
+    return { len, dirs, turns, tan };
+  };
+  const g = geometry(pts);
+  if (g.turns.some((t) => Math.abs(t) < (8 * Math.PI) / 180 || Math.abs(t) > (140 * Math.PI) / 180)) return null;
+  const free = (k: number) => g.len[k] - g.tan[k] - g.tan[(k + 1) % n];
+  if (g.len.some((_, k) => free(k) < 20)) return null;
+  // Legs that don't meet: well apart, or crossing (once, steeply).
+  let crossing: { i: number; j: number; at: UV; sin: number } | null = null;
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 2; j < n; j++) {
+      if (i === 0 && j === n - 1) continue;
+      const at = segCross(pts[i], pts[(i + 1) % n], pts[j], pts[(j + 1) % n]);
+      if (at) {
+        const sin = Math.abs(crossUV(g.dirs[i], g.dirs[j]));
+        if (crossing || sin < Math.sin((50 * Math.PI) / 180)) return null;
+        crossing = { i, j, at, sin };
+      } else if (segDist(pts[i], pts[(i + 1) % n], pts[j], pts[(j + 1) % n]) < 2 * hw + 40) return null;
+    }
+  }
+  // The finish line goes on a leg with room for the grid, not one that's crossed.
+  const starts = g.len.map((_, k) => k).filter((k) => free(k) >= FINISH + 30 && (!crossing || (k !== crossing.i && k !== crossing.j)));
+  if (!starts.length) return null;
+  let pickAt = rand() * starts.reduce((t, k) => t + free(k), 0);
+  const first = starts.find((k) => (pickAt -= free(k)) <= 0) ?? starts[starts.length - 1];
+  pts = [...pts.slice(first), ...pts.slice(0, first)];
+  const { len, dirs, turns, tan } = geometry(pts);
+  let cross: Skeleton['cross'] = null;
+  if (crossing) {
+    const c0 = crossing;
+    const [lower, upper] = [(c0.i - first + n) % n, (c0.j - first + n) % n].sort((a, b) => a - b);
+    // Room on the upper leg for the whole flyover (at its lowest), and on the lower for the level stretch under it.
+    const room = (k: number, before: number, after: number) => {
+      const into = dotUV(sub(c0.at, pts[k]), dirs[k]);
+      return into - tan[k] >= before + 5 && len[k] - tan[(k + 1) % n] - into >= after + 5;
+    };
+    const fly = flyoverPlan(clearOf(hw, c0.sin), flyTop);
+    const under = underHalf(hw, c0.sin);
+    if (!room(upper, fly.at, fly.len - fly.at) || !room(lower, under, under)) return null;
+    cross = { lower, upper, at: c0.at, sin: c0.sin };
+  }
+  const calm = pts.map((_, k) => {
+    if (cross && (k === cross.lower || k === cross.upper)) return true;
+    for (let j = 0; j < n; j++) {
+      if (j === k || j === (k + 1) % n || j === (k + n - 1) % n) continue;
+      if (segDist(pts[k], pts[(k + 1) % n], pts[j], pts[(j + 1) % n]) < 2 * hw + 100) return true;
+    }
+    return false;
+  });
+  const out = turns.map((t, k) => {
+    const next = turns[(k + 1) % n];
+    return t >= 0 && next >= 0 ? 1 : t <= 0 && next <= 0 ? -1 : 0;
+  });
+  let along = 0;
+  const phase = len.map((l) => {
+    const q = Math.min(3, Math.floor((4 * along) / per));
+    along += l;
+    return q;
+  });
+  // A leg long enough for the coaster, off the crossing: past the first quarter if one is, else the first
+  // (after the grid).
+  const roomy = len.map((_, k) => k).filter((k) => !cross || (k !== cross.lower && k !== cross.upper));
+  const free2 = (k: number) => len[k] - tan[k] - tan[(k + 1) % n] - (k === 0 ? FINISH : 0);
+  const later = roomy.filter((k) => phase[k] >= 1 && free2(k) >= coasterRoom);
+  const coaster = later.length ? later.reduce((a, k) => (free2(k) > free2(a) ? k : a)) : free2(0) >= coasterRoom ? 0 : -1;
+  if (coasterRoom > 0 && !cross && coaster < 0) return null;
+  const us = pts.map(([u]) => u);
+  const vs = pts.map(([, v]) => v);
+  const centre: UV = [(Math.min(...us) + Math.max(...us)) / 2, (Math.min(...vs) + Math.max(...vs)) / 2];
+  return { shape, pts, dirs, len, turns, tan, calm, out, phase, coaster, cross, centre };
+}
+
+/**
+ * The skeleton for these dials: its shape drawn from the seed alone (so it
+ * stays the same whatever attempt the layout is on), its proportions from
+ * the attempt's rolls. A shape that can't be built at this size gives way to
+ * the next in a seeded order.
+ */
+function skeleton(p: GenParams, c: number, coasterRooms: number[], rand: () => number, per: number, R: number, hw: number): Skeleton | null {
+  const sr = seededRandom(p.seed * 6151 + 17);
+  const odds = shapeOdds(c);
+  // A weighted shuffle: each shape's key an exponential draw over its odds, the smallest first.
+  const order = GEN_SHAPES.filter((s) => odds[s] > 0)
+    .map((s) => [s, -Math.log(1 - sr()) / odds[s]] as const)
+    .sort((a, b) => a[1] - b[1])
+    .map(([s]) => s);
+  const between = (a: number, b: number) => a + rand() * (b - a);
+  // The rectangle only when it's drawn first (rarely), or when nothing else fits.
+  const tryOrder = [order[0], ...order.slice(1).filter((s) => s !== 'rectangle'), 'rectangle' as const];
+  // The coaster's leg as long as it would like, else as long as it needs.
+  for (const coasterRoom of coasterRooms) {
+    for (const shape of tryOrder) {
+      for (let tries = 0; tries < 10; tries++) {
+        const sk = fitSkeleton(shape, outline(shape, between), per, R, hw, coasterRoom, rand);
+        if (sk) return sk;
+      }
+    }
+  }
+  return null;
+}
+
+/** How far along a pose's heading its line meets the segment a-b, or null if it doesn't. */
+function rayHit(p: Pose, a: Pose, b: Pose): number | null {
+  const f: UV = [Math.sin(p.h), Math.cos(p.h)];
+  const s: UV = [b.x - a.x, b.z - a.z];
+  const den = crossUV(f, s);
+  if (Math.abs(den) < 1e-9) return null;
+  const ap: UV = [a.x - p.x, a.z - p.z];
+  const t = crossUV(ap, s) / den;
+  const u = crossUV(ap, f) / den;
+  return t > 0 && u >= 0 && u <= 1 ? t : null;
+}
+
+/**
+ * How far along its heading from `p` the last corner must start, so that a
+ * single bend of radius R lands it on the finish line's line (`home`'s): the
+ * last leg is laid to there, so the loop closes on a plain corner whatever
+ * the legs before have drifted sideways. Null if the two lines are parallel.
+ */
+function closingAlong(p: Pose, home: Pose, R: number): number | null {
+  const th = wrapPi(home.h - p.h);
+  const f: UV = [Math.sin(p.h), Math.cos(p.h)];
+  const l: UV = [Math.cos(p.h), -Math.sin(p.h)];
+  const side = th < 0 ? -1 : 1;
+  const ahead = R * Math.sin(Math.abs(th));
+  const across = side * R * (1 - Math.cos(Math.abs(th)));
+  const n0: UV = [Math.cos(home.h), -Math.sin(home.h)];
+  const dn = dotUV(f, n0);
+  if (Math.abs(dn) < 1e-6) return null;
+  const off = (p.x - home.x) * n0[0] + (p.z - home.z) * n0[1] + (ahead * f[0] + across * l[0]) * n0[0] + (ahead * f[1] + across * l[1]) * n0[1];
+  return -off / dn;
+}
+
+/** From the skeleton's (u, v) to the map: u along x, v to the left (-z), centred. */
+const toMap = (sk: Skeleton, [u, v]: UV) => ({ x: u - sk.centre[0], z: -(v - sk.centre[1]) });
+const mapHeading = ([du, dv]: UV) => Math.atan2(du, -dv);
+
 function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | null {
   const rand = seededRandom(p.seed * 7919 + attempt * 104729 + 1);
   const pick = <T>(list: readonly T[]) => list[Math.floor(rand() * list.length)];
@@ -1009,10 +1420,19 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
   const wall = abyss || c <= 3 ? 1.2 : 0;
   // Modules wind more at higher complexity, so the skeleton shrinks to keep the lap near its length.
   const per = LENGTH_M[p.length] / (1.02 + 0.033 * c);
-  const aspect = 1 + rand() * 0.6;
+  // The skeleton: the first generator's rectangle (layout 1, kept as it was), or a shape drawn from the seed.
+  const legacy = (p.layout ?? 1) <= 1;
+  // From twists 3 a leg kept for the coaster: longer over an abyss, where it climbs higher.
+  const coasterRooms = c < 3 || plain ? [0] : abyss ? [COASTER_ROOM_ABYSS, COASTER_ROOM] : [COASTER_ROOM];
+  const sk = legacy ? null : skeleton(p, c, coasterRooms, rand, per, R, halfWidth * ROAD_WIDTH_SCALE);
+  if (!legacy && !sk) return null;
+  generatorStats.shape = sk?.shape ?? 'rectangle';
+  const aspect = legacy ? 1 + rand() * 0.6 : 1;
   const H = per / (2 * (1 + aspect));
   const W = H * aspect;
-  const start: Pose = { x: -W / 2 + R + FINISH, z: H / 2, h: Math.PI / 2 };
+  const start: Pose = sk
+    ? { ...toMap(sk, [sk.pts[0][0] + (sk.tan[0] + FINISH) * sk.dirs[0][0], sk.pts[0][1] + (sk.tan[0] + FINISH) * sk.dirs[0][1]]), h: mapHeading(sk.dirs[0]) }
+    : { x: -W / 2 + R + FINISH, z: H / 2, h: Math.PI / 2 };
   const place = () => pick(p.places?.length ? p.places : pal.places);
   const surface = () => (pal.alt && rand() < (pal.alt === 'ice' ? 0.6 : 0.3) ? pal.alt : pal.surface);
 
@@ -1043,9 +1463,14 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
   let landing = false;
   /** The last module was walled: no rail-less bridge straight out of it, where a fast kart still running wide would go in. */
   let walledLast = false;
-  let bulge: { from: { s: number; pose: Pose }; to: { s: number; pose: Pose } } | null = null;
+  // (Set as the legs are filled: typed wide, so the checks after them don't take it for still null.)
+  let bulge = null as { from: { s: number; pose: Pose }; to: { s: number; pose: Pose } } | null;
   const risky: RiskySpot[] = [];
   const edge = () => (rand() < 0.5 ? 1 : -1);
+  /** The leg being filled is near another (no sideways shifts), and which way out of the shape a swing goes (0: none). */
+  let calm = false;
+  let out = 1;
+  let coasterHere = false;
 
   // Modules: each leaves the road heading the way it came in.
   const straight = (len: number): Module => ({ name: pick(['Straight', 'Run', 'Dash']), open: true, props: {}, build: (bb) => bb.straight(len) });
@@ -1126,8 +1551,28 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
       },
     };
   };
-  // A wide swing out of the rectangle and back onto the side's line, open-edged so a shortcut can cut straight across.
+  // Where a figure of eight crosses itself: the road underneath, level and straight, nothing on it.
+  const underpass = (len: number): Module => ({ name: 'Underpass', open: false, fixed: true, props: {}, build: (bb) => bb.straight(len) });
+  // And the road over it (see flyoverPlan): from twists 3 the track's coaster, crossing it.
+  const flyover = (plan: FlyoverPlan, coasterToo: boolean): Module => {
+    const deck = `${place()} ${pick(coasterToo ? COASTER_DECKS : ['Overpass', 'Flyover', 'Viaduct'])}`;
+    const down = `${place()} ${pick(coasterToo ? ['Drop', 'Plunge', 'Dipper'] : ['Ramp', 'Descent', 'Slope'])}`;
+    return {
+      name: coasterToo ? 'Climb' : 'Flyover',
+      open: false,
+      fixed: true,
+      props: { wallHeight: 1.2, surface: pal.surface },
+      shapes: plan.shapes,
+      build: (bb) =>
+        lay(bb, [[plan.len, 0]], [
+          [plan.deckFrom, deck, { halfWidth, wallHeight: 1.2, surface: pal.deck, bridge: true }],
+          [plan.deckTo, down, { halfWidth, wallHeight: 1.2, surface: pal.surface }],
+        ]),
+    };
+  };
+  // A wide swing out of the rectangle (or the shape) and back onto the side's line, open-edged so a shortcut can cut straight across.
   const sweep = (): Module => {
+    const o = out;
     const r = between(42, 52);
     const a = between(60, 68);
     return {
@@ -1136,7 +1581,7 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
       props: { wallHeight: 0, surface: pal.surface },
       bulge: true,
       fixed: true,
-      build: (bb) => bb.straight(6).arc(r, -a).arc(r, 2 * a).arc(r, -a).straight(6),
+      build: (bb) => bb.straight(6).arc(r, -o * a).arc(r, 2 * o * a).arc(r, -o * a).straight(6),
     };
   };
 
@@ -1197,22 +1642,25 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
   const chooseModule = (room: number, side: number): Module => {
     const options: [number, () => Module][] = [
       [3 - c * 0.4, () => straight(Math.min(room, between(15, 60 - c * 7)))],
-      [1.5, sBend],
+      ...(calm ? [] : [[1.5, sBend] as [number, () => Module]]),
       [c * 0.5, () => esses(false)],
     ];
     if (c >= 2 && !landing) options.push([c * 0.4, () => esses(true)]);
-    if (c >= 3 && room > 90 && !landing) options.push([(c - 2) * 0.6, hairpins]);
+    if (c >= 3 && room > 90 && !landing && !calm) options.push([(c - 2) * 0.6, hairpins]);
     if (c >= 2 && jumps < 2 && room > 110 && !landing) options.push([0.5 + c * 0.15, jump]);
     if (pal.liquid && bridges < 1 && room > 110 && !walledLast) options.push([0.6, bridge]);
     // Kickers: more at higher twists, and every track gets one once it's past the first side;
     // none where the grid and the first boxes are.
     const single = KICKER_LEAD + 7 + KICKER_LANDING;
-    if (kickers < 1 + c && room > single && b.s > FINISH) {
-      const pair = kickers + 2 <= 1 + c && room > single + KICKER_PAIR[1] + 7 && rand() < 0.15 + c * 0.12;
+    // (A shape has more legs to put them on: at most `c` there, so one at the gentlest.)
+    const most = sk ? c : 1 + c;
+    if (kickers < most && room > single && b.s > FINISH) {
+      const pair = kickers + 2 <= most && room > single + KICKER_PAIR[1] + 7 && rand() < 0.15 + c * 0.12;
       const make = () => kickerRun(pair, pair ? room - KICKER_PAIR[1] - 7 : room);
       // None yet by the second half of the lap: this is it.
       if (kickers === 0 && side >= 2 && !plain) return make();
-      options.push([kickers === 0 && side > 0 ? 12 : 0.2 + c * 0.25, make]);
+      // (A shape's legs are shorter than the rectangle's sides: likelier per leg, to keep up the count at high twists.)
+      options.push([kickers === 0 && side > 0 ? 12 : 0.2 + c * 0.25 + (sk ? 0.6 * (c - 1) : 0), make]);
     }
     // A coaster from twists 3: likely once past the first side, and by the third side this is it.
     if (c >= 3 && !plain && coasters === 0 && side >= 1) {
@@ -1221,7 +1669,7 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
       if (m) options.push([4, () => m]);
     }
     // Not over an abyss: the open bends where it meets the shortcut would be a long way down.
-    if (c >= 3 && !abyss && !bulge && room > 160) options.push([1.5 + (c - 3) * 0.5, sweep]);
+    if (c >= 3 && !abyss && !bulge && room > 160 && !calm && out !== 0) options.push([1.5 + (c - 3) * 0.5, sweep]);
     if (plain) options.splice(1);
     const total = options.reduce((t, [w]) => t + Math.max(0, w), 0);
     let r = rand() * total;
@@ -1232,19 +1680,29 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
     return options[0][1]();
   };
 
-  // A rectangle of four sides, each filled with modules, corners between them.
+  // The skeleton's legs, each filled with modules, corners between them: the rectangle's four sides, or a shape's.
   const sides = [W - 2 * R - FINISH, H - 2 * R, W - 2 * R, H - 2 * R];
-  for (let side = 0; side < 4; side++) {
+  const legs = sk ? sk.pts.length : 4;
+  const hwMap = halfWidth * ROAD_WIDTH_SCALE;
+  /** The figure of eight's level stretch, as laid, for the flyover to cross. */
+  let under: { a: Pose; b: Pose } | null = null;
+  for (let side = 0; side < legs; side++) {
     const from = { ...b.pose };
     const fx = Math.sin(from.h);
     const fz = Math.cos(from.h);
     const along = () => (b.pose.x - from.x) * fx + (b.pose.z - from.z) * fz;
+    const last = side === legs - 1;
+    const phase = sk ? sk.phase[side] : side;
     lateral = 0;
+    calm = !!sk?.calm[side];
+    out = sk ? sk.out[side] : 1;
+    coasterHere = !!sk && sk.coaster === side;
     if (side > 0) {
       const mark = `side${side}`;
       b.mark(mark);
       marks.push(mark);
-      itemBoxes.push({ s: b.s + 15, count: halfWidth > 10 ? 8 : 3 });
+      // A row of boxes on each side of the rectangle; on a shape, at the first leg of each quarter of the lap.
+      if (!sk || sk.phase[side] > sk.phase[side - 1]) itemBoxes.push({ s: b.s + 15, count: halfWidth > 10 ? 8 : 3 });
     }
     // The last two sides aim for where the final corner must start, so the loop closes on a plain corner;
     // the others run their length.
@@ -1253,19 +1711,49 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
     const lastH = home.h - Math.PI / 2;
     const corner = { x: home.x - R * Math.sin(home.h) - R * Math.sin(lastH), z: home.z - R * Math.cos(home.h) - R * Math.cos(lastH) };
     const toCorner = () => (corner.x - b.pose.x) * fx + (corner.z - b.pose.z) * fz;
-    const goal = () => (side === 3 ? toCorner() : side === 2 ? toCorner() - R : sides[side] - along());
-    let guard = 0;
-    while (goal() > 25 && guard++ < 20) {
-      const room = goal();
-      // Try a few modules for one that fits what's left of the side; otherwise run straight to the end.
-      let m: Module | null = null;
-      for (let tries = 0; tries < 6 && !m; tries++) {
-        const cand = chooseModule(room, side);
-        if (measure(cand) <= room + 4) m = cand;
+    // A shape's legs each run to where the bend at their far corner starts.
+    const next = (side + 1) % legs;
+    const end = sk ? toMap(sk, [sk.pts[next][0] - sk.tan[next] * sk.dirs[side][0], sk.pts[next][1] - sk.tan[next] * sk.dirs[side][1]]) : corner;
+    const toEnd = () => (end.x - b.pose.x) * fx + (end.z - b.pose.z) * fz;
+    // A shape's last leg runs to where one bend puts it on the finish line's line.
+    const closeAt = sk && last ? closingAlong(from, home, R) : null;
+    const goal = sk ? (closeAt !== null ? () => closeAt - along() : toEnd) : () => (side === 3 ? toCorner() : side === 2 ? toCorner() - R : sides[side] - along());
+    const span = sk ? toEnd() : sides[side];
+    // Where a figure of eight crosses this leg (metres along it), and the stretch either side that's
+    // the level road under the flyover, or the flyover itself.
+    let crossAt = -1;
+    /** How far before the crossing the stretch starts, and the module that crosses (or passes under). */
+    let crossIn = 0;
+    let crossing: Module | null = null;
+    if (sk?.cross && side === sk.cross.lower) {
+      const X = toMap(sk, sk.cross.at);
+      crossAt = (X.x - from.x) * fx + (X.z - from.z) * fz;
+      crossIn = underHalf(hwMap, sk.cross.sin);
+      crossing = underpass(2 * crossIn);
+    } else if (sk?.cross && side === sk.cross.upper) {
+      // Where this leg's line meets the level stretch as it was laid (nothing on these legs shifts the road sideways).
+      const hit = under ? rayHit(from, under.a, under.b) : null;
+      const clear = clearOf(hwMap, sk.cross.sin);
+      const fits = (plan: FlyoverPlan) => hit !== null && hit - plan.at >= 0 && hit - plan.at + plan.len <= toEnd();
+      // From twists 3 the flyover is the coaster: as high as it wants to go, or as fits.
+      let plan: FlyoverPlan | null = null;
+      const coasterToo = c >= 3 && !plain && coasters === 0;
+      if (coasterToo) {
+        for (let top = abyss ? between(20, 26) : between(8 + c, 12 + c); top >= COASTER_MIN && !plan; top -= 0.5) {
+          const q = flyoverPlan(clear, top);
+          if (fits(q)) plan = q;
+        }
+      } else if (fits(flyoverPlan(clear, null))) plan = flyoverPlan(clear, null);
+      if (hit === null || !plan) {
+        generatorStats.rejects.flyover++;
+        return null;
       }
-      m ??= straight(room);
-      // The last side keeps to its line: nothing that shifts the road sideways.
-      if (side === 3 && (m.name === 'S-Bends' || m.name === 'Hairpins')) m = straight(Math.min(room, 40));
+      crossAt = hit;
+      crossIn = plan.at;
+      crossing = flyover(plan, coasterToo);
+    }
+
+    const put = (m: Module) => {
       if (m.name === 'Climb') coasters++;
       const s0 = b.s;
       b.section(`${place()} ${m.name}`, { halfWidth, wallHeight: abyss ? 1.2 : 0, surface: surface(), ...m.props });
@@ -1280,7 +1768,11 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
         const margin = m.bulge ? JUNCTION_FLAT : FLAT_MARGIN;
         fixed.push([s0 - margin, s1 + margin]);
       }
-      if (m.walled) walled.push([s0, s1]);
+      // A shape keeps its chicanes level (no hill, no cut's ramp through them), and over an abyss all its tight
+      // walled bends: a crest or a dip in one can throw a fast kart over the wall.
+      const level = !!sk && (m.name === 'Chicane' || (abyss && !!m.walled));
+      if (m.walled && !level) walled.push([s0, s1]);
+      if (level) fixed.push([s0, s1]);
       if (m.name === 'Straight' || m.name === 'Run' || m.name === 'Dash') noteStraight(s0, s1);
       for (const [from, to, f, step] of m.shapes ?? []) shapes.push([s0 + from, s0 + to, (x) => f(x - s0), step]);
       if (m.open && s1 - s0 > 35 && addHazard(s0, s1)) risky.push({ rank: 2, s: (s0 + s1) / 2, count: 1, lateral: edge() * (hw - 2) });
@@ -1293,7 +1785,7 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
       }
       if (m.bulge && !bulge) bulge = { from: { s: s0, pose: before }, to: { s: s1, pose: { ...b.pose } } };
       if (m.name === 'Straight' && s1 - s0 > 40 && boostPads.length < 3 && rand() < 0.5) boostPads.push({ s: s0 + 10, length: 8, lateral: 0, halfWidth: 2.5 });
-      if (side === 0 && marks.length === 0 && along() > sides[0] / 2) {
+      if (side === 0 && marks.length === 0 && along() > span / 2) {
         b.mark('mid');
         marks.push('mid');
       }
@@ -1308,22 +1800,81 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
         risky.push({ rank: 3, s: (s0 + s1) / 2, count: 1, lateral: edge() * (hw - 2) });
       }
       if (pal.landmarks.length && landmarks.length < 3 && m.open && rand() < 0.35) landmarks.push({ kind: pick(pal.landmarks), ribbon: -1, s: s0 + 4 });
+    };
+
+    let guard = 0;
+    while (goal() > 25 && guard++ < 20) {
+      let room = goal();
+      // A shape's coaster goes first thing on the leg kept for it, as high as it likes; on the first leg
+      // (the grid's), at its end: modules up to there, then the coaster in what's left.
+      if (coasterHere && c >= 3 && !plain && coasters === 0) {
+        const spare = side === 0 ? room - COASTER_ROOM : 0;
+        if (spare <= 25) {
+          const m = coaster(room);
+          coasterHere = false;
+          if (m) {
+            put(m);
+            continue;
+          }
+        } else room = spare;
+      }
+      if (crossAt >= 0) {
+        const toCross = crossAt - crossIn - along();
+        if (toCross <= 25) {
+          // Straight on to the crossing, then across it: under the flyover, or over the road below.
+          if (toCross > 0.5) {
+            noteStraight(b.s, b.s + toCross);
+            b.straight(toCross);
+          }
+          const a = { ...b.pose };
+          put(crossing!);
+          if (crossing!.name === 'Underpass') under = { a, b: { ...b.pose } };
+          crossAt = -1;
+          continue;
+        }
+        room = Math.min(room, toCross);
+      }
+      // Try a few modules for one that fits what's left of the side; otherwise run straight to the end.
+      let m: Module | null = null;
+      for (let tries = 0; tries < 6 && !m; tries++) {
+        const cand = chooseModule(room, phase);
+        if (measure(cand) <= room + 4) m = cand;
+      }
+      m ??= straight(room);
+      // The last side keeps to its line: nothing that shifts the road sideways.
+      if (last && (m.name === 'S-Bends' || m.name === 'Hairpins')) m = straight(Math.min(room, 40));
+      put(m);
+    }
+    // The crossing never came: re-rolled.
+    if (crossAt >= 0) {
+      generatorStats.rejects.flyover++;
+      return null;
     }
     // Whatever's left of the side, straight.
     if (goal() > 0.5) {
       noteStraight(b.s, b.s + goal());
       b.straight(goal());
     }
-    if (side < 3) {
+    if (!last) {
+      const turn = sk ? (sk.turns[next] * 180) / Math.PI : 90;
       b.section(`${place()} ${pick(['Bend', 'Turn', 'Corner', 'Sweeper'])}`, { halfWidth, wallHeight: wall, surface: surface() });
       // Tight on the apex: the fallback spot for the double boxes.
-      risky.push({ rank: 0, s: b.s + (R * Math.PI) / 4, count: 1, lateral: -(halfWidth - 1.5) });
-      b.arc(R, 90);
+      risky.push(
+        sk
+          ? { rank: 0, s: b.s + (R * Math.abs(sk.turns[next])) / 2, count: 1, lateral: -Math.sign(turn) * (halfWidth - 1.5) }
+          : { rank: 0, s: b.s + (R * Math.PI) / 4, count: 1, lateral: -(halfWidth - 1.5) },
+      );
+      b.arc(R, turn);
     }
   }
   // From twists 3 every track has its coaster: one with no room for it is re-rolled.
   if (c >= 3 && !plain && coasters === 0) {
     generatorStats.rejects.coaster++;
+    return null;
+  }
+  // And every shaped track a kicker (the rectangle's sides always had room for one).
+  if (sk && !plain && kickers === 0) {
+    generatorStats.rejects.kicker++;
     return null;
   }
   if (!marks.includes('mid')) {
@@ -1332,16 +1883,23 @@ function attemptTrack(p: GenParams, attempt: number, plain = false): TrackDef | 
   }
   // Home: the last corner, closed exactly onto the line. A layout that needs a loop to get there is re-rolled.
   const target = offsetPose(start, -FINISH);
-  const close = dubins(b.pose, target, R);
+  let close = dubins(b.pose, target, R);
+  // A shape's last leg lands right on the corner, where rounding can read a turn of nothing as a whole circle.
+  if (sk) close = close.map(([k, len]) => [k, k !== 'S' && len > 2 * Math.PI * R - 1e-3 ? len - 2 * Math.PI * R : len]);
   const turned = close.filter(([k]) => k !== 'S').reduce((t, [, len]) => t + len / R, 0);
-  if (!plain && turned > Math.PI * 1.15) {
+  if (!plain && turned > (sk ? Math.abs(sk.turns[0]) + 0.65 * Math.PI : Math.PI * 1.15)) {
     generatorStats.rejects.closure++;
     return null;
   }
   b.section(`${place()} ${pick(['Bend', 'Hook', 'Sweeper'])}`, { halfWidth, wallHeight: wall, surface: pal.surface });
   b.mark('home');
   marks.push('home');
-  b.turnTo(target, R);
+  if (sk) {
+    for (const [k, len] of close) {
+      if (k === 'S') b.straight(len);
+      else if (len > 1e-6) b.arc(R, ((k === 'L' ? 1 : -1) * len * 180) / (Math.PI * R));
+    }
+  } else b.turnTo(target, R);
   b.section('Finish Straight', { halfWidth, wallHeight: abyss ? 1.2 : 0, surface: pal.surface });
   b.straight(FINISH);
   itemBoxes.unshift({ s: 30, count: halfWidth > 10 ? 4 : 3 });

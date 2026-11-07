@@ -9,7 +9,7 @@ import { MODE_ICONS, RANDOM_CUP_ICON } from './modeIcons';
 import { chosenShow, onShows, randomShow, showSelect, shows, stepShow } from '../audio/shows';
 import { formatTime } from './hud';
 import { ENGINE_CLASSES, RACERS, bossLockNote, type EngineClass, type RacerDef } from '../physics/racers';
-import { GEN_COMPLEXITY_MAX, GEN_LENGTHS, GEN_THEMES, GEN_THEME_NAMES, trackName, type GenParams } from '../tracks/generator';
+import { GEN_COMPLEXITY_MAX, GEN_LAYOUT, GEN_LENGTHS, GEN_THEMES, GEN_THEME_NAMES, trackName, type GenParams } from '../tracks/generator';
 import { CUPS, RANDOM_CUP_ID, RANDOM_CUP_NAME, TRACK_LIST, randomCupTracks } from '../tracks/index';
 import { SKILLS, SKILL_KINDS, type SkillKind } from '../core/skills';
 
@@ -84,6 +84,13 @@ const STAT_NAMES = ['speed', 'accel', 'weight', 'handling'] as const;
 const LENGTH_NAMES = { short: 'Short', medium: 'Medium', long: 'Long' };
 
 export const newSeed = () => Math.floor(Math.random() * 1e9);
+
+/** A saved track's dials, its layout with them (a track saved before the shapes has none, and builds the rectangle it always did). */
+function savedParams(t: GenParams): GenParams {
+  const p: GenParams = { seed: t.seed, theme: t.theme, complexity: t.complexity, length: t.length };
+  if (t.layout !== undefined) p.layout = t.layout;
+  return p;
+}
 
 /** The cup a Grand Prix choice is for: one of CUPS, or the Random Cup and its draw. */
 export function chosenCup(c: MenuChoice): { id: string; name: string; tracks: number[] } {
@@ -413,7 +420,7 @@ export class Menu {
   selectSaved(slot: number): void {
     const t = this.saved()[slot];
     if (!t) return;
-    this.choice.gen = { slot, params: { seed: t.seed, theme: t.theme, complexity: t.complexity, length: t.length } };
+    this.choice.gen = { slot, params: savedParams(t) };
     this.render();
   }
 
@@ -434,10 +441,11 @@ export class Menu {
     this.lockedPeek = null;
     const step = <T>(list: readonly T[], v: T) => list[(list.indexOf(v) + dir + list.length) % list.length];
     const g = c.gen;
-    // Turning a dial on a saved track starts a new one from it.
+    // Turning a dial on a saved track (or the daily) starts a new one from it, laid out as new tracks are.
     const dial = (change: () => void) => {
       change();
       g.slot = -1;
+      g.params = { ...g.params, layout: GEN_LAYOUT };
     };
     if (row === 'mode') {
       c.mode = step(MODES, c.mode);
@@ -469,11 +477,8 @@ export class Menu {
       const n = saved.length - first;
       g.slot = ((g.slot - first + dir + n) % n) + first;
       if (g.slot === DAILY_SLOT) g.params = dailyParams();
-      else if (g.slot < 0) g.params = { ...g.params, seed: newSeed() };
-      else {
-        const t = saved[g.slot];
-        g.params = { seed: t.seed, theme: t.theme, complexity: t.complexity, length: t.length };
-      }
+      else if (g.slot < 0) g.params = { ...g.params, seed: newSeed(), layout: GEN_LAYOUT };
+      else g.params = savedParams(saved[g.slot]);
     } else if (row === 'mirror') c.mirror = !c.mirror;
     else if (row === 'sound') updateSettings({ soundtrack: step(SOUNDTRACKS, settings().soundtrack), soundtrackChosen: true });
     else if (row === 'songEnd') updateSettings({ raceToSongEnd: !settings().raceToSongEnd });
