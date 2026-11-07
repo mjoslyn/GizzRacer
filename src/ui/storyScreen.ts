@@ -2,6 +2,7 @@ import { SKILLS, explainsItself, skillRules, type SkillKind } from '../core/skil
 import { ACTS, BOONS, CLEAR_PLACE, type StoryRun } from '../core/story';
 import { ALBUM_STORY, SUITES, SuiteRun } from '../core/suites';
 import type { RacerDef } from '../physics/racers';
+import { boonChoiceHtml, boonHandHtml, isBoonChoice } from './boonCards';
 
 /** A story card: a chapter opening, a boon to pick, or how the run ended. */
 export interface StoryCard {
@@ -57,8 +58,8 @@ export class StoryScreen {
     const c = this.card;
     if (!c) return false;
     const n = c.opts.length;
-    if (code === 'ArrowUp' || code === 'KeyW') this.at = (this.at - 1 + n) % n;
-    else if (code === 'ArrowDown' || code === 'KeyS') this.at = (this.at + 1) % n;
+    if (code === 'ArrowUp' || code === 'KeyW' || code === 'ArrowLeft' || code === 'KeyA') this.at = (this.at - 1 + n) % n;
+    else if (code === 'ArrowDown' || code === 'KeyS' || code === 'ArrowRight' || code === 'KeyD') this.at = (this.at + 1) % n;
     else if (code === 'Enter' || code === 'Space') {
       this.onPick(c.opts[this.at].id);
       return true;
@@ -73,6 +74,7 @@ export class StoryScreen {
       this.el.innerHTML = '';
       return;
     }
+    const boons = isBoonChoice(c.opts);
     const opts = c.opts
       .map((o, i) => `<button class="story-opt${i === this.at ? ' on' : ''}" data-pick="${esc(o.id)}"><span class="story-opt-name">${esc(o.name)}</span><span class="story-opt-blurb">${esc(o.blurb)}</span></button>`)
       .join('');
@@ -83,20 +85,12 @@ export class StoryScreen {
         ${c.body ? `<div class="story-body">${esc(c.body)}</div>` : ''}
         ${c.verse ? `<div class="story-verse">${c.verse.map((l) => `<span>${esc(l)}</span>`).join('')}</div>` : ''}
         ${c.detail ? `<div class="story-rules">${esc(c.detail)}</div>` : ''}
-        <div class="story-opts${c.opts.length > 5 ? ' many' : ''}">${opts}</div>
-        ${c.deck ? deckHtml(c.deck) : ''}
+        ${boons ? boonChoiceHtml(c.opts, this.at) : `<div class="story-opts${c.opts.length > 5 ? ' many' : ''}">${opts}</div>`}
+        ${c.deck ? boonHandHtml(c.deck) : ''}
         ${c.footer ? `<div class="story-footer">${esc(c.footer)}</div>` : ''}
-        <div class="menu-hint">${c.opts.length > 1 ? '&uarr;&darr; choose &middot; ' : ''}Enter to go on</div>
+        <div class="menu-hint">${c.opts.length > 1 ? `${boons ? '&larr;&rarr;' : '&uarr;&darr;'} choose &middot; ` : ''}Enter to go on</div>
       </div>`;
   }
-}
-
-/** The run's deck: every boon held on a small card, stacked ones counted. */
-function deckHtml(deck: NonNullable<StoryCard['deck']>): string {
-  const cards = deck
-    .map((b) => `<div class="story-card"><span class="story-card-name">${esc(b.name)}${b.count > 1 ? ` <b>&times;${b.count}</b>` : ''}</span><span class="story-card-text">${esc(b.text)}</span></div>`)
-    .join('');
-  return `<div class="story-deck"><div class="story-kicker">Your deck</div>${cards ? `<div class="story-deck-cards">${cards}</div>` : '<div class="story-footer">Empty so far: this pick is its first card.</div>'}</div>`;
 }
 
 function esc(s: string): string {

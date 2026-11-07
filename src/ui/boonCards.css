@@ -1,0 +1,260 @@
+/* Story mode's boons as playing cards (src/ui/boonCards.ts): the chooser's fan and the run's hand. */
+
+/* The chooser's panel is wider: three cards side by side with their effects under them. */
+.menu-panel:has(.boon-row) {
+  width: min(860px, calc(100vw - 2 * max(16px, 6vw)));
+}
+
+.boon-row {
+  --ch: clamp(100px, 31vh, 236px);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: clamp(8px, 2vw, 24px);
+  padding: clamp(8px, 2vh, 16px) 4px 2px;
+  flex-shrink: 0;
+}
+
+.menu .boon-pick {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 250px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 0 0 4px;
+  background: none;
+  box-shadow: none;
+  text-shadow: none;
+  font-style: normal;
+}
+
+/* The card, fanned a little; the lit one stands straight, lifted and glowing gold. */
+.boon-card {
+  display: block;
+  height: var(--ch);
+  aspect-ratio: 5 / 7;
+  border-radius: calc(var(--ch) * 0.06);
+  transform: rotate(calc(var(--off) * 4deg)) translateY(calc(var(--off) * var(--off) * 5px));
+  transform-origin: 50% 100%;
+  filter: drop-shadow(0 4px 6px rgba(10, 0, 20, 0.6)) saturate(0.75) brightness(0.85);
+  transition:
+    transform 0.16s ease-out,
+    filter 0.16s ease-out;
+}
+
+.boon-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.boon-pick.on .boon-card,
+.boon-pick:hover .boon-card {
+  transform: translateY(calc(var(--ch) * -0.06)) scale(1.04);
+  filter: drop-shadow(0 0 3px #ffd23a) drop-shadow(0 0 10px rgba(255, 210, 58, 0.75)) drop-shadow(0 8px 10px rgba(10, 0, 20, 0.6));
+}
+
+/* Re-rendered on every arrow press: the newly lit card lifts in. */
+.boon-pick.on .boon-card {
+  animation: boon-lift 0.18s ease-out;
+}
+
+@keyframes boon-lift {
+  from {
+    transform: rotate(calc(var(--off) * 4deg)) translateY(calc(var(--off) * var(--off) * 5px));
+  }
+}
+
+/* Dealt in face down and turned over, one after another, as the offer shows. */
+.boon-row.deal .boon-card {
+  animation: boon-deal 0.42s calc(var(--i) * 0.09s) ease-out backwards;
+}
+
+@keyframes boon-deal {
+  from {
+    transform: translateY(40px) rotateY(90deg);
+    opacity: 0;
+  }
+  60% {
+    opacity: 1;
+  }
+}
+
+.boon-name {
+  margin-top: clamp(4px, 1.2vh, 10px);
+  font-family: var(--hud-font);
+  font-style: italic;
+  font-weight: 900;
+  font-size: clamp(15px, min(3.2vh, 4vw), 22px);
+  line-height: 1.05;
+  text-align: center;
+  color: #ffe14d;
+  text-shadow:
+    2px 0 0 #2a0636, -2px 0 0 #2a0636, 0 2px 0 #2a0636, 0 -2px 0 #2a0636,
+    3px 3px 0 rgba(20, 0, 30, 0.85);
+  opacity: 0.8;
+}
+
+.boon-of {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-style: italic;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: #ffd23a;
+  opacity: 0.7;
+}
+
+.boon-text {
+  max-width: 230px;
+  font-family: Verdana, sans-serif;
+  font-size: 13px;
+  line-height: 1.3;
+  text-align: center;
+  color: #fff6d0;
+  text-shadow: 1px 1px 0 #2a0636;
+  opacity: 0.75;
+}
+
+.boon-pick.on .boon-name,
+.boon-pick.on .boon-of,
+.boon-pick.on .boon-text {
+  opacity: 1;
+}
+
+/* The pad's highlight is the card's own glow. */
+body.pad-mode .boon-pick.pad-focus {
+  outline: none;
+  box-shadow: none;
+}
+
+/* The run's hand: a small card a boon, doubles stacked behind it with a count. */
+.boon-hand {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.boon-hand-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+}
+
+.boon-mini {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: 64px;
+}
+
+.boon-mini-stack {
+  --mh: clamp(44px, 9vh, 64px);
+  position: relative;
+  display: block;
+  height: var(--mh);
+  aspect-ratio: 5 / 7;
+  margin-right: calc(var(--k) * 3px);
+}
+
+.boon-mini-card,
+.boon-mini-under {
+  position: absolute;
+  inset: 0;
+  border-radius: calc(var(--mh) * 0.06);
+}
+
+.boon-mini-card {
+  filter: drop-shadow(0 2px 3px rgba(10, 0, 20, 0.6));
+}
+
+/* The doubles: card edges fanned out behind, a card each. */
+.boon-mini-under {
+  background: #fff6d0;
+  box-shadow: 0 0 0 1px #2a0636;
+}
+
+.boon-mini-under:nth-child(1) {
+  transform: translate(3px, -2px) rotate(4deg);
+}
+
+.boon-mini-under:nth-child(2) {
+  transform: translate(6px, -4px) rotate(8deg);
+}
+
+.boon-mini-under:nth-child(3) {
+  transform: translate(9px, -6px) rotate(12deg);
+}
+
+.boon-mini-count {
+  position: absolute;
+  right: -12px;
+  top: -6px;
+  min-width: 18px;
+  padding: 1px 4px;
+  border-radius: 9px;
+  font-family: Verdana, sans-serif;
+  font-style: normal;
+  font-size: 12px;
+  line-height: 16px;
+  text-align: center;
+  color: #2a0636;
+  background: #ffd23a;
+  box-shadow: 0 0 0 2px #2a0636;
+}
+
+.boon-mini-name {
+  font-family: Verdana, sans-serif;
+  font-style: normal;
+  font-size: 10px;
+  line-height: 1.15;
+  text-align: center;
+  color: #fff6d0;
+  text-shadow: 1px 1px 0 #2a0636;
+}
+
+/* A phone on its side: smaller cards, the hand on one line with its label beside it. */
+@media (max-height: 480px) {
+  .boon-row {
+    --ch: clamp(84px, 27vh, 140px);
+    padding-top: 6px;
+  }
+  .boon-of {
+    display: none;
+  }
+  .boon-text {
+    font-size: 11px;
+  }
+  .boon-hand {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+  }
+  .boon-hand .story-kicker {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-size: 10px;
+    letter-spacing: 2px;
+  }
+  .boon-mini-stack {
+    --mh: 40px;
+  }
+  .boon-mini {
+    width: 58px;
+  }
+  .boon-mini-name {
+    font-size: 9px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .boon-card,
+  .boon-pick.on .boon-card,
+  .boon-row.deal .boon-card {
+    animation: none;
+    transition: none;
+  }
+}
