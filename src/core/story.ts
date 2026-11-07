@@ -61,7 +61,7 @@ export const ACTS: readonly StoryAct[] = [
     intro: 'Han-Tyumi, the confused cyborg, wants the two things no cyborg can have: to die, and to vomit. He has made a way to get both, and it is eating everything there is.',
     themes: ['neon', 'factory', 'void'],
     launchTracks: ['robot-stop', 'gamma-knife', 'tetrachromacy'],
-    boss: { trackId: 'murder-of-the-universe', racerId: 'munt-machine', altRacerId: 'octo-organist', name: 'The Soy-Protein Munt Machine', taunt: 'Han-Tyumi built a machine of steel and soy-protein, and it is eating everything. Beat it to the line, or be the last thing the universe sees.' },
+    boss: { trackId: 'murder-of-the-universe', racerId: 'cyborg-gourmand', altRacerId: 'octo-organist', name: 'Han-Tyumi', taunt: 'Han-Tyumi wants to die, and to vomit, and he has built the machine that will do both. It is eating everything. Beat him to the line, or be the last thing the universe sees.' },
   },
 ];
 
@@ -138,10 +138,11 @@ export const BOSS_STAND_INS: Record<string, string> = {
   'people-vulture': 'gator-drummer',
   'altered-beast': 'gator-drummer',
   balrog: 'fuzz-golem',
-  'munt-machine': 'cyborg-gourmand',
+  'munt-machine': 'fuzz-golem',
   'castle-king': 'lizard-warlock',
   'the-devil': 'skeleton-dragon',
   'coven-mother': 'swamp-witch',
+  'cyborg-gourmand': 'octo-organist',
 };
 /** The model when the player is driving the boss's own (or its stand-in). */
 export const BOSS_ALT = 'octo-organist';

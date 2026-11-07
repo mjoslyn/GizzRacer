@@ -51,7 +51,7 @@ describe('track generator', () => {
 
     it('a full CPU field laps it with items and hazards on', () => {
       const race = new Race(track, 3);
-      // The roster (a story boss joins a field only once beaten, and then one of twelve, not thirty-two).
+      // The roster (a story boss joins a field only once beaten, and then one of twelve, not thirty-three).
       for (const r of RACERS.filter((x) => !x.boss)) race.addKart(r, '150cc', CPU_SKILL['150cc']);
       let falls = 0;
       for (let t = 0; t < 200 && race.karts.some((k) => k.laps.lap < 1); t += PHYSICS_DT) {

@@ -1,9 +1,12 @@
 import * as THREE from 'three';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { BOSS_SUITES, FIELD_SIZE, RACERS, bossLockNote, pickRivals } from '../src/physics/racers';
+import { ACTS, BOSS_ALT, BOSS_STAND_INS } from '../src/core/story';
+import { ALBUM_FACE } from '../src/core/suites';
 
 /**
- * The story suites' bosses: eight racers, each locked until beaten in story
+ * The story bosses: nine racers, the suites' eight and Han-Tyumi at the end
+ * of the Murder of the Universe album run, each locked until beaten in story
  * mode, kept out of every draw and picker until then, each with a model of
  * its own and bigger than the roster.
  */
@@ -17,6 +20,7 @@ const BOSSES: [id: string, suite: string, name: string][] = [
   ['castle-king', 'polygondwanaland', 'The King of the Castle in the Air'],
   ['the-devil', 'infest-the-rats-nest', 'The Devil'],
   ['coven-mother', 'petrodragonic-apocalypse', 'The Mother of the Coven'],
+  ['cyborg-gourmand', 'motu', 'Han-Tyumi'],
 ];
 const bosses = RACERS.filter((r) => r.boss);
 const roster = RACERS.filter((r) => !r.boss);
@@ -44,13 +48,14 @@ async function freshProgress(search = '') {
 }
 
 describe('boss racers', () => {
-  it("are the contract's eight, each a suite's boss, after the roster", () => {
+  it("are the contract's nine, each a story's boss, after the roster", () => {
     expect(bosses.map((r) => [r.id, r.boss, r.name])).toEqual(BOSSES);
     for (const [, suite] of BOSSES) expect(BOSS_SUITES[suite]).toBeTruthy();
-    expect(roster).toHaveLength(24);
-    // The roster first and in its old order, so its seeded draws are unchanged.
+    expect(roster).toHaveLength(23);
+    // The roster first, so its seeded draws only change when a racer leaves it.
     expect(RACERS.slice(0, roster.length)).toEqual(roster);
     expect(bossLockNote(bosses[0])).toBe('Beat The Mind Fuzz Suite to unlock');
+    expect(bossLockNote(RACERS.find((r) => r.id === 'cyborg-gourmand')!)).toBe('Beat Murder of the Universe to unlock');
     expect(bossLockNote(roster[0])).toBe('');
   });
 
@@ -79,6 +84,15 @@ describe('boss racers', () => {
     const seen = new Set<string>();
     for (let seed = 1; seed < 200; seed++) for (const r of pickRivals(new Set(), FIELD_SIZE, seed, (b) => b.id === 'balrog')) if (r.boss) seen.add(r.id);
     expect([...seen]).toEqual(['balrog']);
+  });
+});
+
+describe("Han-Tyumi, the album run's boss", () => {
+  it("is Chapter III's boss, the album run's face, and no one's stand-in", () => {
+    expect(ACTS[2].boss).toMatchObject({ racerId: 'cyborg-gourmand', name: 'Han-Tyumi' });
+    expect(ALBUM_FACE).toBe('cyborg-gourmand');
+    // A locked boss never turns up as the kart another boss drives.
+    for (const id of [...Object.values(BOSS_STAND_INS), BOSS_ALT, ...ACTS.map((a) => a.boss.altRacerId)]) expect(RACERS.find((r) => r.id === id)?.boss, id).toBeUndefined();
   });
 });
 

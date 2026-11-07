@@ -124,12 +124,12 @@ describe('story run', () => {
   });
 
   it("the chapter bosses are the new boss racers, and beating one unlocks it", () => {
-    expect(ACTS.map((a) => a.boss.racerId)).toEqual(['altered-beast', 'balrog', 'munt-machine']);
+    expect(ACTS.map((a) => a.boss.racerId)).toEqual(['altered-beast', 'balrog', 'cyborg-gourmand']);
     const run = new StoryRun(10);
     const got: string[] = [];
     run.unlock = (id) => (got.push(id), true);
     clearAll(run);
-    expect(got).toEqual(['altered-beast', 'balrog', 'munt-machine']);
+    expect(got).toEqual(['altered-beast', 'balrog', 'cyborg-gourmand']);
     expect(run.beaten.every((b) => b.fresh)).toBe(true);
   });
 

@@ -303,7 +303,9 @@ describe('Level 5 elevation and driving', () => {
 
   it('a full field of 150cc CPUs laps it', () => {
     const race = new Race(track);
-    for (const r of RACERS.slice(0, 8)) race.addKart(r, '150cc', CPU_SKILL['150cc']);
+    // The eight the lap was tuned with: the roster's first, and Han-Tyumi (a boss now, in a field once beaten).
+    const field = ['lizard-warlock', 'cyborg-gourmand', 'gila-rider', 'swamp-witch', 'microtonal-monk', 'fuzz-golem', 'neon-moth', 'cosmic-coyote'];
+    for (const id of field) race.addKart(RACERS.find((r) => r.id === id)!, '150cc', CPU_SKILL['150cc']);
     let respawns = 0;
     for (let t = 0; t < 200 && race.karts.some((k) => k.laps.lap < 1); t += PHYSICS_DT) {
       race.step(PHYSICS_DT, []);
