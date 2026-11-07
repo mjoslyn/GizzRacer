@@ -271,6 +271,12 @@ export function suiteById(id: string): Suite | undefined {
   return SUITES.find((s) => s.id === id);
 }
 
+/** The card a card game was made for (its suite and stage: its song and words), or null for the other games. */
+export function cardStageFor(game: SkillKind): { suite: Suite; stage: SuiteStage } | null {
+  for (const suite of SUITES) for (const stage of suite.stages) if (stage.game === game) return { suite, stage };
+  return null;
+}
+
 /** How a suite stage's music goes: its own live recording, the one playing held on, or the track's own (song or remix). */
 export type SuiteMusic = 'entry' | 'hold' | 'fallback';
 

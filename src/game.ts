@@ -31,8 +31,8 @@ import type { Effect, RoomStart } from './net/protocol';
 import type { RoomClient } from './net/room';
 import { GrandPrix } from './core/grandPrix';
 import { ACTS, CLEAR_PLACE, SKILL_STAGE, STAGES_PER_ACT, StoryRun, type BoonId } from './core/story';
-import { ALBUM_STORY, CardClock, SuiteRun, cardReadTime, suiteById, suiteMusic } from './core/suites';
-import { cardPlan } from './core/cardSkills';
+import { ALBUM_STORY, CardClock, SuiteRun, cardReadTime, cardStageFor, suiteById, suiteMusic } from './core/suites';
+import { CARD_GAME_DEFAULT, CARD_GAME_MAX, cardPlan, songSeconds } from './core/cardSkills';
 import { DEADSTICK_LAUNCH, DEADSTICK_RUNUP, DEADSTICK_SHOTS, DEADSTICK_SHOT_TIME, planDeadstick, type DeadstickPlan, type SkillKind } from './core/skills';
 import { SkillScreen, type Lyrics, type SkillResult } from './ui/skillScreen';
 import { StoryScreen, hearts, practiceCard, practiceRulesCard, storyCard, storyPickCard, type StoryPhase } from './ui/storyScreen';
@@ -1919,6 +1919,21 @@ function skillStage(): { kind: SkillKind; seed: number; level: number } | null {
 /** Skill Games: the game picked, on its card or (the Deadstick Landing) on a track. */
 function playPractice(): void {
   const p = practice!;
+  // A lyric card's game: its song's live recording plays, and the game runs the song's length, its words beside it.
+  const card = cardStageFor(p.kind);
+  if (card) {
+    const ticket = ++cardTicket;
+    const song = card.stage.song;
+    void radio.suiteRecording(card.suite.id, song).then((rec) => {
+      if (ticket !== cardTicket || practice !== p) return;
+      if (rec && !setPlaying()) radio.playRecording(rec, song, remixCues('title'));
+      else if (!setPlaying()) music.stop();
+      // A song too short for a story game still sets this one's length, at least CARD_GAME_DEFAULT.
+      const length = rec ? Math.min(CARD_GAME_MAX, Math.max(CARD_GAME_DEFAULT, songSeconds(rec))) : CARD_GAME_DEFAULT;
+      startSkillScreen(p.kind, p.seed, p.level, { lines: card.stage.words ?? [], song: () => cardSongProgress(song), length });
+    });
+    return;
+  }
   if (p.kind !== 'deadstick') return startSkillScreen(p.kind, p.seed, p.level);
   // Its rules first, on a card (the card games show theirs over the game).
   setMode('story');

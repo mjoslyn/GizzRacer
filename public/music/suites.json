@@ -142,29 +142,29 @@
    "end": 26.5
   },
   "The Reticent Raconteur": {
-   "id": "kglw2024-09-11.bandcampbootlegger",
-   "file": "King Gizzard & The Lizard Wizard - Live at Edgefield Amphiteater- Troutdale- OR (9-11-24)/King Gizzard & The Lizard Wizard - Live at Edgefield Amphiteater, Troutdale, OR (9-11-24) - 13 The Reticent Raconteur (Live).mp3",
-   "date": "2024-09-11",
-   "venue": "Edgefield Amphiteater",
-   "seconds": 59,
-   "start": 0,
+   "id": "kglw2022-10-10.bootlegger",
+   "date": "2022-10-10",
+   "venue": "Red Rocks Amphitheatre",
+   "file": "21. The Reticent Raconteur (Live At Red Rocks '22).mp3",
+   "seconds": 115,
+   "start": 4,
    "end": null
   },
   "The Lord of Lightning": {
-   "id": "kglw2024-09-11.bandcampbootlegger",
-   "file": "King Gizzard & The Lizard Wizard - Live at Edgefield Amphiteater- Troutdale- OR (9-11-24)/King Gizzard & The Lizard Wizard - Live at Edgefield Amphiteater, Troutdale, OR (9-11-24) - 14 The Lord of Lightning (Live).mp3",
-   "date": "2024-09-11",
-   "venue": "Edgefield Amphiteater",
-   "seconds": 312,
+   "id": "kglw2022-10-10.bootlegger",
+   "date": "2022-10-10",
+   "venue": "Red Rocks Amphitheatre",
+   "file": "22. The Lord Of Lightning (Live At Red Rocks '22).mp3",
+   "seconds": 336,
    "start": 0,
    "end": null
   },
   "The Balrog": {
-   "id": "kglw2024-09-11.bandcampbootlegger",
-   "file": "King Gizzard & The Lizard Wizard - Live at Edgefield Amphiteater- Troutdale- OR (9-11-24)/King Gizzard & The Lizard Wizard - Live at Edgefield Amphiteater, Troutdale, OR (9-11-24) - 15 The Balrog (Live).mp3",
-   "date": "2024-09-11",
-   "venue": "Edgefield Amphiteater",
-   "seconds": 213,
+   "id": "kglw2022-10-10.bootlegger",
+   "date": "2022-10-10",
+   "venue": "Red Rocks Amphitheatre",
+   "file": "23. The Balrog (Live At Red Rocks '22).mp3",
+   "seconds": 326,
    "start": 0,
    "end": null
   }
