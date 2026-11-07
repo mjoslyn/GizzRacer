@@ -4069,3 +4069,89 @@ body.pad-mode .pad-focus {
 .pad-toast.show {
   transform: translate(-50%, 0);
 }
+
+/* Story mode's pick of stories: a grid of tiles, the boss's picture on each (a silhouette till it's beaten),
+   the story's name, about how long a run takes, and the album. */
+.menu-panel:has(.story-grid) {
+  width: min(980px, calc(100vw - 2 * max(16px, 4vw)));
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+}
+
+.story-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 6px;
+}
+
+.menu .story-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 8px 10px;
+  text-align: center;
+  background: rgba(60, 10, 70, 0.75);
+  box-shadow: 0 0 0 2px #5a2a6a;
+  opacity: 0.88;
+  min-width: 0;
+}
+
+.menu .story-tile.on {
+  opacity: 1;
+  background: linear-gradient(180deg, #7a2a8a, #3a0f45);
+  box-shadow: 0 0 0 3px #ffd23a, 0 0 0 6px #3a0f45;
+  transform: translateY(-2px);
+}
+
+.story-tile-face {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  max-height: 13vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 50% 60%, rgba(255, 90, 208, 0.35), rgba(20, 0, 30, 0) 70%);
+  border-radius: 6px;
+}
+
+.story-tile-face img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.story-tile.locked .story-tile-face img {
+  filter: brightness(0) drop-shadow(0 0 6px rgba(255, 90, 208, 0.7));
+}
+
+.story-tile-name {
+  font-weight: 900;
+  font-size: clamp(14px, min(2.6vh, 2.2vw), 20px);
+  line-height: 1.1;
+  color: #ffe14d;
+  text-shadow:
+    2px 0 0 #2a0636, -2px 0 0 #2a0636, 0 2px 0 #2a0636, 0 -2px 0 #2a0636,
+    3px 3px 0 rgba(20, 0, 30, 0.85);
+}
+
+.story-tile-meta {
+  font-family: Verdana, sans-serif;
+  font-size: clamp(11px, 1.8vh, 14px);
+  font-weight: 700;
+  color: #9adcff;
+}
+
+.story-tile-blurb {
+  font-family: Verdana, sans-serif;
+  font-size: clamp(10px, 1.5vh, 12px);
+  color: #e8dcc8;
+  opacity: 0.85;
+}
+
+@media (max-height: 520px) {
+  .story-grid { gap: 8px; }
+  .story-tile-blurb { display: none; }
+  .story-tile-face { max-height: 22vh; }
+}

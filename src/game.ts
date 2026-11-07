@@ -1877,6 +1877,7 @@ function showStoryPick(): void {
   setMode('story');
   // The picker's title music stops: story mode is the band only.
   menuMusic();
+  for (const [id, url] of portraitUrls) storyScreen.setPortrait(id, url);
   storyScreen.show(storyPickCard());
 }
 
@@ -2143,6 +2144,13 @@ storyScreen.onPick = (id) => {
   }
   if (storyPicking) {
     story = newStory(id);
+    storyPicking = false;
+    // A suite goes straight into its first stage; the album run opens on its chapter's card.
+    if (story instanceof SuiteRun) {
+      storyPhase = 'chapter';
+      storyScreen.show(null);
+      return storyNext();
+    }
     return showStory('chapter');
   }
   if (!story) return;
@@ -2743,10 +2751,24 @@ let portraits: Portraits | null = null;
  * screen, focused on the chosen racer. Not on a phone: the grid is
  * centred there and the track stays behind it.
  */
-function drawGallery(dt: number): boolean {
-  if (mode !== 'menu' || !menu.visible || menu.activeRow !== 'racer') return false;
-  portraits ??= new Portraits((id, url) => menu.setPortrait(id, url));
+/** The racers' pictures as they're drawn, for the picker's grid and the pick of stories. */
+const portraitUrls = new Map<string, string>();
+
+/** Draws the next racer's picture (one a frame) for whichever screen wants them. */
+function stepPortraits(): void {
+  portraits ??= new Portraits((id, url) => {
+    portraitUrls.set(id, url);
+    menu.setPortrait(id, url);
+    storyScreen.setPortrait(id, url);
+  });
   portraits.step();
+}
+
+function drawGallery(dt: number): boolean {
+  // The pick of stories shows the bosses' pictures.
+  if (storyPicking && mode === 'story') stepPortraits();
+  if (mode !== 'menu' || !menu.visible || menu.activeRow !== 'racer') return false;
+  stepPortraits();
   if (COARSE) return false;
   const fresh = !gallery;
   gallery ??= new RacerGallery();

@@ -283,3 +283,21 @@ describe('story suite music', () => {
     expect(await new LiveRadio(music).suiteRecording('altered-beast', 'A New World')).toBeNull();
   });
 });
+
+describe('the pick of stories', () => {
+  it("is a grid of the bosses, each story's time within 4 minutes of its songs' lengths in suites.json", () => {
+    const recs = Object.values(import.meta.glob('../public/music/suites.json', { eager: true, import: 'default' }))[0] as Record<string, Record<string, { seconds: number; start?: number | null; end?: number | null; then?: { seconds: number } }>>;
+    const card = storyPickCard();
+    expect(card.grid).toBe(true);
+    for (const suite of SUITES) {
+      let s = 0;
+      for (const st of suite.stages) {
+        const r = recs[suite.id]?.[st.song];
+        s += r ? (r.end ?? r.seconds) - (r.start ?? 0) + (r.then?.seconds ?? 0) : st.kind === 'C' ? 45 : 180;
+      }
+      s += (suite.skill ? 45 : 0) + 15 * (suite.stages.length + 1);
+      expect(Math.abs(suite.minutes - s / 60), suite.id).toBeLessThan(4);
+      expect(card.opts.find((o) => o.id === suite.id)?.face).toBe(suite.boss.racerId);
+    }
+  });
+});

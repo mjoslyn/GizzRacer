@@ -64,6 +64,8 @@ export interface Suite {
   /** The suite's skill game, played just before the boss; none where nothing fits. */
   skill: SkillKind | null;
   stages: readonly SuiteStage[];
+  /** About how long a run takes, in minutes, for the pick of stories: its songs as suites.json has them, plus the skill game and the cards between (tests/story-suites.test.ts keeps it near). */
+  minutes: number;
 }
 
 const MOTU = { album: 'Murder of the Universe', year: 2017 };
@@ -76,6 +78,7 @@ export const SUITES: readonly Suite[] = [
     year: 2014,
     intro: 'Four songs run together into one: into the mind, out of it, through the cellophane and into the fuzz. Something is in there with you, and it wants the wheel.',
     ending: 'The fuzz clears and the voice goes quiet. It is out of your mind, and now it drives for you.',
+    minutes: 20,
     boss: { racerId: 'mind-voice', name: 'The Voice in Your Mind', taunt: "I'm in your mind fuzz. Beat me to the line, and I'll get out of it." },
     skill: 'mindfuzz',
     stages: [
@@ -92,6 +95,7 @@ export const SUITES: readonly Suite[] = [
     year: 2016,
     intro: 'The album that never ends. Robot Stop opens the door, the Big Fig Wasp is buzzing in the trees, the Gamma Knife cuts, and the People-Vultures circle overhead.',
     ending: 'The vulture drops away, and the loop comes round: Nonagon Infinity opens the door again.',
+    minutes: 26,
     boss: { racerId: 'people-vulture', name: 'The People-Vulture', taunt: 'People-vultures, circling. Outrun this one and the loop lets you go.' },
     skill: 'nonagon',
     stages: [
@@ -108,6 +112,7 @@ export const SUITES: readonly Suite[] = [
     ...MOTU,
     intro: 'After the cataclysm, a new world, and in it a beast that promises you everything if you will only let it in. Altered beast, alter me.',
     ending: 'The beast is beaten, and it was you all along. Altered, you drive on into the new world.',
+    minutes: 21,
     boss: { racerId: 'altered-beast', name: 'The Altered Beast', taunt: 'Alter me, it says. Beat it to the line, or become it.' },
     skill: null,
     stages: [
@@ -146,6 +151,7 @@ export const SUITES: readonly Suite[] = [
     ...MOTU,
     intro: 'A teller who hid in the quagmire and saw it all tells of two powers at war over a burning world: the Lord of Lightning, and the Balrog his lightning made.',
     ending: 'The Balrog smoulders, and the Lord of Lightning is gone into the moonless night. You are the last one on the road.',
+    minutes: 17,
     boss: { racerId: 'balrog', name: 'The Balrog', taunt: 'The Balrog fears not the lightning lord. Does it fear you? One on one, through the fire.' },
     skill: 'horology',
     stages: [
@@ -195,6 +201,7 @@ export const SUITES: readonly Suite[] = [
     ...MOTU,
     intro: 'An altered future. Han-Tyumi, the confused cyborg, wants the two human things no cyborg can do, and builds a machine to get them. It will not stop growing.',
     ending: 'The machine is beaten to the line. The universe is still here, for now, and the Munt Machine is yours to drive.',
+    minutes: 15,
     boss: { racerId: 'munt-machine', name: 'The Soy-Protein Munt Machine', taunt: 'Born from a test tube, into a vat. It grows, and the universe is next. Beat it to the line.' },
     skill: 'robot',
     stages: [
@@ -221,6 +228,7 @@ export const SUITES: readonly Suite[] = [
     year: 2017,
     intro: 'Goodbye, kinsman: off to a land grand and never been seen by man, past the crumbling castle, down the river and up to the castle in the air.',
     ending: 'You got there. The King of the Castle in the Air hands over the keys, and the clouds close behind you.',
+    minutes: 15,
     boss: { racerId: 'castle-king', name: 'The King of the Castle in the Air', taunt: 'He looks down from above the clouds. Race him round his castle, with nothing below but air.' },
     skill: 'castle',
     stages: [
@@ -236,6 +244,7 @@ export const SUITES: readonly Suite[] = [
     year: 2019,
     intro: 'There is no Planet B. The rich have gone to Mars, the rest farm what is left, Venus burns, and at the bottom of it all is Hell.',
     ending: 'The Devil is beaten in his own place. Up you climb, out of the rats’ nest, with him in the passenger seat.',
+    minutes: 23,
     boss: { racerId: 'the-devil', name: 'The Devil', taunt: 'The Devil waits at the bottom. Beat him at his own game, on his own road.' },
     skill: 'rattlesnake',
     stages: [
@@ -253,6 +262,7 @@ export const SUITES: readonly Suite[] = [
     year: 2023,
     intro: 'Motor spirit fuels the end of the world. A supercell rises, the storms converge, and in the fields once green and gold a coven gathers to call something down.',
     ending: 'The spell is broken and the storm passes. The Mother of the Coven bows, and her broom is yours.',
+    minutes: 28,
     boss: { racerId: 'coven-mother', name: 'The Mother of the Coven', taunt: 'She has laid the altar and blessed the circle. Break her spell before the moon wanes.' },
     skill: 'riff',
     stages: [
@@ -266,6 +276,10 @@ export const SUITES: readonly Suite[] = [
 
 /** The album run's id on the story pick (core/story.ts ACTS). */
 export const ALBUM_STORY = 'motu';
+/** About how long the album run takes: three chapters of two races, a skill game and a boss. */
+export const ALBUM_MINUTES = 35;
+/** The album run's face on the pick of stories. */
+export const ALBUM_FACE = 'cyborg-gourmand';
 
 export function suiteById(id: string): Suite | undefined {
   return SUITES.find((s) => s.id === id);

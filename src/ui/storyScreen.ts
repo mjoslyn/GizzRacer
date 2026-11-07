@@ -1,6 +1,7 @@
 import { RULES_WAIT, SKILLS, explainsItself, skillRules, type SkillKind } from '../core/skills';
 import { ACTS, BOONS, CLEAR_PLACE, type StoryRun } from '../core/story';
-import { ALBUM_STORY, SUITES, SuiteRun } from '../core/suites';
+import { ALBUM_FACE, ALBUM_MINUTES, ALBUM_STORY, SUITES, SuiteRun } from '../core/suites';
+import { bossUnlocked } from '../core/progress';
 import type { RacerDef } from '../physics/racers';
 import { boonChoiceHtml, boonHandHtml, isBoonChoice } from './boonCards';
 
@@ -15,7 +16,9 @@ export interface StoryCard {
   /** Exactly what to do, under the body (a skill game's rules). */
   detail?: string;
   /** What can be picked; the first is lit to start. */
-  opts: { id: string; name: string; blurb: string }[];
+  opts: { id: string; name: string; blurb: string; face?: string; meta?: string; locked?: boolean }[];
+  /** The choices as a grid of tiles, each with its face's picture (a racer id: render/portraits.ts) and `meta`, for the pick of stories. */
+  grid?: boolean;
   /** Small line under the choices: the boons held. */
   footer?: string;
   /** The boons held, as a deck of small cards (the boon chooser's, in place of the footer): each once, with how many. */
@@ -45,6 +48,15 @@ export class StoryScreen {
       const t = (e.target as HTMLElement).closest<HTMLElement>('[data-pick]');
       if (t?.dataset.pick) this.onPick(t.dataset.pick);
     });
+  }
+
+  /** Racers' pictures (render/portraits.ts), for the pick of stories' tiles. */
+  private readonly faces = new Map<string, string>();
+
+  /** A racer's picture is ready: the tiles showing it redraw. */
+  setPortrait(racerId: string, url: string): void {
+    this.faces.set(racerId, url);
+    if (this.card?.grid && this.card.opts.some((o) => o.face === racerId)) this.render();
   }
 
   get visible(): boolean {
@@ -85,14 +97,34 @@ export class StoryScreen {
     const c = this.card;
     if (!c) return false;
     const n = c.opts.length;
-    if (code === 'ArrowUp' || code === 'KeyW' || code === 'ArrowLeft' || code === 'KeyA') this.at = (this.at - 1 + n) % n;
-    else if (code === 'ArrowDown' || code === 'KeyS' || code === 'ArrowRight' || code === 'KeyD') this.at = (this.at + 1) % n;
+    // On a grid, up and down move a row.
+    const row = c.grid ? GRID_COLS : 1;
+    if (code === 'ArrowLeft' || code === 'KeyA') this.at = (this.at - 1 + n) % n;
+    else if (code === 'ArrowRight' || code === 'KeyD') this.at = (this.at + 1) % n;
+    else if (code === 'ArrowUp' || code === 'KeyW') this.at = (this.at - row + n * row) % n;
+    else if (code === 'ArrowDown' || code === 'KeyS') this.at = (this.at + row) % n;
     else if (code === 'Enter' || code === 'Space') {
       this.onPick(c.opts[this.at].id);
       return true;
     } else return false;
     this.render();
     return true;
+  }
+
+  /** The pick of stories as tiles: the boss's picture (a silhouette till beaten), the title, how long, and the album. */
+  private gridHtml(c: StoryCard): string {
+    const tiles = c.opts
+      .map((o, i) => {
+        const img = o.face ? this.faces.get(o.face) : undefined;
+        return `<button class="story-tile${i === this.at ? ' on' : ''}${o.locked ? ' locked' : ''}" data-pick="${esc(o.id)}">
+          <span class="story-tile-face">${img ? `<img src="${img}" alt="">` : ''}</span>
+          <span class="story-tile-name">${esc(o.name)}</span>
+          ${o.meta ? `<span class="story-tile-meta">${esc(o.meta)}</span>` : ''}
+          <span class="story-tile-blurb">${esc(o.blurb)}</span>
+        </button>`;
+      })
+      .join('');
+    return `<div class="story-grid">${tiles}</div>`;
   }
 
   private render(): void {
@@ -112,13 +144,16 @@ export class StoryScreen {
         ${c.body ? `<div class="story-body">${esc(c.body)}</div>` : ''}
         ${c.verse ? `<div class="story-verse">${c.verse.map((l) => `<span>${esc(l)}</span>`).join('')}</div>` : ''}
         ${c.detail ? `<div class="story-rules">${esc(c.detail)}</div>` : ''}
-        ${boons ? boonChoiceHtml(c.opts, this.at) : `<div class="story-opts${c.opts.length > 5 ? ' many' : ''}">${opts}</div>`}
+        ${c.grid ? this.gridHtml(c) : boons ? boonChoiceHtml(c.opts, this.at) : `<div class="story-opts${c.opts.length > 5 ? ' many' : ''}">${opts}</div>`}
         ${c.deck ? boonHandHtml(c.deck) : ''}
         ${c.footer ? `<div class="story-footer">${esc(c.footer)}</div>` : ''}
-        <div class="menu-hint">${c.opts.length > 1 ? `${boons ? '&larr;&rarr;' : '&uarr;&darr;'} choose &middot; ` : ''}Enter to go on${c.auto !== undefined ? ` &middot; <span class="story-auto">starts by itself in ${this.countdown} s</span>` : ''}</div>
+        <div class="menu-hint">${c.opts.length > 1 ? `${c.grid ? '&larr;&uarr;&rarr;&darr;' : boons ? '&larr;&rarr;' : '&uarr;&darr;'} choose &middot; ` : ''}Enter to go on${c.auto !== undefined ? ` &middot; <span class="story-auto">starts by itself in ${this.countdown} s</span>` : ''}</div>
       </div>`;
   }
 }
+
+/** Columns on the pick of stories' grid (hud.css .story-grid matches). */
+const GRID_COLS = 3;
 
 function esc(s: string): string {
   return s.replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`);
@@ -131,10 +166,11 @@ export function storyPickCard(): StoryCard {
   return {
     kicker: 'Story mode',
     title: 'Pick a story',
-    body: 'Each is a run: one stage a song, in the order the band play them, a boss at the end. One life, and a boon for every stage cleared.',
+    body: '',
+    grid: true,
     opts: [
-      ...SUITES.map((s) => ({ id: s.id, name: s.name, blurb: `${s.year} · ${s.stages.length} songs · boss: ${s.boss.name}` })),
-      { id: ALBUM_STORY, name: 'Murder of the Universe', blurb: `The whole album, 2017 · ${ACTS.length} chapters, a boss each` },
+      ...SUITES.map((s) => ({ id: s.id, name: s.name, blurb: `${s.album} (${s.year}) · boss: ${s.boss.name}`, face: s.boss.racerId, meta: `About ${s.minutes} min · ${s.stages.length} songs`, locked: !bossUnlocked(s.boss.racerId) })),
+      { id: ALBUM_STORY, name: 'Murder of the Universe', blurb: `The whole album (2017) · ${ACTS.length} chapters, a boss each`, face: ALBUM_FACE, meta: `About ${ALBUM_MINUTES} min · ${ACTS.length} chapters` },
     ],
   };
 }
