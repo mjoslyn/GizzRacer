@@ -32,8 +32,8 @@ import type { RoomClient } from './net/room';
 import { GrandPrix } from './core/grandPrix';
 import { ACTS, CLEAR_PLACE, SKILL_STAGE, STAGES_PER_ACT, StoryRun, type BoonId } from './core/story';
 import { ALBUM_STORY, CardClock, SuiteRun, cardReadTime, cardStageFor, suiteById, suiteMusic } from './core/suites';
-import { CARD_GAME_DEFAULT, CARD_GAME_MAX, cardGameLeft, cardPlan, songSeconds } from './core/cardSkills';
-import { DEADSTICK_LAUNCH, DEADSTICK_RUNUP, DEADSTICK_SHOTS, DEADSTICK_SHOT_TIME, planDeadstick, type DeadstickPlan, type SkillKind } from './core/skills';
+import { CARD_GAME_DEFAULT, CARD_GAME_LEFT_MIN, CARD_GAME_MAX, cardGameLeft, cardPlan, songSeconds } from './core/cardSkills';
+import { DEADSTICK_LAUNCH, DEADSTICK_RUNUP, DEADSTICK_SHOTS, DEADSTICK_SHOT_TIME, RULES_WAIT, planDeadstick, type DeadstickPlan, type SkillKind } from './core/skills';
 import { SkillScreen, type Lyrics, type SkillResult } from './ui/skillScreen';
 import { StoryScreen, hearts, practiceCard, practiceRulesCard, storyCard, storyPickCard, type StoryPhase } from './ui/storyScreen';
 import { Race, TOUCH_CPU_PACE, ordinal, type RaceKart } from './core/race';
@@ -211,8 +211,11 @@ const TOUR_SET_LAPS = 8;
 const SKY_LAPS = 3;
 /** A race to the song's end lasts at least this long (s): a song ending sooner, it runs to the end of the next. */
 const SONG_RACE_MIN = 60;
-/** A suite's race runs on whatever is left of its song (it came on before the race), down to this. */
-const SUITE_SONG_RACE_MIN = 15;
+/** A suite's race runs on whatever is left of its song (it came on before the race), and ends with it: songs don't repeat in a story. */
+const SUITE_SONG_RACE_MIN = 0;
+/** Seconds a suite's race results stay up before the run moves on by itself. */
+const SUITE_RESULTS_WAIT = 5;
+let suiteResultsWait = 0;
 const songRaceMin = (): number => (story instanceof SuiteRun ? SUITE_SONG_RACE_MIN : SONG_RACE_MIN);
 /** A race to the song's end with no song heard this long (s) into it goes back to laps. */
 const SONG_WAIT = 15;
@@ -1834,7 +1837,10 @@ function showStory(phase: StoryPhase, note = ''): void {
   storyPhase = phase;
   storyPicking = false;
   setMode('story');
-  storyScreen.show(storyCard(story!, phase, choice.racer, note));
+  const card = storyCard(story!, phase, choice.racer, note);
+  // A suite plays straight through: a boon or the boss's card picks by itself too, so the song goes on into its stage.
+  if (story instanceof SuiteRun && (phase === 'boon' || phase === 'boss')) card.auto ??= RULES_WAIT;
+  storyScreen.show(card);
   cardClock = null;
   if (phase === 'card') {
     cardClock = new CardClock(cardReadTime(story!.race.words));
@@ -1930,7 +1936,11 @@ function storyNext(): void {
     void radio.suiteRecording(run.suite.id, song).then((rec) => {
       if (ticket !== cardTicket || story !== run || run.cleared !== at) return;
       const plan = cardPlan(rec);
-      if (!plan.game) {
+      // Too little of its song left for a game (it came on over the stage before's results and boon): its words on a card
+      // till the song ends, and on; a song never repeats in a story.
+      const heardNow = restartSuiteSong ? null : cardSongProgress(song);
+      const leftNow = rec && heardNow != null ? songSeconds(rec) * (1 - heardNow) : Infinity;
+      if (!plan.game || leftNow < CARD_GAME_LEFT_MIN) {
         run.asLyricCard();
         return showStory('card');
       }
@@ -2865,6 +2875,14 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
   cardClockStep(frameDt);
   // A skill game's card before it counts down, and starts it by itself (not under Settings).
   if (mode === 'story' && !settingsScreen.visible) storyScreen.step(frameDt);
+  // A suite plays straight through: its results move on by themselves, so the next song isn't used up waiting.
+  if (mode === 'results' && story instanceof SuiteRun && player && !settingsScreen.visible) {
+    suiteResultsWait += frameDt;
+    if (suiteResultsWait >= SUITE_RESULTS_WAIT) {
+      suiteResultsWait = 0;
+      advance();
+    }
+  } else suiteResultsWait = 0;
   // A Party player's Start (every seat's checked, so none is left pending).
   const seatPause = seats.map((x) => x.input?.consumePause() ?? false).some(Boolean);
   // Start under Settings (opened from the pause menu) is Settings', not a resume.

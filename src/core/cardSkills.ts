@@ -891,6 +891,10 @@ export const SAT_TIME = 30;
 export interface SatGame {
   /** Seconds each satellite takes to go from full to black at the start. */
   lives: number[];
+  /** The range a satellite's fade time is drawn from again each time it's lit back up, so every cycle runs at its own speed. */
+  range: [number, number];
+  /** Seeds those draws. */
+  seed: number;
   /** How bright each starts. */
   starts: number[];
   /** How much faster everything fades by the end. */
@@ -904,8 +908,12 @@ export function makeSats(seed: number, level: number, length = SAT_TIME): SatGam
   const rand = seededRandom(seed);
   const n = lv([4, 5, 5], level);
   const [lo, hi] = lv<[number, number]>([[8.5, 11.5], [7.5, 10.5], [6.5, 9]], level);
+  // Each cycle draws its own speed from a wider spread than the first: some fast, some slow.
+  const range: [number, number] = [lo * 0.6, hi * 1.3];
   return {
     lives: Array.from({ length: n }, () => lo + rand() * (hi - lo)),
+    range,
+    seed: seed * 31 + 7,
     starts: Array.from({ length: n }, () => 0.85 + rand() * 0.15),
     dark: lv([1.6, 1.7, 1.8], level),
     // As the old three of four and four of five kept lit all the way, at the least; one lost late costs less than one lost early.
@@ -923,8 +931,14 @@ export class SatSim implements CardSim {
   /** Satellite-seconds lit so far, as a share of all the satellites (so seconds of the whole sky lit). */
   litTime = 0;
 
+  /** Each satellite's fade time this cycle (seconds full to black). */
+  readonly lives: number[];
+  private readonly rand: () => number;
+
   constructor(readonly game: SatGame) {
     this.light = [...game.starts];
+    this.lives = [...game.lives];
+    this.rand = seededRandom(game.seed);
   }
 
   get lit(): number {
@@ -948,7 +962,7 @@ export class SatSim implements CardSim {
     const rate = 1 + (g.dark - 1) * this.gloom;
     this.light.forEach((l, i) => {
       if (l <= 0) return;
-      const next = l - (rate / g.lives[i]) * dt;
+      const next = l - (rate / this.lives[i]) * dt;
       this.light[i] = Math.max(0, next);
       if (next <= 0) this.sounds.push({ s: 'black', n: i });
     });
@@ -974,6 +988,9 @@ export class SatSim implements CardSim {
       return;
     }
     this.light[i] = 1;
+    // A new cycle, at a speed of its own.
+    const [lo, hi] = this.game.range;
+    this.lives[i] = lo + this.rand() * (hi - lo);
     this.sounds.push({ s: 'charge', n: i });
   }
 }
