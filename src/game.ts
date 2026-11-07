@@ -1906,7 +1906,8 @@ function storyNext(): void {
   // A skill game makes its own sound, and the Deadstick Landing flies to its own: no song carries into those.
   const keep = storySameSong && !r.skill;
   storySameSong = false;
-  if (r.skill && r.skill !== 'deadstick') return startSkillScreen(r.skill, r.seed, r.level ?? r.act);
+  // Its rules were on the story's skill card just now: straight into the game.
+  if (r.skill && r.skill !== 'deadstick') return startSkillScreen(r.skill, r.seed, r.level ?? r.act, undefined, true);
   startRace(true, keep);
 }
 
@@ -1914,14 +1915,14 @@ function storyNext(): void {
 let storySameSong = false;
 
 /** A skill game on its card over the game; a suite card's game (`lyrics`: its words) is played as the card's recording plays on. */
-function startSkillScreen(kind: SkillKind, seed: number, level: number, lyrics?: Lyrics): void {
+function startSkillScreen(kind: SkillKind, seed: number, level: number, lyrics?: Lyrics, ruled = false): void {
   setMode('skill');
   cardGameOn = !!lyrics;
   // The game makes its own sound: the soundtrack waits (unless a Full set is playing, or it's a card's song).
   if (setPlaying()) ensureSet();
   // A suite's song plays on through its skill game, so the suite runs without a break.
   else if (!lyrics && !(story instanceof SuiteRun)) music.stop();
-  skillScreen.start(kind, seed, level, lyrics);
+  skillScreen.start(kind, seed, level, lyrics, ruled);
 }
 
 /** A suite card's game is being played over its song: the song plays on after it, too. */

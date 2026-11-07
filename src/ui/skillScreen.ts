@@ -149,7 +149,8 @@ export class SkillScreen {
     return this.game !== null;
   }
 
-  start(kind: SkillKind, seed: number, level: number, lyrics?: Lyrics): void {
+  /** `ruled`: its rules were already shown (a story skill stage's card), so the game starts straight away. */
+  start(kind: SkillKind, seed: number, level: number, lyrics?: Lyrics, ruled = false): void {
     this.stop();
     const s = this.synth;
     const Game = GAMES[kind];
@@ -158,7 +159,7 @@ export class SkillScreen {
     // A card game in story mode runs for what's left of its song as it starts, past its rules card (the song plays on
     // meanwhile, so the time on the card comes off); else for its own length. Its rules say the length it'd have now.
     this.game =
-      kind === 'mindfuzz'
+      kind === 'mindfuzz' || (ruled && !lyrics)
         ? new Game(s, seed, level)
         : briefed(kind, level, lyrics, (length) => {
             if (this.lyrics && length !== undefined) this.lyrics = { ...this.lyrics, length };
