@@ -123,8 +123,10 @@ export class LiveRadio {
    * it won't stream.
    */
   playRecording(rec: LiveRecording, song: string, fallback: readonly MusicCue[]): void {
-    const t = ++this.ticket;
     this.fallback = fallback;
+    // Already on (a suite's next song, started before its race): it plays on as it is, a pair's hand-over included.
+    if (this.now?.mode === 'song' && this.now.rec.id === rec.id && this.now.rec.file === rec.file && this.music.live) return;
+    const t = ++this.ticket;
     if (this.now && this.now.mode !== 'show' && this.now.rec !== rec) this.history.push({ rec: this.now.rec, title: this.now.title, mode: this.now.mode });
     this.now = { rec, title: song, mode: 'song' };
     if (rec.then) this.playPair(rec, t);

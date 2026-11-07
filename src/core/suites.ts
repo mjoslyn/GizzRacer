@@ -344,6 +344,15 @@ export class SuiteRun extends StoryRun {
     return { ...base, kind, boss: kind === 'boss', gen, skill: null, cardGame: st.kind === 'C' && !this.read.has(n) ? (st.game ?? null) : null, song: st.song, trackId: st.trackId ?? null, words: st.words };
   }
 
+  /** The song of the first stage after this one that has one (a skill game has none), for playing on into it; null at the end. */
+  songAfter(): string | null {
+    for (let n = this.cleared + 1; n < this.plan.length; n++) {
+      const st = this.plan[n];
+      if (st.kind !== 'S') return st.song;
+    }
+    return null;
+  }
+
   override get actDef(): StoryAct {
     const s = this.suite;
     return {

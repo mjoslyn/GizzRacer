@@ -209,6 +209,11 @@ const TOUR_SET_LAPS = 8;
 const SKY_LAPS = 3;
 /** A race to the song's end lasts at least this long (s): a song ending sooner, it runs to the end of the next. */
 const SONG_RACE_MIN = 60;
+/** A suite's race runs on whatever is left of its song (it came on before the race), down to this. */
+const SUITE_SONG_RACE_MIN = 15;
+/** And a card's game on what's left of its song, down to this. */
+const CARD_GAME_LEFT_MIN = 15;
+const songRaceMin = (): number => (story instanceof SuiteRun ? SUITE_SONG_RACE_MIN : SONG_RACE_MIN);
 /** A race to the song's end with no song heard this long (s) into it goes back to laps. */
 const SONG_WAIT = 15;
 /**
@@ -1296,7 +1301,7 @@ function songRaceStep(p: RaceKart): void {
   const ended = songRace.ended;
   songRace.ended = false;
   if (!race.started || p.finishTime !== null) return;
-  if (ended && race.time >= SONG_RACE_MIN) {
+  if (ended && race.time >= songRaceMin()) {
     songRace.live = false;
     songRace.over = true;
     race.endNow();
@@ -1316,7 +1321,7 @@ function songLeft(): number | null {
   const pos = songPosition();
   if (!pos) return null;
   // A song ending before the race is long enough doesn't end it: the next one's length isn't known yet.
-  return Math.max(0, race.time) + pos.left >= SONG_RACE_MIN ? pos.left : null;
+  return Math.max(0, race.time) + pos.left >= songRaceMin() ? pos.left : null;
 }
 
 /** Infinite's track switch: on to the next track once the leader (or I) has done its laps; Each song moves on with a Full set's songs instead. */
@@ -1736,6 +1741,11 @@ function finishStoryRace(p: RaceKart): void {
   const parts = [story!.passes(p.position, boss?.position ?? null) ? 'CLEARED!' : boss ? `${boss.racer.name} beat you: ${lost}` : `Top ${CLEAR_PLACE} needed: ${lost}`];
   if (style) parts.push(style.summary());
   trialNote = parts.join(' · ');
+  // A suite plays on without a break: won, the next song comes on now, through the results and the boon.
+  if (story instanceof SuiteRun && story.passes(p.position, boss?.position ?? null)) {
+    const next = story.songAfter();
+    if (next) suiteStageMusic(null, next);
+  }
 }
 
 /** The race intro's line in story mode: the chapter (a suite's name), the race (its song) or the boss, the lives. */
@@ -1847,6 +1857,18 @@ function storyResult(passed: boolean, note = ''): void {
   const out = story!.record(passed);
   if (out === 'next') return storyNext();
   showStory(out === 'cleared' ? 'boon' : out, note);
+  // A suite goes straight on into the next song while the boon is picked: a race or a duel next starts with it playing, and runs on what's left of it.
+  if (out === 'cleared' && story instanceof SuiteRun) {
+    const next = story.race;
+    // A skill game has no song: the one after it (the boss's) plays through it.
+    const song = next.song ?? (next.kind === 'skill' ? songAfterSkill(story) : null);
+    if (song) suiteStageMusic(null, song);
+  }
+}
+
+/** The song after a suite's skill game stage: the next stage's that has one. */
+function songAfterSkill(run: SuiteRun): string | null {
+  return run.songAfter();
 }
 
 /** On to the run's next stage, by way of the chapter's, the skill game's or the boss's card when one is due. */
@@ -1870,7 +1892,10 @@ function storyNext(): void {
       }
       storyPhase = 'card';
       suiteStageMusic(null);
-      startSkillScreen(game, r.seed, r.level ?? r.act, { lines: r.words ?? [], song: () => cardSongProgress(song), length: plan.length });
+      // Its song may have come on already (over the stage before's results and boon): the game runs on what's left, ending with it.
+      const heard = cardSongProgress(song);
+      const length = heard != null ? Math.max(CARD_GAME_LEFT_MIN, plan.length * (1 - heard)) : plan.length;
+      startSkillScreen(game, r.seed, r.level ?? r.act, { lines: r.words ?? [], song: () => cardSongProgress(song), length });
     });
     return;
   }
@@ -1893,7 +1918,8 @@ function startSkillScreen(kind: SkillKind, seed: number, level: number, lyrics?:
   cardGameOn = !!lyrics;
   // The game makes its own sound: the soundtrack waits (unless a Full set is playing, or it's a card's song).
   if (setPlaying()) ensureSet();
-  else if (!lyrics) music.stop();
+  // A suite's song plays on through its skill game, so the suite runs without a break.
+  else if (!lyrics && !(story instanceof SuiteRun)) music.stop();
   skillScreen.start(kind, seed, level, lyrics);
 }
 
@@ -2505,10 +2531,10 @@ function startRaceMusic(): void {
  * `fallback` (a race's own: its song by the setting, or its remix). A card
  * passes null: whatever is playing plays on.
  */
-function suiteStageMusic(fallback: (() => void) | null): void {
+function suiteStageMusic(fallback: (() => void) | null, songOf: string | null = null): void {
   if (setPlaying() || !(story instanceof SuiteRun)) return;
   const run = story;
-  const song = run.race.song;
+  const song = songOf ?? run.race.song;
   if (!song) return;
   const ticket = ++suiteMusicTicket;
   const at = run.cleared;
