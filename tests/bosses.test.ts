@@ -17,8 +17,8 @@ const BOSSES: [id: string, suite: string, name: string][] = [
   ['altered-beast', 'altered-beast', 'The Altered Beast'],
   ['balrog', 'lord-of-lightning', 'The Balrog'],
   ['munt-machine', 'han-tyumi', 'The Soy-Protein Munt Machine'],
-  ['castle-king', 'polygondwanaland', 'The King of the Castle in the Air'],
-  ['the-devil', 'infest-the-rats-nest', 'The Devil'],
+  ['fourth-colour', 'polygondwanaland', 'The Fourth Colour'],
+  ['rat-king', 'infest-the-rats-nest', 'The Rat King'],
   ['coven-mother', 'petrodragonic-apocalypse', 'The Mother of the Coven'],
   ['cyborg-gourmand', 'motu', 'Han-Tyumi'],
 ];
@@ -114,7 +114,7 @@ describe('unlocking a boss', () => {
     expect(p.beatBoss('lizard-warlock')).toBe(false);
     expect(p.beatBoss('nobody')).toBe(false);
     expect(p.bossUnlocked('balrog')).toBe(true);
-    expect(p.bossUnlocked('the-devil')).toBe(false);
+    expect(p.bossUnlocked('rat-king')).toBe(false);
     // A new page load: it's still there, and pickable.
     p = await freshProgress();
     expect(p.progress().bosses).toEqual(['balrog']);
@@ -136,6 +136,16 @@ describe('unlocking a boss', () => {
     expect(p.bossUnlocked('coven-mother')).toBe(true);
     p = await freshProgress('?unlock=off');
     expect(p.bossUnlocked('coven-mother')).toBe(false);
+  });
+
+  it('a boss since replaced stays beaten as the one that replaced it', async () => {
+    g.localStorage = fakeStorage();
+    g.localStorage.setItem('gizzracer.progress', JSON.stringify({ bosses: ['the-devil', 'balrog', 'castle-king', 'rat-king'] }));
+    const p = await freshProgress();
+    expect(p.progress().bosses).toEqual(['rat-king', 'balrog', 'fourth-colour']);
+    expect(p.bossUnlocked('rat-king')).toBe(true);
+    expect(p.bossUnlocked('fourth-colour')).toBe(true);
+    expect(RACERS.some((r) => r.id === 'the-devil' || r.id === 'castle-king')).toBe(false);
   });
 
   it('with no storage, a boss beaten stays unlocked for the visit', async () => {

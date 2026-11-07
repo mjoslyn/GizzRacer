@@ -79,14 +79,14 @@ const TRICKS: Record<string, TrickMove> = {
   'people-vulture': (u, d) => [-Math.sin(u * Math.PI) * 0.3, d * u * TAU, d * Math.sin(u * Math.PI) * 1.1, Math.sin(u * Math.PI) * 1.2],
   // The Altered Beast: a lumbering pounce, up and slammed down, half a turn and back.
   'altered-beast': (u, d) => [-Math.sin(u * Math.PI) * 0.5, d * Math.sin(u * Math.PI) * Math.PI, 0, Math.sin(u * Math.PI) * 0.8],
-  // The Balrog: up out of the rift in a slow backflip.
-  balrog: (u) => [-u * TAU, 0, 0, Math.sin(u * Math.PI) * 1.4],
+  // The Balrog: the Skeleton Dragon's wing-over, banked up, right round in the air and down out of it.
+  balrog: (u, d) => [-Math.sin(u * Math.PI) * 0.5, d * u * TAU, d * Math.sin(u * TAU) * 0.7, Math.sin(u * Math.PI) * 1.4],
   // The Munt Machine: a heave, the whole vat rocked side to side.
   'munt-machine': (u, d) => [0, 0, d * Math.sin(u * TAU * 2) * 0.5, Math.abs(Math.sin(u * Math.PI * 2)) * 0.7],
-  // The castle: it sails a full slow turn, pitching on the swell.
-  'castle-king': (u, d) => [Math.sin(u * TAU * 2) * 0.2, d * u * TAU, 0, Math.sin(u * Math.PI) * 1.2],
-  // The Devil: the Skeleton Dragon's wing-over, banked up, right round in the air and down out of it.
-  'the-devil': (u, d) => [-Math.sin(u * Math.PI) * 0.5, d * u * TAU, d * Math.sin(u * TAU) * 0.7, Math.sin(u * Math.PI) * 1.4],
+  // The Fourth Colour: a tumble, rolled over on two axes at once like a die, up and down again.
+  'fourth-colour': (u, d) => [u * TAU, d * u * TAU, d * u * TAU, Math.sin(u * Math.PI) * 1.3],
+  // The Rat King: a scrabbling leap, kicked up and twisted round in the air, landing on all fours.
+  'rat-king': (u, d) => [-Math.sin(u * Math.PI) * 0.4, d * u * TAU, d * Math.sin(u * Math.PI) * 0.35, Math.sin(u * Math.PI) * 1.0],
   // The Mother of the Coven: the broom turns widdershins, three times round the circle.
   'coven-mother': (u, d) => [0, -d * u * TAU * 3, 0, Math.sin(u * Math.PI) * 1.1],
   // The band. A stage dive, all the way round.
@@ -525,11 +525,22 @@ export class KartView {
     for (const leg of this.legs) {
       const side = leg.userData.side as number;
       const p = this.gait + (leg.userData.phase as number);
+      if (leg.userData.gallop) {
+        // A mammal's leg, under it: swung fore and aft about the hip, the lower leg folded up as it comes forward.
+        leg.rotation.x = -Math.sin(p) * 0.7 * reach;
+        const lower = leg.userData.lower as THREE.Object3D | undefined;
+        if (lower) lower.rotation.x = Math.max(0, Math.cos(p)) * 1.1 * reach;
+        continue;
+      }
       leg.rotation.y = -side * Math.sin(p) * 0.55 * reach;
       // Lifted while it swings forward, planted while it pushes back.
       leg.rotation.z = side * Math.max(0, Math.cos(p)) * 0.35 * reach;
     }
-    if (this.sway) this.sway.rotation.y = Math.sin(this.gait) * 0.1 * reach;
+    if (this.sway) {
+      this.sway.rotation.y = Math.sin(this.gait) * 0.1 * reach;
+      // A galloper's back rocks with the bound, nose down as the forelegs land.
+      if (this.sway.userData.bound) this.sway.rotation.x = Math.sin(this.gait + 0.8) * 0.07 * reach;
+    }
     if (this.tail) this.tail.rotation.y = -Math.sin(this.gait - 0.6) * 0.28 * reach;
   }
 

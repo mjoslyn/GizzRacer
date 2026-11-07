@@ -139,8 +139,8 @@ export const BOSS_STAND_INS: Record<string, string> = {
   'altered-beast': 'gator-drummer',
   balrog: 'fuzz-golem',
   'munt-machine': 'fuzz-golem',
-  'castle-king': 'lizard-warlock',
-  'the-devil': 'skeleton-dragon',
+  'fourth-colour': 'lizard-warlock',
+  'rat-king': 'gila-rider',
   'coven-mother': 'swamp-witch',
   'cyborg-gourmand': 'octo-organist',
 };
