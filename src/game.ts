@@ -1445,7 +1445,7 @@ function step(dt: number): void {
       v.struck(e.by);
       if (e.robbed !== undefined) v.robbed(e.robbed);
     } else if (e.type === 'use') v.used(e.item);
-    if (e.type === 'block' && frameItemEvents.length < 64) frameItemEvents.push(e);
+    if ((e.type === 'block' || (e.type === 'hit' && e.rammed)) && frameItemEvents.length < 64) frameItemEvents.push(e);
   }
   // A new track mid-step: this step's events were the old race's.
   if (mode === 'race' && choice.mode === 'infinite' && !online && tourStep()) return;
@@ -1594,8 +1594,10 @@ function seatStep(seat: Seat, ev: StepEvents, dt: number): void {
     if (e.type !== 'hit') continue;
     const item = e.by in ITEMS ? (e.by as ItemKind) : null;
     if (mine) {
-      seatFlash(seat, hitText(e.by) ?? '');
+      seatFlash(seat, e.rammed ? RAMMED_TEXT : (hitText(e.by) ?? ''));
       sfx.hurt(e.by);
+      // Ran into someone's trailing item: a crunch as it breaks on you.
+      if (e.rammed) sfx.rammed();
       if (hitText(e.by)) seatBite(seat);
       // The wrong pill: the screen swims as long as the steering does.
       if (e.by === 'pills') fx.swim = 1;
@@ -1638,7 +1640,8 @@ function netStep(net: OnlineRace, p: RaceKart): void {
   if (lastInput.itemPressed && p.item && p.rolling === 0 && race.started && p.finishTime === null && now - itemSentAt > 0.4) {
     itemSentAt = now;
     sfx.use(p.item);
-    online!.client.send({ t: 'item' });
+    // Braking or looking back as it goes throws it backward (the Rattlesnake).
+    online!.client.send({ t: 'item', b: lastInput.lookBack || lastInput.brake > 0.5 });
   }
   if (netTicks++ % 4 === 0) online!.client.send({ t: 'kart', s: net.report() });
 }
@@ -1661,8 +1664,9 @@ function onEffects(fx: Effect[]): void {
       if (from) hud.callout({ from: who(from), to: 'you', by, kind: 'dodged' });
       continue;
     }
-    hud.flash(hitText(by) ?? 'HIT!');
+    hud.flash(e.r ? RAMMED_TEXT : (hitText(by) ?? 'HIT!'));
     sfx.hurt(by);
+    if (e.r) sfx.rammed();
     bite();
     if (e.k !== 'slow') chase.bump(0.5);
     if (from && by in ITEMS) hud.callout({ from: who(from), to: 'you', by, kind: 'took' });
@@ -2210,6 +2214,9 @@ function finishCup(): string {
   return parts.join(' · ');
 }
 
+/** Ran into someone's trailing item. */
+const RAMMED_TEXT = 'RAN INTO IT!';
+
 const HIT_TEXT: Record<ItemKind | CoreHazardKind, string> = {
   fuzzPedal: '',
   microtonalMine: 'DETUNED!',
@@ -2225,6 +2232,7 @@ const HIT_TEXT: Record<ItemKind | CoreHazardKind, string> = {
   keytarLaser: 'SLICED!',
   gizzardWave: 'INFINITY!',
   drippingTap: '',
+  rattle: 'RATTLED!',
   snakes: 'SNAKEBITE!',
   dustDevils: 'DUST DEVIL!',
   tumbleweeds: 'TUMBLEWEED!',
@@ -2510,6 +2518,33 @@ function hazardSounds(dt: number, karts: KartState[]): void {
     return best;
   };
   sfx.hazards(dt, near('snakes'), near('dustDevils') ?? near('tornadoes') ?? near('blackHoles') ?? near('butterflies') ?? near('wisps'));
+  rattleSounds(dt, karts);
+}
+
+/** Each Rattlesnake's bounces as last heard, by id: a new one clacks off the wall. */
+const rattleBounces = new Map<number, number>();
+
+/** The Rattlesnakes on the road: the nearest buzzes as it comes, and each clacks off the walls it bounces off within earshot. */
+function rattleSounds(dt: number, karts: KartState[]): void {
+  let nearest: { d: number; pan: number } | null = null;
+  const live = new Set<number>();
+  for (const r of race.items.rattles) {
+    live.add(r.id);
+    let best: { d: number; pan: number } | null = null;
+    for (const s of karts) {
+      const dx = r.x - s.x;
+      const dz = r.z - s.z;
+      const d = Math.hypot(dx, dz);
+      if (!best || d < best.d) best = { d, pan: d > 0 ? ((dx * -Math.cos(s.heading) + dz * Math.sin(s.heading)) / d) * (mirrored() ? -1 : 1) : 0 };
+    }
+    if (!best) continue;
+    if (!nearest || best.d < nearest.d) nearest = best;
+    const was = rattleBounces.get(r.id) ?? 0;
+    if (r.bounces > was && best.d < 60) sfx.rattleBounce(1 - best.d / 60, best.pan);
+    rattleBounces.set(r.id, r.bounces);
+  }
+  for (const id of rattleBounces.keys()) if (!live.has(id)) rattleBounces.delete(id);
+  sfx.rattleNear(dt, nearest);
 }
 
 /** The live soundtrack has this race's music (it falls back to the game's own by itself if a stream won't play). */

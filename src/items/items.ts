@@ -1,6 +1,6 @@
-import { clamp, seededRandom } from '../core/math';
+import { clamp, seededRandom, wrapAngle } from '../core/math';
 import type { InputFrame } from '../core/inputFrame';
-import { KART_RADIUS, spinOut, slowDown, wobble, type KartState } from '../physics/kart';
+import { KART_RADIUS, createKartState, spinOut, slowDown, wobble, type KartState } from '../physics/kart';
 import { pointAt } from '../tracks/spline';
 import type { Track } from '../tracks/track';
 import type { HazardKind } from './hazards';
@@ -24,7 +24,8 @@ export type ItemKind =
   | 'harmonicaWail'
   | 'keytarLaser'
   | 'gizzardWave'
-  | 'drippingTap';
+  | 'drippingTap'
+  | 'rattle';
 
 export const ITEMS: Record<ItemKind, { name: string }> = {
   fuzzPedal: { name: 'Mind Fuzz' },
@@ -43,6 +44,8 @@ export const ITEMS: Record<ItemKind, { name: string }> = {
   gizzardWave: { name: 'Nonagon Infinity' },
   // The long jam, for the back of the field: a boost that keeps dripping.
   drippingTap: { name: 'The Dripping Tap' },
+  // After Flying Microtonal Banana's opening song, the banana's own album: the rattlesnake's rattle, thrown down the road to skitter off the walls.
+  rattle: { name: 'Rattlesnake Rattle' },
 };
 export const ITEM_KINDS = Object.keys(ITEMS) as ItemKind[];
 
@@ -57,8 +60,29 @@ export const SIGNATURE_ITEMS: Record<string, ItemKind> = {
 };
 const SIGNATURE_BIAS = 2;
 
-/** Held in the slot, these guard your back: they take a missile or a mine for you, and are gone. */
-export const SHIELD_ITEMS: readonly ItemKind[] = ['microtonalMine', 'riffMissile'];
+/**
+ * Held in the slot, these trail behind the kart (TRAIL_BACK metres back):
+ * they take one item coming from behind for you, and both break; and a
+ * kart that runs into one spins out, and the holder loses it.
+ */
+export const SHIELD_ITEMS: readonly ItemKind[] = ['microtonalMine', 'riffMissile', 'rattle'];
+/** A trailing item rides this far behind its kart's centre, and is this big for whatever meets it. */
+export const TRAIL_BACK = 2.3;
+export const TRAIL_RADIUS = 0.7;
+/** Running into someone's trailing item spins you out this long. */
+export const TRAIL_RAM_SPIN = 1;
+
+/** Where `k`'s trailing item is, or null when it has none out (nothing in the slot, a roulette, or an item that doesn't trail). */
+export function trailPoint(k: ItemHolder): { x: number; y: number; z: number } | null {
+  if (!k.item || k.rolling > 0 || !SHIELD_ITEMS.includes(k.item)) return null;
+  const s = k.state;
+  return { x: s.x - Math.sin(s.heading) * TRAIL_BACK, y: s.y, z: s.z - Math.cos(s.heading) * TRAIL_BACK };
+}
+
+/** Whether a point is behind kart `s` (not ahead of its centre). */
+export function behindOf(s: KartState, x: number, z: number): boolean {
+  return (x - s.x) * Math.sin(s.heading) + (z - s.z) * Math.cos(s.heading) < 0;
+}
 
 /** How long Horology slows a kart in `position` of `karts`: longest for the leader, shortest for last. */
 export function tempoSlowFor(position: number, karts: number): number {
@@ -142,6 +166,21 @@ const MISSILE_SPEED = 55;
 const MISSILE_LIFE = 7;
 const MISSILE_HOMING_RANGE = 28;
 const MISSILE_TURN = 4; // rad/s once homing
+/**
+ * Rattlesnake: thrown ahead (or back, braking or looking back), it skitters
+ * straight down the road along the ground at RATTLE_SPEED, off the walls up
+ * to RATTLE_BOUNCES times, and spins out the first kart it meets, then
+ * breaks. It goes over an open edge and is gone. Its thrower is safe from it
+ * until it has bounced.
+ */
+export const RATTLE_SPEED = 62;
+export const RATTLE_BOUNCES = 5;
+export const RATTLE_LIFE = 6;
+export const RATTLE_SPIN = 1.2;
+export const RATTLE_RADIUS = 0.55;
+/** It drops off anything deeper than this (an open edge, a gap) and is gone. */
+const RATTLE_DROP = 2.5;
+const MAX_RATTLES = 10;
 
 /** A racer, as far as the item system cares. */
 export interface ItemHolder {
@@ -198,6 +237,22 @@ export interface Missile {
   life: number;
 }
 
+/** A Rattlesnake skittering down the road. */
+export interface Rattle {
+  /** Stable across snapshots online, so views keep one through the mirror. */
+  id: number;
+  x: number;
+  y: number;
+  z: number;
+  heading: number;
+  owner: ItemHolder;
+  age: number;
+  /** Walls it has come off so far. */
+  bounces: number;
+  /** Its own little kart state, for the track's lookups (ground, walls, the lap's roads). */
+  readonly body: KartState;
+}
+
 export interface Wave {
   x: number;
   y: number;
@@ -242,7 +297,8 @@ export type ItemEvent =
   /** Drove through an item box, full slot or not. */
   | { type: 'box'; kart: ItemHolder; double: boolean; x: number; y: number; z: number }
   /** `from` is whoever fired the item; absent for hazards. `push` is a shove (m/s, world) that came with it. */
-  | { type: 'hit'; kart: ItemHolder; by: ItemKind | HazardKind; from?: ItemHolder; push?: [number, number]; robbed?: ItemKind }
+  /** `rammed`: ran into `from`'s trailing item (`by`), which broke on it, and `from` has lost it. */
+  | { type: 'hit'; kart: ItemHolder; by: ItemKind | HazardKind; from?: ItemHolder; push?: [number, number]; robbed?: ItemKind; rammed?: boolean }
   /** A held item took the hit instead. */
   | { type: 'block'; kart: ItemHolder; by: ItemKind; from?: ItemHolder }
   /** Rode over a Nonagon Infinity. */
@@ -276,6 +332,8 @@ export function itemWeights(position: number, karts: number, signature: ItemKind
     tempoShift: karts > 2 && back(COMEBACK_HOROLOGY) >= 0 ? 1 + 2 * back(COMEBACK_HOROLOGY) : 0,
     wooCannon: karts > 3 && back(COMEBACK_CANNON) >= 0 ? 1 + 2.5 * back(COMEBACK_CANNON) : 0,
     drippingTap: karts > 2 && back(COMEBACK_TAP) >= 0 ? 1 + 1.5 * back(COMEBACK_TAP) : 0,
+    // The straight shot: common up front (to hold behind you, or throw at whoever's just ahead), less so further back.
+    rattle: 2.6 - 1.2 * p,
     // The band's own: something for every place, the ones that reach ahead only for those behind.
     fluteFlurry: 1.4 * (1 - 0.5 * p),
     drumRoll: 1 + 0.8 * p,
@@ -307,11 +365,13 @@ export class ItemSystem {
   readonly boxes: ItemBox[] = [];
   readonly mines: Mine[] = [];
   readonly missiles: Missile[] = [];
+  readonly rattles: Rattle[] = [];
   readonly waves: Wave[] = [];
   readonly bursts: Burst[] = [];
   /** The Nonagon Infinity in flight; one at a time. */
   surge: Surge | null = null;
   private readonly rand: () => number;
+  private nextRattle = 1;
 
   constructor(
     private readonly track: Track,
@@ -337,8 +397,8 @@ export class ItemSystem {
     }
   }
 
-  /** `use[i]` is true when kart i pressed its item button this tick. */
-  update(dt: number, karts: readonly ItemHolder[], use: readonly boolean[]): ItemEvent[] {
+  /** `use[i]` is true when kart i pressed its item button this tick; `back[i]`, that it throws it backward. */
+  update(dt: number, karts: readonly ItemHolder[], use: readonly boolean[], back: readonly boolean[] = []): ItemEvent[] {
     const events: ItemEvent[] = [];
     this.pickups(dt, karts, events);
     karts.forEach((k, i) => {
@@ -347,12 +407,14 @@ export class ItemSystem {
       if (use[i] && k.item && k.rolling === 0 && k.state.spinTime === 0) {
         const item = k.item;
         nextItem(k);
-        this.fire(item, k, karts, events);
+        this.fire(item, k, karts, events, !!back[i]);
         events.push({ type: 'use', kart: k, item });
       }
     });
     this.updateMines(dt, karts, events);
     this.updateMissiles(dt, karts, events);
+    this.updateRattles(dt, karts, events);
+    this.updateTrails(karts, events);
     this.updateSurge(dt, karts, events);
     for (const w of this.waves) w.age += dt;
     while (this.waves.length && this.waves[0].age > 0.8) this.waves.shift();
@@ -431,7 +493,7 @@ export class ItemSystem {
     this.bursts.push({ kind, x: s.x, y: s.y, z: s.z, heading: s.heading, age: 0, life, len, from: k, to });
   }
 
-  private fire(item: ItemKind, k: ItemHolder, karts: readonly ItemHolder[], events: ItemEvent[]): void {
+  private fire(item: ItemKind, k: ItemHolder, karts: readonly ItemHolder[], events: ItemEvent[], back = false): void {
     const s = k.state;
     const fx = Math.sin(s.heading);
     const fz = Math.cos(s.heading);
@@ -531,15 +593,23 @@ export class ItemSystem {
         if (victim && spinOut(victim.state, LASER_SPIN)) events.push({ type: 'hit', kart: victim, by: item, from: k });
         break;
       }
+      case 'rattle': {
+        const h = wrapAngle(back ? s.heading + Math.PI : s.heading);
+        const body = createKartState(s.x + Math.sin(h) * 2.4, s.z + Math.cos(h) * 2.4, h);
+        Object.assign(body, { y: s.groundY, groundY: s.groundY, trackHint: s.trackHint, lap: s.lap, lastLap: s.lastLap });
+        this.rattles.push({ id: this.nextRattle++, x: body.x, y: body.y, z: body.z, heading: h, owner: k, age: 0, bounces: 0, body });
+        if (this.rattles.length > MAX_RATTLES) this.rattles.shift();
+        break;
+      }
       case 'gizzardWave':
         this.surge = { d: k.distance + 2, x: s.x, y: s.groundY, z: s.z, heading: s.heading, owner: k, target: null, age: 0, dodgeRolled: false };
         break;
     }
   }
 
-  /** A held mine or missile takes the hit instead; true if it did. */
-  private shield(k: ItemHolder, by: ItemKind, from: ItemHolder, events: ItemEvent[]): boolean {
-    if (!k.item || k.rolling > 0 || !SHIELD_ITEMS.includes(k.item)) return false;
+  /** A trailing item takes a hit coming from behind (from x, z) instead; true if it did. */
+  private shield(k: ItemHolder, by: ItemKind, from: ItemHolder, events: ItemEvent[], x: number, z: number): boolean {
+    if (!trailPoint(k) || !behindOf(k.state, x, z)) return false;
     nextItem(k);
     events.push({ type: 'block', kart: k, by, from });
     return true;
@@ -553,7 +623,7 @@ export class ItemSystem {
       const victim = karts.find((k) => Math.hypot(k.state.x - m.x, k.state.z - m.z) < MINE_RADIUS + KART_RADIUS && Math.abs(k.state.y - m.y) < 1.5);
       if (!victim) continue;
       this.mines.splice(i, 1);
-      if (victim.state.invulnTime > 0 || this.shield(victim, 'microtonalMine', m.owner, events)) continue;
+      if (victim.state.invulnTime > 0 || this.shield(victim, 'microtonalMine', m.owner, events, m.x, m.z)) continue;
       if (wobble(victim.state, MINE_WOBBLE)) events.push({ type: 'hit', kart: victim, by: 'microtonalMine', from: m.owner });
     }
   }
@@ -583,9 +653,17 @@ export class ItemSystem {
         m.z = p.z;
         m.y = this.track.main.heightAt(((m.s % sp.length) + sp.length) % sp.length) + 0.9;
       }
+      // Someone's trailing item in its way takes it first.
+      const guard = this.guardAt(karts, m.x, m.y - 0.8, m.z, 0.8, m.owner);
+      if (guard) {
+        this.missiles.splice(i, 1);
+        nextItem(guard);
+        events.push({ type: 'block', kart: guard, by: 'riffMissile', from: m.owner });
+        continue;
+      }
       const victim = karts.find((k) => k !== m.owner && Math.hypot(k.state.x - m.x, k.state.z - m.z) < KART_RADIUS + 0.8 && Math.abs(k.state.y + 0.8 - m.y) < 1.6);
       if (victim) {
-        if (victim.state.invulnTime === 0 && !this.shield(victim, 'riffMissile', m.owner, events) && spinOut(victim.state, MISSILE_SPIN)) {
+        if (victim.state.invulnTime === 0 && !this.shield(victim, 'riffMissile', m.owner, events, m.x, m.z) && spinOut(victim.state, MISSILE_SPIN)) {
           events.push({ type: 'hit', kart: victim, by: 'riffMissile', from: m.owner });
         }
         this.missiles.splice(i, 1);
@@ -593,6 +671,143 @@ export class ItemSystem {
         this.missiles.splice(i, 1);
       }
     }
+  }
+
+  /** A kart (not `except`) whose trailing item is within `r` of a point, if any. */
+  private guardAt(karts: readonly ItemHolder[], x: number, y: number, z: number, r: number, except: ItemHolder | null): ItemHolder | null {
+    for (const k of karts) {
+      if (k === except) continue;
+      const t = trailPoint(k);
+      if (t && Math.hypot(t.x - x, t.z - z) < r + TRAIL_RADIUS && Math.abs(t.y - y) < 1.6) return k;
+    }
+    return null;
+  }
+
+  /**
+   * Rattlesnakes: straight on along the ground, off the walls, over the
+   * edge and gone; into a trailing item (both break), a banana (both
+   * break), another rattle (both break), or a kart, which spins out.
+   */
+  private updateRattles(dt: number, karts: readonly ItemHolder[], events: ItemEvent[]): void {
+    const STEPS = 2;
+    const h = dt / STEPS;
+    for (let i = this.rattles.length - 1; i >= 0; i--) {
+      const r = this.rattles[i];
+      const b = r.body;
+      r.age += dt;
+      let gone = r.age > RATTLE_LIFE;
+      for (let n = 0; n < STEPS && !gone; n++) {
+        const x0 = b.x;
+        const z0 = b.z;
+        b.x += Math.sin(r.heading) * RATTLE_SPEED * h;
+        b.z += Math.cos(r.heading) * RATTLE_SPEED * h;
+        const loc = this.track.locate(b.x, b.z, b.y, b.trackHint, b);
+        b.trackHint = loc.hint;
+        if (loc.height < b.y - RATTLE_DROP) {
+          // Over an open edge, or into a gap: gone.
+          gone = true;
+          break;
+        }
+        if (loc.height > b.y + 1.2) {
+          // A step up it can't climb: off it, back the way it came.
+          b.x = x0;
+          b.z = z0;
+          r.heading = wrapAngle(r.heading + Math.PI);
+          if (++r.bounces > RATTLE_BOUNCES) gone = true;
+          continue;
+        }
+        b.y = b.groundY = loc.height;
+        const wall = this.track.collide(b, RATTLE_RADIUS);
+        if (!wall) continue;
+        b.x += wall.nx * wall.depth;
+        b.z += wall.nz * wall.depth;
+        const vx = Math.sin(r.heading);
+        const vz = Math.cos(r.heading);
+        const into = vx * wall.nx + vz * wall.nz;
+        if (into >= 0) continue;
+        // Off the wall like a ball off a cushion.
+        r.heading = Math.atan2(vx - 2 * into * wall.nx, vz - 2 * into * wall.nz);
+        if (++r.bounces > RATTLE_BOUNCES) gone = true;
+      }
+      r.x = b.x;
+      r.y = b.y;
+      r.z = b.z;
+      if (gone) {
+        this.rattles.splice(i, 1);
+        continue;
+      }
+      // Its thrower is safe from it until it has come back off a wall.
+      const spares = r.bounces > 0 && r.age > 0.25 ? null : r.owner;
+      const guard = this.guardAt(karts, r.x, r.y, r.z, RATTLE_RADIUS, spares);
+      if (guard) {
+        this.rattles.splice(i, 1);
+        nextItem(guard);
+        events.push({ type: 'block', kart: guard, by: 'rattle', from: r.owner });
+        continue;
+      }
+      const victim = karts.find((k) => k !== spares && Math.hypot(k.state.x - r.x, k.state.z - r.z) < KART_RADIUS + RATTLE_RADIUS && Math.abs(k.state.y - r.y) < 1.6);
+      if (victim) {
+        this.rattles.splice(i, 1);
+        if (victim.state.invulnTime === 0 && !this.shield(victim, 'rattle', r.owner, events, r.x, r.z) && spinOut(victim.state, RATTLE_SPIN)) {
+          events.push({ type: 'hit', kart: victim, by: 'rattle', from: r.owner });
+        }
+        continue;
+      }
+      const mine = this.mines.findIndex((m) => Math.hypot(m.x - r.x, m.z - r.z) < MINE_RADIUS + RATTLE_RADIUS && Math.abs(m.y - r.y) < 1.5);
+      if (mine >= 0) {
+        this.mines.splice(mine, 1);
+        this.rattles.splice(i, 1);
+      }
+    }
+    // Two meeting head on (or one catching another): both break.
+    for (let i = this.rattles.length - 1; i > 0; i--) {
+      const a = this.rattles[i];
+      const j = this.rattles.findIndex((o, n) => n < i && Math.hypot(o.x - a.x, o.z - a.z) < RATTLE_RADIUS * 2 && Math.abs(o.y - a.y) < 1.5);
+      if (j < 0) continue;
+      this.rattles.splice(i, 1);
+      this.rattles.splice(j, 1);
+      i--;
+    }
+  }
+
+  /**
+   * Running into someone's trailing item: it breaks on you and you spin
+   * out, and its holder has lost it. Immune, you only break it.
+   */
+  private updateTrails(karts: readonly ItemHolder[], events: ItemEvent[]): void {
+    for (const h of karts) {
+      const t = trailPoint(h);
+      if (!t) continue;
+      for (const o of karts) {
+        if (o === h || Math.hypot(o.state.x - t.x, o.state.z - t.z) > KART_RADIUS + TRAIL_RADIUS || Math.abs(o.state.y - t.y) > 1.6) continue;
+        const item = h.item!;
+        nextItem(h);
+        if (spinOut(o.state, TRAIL_RAM_SPIN)) events.push({ type: 'hit', kart: o, by: item, from: h, rammed: true });
+        else events.push({ type: 'block', kart: h, by: item, from: o });
+        break;
+      }
+    }
+  }
+
+  /**
+   * Something coming for `k` from behind that a trailing item would stop:
+   * a wasp after it, or a rattle on its way up the road at it. CPUs hold
+   * on to a trailing item while there is.
+   */
+  threatened(k: ItemHolder): boolean {
+    const s = k.state;
+    for (const m of this.missiles) if (m.target === k && Math.hypot(m.x - s.x, m.z - s.z) < 60) return true;
+    for (const r of this.rattles) {
+      if (r.owner === k && r.bounces === 0) continue;
+      const dx = s.x - r.x;
+      const dz = s.z - r.z;
+      if (Math.hypot(dx, dz) > 45 || !behindOf(s, r.x, r.z)) continue;
+      // Headed at it: on its way toward it, and passing within a couple of metres.
+      const along = dx * Math.sin(r.heading) + dz * Math.cos(r.heading);
+      const off = Math.abs(dx * Math.cos(r.heading) - dz * Math.sin(r.heading));
+      if (along > 0 && off < 2.5) return true;
+    }
+    return false;
   }
 
   /** The Nonagon Infinity: on down the road to whoever leads, then it breaks on them, or under them if they're in the air. */

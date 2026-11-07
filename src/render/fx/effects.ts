@@ -29,6 +29,7 @@ export const ITEM_COLOR: Record<ItemKind, number> = {
   keytarLaser: 0xff2ad0,
   gizzardWave: 0x30ff90,
   drippingTap: 0x60c8ff,
+  rattle: 0xb4ff3a,
 };
 
 /** A quick bloom of light. */
@@ -199,13 +200,85 @@ export function waspFizzle(fx: FxSystem, x: number, y: number, z: number, ground
   debris(fx, TILE.cog, x, y, z, 3, 0x6a5a40, 3, ground, 0.26, 0xffc820);
 }
 
-/** A held banana or wasp taking a hit: it shatters behind the kart with a clang of light. */
-export function shieldBreak(fx: FxSystem, x: number, y: number, z: number, ground: number, wasp: boolean): void {
+/** A trailing item taking a hit: it shatters behind the kart with a clang of light, in bits of whatever `kind` came apart. */
+export function shieldBreak(fx: FxSystem, x: number, y: number, z: number, ground: number, kind: ItemKind): void {
   flash(fx, x, y, z, 3, 0xe0f0ff, 0.2);
   shockRing(fx, x, ground, z, 2.4, 0xc0e0ff, 0.3);
-  if (wasp) debris(fx, TILE.cog, x, y, z, 5, 0x6a5a40, 5, ground, 0.28, 0xffc820);
-  else debris(fx, TILE.peel, x, y, z, 5, 0xffe040, 5, ground, 0.42, 0xe8c020);
+  itemBits(fx, kind, x, y, z, 5, 5, ground);
   sparks(fx, x, y, z, 10, 0xc0e0ff, 6, ground);
+}
+
+/** Bits of an item breaking: peel for a banana, cogs for a wasp, horn for a rattle. */
+function itemBits(fx: FxSystem, kind: ItemKind, x: number, y: number, z: number, count: number, speed: number, ground: number): void {
+  if (kind === 'riffMissile') debris(fx, TILE.cog, x, y, z, count, 0x6a5a40, speed, ground, 0.28, 0xffc820);
+  else if (kind === 'rattle') debris(fx, TILE.chunk, x, y, z, count, RATTLE_HORN, speed, ground, 0.3, RATTLE_TAN);
+  else debris(fx, TILE.peel, x, y, z, count, 0xffe040, speed, ground, 0.42, 0xe8c020);
+}
+
+/** The Rattlesnake's horn, in its two shades, and its glow. */
+const RATTLE_HORN = 0xf4e2b0;
+const RATTLE_TAN = 0xc89a58;
+const RATTLE_GLOW = 0xb4ff3a;
+
+/** A Rattlesnake thrown: a lime flash where it leaves the hand, a kick of dust and a shake of light. */
+export function rattleThrow(fx: FxSystem, x: number, y: number, z: number, ground: number, heading: number): void {
+  flash(fx, x, y + 0.5, z, 2.2, RATTLE_GLOW, 0.16);
+  dustRing(fx, x, ground, z, 5, 0xd8c8a0, 3, 0.7);
+  sparks(fx, x, y + 0.4, z, 6, RATTLE_GLOW, 4, ground, Math.sin(heading) * 0.6, Math.cos(heading) * 0.6);
+}
+
+/** A Rattlesnake coming off a wall: a spray of sparks out along its new way, a puff of grit off the wall and a little ring. */
+export function rattleBounce(fx: FxSystem, x: number, y: number, z: number, ground: number, heading: number): void {
+  const dx = Math.sin(heading);
+  const dz = Math.cos(heading);
+  flash(fx, x, y + 0.5, z, 1.6, 0xffffff, 0.1);
+  sparks(fx, x, y + 0.5, z, 12, RATTLE_GLOW, 7, ground, dx * 0.5, dz * 0.5, 0xffffe0);
+  smoke(fx, x, y + 0.4, z, 2, 0xb8a888, 0.7, 0.8, 1.2, 0.5, 0.5);
+  fx.add.spawn(TILE.ring).at(x, y + 0.6, z).life(0.18).size(0.6, 2.5).color(0xffffff, RATTLE_GLOW, 0.9).fade(0, 0.3);
+}
+
+/**
+ * A Rattlesnake breaking on a kart: the segments burst apart and bounce
+ * down the road, a crack of lime light with a star burst round it, venom
+ * spat in drops and a ring.
+ */
+export function rattleBreak(fx: FxSystem, x: number, y: number, z: number, ground: number): void {
+  flash(fx, x, y + 0.6, z, 3.6, RATTLE_GLOW, 0.22);
+  itemBits(fx, 'rattle', x, y + 0.6, z, 8, 6, ground);
+  const n = fx.n(8);
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * TAU;
+    fx.add.spawn(TILE.star).at(x, y + 0.7, z).vel(Math.cos(a) * 7, 2 + rnd() * 2, Math.sin(a) * 7).life(0.4).size(0.5, -0.6).color(0xffffff, RATTLE_GLOW).physics(4, 3).spin(a, spread(8));
+  }
+  const m = fx.n(6);
+  for (let i = 0; i < m; i++) {
+    fx.add.spawn(TILE.drop).at(x, y + 0.8, z).vel(spread(4), 3 + rnd() * 3, spread(4)).life(0.6 + rnd() * 0.3).size(0.3).color(0xd8ff80, 0x60a010).physics(18, 0.3).floor(ground + 0.05, 0.2);
+  }
+  shockRing(fx, x, ground, z, 3, RATTLE_GLOW, 0.35);
+  smoke(fx, x, y + 0.4, z, 3, 0xc8b898, 1, 1.2, 1.5, 0.7, 0.5);
+}
+
+/** A Rattlesnake gone without a hit (run out, or over the edge): a last shake of light. */
+export function rattleFizzle(fx: FxSystem, x: number, y: number, z: number, ground: number): void {
+  embers(fx, TILE.glow, x, y + 0.5, z, 5, RATTLE_GLOW, 0x407010, 0.4, 0.3, 0.6);
+  itemBits(fx, 'rattle', x, y + 0.5, z, 3, 3, ground);
+}
+
+/**
+ * Someone ran into a trailing item: it bursts against their nose, a white
+ * hot impact star in the item's colour, its bits flung forward and up, two
+ * rings and a thump of dust: bigger than a shield's clang, so it reads.
+ */
+export function trailRam(fx: FxSystem, x: number, y: number, z: number, ground: number, kind: ItemKind): void {
+  const c = ITEM_COLOR[kind];
+  flash(fx, x, y, z, 4.5, c, 0.26);
+  fx.add.spawn(TILE.flare).at(x, y, z).life(0.3).size(2.5, 1.2).color(0xffffff, c).spin(rnd() * TAU, 6).fade(0, 0.3);
+  itemBits(fx, kind, x, y, z, 9, 7, ground);
+  embers(fx, TILE.star, x, y, z, 8, 0xffffff, c, 0.8, 0.5, 0.7);
+  sparks(fx, x, y, z, 16, c, 8, ground, 0, 0, 0xffffff);
+  shockRing(fx, x, ground, z, 3.5, 0xffffff, 0.3);
+  shockRing(fx, x, ground, z, 2.2, c, 0.45);
+  dustRing(fx, x, ground, z, 6, 0xd0c0a0, 4, 0.9);
 }
 
 /** Nuclear Fusion going off: a white-hot core, two shockwaves out to its reach, sparks flat along the road, embers and a ring of smoke. */
