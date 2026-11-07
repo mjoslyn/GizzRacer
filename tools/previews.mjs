@@ -60,6 +60,8 @@ if (!only || only === 'skills') {
   const kinds = await page.evaluate(() => [...document.querySelectorAll('[data-grid="skill"] .menu-tile')].map((t) => t.dataset.tileId));
   for (let i = 0; i < kinds.length; i++) {
     if (oneSkill && kinds[i] !== oneSkill) continue;
+    // The Deadstick Landing is flown on a track, not on the skill screen: its tile (skills/deadstick.jpg) is drawn by hand to match the others, so keep it.
+    if (kinds[i] === 'deadstick') continue;
     // A fresh page each time, on the mode screen (a tap on the mode already picked would move on).
     await page.goto(`${base}?shots&unlock=1`);
     await page.waitForTimeout(3000);
