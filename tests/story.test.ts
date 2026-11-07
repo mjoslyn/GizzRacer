@@ -140,7 +140,7 @@ describe('story run', () => {
 });
 
 describe('story mode generated tracks', () => {
-  it('start at twists 3 and climb to the most, short in Chapter I and medium after', () => {
+  it('start at twists 4 and climb to the most, all medium length', () => {
     const run = new StoryRun(4242);
     const got: string[] = [];
     while (!run.finished) {
@@ -149,6 +149,6 @@ describe('story mode generated tracks', () => {
       run.record(true);
       if (run.offer.length) run.take(run.offer[0]);
     }
-    expect(got).toEqual(['0:3:short', '0:4:short', '1:4:medium', '1:5:medium', '2:5:medium', '2:5:medium']);
+    expect(got).toEqual(['0:4:medium', '0:5:medium', '1:5:medium', '1:5:medium', '2:5:medium', '2:5:medium']);
   });
 });

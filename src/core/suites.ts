@@ -274,7 +274,7 @@ export function suiteMusic(entry: LiveRecording | null | undefined, livePlaying:
 }
 
 /** The CPUs' pace over a suite, from the first stage to the boss. */
-const SUITE_PACE: [number, number] = [1, 1.03];
+const SUITE_PACE: [number, number] = [1.02, 1.045];
 /** How hard a suite's skill game is (skills.ts levels 0..2). */
 const SUITE_SKILL_LEVEL = 1;
 

@@ -25,7 +25,7 @@ import { SURGE_CLOSE, SURGE_CLOSING, SURGE_FAST } from './items/items';
 import { LobbyScreen } from './ui/lobby';
 import { SettingsScreen } from './ui/settings';
 import { TiltSteering } from './ui/tilt';
-import { onSettings, settings, updateSettings } from './core/settings';
+import { SONG_END_SOUNDTRACKS, onSettings, settings, updateSettings } from './core/settings';
 import { OnlineRace } from './net/onlineRace';
 import type { Effect, RoomStart } from './net/protocol';
 import type { RoomClient } from './net/room';
@@ -985,7 +985,9 @@ function startRace(withPlayer: boolean, keepSong = false, seamless = false): voi
   // Party mode: every player who joined drives a kart of their own.
   const party = withPlayer && !net && choice.mode === 'party' && partySeats?.length ? partySeats : null;
   partyOn = !!party;
-  const toSongEnd = withPlayer && !net && racesToSongEnd(choice.mode);
+  // Story races run to the end of their song: a suite's always (its live recording plays whatever the setting), the album run's on a live soundtrack.
+  const storySong = !!story && !solo && (story instanceof SuiteRun || SONG_END_SOUNDTRACKS.includes(settings().soundtrack));
+  const toSongEnd = withPlayer && !net && (racesToSongEnd(choice.mode) || storySong);
   Object.assign(songRace, { on: toSongEnd, live: toSongEnd, over: false, key: null, at: 0, ended: false, silent: 0 });
   if (toSongEnd && gp) gpSongRace = true;
   race = new Race(track, net ? net.start.seed : raceSeed++, !trial && !solo, trial ? TRIAL_LAPS : infinite || toSongEnd ? INFINITE_LAPS : track.def.laps);
