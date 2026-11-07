@@ -1,7 +1,7 @@
 import { seededRandom } from './math';
 import type { LiveRecording } from '../audio/music';
 import type { RacerDef } from '../physics/racers';
-import { GEN_COMPLEXITY_MAX, type GenParams, type GenTheme } from '../tracks/generator';
+import { GEN_COMPLEXITY_MAX, GEN_LAYOUT, type GenParams, type GenTheme } from '../tracks/generator';
 import type { SkillKind } from './skills';
 import { BOSS_ALT, BOSS_STAND_INS, STORY_TWISTS, StoryRun, bossRacer, type StoryAct, type StoryStage } from './story';
 
@@ -395,7 +395,7 @@ export class SuiteRun extends StoryRun {
   private suiteGen(n: number, g: SuiteGen): GenParams {
     const r = seededRandom(this.seed + n * 104729 + 7);
     const raced = this.plan.slice(0, n).filter((s) => s.kind === 'R' || s.kind === 'B').length;
-    return { seed: Math.floor(r() * 1e9), theme: g.theme, complexity: Math.min(GEN_COMPLEXITY_MAX, STORY_TWISTS + raced), length: 'medium', name: g.name, places: g.places };
+    return { seed: Math.floor(r() * 1e9), theme: g.theme, complexity: Math.min(GEN_COMPLEXITY_MAX, STORY_TWISTS + raced), length: 'medium', layout: GEN_LAYOUT, name: g.name, places: g.places };
   }
 }
 

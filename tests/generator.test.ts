@@ -5,30 +5,30 @@ import { PHYSICS_DT } from '../src/core/loop';
 import { clamp, wrapAngle } from '../src/core/math';
 import { Race } from '../src/core/race';
 import { RACERS } from '../src/physics/racers';
-import { GEN_THEMES, generateTrack, isPlayable, trackName, type GenParams } from '../src/tracks/generator';
+import { GEN_LAYOUT, GEN_THEMES, generateTrack, isPlayable, trackName, type GenParams } from '../src/tracks/generator';
 import { pointAt } from '../src/tracks/spline';
 import { Track } from '../src/tracks/track';
 
 describe('track generator', () => {
   it('builds the same track from the same seed and dials', () => {
-    const p: GenParams = { seed: 42, theme: 'lagoon', complexity: 3, length: 'medium' };
+    const p: GenParams = { seed: 42, theme: 'lagoon', complexity: 3, length: 'medium', layout: GEN_LAYOUT };
     expect(JSON.stringify(generateTrack(p))).toBe(JSON.stringify(generateTrack(p)));
     expect(JSON.stringify(generateTrack({ ...p, seed: 43 }))).not.toBe(JSON.stringify(generateTrack(p)));
     expect(trackName(p)).toBe(generateTrack(p).name);
   });
 
   it('longer dial, longer lap', () => {
-    const len = (length: GenParams['length']) => new Track(generateTrack({ seed: 7, theme: 'desert', complexity: 3, length })).length;
+    const len = (length: GenParams['length']) => new Track(generateTrack({ seed: 7, theme: 'desert', complexity: 3, length, layout: GEN_LAYOUT })).length;
     expect(len('short')).toBeLessThan(len('medium'));
     expect(len('medium')).toBeLessThan(len('long'));
   });
 
   describe.each(GEN_THEMES.flatMap((theme) => [1, 3, 5].map((complexity) => [theme, complexity] as const)))('%s, complexity %i', (theme, complexity) => {
-    const def = generateTrack({ seed: 11 + complexity, theme, complexity, length: 'medium' });
+    const def = generateTrack({ seed: 11 + complexity, theme, complexity, length: 'medium', layout: GEN_LAYOUT });
     const track = new Track(def);
 
-    it('is a closed loop inside its bounds that never crosses itself', () => {
-      expect(isPlayable(def)).toBe(true);
+    it('is a closed loop inside its bounds that never crosses itself (but on a flyover)', () => {
+      expect(isPlayable(def, true)).toBe(true);
       const sp = track.spline;
       for (let i = 0; i < sp.count; i++) expect(Math.max(Math.abs(sp.px[i]), Math.abs(sp.pz[i]))).toBeLessThan(def.bounds - 20);
     });
