@@ -1,4 +1,4 @@
-import { OVERTURE_APPROACH, OvertureSim, makeOverture, type CardSound } from '../../core/cardSkills';
+import { OVERTURE_APPROACH, OvertureSim, makeOverture, pct, type CardSound } from '../../core/cardSkills';
 import { CREAM, GOLD, SimGame, clipStage, panel, type Stage, type Synth } from './kit';
 
 const PRESS = new Set(['Space', 'Enter', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
@@ -110,6 +110,6 @@ export class SomeContextGame extends SimGame<OvertureSim> {
     g.fillRect(s.x + s.size * 0.1, s.y + s.size * 0.92, s.size * 0.8, s.size * 0.025);
     g.fillStyle = CREAM;
     g.fillRect(s.x + s.size * 0.1, s.y + s.size * 0.92, s.size * 0.8 * share, s.size * 0.025);
-    s.status(t < first ? 'Count in...' : `${sim.landed} struck${sim.strays ? ` · ${sim.strays} stray` : ''}`);
+    s.status(t < first ? 'Count in...' : `${pct(sim.landed / sim.game.hits.length)} of the hits struck, ${pct(sim.game.need)} needed${sim.strays ? ` · ${sim.strays} stray` : ''}`);
   }
 }

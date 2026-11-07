@@ -1,4 +1,4 @@
-import { HIDE_LOOK, HIDE_WARN, HIDE_X, HideSim, beamEnters, beamLead, makeHide, type CardSound, type HideBeam } from '../../core/cardSkills';
+import { HIDE_LOOK, HIDE_WARN, HIDE_X, HideSim, beamEnters, beamLead, makeHide, pct, type CardSound, type HideBeam } from '../../core/cardSkills';
 import { seededRandom } from '../../core/math';
 import { CREAM, GOLD, SimGame, clipStage, panel, say, type Stage, type Synth } from './kit';
 
@@ -142,11 +142,12 @@ export class RaconteurGame extends SimGame<HideSim> {
     // Seen so far, of the times you can be: the eyes after the word, however wide it came out.
     say(s, 'SEEN', 0.04, 0.05, 0.035, CREAM, 'left');
     const after = (g.measureText('SEEN').width + 6) / k + 0.04;
-    for (let i = 0; i < game.lives; i++) this.eye(s, after + 0.03 + i * 0.065, 0.05, i < sim.seen);
+    // A long song's many: as many eyes as fit, then the count.
+    if (game.lives <= 6) for (let i = 0; i < game.lives; i++) this.eye(s, after + 0.03 + i * 0.065, 0.05, i < sim.seen);
+    else say(s, `${sim.seen} / ${game.lives}`, after + 0.01, 0.05, 0.035, sim.seen ? '#ff5a5a' : CREAM, 'left');
     // Flares glimpsed, of those so far.
-    say(s, sim.past ? `${sim.glimpsed} / ${sim.past} glimpsed` : 'watch the battle', 0.96, 0.05, 0.035, GOLD, 'right');
-    const need = Math.round(game.share * 100);
-    s.status(`${sim.gasp > 0 ? 'Gasping for air' : sim.under ? `Under the mud, ${Math.round(sim.air * 100)}% air` : 'Up in the reeds'} · ${sim.glimpsed} of ${sim.past} flares glimpsed, ${need}% needed · seen ${sim.seen} of ${game.lives} · ${Math.max(0, Math.ceil(game.length - now))} s`);
+    say(s, sim.past ? `${pct(sim.glimpsed / sim.past)} glimpsed, ${pct(game.share)} needed` : 'watch the battle', 0.96, 0.05, 0.035, GOLD, 'right');
+    s.status(`${sim.gasp > 0 ? 'Gasping for air' : sim.under ? `Under the mud, ${Math.round(sim.air * 100)}% air` : 'Up in the reeds'} · ${sim.glimpsed} of ${sim.past} flares glimpsed, ${pct(game.share)} needed · seen ${sim.seen} of ${game.lives} · ${Math.max(0, Math.ceil(game.length - now))} s`);
   }
 
   /** The lightning lord on his hill, crowned in light. */

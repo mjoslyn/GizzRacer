@@ -43,6 +43,8 @@ export const CARD_GAME_MIN = 45;
 export const CARD_GAME_MAX = 240;
 /** A card with no recording of its own (it holds the one before, or the remix) plays its game this long. */
 export const CARD_GAME_DEFAULT = 45;
+/** The shortest a card's game runs when it starts late in its song (what's left of it is less). */
+export const CARD_GAME_LEFT_MIN = 15;
 
 /** A card's recording's length of music: from where it starts to where it stops (or the file's end). */
 export function songSeconds(rec: { seconds: number; start?: number | null; end?: number | null }): number {
@@ -62,6 +64,26 @@ export function cardPlan(rec: { seconds: number; start?: number | null; end?: nu
   return { game: true, length: Math.min(CARD_GAME_MAX, music) };
 }
 
+/**
+ * A card game's length if it starts now: its full length (`full`), less
+ * what's been heard of its song (`heard`, 0..1 of its `music` seconds; null:
+ * not playing, so the full length), at least CARD_GAME_LEFT_MIN. Asked as
+ * the game starts, past its rules card, so the time spent reading comes off
+ * and the game still ends with its song.
+ */
+export function cardGameLeft(full: number, music: number | null, heard: number | null): number {
+  if (heard == null || !music) return full;
+  return Math.max(CARD_GAME_LEFT_MIN, Math.min(full, full - clamp(heard, 0, 1) * music));
+}
+
+// ---- Shares: every game passes on a share of what it offered ----
+
+/** A share as the cards and the HUD say it: 60%. */
+export const pct = (share: number): string => `${Math.round(share * 100)}%`;
+
+/** How many of `n` a share asks for: at least one. */
+export const shareOf = (n: number, share: number): number => Math.max(1, Math.ceil(n * share - 1e-9));
+
 // ---- A New World: hide in the bear's shadow ----
 
 /** Seconds the shadow walks the meadow in Skill Games. */
@@ -72,7 +94,8 @@ export const SHADOW_DUST = 2;
 export interface ShadowGame {
   /** The shadow's width at the start, a share of the meadow; it narrows to SHADOW_NARROW of that. */
   width: number;
-  /** Seconds in the shadow to pass, out of `length`. */
+  /** Share of the game to spend in the shadow, and so the seconds in it to pass, out of `length`. */
+  share: number;
   need: number;
   length: number;
   /** How fast you move, meadow widths a second (always faster than the shadow). */
@@ -91,7 +114,8 @@ export function makeShadow(seed: number, level: number, length = SHADOW_TIME): S
     [0.11, 0.2],
     [0.06, 0.36],
   ].map(([a, f]) => ({ a, f: f * k * (0.85 + rand() * 0.3), p: rand() }));
-  return { width: lv([0.26, 0.22, 0.19], level), need: Math.round(length * lv([0.5, 0.56, 0.62], level)), length, speed: 0.7, waves };
+  const share = lv([0.5, 0.56, 0.62], level);
+  return { width: lv([0.26, 0.22, 0.19], level), share, need: length * share, length, speed: 0.7, waves };
 }
 
 /** The bear's clock: it wanders faster as the song goes on, from 0.85 of its pace to 1.2. */
@@ -138,9 +162,10 @@ export class ShadowSim implements CardSim {
     this.hidden = Math.abs(this.x - this.shadow) <= this.width / 2;
     if (this.hidden) this.inside += dt;
     if (this.hidden !== was) this.sounds.push({ s: this.hidden ? 'in' : 'out' });
-    const { need, length } = this.game;
-    if (this.inside + (length - this.t) < need) this.result = { passed: false, note: `Seen: ${Math.floor(this.inside)} seconds in the shadow, ${need} needed` };
-    else if (this.t >= length) this.result = { passed: this.inside >= need, note: `${Math.floor(this.inside)} seconds in the shadow of ${need} needed${this.inside >= need ? ', and the beast never saw you' : ''}` };
+    const { need, length, share } = this.game;
+    const kept = pct(this.inside / length);
+    if (this.inside + (length - this.t) < need - 1e-9) this.result = { passed: false, note: `Seen: ${kept} of the time in the shadow, ${pct(share)} needed` };
+    else if (this.t >= length) this.result = { passed: this.inside >= need - 1e-9, note: `${kept} of the time in the shadow, ${pct(share)} needed${this.inside >= need - 1e-9 ? ', and the beast never saw you' : ''}` };
   }
 }
 
@@ -305,7 +330,8 @@ export class MirrorSim implements CardSim {
   private end(): void {
     const n = this.marks.length;
     const passed = sharePasses(this.right, n, this.game.share);
-    this.result = { passed, note: passed ? `You knew yourself ${this.right} times of ${n}` : `Lost in the labyrinthine: ${this.right} of ${n} (needed ${Math.max(1, Math.ceil(n * this.game.share - 1e-9))})` };
+    const got = pct(n ? this.right / n : 0);
+    this.result = { passed, note: passed ? `You knew yourself ${got} of the time, ${this.right} of ${n}` : `Lost in the labyrinthine: ${got}, ${this.right} of ${n} (${pct(this.game.share)} needed)` };
   }
 }
 
@@ -393,7 +419,7 @@ export class OvertureSim implements CardSim {
     });
     if (this.t > g.length) {
       const n = g.hits.length;
-      this.result = { passed: overturePasses(g, this.landed, this.strays), note: `${this.landed} of ${n} hits${this.strays ? `, ${this.strays} stray` : ''} (needed ${Math.ceil(n * g.need)})` };
+      this.result = { passed: overturePasses(g, this.landed, this.strays), note: `${pct(this.landed / n)} of the hits, ${this.landed} of ${n}${this.strays ? `, ${this.strays} stray` : ''} (${pct(g.need)} needed)` };
     }
   }
 
@@ -461,7 +487,7 @@ export interface HideGame {
   flares: HideFlare[];
   /** Seconds of air under the mud, from full. */
   air: number;
-  /** Times you can be seen: this many and you're found. */
+  /** Times you can be seen: this many and you're found (a share of the beams, so as many for the song's length). */
   lives: number;
   /** Share of the flares to glimpse. */
   share: number;
@@ -542,8 +568,14 @@ export function makeHide(seed: number, level: number, length = HIDE_TIME): HideG
     }
     t = end + rest;
   }
+  // However short the song, the battle flares at least once, after the last beam (or before the first).
+  if (!flares.length) {
+    const last = beams[beams.length - 1];
+    const at = last ? last.at + last.dur + 0.9 : 2.5;
+    flares.push({ at: Math.min(at, length - 1), w: 0.8 / quick, kind: kind() });
+  }
   flares.sort((a, b) => a.at - b.at);
-  return { beams, flares, air, lives: lv([4, 3, 3], level), share: lv([0.6, 0.7, 0.75], level), length };
+  return { beams, flares, air, lives: Math.max(1, Math.round(beams.length * lv([0.44, 0.33, 0.3], level))), share: lv([0.6, 0.7, 0.75], level), length };
 }
 
 export class HideSim implements CardSim {
@@ -621,7 +653,7 @@ export class HideSim implements CardSim {
       const passed = sharePasses(this.glimpsed, n, g.share);
       this.result = {
         passed,
-        note: passed ? `You saw it all from your hiding place: ${this.glimpsed} of ${n} glimpsed` : `${this.glimpsed} of ${n} glimpsed (needed ${Math.max(1, Math.ceil(n * g.share - 1e-9))})`,
+        note: passed ? `You saw it all from your hiding place: ${pct(this.glimpsed / n)} of the flares glimpsed` : `${pct(n ? this.glimpsed / n : 0)} of the flares glimpsed, ${this.glimpsed} of ${n} (${pct(g.share)} needed)`,
       };
     }
   }
@@ -650,7 +682,10 @@ export interface FireGame {
   wires: { x: number; y: number }[];
   /** Widths a second the sky scrolls by. */
   speed: number;
+  /** Strikes that put the fire out: a share of the bolts, so as many for the song's length. */
   sparks: number;
+  /** Share of the golden wire to catch, and so how many. */
+  share: number;
   need: number;
 }
 
@@ -675,7 +710,8 @@ export function makeFire(seed: number, level: number, length = FIRE_TIME): FireG
     const nb = bolts[i + 1];
     if (nb) wires.push({ x: (b.x + nb.x) / 2, y: clamp((b.gap + nb.gap) / 2 + (rand() * 2 - 1) * 0.22, 0.15, 0.85) });
   });
-  return { bolts, wires, speed, sparks: lv([3, 3, 2], level) + Math.floor(length / 60), need: Math.ceil(wires.length * lv([0.55, 0.62, 0.68], level)) };
+  const share = lv([0.55, 0.62, 0.68], level);
+  return { bolts, wires, speed, sparks: Math.max(1, Math.round(bolts.length * lv([0.23, 0.21, 0.125], level))), share, need: shareOf(wires.length, share) };
 }
 
 export class FireSim implements CardSim {
@@ -737,7 +773,8 @@ export class FireSim implements CardSim {
     const last = this.game.bolts[this.game.bolts.length - 1];
     if (last.x - s < FIRE_X - 0.15) {
       const need = this.game.need;
-      this.result = this.caught >= need ? { passed: true, note: `Through the storm with ${this.caught} golden wire` } : { passed: false, note: `${this.caught} golden wire caught (needed ${need})` };
+      const got = pct(this.caught / this.game.wires.length);
+      this.result = this.caught >= need ? { passed: true, note: `Through the storm with ${got} of the golden wire` } : { passed: false, note: `${got} of the golden wire caught, ${this.caught} of ${this.game.wires.length} (${pct(this.game.share)} needed)` };
     }
   }
 }
@@ -764,6 +801,9 @@ export interface EmberGame {
   items: EmberItem[];
   /** Shares across a second. */
   speed: number;
+  /** All the light there is to catch (the embers, and the final clap's EMBER_FINAL), the share of it to catch, and so how much. */
+  total: number;
+  share: number;
   need: number;
   /** When the sun is down: the end. */
   end: number;
@@ -791,7 +831,9 @@ export function makeEmbers(seed: number, level: number, length = EMBER_TIME): Em
     if (a.lane !== b.lane && !smoke.some((s) => Math.abs(s.at - a.at) < 2)) smoke.push({ at: (a.at + b.at) / 2, lane: a.lane, kind: 'smoke' });
   }
   const items = [...embers, ...smoke, final].sort((x, y) => x.at - y.at);
-  return { items, speed: lv([0.32, 0.37, 0.42], level), need: Math.ceil((embers.length + EMBER_FINAL) * lv([0.52, 0.6, 0.65], level)), end: final.at + 0.8 };
+  const total = embers.length + EMBER_FINAL;
+  const share = lv([0.52, 0.6, 0.65], level);
+  return { items, speed: lv([0.32, 0.37, 0.42], level), total, share, need: shareOf(total, share), end: final.at + 0.8 };
 }
 
 export class EmberSim implements CardSim {
@@ -831,7 +873,8 @@ export class EmberSim implements CardSim {
     });
     if (this.t >= this.game.end) {
       const need = this.game.need;
-      this.result = this.light >= need ? { passed: true, note: `${this.light} of the last light caught before the moonless night` } : { passed: false, note: `The sun set on ${this.light} light caught (needed ${need})` };
+      const got = pct(this.light / this.game.total);
+      this.result = this.light >= need ? { passed: true, note: `${got} of the last light caught before the moonless night` } : { passed: false, note: `The sun set on ${got} of the light caught (${pct(this.game.share)} needed)` };
     }
   }
 
@@ -852,7 +895,8 @@ export interface SatGame {
   starts: number[];
   /** How much faster everything fades by the end. */
   dark: number;
-  need: number;
+  /** Share of the sky to keep lit over the game: of every satellite's every second, how much it's lit. */
+  share: number;
   length: number;
 }
 
@@ -864,7 +908,8 @@ export function makeSats(seed: number, level: number, length = SAT_TIME): SatGam
     lives: Array.from({ length: n }, () => lo + rand() * (hi - lo)),
     starts: Array.from({ length: n }, () => 0.85 + rand() * 0.15),
     dark: lv([1.6, 1.7, 1.8], level),
-    need: lv([3, 4, 4], level),
+    // As the old three of four and four of five kept lit all the way, at the least; one lost late costs less than one lost early.
+    share: lv([0.75, 0.8, 0.8], level),
     length,
   };
 }
@@ -875,6 +920,8 @@ export class SatSim implements CardSim {
   t = 0;
   readonly light: number[];
   cursor = 0;
+  /** Satellite-seconds lit so far, as a share of all the satellites (so seconds of the whole sky lit). */
+  litTime = 0;
 
   constructor(readonly game: SatGame) {
     this.light = [...game.starts];
@@ -882,6 +929,11 @@ export class SatSim implements CardSim {
 
   get lit(): number {
     return this.light.filter((l) => l > 0).length;
+  }
+
+  /** Share of the sky kept lit so far. */
+  get kept(): number {
+    return this.t > 0 ? this.litTime / this.t : 1;
   }
 
   /** How dark the world is, 0..1. */
@@ -900,8 +952,12 @@ export class SatSim implements CardSim {
       this.light[i] = Math.max(0, next);
       if (next <= 0) this.sounds.push({ s: 'black', n: i });
     });
-    if (this.lit < g.need) this.result = { passed: false, note: `Digital black: ${this.lit} of ${g.lives.length} still lit (needed ${g.need})` };
-    else if (this.t >= g.length) this.result = { passed: true, note: `${this.lit} of ${g.lives.length} satellites still lit in the altered future` };
+    const n = g.lives.length;
+    this.litTime += (dt * this.lit) / n;
+    // A satellite gone black stays black: the most still to come is the ones lit now, lit to the end.
+    const most = this.litTime + (Math.max(0, g.length - this.t) * this.lit) / n;
+    if (most < g.share * g.length - 1e-9) this.result = { passed: false, note: `Digital black: the sky ${pct(most / g.length)} lit at the most, ${pct(g.share)} needed` };
+    else if (this.t >= g.length) this.result = { passed: true, note: `The sky ${pct(this.litTime / g.length)} lit, ${this.lit} of ${n} satellites still shining in the altered future` };
   }
 
   move(d: number): void {
@@ -943,9 +999,12 @@ export interface MuntGame {
   belt: MuntPart[];
   /** Shares across a second, at the start. */
   speed: number;
-  /** Machines to build by the end. */
+  /** Machines the belt brings the parts for in the time, every part grabbed as it comes. */
+  possible: number;
+  /** Share of those to build, and so how many by the end. */
+  share: number;
   machines: number;
-  /** Wrong parts grabbed that end it. */
+  /** Wrong parts grabbed that end it: as many for the game's length. */
   strikes: number;
   length: number;
 }
@@ -959,7 +1018,28 @@ export function makeMunt(seed: number, level: number, length = MUNT_TIME): MuntG
     const four = [...MUNT_PARTS];
     while (four.length) belt.push(four.splice(Math.floor(rand() * four.length), 1)[0]);
   }
-  return { belt, speed, machines: Math.max(1, Math.round(length / lv([17, 15, 12], level))), strikes: lv([3, 3, 2], level) + Math.floor(length / 60), length };
+  const possible = muntPossible(belt, speed, length);
+  const share = lv([0.4, 0.4, 0.5], level);
+  return { belt, speed, possible, share, machines: shareOf(possible, share), strikes: Math.max(2, Math.round((lv([3, 3, 2], level) * length) / MUNT_TIME)), length };
+}
+
+/** How far a belt at `speed` has run `t` seconds into a game of `length` (it speeds up as it goes). */
+export function muntRun(speed: number, t: number, length: number): number {
+  return speed * (t + (MUNT_RUSH * t * t) / (2 * length));
+}
+
+/** Machines the belt could make: each part the machine needs grabbed as it comes under the claw, before the end. */
+export function muntPossible(belt: readonly MuntPart[], speed: number, length: number): number {
+  const run = muntRun(speed, length, length);
+  let parts = 0;
+  let built = 0;
+  for (let i = 0; i < belt.length && run - i * MUNT_SPACING >= MUNT_CLAW; i++) {
+    if (belt[i] !== MUNT_PARTS[parts]) continue;
+    if (++parts < MUNT_PARTS.length) continue;
+    parts = 0;
+    built++;
+  }
+  return Math.max(1, built);
 }
 
 export class MuntSim implements CardSim {
@@ -982,8 +1062,7 @@ export class MuntSim implements CardSim {
 
   /** How far the belt has run (it speeds up as the song goes). */
   get run(): number {
-    const g = this.game;
-    return g.speed * (this.t + (MUNT_RUSH * this.t * this.t) / (2 * g.length));
+    return muntRun(this.game.speed, this.t, this.game.length);
   }
 
   /** A belt part's place across now. */
@@ -1007,7 +1086,11 @@ export class MuntSim implements CardSim {
     this.t += dt;
     this.cool = Math.max(0, this.cool - dt);
     const g = this.game;
-    if (this.t >= g.length) this.result = { passed: this.built >= g.machines, note: `${this.built} machine${this.built === 1 ? '' : 's'} born from the vat of ${g.machines} needed${this.strikes ? `, ${this.strikes} wrong part${this.strikes > 1 ? 's' : ''}` : ''}` };
+    if (this.t >= g.length)
+      this.result = {
+        passed: this.built >= g.machines,
+        note: `${this.built} of ${g.possible} machines born from the vat (${pct(this.built / g.possible)}, ${pct(g.share)} needed)${this.strikes ? `, ${this.strikes} wrong part${this.strikes > 1 ? 's' : ''}` : ''}`,
+      };
   }
 
   grab(): void {

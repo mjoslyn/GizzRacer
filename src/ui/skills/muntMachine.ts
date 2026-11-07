@@ -1,4 +1,4 @@
-import { MUNT_CLAW, MUNT_COOL, MUNT_NAMES, MUNT_PARTS, MUNT_REACH, MUNT_SPACING, MuntSim, makeMunt, type CardSound, type MuntPart } from '../../core/cardSkills';
+import { MUNT_CLAW, MUNT_COOL, MUNT_NAMES, MUNT_PARTS, MUNT_REACH, MUNT_SPACING, MuntSim, makeMunt, pct, type CardSound, type MuntPart } from '../../core/cardSkills';
 import { CREAM, GOLD, SimGame, clipStage, panel, say, type Stage, type Synth } from './kit';
 
 const GRAB = new Set(['Space', 'Enter', 'ArrowDown', 'KeyS']);
@@ -105,9 +105,11 @@ export class MuntMachineGame extends SimGame<MuntSim> {
     g.stroke();
     g.restore();
     // Machines built and wrong parts.
-    say(s, `Machines ${sim.built} / ${sim.game.machines}`, 0.05, 0.46, 0.04, GOLD, 'left');
-    say(s, `${'X '.repeat(sim.strikes)}${'- '.repeat(Math.max(0, sim.game.strikes - sim.strikes))}`.trim(), 0.95, 0.46, 0.04, '#ff5a5a', 'right');
-    s.status(`Grab the ${MUNT_NAMES[sim.needed].toLowerCase()} · ${Math.max(0, Math.ceil(sim.game.length - sim.t))} s left`);
+    const g2 = sim.game;
+    say(s, `Machines ${pct(sim.built / g2.possible)} / ${pct(g2.share)}`, 0.05, 0.46, 0.04, GOLD, 'left');
+    const wrong = g2.strikes <= 6 ? `${'X '.repeat(sim.strikes)}${'- '.repeat(Math.max(0, g2.strikes - sim.strikes))}`.trim() : `Wrong ${sim.strikes} / ${g2.strikes}`;
+    say(s, wrong, 0.95, 0.46, 0.04, '#ff5a5a', 'right');
+    s.status(`Grab the ${MUNT_NAMES[sim.needed].toLowerCase()} · ${sim.built} of ${g2.possible} machines (${pct(sim.built / g2.possible)}, ${pct(g2.share)} needed) · ${Math.max(0, Math.ceil(g2.length - sim.t))} s left`);
   }
 
   /** A part's picture at (u, v), `size` of its full size. */

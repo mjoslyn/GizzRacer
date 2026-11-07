@@ -1,4 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { RULES_WAIT } from '../src/core/skills';
+import { StoryScreen, practiceRulesCard, storyCard } from '../src/ui/storyScreen';
 import { ACTS, BOON_CHOICES, CLEAR_PLACE, SKILL_STAGE, STAGES_PER_ACT, START_LIVES, StoryRun } from '../src/core/story';
 import { kartParams, RACERS } from '../src/physics/racers';
 import { TRACK_LIST } from '../src/tracks/index';
@@ -150,5 +152,58 @@ describe('story mode generated tracks', () => {
       if (run.offer.length) run.take(run.offer[0]);
     }
     expect(got).toEqual(['0:4:medium', '0:5:medium', '1:5:medium', '1:5:medium', '2:5:medium', '2:5:medium']);
+  });
+});
+
+describe("a skill game's card before it", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  /** Enough of a DOM for the story screen: an element whose markup can be read back. */
+  function screen() {
+    const el = { className: '', innerHTML: '', classList: { toggle: () => {} }, addEventListener: () => {} };
+    vi.stubGlobal('document', { createElement: () => el, body: { appendChild: () => {} } });
+    const sc = new StoryScreen({ appendChild: () => {} } as unknown as HTMLElement);
+    const picked: string[] = [];
+    sc.onPick = (id) => picked.push(id);
+    return { sc, el, picked, step: (s: number) => Array.from({ length: Math.round(s * 60) }, () => sc.step(1 / 60)) };
+  }
+
+  it('counts down on the card and starts the game by itself after RULES_WAIT seconds', () => {
+    const run = new StoryRun(3);
+    while (run.race.kind !== 'skill') {
+      run.record(true);
+      if (run.offer.length) run.take(run.offer[0]);
+    }
+    const card = storyCard(run, 'skill', RACERS[0]);
+    expect(card.auto).toBe(RULES_WAIT);
+    const { sc, el, picked, step } = screen();
+    sc.show(card);
+    expect(el.innerHTML).toContain(`starts by itself in ${RULES_WAIT} s`);
+    step(4);
+    expect(el.innerHTML).toContain(`starts by itself in ${RULES_WAIT - 4} s`);
+    expect(picked).toEqual([]);
+    step(RULES_WAIT - 4 + 0.1);
+    expect(picked).toEqual(['go']);
+    step(5);
+    expect(picked).toEqual(['go']);
+  });
+
+  it("Skill Games' card before the Deadstick Landing too; a press still goes sooner", () => {
+    const card = practiceRulesCard('deadstick', 'Easy', 0);
+    expect(card.auto).toBe(RULES_WAIT);
+    const { sc, picked, step } = screen();
+    sc.show(card);
+    step(2);
+    expect(sc.key('Enter')).toBe(true);
+    expect(picked).toEqual(['play']);
+  });
+
+  it('cards that are not before a game wait for a press', () => {
+    const run = new StoryRun(3);
+    for (const phase of ['chapter', 'boss', 'boon'] as const) expect(storyCard(run, phase, RACERS[0]).auto, phase).toBeUndefined();
+    const { sc, picked, step } = screen();
+    sc.show(storyCard(run, 'chapter', RACERS[0]));
+    step(RULES_WAIT * 3);
+    expect(picked).toEqual([]);
   });
 });

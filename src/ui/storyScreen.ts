@@ -1,4 +1,4 @@
-import { SKILLS, explainsItself, skillRules, type SkillKind } from '../core/skills';
+import { RULES_WAIT, SKILLS, explainsItself, skillRules, type SkillKind } from '../core/skills';
 import { ACTS, BOONS, CLEAR_PLACE, type StoryRun } from '../core/story';
 import { ALBUM_STORY, SUITES, SuiteRun } from '../core/suites';
 import type { RacerDef } from '../physics/racers';
@@ -20,6 +20,8 @@ export interface StoryCard {
   footer?: string;
   /** The boons held, as a deck of small cards (the boon chooser's, in place of the footer): each once, with how many. */
   deck?: { name: string; text: string; count: number }[];
+  /** Seconds before the lit choice is picked by itself, counting down on the card (a skill game's card before it: RULES_WAIT). */
+  auto?: number;
 }
 
 /**
@@ -32,6 +34,9 @@ export class StoryScreen {
   private readonly el = document.createElement('div');
   private card: StoryCard | null = null;
   private at = 0;
+  /** Seconds the card has been up, for its countdown, and whether that's picked for it already. */
+  private waited = 0;
+  private fired = false;
 
   constructor(parent: HTMLElement) {
     this.el.className = 'menu story';
@@ -49,8 +54,30 @@ export class StoryScreen {
   show(card: StoryCard | null): void {
     this.card = card;
     this.at = 0;
+    this.waited = 0;
+    this.fired = false;
     this.el.classList.toggle('show', card !== null);
     this.render();
+  }
+
+  /** Seconds on the card's countdown (whole), or null with none. */
+  get countdown(): number | null {
+    const auto = this.card?.auto;
+    return auto === undefined ? null : Math.max(0, Math.ceil(auto - this.waited - 1e-9));
+  }
+
+  /** Every frame the card's up: its countdown runs, and at the end its lit choice is picked, as Enter would. */
+  step(dt: number): void {
+    const c = this.card;
+    if (!c || c.auto === undefined || this.fired) return;
+    const before = this.countdown;
+    this.waited += dt;
+    if (this.waited >= c.auto) {
+      this.fired = true;
+      this.onPick(c.opts[this.at].id);
+      return;
+    }
+    if (this.countdown !== before) this.render();
   }
 
   /** Returns true if the key was used. */
@@ -88,7 +115,7 @@ export class StoryScreen {
         ${boons ? boonChoiceHtml(c.opts, this.at) : `<div class="story-opts${c.opts.length > 5 ? ' many' : ''}">${opts}</div>`}
         ${c.deck ? boonHandHtml(c.deck) : ''}
         ${c.footer ? `<div class="story-footer">${esc(c.footer)}</div>` : ''}
-        <div class="menu-hint">${c.opts.length > 1 ? `${boons ? '&larr;&rarr;' : '&uarr;&darr;'} choose &middot; ` : ''}Enter to go on</div>
+        <div class="menu-hint">${c.opts.length > 1 ? `${boons ? '&larr;&rarr;' : '&uarr;&darr;'} choose &middot; ` : ''}Enter to go on${c.auto !== undefined ? ` &middot; <span class="story-auto">starts by itself in ${this.countdown} s</span>` : ''}</div>
       </div>`;
   }
 }
@@ -163,7 +190,15 @@ export function storyCard(run: StoryRun, phase: StoryPhase, player: RacerDef, no
       return { kicker, title: act.title, body: act.intro, opts: go('Begin', `Two races, a skill game, then the boss one on one. Finish each race in the top ${CLEAR_PLACE}.`), footer };
     case 'skill': {
       const k = SKILLS[race.skill!];
-      return { kicker: `${act.chapter} · Skill game · ${hearts(run.lives)}`, title: k.name, body: k.intro, detail: explainsItself(race.skill!) ? undefined : skillRules(race.skill!, race.act), opts: go('Play', 'Ready when you are'), footer };
+      return {
+        kicker: `${act.chapter} · Skill game · ${hearts(run.lives)}`,
+        title: k.name,
+        body: k.intro,
+        detail: explainsItself(race.skill!) ? undefined : skillRules(race.skill!, race.act),
+        opts: go('Play', 'Ready when you are'),
+        footer,
+        auto: RULES_WAIT,
+      };
     }
     case 'boss': {
       const boss = run.bossRacer(player);
@@ -212,6 +247,7 @@ export function practiceRulesCard(kind: SkillKind, levelName: string, level: num
     body: SKILLS[kind].intro,
     detail: skillRules(kind, level),
     opts: [{ id: 'play', name: 'Continue', blurb: 'Ready when you are' }],
+    auto: RULES_WAIT,
   };
 }
 

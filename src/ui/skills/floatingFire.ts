@@ -1,4 +1,4 @@
-import { BOLT_W, FIRE_R, FIRE_X, FireSim, makeFire, type CardSound } from '../../core/cardSkills';
+import { BOLT_W, FIRE_R, FIRE_X, FireSim, makeFire, pct, type CardSound } from '../../core/cardSkills';
 import { GOLD, SimGame, clipStage, panel, say, type Stage, type Synth } from './kit';
 
 const RISE = new Set(['Space', 'Enter', 'ArrowUp', 'KeyW']);
@@ -115,14 +115,18 @@ export class FloatingFireGame extends SimGame<FireSim> {
     }
     g.restore();
     // Sparks left, and the wire caught.
-    for (let i = 0; i < sim.game.sparks; i++) {
-      g.fillStyle = i < sim.sparks ? '#ff7a1a' : 'rgba(255,255,255,0.2)';
-      g.beginPath();
-      g.arc(X(0.06 + i * 0.06), Y(0.06), k * 0.02, 0, Math.PI * 2);
-      g.fill();
-    }
-    say(s, `${sim.caught} / ${sim.game.need}`, 0.94, 0.06, 0.05, GOLD, 'right');
-    s.status(`${sim.holding ? 'Rising' : 'Sinking'} · ${sim.caught} golden wire of ${sim.game.need} · ${sim.sparks} ${sim.sparks === 1 ? 'spark' : 'sparks'} left`);
+    // The sparks left: a dot each, or (a long song's many) the count.
+    if (sim.game.sparks <= 8)
+      for (let i = 0; i < sim.game.sparks; i++) {
+        g.fillStyle = i < sim.sparks ? '#ff7a1a' : 'rgba(255,255,255,0.2)';
+        g.beginPath();
+        g.arc(X(0.06 + i * 0.06), Y(0.06), k * 0.02, 0, Math.PI * 2);
+        g.fill();
+      }
+    else say(s, `${sim.sparks} sparks`, 0.04, 0.06, 0.04, '#ff7a1a', 'left');
+    const wires = sim.game.wires.length;
+    say(s, `${pct(sim.caught / wires)} / ${pct(sim.game.share)}`, 0.94, 0.06, 0.05, GOLD, 'right');
+    s.status(`${sim.holding ? 'Rising' : 'Sinking'} · ${pct(sim.caught / wires)} of the golden wire, ${pct(sim.game.share)} needed · ${sim.sparks} ${sim.sparks === 1 ? 'spark' : 'sparks'} left`);
   }
 
   /** A bolt's jagged line at `u`, from height `from` to `to`, its kinks fixed by `seed`. */

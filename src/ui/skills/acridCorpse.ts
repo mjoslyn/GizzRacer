@@ -1,4 +1,4 @@
-import { EMBER_CATCH, EMBER_FROM, EmberSim, makeEmbers, type CardSound } from '../../core/cardSkills';
+import { EMBER_CATCH, EMBER_FROM, EmberSim, makeEmbers, pct, type CardSound } from '../../core/cardSkills';
 import { CREAM, GOLD, SimGame, clipStage, panel, say, type Stage, type Synth } from './kit';
 
 /** Each lane's height (share down the stage). */
@@ -122,7 +122,7 @@ export class AcridCorpseGame extends SimGame<EmberSim> {
     g.lineWidth = 3;
     g.strokeRect(jx - k * 0.035, jy - k * 0.045, k * 0.07, k * 0.09);
     g.restore();
-    say(s, `${sim.light} / ${sim.game.need}`, 0.06, 0.07, 0.055, GOLD, 'left');
-    s.status(`${sim.light} light caught of ${sim.game.need} needed · the sun is ${dusk < 0.5 ? 'setting' : dusk < 0.85 ? 'going' : 'nearly gone'}`);
+    say(s, `${pct(sim.light / sim.game.total)} / ${pct(sim.game.share)}`, 0.06, 0.07, 0.055, GOLD, 'left');
+    s.status(`${pct(sim.light / sim.game.total)} of the light caught, ${pct(sim.game.share)} needed · the sun is ${dusk < 0.5 ? 'setting' : dusk < 0.85 ? 'going' : 'nearly gone'}`);
   }
 }

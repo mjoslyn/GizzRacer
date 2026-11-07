@@ -1,13 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { NEUTRAL_INPUT } from '../src/core/inputFrame';
 import { Race } from '../src/core/race';
+import { pct } from '../src/core/cardSkills';
+import { NonagonGame } from '../src/ui/skillScreen';
+import { Synth } from '../src/ui/skills/kit';
 import {
+  BANANA_NEED,
   BANANA_ROUNDS,
   DEADSTICK_LAUNCH,
   DEADSTICK_RUNUP,
   HOROLOGY_ROUNDS,
   NONAGON_FIRST,
   NONAGON_SIDES,
+  nonagonNeed,
+  nonagonTotal,
   RIFF_GOOD,
   RIFF_LANES,
   RIFF_OK,
@@ -59,10 +65,33 @@ describe('skill rules', () => {
   it('every game says exactly what to do at every level, with its real targets', () => {
     for (const kind of SKILL_KINDS) for (let level = 0; level < 3; level++) expect(skillRules(kind, level).length, kind).toBeGreaterThan(80);
     expect(skillRules('riff', 0)).toContain(`${Math.round(makeRiff(1, 0).need * 100)}%`);
-    expect(skillRules('nonagon', 2)).toContain(`all ${makeNonagon(1, 2).seq.length}`);
+    expect(skillRules('nonagon', 2)).toContain(`${pct(makeNonagon(1, 2).share)} of all the lights`);
+    expect(skillRules('nonagon', 2)).toContain(`${nonagonNeed(makeNonagon(1, 2))} of ${nonagonTotal(makeNonagon(1, 2))}`);
     expect(skillRules('banana', 1)).toContain(`${makeBanana(1, 1).tolerance} cents`);
-    expect(skillRules('horology', 2)).toContain(`land ${makeHorology(1, 2).need}`);
-    expect(skillRules('mindfuzz', 0)).toContain(`${makeSuite(1, 0).fuzz.need} seconds`);
+    expect(skillRules('horology', 2)).toContain(`land ${pct(makeHorology(1, 2).share)} of them`);
+    expect(skillRules('mindfuzz', 0)).toContain(`${pct(makeSuite(1, 0).fuzz.share)} of its 12 seconds`);
+  });
+
+  it('passes on a percentage: every game but the three whose target is a place says its target as one', () => {
+    // Robot Stop (reach the robot), Crumbling Castle (every floor of it) and the Deadstick Landing (the ring) have a goal, not a count.
+    for (const kind of SKILL_KINDS) {
+      if (kind === 'robot' || kind === 'castle' || kind === 'deadstick') continue;
+      for (let level = 0; level < 3; level++) expect(skillRules(kind, level), kind).toMatch(/\d+%/);
+    }
+  });
+
+  it('the shares ask for what the old counts did', () => {
+    expect([0, 1, 2].map((l) => makeHorology(1, l).need)).toEqual([3, 4, 4]);
+    expect([0, 1, 2].map((l) => makeFishing(1, l).need)).toEqual([3, 3, 4]);
+    expect([0, 1, 2].map((l) => makeSnake(1, l).need)).toEqual([10, 12, 14]);
+    expect(BANANA_NEED).toBe(2);
+    expect(SUITE_NEED).toBe(3);
+    for (let l = 0; l < 3; l++) {
+      const g = makeSuite(1, l);
+      expect([g.mind.need, g.notMind.need, g.cellophane.need]).toEqual([4, 4, [2, 2, 3][l]]);
+      expect(g.fuzz.need).toBeCloseTo([4, 5, 5.5][l]);
+      for (const sh of [g.mind.share, g.notMind.share, g.cellophane.share, g.fuzz.share]) expect(sh).toBeLessThan(1);
+    }
     expect(skillRules('deadstick', 2)).toContain(`${deadstickRadius(2)} m`);
   });
 });
@@ -109,6 +138,43 @@ describe('nonagon infinity', () => {
         if (i) expect(s).not.toBe(g.seq[i - 1]);
       });
     }
+  });
+});
+
+describe('nonagon infinity: played', () => {
+  /** Plays the loop back, getting each round right but those in `slip` (lost at that light of the round). */
+  function play(seed: number, level: number, slip: Record<number, number> = {}) {
+    const game = new NonagonGame(new Synth(() => null, () => 0), seed, level);
+    const g = makeNonagon(seed, level);
+    const inner = game as unknown as { phase: string; round: number; entered: number };
+    let t = 0;
+    while (!game.result && t < 120) {
+      game.update(t, 1 / 60);
+      t += 1 / 60;
+      if (inner.phase !== 'input') continue;
+      const at = slip[inner.round];
+      const side = at === inner.entered ? (g.seq[inner.entered] + 1) % NONAGON_SIDES : g.seq[inner.entered];
+      game.key(`Digit${side + 1}`, false);
+    }
+    return game.result;
+  }
+
+  it('the whole loop played back passes; a slip late in it is forgiven, one early is not', () => {
+    for (let level = 0; level < 3; level++)
+      for (const seed of [1, 7, 42]) {
+        const last = makeNonagon(seed, level).seq.length;
+        expect(play(seed, level)?.passed, `seed ${seed} level ${level}`).toBe(true);
+        expect(play(seed, level, { [last]: last - 1 })?.passed, 'the last light of the last round').toBe(true);
+        expect(play(seed, level, { [NONAGON_FIRST]: 0 })?.passed, 'the first round lost').toBe(false);
+        expect(play(seed, level, { [NONAGON_FIRST]: 1, [NONAGON_FIRST + 1]: 1 })?.passed, 'two rounds lost').toBe(false);
+      }
+  });
+
+  it('asks for 90% of the lights shown over the rounds', () => {
+    const g = makeNonagon(1, 0);
+    expect(nonagonTotal(g)).toBe(3 + 4 + 5);
+    expect(nonagonNeed(g)).toBe(Math.ceil(12 * g.share));
+    expect(g.share).toBe(0.9);
   });
 });
 

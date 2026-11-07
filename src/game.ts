@@ -32,7 +32,7 @@ import type { RoomClient } from './net/room';
 import { GrandPrix } from './core/grandPrix';
 import { ACTS, CLEAR_PLACE, SKILL_STAGE, STAGES_PER_ACT, StoryRun, type BoonId } from './core/story';
 import { ALBUM_STORY, CardClock, SuiteRun, cardReadTime, cardStageFor, suiteById, suiteMusic } from './core/suites';
-import { CARD_GAME_DEFAULT, CARD_GAME_MAX, cardPlan, songSeconds } from './core/cardSkills';
+import { CARD_GAME_DEFAULT, CARD_GAME_MAX, cardGameLeft, cardPlan, songSeconds } from './core/cardSkills';
 import { DEADSTICK_LAUNCH, DEADSTICK_RUNUP, DEADSTICK_SHOTS, DEADSTICK_SHOT_TIME, planDeadstick, type DeadstickPlan, type SkillKind } from './core/skills';
 import { SkillScreen, type Lyrics, type SkillResult } from './ui/skillScreen';
 import { StoryScreen, hearts, practiceCard, practiceRulesCard, storyCard, storyPickCard, type StoryPhase } from './ui/storyScreen';
@@ -211,8 +211,6 @@ const SKY_LAPS = 3;
 const SONG_RACE_MIN = 60;
 /** A suite's race runs on whatever is left of its song (it came on before the race), down to this. */
 const SUITE_SONG_RACE_MIN = 15;
-/** And a card's game on what's left of its song, down to this. */
-const CARD_GAME_LEFT_MIN = 15;
 const songRaceMin = (): number => (story instanceof SuiteRun ? SUITE_SONG_RACE_MIN : SONG_RACE_MIN);
 /** A race to the song's end with no song heard this long (s) into it goes back to laps. */
 const SONG_WAIT = 15;
@@ -1892,11 +1890,13 @@ function storyNext(): void {
         return showStory('card');
       }
       storyPhase = 'card';
-      // Its song may have come on already (over the stage before's results and boon): the game runs on what's left, ending with it; a retry starts it over.
-      const heard = restartSuiteSong ? null : cardSongProgress(song);
+      // Its song may have come on already (over the stage before's results and boon), and it plays on over the game's
+      // rules card: the game runs on what's left as it starts, ending with it (at least CARD_GAME_LEFT_MIN); a retry starts it over.
+      const songLen = rec ? songSeconds(rec) : null;
+      const left = () => cardGameLeft(plan.length, songLen, restartSuiteSong ? null : cardSongProgress(song));
+      const length = left();
       suiteStageMusic(null);
-      const length = heard != null ? Math.max(CARD_GAME_LEFT_MIN, plan.length * (1 - heard)) : plan.length;
-      startSkillScreen(game, r.seed, r.level ?? r.act, { lines: r.words ?? [], song: () => cardSongProgress(song), length });
+      startSkillScreen(game, r.seed, r.level ?? r.act, { lines: r.words ?? [], song: () => cardSongProgress(song), length, left });
     });
     return;
   }
@@ -1946,9 +1946,12 @@ function playPractice(): void {
       if (ticket !== cardTicket || practice !== p) return;
       if (rec && !setPlaying()) radio.playRecording(rec, song, remixCues('title'));
       else if (!setPlaying()) music.stop();
-      // A song too short for a story game still sets this one's length, at least CARD_GAME_DEFAULT.
+      // A song too short for a story game still sets this one's length, at least CARD_GAME_DEFAULT; the time on its
+      // rules card, the song playing, comes off as the game starts.
       const length = rec ? Math.min(CARD_GAME_MAX, Math.max(CARD_GAME_DEFAULT, songSeconds(rec))) : CARD_GAME_DEFAULT;
-      startSkillScreen(p.kind, p.seed, p.level, { lines: card.stage.words ?? [], song: () => cardSongProgress(song), length });
+      const songLen = rec ? songSeconds(rec) : null;
+      const left = () => cardGameLeft(length, songLen, cardSongProgress(song));
+      startSkillScreen(p.kind, p.seed, p.level, { lines: card.stage.words ?? [], song: () => cardSongProgress(song), length, left });
     });
     return;
   }
@@ -2758,6 +2761,8 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
   tellPads();
   padFrame(performance.now() / 1000);
   cardClockStep(frameDt);
+  // A skill game's card before it counts down, and starts it by itself (not under Settings).
+  if (mode === 'story' && !settingsScreen.visible) storyScreen.step(frameDt);
   // A Party player's Start (every seat's checked, so none is left pending).
   const seatPause = seats.map((x) => x.input?.consumePause() ?? false).some(Boolean);
   // Start under Settings (opened from the pause menu) is Settings', not a resume.

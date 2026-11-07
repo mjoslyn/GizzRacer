@@ -1,4 +1,4 @@
-import { SatSim, makeSats, type CardSound } from '../../core/cardSkills';
+import { SatSim, makeSats, pct, type CardSound } from '../../core/cardSkills';
 import { CREAM, GOLD, SimGame, panel, say, type Stage, type Synth } from './kit';
 
 /** The satellites' orbit: its middle and radius (shares of the stage). */
@@ -113,6 +113,7 @@ export class AlteredFutureGame extends SimGame<SatSim> {
     });
     const left = Math.max(0, Math.ceil(sim.game.length - sim.t));
     say(s, `${left}`, 0.5, 0.08, 0.06, GOLD);
-    s.status(`${sim.lit} lit, ${sim.game.need} to keep · ${left} s to go`);
+    say(s, `${pct(sim.kept)} lit / ${pct(sim.game.share)}`, 0.06, 0.08, 0.04, sim.kept >= sim.game.share ? CREAM : '#ff5a5a', 'left');
+    s.status(`The sky ${pct(sim.kept)} lit so far, ${pct(sim.game.share)} needed · ${sim.lit} of ${sim.light.length} shining · ${left} s to go`);
   }
 }

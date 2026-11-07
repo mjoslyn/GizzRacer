@@ -4,10 +4,15 @@ import {
   BANANA_FINE,
   BANANA_NEED,
   BANANA_ROUNDS,
+  BANANA_SHARE,
   BANANA_TIME,
   HOROLOGY_ROUNDS,
   NONAGON_FIRST,
   NONAGON_SIDES,
+  RULES_WAIT,
+  nonagonNeed,
+  nonagonTotal,
+  rulesLeft,
   RIFF_LANES,
   RIFF_OK,
   SKILLS,
@@ -23,6 +28,7 @@ import {
   SUITE_MOVES,
   SUITE_NAMES,
   SUITE_NEED,
+  SUITE_SHARE,
   fuzzStep,
   makeSuite,
   suiteMoveRules,
@@ -52,7 +58,7 @@ import {
   type SuiteMove,
 } from '../core/skills';
 import { seededRandom } from '../core/math';
-import { lyricIndex } from '../core/cardSkills';
+import { lyricIndex, pct } from '../core/cardSkills';
 
 import { CREAM, GOLD, INK, LANE_COLORS, Synth, panel, type MiniGame, type SkillResult, type Stage } from './skills/kit';
 import { NewWorldGame } from './skills/newWorld';
@@ -66,11 +72,34 @@ import { MuntMachineGame } from './skills/muntMachine';
 
 export type { SkillResult };
 
-/** A song's words to show beside a card game, how far through its song the recording is (0..1, null: none playing), and the game's length (s). */
+/**
+ * A song's words to show beside a card game, how far through its song the
+ * recording is (0..1, null: none playing), and the game's length (s): as
+ * planned, and (`left`) as it would be if the game started now, what's left
+ * of its song, asked as the game starts past its rules card.
+ */
 export interface Lyrics {
   lines: readonly string[];
   song: () => number | null;
   length: number;
+  left?: () => number;
+}
+
+/** A card game's length if it starts now: what's left of its song, or as planned; none for a chapter game. */
+export const lengthNow = (lyrics: Lyrics | undefined): number | undefined => (lyrics ? (lyrics.left?.() ?? lyrics.length) : undefined);
+
+/**
+ * A game behind its rules card: made (`make`) as it starts, by a press or
+ * by itself after RULES_WAIT seconds, with its length then (a card game's:
+ * what's left of its song as it starts; none for a chapter game). The card
+ * says the rules for the length it would have if it started now.
+ */
+export function briefed(kind: SkillKind, level: number, lyrics: Lyrics | undefined, make: (length: number | undefined) => MiniGame): Briefed {
+  return new Briefed(
+    SKILLS[kind].name,
+    () => skillRules(kind, level, lengthNow(lyrics)),
+    () => make(lengthNow(lyrics)),
+  );
 }
 
 /**
@@ -126,9 +155,15 @@ export class SkillScreen {
     const Game = GAMES[kind];
     if (!Game) return;
     // The suite has a card before each movement; every other game one before it starts.
-    // A card game in story mode runs for its song (`lyrics.length`); else for its own length.
-    const length = lyrics?.length;
-    this.game = kind === 'mindfuzz' ? new Game(s, seed, level) : new Briefed(SKILLS[kind].name, skillRules(kind, level, length), () => new Game(s, seed, level, length));
+    // A card game in story mode runs for what's left of its song as it starts, past its rules card (the song plays on
+    // meanwhile, so the time on the card comes off); else for its own length. Its rules say the length it'd have now.
+    this.game =
+      kind === 'mindfuzz'
+        ? new Game(s, seed, level)
+        : briefed(kind, level, lyrics, (length) => {
+            if (this.lyrics && length !== undefined) this.lyrics = { ...this.lyrics, length };
+            return new Game(s, seed, level, length);
+          });
     this.title = SKILLS[kind].name;
     this.howTo = SKILLS[kind].howTo;
     this.t = 0;
@@ -326,7 +361,7 @@ class RiffGame implements MiniGame {
     for (let i = 0; i < RIFF_LANES; i++) this.flash[i] = Math.max(0, this.flash[i] - dt * 4);
     if (t > this.riff.length) {
       const n = this.riff.notes.length;
-      this.result = { passed: riffPasses(this.riff, this.hits, this.strays), note: `${this.hits} of ${n} notes${this.strays ? `, ${this.strays} stray` : ''} (needed ${Math.ceil(n * this.riff.need)})` };
+      this.result = { passed: riffPasses(this.riff, this.hits, this.strays), note: `${pct(this.hits / n)} of the notes, ${this.hits} of ${n}${this.strays ? `, ${this.strays} stray` : ''} (${pct(this.riff.need)} needed)` };
     }
   }
 
@@ -396,7 +431,7 @@ class RiffGame implements MiniGame {
       g.globalAlpha = 1;
     });
     const first = this.riff.notes[0]?.t ?? 0;
-    s.status(t < first ? 'Count in...' : `${this.hits} hit${this.strays ? ` · ${this.strays} stray` : ''}`);
+    s.status(t < first ? 'Count in...' : `${pct(this.hits / this.riff.notes.length)} of the notes hit, ${pct(this.riff.need)} needed${this.strays ? ` · ${this.strays} stray` : ''}`);
   }
 }
 
@@ -405,7 +440,7 @@ class RiffGame implements MiniGame {
 /** A pentatonic climb across the nine sides. */
 const NONAGON_HZ = [196, 220, 261.63, 293.66, 329.63, 392, 440, 523.25, 587.33];
 
-class NonagonGame implements MiniGame {
+export class NonagonGame implements MiniGame {
   result: SkillResult | null = null;
   private readonly game;
   private round = NONAGON_FIRST;
@@ -416,6 +451,11 @@ class NonagonGame implements MiniGame {
   private lit = -1;
   private litFor = 0;
   private cursor = 0;
+  /** Lights played back right, over all the rounds so far, and lights shown. */
+  private right = 0;
+  private shownAll = 0;
+  /** The last round's playback: whole, or lost on a wrong side, for a moment. */
+  private mark: { ok: boolean; for: number } | null = null;
 
   constructor(
     private readonly synth: Synth,
@@ -429,6 +469,7 @@ class NonagonGame implements MiniGame {
     this.clock += dt;
     this.litFor -= dt;
     if (this.litFor <= 0) this.lit = -1;
+    if (this.mark && (this.mark.for -= dt) <= 0) this.mark = null;
     if (this.phase === 'between' && this.clock >= 0) {
       this.phase = 'show';
       this.clock = 0;
@@ -474,14 +515,29 @@ class NonagonGame implements MiniGame {
     if (this.phase !== 'input') return;
     this.cursor = side;
     if (side !== this.game.seq[this.entered]) {
+      // A wrong side: this round's playback is lost from there, and the loop goes on.
       this.synth.thud();
-      this.result = { passed: false, note: `Lost the loop at ${this.round} lights` };
-      return;
+      return this.endRound(false);
     }
     this.light(side, 0.25);
     if (++this.entered < this.round) return;
+    this.endRound(true);
+  }
+
+  /** A round's playback done, whole or lost: on to the next round, or the end once it's decided. */
+  private endRound(whole: boolean): void {
+    this.right += this.entered;
+    this.shownAll += this.round;
+    this.mark = { ok: whole, for: 0.6 };
+    const need = nonagonNeed(this.game);
+    const total = nonagonTotal(this.game);
+    const note = `${pct(this.right / this.shownAll)} of the lights played back, ${this.right} of ${this.shownAll} (${pct(this.game.share)} needed)`;
+    if (this.right + (total - this.shownAll) < need) {
+      this.result = { passed: false, note: `Lost the loop at ${this.round} lights: ${note}` };
+      return;
+    }
     if (this.round >= this.game.seq.length) {
-      this.result = { passed: true, note: `All ${this.round} lights, round and round` };
+      this.result = { passed: true, note: `Round and round: ${note}` };
       return;
     }
     this.round++;
@@ -517,7 +573,16 @@ class NonagonGame implements MiniGame {
       g.fillText(String(i + 1), cx + Math.cos(am) * r * 0.72, cy + Math.sin(am) * r * 0.72);
       g.textBaseline = 'alphabetic';
     }
-    s.status(this.phase === 'input' ? `Your turn: ${this.entered} of ${this.round}` : `Watch: ${this.round} lights (to ${this.game.seq.length})`);
+    if (this.mark) {
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.fillStyle = this.mark.ok ? GOLD : '#ff5a5a';
+      g.font = `bold ${s.size * 0.07}px Verdana, sans-serif`;
+      g.fillText(this.mark.ok ? 'YES' : 'LOST', cx, cy);
+      g.textBaseline = 'alphabetic';
+    }
+    const so = this.shownAll ? `${pct(this.right / this.shownAll)} played back, ` : '';
+    s.status(`${this.phase === 'input' ? `Your turn: ${this.entered} of ${this.round}` : `Watch: ${this.round} lights (to ${this.game.seq.length})`} · ${so}${pct(this.game.share)} needed`);
   }
 }
 
@@ -616,7 +681,7 @@ class BananaGame implements MiniGame {
     this.round++;
     if (this.round >= BANANA_ROUNDS) {
       this.stop();
-      this.result = { passed: this.wins >= BANANA_NEED, note: `${this.wins} of ${BANANA_ROUNDS} strings in tune (needed ${BANANA_NEED})` };
+      this.result = { passed: this.wins >= BANANA_NEED, note: `${pct(this.wins / BANANA_ROUNDS)} of the strings in tune, ${this.wins} of ${BANANA_ROUNDS} (${pct(BANANA_SHARE)} needed)` };
       return;
     }
     this.cents = this.game.starts[this.round];
@@ -676,7 +741,7 @@ class BananaGame implements MiniGame {
       g.font = `bold ${s.size * (i === 2 ? 0.04 : 0.07)}px Verdana, sans-serif`;
       g.fillText(l, x + bw / 2, s.y + s.size * 0.915);
     });
-    s.status(`String ${Math.min(this.round + 1, BANANA_ROUNDS)} of ${BANANA_ROUNDS} · ${Math.max(0, Math.ceil(BANANA_TIME - this.roundTime))}s`);
+    s.status(`String ${Math.min(this.round + 1, BANANA_ROUNDS)} of ${BANANA_ROUNDS}, ${pct(BANANA_SHARE)} to tune · ${Math.max(0, Math.ceil(BANANA_TIME - this.roundTime))}s`);
   }
 }
 
@@ -707,7 +772,7 @@ class HorologyGame implements MiniGame {
     if (this.pause > 0) {
       this.pause -= dt;
       if (this.pause <= 0 && this.marks.length >= HOROLOGY_ROUNDS) {
-        this.result = { passed: this.hits >= this.game.need, note: `${this.hits} of ${HOROLOGY_ROUNDS} on the mark (needed ${this.game.need})` };
+        this.result = { passed: this.hits >= this.game.need, note: `${pct(this.hits / HOROLOGY_ROUNDS)} on the mark, ${this.hits} of ${HOROLOGY_ROUNDS} (${pct(this.game.share)} needed)` };
       }
       return;
     }
@@ -778,7 +843,7 @@ class HorologyGame implements MiniGame {
       g.arc(cx + (i - 2) * s.size * 0.07, s.y + s.size * 0.93, s.size * 0.022, 0, Math.PI * 2);
       g.fill();
     }
-    s.status(`Try ${this.marks.length + (this.pause > 0 ? 0 : 1)} of ${HOROLOGY_ROUNDS} · ${this.hits} on the mark`);
+    s.status(`Try ${this.marks.length + (this.pause > 0 ? 0 : 1)} of ${HOROLOGY_ROUNDS} · ${this.hits} on the mark, ${pct(this.game.share)} needed`);
   }
 }
 
@@ -809,9 +874,10 @@ function onContinue(px: number, py: number): boolean {
 /**
  * A card over the whole screen, not just the stage, so a phone held
  * sideways still gets big type: a small line, a heading, exactly what to
- * do, and Continue.
+ * do, and Continue, counting down (`shown`: seconds the card's been up) to
+ * when the game starts by itself.
  */
-function rulesCard(s: Stage, kicker: string, heading: string, text: string): void {
+function rulesCard(s: Stage, kicker: string, heading: string, text: string, shown: number): void {
   const g = s.g;
   const vw = window.innerWidth;
   const vh = window.innerHeight;
@@ -857,30 +923,48 @@ function rulesCard(s: Stage, kicker: string, heading: string, text: string): voi
   const [bx, by] = continueBox;
   g.fillStyle = 'rgba(255, 210, 58, 0.9)';
   g.fillRect(bx, by, bw, bh);
+  // The countdown: the button's lit part runs down to the start, the seconds on it.
+  const left = Math.max(0, 1 - shown / RULES_WAIT);
+  g.fillStyle = 'rgba(58, 15, 69, 0.28)';
+  g.fillRect(bx + bw * left, by, bw * (1 - left), bh);
   g.fillStyle = INK;
   g.font = `bold ${Math.max(16, bh * 0.45)}px Verdana, sans-serif`;
   g.textBaseline = 'middle';
-  g.fillText('CONTINUE', cx, by + bh / 2);
+  g.fillText(`CONTINUE · ${rulesLeft(shown)}`, cx, by + bh / 2);
   g.textBaseline = 'alphabetic';
 }
 
 /**
  * A game behind its rules card: the rules until Continue (Enter, Space, or
- * a tap on it), then the game, made then so its clock and its sound start
- * from Continue.
+ * a tap on it) or RULES_WAIT seconds, whichever's first, then the game,
+ * made then so its clock, its sound and its length start from there.
+ * `rules` is asked for each time the card's drawn (a card game's length
+ * runs down with its song).
  */
-class Briefed implements MiniGame {
+export class Briefed implements MiniGame {
   private inner: MiniGame | null = null;
   /** A result before the game began: given up on the card. */
   private early: SkillResult | null = null;
   private now = 0;
   private t0 = 0;
+  /** When the card first came up, by the screen's clock. */
+  private shownAt = -1;
 
   constructor(
     private readonly heading: string,
-    private readonly rules: string,
+    private readonly rules: () => string,
     private readonly make: () => MiniGame,
   ) {}
+
+  /** Seconds the rules card has been up. */
+  get shown(): number {
+    return this.shownAt < 0 ? 0 : this.now - this.shownAt;
+  }
+
+  /** The game, once it's begun. */
+  get game(): MiniGame | null {
+    return this.inner;
+  }
 
   get result(): SkillResult | null {
     return this.inner ? this.inner.result : this.early;
@@ -897,14 +981,17 @@ class Briefed implements MiniGame {
 
   update(t: number, dt: number): void {
     this.now = t;
-    this.inner?.update(t - this.t0, dt);
+    if (this.inner) return this.inner.update(t - this.t0, dt);
+    if (this.shownAt < 0) this.shownAt = t;
+    // Nobody pressed: it starts by itself.
+    if (!this.early && this.shown >= RULES_WAIT) this.go();
   }
 
   draw(s: Stage, t: number): void {
     if (this.inner) return this.inner.draw(s, t - this.t0);
     panel(s);
-    rulesCard(s, 'HOW TO PLAY', this.heading, this.rules);
-    s.status('Read how it goes, then Continue');
+    rulesCard(s, 'HOW TO PLAY', this.heading, this.rules(), this.shown);
+    s.status(`Read how it goes, then Continue: it starts in ${rulesLeft(this.shown)} s`);
   }
 
   key(code: string, repeat: boolean): void {
@@ -930,6 +1017,7 @@ class Briefed implements MiniGame {
   }
 
   private go(): void {
+    if (this.inner) return;
     this.t0 = this.now;
     this.inner = this.make();
   }
@@ -953,7 +1041,8 @@ function wrap(g: CanvasRenderingContext2D, text: string, width: number): string[
 /**
  * I'm In Your Mind Fuzz's opening suite, four songs run together, as four
  * short movements: read the arrow in the eye, find the one not there, line
- * up the cellophane, ride the fuzz. Pass SUITE_NEED of them.
+ * up the cellophane, ride the fuzz. Pass SUITE_SHARE of them. Each has its
+ * card first, which starts it by itself after RULES_WAIT seconds.
  */
 class SuiteGame implements MiniGame {
   result: SkillResult | null = null;
@@ -998,7 +1087,10 @@ class SuiteGame implements MiniGame {
   update(_t: number, dt: number): void {
     this.clock += dt;
     if (this.mark && (this.mark.for -= dt) <= 0) this.mark = null;
-    if (this.phase === 'title') return;
+    if (this.phase === 'title') {
+      if (this.clock >= RULES_WAIT) this.begin();
+      return;
+    }
     if (this.phase === 'done') {
       if (this.clock > 1.1) this.nextMove();
       return;
@@ -1015,7 +1107,7 @@ class SuiteGame implements MiniGame {
       const [lo, hi] = g.fuzz.band;
       if (this.level >= lo && this.level <= hi) this.held += dt;
       this.hum?.set(90 + this.level * 260);
-      if (this.held >= g.fuzz.need || this.roundTime >= g.fuzz.time) this.finish(this.held >= g.fuzz.need, `${this.held.toFixed(1)}s in the band`);
+      if (this.held >= g.fuzz.need - 1e-9 || this.roundTime >= g.fuzz.time) this.finish(this.held >= g.fuzz.need - 1e-9, `${pct(this.held / g.fuzz.time)} of the time in the band (${pct(g.fuzz.share)} needed)`);
     }
   }
 
@@ -1093,14 +1185,14 @@ class SuiteGame implements MiniGame {
     this.mark = { ok, for: 0.45 };
     this.synth.note(ok ? 660 + this.round * 60 : 110, 0.2, 'triangle', 0.15);
     const rounds = this.now === 'mind' ? g.mind.arrows.length : this.now === 'notMind' ? g.notMind.missing.length : g.cellophane.sheets.length;
-    const need = this.now === 'mind' ? g.mind.need : this.now === 'notMind' ? g.notMind.need : g.cellophane.need;
+    const of = this.now === 'mind' ? g.mind : this.now === 'notMind' ? g.notMind : g.cellophane;
     this.round++;
     this.roundTime = 0;
     if (this.round < rounds) {
       if (this.now === 'notMind') this.shuffle();
       return;
     }
-    this.finish(this.hits >= need, `${this.hits} of ${rounds}`);
+    this.finish(this.hits >= of.need, `${pct(this.hits / rounds)}, ${this.hits} of ${rounds} (${pct(of.share)} needed)`);
   }
 
   private finish(ok: boolean, note: string): void {
@@ -1117,7 +1209,7 @@ class SuiteGame implements MiniGame {
     const left = SUITE_MOVES.length - this.passed.length;
     // Over when it's decided either way.
     if (won >= SUITE_NEED || won + left < SUITE_NEED || left === 0) {
-      this.result = { passed: won >= SUITE_NEED, note: `${won} of ${this.passed.length} movements (needed ${SUITE_NEED})` };
+      this.result = { passed: won >= SUITE_NEED, note: `${won} of ${this.passed.length} movements (${pct(SUITE_SHARE)} of the ${SUITE_MOVES.length} needed)` };
       return;
     }
     this.move++;
@@ -1227,14 +1319,14 @@ class SuiteGame implements MiniGame {
     this.drawMarks(s);
     const counts =
       move === 'fuzz'
-        ? `${this.held.toFixed(1)}s of ${this.game.fuzz.need}s in the band · ${Math.max(0, Math.ceil(this.game.fuzz.time - this.roundTime))}s left`
-        : `${this.hits} right so far`;
+        ? `${pct(this.held / this.game.fuzz.time)} of the time in the band, ${pct(this.game.fuzz.share)} needed · ${Math.max(0, Math.ceil(this.game.fuzz.time - this.roundTime))}s left`
+        : `${this.hits} right so far, ${pct((move === 'mind' ? this.game.mind : move === 'notMind' ? this.game.notMind : this.game.cellophane).share)} needed`;
     s.status(this.phase === 'done' ? (this.notes[this.notes.length - 1] ?? '') : `${SUITE_NAMES[move].song} · ${counts}`);
   }
 
   /** A movement's card: its song, exactly what to do, and Continue to start it. */
   private drawCard(s: Stage, move: SuiteMove): void {
-    rulesCard(s, `MOVEMENT ${this.move + 1} OF ${SUITE_MOVES.length}`, SUITE_NAMES[move].song, suiteMoveRules(this.game, move));
+    rulesCard(s, `MOVEMENT ${this.move + 1} OF ${SUITE_MOVES.length}`, SUITE_NAMES[move].song, suiteMoveRules(this.game, move), this.clock);
   }
 
   /** The four arrow pads round the edge, to tap (and to see which key is which). */
@@ -1317,7 +1409,7 @@ class SnakeGame implements MiniGame {
     const out = snakeStep(this.body, this.dir, this.mouse, this.game.grid);
     if (out.crash) {
       this.synth.thud();
-      this.result = { passed: false, note: `${out.crash === 'wall' ? 'Hit the wall' : 'Bit your own rattle'} with ${this.eaten} of ${this.game.need} mice eaten` };
+      this.result = { passed: false, note: `${out.crash === 'wall' ? 'Hit the wall' : 'Bit your own rattle'} at ${this.filled} of the field (${pct(this.game.share)} needed)` };
       return;
     }
     this.body = out.body;
@@ -1327,7 +1419,12 @@ class SnakeGame implements MiniGame {
     this.synth.note(440 + this.eaten * 40, 0.12, 'triangle', 0.12);
     this.step *= SNAKE_SPEEDUP;
     this.mouse = placeMouse(this.body, this.game.grid, this.rand());
-    if (this.eaten >= this.game.need || !this.mouse) this.result = { passed: true, note: `${this.eaten} mice eaten, ${this.body.length} long` };
+    if (this.eaten >= this.game.need || !this.mouse) this.result = { passed: true, note: `${this.eaten} mice eaten, ${this.body.length} long: ${this.filled} of the field` };
+  }
+
+  /** How much of the field the snake fills. */
+  private get filled(): string {
+    return pct(this.body.length / (this.game.grid * this.game.grid));
   }
 
   key(code: string): void {
@@ -1391,7 +1488,7 @@ class SnakeGame implements MiniGame {
       g.arc(at(hx) + c / 2 + dx * c * 0.2 - dy * side * c * 0.2, atY(hy) + c / 2 + dy * c * 0.2 + dx * side * c * 0.2, c * 0.08, 0, Math.PI * 2);
       g.fill();
     }
-    s.status(this.clock < 0 && this.eaten === 0 ? 'Ready...' : `${this.eaten} of ${this.game.need} mice`);
+    s.status(this.clock < 0 && this.eaten === 0 ? 'Ready...' : `${this.filled} of the field, ${pct(this.game.share)} needed · ${this.eaten} of ${this.game.need} mice`);
   }
 }
 
@@ -1591,7 +1688,7 @@ class FishingGame implements MiniGame {
     const left = FISH_ROUNDS - this.marks.length;
     // Over when it's decided either way.
     if (this.hooked >= this.game.need || this.hooked + left < this.game.need || left === 0) {
-      this.result = { passed: this.hooked >= this.game.need, note: `${this.hooked} of ${this.marks.length} fish hooked (needed ${this.game.need})` };
+      this.result = { passed: this.hooked >= this.game.need, note: `${this.hooked} of ${this.marks.length} fish hooked (${pct(this.game.share)} of the ${FISH_ROUNDS} needed)` };
       return;
     }
     this.round++;
@@ -1678,7 +1775,7 @@ class FishingGame implements MiniGame {
       g.font = `bold ${s.size * 0.06}px Verdana, sans-serif`;
       g.fillText(this.outcome === 'hooked' ? 'HOOKED!' : this.outcome === 'spooked' ? 'TOO SOON: SPOOKED' : 'IT GOT AWAY', s.x + s.size / 2, s.y + s.size * 0.28);
     }
-    s.status(`Fish ${Math.min(this.round + 1, FISH_ROUNDS)} of ${FISH_ROUNDS} · ${this.hooked} hooked`);
+    s.status(`Fish ${Math.min(this.round + 1, FISH_ROUNDS)} of ${FISH_ROUNDS} · ${this.hooked} hooked, ${pct(this.game.share)} needed`);
   }
 }
 

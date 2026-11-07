@@ -1,4 +1,4 @@
-import { SHADOW_DUST, ShadowSim, makeShadow, type CardSound } from '../../core/cardSkills';
+import { SHADOW_DUST, ShadowSim, makeShadow, pct, type CardSound } from '../../core/cardSkills';
 import { seededRandom } from '../../core/math';
 import { CREAM, GOLD, SimGame, clipStage, panel, say, type Stage, type Synth } from './kit';
 
@@ -132,6 +132,6 @@ export class NewWorldGame extends SimGame<ShadowSim> {
     g.fillRect(X(0.1), Y(0.94), s.size * 0.8, s.size * 0.03);
     g.fillStyle = GOLD;
     g.fillRect(X(0.1), Y(0.94), s.size * 0.8 * share, s.size * 0.03);
-    s.status(`${sim.hidden ? 'Hidden' : 'SEEN: back into the shadow'} · ${Math.floor(sim.inside)} of ${sim.game.need} s · ${Math.max(0, Math.ceil(sim.game.length - sim.t))} s left`);
+    s.status(`${sim.hidden ? 'Hidden' : 'SEEN: back into the shadow'} · ${pct(sim.inside / sim.game.length)} of the time in the shadow, ${pct(sim.game.share)} needed · ${Math.max(0, Math.ceil(sim.game.length - sim.t))} s left`);
   }
 }

@@ -1,7 +1,7 @@
 import { clamp, seededRandom } from './math';
 import { pointAt } from '../tracks/spline';
 import type { Track } from '../tracks/track';
-import { EMBER_FINAL, HIDE_GASP, MIRROR_PICK, MUNT_PARTS, makeEmbers, makeFire, makeHide, makeMirror, makeMunt, makeOverture, makeSats, makeShadow } from './cardSkills';
+import { EMBER_FINAL, HIDE_GASP, MIRROR_PICK, MUNT_PARTS, makeEmbers, makeFire, makeHide, makeMirror, makeMunt, makeOverture, makeSats, makeShadow, pct, shareOf } from './cardSkills';
 
 /**
  * Story mode's skill games: one stands between each chapter's race and its
@@ -46,7 +46,7 @@ export const SKILLS: Record<SkillKind, { name: string; intro: string; howTo: str
   mindfuzz: {
     name: 'The Mind Fuzz Suite',
     intro: "I'm In Your Mind Fuzz runs four songs into one. Play the suite through: read the mind, find the arrow that is not there, line up the cellophane, then ride the fuzz.",
-    howTo: 'Four movements, pass three: arrow keys or WASD for the arrows, Space for the rest, or tap',
+    howTo: 'Four movements, pass 75% of them: arrow keys or WASD for the arrows, Space for the rest, or tap',
   },
   rattlesnake: {
     name: 'Rattlesnake',
@@ -126,6 +126,16 @@ export const explainsItself = (kind: SkillKind): boolean => kind !== 'deadstick'
 const lv = <T>(list: readonly T[], level: number): T => list[clamp(Math.round(level), 0, list.length - 1)];
 
 /**
+ * Seconds a game's rules card (the Mind Fuzz Suite's card before each
+ * movement, and Skill Games' and the story's card before a game, too)
+ * waits for a press before the game starts by itself, counting down.
+ */
+export const RULES_WAIT = 10;
+
+/** Whole seconds left on a rules card's countdown, `t` seconds after it showed. */
+export const rulesLeft = (t: number): number => Math.max(0, Math.ceil(RULES_WAIT - t - 1e-9));
+
+/**
  * Exactly what to do to pass a game at a level, with its real numbers: for
  * the card before it. `length`: a card game's seconds in story mode (its song's).
  */
@@ -137,23 +147,23 @@ export function skillRules(kind: SkillKind, level: number, length?: number): str
     }
     case 'nonagon': {
       const g = makeNonagon(1, level);
-      return `The nine sides light up one at a time. When they stop, press them back in the same order: keys 1 to 9 (or arrows and Enter), or tap the sides. It starts with ${NONAGON_FIRST} lights and adds one each round. Play back all ${g.seq.length} to pass; one wrong side and it's over.`;
+      return `The nine sides light up one at a time. When they stop, press them back in the same order: keys 1 to 9 (or arrows and Enter), or tap the sides. It starts with ${NONAGON_FIRST} lights and adds one each round, up to ${g.seq.length}; a wrong side ends that round's playback. Play back ${pct(g.share)} of all the lights shown to pass (${nonagonNeed(g)} of ${nonagonTotal(g)}).`;
     }
     case 'banana': {
       const g = makeBanana(1, level);
-      return `Two notes play: the drone and your string. Tune your string until the yellow ring stops wobbling, then lock it in. Left and right move it a little, up and down a lot, Enter locks (or tap the buttons). Get ${BANANA_NEED} of ${BANANA_ROUNDS} strings within ${g.tolerance} cents of the drone, ${BANANA_TIME} seconds each.`;
+      return `Two notes play: the drone and your string. Tune your string until the yellow ring stops wobbling, then lock it in. Left and right move it a little, up and down a lot, Enter locks (or tap the buttons). Get ${pct(BANANA_SHARE)} of the ${BANANA_ROUNDS} strings (${BANANA_NEED}) within ${g.tolerance} cents of the drone, ${BANANA_TIME} seconds each.`;
     }
     case 'horology': {
       const g = makeHorology(1, level);
-      return `A hand sweeps round the clock. Press Space or Enter (or tap) while it's inside the gold mark. ${HOROLOGY_ROUNDS} tries, the mark shrinking and the hand speeding up each time; land ${g.need} of them.`;
+      return `A hand sweeps round the clock. Press Space or Enter (or tap) while it's inside the gold mark. ${HOROLOGY_ROUNDS} tries, the mark shrinking and the hand speeding up each time; land ${pct(g.share)} of them (${g.need}).`;
     }
     case 'mindfuzz': {
       const g = makeSuite(1, level);
-      return `Four movements; pass ${SUITE_NEED}. One: an arrow flashes in the eye for ${g.mind.flash} seconds: press that arrow (or tap its pad), ${g.mind.need} of ${g.mind.arrows.length}. Two: three arrows show: press the missing fourth within ${g.notMind.time} seconds, ${g.notMind.need} of ${g.notMind.missing.length}. Three: two sheets slide: press Space (or tap) when they overlap, ${g.cellophane.need} of ${g.cellophane.sheets.length}. Four: tap Space (or tap) to push the needle up and hold it in the gold band for ${g.fuzz.need} seconds out of ${g.fuzz.time}.`;
+      return `Four movements; pass ${pct(SUITE_SHARE)} of them (${SUITE_NEED}). One: an arrow flashes in the eye for ${g.mind.flash} seconds: press that arrow (or tap its pad), ${pct(g.mind.share)} right. Two: three arrows show: press the missing fourth within ${g.notMind.time} seconds, ${pct(g.notMind.share)} right. Three: two sheets slide: press Space (or tap) when they overlap, ${pct(g.cellophane.share)} lined up. Four: tap Space (or tap) to push the needle up and hold it in the gold band for ${pct(g.fuzz.share)} of its ${g.fuzz.time} seconds.`;
     }
     case 'rattlesnake': {
       const g = makeSnake(1, level);
-      return `The snake never stops moving. Steer it with the arrow keys or WASD (or tap the side to turn to) across a ${g.grid} by ${g.grid} field, and eat the mice: each one makes it a cell longer and a touch quicker. Eat ${g.need} to pass; run into the wall or your own tail and it's over.`;
+      return `The snake never stops moving. Steer it with the arrow keys or WASD (or tap the side to turn to) across a ${g.grid} by ${g.grid} field, and eat the mice: each one makes it a cell longer and a touch quicker. Grow it to fill ${pct(g.share)} of the field to pass (${g.need} mice); run into the wall or your own tail and it's over.`;
     }
     case 'robot': {
       const g = makeRobot(1, level);
@@ -161,7 +171,7 @@ export function skillRules(kind: SkillKind, level: number, length?: number): str
     }
     case 'fishies': {
       const g = makeFishing(1, level);
-      return `${FISH_ROUNDS} fish come to the bobber. Each nibbles at it first (a little dip), then bites, pulling it right under. Press Space or Enter (or tap) within ${g.window} seconds of the bite to hook it; strike early, on a nibble, and the fish is gone. Hook ${g.need} of ${FISH_ROUNDS}.`;
+      return `${FISH_ROUNDS} fish come to the bobber. Each nibbles at it first (a little dip), then bites, pulling it right under. Press Space or Enter (or tap) within ${g.window} seconds of the bite to hook it; strike early, on a nibble, and the fish is gone. Hook ${pct(g.share)} of them (${g.need} of ${FISH_ROUNDS}).`;
     }
     case 'castle': {
       const g = makeCastle(1, level);
@@ -169,35 +179,35 @@ export function skillRules(kind: SkillKind, level: number, length?: number): str
     }
     case 'newworld': {
       const g = makeShadow(1, level, length);
-      return `The bear wanders the meadow, its long dark shadow sliding across the grass, quicker and narrower as the day goes. Hold left or right (the arrow keys or A D, or hold a side of the screen) to walk with it and stay inside the shadow. Be in it for ${g.need} seconds in all of the ${Math.round(g.length)} to pass.`;
+      return `The bear wanders the meadow, its long dark shadow sliding across the grass, quicker and narrower as the day goes. Hold left or right (the arrow keys or A D, or hold a side of the screen) to walk with it and stay inside the shadow. Be in it for ${pct(g.share)} of the ${Math.round(g.length)} seconds to pass.`;
     }
     case 'lifedeath': {
       const g = makeMirror(1, level, length);
-      return `${g.figures} figures stand in the labyrinth: you, lit for a moment, and your copies. They swap places, more and quicker each round. Then pick yourself: left and right and Space or Enter, keys 1 to ${g.figures}, or tap the figure, within ${MIRROR_PICK} seconds. Round after round for ${Math.round(g.length)} seconds: pick yourself in ${Math.round(g.share * 100)}% of them.`;
+      return `${g.figures} figures stand in the labyrinth: you, lit for a moment, and your copies. They swap places, more and quicker each round. Then pick yourself: left and right and Space or Enter, keys 1 to ${g.figures}, or tap the figure, within ${MIRROR_PICK} seconds. Round after round for ${Math.round(g.length)} seconds: pick yourself in ${pct(g.share)} of them.`;
     }
     case 'context': {
       const g = makeOverture(1, level, length);
-      return `Rings close in on the storm cloud, one for each of the overture's hits. Press Space or Enter (or tap anywhere) as each ring meets the cloud. After a one-bar count-in it runs ${g.bars} bars at ${g.bpm} bpm, the storm building as it goes. Hit ${Math.round(g.need * 100)}% of the hits to pass; every two presses with no hit there cost one.`;
+      return `Rings close in on the storm cloud, one for each of the overture's hits. Press Space or Enter (or tap anywhere) as each ring meets the cloud. After a one-bar count-in it runs ${g.bars} bars at ${g.bpm} bpm, the storm building as it goes. Hit ${pct(g.need)} of the hits to pass; every two presses with no hit there cost one.`;
     }
     case 'raconteur': {
       const g = makeHide(1, level, length);
-      return `You hide in the quagmire's reeds as beams of lightning and the Balrog's fire sweep across it, an arrow at the edge warning of each before it comes. Hold Space, Enter or Down (or hold a finger down) to duck under the mud while a beam passes over you; let go to come up. Under, your air runs down (the bar under the marsh): ${g.air} seconds of it, and run out and you come up gasping, seeing nothing, for ${HIDE_GASP} s. Up when a beam is on you, you're seen: ${g.lives} times and you're found. When the battle flares (a ring closes on it), be up to glimpse it: glimpse ${Math.round(g.share * 100)}% of the flares in ${Math.round(g.length)} seconds.`;
+      return `You hide in the quagmire's reeds as beams of lightning and the Balrog's fire sweep across it, an arrow at the edge warning of each before it comes. Hold Space, Enter or Down (or hold a finger down) to duck under the mud while a beam passes over you; let go to come up. Under, your air runs down (the bar under the marsh): ${g.air} seconds of it, and run out and you come up gasping, seeing nothing, for ${HIDE_GASP} s. Up when a beam is on you, you're seen: ${g.lives} ${g.lives === 1 ? 'time' : 'times'} (of the ${g.beams.length} beams) and you're found. When the battle flares (a ring closes on it), be up to glimpse it: glimpse ${pct(g.share)} of the flares in ${Math.round(g.length)} seconds.`;
     }
     case 'floatingfire': {
       const g = makeFire(1, level, length);
-      return `The floating fire flies through the storm. Hold Space, Enter or Up (or hold a finger down) to rise, let go to sink. ${g.bolts.length} bolts of lightning come, their gaps narrowing; golden wire floats in the gaps and between. Catch ${g.need} golden wire by the end; ${g.sparks} strikes and the fire is out.`;
+      return `The floating fire flies through the storm. Hold Space, Enter or Up (or hold a finger down) to rise, let go to sink. ${g.bolts.length} bolts of lightning come, their gaps narrowing; golden wire floats in the gaps and between. Catch ${pct(g.share)} of the golden wire by the end; ${g.sparks} ${g.sparks === 1 ? 'strike' : 'strikes'} and the fire is out.`;
     }
     case 'acrid': {
       const g = makeEmbers(1, level, length);
-      return `Embers drift from the Balrog's corpse toward the setting sun, in three lanes, quicker as it sinks. Move your jar up and down (the arrow keys or W S, or tap a lane) to catch them; black smoke snuffs one out, and the final clap of light is worth ${EMBER_FINAL}. Catch ${g.need} light before the sun is down.`;
+      return `Embers drift from the Balrog's corpse toward the setting sun, in three lanes, quicker as it sinks. Move your jar up and down (the arrow keys or W S, or tap a lane) to catch them; black smoke snuffs one out, and the final clap of light is worth ${EMBER_FINAL}. Catch ${pct(g.share)} of the light in the ${Math.round(g.end)} seconds before the sun is down.`;
     }
     case 'future': {
       const g = makeSats(1, level, length);
-      return `${g.lives.length} satellites fade toward black, faster as the world goes dark. Light one back to full with its key (1 to ${g.lives.length}), or left and right and Space, or tap it. One gone black stays black. Keep ${g.need} lit for ${Math.round(g.length)} seconds.`;
+      return `${g.lives.length} satellites fade toward black, faster as the world goes dark. Light one back to full with its key (1 to ${g.lives.length}), or left and right and Space, or tap it. One gone black stays black. Keep the sky ${pct(g.share)} lit over the ${Math.round(g.length)} seconds: of every satellite's every second, that much lit.`;
     }
     case 'munt': {
       const g = makeMunt(1, level, length);
-      return `Parts ride the belt under the claw, the belt speeding up: steel, soy-protein, test tube and vat. Press Space or Enter (or tap) to grab the one under the claw, and only the next the machine needs, in that order (${MUNT_PARTS.length} a machine). Build ${g.machines} machines in ${Math.round(g.length)} seconds; ${g.strikes} wrong parts and it's over.`;
+      return `Parts ride the belt under the claw, the belt speeding up: steel, soy-protein, test tube and vat. Press Space or Enter (or tap) to grab the one under the claw, and only the next the machine needs, in that order (${MUNT_PARTS.length} a machine). In ${Math.round(g.length)} seconds the belt brings the parts for ${g.possible} ${g.possible === 1 ? 'machine' : 'machines'}: build ${pct(g.share)} of them (${g.machines}); ${g.strikes} wrong parts and it's over.`;
     }
     case 'deadstick':
       return `Drive at the ramp ahead and hop (Shift or Space, or DRIFT on touch) as you hit it: it throws you high and opens the glider for a long flight. Left alone the glider floats past the ring; hold Down (on touch, drag down) to dive and come down sooner, and steer to line up. Land inside the gold ring, ${deadstickRadius(level)} m from its middle, within ${DEADSTICK_SHOTS} shots.`;
@@ -280,6 +290,8 @@ export interface NonagonGame {
   seq: number[];
   /** Seconds each light shows for. */
   beat: number;
+  /** Share of all the lights shown, over every round, to play back right. */
+  share: number;
 }
 
 export function makeNonagon(seed: number, level: number): NonagonGame {
@@ -292,15 +304,27 @@ export function makeNonagon(seed: number, level: number): NonagonGame {
     if (side === seq[i - 1]) side = (side + 1 + Math.floor(rand() * (NONAGON_SIDES - 1))) % NONAGON_SIDES;
     seq.push(side);
   }
-  return { seq, beat: lv([0.55, 0.46, 0.38], level) };
+  return { seq, beat: lv([0.55, 0.46, 0.38], level), share: 0.9 };
 }
+
+/** Every light the loop shows, over all its rounds (3, then 4, and so on to the whole loop). */
+export function nonagonTotal(g: NonagonGame): number {
+  let n = 0;
+  for (let r = NONAGON_FIRST; r <= g.seq.length; r++) n += r;
+  return n;
+}
+
+/** Lights to play back right to pass. */
+export const nonagonNeed = (g: NonagonGame): number => shareOf(nonagonTotal(g), g.share);
 
 // ---- The Flying Microtonal Banana ----
 
 /** The drone to tune to, Hz. */
 export const BANANA_DRONE = 220;
 export const BANANA_ROUNDS = 3;
-export const BANANA_NEED = 2;
+/** Share of the strings to tune, and so how many. */
+export const BANANA_SHARE = 2 / 3;
+export const BANANA_NEED = shareOf(BANANA_ROUNDS, BANANA_SHARE);
 /** Cents a fine and a coarse turn move the string. */
 export const BANANA_FINE = 3;
 export const BANANA_COARSE = 25;
@@ -337,6 +361,8 @@ export interface HorologyRound {
 
 export interface HorologyGame {
   rounds: HorologyRound[];
+  /** Share of the tries to land, and so how many. */
+  share: number;
   need: number;
 }
 
@@ -349,7 +375,8 @@ export function makeHorology(seed: number, level: number): HorologyGame {
     width: width * (1 - 0.08 * i),
     speed: (speed + 0.05 * i) * (i % 2 ? -1 : 1),
   }));
-  return { rounds, need: lv([3, 4, 4], level) };
+  const share = lv([0.6, 0.8, 0.8], level);
+  return { rounds, share, need: shareOf(HOROLOGY_ROUNDS, share) };
 }
 
 /** Whether a hand stopped at `angle` (turns) is inside a round's mark. */
@@ -369,20 +396,21 @@ export const SUITE_NAMES: Record<SuiteMove, { song: string; how: string }> = {
   cellophane: { song: 'Cellophane', how: 'Two sheets slide: press Space (or tap) when they overlap' },
   fuzz: { song: "I'm In Your Mind Fuzz", how: 'Tap Space (or tap) to push the needle up: keep it in the gold band' },
 };
-/** Movements to pass for the suite. */
-export const SUITE_NEED = 3;
+/** Share of the movements to pass for the suite, and so how many. */
+export const SUITE_SHARE = 0.75;
+export const SUITE_NEED = shareOf(SUITE_MOVES.length, SUITE_SHARE);
 /** Arrows: left, down, up, right (as the riff's lanes). */
 export const SUITE_ARROWS = 4;
 
 export interface SuiteGame {
-  /** I'm In Your Mind: the arrow each round, and how long it shows. */
-  mind: { arrows: number[]; flash: number; need: number };
+  /** I'm In Your Mind: the arrow each round, and how long it shows; the share of rounds to get right, and so how many. */
+  mind: { arrows: number[]; flash: number; share: number; need: number };
   /** I'm Not In Your Mind: the missing arrow each round, and the seconds to answer. */
-  notMind: { missing: number[]; time: number; need: number };
+  notMind: { missing: number[]; time: number; share: number; need: number };
   /** Cellophane: each try's two sheets, as speeds (turns a second) and phases; the overlap to hit. */
-  cellophane: { sheets: { speed: number; phase: number }[][]; overlap: number; need: number };
-  /** I'm In Your Mind Fuzz: the band to hold the needle in, and the seconds in it to pass, out of `time`. */
-  fuzz: { band: [number, number]; need: number; time: number };
+  cellophane: { sheets: { speed: number; phase: number }[][]; overlap: number; share: number; need: number };
+  /** I'm In Your Mind Fuzz: the band to hold the needle in, and the share of `time` in it to pass (`need` seconds). */
+  fuzz: { band: [number, number]; share: number; need: number; time: number };
 }
 
 export function makeSuite(seed: number, level: number): SuiteGame {
@@ -390,15 +418,17 @@ export function makeSuite(seed: number, level: number): SuiteGame {
   const arrow = () => Math.floor(rand() * SUITE_ARROWS);
   const width = lv([0.24, 0.21, 0.18], level);
   const low = 0.4 + rand() * 0.25;
+  const sheets = Array.from({ length: 4 }, () => [0, 1].map((i) => ({ speed: (0.18 + rand() * 0.12) * (i ? -1 : 1), phase: rand() })));
+  const sheetShare = lv([0.5, 0.5, 0.75], level);
+  const fuzzTime = 12;
+  const fuzzShare = lv([4, 5, 5.5], level) / fuzzTime;
+  const arrows = Array.from({ length: 5 }, arrow);
+  const missing = Array.from({ length: 5 }, arrow);
   return {
-    mind: { arrows: Array.from({ length: 5 }, arrow), flash: lv([0.75, 0.6, 0.5], level), need: 4 },
-    notMind: { missing: Array.from({ length: 5 }, arrow), time: lv([3, 2.6, 2.2], level), need: 4 },
-    cellophane: {
-      sheets: Array.from({ length: 4 }, () => [0, 1].map((i) => ({ speed: (0.18 + rand() * 0.12) * (i ? -1 : 1), phase: rand() }))),
-      overlap: lv([0.75, 0.8, 0.85], level),
-      need: lv([2, 2, 3], level),
-    },
-    fuzz: { band: [low, low + width], need: lv([4, 5, 5.5], level), time: 12 },
+    mind: { arrows, flash: lv([0.75, 0.6, 0.5], level), share: 0.8, need: shareOf(arrows.length, 0.8) },
+    notMind: { missing, time: lv([3, 2.6, 2.2], level), share: 0.8, need: shareOf(missing.length, 0.8) },
+    cellophane: { sheets, overlap: lv([0.75, 0.8, 0.85], level), share: sheetShare, need: shareOf(sheets.length, sheetShare) },
+    fuzz: { band: [low, low + width], share: fuzzShare, need: fuzzShare * fuzzTime, time: fuzzTime },
   };
 }
 
@@ -416,13 +446,13 @@ export function sheetOverlap(a: number, b: number, width: number): number {
 export function suiteMoveRules(g: SuiteGame, move: SuiteMove): string {
   switch (move) {
     case 'mind':
-      return `An arrow flashes in the eye for ${g.mind.flash} seconds, then it's gone. Press that arrow: the arrow keys or WASD, or tap its pad round the edge. Get ${g.mind.need} of ${g.mind.arrows.length} right.`;
+      return `An arrow flashes in the eye for ${g.mind.flash} seconds, then it's gone. Press that arrow: the arrow keys or WASD, or tap its pad round the edge. Get ${pct(g.mind.share)} of the ${g.mind.arrows.length} right (${g.mind.need}).`;
     case 'notMind':
-      return `Three of the four arrows show in the middle. Press the one that isn't there before the gold ring runs out (${g.notMind.time} seconds): the arrow keys or WASD, or tap its pad. Get ${g.notMind.need} of ${g.notMind.missing.length} right.`;
+      return `Three of the four arrows show in the middle. Press the one that isn't there before the gold ring runs out (${g.notMind.time} seconds): the arrow keys or WASD, or tap its pad. Get ${pct(g.notMind.share)} of the ${g.notMind.missing.length} right (${g.notMind.need}).`;
     case 'cellophane':
-      return `Two see-through sheets slide back and forth. Press Space or Enter (or tap) when they lie over each other: one press a sheet. Line up ${g.cellophane.need} of ${g.cellophane.sheets.length}.`;
+      return `Two see-through sheets slide back and forth. Press Space or Enter (or tap) when they lie over each other: one press a sheet. Line up ${pct(g.cellophane.share)} of the ${g.cellophane.sheets.length} (${g.cellophane.need}).`;
     case 'fuzz':
-      return `Each press of Space or Enter (or tap) kicks the needle up, and it falls away between. Keep it in the gold band for ${g.fuzz.need} seconds in all, out of ${g.fuzz.time}.`;
+      return `Each press of Space or Enter (or tap) kicks the needle up, and it falls away between. Keep it in the gold band for ${pct(g.fuzz.share)} of the ${g.fuzz.time} seconds (${g.fuzz.need} seconds in all).`;
   }
 }
 
@@ -462,7 +492,8 @@ export interface SnakeGame {
   grid: number;
   /** Seconds a move at the start; each mouse eaten makes it SNAKE_SPEEDUP of that. */
   step: number;
-  /** Mice to eat to pass. */
+  /** Share of the field the snake must fill to pass, and so the mice to eat. */
+  share: number;
   need: number;
   seed: number;
 }
@@ -470,7 +501,10 @@ export interface SnakeGame {
 export const SNAKE_SPEEDUP = 0.97;
 
 export function makeSnake(seed: number, level: number): SnakeGame {
-  return { grid: lv([12, 13, 14], level), step: lv([0.2, 0.17, 0.14], level), need: lv([10, 12, 14], level), seed };
+  const grid = lv([12, 13, 14], level);
+  // Ten, twelve and fourteen mice, as the field fills.
+  const share = lv([0.09, 0.0885, 0.085], level);
+  return { grid, step: lv([0.2, 0.17, 0.14], level), share, need: Math.ceil(grid * grid * share - 1e-9) - SNAKE_START, seed };
 }
 
 /** The snake at the start: in the middle of the left half, heading right, head first. */
@@ -587,6 +621,8 @@ export interface FishingGame {
   rounds: FishRound[];
   /** Seconds after the bite to strike in. */
   window: number;
+  /** Share of the fish to hook, and so how many. */
+  share: number;
   need: number;
   /** How far down a nibble pulls the bobber (1 is right under, as a bite). */
   nibbleDepth: number;
@@ -605,7 +641,8 @@ export function makeFishing(seed: number, level: number): FishingGame {
     }
     return { nibbles, bite: t + 0.3 + rand() * 1.4 };
   });
-  return { rounds, window: lv([0.7, 0.55, 0.45], level), need: lv([3, 3, 4], level), nibbleDepth: lv([0.3, 0.4, 0.5], level) };
+  const share = lv([0.6, 0.6, 0.8], level);
+  return { rounds, window: lv([0.7, 0.55, 0.45], level), share, need: shareOf(FISH_ROUNDS, share), nibbleDepth: lv([0.3, 0.4, 0.5], level) };
 }
 
 /** How a strike at `press` seconds into a round goes (null: no strike yet), or null while it's still to play for. */

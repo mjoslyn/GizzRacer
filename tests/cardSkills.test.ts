@@ -2,9 +2,12 @@ import suitesJson from '../public/music/suites.json';
 import { describe, expect, it } from 'vitest';
 import {
   CARD_GAME_DEFAULT,
+  CARD_GAME_LEFT_MIN,
   CARD_GAME_MAX,
   CARD_GAME_MIN,
   EMBER_LANES,
+  FIRE_TIME,
+  HIDE_TIME,
   HIDE_X,
   HideSim,
   EmberSim,
@@ -12,11 +15,13 @@ import {
   FireSim,
   MUNT_CLAW,
   MUNT_PARTS,
+  MUNT_TIME,
   MirrorSim,
   MuntSim,
   OvertureSim,
   SatSim,
   ShadowSim,
+  cardGameLeft,
   cardGameSeconds,
   cardPlan,
   beamEnters,
@@ -30,6 +35,8 @@ import {
   makeOverture,
   makeSats,
   makeShadow,
+  muntPossible,
+  shareOf,
   mirrorFinal,
   overtureJudge,
   shadowAt,
@@ -37,13 +44,15 @@ import {
   songSeconds,
   type CardSim,
 } from '../src/core/cardSkills';
-import { CARD_SKILLS, CHAPTER_SKILLS, SKILLS, SKILL_KINDS, skillRules } from '../src/core/skills';
+import { CARD_SKILLS, CHAPTER_SKILLS, RULES_WAIT, SKILLS, SKILL_KINDS, skillRules } from '../src/core/skills';
+import { briefed, type Lyrics } from '../src/ui/skillScreen';
+import type { MiniGame } from '../src/ui/skills/kit';
 import { SUITES } from '../src/core/suites';
 
 const DT = 1 / 60;
 const SEEDS = [1, 7, 42, 1234, 99991];
-/** Skill Games' own length (undefined), and songs' lengths in story mode. */
-const LENGTHS = [undefined, 48, 68, 150, CARD_GAME_MAX];
+/** Skill Games' own length (undefined), and what's left of songs in story mode: from the shortest a game runs to the longest. */
+const LENGTHS = [undefined, CARD_GAME_LEFT_MIN, 30, 68, 150, CARD_GAME_MAX];
 
 /** Runs a game at 60 fps, `play` acting each frame, until it ends (or `max` seconds): its result and how long it took. */
 function run<S extends CardSim>(sim: S, play: (sim: S, t: number) => void, max = 400): { passed: boolean; seconds: number } {
@@ -253,7 +262,7 @@ describe('the reticent raconteur', () => {
       for (const level of [0, 1, 2])
         for (const seed of SEEDS) {
           const g = makeHide(seed, level, length);
-          expect(g.flares.length).toBeGreaterThan(3);
+          expect(g.flares.length).toBeGreaterThan(length && length < 30 ? 0 : 3);
           let gasped = false;
           const sim = new HideSim(g);
           const good = run(sim, (s) => {
@@ -396,5 +405,189 @@ describe('soy-protein munt machine', () => {
     const sim = new MuntSim(g);
     sim.t = g.length;
     expect(sim.xOf(g.belt.length - 1)).toBeLessThan(0);
+  });
+});
+
+describe('card games: a share of what they offered, however long the song', () => {
+  const LONG = [CARD_GAME_LEFT_MIN, 30, 68, 150, CARD_GAME_MAX];
+
+  it('every rules card says the target as a percentage, at every length', () => {
+    for (const k of CARD_SKILLS)
+      for (const len of [undefined, ...LONG])
+        for (let level = 0; level < 3; level++) expect(skillRules(k, level, len), `${k} ${len}`).toMatch(/\d+%/);
+  });
+
+  it('each target is its share of what the game offers, the same share at every length', () => {
+    for (const len of LONG)
+      for (let level = 0; level < 3; level++) {
+        const sh = makeShadow(1, level, len);
+        expect(sh.need).toBeCloseTo(sh.share * len);
+        const fire = makeFire(1, level, len);
+        expect(fire.need).toBe(shareOf(fire.wires.length, fire.share));
+        const em = makeEmbers(1, level, len);
+        expect(em.need).toBe(shareOf(em.total, em.share));
+        const m = makeMunt(1, level, len);
+        expect(m.possible).toBe(muntPossible(m.belt, m.speed, len));
+        expect(m.machines).toBe(shareOf(m.possible, m.share));
+        for (const g of [sh, fire, em, m, makeSats(1, level, len), makeMirror(1, level, len), makeHide(1, level, len)])
+          expect(g.share, `level ${level} length ${len}`).toBe((makeAt(g, level) as { share: number }).share);
+      }
+    // The same game at its Skill Games length, for the share to match.
+    function makeAt(g: object, level: number): object {
+      if ('waves' in g) return makeShadow(2, level);
+      if ('bolts' in g) return makeFire(2, level);
+      if ('items' in g) return makeEmbers(2, level);
+      if ('belt' in g) return makeMunt(2, level);
+      if ('starts' in g) return makeSats(2, level);
+      if ('figures' in g) return makeMirror(2, level);
+      return makeHide(2, level);
+    }
+  });
+
+  it('at their Skill Games lengths the targets are about the old counts', () => {
+    // Old: the fire's 3, 3 and 2 strikes; the quagmire's 4, 3 and 3 sightings; the munt machine's 3, 3 and 2 wrong parts.
+    expect([0, 1, 2].map((l) => makeFire(1, l, FIRE_TIME).sparks)).toEqual([3, 3, 2]);
+    expect([0, 1, 2].map((l) => makeMunt(1, l, MUNT_TIME).strikes)).toEqual([3, 3, 2]);
+    for (let l = 0; l < 3; l++) {
+      const lives = [1, 7, 42, 1234, 99991].map((seed) => makeHide(seed, l, HIDE_TIME).lives);
+      for (const n of lives) expect(Math.abs(n - [4, 3, 3][l]), `level ${l}`).toBeLessThanOrEqual(1);
+      // Two or three machines in the munt machine's 36 s, as before.
+      for (const seed of [1, 7, 42]) expect(makeMunt(seed, l, MUNT_TIME).machines).toBeGreaterThanOrEqual(2);
+      for (const seed of [1, 7, 42]) expect(makeMunt(seed, l, MUNT_TIME).machines).toBeLessThanOrEqual(3);
+    }
+    // The satellites: the old three of four (four of five) kept lit, as a share of the sky.
+    expect([0, 1, 2].map((l) => makeSats(1, l).share)).toEqual([3 / 4, 4 / 5, 4 / 5]);
+  });
+
+  it('the rules that end a game early scale with its length too', () => {
+    for (let level = 0; level < 3; level++) {
+      const short = { fire: makeFire(3, level, 30), hide: makeHide(3, level, 30), munt: makeMunt(3, level, 30) };
+      const long = { fire: makeFire(3, level, 240), hide: makeHide(3, level, 240), munt: makeMunt(3, level, 240) };
+      expect(Math.abs(long.fire.sparks / long.fire.bolts.length - short.fire.sparks / short.fire.bolts.length)).toBeLessThan(0.1);
+      expect(Math.abs(long.hide.lives / long.hide.beams.length - short.hide.lives / short.hide.beams.length)).toBeLessThan(0.1);
+      expect(long.munt.strikes).toBeGreaterThanOrEqual(6 * short.munt.strikes);
+    }
+  });
+
+  it('a player who does just the share passes and one just short fails, at 15 s and at 240', () => {
+    for (const len of [CARD_GAME_LEFT_MIN, CARD_GAME_MAX])
+      for (let level = 0; level < 3; level++) {
+        // A new world: with the shadow until enough of the time is spent in it, then out in the open.
+        const shadow = (extra: number) =>
+          run(new ShadowSim(makeShadow(4, level, len)), (s) => {
+            const d = s.shadow - s.x;
+            s.dir = s.inside < s.game.need + extra ? (Math.abs(d) < 0.01 ? 0 : Math.sign(d)) : s.x < 0.5 ? -1 : 1;
+          });
+        expect(shadow(0.3).passed, `shadow ${len} ${level}`).toBe(true);
+        expect(shadow(-1).passed, `shadow ${len} ${level}`).toBe(false);
+        // The munt machine: every part grabbed until enough machines are built, then the claw left be.
+        const munt = (stop: number) => {
+          const g = makeMunt(4, level, len);
+          return run(new MuntSim(g), (s) => {
+            const i = s.under;
+            if (s.built < stop && i !== null && g.belt[i] === s.needed && Math.abs(s.xOf(i) - MUNT_CLAW) < 0.03) s.grab();
+          });
+        };
+        const need = makeMunt(4, level, len).machines;
+        expect(munt(need).passed, `munt ${len} ${level}`).toBe(true);
+        expect(munt(need - 1).passed, `munt ${len} ${level}`).toBe(false);
+      }
+  });
+
+  it('the satellites: the sky lit long enough passes, two lost early fail, lost late are forgiven', () => {
+    // (A satellite left alone takes most of 15 s to go black, so only the longer songs can lose one early.)
+    for (const len of [68, 150, CARD_GAME_MAX]) {
+      const g = makeSats(5, 0, len);
+      // Every one kept lit but the first, let go at `drop` of the way through.
+      const play = (drop: number, also = false) =>
+        run(new SatSim(g), (s) => {
+          for (let i = 0; i < s.light.length; i++) {
+            const gone = (i === 0 && s.t > drop * len) || (also && i === 1 && s.t > drop * len);
+            if (!gone && s.light[i] < 0.5) s.charge(i);
+          }
+        });
+      expect(play(1.1).passed, `${len}: all lit`).toBe(true);
+      expect(play(0, true).passed, `${len}: two of four gone at the start`).toBe(false);
+      expect(play(0.6, true).passed, `${len}: two of four gone late`).toBe(true);
+    }
+  });
+});
+
+describe('card games: the rules card and the song', () => {
+  it("the length if the game starts now: what's left of its song, never under the least", () => {
+    expect(cardGameLeft(68, 68, null)).toBe(68);
+    expect(cardGameLeft(68, 68, 0)).toBe(68);
+    expect(cardGameLeft(68, 68, 0.5)).toBe(34);
+    expect(cardGameLeft(68, 68, 0.95)).toBe(CARD_GAME_LEFT_MIN);
+    // Skill Games: a short song still plays its game the default length, less what's been heard.
+    expect(cardGameLeft(CARD_GAME_DEFAULT, 30, 10 / 30)).toBe(CARD_GAME_DEFAULT - 10);
+    expect(cardGameLeft(CARD_GAME_DEFAULT, null, 0.5)).toBe(CARD_GAME_DEFAULT);
+  });
+
+  /** A song playing, `heard` seconds in already, `music` long; and the game made, with its length. */
+  function card(heard: number, music: number) {
+    let clock = 0;
+    const song = () => (heard + clock) / music;
+    const lyrics: Lyrics = { lines: ['a', 'b'], song, length: music - heard, left: () => cardGameLeft(music, music, song()) };
+    const made: (number | undefined)[] = [];
+    const game: MiniGame = { result: null, update: () => {}, draw: () => {}, key: () => {}, tap: () => {} };
+    const b = briefed('newworld', 1, lyrics, (length) => {
+      made.push(length);
+      return game;
+    });
+    const step = (seconds: number) => {
+      for (let i = 0; i < Math.round(seconds * 60); i++) {
+        clock += 1 / 60;
+        b.update(clock, 1 / 60);
+      }
+    };
+    return { b, made, step, rules: () => skillRules('newworld', 1, lyrics.left!()) };
+  }
+
+  it('waits at most RULES_WAIT seconds, then starts by itself', () => {
+    expect(RULES_WAIT).toBe(10);
+    const c = card(20, 120);
+    c.step(RULES_WAIT - 0.5);
+    expect(c.b.game).toBeNull();
+    expect(c.b.carded).toBe(true);
+    c.step(0.6);
+    expect(c.b.game).not.toBeNull();
+    expect(c.made).toHaveLength(1);
+  });
+
+  it('a press still starts it sooner', () => {
+    const c = card(0, 90);
+    c.step(2);
+    c.b.key('Enter', false);
+    expect(c.made).toHaveLength(1);
+    c.step(RULES_WAIT);
+    expect(c.made).toHaveLength(1);
+  });
+
+  it("the game's length is measured from when it starts, so it still ends with its song", () => {
+    for (const [heard, music] of [
+      [0, 68],
+      [30, 150],
+      [0, CARD_GAME_MAX],
+    ]) {
+      const waited = card(heard, music);
+      waited.step(RULES_WAIT + 0.1);
+      expect(waited.made[0]!, `${heard} into ${music}`).toBeCloseTo(music - heard - RULES_WAIT, 0);
+      const quick = card(heard, music);
+      quick.step(3);
+      quick.b.key('Space', false);
+      expect(quick.made[0]!).toBeCloseTo(music - heard - 3, 0);
+    }
+    // Late in a song, it still runs the least a game runs.
+    const late = card(60, 68);
+    late.step(RULES_WAIT + 0.1);
+    expect(late.made[0]).toBe(CARD_GAME_LEFT_MIN);
+  });
+
+  it("the rules card says the length the game would have if it started now", () => {
+    const c = card(0, 68);
+    expect(c.rules()).toContain('of the 68 seconds');
+    c.step(5);
+    expect(c.rules()).toContain('of the 63 seconds');
   });
 });
