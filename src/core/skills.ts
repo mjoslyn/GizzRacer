@@ -1,7 +1,7 @@
 import { clamp, seededRandom } from './math';
 import { pointAt } from '../tracks/spline';
 import type { Track } from '../tracks/track';
-import { ECHO_MAX, EMBER_FINAL, MIRROR_PICK, MUNT_PARTS, makeEcho, makeEmbers, makeFire, makeMirror, makeMunt, makeOverture, makeSats, makeShadow } from './cardSkills';
+import { EMBER_FINAL, HIDE_GASP, MIRROR_PICK, MUNT_PARTS, makeEmbers, makeFire, makeHide, makeMirror, makeMunt, makeOverture, makeSats, makeShadow } from './cardSkills';
 
 /**
  * Story mode's skill games: one stands between each chapter's race and its
@@ -85,8 +85,8 @@ export const SKILLS: Record<SkillKind, { name: string; intro: string; howTo: str
   },
   raconteur: {
     name: 'The Reticent Raconteur',
-    intro: 'From a hiding place in the quagmire the teller taps out his secret, a little more each time. Tap it back to him, just as he told it.',
-    howTo: 'Listen, then tap the rhythm back: Space (or tap), timed from your first tap',
+    intro: "There is a secret I've been keeping: I saw the battle of the Balrog and the lightning lord from my hiding place within the quagmire. Duck under the mud as their beams sweep over, and come up to see it.",
+    howTo: 'Hold Space or Down (or hold a finger down) to duck under a beam; let go to come up and look',
   },
   floatingfire: {
     name: 'The Floating Fire',
@@ -180,8 +180,8 @@ export function skillRules(kind: SkillKind, level: number, length?: number): str
       return `Rings close in on the storm cloud, one for each of the overture's hits. Press Space or Enter (or tap anywhere) as each ring meets the cloud. After a one-bar count-in it runs ${g.bars} bars at ${g.bpm} bpm, the storm building as it goes. Hit ${Math.round(g.need * 100)}% of the hits to pass; every two presses with no hit there cost one.`;
     }
     case 'raconteur': {
-      const g = makeEcho(1, level, length);
-      return `The teller taps a rhythm, then it's your turn: tap it back with Space or Enter (or tap the screen), timed from your first tap, each tap within ${Math.round(g.tolerance * 100) / 100} seconds of his. It starts at ${g.first} notes and grows by one each telling, up to ${ECHO_MAX}, for ${Math.round(g.length)} seconds: echo ${Math.round(g.share * 100)}% of the tellings.`;
+      const g = makeHide(1, level, length);
+      return `You hide in the quagmire's reeds as beams of lightning and the Balrog's fire sweep across it, an arrow at the edge warning of each before it comes. Hold Space, Enter or Down (or hold a finger down) to duck under the mud while a beam passes over you; let go to come up. Under, your air runs down (the bar under the marsh): ${g.air} seconds of it, and run out and you come up gasping, seeing nothing, for ${HIDE_GASP} s. Up when a beam is on you, you're seen: ${g.lives} times and you're found. When the battle flares (a ring closes on it), be up to glimpse it: glimpse ${Math.round(g.share * 100)}% of the flares in ${Math.round(g.length)} seconds.`;
     }
     case 'floatingfire': {
       const g = makeFire(1, level, length);

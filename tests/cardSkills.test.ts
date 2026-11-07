@@ -4,9 +4,9 @@ import {
   CARD_GAME_DEFAULT,
   CARD_GAME_MAX,
   CARD_GAME_MIN,
-  ECHO_MAX,
   EMBER_LANES,
-  EchoSim,
+  HIDE_X,
+  HideSim,
   EmberSim,
   FIRE_X,
   FireSim,
@@ -19,10 +19,10 @@ import {
   ShadowSim,
   cardGameSeconds,
   cardPlan,
-  echoJudge,
-  echoOffsets,
+  beamEnters,
+  beamLead,
   lyricIndex,
-  makeEcho,
+  makeHide,
   makeEmbers,
   makeFire,
   makeMirror,
@@ -227,36 +227,60 @@ describe('some context', () => {
 });
 
 describe('the reticent raconteur', () => {
-  it('the ostinato grows by a note a telling, up to its longest, and an echo counts only in time', () => {
-    const g = makeEcho(4, 1);
-    expect(echoOffsets(g, 1).length).toBe(echoOffsets(g, 0).length + 1);
-    expect(echoOffsets(g, 1).slice(0, -1)).toEqual(echoOffsets(g, 0));
-    expect(echoOffsets(g, 40).length).toBe(ECHO_MAX);
-    const o = echoOffsets(g, 0);
-    expect(echoJudge(o, o.map((x) => x + 3), g.tolerance)).toBe(true);
-    expect(echoJudge(o, o.map((x, i) => x + 3 + (i === o.length - 1 ? 0.3 : 0)), g.tolerance)).toBe(false);
-    expect(echoJudge(o, o.slice(1), g.tolerance)).toBe(false);
+  /** A careful player: down a little before each beam reaches the hiding place, up a little after; up the rest of the time. */
+  const careful = (s: HideSim): void => {
+    s.holding = s.game.beams.some((b) => s.t > b.at - 0.22 && s.t < b.at + b.dur + 0.15);
+  };
+
+  it('the beams come from both sides, more of them and quicker as the song goes on, each with a warning and a run under that fits in your air', () => {
+    const g = makeHide(5, 1, 200);
+    expect(new Set(g.beams.map((b) => b.from)).size).toBe(2);
+    expect(new Set(g.beams.map((b) => b.kind)).size).toBe(2);
+    const half = g.beams.filter((b) => b.at < 100).length;
+    expect(g.beams.length - half).toBeGreaterThan(half);
+    expect(g.beams[g.beams.length - 1].speed).toBeGreaterThan(g.beams[0].speed);
+    // On the stage well before it reaches you, its warning before that.
+    for (const b of g.beams) {
+      expect(b.at - beamEnters(b)).toBeGreaterThan(0.7);
+      expect(beamLead(b, beamEnters(b))).toBeCloseTo(b.from < 0 ? 0 : 1);
+      expect(beamLead(b, b.at)).toBeCloseTo(HIDE_X);
+    }
+    for (let i = 1; i < g.beams.length; i++) expect(g.beams[i].at).toBeGreaterThan(g.beams[i - 1].at + g.beams[i - 1].dur);
   });
 
-  it('tapping it back to the end passes; tapping evenly, or not at all, does not', () => {
+  it('ducking every beam and coming up for the flares to the end passes; never ducking, or staying down, does not', () => {
     for (const length of LENGTHS)
-      for (const seed of SEEDS) {
-        const g = makeEcho(seed, 1, length);
-        const good = run(new EchoSim(g), (s) => {
-          if (s.phase !== 'echo') return;
-          const o = s.offsets;
-          const due = s.taps.length ? s.taps[0] + o[s.taps.length] : 0.5;
-          if (s.clock >= due) s.tap();
-        });
-        expect(good.passed).toBe(true);
-        lasts('raconteur', 1, length, good.seconds);
-        expect(
-          run(new EchoSim(g), (s) => {
-            if (s.phase === 'echo' && s.clock >= 0.5 + s.taps.length * 0.7) s.tap();
-          }).passed,
-        ).toBe(false);
-        expect(run(new EchoSim(g), () => {}).passed).toBe(false);
-      }
+      for (const level of [0, 1, 2])
+        for (const seed of SEEDS) {
+          const g = makeHide(seed, level, length);
+          expect(g.flares.length).toBeGreaterThan(3);
+          let gasped = false;
+          const sim = new HideSim(g);
+          const good = run(sim, (s) => {
+            careful(s);
+            gasped ||= s.gasp > 0;
+          });
+          expect(good.passed, `seed ${seed} level ${level} length ${length}: ${sim.result?.note}`).toBe(true);
+          expect(sim.seen).toBe(0);
+          expect(gasped, 'never out of air').toBe(false);
+          lasts('raconteur', level, length, good.seconds);
+          expect(run(new HideSim(g), () => {}).passed).toBe(false);
+          expect(
+            run(new HideSim(g), (s) => {
+              s.holding = true;
+            }).passed,
+          ).toBe(false);
+        }
+  });
+
+  it('out of air under the mud, you come up gasping and stay up a while', () => {
+    const g = makeHide(3, 1);
+    const sim = new HideSim({ ...g, beams: [], flares: [] });
+    sim.holding = true;
+    for (let t = 0; t < g.air + 0.1; t += DT) sim.update(DT);
+    expect(sim.under).toBe(false);
+    expect(sim.gasp).toBeGreaterThan(0);
+    expect(sim.sounds.some((x) => x.s === 'gasp')).toBe(true);
   });
 });
 
