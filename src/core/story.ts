@@ -2,7 +2,7 @@ import { seededRandom } from './math';
 import type { ItemKind } from '../items/items';
 import { RACERS, type KartParams, type RacerDef } from '../physics/racers';
 import { GEN_COMPLEXITY_MAX, type GenParams, type GenTheme } from '../tracks/generator';
-import { SKILLS, SKILL_KINDS, type SkillKind } from './skills';
+import { CHAPTER_SKILLS, SKILLS, type SkillKind } from './skills';
 
 /**
  * Story mode's album run: Murder of the Universe (2017) as a roguelike run
@@ -113,6 +113,8 @@ export interface StoryStage {
   gen: GenParams | null;
   /** The skill game, or null. */
   skill: SkillKind | null;
+  /** A suite's card's own game, played with its words on screen (a miss costs a life, as a skill game's does). */
+  cardGame?: SkillKind | null;
   /** Seeds the skill game: the same on a retry. */
   seed: number;
   /** How hard the skill game is (0..2); the act's when absent. */
@@ -168,7 +170,7 @@ export class StoryRun {
   constructor(readonly seed: number) {
     this.rand = seededRandom(seed);
     const draw = seededRandom(seed * 31 + 17);
-    const pool = [...SKILL_KINDS];
+    const pool: SkillKind[] = [...CHAPTER_SKILLS];
     this.skills = ACTS.map(() => pool.splice(Math.floor(draw() * pool.length), 1)[0]);
   }
 

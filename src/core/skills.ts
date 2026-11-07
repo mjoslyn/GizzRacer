@@ -1,16 +1,26 @@
 import { clamp, seededRandom } from './math';
 import { pointAt } from '../tracks/spline';
 import type { Track } from '../tracks/track';
+import { ECHO_MAX, EMBER_FINAL, MIRROR_PICK, MUNT_PARTS, makeEcho, makeEmbers, makeFire, makeMirror, makeMunt, makeOverture, makeSats, makeShadow } from './cardSkills';
 
 /**
  * Story mode's skill games: one stands between each chapter's race and its
  * boss. All but one are played on a card over the game (ui/skillScreen.ts); the
- * Deadstick Landing is flown on a track. This is their rules and draws,
- * kept pure so they can be tested. `level` is the chapter, 0..2.
+ * Deadstick Landing is flown on a track. The story suites' card games
+ * (core/cardSkills.ts) follow their spoken-song cards. This is their names,
+ * rules and draws, kept pure so they can be tested. `level` is the chapter, 0..2.
  */
 
-export type SkillKind = 'riff' | 'nonagon' | 'banana' | 'horology' | 'deadstick' | 'mindfuzz' | 'rattlesnake' | 'robot' | 'fishies' | 'castle';
-export const SKILL_KINDS: readonly SkillKind[] = ['riff', 'nonagon', 'banana', 'horology', 'deadstick', 'mindfuzz', 'rattlesnake', 'robot', 'fishies', 'castle'];
+export type ChapterSkill = 'riff' | 'nonagon' | 'banana' | 'horology' | 'deadstick' | 'mindfuzz' | 'rattlesnake' | 'robot' | 'fishies' | 'castle';
+/** The card games (core/cardSkills.ts): one after each of the suites' spoken-song cards, made from its words. */
+export type CardSkill = 'newworld' | 'lifedeath' | 'context' | 'raconteur' | 'floatingfire' | 'acrid' | 'future' | 'munt';
+export type SkillKind = ChapterSkill | CardSkill;
+/** The album run's chapter games, drawn one a chapter. */
+export const CHAPTER_SKILLS: readonly ChapterSkill[] = ['riff', 'nonagon', 'banana', 'horology', 'deadstick', 'mindfuzz', 'rattlesnake', 'robot', 'fishies', 'castle'];
+/** The card games, in the order their cards come in the suites. */
+export const CARD_SKILLS: readonly CardSkill[] = ['newworld', 'lifedeath', 'context', 'raconteur', 'floatingfire', 'acrid', 'future', 'munt'];
+/** Every game, as Skill Games lists them: the chapter games, then the card games in story order. */
+export const SKILL_KINDS: readonly SkillKind[] = [...CHAPTER_SKILLS, ...CARD_SKILLS];
 
 export const SKILLS: Record<SkillKind, { name: string; intro: string; howTo: string }> = {
   riff: {
@@ -58,6 +68,46 @@ export const SKILLS: Record<SkillKind, { name: string; intro: string; howTo: str
     intro: 'Build the castle floor by floor. Each stone slides across the one below: drop it square, because whatever hangs over crumbles away.',
     howTo: 'Press Space (or tap) to drop the sliding stone onto the tower',
   },
+  newworld: {
+    name: 'A New World',
+    intro: 'As the dust settles there appears by the meadow a brute like a bear with a long dark shadow. Keep inside its shadow as it wanders, and it never sees you.',
+    howTo: 'Hold left or right (arrow keys or A D, or hold a side of the screen) to stay in the shadow',
+  },
+  lifedeath: {
+    name: 'Life / Death',
+    intro: 'Are you you? Are you me? Or someone in between? You and your copies, lost in the labyrinthine: keep your eye on yourself as they shuffle.',
+    howTo: 'Watch yourself through the shuffle, then pick: left and right and Space, keys 1 to 4, or tap',
+  },
+  context: {
+    name: 'Some Context',
+    intro: 'Before the story, the storm: the overture. Strike each of its opening hits on the beat as the rings close in on the cloud.',
+    howTo: 'Press Space (or tap) as each ring closes on the cloud',
+  },
+  raconteur: {
+    name: 'The Reticent Raconteur',
+    intro: 'From a hiding place in the quagmire the teller taps out his secret, a little more each time. Tap it back to him, just as he told it.',
+    howTo: 'Listen, then tap the rhythm back: Space (or tap), timed from your first tap',
+  },
+  floatingfire: {
+    name: 'The Floating Fire',
+    intro: 'Clouds tear and the sky bleeds. Float the fire through the gaps in the lightning, catching golden wire on the way.',
+    howTo: 'Hold Space or Up (or hold a finger down) to rise; let go to sink',
+  },
+  acrid: {
+    name: 'The Acrid Corpse',
+    intro: "The Balrog's corpse smoulders, and its crimson-orange light drifts off to melt into the setting sun. Catch what you can of the last light before the night.",
+    howTo: 'Up and down (arrow keys or W S, or tap a lane) to move the jar into the path of each ember',
+  },
+  future: {
+    name: 'Welcome to an Altered Future',
+    intro: 'Digitised satellites, augmented entities, an unremembered god. The world fades to black: keep the satellites lit as long as you can.',
+    howTo: 'Light up a satellite before it fades: keys 1 to 5, or left and right and Space, or tap it',
+  },
+  munt: {
+    name: 'Soy-Protein Munt Machine',
+    intro: 'Build a human machine: steel, then soy-protein, born from a test tube, then into a vat. Grab each part off the belt in that order.',
+    howTo: 'Press Space (or tap) to grab the part under the claw: only the next one the machine needs',
+  },
   deadstick: {
     name: 'Deadstick Landing',
     intro: 'Engine dead, glider out. Hit the ramp, hop on the lip to open the wings, and put it down in the ring.',
@@ -77,9 +127,9 @@ const lv = <T>(list: readonly T[], level: number): T => list[clamp(Math.round(le
 
 /**
  * Exactly what to do to pass a game at a level, with its real numbers: for
- * the card before it.
+ * the card before it. `length`: a card game's seconds in story mode (its song's).
  */
-export function skillRules(kind: SkillKind, level: number): string {
+export function skillRules(kind: SkillKind, level: number, length?: number): string {
   switch (kind) {
     case 'riff': {
       const r = makeRiff(1, level);
@@ -116,6 +166,38 @@ export function skillRules(kind: SkillKind, level: number): string {
     case 'castle': {
       const g = makeCastle(1, level);
       return `A stone slides back and forth over the tower. Press Space or Enter (or tap) to drop it: whatever hangs over the floor below crumbles away, so the next stone is only as wide as what stayed. Drop it square and it keeps its width. Build ${g.floors} floors before the stones crumble to nothing; they slide faster as the castle rises.`;
+    }
+    case 'newworld': {
+      const g = makeShadow(1, level, length);
+      return `The bear wanders the meadow, its long dark shadow sliding across the grass, quicker and narrower as the day goes. Hold left or right (the arrow keys or A D, or hold a side of the screen) to walk with it and stay inside the shadow. Be in it for ${g.need} seconds in all of the ${Math.round(g.length)} to pass.`;
+    }
+    case 'lifedeath': {
+      const g = makeMirror(1, level, length);
+      return `${g.figures} figures stand in the labyrinth: you, lit for a moment, and your copies. They swap places, more and quicker each round. Then pick yourself: left and right and Space or Enter, keys 1 to ${g.figures}, or tap the figure, within ${MIRROR_PICK} seconds. Round after round for ${Math.round(g.length)} seconds: pick yourself in ${Math.round(g.share * 100)}% of them.`;
+    }
+    case 'context': {
+      const g = makeOverture(1, level, length);
+      return `Rings close in on the storm cloud, one for each of the overture's hits. Press Space or Enter (or tap anywhere) as each ring meets the cloud. After a one-bar count-in it runs ${g.bars} bars at ${g.bpm} bpm, the storm building as it goes. Hit ${Math.round(g.need * 100)}% of the hits to pass; every two presses with no hit there cost one.`;
+    }
+    case 'raconteur': {
+      const g = makeEcho(1, level, length);
+      return `The teller taps a rhythm, then it's your turn: tap it back with Space or Enter (or tap the screen), timed from your first tap, each tap within ${Math.round(g.tolerance * 100) / 100} seconds of his. It starts at ${g.first} notes and grows by one each telling, up to ${ECHO_MAX}, for ${Math.round(g.length)} seconds: echo ${Math.round(g.share * 100)}% of the tellings.`;
+    }
+    case 'floatingfire': {
+      const g = makeFire(1, level, length);
+      return `The floating fire flies through the storm. Hold Space, Enter or Up (or hold a finger down) to rise, let go to sink. ${g.bolts.length} bolts of lightning come, their gaps narrowing; golden wire floats in the gaps and between. Catch ${g.need} golden wire by the end; ${g.sparks} strikes and the fire is out.`;
+    }
+    case 'acrid': {
+      const g = makeEmbers(1, level, length);
+      return `Embers drift from the Balrog's corpse toward the setting sun, in three lanes, quicker as it sinks. Move your jar up and down (the arrow keys or W S, or tap a lane) to catch them; black smoke snuffs one out, and the final clap of light is worth ${EMBER_FINAL}. Catch ${g.need} light before the sun is down.`;
+    }
+    case 'future': {
+      const g = makeSats(1, level, length);
+      return `${g.lives.length} satellites fade toward black, faster as the world goes dark. Light one back to full with its key (1 to ${g.lives.length}), or left and right and Space, or tap it. One gone black stays black. Keep ${g.need} lit for ${Math.round(g.length)} seconds.`;
+    }
+    case 'munt': {
+      const g = makeMunt(1, level, length);
+      return `Parts ride the belt under the claw, the belt speeding up: steel, soy-protein, test tube and vat. Press Space or Enter (or tap) to grab the one under the claw, and only the next the machine needs, in that order (${MUNT_PARTS.length} a machine). Build ${g.machines} machines in ${Math.round(g.length)} seconds; ${g.strikes} wrong parts and it's over.`;
     }
     case 'deadstick':
       return `Drive at the ramp ahead and hop (Shift or Space, or DRIFT on touch) as you hit it: it throws you high and opens the glider for a long flight. Left alone the glider floats past the ring; hold Down (on touch, drag down) to dive and come down sooner, and steer to line up. Land inside the gold ring, ${deadstickRadius(level)} m from its middle, within ${DEADSTICK_SHOTS} shots.`;

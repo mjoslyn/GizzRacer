@@ -181,7 +181,7 @@ export function storyCard(run: StoryRun, phase: StoryPhase, player: RacerDef, no
       return {
         kicker,
         title: 'The loop bends back',
-        body: lead(`Planet B takes the hit. ${race.boss ? `${run.bossRacer(player).name} waits at the line again.` : race.skill ? 'Have another go.' : 'Back to the line: the race starts over.'}`),
+        body: lead(`Planet B takes the hit. ${race.boss ? `${run.bossRacer(player).name} waits at the line again.` : race.skill || race.cardGame ? 'Have another go.' : 'Back to the line: the race starts over.'}`),
         opts: go('Try again', `${run.lives} ${run.lives === 1 ? 'life' : 'lives'} left`),
         footer,
       };

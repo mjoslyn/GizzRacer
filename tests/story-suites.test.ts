@@ -1,12 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ACTS, StoryRun } from '../src/core/story';
-import { SUITES, SuiteRun, runStages, suiteMusic, type Suite } from '../src/core/suites';
+import { CARD_SONG_WAIT, CardClock, SUITES, SuiteRun, cardReadTime, runStages, suiteMusic, type Suite } from '../src/core/suites';
 import { LiveRadio } from '../src/audio/radio';
 import type { LiveRecording, MusicPlayer } from '../src/audio/music';
 import { RACERS } from '../src/physics/racers';
 import { TRACK_LIST } from '../src/tracks/index';
 import { generateTrack, type GenParams } from '../src/tracks/generator';
 import { storyCard, storyPickCard } from '../src/ui/storyScreen';
+import { CARD_SKILLS, CHAPTER_SKILLS, SKILLS } from '../src/core/skills';
 
 /** The shared contract (scratchpad suites/CONTRACT.md): id, name, boss racer, and each stage as kind:song[:track]. */
 const CONTRACT: [string, string, string, string[]][] = [
@@ -101,15 +102,109 @@ describe('story suites', () => {
     expect(card.verse).toEqual(beast.stages[0].words);
   });
 
-  it('plays one stage a song in order, the skill game just before the boss; cards give no boon', () => {
+  it('plays one stage a song in order, the skill game just before the boss; a card game cleared gives a boon', () => {
     for (const s of SUITES) {
       const run = new SuiteRun(5, s);
       const seen = clearAll(run);
       const want = s.stages.flatMap((st) => (st.kind === 'B' && s.skill ? ['skill', 'boss'] : [st.kind === 'C' ? 'card' : st.kind === 'B' ? 'boss' : 'race']));
       expect(seen.map((x) => x.kind)).toEqual(want);
-      for (const x of seen) if (x.kind === 'card') expect(x.outcome === 'next' || x.outcome === 'won').toBe(true);
+      for (const x of seen) if (x.kind === 'card') expect(x.outcome === 'cleared' || x.outcome === 'won').toBe(true);
       expect(seen[seen.length - 1].outcome).toBe('won');
     }
+  });
+
+  it('every card stage is its own game, made from its words', () => {
+    const want: Record<string, string> = {
+      'A New World': 'newworld',
+      'Life / Death': 'lifedeath',
+      'Some Context': 'context',
+      'The Reticent Raconteur': 'raconteur',
+      'The Floating Fire': 'floatingfire',
+      'The Acrid Corpse': 'acrid',
+      'Welcome to an Altered Future': 'future',
+      'Soy-Protein Munt Machine': 'munt',
+    };
+    let n = 0;
+    for (const s of SUITES)
+      runStages(s).forEach((st, i) => {
+        if (st.kind !== 'C') return;
+        n++;
+        const r = at(s, i);
+        expect(r.kind).toBe('card');
+        expect(r.cardGame, st.song).toBe(want[st.song]);
+        expect(r.skill).toBeNull();
+        // The words it shows beside the game.
+        expect(r.words).toEqual(st.words);
+        expect(SKILLS[r.cardGame!].name.length).toBeGreaterThan(0);
+      });
+    expect(n).toBe(Object.keys(want).length);
+    expect(new Set(Object.values(want))).toEqual(new Set(CARD_SKILLS));
+  });
+
+  it('a card game cleared offers a boon; missed, it costs a life, and the last life ends the run', () => {
+    const beast = SUITES.find((s) => s.id === 'altered-beast')!;
+    const won = new SuiteRun(3, beast);
+    expect(won.race.cardGame).toBe('newworld');
+    expect(won.record(true)).toBe('cleared');
+    expect(won.offer.length).toBeGreaterThan(0);
+    expect(won.lives).toBe(1);
+
+    const missed = new SuiteRun(3, beast);
+    missed.lives = 2;
+    expect(missed.record(false)).toBe('failed');
+    expect(missed.lives).toBe(1);
+    expect(missed.cleared).toBe(0);
+    expect(missed.race.cardGame).toBe('newworld');
+    expect(storyCard(missed, 'failed', RACERS[0]).body).toContain('Have another go');
+    expect(missed.record(false)).toBe('over');
+    expect(missed.finished).toBe(true);
+  });
+
+  it('a card whose song is too short for its game is a plain lyric card: read, no boon, no life at stake', () => {
+    const lightning = SUITES.find((s) => s.id === 'lord-of-lightning')!;
+    const run = new SuiteRun(4, lightning);
+    expect(run.race.song).toBe('Some Context');
+    expect(run.race.cardGame).toBe('context');
+    run.asLyricCard();
+    expect(run.race.cardGame).toBeNull();
+    const card = storyCard(run, 'card', RACERS[0]);
+    expect(card.verse).toEqual(lightning.stages[0].words);
+    expect(card.opts.map((o) => o.name)).toEqual(['Continue']);
+    expect(run.record(true)).toBe('next');
+    expect(run.offer).toEqual([]);
+    expect(run.lives).toBe(1);
+    // The next card is still a game.
+    expect(run.race.cardGame).toBe('raconteur');
+  });
+
+  it("a plain lyric card moves on when its song ends, or with no song after its words' reading time", () => {
+    // Its own song, played to its end: on as it goes round again.
+    const looped = new CardClock(10);
+    looped.song('a/1.mp3');
+    expect(looped.step(1, { key: 'a/1.mp3', at: 3 })).toBe(false);
+    expect(looped.step(20, { key: 'a/1.mp3', at: 23 })).toBe(false);
+    expect(looped.step(0.1, { key: 'a/1.mp3', at: 3 })).toBe(true);
+    // Stopped at its `end`, before the applause.
+    const ended = new CardClock(10);
+    ended.song('a/1.mp3', 26.5);
+    expect(ended.step(1, { key: 'a/1.mp3', at: 20 })).toBe(false);
+    expect(ended.step(1, { key: 'a/1.mp3', at: 26.5 })).toBe(true);
+    // Something else came on after it.
+    const other = new CardClock(10);
+    other.song('a/1.mp3');
+    other.step(1, { key: 'a/1.mp3', at: 5 });
+    expect(other.step(1, { key: 'b/2.mp3', at: 0 })).toBe(true);
+    // No song of its own: the reading time.
+    const read = new CardClock(cardReadTime(['one two three four', 'five six']));
+    expect(read.readTime).toBeCloseTo(4 + 0.35 * 6);
+    expect(read.step(5, null)).toBe(false);
+    expect(read.step(2, { key: 'x/y.mp3', at: 9 })).toBe(true);
+    // Its song never starts: it falls back to reading.
+    const silent = new CardClock(5);
+    silent.song('a/1.mp3');
+    for (let i = 0; i <= CARD_SONG_WAIT; i++) expect(silent.step(1, null)).toBe(false);
+    expect(silent.step(1, null)).toBe(true);
+    expect(cardReadTime(Array(200).fill('word'))).toBe(40);
   });
 
   it('keeps the skill games asked for', () => {
@@ -155,6 +250,8 @@ describe('story suites', () => {
     expect(new StoryRun(1).total).toBe(ACTS.length * 4);
     expect(new StoryRun(1).id).toBe('motu');
     expect(clearAll(new StoryRun(1)).every((x) => x.kind !== 'card' && x.outcome !== 'next')).toBe(true);
+    // Its chapter games are drawn from the chapter games only, never a card's.
+    for (let seed = 1; seed < 40; seed++) for (const k of new StoryRun(seed).skills) expect(CHAPTER_SKILLS).toContain(k);
   });
 });
 

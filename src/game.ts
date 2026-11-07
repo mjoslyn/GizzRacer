@@ -31,9 +31,10 @@ import type { Effect, RoomStart } from './net/protocol';
 import type { RoomClient } from './net/room';
 import { GrandPrix } from './core/grandPrix';
 import { ACTS, CLEAR_PLACE, SKILL_STAGE, STAGES_PER_ACT, StoryRun, type BoonId } from './core/story';
-import { ALBUM_STORY, SuiteRun, suiteById, suiteMusic } from './core/suites';
+import { ALBUM_STORY, CardClock, SuiteRun, cardReadTime, suiteById, suiteMusic } from './core/suites';
+import { cardPlan } from './core/cardSkills';
 import { DEADSTICK_LAUNCH, DEADSTICK_RUNUP, DEADSTICK_SHOTS, DEADSTICK_SHOT_TIME, planDeadstick, type DeadstickPlan, type SkillKind } from './core/skills';
-import { SkillScreen, type SkillResult } from './ui/skillScreen';
+import { SkillScreen, type Lyrics, type SkillResult } from './ui/skillScreen';
 import { StoryScreen, hearts, practiceCard, practiceRulesCard, storyCard, storyPickCard, type StoryPhase } from './ui/storyScreen';
 import { Race, TOUCH_CPU_PACE, ordinal, type RaceKart } from './core/race';
 import { ASSIST_NORMAL, ASSIST_TOUCH } from './physics/steerAssist';
@@ -1770,7 +1771,39 @@ function showStory(phase: StoryPhase, note = ''): void {
   storyPicking = false;
   setMode('story');
   storyScreen.show(storyCard(story!, phase, choice.racer, note));
-  if (phase === 'card') suiteStageMusic(null);
+  cardClock = null;
+  if (phase === 'card') {
+    cardClock = new CardClock(cardReadTime(story!.race.words));
+    suiteStageMusic(null);
+  }
+}
+
+/** A plain lyric card's clock: it moves on by itself when its song is done (Enter skips ahead). */
+let cardClock: CardClock | null = null;
+
+/** Every frame: a plain lyric card up moves on by itself once its clock says so, as Enter would. */
+function cardClockStep(dt: number): void {
+  if (!cardClock || mode !== 'story' || storyPhase !== 'card' || !story || settingsScreen.visible) return;
+  const p = radio.playing;
+  const at = music.liveProgress()?.at;
+  const rec = music.live;
+  const playing = p && rec && at !== undefined && `${rec.id}/${rec.file}` === `${p.rec.id}/${p.rec.file}` ? { key: `${rec.id}/${rec.file}`, at } : null;
+  if (!cardClock.step(dt, playing)) return;
+  cardClock = null;
+  storyScreen.onPick('go');
+}
+
+/** Bumped each time a card's game is asked for, so only the latest answer starts one. */
+let cardTicket = 0;
+
+/** How far through the card's song the live recording is (0..1, from where its music starts to where it stops), or null with none of its own playing. */
+function cardSongProgress(song: string): number | null {
+  const rec = music.live;
+  const p = music.liveProgress();
+  if (!rec || !p || radio.playing?.title !== song) return null;
+  const from = rec.start ?? 0;
+  const to = rec.end ?? p.length;
+  return to > from ? (p.at - from) / (to - from) : null;
 }
 
 /** Story mode's first card: the pick of stories. */
@@ -1807,7 +1840,26 @@ function storyNext(): void {
   const run = story!;
   const r = run.race;
   if (run.actStart && storyPhase !== 'chapter') return showStory('chapter');
-  // A suite's spoken song: its words on a card, its recording playing.
+  // A suite's spoken song: its game, its words along the side, its recording playing; with no game, its words on a card.
+  if (r.kind === 'card' && r.cardGame && run instanceof SuiteRun) {
+    // How long its song runs decides it: a game for the song's length, or, too short for one, a plain lyric card.
+    const ticket = ++cardTicket;
+    const at = run.cleared;
+    const song = r.song ?? '';
+    const game = r.cardGame;
+    void radio.suiteRecording(run.suite.id, song).then((rec) => {
+      if (ticket !== cardTicket || story !== run || run.cleared !== at) return;
+      const plan = cardPlan(rec);
+      if (!plan.game) {
+        run.asLyricCard();
+        return showStory('card');
+      }
+      storyPhase = 'card';
+      suiteStageMusic(null);
+      startSkillScreen(game, r.seed, r.level ?? r.act, { lines: r.words ?? [], song: () => cardSongProgress(song), length: plan.length });
+    });
+    return;
+  }
   if (r.kind === 'card') return showStory('card');
   if (r.skill && storyPhase !== 'skill') return showStory('skill');
   if (r.boss && storyPhase !== 'boss') return showStory('boss');
@@ -1821,14 +1873,18 @@ function storyNext(): void {
 /** Story mode's same song: picked on a race's results, the song plays on over the cards between to the next race. */
 let storySameSong = false;
 
-/** A skill game on its card over the game. */
-function startSkillScreen(kind: SkillKind, seed: number, level: number): void {
+/** A skill game on its card over the game; a suite card's game (`lyrics`: its words) is played as the card's recording plays on. */
+function startSkillScreen(kind: SkillKind, seed: number, level: number, lyrics?: Lyrics): void {
   setMode('skill');
-  // The game makes its own sound: the soundtrack waits (unless a Full set is playing).
+  cardGameOn = !!lyrics;
+  // The game makes its own sound: the soundtrack waits (unless a Full set is playing, or it's a card's song).
   if (setPlaying()) ensureSet();
-  else music.stop();
-  skillScreen.start(kind, seed, level);
+  else if (!lyrics) music.stop();
+  skillScreen.start(kind, seed, level, lyrics);
 }
+
+/** A suite card's game is being played over its song: the song plays on after it, too. */
+let cardGameOn = false;
 
 /** The skill game being played, a story stage's or Skill Games', with its draw and how hard. */
 function skillStage(): { kind: SkillKind; seed: number; level: number } | null {
@@ -1863,7 +1919,8 @@ function launchTrack(level: number, seed: number): TrackEntry {
 
 skillScreen.onDone = (r) => {
   if (!story && !practice) return;
-  menuMusic();
+  if (!cardGameOn) menuMusic();
+  cardGameOn = false;
   skillDone(r);
 };
 
@@ -2433,6 +2490,8 @@ function suiteStageMusic(fallback: (() => void) | null): void {
     const plan = suiteMusic(rec, !!(radio.playing && music.live));
     if (plan === 'entry') {
       liveRace = !!forRace;
+      // A plain lyric card's own song: the card moves on when it ends.
+      if (!forRace) cardClock?.song(`${rec!.id}/${rec!.file}`, rec!.end);
       return radio.playRecording(rec!, song, remixCues(forRace ? track.def.music.lap : 'title'));
     }
     if (plan === 'hold') {
@@ -2633,6 +2692,7 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
   if (mode === 'party') party.poll(performance.now() / 1000);
   tellPads();
   padFrame(performance.now() / 1000);
+  cardClockStep(frameDt);
   // A Party player's Start (every seat's checked, so none is left pending).
   const seatPause = seats.map((x) => x.input?.consumePause() ?? false).some(Boolean);
   // Start under Settings (opened from the pause menu) is Settings', not a resume.

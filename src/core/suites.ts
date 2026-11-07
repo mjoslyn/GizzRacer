@@ -12,7 +12,12 @@ import { BOSS_ALT, BOSS_STAND_INS, STORY_TWISTS, StoryRun, bossRacer, type Story
  * hand-built track, or on a generated one named from its lyrics; a card
  * (C) with its spoken words, while its live recording plays; or the boss
  * duel (B) against the suite's boss racer, which beating unlocks. A skill
- * game, where one fits the suite, comes just before the boss.
+ * game, where one fits the suite, comes just before the boss. A card
+ * with a game (`game`) is played as that game for the length of its song
+ * (cardSkills.ts cardPlan), its words beside it as its recording plays:
+ * cleared for a boon, missed for a life, as the skill game. A song too
+ * short for a game, or a card with none, is a plain lyric card that moves
+ * on when the song ends (CardClock).
  */
 
 export type SuiteStageKind = 'R' | 'C' | 'B';
@@ -34,6 +39,8 @@ export interface SuiteStage {
   gen?: SuiteGen;
   /** A card's words: the song's spoken lines, one a line. */
   words?: readonly string[];
+  /** A card's game, made from its words, played with them on screen (core/cardSkills.ts). */
+  game?: SkillKind;
 }
 
 export interface SuiteBoss {
@@ -106,7 +113,7 @@ export const SUITES: readonly Suite[] = [
     stages: [
       {
         kind: 'C',
-        song: 'A New World',
+        song: 'A New World', game: 'newworld',
         words: [
           'As soon as the dust settles you can see',
           'A new world in place of where the old one had been',
@@ -122,7 +129,7 @@ export const SUITES: readonly Suite[] = [
       { kind: 'B', song: 'Altered Beast IV', trackId: 'altered-beast-iv' },
       {
         kind: 'C',
-        song: 'Life / Death',
+        song: 'Life / Death', game: 'lifedeath',
         words: [
           'Are you you? Are you me?',
           'Or someone in between?',
@@ -142,10 +149,10 @@ export const SUITES: readonly Suite[] = [
     boss: { racerId: 'balrog', name: 'The Balrog', taunt: 'The Balrog fears not the lightning lord. Does it fear you? One on one, through the fire.' },
     skill: 'horology',
     stages: [
-      { kind: 'C', song: 'Some Context', words: ['(Instrumental)'] },
+      { kind: 'C', song: 'Some Context', game: 'context', words: ['(Instrumental)'] },
       {
         kind: 'C',
-        song: 'The Reticent Raconteur',
+        song: 'The Reticent Raconteur', game: 'raconteur',
         words: [
           "There is a secret I've been keeping, a story true and genuine",
           'And I have not the candid heart to keep its burden clandestine',
@@ -159,7 +166,7 @@ export const SUITES: readonly Suite[] = [
       { kind: 'B', song: 'The Balrog', gen: { theme: 'volcano', name: 'The Massive Rift', places: ['Atom Split', 'Massive Rift', 'Burnt Path', 'Lapis Hot', 'Great Pot', 'Blazing Zealot', 'Murmurings', 'Overlord'] } },
       {
         kind: 'C',
-        song: 'The Floating Fire',
+        song: 'The Floating Fire', game: 'floatingfire',
         words: [
           'And thus revenge was fruitless for one who had been turned',
           'And we are reminded who lords over this altered world',
@@ -172,7 +179,7 @@ export const SUITES: readonly Suite[] = [
       },
       {
         kind: 'C',
-        song: 'The Acrid Corpse',
+        song: 'The Acrid Corpse', game: 'acrid',
         words: [
           'And as the acrid Balrog corpse smoulders just like it began',
           'Its crimson-orange light melts into the setting sun',
@@ -193,14 +200,14 @@ export const SUITES: readonly Suite[] = [
     stages: [
       {
         kind: 'C',
-        song: 'Welcome to an Altered Future',
+        song: 'Welcome to an Altered Future', game: 'future',
         words: ['Impertinent and ignorant.', 'Deathless and restless.', 'Cold contrite cowards.', 'Digitised satellite.', 'Augmented entities.', 'Unremembered God.', 'The world fades to black.', 'Digital black.', 'Welcome to an altered future.'],
       },
       { kind: 'R', song: 'Digital Black', gen: { theme: 'smog', name: 'Roaring Silence', places: ['Whiteness to Grey', 'Cimmerian', 'Brittle Egg', 'Last Human', 'Colossal Confusion', 'Black Wave', 'Caliginous', 'Illusion'] } },
       { kind: 'R', song: 'Han-Tyumi, the Confused Cyborg', gen: { theme: 'neon', name: 'The Virtual Rainbow', places: ['Bodhi Tree', 'Pseudo-Mind', 'Virtual Rainbow', 'Quasi-Synapse', 'Dense and Black', 'Primordial', 'Clamber', 'Noble Death'] } },
       {
         kind: 'C',
-        song: 'Soy-Protein Munt Machine',
+        song: 'Soy-Protein Munt Machine', game: 'munt',
         words: ['So I built a machine.', 'A human machine.', 'I made it with steel.', 'And soy-protein.', 'Born from a test tube.', 'And into a vat.', 'To live and to heave.', 'And to die just like that.'],
       },
       { kind: 'R', song: 'Vomit Coffin', gen: { theme: 'factory', name: 'One with Machine', places: ['Queasy Green', 'Rotten Scoff', 'Thankless Swine', 'Magic I Conjure', 'Spew Coat', 'No Name', 'Berserk', 'Frankenstein'] } },
@@ -293,11 +300,14 @@ export function runStages(suite: Suite): RunStage[] {
 
 /**
  * A suite as a story run: lives, boons and the cards between as the album
- * run has them, one stage a song. Cards give no boon; a boss win unlocks
- * the boss racer (`unlock`, progress.ts's beatBoss).
+ * run has them, one stage a song. A card with a game is cleared (a boon)
+ * or missed (a life) by the game; one without is just read, for no boon. A
+ * boss win unlocks the boss racer (`unlock`, progress.ts's beatBoss).
  */
 export class SuiteRun extends StoryRun {
   private readonly plan: RunStage[];
+  /** Card stages played as plain lyric cards, their song too short for a game: no game, no boon, no life at stake. */
+  private readonly read = new Set<number>();
 
   constructor(
     seed: number,
@@ -325,7 +335,7 @@ export class SuiteRun extends StoryRun {
     if (st.kind === 'S') return { ...base, kind: 'skill', boss: false, gen: null, skill: st.skill };
     const kind = st.kind === 'C' ? 'card' : st.kind === 'B' ? 'boss' : 'race';
     const gen = st.kind !== 'C' && st.gen ? this.suiteGen(n, st.gen) : null;
-    return { ...base, kind, boss: kind === 'boss', gen, skill: null, song: st.song, trackId: st.trackId ?? null, words: st.words };
+    return { ...base, kind, boss: kind === 'boss', gen, skill: null, cardGame: st.kind === 'C' && !this.read.has(n) ? (st.game ?? null) : null, song: st.song, trackId: st.trackId ?? null, words: st.words };
   }
 
   override get actDef(): StoryAct {
@@ -358,20 +368,27 @@ export class SuiteRun extends StoryRun {
     return r.song ?? super.stageLabel();
   }
 
+  /** The card stage up is played as a plain lyric card (its song is too short for its game): read, for no boon and no life. */
+  asLyricCard(): void {
+    this.read.add(Math.min(this.cleared, this.total - 1));
+  }
+
   /** What the run opens with on its first card: how many of each stage. */
   get outline(): string {
     const n = (k: SuiteStageKind) => this.suite.stages.filter((s) => s.kind === k).length;
     const races = n('R');
     const cards = n('C');
     const parts = [`${races} ${races === 1 ? 'race' : 'races'}`];
-    if (cards) parts.push(`${cards} spoken ${cards === 1 ? 'song' : 'songs'}`);
+    if (cards) parts.push(`${cards} spoken ${cards === 1 ? 'song' : 'songs'}${this.suite.stages.some((st) => st.kind === 'C' && st.game) ? ', each a game with its words' : ''}`);
     if (this.suite.skill) parts.push('a skill game');
     return `${this.suite.stages.length} songs in order: ${parts.join(', ')}, then the boss one on one`;
   }
 
-  /** No boon for a card, nor once there's nothing left but cards to read. */
+  /** A boon for a card's game cleared; none for a card only read, nor once there's nothing left but cards to read. */
   protected override offersBoon(n: number): boolean {
-    return this.plan.slice(n + 1).some((s) => s.kind !== 'C') && this.plan[n].kind !== 'C';
+    const st = this.plan[n];
+    if (st.kind === 'C') return !!st.game && !this.read.has(n);
+    return this.plan.slice(n + 1).some((s) => s.kind !== 'C' || !!s.game);
   }
 
   /** A generated stage's track: the song's world and lyric names, twistier as the run goes on, medium length. */
@@ -379,5 +396,56 @@ export class SuiteRun extends StoryRun {
     const r = seededRandom(this.seed + n * 104729 + 7);
     const raced = this.plan.slice(0, n).filter((s) => s.kind === 'R' || s.kind === 'B').length;
     return { seed: Math.floor(r() * 1e9), theme: g.theme, complexity: Math.min(GEN_COMPLEXITY_MAX, STORY_TWISTS + raced), length: 'medium', name: g.name, places: g.places };
+  }
+}
+
+/** Seconds a lyric card's own recording may take to start before the card goes by its reading time instead. */
+export const CARD_SONG_WAIT = 12;
+/** A lyric card with no song to wait for reads for 4 s and 0.35 s a word, at most 40 s. */
+export function cardReadTime(words: readonly string[] | undefined): number {
+  const n = (words ?? []).join(' ').split(/\s+/).filter(Boolean).length;
+  return Math.min(40, 4 + 0.35 * n);
+}
+
+/**
+ * When a plain lyric card moves on by itself: as its song ends (its own
+ * recording reaches its `end`, or the end of its file, and goes round again
+ * or something else comes on); with no song of its own playing (it never
+ * starts, or there's none), once its words have had their reading time.
+ */
+export class CardClock {
+  private t = 0;
+  /** The card's own recording (radio key), once known; null: none, go by the reading time. */
+  private own: string | null = null;
+  private end: number | undefined;
+  private seen = false;
+  private last = 0;
+  private waited = 0;
+
+  constructor(readonly readTime: number) {}
+
+  /** The card's own recording, playing now (`end`: where its music stops), or null: it has none. */
+  song(key: string | null, end?: number): void {
+    this.own = key;
+    this.end = end;
+    this.seen = false;
+    this.waited = 0;
+  }
+
+  /** Steps the clock, with what's playing (its key and how far in, s); true when it's time to move on. */
+  step(dt: number, playing: { key: string; at: number } | null): boolean {
+    this.t += dt;
+    if (this.own === null) return this.t >= this.readTime;
+    if (playing && playing.key === this.own) {
+      const ended = (this.seen && playing.at < this.last - 2) || (this.end !== undefined && playing.at >= this.end - 0.05);
+      this.seen = true;
+      this.last = playing.at;
+      return ended;
+    }
+    // Something else on after it played: it's over. Never heard at all: read it instead.
+    if (this.seen) return true;
+    this.waited += dt;
+    if (this.waited > CARD_SONG_WAIT) this.own = null;
+    return false;
   }
 }

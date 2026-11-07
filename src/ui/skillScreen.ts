@@ -52,143 +52,33 @@ import {
   type SuiteMove,
 } from '../core/skills';
 import { seededRandom } from '../core/math';
+import { lyricIndex } from '../core/cardSkills';
 
-/** How a skill game ended: passed or not, and a line saying how it went. */
-export interface SkillResult {
-  passed: boolean;
-  note: string;
-}
+import { CREAM, GOLD, INK, LANE_COLORS, Synth, panel, type MiniGame, type SkillResult, type Stage } from './skills/kit';
+import { NewWorldGame } from './skills/newWorld';
+import { LifeDeathGame } from './skills/lifeDeath';
+import { SomeContextGame } from './skills/someContext';
+import { RaconteurGame } from './skills/raconteur';
+import { FloatingFireGame } from './skills/floatingFire';
+import { AcridCorpseGame } from './skills/acridCorpse';
+import { AlteredFutureGame } from './skills/alteredFuture';
+import { MuntMachineGame } from './skills/muntMachine';
 
-/** The box a game draws in, and the line under its title. */
-interface Stage {
-  g: CanvasRenderingContext2D;
-  x: number;
-  y: number;
-  size: number;
-  status: (text: string) => void;
-}
+export type { SkillResult };
 
-interface MiniGame {
-  update(t: number, dt: number): void;
-  draw(s: Stage, t: number): void;
-  key(code: string, repeat: boolean): void;
-  /** A key let go (for a key held down). */
-  keyUp?(code: string): void;
-  /** A tap, in the stage's own 0..1 square (and in pixels, for a card over the whole screen). */
-  tap(u: number, v: number, px: number, py: number): void;
-  /** The finger or button lifted (for a button held down to repeat). */
-  release?(): void;
-  result: SkillResult | null;
-  /** A rules card is up over the whole screen: the title and the lines round the stage stay off it. */
-  readonly carded?: boolean;
-  stop?(): void;
-}
-
-const GOLD = '#ffd23a';
-const INK = '#3a0f45';
-const CREAM = '#fff6d0';
-const LANE_COLORS = ['#ff5ad0', '#3ad8ff', '#9ad83a', '#ff9a1f'];
-
-/** Little synth voices for the games, on the music's audio context. */
-class Synth {
-  constructor(
-    private readonly context: () => AudioContext | null,
-    private readonly volume: () => number,
-  ) {}
-
-  /** A plucked note. */
-  note(freq: number, dur = 0.25, type: OscillatorType = 'sawtooth', level = 0.12): void {
-    const ctx = this.context();
-    const v = this.volume();
-    if (!ctx || v <= 0) return;
-    const t = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    const filter = ctx.createBiquadFilter();
-    osc.type = type;
-    osc.frequency.value = freq;
-    filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(3200, t);
-    filter.frequency.exponentialRampToValueAtTime(600, t + dur);
-    gain.gain.setValueAtTime(level * v, t);
-    gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    osc.connect(filter).connect(gain).connect(ctx.destination);
-    osc.start(t);
-    osc.stop(t + dur + 0.05);
-  }
-
-  /** A kick drum, for keeping time. */
-  kick(level = 0.5): void {
-    const ctx = this.context();
-    const v = this.volume();
-    if (!ctx || v <= 0) return;
-    const t = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.frequency.setValueAtTime(130, t);
-    osc.frequency.exponentialRampToValueAtTime(40, t + 0.15);
-    gain.gain.setValueAtTime(level * v, t);
-    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
-    osc.connect(gain).connect(ctx.destination);
-    osc.start(t);
-    osc.stop(t + 0.2);
-  }
-
-  /** A rattle: a short burst of hiss. */
-  rattle(level = 0.18): void {
-    const ctx = this.context();
-    const v = this.volume();
-    if (!ctx || v <= 0) return;
-    const t = ctx.currentTime;
-    const len = Math.round(ctx.sampleRate * 0.12);
-    const buffer = ctx.createBuffer(1, len, ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    // Three quick clicks of hiss, as the tail's rings knock.
-    for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * Math.max(0, 1 - ((i / len) * 3) % 1) ** 2;
-    const src = ctx.createBufferSource();
-    const filter = ctx.createBiquadFilter();
-    const gain = ctx.createGain();
-    src.buffer = buffer;
-    filter.type = 'highpass';
-    filter.frequency.value = 3000;
-    gain.gain.value = level * v;
-    src.connect(filter).connect(gain).connect(ctx.destination);
-    src.start(t);
-  }
-
-  /** A dull miss. */
-  thud(): void {
-    this.note(70, 0.18, 'square', 0.1);
-  }
-
-  /** A held tone whose pitch can be moved; returns its controls. */
-  hold(freq: number, level = 0.1): { set(freq: number): void; stop(): void } {
-    const ctx = this.context();
-    const v = this.volume();
-    if (!ctx || v <= 0) return { set: () => {}, stop: () => {} };
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.value = freq;
-    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(level * v, ctx.currentTime + 0.15);
-    osc.connect(gain).connect(ctx.destination);
-    osc.start();
-    return {
-      set: (f) => osc.frequency.setTargetAtTime(f, ctx.currentTime, 0.01),
-      stop: () => {
-        gain.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.05);
-        osc.stop(ctx.currentTime + 0.3);
-      },
-    };
-  }
+/** A song's words to show beside a card game, how far through its song the recording is (0..1, null: none playing), and the game's length (s). */
+export interface Lyrics {
+  lines: readonly string[];
+  song: () => number | null;
+  length: number;
 }
 
 /**
  * Story mode's skill games, drawn on a canvas over the game: Play the
  * Riff, Nonagon Infinity, the Flying Microtonal Banana, Horology, the
  * Mind Fuzz Suite, Rattlesnake, Robot Stop, Fishing for Fishies and
- * Crumbling Castle. Keys, mouse or touch. (The Deadstick Landing is flown
+ * Crumbling Castle, and the story suites' card games (ui/skills/). Keys,
+ * mouse or touch. (The Deadstick Landing is flown
  * on a track, in game.ts.)
  */
 export class SkillScreen {
@@ -207,6 +97,9 @@ export class SkillScreen {
   private frame = 0;
   /** When the result came in, to show it a while before handing back. */
   private endedAt = -1;
+  /** A card game's words, and when its game began (past its rules card), by the screen's clock. */
+  private lyrics: Lyrics | null = null;
+  private lyricsFrom = -1;
 
   constructor(parent: HTMLElement, context: () => AudioContext | null, volume: () => number) {
     this.synth = new Synth(context, volume);
@@ -227,18 +120,22 @@ export class SkillScreen {
     return this.game !== null;
   }
 
-  start(kind: SkillKind, seed: number, level: number): void {
+  start(kind: SkillKind, seed: number, level: number, lyrics?: Lyrics): void {
     this.stop();
     const s = this.synth;
     const Game = GAMES[kind];
     if (!Game) return;
     // The suite has a card before each movement; every other game one before it starts.
-    this.game = kind === 'mindfuzz' ? new Game(s, seed, level) : new Briefed(SKILLS[kind].name, skillRules(kind, level), () => new Game(s, seed, level));
+    // A card game in story mode runs for its song (`lyrics.length`); else for its own length.
+    const length = lyrics?.length;
+    this.game = kind === 'mindfuzz' ? new Game(s, seed, level) : new Briefed(SKILLS[kind].name, skillRules(kind, level, length), () => new Game(s, seed, level, length));
     this.title = SKILLS[kind].name;
     this.howTo = SKILLS[kind].howTo;
     this.t = 0;
     this.endedAt = -1;
     this.el.classList.add('show');
+    this.lyrics = lyrics && lyrics.lines.length ? lyrics : null;
+    this.lyricsFrom = -1;
     this.started = this.last = performance.now();
     const tick = (now: number) => {
       if (!this.game) return;
@@ -310,6 +207,8 @@ export class SkillScreen {
     this.game!.draw(st, this.t);
     const res = this.game!.result;
     if (this.game!.carded && !res) return;
+    if (this.lyricsFrom < 0) this.lyricsFrom = this.t;
+    const words = this.lyrics ? this.drawLyrics(st) : false;
     g.textAlign = 'center';
     g.fillStyle = GOLD;
     // Sized to the screen's height too: a phone held sideways is short.
@@ -320,7 +219,7 @@ export class SkillScreen {
     g.fillText(res ? res.note : this.statusText || this.howTo, w / 2, st.y - 16);
     g.font = `${Math.min(14, w / 34)}px Verdana, sans-serif`;
     g.globalAlpha = 0.7;
-    g.fillText(this.howTo + ' · Esc gives up', w / 2, Math.min(h - 14, st.y + st.size + 28));
+    if (!words) g.fillText(this.howTo + ' · Esc gives up', w / 2, Math.min(h - 14, st.y + st.size + 28));
     g.globalAlpha = 1;
     if (res) {
       g.fillStyle = res.passed ? GOLD : '#ff5a5a';
@@ -332,15 +231,58 @@ export class SkillScreen {
       g.fillText(text, w / 2, st.y + st.size / 2);
     }
   }
-}
 
-function panel(s: Stage): void {
-  const g = s.g;
-  g.fillStyle = 'rgba(48, 10, 64, 0.9)';
-  g.fillRect(s.x, s.y, s.size, s.size);
-  g.strokeStyle = GOLD;
-  g.lineWidth = 3;
-  g.strokeRect(s.x, s.y, s.size, s.size);
+  /**
+   * A card game's words: the line the song is at, big, beside the stage on
+   * the right (the side the mini player isn't on), the one before and the
+   * one after dimmed above and below; with no room beside it (upright), the
+   * line under the stage in place of the controls line. True when drawn
+   * under the stage.
+   */
+  private drawLyrics(st: Stage): boolean {
+    const lines = this.lyrics!.lines;
+    const i = lyricIndex(lines.length, this.t - this.lyricsFrom, this.lyrics!.length, this.lyrics!.song());
+    const g = st.g;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const left = st.x + st.size + 14;
+    const room = w - 12 - left;
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    if (room < 150) {
+      g.fillStyle = GOLD;
+      g.font = `italic bold ${Math.min(17, w / 26)}px Georgia, serif`;
+      g.fillText(lines[i], w / 2, Math.min(h - 14, st.y + st.size + 28));
+      g.textBaseline = 'alphabetic';
+      return true;
+    }
+    // A dark band behind the words, so they read over whatever the game shows behind.
+    g.fillStyle = 'rgba(20, 0, 30, 0.55)';
+    g.fillRect(left - 6, st.y, room + 6, st.size);
+    const cx = left + room / 2;
+    const big = Math.max(14, Math.min(26, room / 9, st.size / 11));
+    const small = Math.max(12, big * 0.7);
+    g.font = `italic bold ${big}px Georgia, serif`;
+    const now = wrap(g, lines[i], room - 8);
+    // The line before, above; the line after, below; faint.
+    const mid = st.y + st.size / 2;
+    const block = now.length * big * 1.25;
+    g.fillStyle = CREAM;
+    now.forEach((l, j) => g.fillText(l, cx, mid - block / 2 + big * 0.62 + j * big * 1.25));
+    g.font = `italic ${small}px Georgia, serif`;
+    g.globalAlpha = 0.45;
+    if (i > 0) {
+      const before = wrap(g, lines[i - 1], room - 8);
+      before.forEach((l, j) => g.fillText(l, cx, mid - block / 2 - small * 0.9 - (before.length - 1 - j) * small * 1.25));
+    }
+    if (i < lines.length - 1) {
+      const after = wrap(g, lines[i + 1], room - 8);
+      after.forEach((l, j) => g.fillText(l, cx, mid + block / 2 + small * 0.9 + j * small * 1.25));
+    }
+    g.globalAlpha = 1;
+    g.textBaseline = 'alphabetic';
+    return false;
+  }
 }
 
 // ---- Play the Riff ----
@@ -1872,7 +1814,7 @@ class CastleGame implements MiniGame {
 }
 
 /** Each card game, by its kind (the Deadstick Landing is flown on a track instead). */
-const GAMES: Partial<Record<SkillKind, new (synth: Synth, seed: number, level: number) => MiniGame>> = {
+const GAMES: Partial<Record<SkillKind, new (synth: Synth, seed: number, level: number, length?: number) => MiniGame>> = {
   riff: RiffGame,
   nonagon: NonagonGame,
   banana: BananaGame,
@@ -1882,4 +1824,12 @@ const GAMES: Partial<Record<SkillKind, new (synth: Synth, seed: number, level: n
   robot: RobotGame,
   fishies: FishingGame,
   castle: CastleGame,
+  newworld: NewWorldGame,
+  lifedeath: LifeDeathGame,
+  context: SomeContextGame,
+  raconteur: RaconteurGame,
+  floatingfire: FloatingFireGame,
+  acrid: AcridCorpseGame,
+  future: AlteredFutureGame,
+  munt: MuntMachineGame,
 };
