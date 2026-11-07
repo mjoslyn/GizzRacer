@@ -429,32 +429,12 @@ export function gatorDrummer(r: RacerDef): KartModel {
   put(gator, ball(0.33, 16, 12), hide, [0, -0.02, -0.6], [0, 0, 0], [1.1, 0.66, 1.15]);
   put(gator, ball(0.36, 16, 12), belly, [0, -0.1, 0.05], [0, 0, 0], [1.02, 0.42, 2]);
   // Rows of bony scutes down the back.
-  // (Not under the drum.)
-  for (let k = 0; k < 8; k++) for (const x of [-0.16, 0, 0.16]) if (k < 1 || k > 3) put(gator, cone(0.05, 0.1, 4), scute, [x, 0.22 - Math.abs(x) * 0.25 - Math.abs(k - 3) * 0.008, 0.72 - k * 0.2]);
+  for (let k = 0; k < 8; k++) for (const x of [-0.16, 0, 0.16]) put(gator, cone(0.05, 0.1, 4), scute, [x, 0.22 - Math.abs(x) * 0.25 - Math.abs(k - 3) * 0.008, 0.72 - k * 0.2]);
   // Two more rows of osteoderms either side of the crest, smaller toward the flanks.
   const M = new Mats();
   for (let k = 0; k < 9; k++) {
     for (const x of [-0.3, 0.3]) put(gator, cone(0.035, 0.07, 4), scute, [x, 0.15 - Math.abs(k - 4) * 0.012, 0.8 - k * 0.19], [0, 0, x > 0 ? -0.45 : 0.45]);
   }
-  // The drummer's snare, strapped on over the shoulders: a sparkle shell, chrome hoops and lugs, a white head
-  // with a stick resting on it.
-  const drum = new THREE.Group();
-  drum.position.set(0, 0.36, 0.32);
-  const shell = M.gloss(0xc8202a, { specular: 0xffffff, shininess: 120 });
-  const steel = chrome();
-  put(drum, cyl(0.2, 0.2, 0.12, 14), shell, [0, 0, 0]);
-  put(drum, cyl(0.195, 0.195, 0.005, 14), M.matte(0xf4f0e4), [0, 0.065, 0]);
-  for (const y of [-0.06, 0.062]) put(drum, new THREE.TorusGeometry(0.2, 0.012, 4, 20), steel, [0, y, 0], [Math.PI / 2, 0, 0]);
-  for (let k = 0; k < 6; k++) {
-    const a = (k / 6) * Math.PI * 2 + 0.3;
-    put(drum, box(0.025, 0.07, 0.025), steel, [Math.cos(a) * 0.205, 0, Math.sin(a) * 0.205], [0, -a, 0]);
-  }
-  put(drum, box(0.06, 0.04, 0.03), steel, [0.205, -0.03, 0], [0, 0, 0]);
-  gator.add(drum);
-  put(gator, new THREE.TorusGeometry(0.35, 0.02, 4, 20), M.matte(0x2a2a2a), [0, 0.02, 0.32], [0, Math.PI / 2, 0], [1, 0.75, 1.2]);
-  const stickMat = M.matte(0xe8d0a0, { shininess: 40 });
-  rod(gator, [-0.18, 0.44, 0.2], [0.24, 0.43, 0.42], 0.014, stickMat, 0.01);
-  put(gator, ball(0.016, 6, 4), stickMat, [0.24, 0.43, 0.42]);
   // The long tail on its own pivot, flattened side to side, a double crest of scutes along it, lashing against the stride.
   const tailRoot = new THREE.Group();
   tailRoot.position.set(0, -0.02, -0.82);
@@ -524,9 +504,6 @@ export function gatorDrummer(r: RacerDef): KartModel {
   }
   for (let k = 0; k < 4; k++) put(head, cone(0.025, 0.05, 4), scute, [0, 0.12 - k * 0.012, -0.02 - k * 0.07]);
   tube(head, [[0.25, 0.0, 0.0], [0.26, -0.12, -0.08], [0.22, -0.2, -0.2], [0.18, -0.25, -0.35]], 0.009, M.matte(0x1a1a1a));
-  // The other stick clamped crossways in the teeth.
-  rod(head, [-0.3, -0.06, 0.48], [0.3, -0.055, 0.52], 0.016, stickMat, 0.012);
-  put(head, ball(0.018, 6, 4), stickMat, [0.3, -0.055, 0.52]);
   gator.add(head);
 
   bake(body, [gator]);
