@@ -73,7 +73,7 @@ export class LifeDeathGame extends SimGame<MirrorSim> {
         at = at + (to - at) * ease(sw.p);
       }
       const you = f === 0;
-      const showYou = sim.phase === 'show' || (sim.phase === 'reveal' && you);
+      const showYou = you && (sim.phase === 'show' || sim.phase === 'reveal');
       // A copy picked for you turns to bone: return to the ground and ossify.
       const bone = sim.phase === 'reveal' && sim.picked === sim.slots[f] && !you;
       this.figure(s, slotU(at), ROW + lift, showYou ? GOLD : bone ? '#8a8a80' : CREAM, showYou);
