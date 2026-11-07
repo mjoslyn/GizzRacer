@@ -21,7 +21,7 @@ export interface RacerDef {
   boss?: string;
 }
 
-/** The stories with a boss at the end (the suites, and the album run for Han-Tyumi), by id: for "Beat <story> to unlock". */
+/** The stories with a boss at the end (the suites), by id: for "Beat <story> to unlock". */
 export const BOSS_SUITES: Readonly<Record<string, string>> = {
   'mind-fuzz': 'The Mind Fuzz Suite',
   'nonagon-infinity': 'Nonagon Infinity',
@@ -31,7 +31,6 @@ export const BOSS_SUITES: Readonly<Record<string, string>> = {
   polygondwanaland: 'Polygondwanaland',
   'infest-the-rats-nest': "Infest the Rats' Nest",
   'petrodragonic-apocalypse': 'PetroDragonic Apocalypse',
-  motu: 'Murder of the Universe',
 };
 
 /** What a locked boss's tile says: "Beat <suite name> to unlock". */
@@ -41,6 +40,7 @@ export function bossLockNote(r: RacerDef): string {
 
 export const RACERS: readonly RacerDef[] = [
   { id: 'lizard-warlock', name: 'Lizard Wizard', stats: { speed: 3, accel: 3, weight: 3, handling: 3, drift: 4 }, color: 0x3fa34d, accent: 0x7a3fbf, bio: 'Robed reptile mage from the castle on the misty mountain, hot rod and all' },
+  { id: 'cyborg-gourmand', name: 'Han-Tyumi', stats: { speed: 4, accel: 2, weight: 4, handling: 2, drift: 3 }, color: 0x9aa4b1, accent: 0xd1342f, bio: 'The confused cyborg, last of the naturally born, gone fishing for fishies in a leaky dinghy that floats over the road, dripping' },
   { id: 'gila-rider', name: 'Gila Rider', stats: { speed: 3, accel: 5, weight: 2, handling: 3, drift: 3 }, color: 0xe0702a, accent: 0x222222, bio: 'Keeper of the Gila Monster, running it flat out before the candle falls' },
   { id: 'swamp-witch', name: 'Beowulf\'s Witch', stats: { speed: 3, accel: 2, weight: 3, handling: 5, drift: 4 }, color: 0x2f6f5e, accent: 0xb7d14a, bio: 'Survivor of the Witchcraft ritual, with Beowulf the black cat on the dash: the one who knocked the candle over' },
   { id: 'microtonal-monk', name: 'Microtonal Monk', stats: { speed: 3, accel: 3, weight: 2, handling: 4, drift: 3 }, color: 0xe3a72f, accent: 0x7b2230, bio: 'One of the seven robed, floating on the lotus a quarter tone above the road' },
@@ -73,7 +73,6 @@ export const RACERS: readonly RacerDef[] = [
   { id: 'fourth-colour', name: 'The Fourth Colour', boss: 'polygondwanaland', stats: { speed: 4, accel: 2, weight: 4, handling: 3, drift: 3 }, color: 0x3a2a8a, accent: 0x3affd0, bio: 'A cube of a colour no eye has seen, folding in and out of itself: can I see the eye that sees me?' },
   { id: 'rat-king', name: 'The Rat King', boss: 'infest-the-rats-nest', stats: { speed: 4, accel: 4, weight: 3, handling: 2, drift: 3 }, color: 0x5a4a40, accent: 0xff2a1a, bio: 'The rat at the bottom of the nest Satan points you to: mangy, scarred, red-eyed and galloping, crowned in wire and bottle caps' },
   { id: 'coven-mother', name: 'The Mother of the Coven', boss: 'petrodragonic-apocalypse', stats: { speed: 3, accel: 3, weight: 2, handling: 4, drift: 4 }, color: 0x2a1a3a, accent: 0xff3a3a, bio: 'Antlers draped in ribbons, the blood-moon at her hand and her charged crystals swinging from the broom: witchcraft' },
-  { id: 'cyborg-gourmand', name: 'Han-Tyumi', boss: 'motu', stats: { speed: 4, accel: 2, weight: 4, handling: 2, drift: 3 }, color: 0x9aa4b1, accent: 0xd1342f, bio: 'The confused cyborg, last of the naturally born, gone fishing for fishies in a leaky dinghy that floats over the road, dripping' },
 ];
 
 /** Karts in one race: the player (or the room's players) and CPUs drawn from the roster. */

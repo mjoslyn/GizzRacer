@@ -45,7 +45,7 @@ describe('story suites', () => {
   });
 
   it('the pick has the eight suites in order, then the album run', () => {
-    expect(storyPickCard().opts.map((o) => o.id)).toEqual([...CONTRACT.map((c) => c[0]), 'motu']);
+    expect(storyPickCard().opts.map((o) => o.id)).toEqual(CONTRACT.map((c) => c[0]));
   });
 
   it('every hand-built stage track is a real track', () => {

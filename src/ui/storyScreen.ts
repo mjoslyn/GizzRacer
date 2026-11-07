@@ -1,6 +1,6 @@
 import { RULES_WAIT, SKILLS, explainsItself, skillRules, type SkillKind } from '../core/skills';
-import { ACTS, BOONS, CLEAR_PLACE, type StoryRun } from '../core/story';
-import { ALBUM_FACE, ALBUM_MINUTES, ALBUM_STORY, SUITES, SuiteRun } from '../core/suites';
+import { BOONS, CLEAR_PLACE, type StoryRun } from '../core/story';
+import { SUITES, SuiteRun } from '../core/suites';
 import { bossUnlocked } from '../core/progress';
 import type { RacerDef } from '../physics/racers';
 import { boonChoiceHtml, boonHandHtml, isBoonChoice } from './boonCards';
@@ -170,7 +170,6 @@ export function storyPickCard(): StoryCard {
     grid: true,
     opts: [
       ...SUITES.map((s) => ({ id: s.id, name: s.name, blurb: `${s.album} (${s.year}) · boss: ${s.boss.name}`, face: s.boss.racerId, meta: `About ${s.minutes} min · ${s.stages.length} songs`, locked: !bossUnlocked(s.boss.racerId) })),
-      { id: ALBUM_STORY, name: 'Murder of the Universe', blurb: `The whole album (2017) · ${ACTS.length} chapters, a boss each`, face: ALBUM_FACE, meta: `About ${ALBUM_MINUTES} min · ${ACTS.length} chapters`, locked: !bossUnlocked(ALBUM_FACE) },
     ],
   };
 }
