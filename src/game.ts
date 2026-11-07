@@ -1262,18 +1262,42 @@ function watchStep(dt: number): void {
  */
 function watchSong(dt: number): void {
   if (!songRace.live || mode !== 'race') return;
-  const p = radio.playing;
-  const rec = music.live;
-  const at = music.liveProgress()?.at;
-  const key = p ? `${p.rec.id}/${p.rec.file}` : null;
-  if (!rec || at === undefined || `${rec.id}/${rec.file}` !== key) {
+  const pos = songPosition();
+  if (!pos) {
     if (race.started) songRace.silent += dt;
     return;
   }
   songRace.silent = 0;
-  if (songRace.key !== null && (key !== songRace.key || at < songRace.at - 2)) songRace.ended = true;
-  songRace.key = key;
-  songRace.at = at;
+  if (songRace.key !== null && (pos.key !== songRace.key || pos.at < songRace.at - 2)) songRace.ended = true;
+  songRace.key = pos.key;
+  songRace.at = pos.at;
+}
+
+/**
+ * Where the song the radio asked for is, counted as one song even when it's
+ * a pair played back to back (an Altered Beast into its Alter Me: two files,
+ * the second straight after the first): `at` runs on through the second
+ * file, and `left` counts what's left of both. Null while it isn't the one
+ * playing (another still on while it buffers, or nothing).
+ */
+function songPosition(): { key: string; at: number; left: number } | null {
+  const p = radio.playing;
+  const rec = music.live;
+  const prog = music.liveProgress();
+  if (!p || !rec || !prog || rec.id !== p.rec.id) return null;
+  const key = `${p.rec.id}/${p.rec.file}`;
+  const then = p.rec.then;
+  const firstEnd = p.rec.end ?? p.rec.seconds;
+  if (rec.file === p.rec.file) {
+    const end = rec.end ?? (prog.length || rec.seconds);
+    const rest = then ? (then.end ?? then.seconds) : 0;
+    return { key, at: prog.at, left: Math.max(0, end - prog.at) + rest };
+  }
+  if (then && rec.file === then.file) {
+    const end = then.end ?? (prog.length || then.seconds);
+    return { key, at: firstEnd + prog.at, left: Math.max(0, end - prog.at) };
+  }
+  return null;
 }
 
 /** Race to the song's end: the song over (and the race long enough), everyone finishes where they are; no song to hear, it's laps again. */
@@ -1298,11 +1322,10 @@ function songRaceStep(p: RaceKart): void {
 /** Race to the song's end: what's left of the song that will end the race (s), for the HUD; null when that isn't known yet. */
 function songLeft(): number | null {
   if (!songRace.live || songRace.key === null) return null;
-  const p = music.liveProgress();
-  if (!p || !p.length) return null;
-  const left = Math.max(0, p.length - p.at);
+  const pos = songPosition();
+  if (!pos) return null;
   // A song ending before the race is long enough doesn't end it: the next one's length isn't known yet.
-  return Math.max(0, race.time) + left >= SONG_RACE_MIN ? left : null;
+  return Math.max(0, race.time) + pos.left >= SONG_RACE_MIN ? pos.left : null;
 }
 
 /** Infinite's track switch: on to the next track once the leader (or I) has done its laps; Each song moves on with a Full set's songs instead. */
