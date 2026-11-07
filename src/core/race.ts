@@ -22,6 +22,8 @@ const RESPAWN_IMMUNE = 1.5;
 /** A CPU that gains less than this (m) in STUCK_RESPAWN seconds is wedged: it's put back on the road. */
 const STUCK_GAIN = 15;
 const STUCK_RESPAWN = 8;
+/** Progress along the road jumping this far (m) in one step is a drop onto another part of it, not driving. */
+const STUCK_JUMP = 20;
 export const COUNTDOWN = 3;
 /** Trailing CPUs get up to this much extra top speed (spec section 8). */
 export const RUBBER_BAND_MAX = 0.08;
@@ -522,6 +524,10 @@ export class Race {
     kart.onRoad = true;
     copyKartState(kart.state, kart.prev);
     kart.fallTime = 0;
+    // A fresh start on the stuck clock too: put back behind where it fell, the ground it lost isn't being wedged.
+    kart.stuckTime = 0;
+    kart.gained = 0;
+    kart.lastS = NaN;
     kart.respawned = true;
     kart.driver?.onRespawn();
   }
@@ -532,14 +538,17 @@ export class Race {
    * on the road where it is, as after a fall; a human never is.
    */
   private updateStuck(kart: RaceKart, dt: number): void {
-    if (!this.started || kart.finishTime !== null) return;
+    // Just put back: where it is along the road is only known once its laps are updated, so the clock starts next step.
+    if (!this.started || kart.finishTime !== null || kart.respawned) return;
     const L = this.track.length;
     if (!Number.isNaN(kart.lastS)) {
       // Along the road since last step, across the line either way.
       let d = kart.progressS - kart.lastS;
       if (d > L / 2) d -= L;
       else if (d < -L / 2) d += L;
-      kart.gained += d;
+      // A jump no kart could drive in a step is a drop onto another part of the road (knocked off a deck onto
+      // the road below, say): not ground gained or lost, so it counts from there. The clock keeps running.
+      kart.gained = Math.abs(d) > STUCK_JUMP ? 0 : kart.gained + d;
     }
     kart.lastS = kart.progressS;
     if (kart.gained > STUCK_GAIN) {
@@ -549,9 +558,6 @@ export class Race {
     }
     kart.stuckTime += dt;
     if (kart.stuckTime < STUCK_RESPAWN) return;
-    kart.stuckTime = 0;
-    kart.gained = 0;
-    kart.lastS = NaN;
     this.putBack(kart, kart.progressS + 2);
   }
 

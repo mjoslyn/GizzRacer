@@ -6,6 +6,7 @@ import { COUNTDOWN, DRAG_MAX, RUBBER_BAND_MAX, Race, ordinal } from '../src/core
 import { FIELD_SIZE, RACERS } from '../src/physics/racers';
 import { buildRattlesnakeRun } from '../src/tracks/rattlesnakeRun';
 import { TRACK_LIST } from '../src/tracks/index';
+import { pointAt } from '../src/tracks/spline';
 import { Track } from '../src/tracks/track';
 
 const track = new Track(buildRattlesnakeRun());
@@ -92,6 +93,45 @@ describe('race', () => {
     expect(respawns.reduce((a, b) => a + b, 0)).toBeLessThanOrEqual(1);
     // CPUs should be quick: a 1.9 km lap well under two minutes.
     for (const k of race.karts) expect(k.lapTimes[0]).toBeLessThan(110);
+  });
+
+  it('a CPU put back after a fall drives on: the ground it lost falling is not counted against it as being wedged', () => {
+    const race = cpuRace('100cc');
+    for (let t = 0; t < COUNTDOWN + 8; t += PHYSICS_DT) race.step(PHYSICS_DT, []);
+    const k = race.karts[0];
+    // Gone wide off the road and on along beside it a way (the stuck clock running, the ground it'll lose
+    // going back to its checkpoint already against it), then over the edge: a fall.
+    const here = pointAt(track.spline, k.progressS);
+    Object.assign(k.state, { x: here.x - here.tz * 60, z: here.z + here.tx * 60, y: -6, vy: 0, grounded: false });
+    k.stuckTime = 5;
+    k.gained = -300;
+    let falls = 0;
+    for (let t = 0; t < 3 && !falls; t += PHYSICS_DT) {
+      race.step(PHYSICS_DT, []);
+      if (k.respawned) falls++;
+    }
+    expect(falls).toBe(1);
+    let again = 0;
+    for (let t = 0; t < 10; t += PHYSICS_DT) {
+      race.step(PHYSICS_DT, []);
+      if (k.respawned) again++;
+    }
+    expect(again).toBe(0);
+  });
+
+  it('a CPU dropped onto the road a long way back (knocked off a deck onto the road below) drives on from there', () => {
+    const race = cpuRace('100cc');
+    for (let t = 0; t < COUNTDOWN + 20; t += PHYSICS_DT) race.step(PHYSICS_DT, []);
+    const k = race.karts[0];
+    const back = pointAt(track.spline, k.progressS - 300);
+    Object.assign(k.state, { x: back.x, z: back.z, heading: Math.atan2(back.tx, back.tz), trackHint: -1 });
+    k.stuckTime = 2;
+    let respawns = 0;
+    for (let t = 0; t < 10; t += PHYSICS_DT) {
+      race.step(PHYSICS_DT, []);
+      if (k.respawned) respawns++;
+    }
+    expect(respawns).toBe(0);
   });
 
   it('150cc CPUs out-drive 50cc ones', () => {

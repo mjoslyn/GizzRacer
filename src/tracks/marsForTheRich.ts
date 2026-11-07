@@ -29,6 +29,11 @@ const FINISH = 45;
 /** The Crater Rim swings out round a crater in three arcs of this radius and turn; the Service Tube runs straight across. */
 const RIM_R = 45;
 const RIM_TURN = 70;
+/**
+ * The Service Tube runs this far in before it ramps up over the crater. Nearer the junctions the crater bit
+ * into the Crater Rim's edge, where a kart running wide dropped in, and the ramp lay under the rim's edge.
+ */
+const TUBE_IN = 50;
 /** The Tower Spiral's radius, and the top of it. */
 const SPIRAL_R = 19;
 const SPIRAL_TOP = 15;
@@ -71,7 +76,8 @@ export function buildMarsForTheRich(): TrackDef {
   b.arc(ROW_R, 90).straight(40).arc(ROW_R, -90);
   b.section('The Undercity', { halfWidth: 9, wallHeight: WALL, surface: 'regolith' });
   b.mark('under');
-  to(215);
+  // Straight on round the spiral from Airlock Row: its right angle in sets the road 80 m inside the spiral at 215
+  // degrees, and heading back out to it there folded the road into two 5 m hairpins down in the cut.
   to(240);
   to(270);
   b.mark('underEnd');
@@ -190,7 +196,7 @@ function plunge(b: TrackBuilder, s0: number, y0: number, s1: number, y1: number)
 function buildServiceTube(from: { s: number; pose: Pose }, to: { s: number; pose: Pose }) {
   const chord = Math.hypot(to.pose.x - from.pose.x, to.pose.z - from.pose.z);
   const b = new TrackBuilder(from.pose, 'Service Tube', { halfWidth: 6, surface: 'regolith' });
-  b.straight(30);
+  b.straight(TUBE_IN);
   b.section('The Tube', { halfWidth: 4.5, surface: 'neon' });
   b.elevate(0).straight(12).elevate(1);
   const crater = chord - 2 * b.s;

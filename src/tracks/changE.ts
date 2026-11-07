@@ -24,6 +24,16 @@ const FINISH = 45;
 /** Sailing the Moon-Sea swings out round the Sea of Tears in three arcs of this radius and turn; Riding on Moonbeams runs straight across. */
 const SEA_R = 40;
 const SEA_TURN = 65;
+/**
+ * Off the moon-sea the road swings back round to rejoin the knot, climbing to the Palace: no tighter than
+ * this. (Laid as a single curve it folded into a 6 m kink there, and karts went off its inside onto the ground below.)
+ */
+const SEA_EXIT_R = 30;
+/**
+ * How far out along Riding on Moonbeams it runs level before it ramps up a metre over the Sea of Tears.
+ * Nearer the junctions the sea bit into the road's edge and the ramp lay under it.
+ */
+const BEAM_IN = 50;
 /** Float in the Bright Night: the Moon's gravity, as a share of the usual. */
 const MOON_G = 0.6;
 /** The Lyre of Lightning's walls. */
@@ -91,7 +101,7 @@ export function buildChangE(): TrackDef {
   b.mark('beamTo');
   b.straight(5);
   b.mark('seaEnd');
-  to(7).mark('w7');
+  b.turnTo(knot(7 * STEP), SEA_EXIT_R).mark('w7');
   deck('Palace Amongst Stars');
   to(8).mark('w8');
   b.section('Astral Planes', { halfWidth: 9.5, wallHeight: 1.2, surface: 'jade' });
@@ -180,7 +190,7 @@ const STRINGS_FROM = 45;
 function buildMoonbeams(from: { s: number; pose: Pose }, to: { s: number; pose: Pose }) {
   const chord = Math.hypot(to.pose.x - from.pose.x, to.pose.z - from.pose.z);
   const b = new TrackBuilder(from.pose, 'Riding on Moonbeams', { halfWidth: 6, surface: 'jade' });
-  b.straight(30);
+  b.straight(BEAM_IN);
   b.section('Sea of Tears', { halfWidth: 4.5, surface: 'jade' });
   b.elevate(0).straight(12).elevate(1);
   const sea = chord - 2 * b.s;

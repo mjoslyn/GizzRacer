@@ -12,6 +12,15 @@ const FINISH = 45;
 /** Downdraft: the road blows out round a flooded field in three arcs of this radius and turn. */
 const LEVEE_R = 38;
 const LEVEE_TURN = 70;
+/**
+ * How far out along the levee it runs level before it ramps up a metre over the water. Nearer the junctions
+ * the ramp lay under the main road's edge, and a kart running there stepped up onto it sideways and was
+ * thrown into the air (and the water's edge bit into the road).
+ */
+const RAMP_IN = 45;
+/** Off the levee the road swings round under the Wall Cloud this tight to rejoin the storm's spiral this far round. */
+const WALL_CLOUD_R = 30;
+const WALL_CLOUD_AT = 380;
 /** The top of the trestle up round the silos. */
 const SILO_TOP = 16;
 /** How deep the Washout's gully runs below the creek. */
@@ -90,10 +99,14 @@ export function buildSupercell(): TrackDef {
   b.mark('leveeFrom');
   b.arc(LEVEE_R, -LEVEE_TURN).arc(LEVEE_R, 2 * LEVEE_TURN).arc(LEVEE_R, -LEVEE_TURN);
   b.mark('leveeTo');
-  to(360);
 
-  b.section('Wall Cloud', { halfWidth: 9.5, surface: 'wet' });
+  // Off the levee's far end and round to the right under the Wall Cloud, walled (it runs close by Tornado Alley
+  // outside the bend). Laid as one curve straight to the storm's 360 it folded into a 4 m hairpin, and karts
+  // carried on off it onto the alley and round the lap again.
+  b.section('Wall Cloud', { halfWidth: 9.5, wallHeight: 1.2, surface: 'wet' });
   b.mark('wall');
+  b.turnTo(vortex(WALL_CLOUD_AT), WALL_CLOUD_R);
+  b.section('Wall Cloud', { halfWidth: 9.5, surface: 'wet' });
   to(405);
   to(TURN);
 
@@ -181,7 +194,7 @@ function plunge(b: TrackBuilder, s0: number, y0: number, s1: number, y1: number)
 function buildLevee(from: { s: number; pose: Pose }, to: { s: number; pose: Pose }) {
   const chord = Math.hypot(to.pose.x - from.pose.x, to.pose.z - from.pose.z);
   const b = new TrackBuilder(from.pose, 'Converge', { halfWidth: 6, surface: 'wet' });
-  b.straight(30);
+  b.straight(RAMP_IN);
   b.section('Converge Levee', { halfWidth: 4, surface: 'boards' });
   b.elevate(0).straight(12).elevate(1);
   const flood = chord - 2 * b.s;

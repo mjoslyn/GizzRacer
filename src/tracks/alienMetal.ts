@@ -31,6 +31,15 @@ const FLOAT = 0.75;
 const SLIP_R = 36;
 const SLIP_TURN = 80;
 const SLIP_FROM = 2.1;
+/**
+ * How far out along the Slipstream it runs level before it ramps up a metre over the water. Nearer the junctions
+ * the ramp lay under the main road's edge, and a kart running there stepped up onto it sideways and was
+ * thrown into the air (and the water's edge bit into the road).
+ */
+const RAMP_IN = 45;
+/** Off the pool the road bends onto the deck this tight and this far before it rejoins the strip's edge. */
+const TWIST_IN_R = 40;
+const TWIST_IN_TURN = 50;
 /** Into the forge: the road turns in to run this far up from the strip's middle, round the anvil (a hairpin this tight) and back out. */
 const FORGE_IN = 45;
 const FINISH = 45;
@@ -152,7 +161,11 @@ export function buildAlienMetal(): TrackDef {
   // The twist: up onto a deck, over the road coming back round the inside, and on round the inside, high over the forge.
   b.section('Transforming', { halfWidth: 10, wallHeight: 1.2, surface: 'anvil', bridge: true });
   b.mark('twist');
-  for (let t = across(SLIP_FROM, pool) + 0.3; t < 5.4; t += 0.2) to(t);
+  // Swung off the pool onto the deck in a steady bend first: laid as one curve straight to the edge, it
+  // kinked to 15 m (narrower than the road), and karts on the inside ran off it onto the ground under the deck.
+  b.arc(TWIST_IN_R, TWIST_IN_TURN);
+  const twistFrom = across(SLIP_FROM, pool) + 0.5;
+  for (let t = twistFrom; t < 5.4; t += 0.2) to(t);
   b.mark('twistEnd');
 
   // Reborn: off the end of the deck, a crest, and a leap over the quench water.
@@ -276,7 +289,7 @@ function plunge(b: TrackBuilder, s0: number, y0: number, s1: number, y1: number)
 function buildSlipstream(from: { s: number; pose: Pose }, to: { s: number; pose: Pose }) {
   const chord = Math.hypot(to.pose.x - from.pose.x, to.pose.z - from.pose.z);
   const b = new TrackBuilder(from.pose, 'The Slipstream', { halfWidth: 6, surface: 'anvil' });
-  b.straight(30);
+  b.straight(RAMP_IN);
   b.section('Quench Pool', { halfWidth: 4.5, surface: 'anvil' });
   b.elevate(0).straight(12).elevate(1);
   const pool = chord - 2 * b.s;

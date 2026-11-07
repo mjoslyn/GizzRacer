@@ -192,8 +192,12 @@ function plunge(b: TrackBuilder, s0: number, y0: number, s1: number, y1: number)
   b.profile(s0, s1, (u) => y0 + (y1 - y0) * Math.sin((Math.PI * u) / 2));
 }
 
-/** How far into the shortcut the capsule's shell begins, and ends before its far end. */
-export const TUBE_IN = 30;
+/**
+ * How far into the shortcut the capsule's shell (and its walls) begins, and ends before its far end: far
+ * enough that the main road has swung clear of it. Any nearer and the shell's mouth stood in the main
+ * road's outside lane, where karts ran into its end or were drawn in against its wall and wedged.
+ */
+export const TUBE_IN = 40;
 
 /**
  * The Wrong Pill: straight across the loop the main road swings round,
