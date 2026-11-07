@@ -24,6 +24,8 @@ export class Sfx implements SfxVoice {
   private alarmWait = 0;
   private devil: { src: AudioBufferSourceNode; gain: GainNode; pan: StereoPannerNode } | null = null;
   private rattleWait = 0;
+  /** A Rattlesnake item on the road: its buzz's own clock. */
+  private rattleItemWait = 0;
   /** The Woo Cannon's shout: the one sound that's a recording (public/sfx/woo.mp3), fetched once. */
   private wooBuffer: AudioBuffer | null = null;
   private wooLoad: Promise<void> | null = null;
@@ -400,6 +402,12 @@ export class Sfx implements SfxVoice {
         for (let i = 0; i < 8; i++) this.tone(1400 - i * 60, 0.05, 'sine', 0.08, 900, i * i * 0.012);
         this.whoosh(0.9, 400, 2200, 0.1);
         break;
+      case 'rattle':
+        // A shake of the rattle, then the throw: a flick of air and the buzz going off down the road.
+        if (this.ctx) this.rattleBurst(this.ctx, 0.32, 0, 12, 0.026, 4200);
+        this.whoosh(0.3, 900, 3200, 0.14);
+        this.tone(330, 0.12, 'triangle', 0.06, 520, 0.02);
+        break;
       case 'gizzardWave':
         this.onDuck(0.4, 1.2);
         this.whoosh(1.2, 120, 900, 0.3);
@@ -605,6 +613,13 @@ export class Sfx implements SfxVoice {
       this.hit(0.25, 900, 0.5);
       this.tone(220, 0.3, 'sawtooth', 0.06, 110, 0, true);
     }
+    // Rattled: a hard crack of the shell breaking, its buzz cut short, and a snake's hiss.
+    if (by === 'rattle') {
+      this.hit(0.18, 2600, 0.55);
+      if (this.ctx) this.rattleBurst(this.ctx, 0.3, 0, 5, 0.03, 3000);
+      this.whoosh(0.35, 5000, 2500, 0.12);
+      this.tone(196, 0.25, 'square', 0.06, 98);
+    }
     if (by === 'microtonalMine') {
       this.whoosh(0.25, 700, 200, 0.2);
       this.tone(620, 0.4, 'triangle', 0.08, 560);
@@ -710,26 +725,53 @@ export class Sfx implements SfxVoice {
     this.devil.pan.pan.setTargetAtTime(devil?.pan ?? 0, ctx.currentTime, 0.1);
   }
 
-  private rattleBurst(ctx: AudioContext, level: number, pan: number): void {
+  /** A Rattlesnake coming (`near.d` metres away, panned): its buzz, quicker and louder as it nears. */
+  rattleNear(dt: number, near: { d: number; pan: number } | null): void {
+    const ctx = this.ctx;
+    this.rattleItemWait -= dt;
+    if (!ctx || !near || near.d > 45 || this.rattleItemWait > 0) return;
+    const close = 1 - near.d / 45;
+    this.rattleItemWait = 0.32 - close * 0.18;
+    this.rattleBurst(ctx, 0.08 + close * 0.22, near.pan, 7, 0.024, 4800);
+  }
+
+  /** A Rattlesnake coming off a wall: a hard clack and a tick of its rattle. */
+  rattleBounce(level: number, pan: number): void {
+    // Panned to the nearest quarter: each pan is a bus of its own.
+    this.at(Math.round(pan * 4) / 4, () => {
+      this.hit(0.05, 3800, 0.35 * level);
+      this.tone(1400, 0.05, 'square', 0.05 * level, 900);
+    });
+  }
+
+  /** Ran into someone's trailing item: a crunch and a thud as it breaks on the kart. */
+  rammed(): void {
+    this.onDuck(0.5, 0.5);
+    this.hit(0.3, 500, 0.6);
+    this.tone(110, 0.3, 'sine', 0.14, 55);
+    this.hit(0.12, 4500, 0.25);
+  }
+
+  private rattleBurst(ctx: AudioContext, level: number, pan: number, clicks = 9, gap = 0.035, cutoff = 3500): void {
     const t = ctx.currentTime;
     const src = ctx.createBufferSource();
     src.buffer = this.noise;
     const hp = ctx.createBiquadFilter();
     hp.type = 'highpass';
-    hp.frequency.value = 3500;
+    hp.frequency.value = cutoff;
     const gain = ctx.createGain();
     // A fast train of clicks: the rattle.
     gain.gain.setValueAtTime(0, t);
-    for (let i = 0; i < 9; i++) {
-      gain.gain.setValueAtTime(level, t + i * 0.035);
-      gain.gain.setValueAtTime(level * 0.15, t + i * 0.035 + 0.015);
+    for (let i = 0; i < clicks; i++) {
+      gain.gain.setValueAtTime(level, t + i * gap);
+      gain.gain.setValueAtTime(level * 0.15, t + i * gap + gap * 0.43);
     }
-    gain.gain.setValueAtTime(0, t + 0.33);
+    gain.gain.setValueAtTime(0, t + clicks * gap + 0.01);
     const p = ctx.createStereoPanner();
     p.pan.value = Math.max(-1, Math.min(1, pan));
     src.connect(hp).connect(gain).connect(p).connect(this.shots!);
     src.start(t, Math.random());
-    src.stop(t + 0.35);
+    src.stop(t + clicks * gap + 0.02);
   }
 
   tone(freq: number, dur: number, type: OscillatorType, level: number, slideTo?: number, delay = 0, fuzz = false): void {

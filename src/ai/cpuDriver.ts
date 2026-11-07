@@ -1,6 +1,6 @@
 import { NEUTRAL_INPUT, type InputFrame } from '../core/inputFrame';
 import { clamp, seededRandom, wrapAngle } from '../core/math';
-import { CABLE_RANGE, FLUTE_CONE, FLUTE_RANGE, HARMONICA_CONE, HARMONICA_RANGE, LASER_RANGE, LASER_WIDTH, inCone, type ItemKind } from '../items/items';
+import { CABLE_RANGE, FLUTE_CONE, FLUTE_RANGE, HARMONICA_CONE, HARMONICA_RANGE, LASER_RANGE, LASER_WIDTH, SHIELD_ITEMS, inCone, type ItemKind } from '../items/items';
 import { DRIFT_MIN_SPEED, DRIFT_YAW_BASE, DRIFT_YAW_STEER, KART_RADIUS, driftTier, type KartState } from '../physics/kart';
 import type { EngineClass, KartParams } from '../physics/racers';
 import { pointAt } from '../tracks/spline';
@@ -92,6 +92,12 @@ const ITEM_HOLD_MIN = 1;
 const ITEM_HOLD_SPREAD = 4;
 /** Even a patient CPU uses its item eventually. */
 const ITEM_HOLD_MAX = 9;
+/** A leader keeps a trailing item at its back longer than that, as a guard. */
+const GUARD_HOLD_MAX = 18;
+/** A Rattlesnake is thrown at a kart up to this far ahead, in this narrow a line, on a road this straight. */
+const RATTLE_AIM_RANGE = 50;
+const RATTLE_AIM_CONE = 0.14;
+const RATTLE_AIM_TURN = 0.3;
 
 /**
  * Follows the main centerline on its own preferred lane, slows for corners
@@ -110,6 +116,8 @@ export class CpuDriver {
   private stuck = 0;
   private reversing = 0;
   private itemPlan: { item: ItemKind; smart: boolean; at: number } | null = null;
+  /** Set by wantsItem: throw this one backward. */
+  aimBack = false;
 
   constructor(
     readonly skill: CpuSkill,
@@ -201,14 +209,21 @@ export class CpuDriver {
    * Whether to fire the held item this tick. Smart picks wait for a good
    * moment (a straight for the Mind Fuzz, a kart on its tail for a mine,
    * company for the Nuclear Fusion); the rest fire after a random wait.
+   * A smart CPU keeps a trailing item (a banana, a wasp, a Rattlesnake) at
+   * its back while something is coming for it from behind (`threat`), and a
+   * leader keeps one there longer as a guard. A Rattlesnake goes at a kart
+   * in line ahead on a straight, or back at one right on its tail (aimBack).
    */
-  wantsItem(item: ItemKind, held: number, s: KartState, position: number, progress: number, track: Track, others: readonly KartState[]): boolean {
+  wantsItem(item: ItemKind, held: number, s: KartState, position: number, progress: number, track: Track, others: readonly KartState[], threat = false): boolean {
+    this.aimBack = false;
     if (this.itemPlan?.item !== item) {
       this.itemPlan = { item, smart: this.rand() < this.skill.itemIq, at: ITEM_HOLD_MIN + this.rand() * ITEM_HOLD_SPREAD };
     }
     const plan = this.itemPlan;
     if (!plan.smart) return held >= plan.at;
-    if (held >= ITEM_HOLD_MAX) return true;
+    const guard = SHIELD_ITEMS.includes(item);
+    if (guard && threat) return false;
+    if (held >= (guard && position === 1 ? GUARD_HOLD_MAX : ITEM_HOLD_MAX)) return true;
     if (held < 0.3) return false;
     const fx = Math.sin(s.heading);
     const fz = Math.cos(s.heading);
@@ -249,6 +264,12 @@ export class CpuDriver {
         return position > 1;
       case 'patchCable':
         return position > 1 && others.some((o) => o !== s && inCone(s, o, CABLE_RANGE * 0.8, 0.9));
+      case 'rattle': {
+        const straight = Math.abs(track.main.turnBetween(progress, progress + 40)) < RATTLE_AIM_TURN;
+        if (straight && others.some((o) => o !== s && inCone(s, o, RATTLE_AIM_RANGE, RATTLE_AIM_CONE))) return true;
+        this.aimBack = tailing;
+        return tailing;
+      }
     }
   }
 

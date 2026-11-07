@@ -20,11 +20,11 @@ import { alphaParts, poseAlphas } from './rapidAlphaDecay';
 import { poseSweeper, sweeperParts } from './allIsKnown';
 import { poseShark, sharkParts } from './muddyWater';
 import { dozeParts, poseDoze } from './theWheel';
-import { BOX_RESPAWN, ITEM_KINDS, MINE_ARM as MINE_ARM_TIME, SHIELD_ITEMS, WAVE_RANGE, type Burst, type ItemEvent, type ItemHolder, type ItemSystem, type Mine, type Missile, type Surge, type Wave } from '../items/items';
+import { BOX_RESPAWN, ITEM_KINDS, MINE_ARM as MINE_ARM_TIME, SHIELD_ITEMS, TRAIL_BACK, WAVE_RANGE, type Burst, type ItemEvent, type ItemHolder, type ItemKind, type ItemSystem, type Mine, type Missile, type Rattle, type Surge, type Wave } from '../items/items';
 import { FxSystem } from './fx/fxSystem';
 import { TILE } from './fx/particles';
 import { armBlink, tossArc } from './fx/envelopes';
-import { ITEM_COLOR, bananaPop, bananaSplat, boxBreak, dustRing, embers, flash, fusionBlast, laserHit, shieldBreak, shockRing, smoke, sparks, surgeBreak, surgeFade, waspFizzle, waspStrike } from './fx/effects';
+import { ITEM_COLOR, bananaPop, bananaSplat, boxBreak, dustRing, embers, flash, fusionBlast, laserHit, rattleBounce, rattleBreak, rattleFizzle, rattleThrow, shieldBreak, shockRing, smoke, sparks, surgeBreak, surgeFade, trailRam, waspFizzle, waspStrike } from './fx/effects';
 import type { KartState } from '../physics/kart';
 import type { HazardSystem } from '../items/hazards';
 import { KIT_HAZARD_VIEWS } from '../kits/views';
@@ -34,6 +34,10 @@ import { CELLOPHANE_COLOURS, TETRA_COLOURS, basaltTexture, fuzzRoadTexture, mete
 
 const MINE_POOL = 12;
 const MISSILE_POOL = 8;
+const RATTLE_POOL = 10;
+/** A Rattlesnake's spin (rad/s) as it skitters, and its glow. */
+const RATTLE_TURN = 24;
+const RATTLE_GLOW = 0xb4ff3a;
 const WAVE_POOL = 4;
 const SNAKE_SEGMENTS = 9;
 const KART_POOL = 12;
@@ -69,6 +73,8 @@ interface ItemLife {
   heading: number;
   roll: number;
   trail: number;
+  /** Walls it had come off by last frame (a Rattlesnake). */
+  bounces: number;
 }
 
 /** Whether `list` holds `o` (a dozen at most: no Set to build each frame). */
@@ -87,10 +93,12 @@ export class ItemsView {
   private readonly boxes: THREE.Mesh[] = [];
   private readonly mines: THREE.Group[] = [];
   private readonly missiles: THREE.Group[] = [];
+  private readonly rattles: THREE.Group[] = [];
   private readonly waves: THREE.Mesh[] = [];
-  /** Mines and missiles held in the slot, trailing behind their karts as shields. */
+  /** Mines, missiles and rattles held in the slot, trailing behind their karts as shields. */
   private readonly heldMines: THREE.Group[] = [];
   private readonly heldPicks: THREE.Group[] = [];
+  private readonly heldRattles: THREE.Group[] = [];
   /** Road Train: a ring of drumheads round the kart. */
   private readonly auras: THREE.Mesh[] = [];
   private readonly drops: THREE.Mesh[] = [];
@@ -105,6 +113,7 @@ export class ItemsView {
   private readonly lives = new Map<object, ItemLife>();
   private readonly seenMines: Mine[] = [];
   private readonly seenMissiles: Missile[] = [];
+  private readonly seenRattles: Rattle[] = [];
   private readonly seenWaves: Wave[] = [];
   private readonly seenBursts: Burst[] = [];
   private seenSurge: Surge | null = null;
@@ -220,6 +229,14 @@ export class ItemsView {
       this.group.add(g);
     }
 
+    // Rattlesnake: a rattle of horn on a stub of banded tail, with a lime glow.
+    for (let i = 0; i < RATTLE_POOL; i++) {
+      const g = rattleFigure(glow);
+      g.visible = false;
+      this.rattles.push(g);
+      this.group.add(g);
+    }
+
     const ringGeo = new THREE.RingGeometry(0.8, 1, 48);
     ringGeo.rotateX(-Math.PI / 2);
     for (let i = 0; i < WAVE_POOL; i++) {
@@ -242,7 +259,11 @@ export class ItemsView {
       pickGlow.material = pickGlow.material.clone();
       pickHeld.visible = false;
       this.heldPicks.push(pickHeld);
-      this.group.add(mine, pickHeld);
+      const rattle = this.rattles[0].clone();
+      rattle.scale.setScalar(0.85);
+      rattle.visible = false;
+      this.heldRattles.push(rattle);
+      this.group.add(mine, pickHeld, rattle);
       const aura = new THREE.Mesh(new THREE.TorusGeometry(1.9, 0.12, 8, 40), new THREE.MeshBasicMaterial({ color: 0xffb040, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
       aura.rotation.x = Math.PI / 2;
       aura.visible = false;
@@ -305,14 +326,18 @@ export class ItemsView {
     this.updateBursts(elapsed, karts);
     this.updateMines(elapsed, karts);
     this.updateMissiles(elapsed, karts);
+    this.updateRattles(elapsed, karts);
     this.updateWaves(elapsed);
     this.updateSurge(elapsed, karts);
     for (const e of events) {
-      if (e.type !== 'block') continue;
-      const s = this.stateOf(e.kart, karts);
-      const fx_ = Math.sin(s.heading);
-      const fz = Math.cos(s.heading);
-      shieldBreak(this.fx, s.x - fx_ * 2.3, s.y + 0.8, s.z - fz * 2.3, s.groundY, e.by === 'riffMissile');
+      // A trailing item breaking: stopping something (at its holder's back), or rammed (on the nose of the kart that ran into it).
+      const holder = e.type === 'block' ? e.kart : e.type === 'hit' && e.rammed && e.from ? e.from : null;
+      if (!holder) continue;
+      const s = this.stateOf(holder, karts);
+      const x = s.x - Math.sin(s.heading) * TRAIL_BACK;
+      const z = s.z - Math.cos(s.heading) * TRAIL_BACK;
+      if (e.type === 'block') shieldBreak(this.fx, x, s.y + 0.8, z, s.groundY, e.by as ItemKind);
+      else if (e.type === 'hit') trailRam(this.fx, x, s.y + 0.8, z, s.groundY, e.by as ItemKind);
     }
     if (this.ownFx) this.fx.end();
     else this.fx.flip(false);
@@ -327,7 +352,7 @@ export class ItemsView {
   private life(o: object, x: number, y: number, z: number, heading: number, elapsed: number): ItemLife {
     let l = this.lives.get(o);
     if (!l) {
-      l = { born: elapsed, x, y, z, heading, roll: 0, trail: 0 };
+      l = { born: elapsed, x, y, z, heading, roll: 0, trail: 0, bounces: 0 };
       this.lives.set(o, l);
     }
     return l;
@@ -367,8 +392,10 @@ export class ItemsView {
       const shield = held && SHIELD_ITEMS.includes(held) ? held : null;
       const mine = this.heldMines[i];
       const pick = this.heldPicks[i];
+      const rattle = this.heldRattles[i];
       mine.visible = shield === 'microtonalMine';
       pick.visible = shield === 'riffMissile';
+      rattle.visible = shield === 'rattle';
       const aura = this.auras[i];
       aura.visible = !!k && k.state.ramTime > 0;
       if (!k) continue;
@@ -396,6 +423,20 @@ export class ItemsView {
         pick.children[1].rotation.z = -flap;
         pick.children[11].rotation.z = elapsed * 30;
         fx.alpha.spawn(TILE.shadow).at(pick.position.x, s.groundY + 0.05, pick.position.z).life(0).size(0.8).color(0, 0, 0.35).flat();
+      } else if (shield === 'rattle') {
+        // Dragged behind on the road, tail to the kart, shaking: every so often a buzz of lime light off it.
+        const sway = Math.sin(elapsed * 2.7 + i) * 0.25 - s.steer * 0.4;
+        rattle.position.set(s.x - fx_ * TRAIL_BACK + rx * sway, s.groundY + 0.15 + Math.abs(Math.sin(elapsed * 16 + i)) * 0.08, s.z - fz * TRAIL_BACK + rz * sway);
+        rattle.rotation.set(0, s.heading - sway * 0.5, 0);
+        const body = rattle.children[0];
+        body.rotation.z = Math.sin(elapsed * 70 + i) * 0.22;
+        body.rotation.y = Math.sin(elapsed * 55 + i) * 0.12;
+        const glow = rattle.children[1] as THREE.Sprite;
+        glow.scale.setScalar(1.8 * (1 + 0.2 * Math.sin(elapsed * 9 + i)));
+        if ((elapsed * 1.6 + i * 0.37) % 1 < this.dt * 1.6) {
+          fx.add.spawn(TILE.ring).at(rattle.position.x, rattle.position.y + 0.35, rattle.position.z).life(0.25).size(0.5, 2).color(0xffffff, RATTLE_GLOW, 0.8).fade(0, 0.3);
+        }
+        fx.alpha.spawn(TILE.shadow).at(rattle.position.x, s.groundY + 0.05, rattle.position.z).life(0).size(0.9).color(0, 0, 0.4).flat();
       } else if (held) {
         // Anything else in hand: a mote of its colour circling the kart, slow and low.
         const a = elapsed * 2.2 + i * 1.3;
@@ -699,6 +740,58 @@ export class ItemsView {
         fx.add.spawn(TILE.ring).at(t.x, t.groundY + 0.1, t.z).life(0).size(2.6 + close * 2.5).color(0xff3020, 0xff3020, 0.9).flat();
         fx.add.spawn(TILE.flare).at(t.x, t.groundY + 0.12, t.z).life(0).size(2.2 + close * 2).color(0xff6040, 0xff6040, 0.7).spin(elapsed * 3).flat();
       }
+    });
+  }
+
+  /**
+   * Rattlesnakes: out of the hand with a lime flash and a kick of dust; on
+   * the road a spinning, buzzing rattle hopping as it skitters, grit and a
+   * streak of lime behind it; sparks off every wall it comes off; on a kart
+   * its segments burst apart, run out or over the edge, a last shake.
+   */
+  private updateRattles(elapsed: number, karts: readonly ItemKartView[]): void {
+    const fx = this.fx;
+    const dt = this.dt;
+    for (const r of this.seenRattles) {
+      if (holds(this.items.rattles, r)) continue;
+      this.lives.delete(r);
+      let hit = false;
+      for (const k of karts) if (Math.hypot(k.state.x - r.x, k.state.z - r.z) < 4.5) hit = true;
+      if (hit) rattleBreak(fx, r.x, r.y, r.z, r.y);
+      else rattleFizzle(fx, r.x, r.y, r.z, r.y);
+    }
+    this.seenRattles.length = 0;
+    this.rattles.forEach((g, i) => {
+      const r = this.items.rattles[i];
+      g.visible = !!r;
+      if (!r) return;
+      this.seenRattles.push(r);
+      const fresh = !this.lives.has(r);
+      const l = this.life(r, r.x, r.y, r.z, r.heading, elapsed);
+      if (fresh) {
+        l.bounces = r.bounces;
+        rattleThrow(fx, r.x, r.y, r.z, r.y, r.heading);
+      }
+      if (r.bounces > l.bounces) rattleBounce(fx, r.x, r.y, r.z, r.y, r.heading);
+      l.bounces = r.bounces;
+      l.roll += dt * RATTLE_TURN;
+      const hop = Math.abs(Math.sin(elapsed * 22 + i)) * 0.25;
+      g.position.set(r.x, r.y + hop, r.z);
+      g.rotation.set(0, l.roll, 0);
+      const body = g.children[0];
+      body.rotation.z = Math.sin(elapsed * 80 + i) * 0.3;
+      const glow = g.children[1] as THREE.Sprite;
+      glow.scale.setScalar(2.6 + Math.sin(elapsed * 40 + i) * 0.4);
+      // Grit kicked up behind it, and a streak of lime glow.
+      const fx_ = Math.sin(r.heading);
+      const fz = Math.cos(r.heading);
+      l.trail += dt * 34 * fx.scale;
+      while (l.trail >= 1) {
+        l.trail -= 1;
+        fx.add.spawn(TILE.glow).at(r.x - fx_ * 0.6, r.y + 0.45, r.z - fz * 0.6).vel(-fx_ * 6 + (Math.random() - 0.5) * 2, Math.random() * 1.5, -fz * 6 + (Math.random() - 0.5) * 2).life(0.2).size(0.3, -0.7).color(0xf0ffd0, RATTLE_GLOW).stretch(0.03);
+        if (Math.random() < 0.45) fx.alpha.spawn(TILE.puff).at(r.x - fx_ * 0.8, r.y + 0.2, r.z - fz * 0.8).vel((Math.random() - 0.5) * 2, 0.8, (Math.random() - 0.5) * 2).life(0.5).size(0.45, 1.8).color(0xd0c098, 0xd0c098, 0.45).physics(0, 2).spin(Math.random() * 6, 1).fade(0.04, 0.2);
+      }
+      fx.alpha.spawn(TILE.shadow).at(r.x, r.y + 0.05, r.z).life(0).size(1.3 / (1 + hop)).color(0, 0, 0.45).flat();
     });
   }
 
@@ -2969,6 +3062,42 @@ export class HazardsView {
       }
     }
   }
+}
+
+/**
+ * A Rattlesnake's rattle: six lobes of horn, cream and tan by turns,
+ * shrinking to the tip, on a stub of tail banded brown and dark. Children:
+ * 0 the rattle (it shakes), 1 the glow.
+ */
+function rattleFigure(glow: THREE.Texture): THREE.Group {
+  const g = new THREE.Group();
+  const body = new THREE.Group();
+  const lobe = new THREE.SphereGeometry(1, 16, 12);
+  const horn = [new THREE.MeshPhongMaterial({ color: 0xf4e2b0, emissive: 0x2a2010, shininess: 60, specular: 0x806040 }), new THREE.MeshPhongMaterial({ color: 0xc89a58, emissive: 0x201408, shininess: 50, specular: 0x604020 })];
+  let z = 0.45;
+  for (const [k, r] of [0.42, 0.39, 0.35, 0.31, 0.26, 0.2].entries()) {
+    const m = new THREE.Mesh(lobe, horn[k % 2]);
+    m.scale.set(r, r * 0.82, r * 0.6);
+    m.position.z = z;
+    body.add(m);
+    // The ridge where one segment fits into the next.
+    const ridge = new THREE.Mesh(new THREE.TorusGeometry(r * 0.86, 0.03, 6, 18), horn[(k + 1) % 2]);
+    ridge.scale.y = 0.82;
+    ridge.position.z = z + r * 0.42;
+    body.add(ridge);
+    z -= r * 0.95;
+  }
+  const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.3, 0.7, 12), new THREE.MeshPhongMaterial({ color: 0x7a5030, shininess: 30 }));
+  tail.rotation.x = Math.PI / 2;
+  tail.position.z = 1.05;
+  const band = new THREE.Mesh(new THREE.TorusGeometry(0.26, 0.06, 6, 16), new THREE.MeshPhongMaterial({ color: 0x2a1a10 }));
+  band.position.z = 0.95;
+  body.add(tail, band);
+  body.position.set(0, 0.42, 0.1);
+  const halo = sprite(glow, RATTLE_GLOW, 2.6);
+  halo.position.y = 0.45;
+  g.add(body, halo);
+  return g;
 }
 
 function sprite(tex: THREE.Texture, color: number, size: number): THREE.Sprite {

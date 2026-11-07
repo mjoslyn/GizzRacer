@@ -81,7 +81,7 @@ export class Room extends Server<Env> {
         this.race?.report(me, msg.s);
         return;
       case 'item':
-        this.race?.useItem(me);
+        this.race?.useItem(me, msg.b === true);
         return;
       case 'quit':
         this.race?.drop(me);

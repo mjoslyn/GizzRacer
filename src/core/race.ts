@@ -1,7 +1,7 @@
 import { AUTOPILOT_SKILL, CpuDriver, type CpuSkill, type Obstacle } from '../ai/cpuDriver';
 import { HazardSystem } from '../items/hazards';
 import { ASSIST_NORMAL, assistSteer, type AssistLevel } from '../physics/steerAssist';
-import { CANNON_FAR, CANNON_FAR_BOOST, CANNON_FAR_FROM, CANNON_MIN_TIME, CANNON_PAST_MAX, CANNON_PAST_MIN, CANNON_SPEED_MUL, CANNON_SPIN, CANNON_TIME, ItemSystem, SIGNATURE_ITEMS, type ItemEvent, type ItemHolder, type ItemKind } from '../items/items';
+import { CANNON_FAR, CANNON_FAR_BOOST, CANNON_FAR_FROM, CANNON_MIN_TIME, CANNON_PAST_MAX, CANNON_PAST_MIN, CANNON_SPEED_MUL, CANNON_SPIN, CANNON_TIME, ItemSystem, RATTLE_SPEED, SIGNATURE_ITEMS, TRAIL_RADIUS, trailPoint, type ItemEvent, type ItemHolder, type ItemKind } from '../items/items';
 import { NEUTRAL_INPUT, type InputFrame } from './inputFrame';
 import { seededRandom } from './math';
 import { unpackKart } from '../net/wire';
@@ -140,8 +140,9 @@ export class RaceKart implements ItemHolder {
   favour: ItemKind | null = null;
   /** The branch (shortcut) it's on, -1 for the main road; and the last branch it was on, for noticing a new one. */
   branch = -1;
-  /** Online: the remote player pressed their item button. */
+  /** Online: the remote player pressed their item button, and whether to throw it backward. */
   pendingUse = false;
+  pendingBack = false;
   private incoming: readonly number[] | null = null;
   /** CPU brain, or null while a human drives. A finished human gets one. */
   driver: CpuDriver | null;
@@ -280,6 +281,8 @@ export class Race {
     const states = this.karts.map((k) => k.state);
     this.updateObstacles();
     const use = this.karts.map(() => false);
+    // Throwing backward: braking or looking back as the item goes (the Rattlesnake; a CPU decides for itself).
+    const back = this.karts.map(() => false);
     const events = this.karts.map((kart, i) => {
       copyKartState(kart.state, kart.prev);
       kart.respawned = false;
@@ -287,7 +290,9 @@ export class Race {
         kart.respawned = kart.applyFed();
         if (kart.respawned) copyKartState(kart.state, kart.prev);
         use[i] = kart.pendingUse && this.started;
+        back[i] = kart.pendingBack;
         kart.pendingUse = false;
+        kart.pendingBack = false;
         // Not ours to respawn, but shown falling all the same.
         kart.fallTime = this.overEdge(kart) ? kart.fallTime + dt : 0;
         this.updateLaps(kart);
@@ -306,9 +311,11 @@ export class Race {
       kart.trickPlan = false;
       if (d) input = this.items.dodge(kart, input, d);
       if (d && kart.item && kart.rolling === 0) {
-        use[i] = d.wantsItem(kart.item, kart.held, kart.state, kart.position, kart.progressS, this.track, states);
+        use[i] = d.wantsItem(kart.item, kart.held, kart.state, kart.position, kart.progressS, this.track, states, this.items.threatened(kart));
+        back[i] = d.aimBack;
       } else if (!d) {
         use[i] = input.itemPressed;
+        back[i] = input.lookBack || input.brake > 0.5;
       }
       // Hold everyone on the grid until the lights go green.
       if (!this.started) {
@@ -330,10 +337,12 @@ export class Race {
     this.slipstream(dt);
     this.bumps();
     this.rank();
-    this.events = this.remoteItems ? [] : this.items.update(dt, this.karts, use);
+    this.events = this.remoteItems ? [] : this.items.update(dt, this.karts, use, back);
     this.events.push(...this.cannonHits);
     this.cannonHits.length = 0;
     for (const e of this.events) {
+      // A trailing item lost (rammed, or it stopped something): the holder plans afresh.
+      if (e.type === 'block' || (e.type === 'hit' && e.rammed)) (e.type === 'block' ? (e.kart as RaceKart) : (e.from as RaceKart)).driver?.forgetItem();
       if (e.type !== 'use') continue;
       (e.kart as RaceKart).driver?.forgetItem();
       if (e.item === 'wooCannon') this.aimCannon(e.kart as RaceKart);
@@ -359,11 +368,24 @@ export class Race {
     return events;
   }
 
-  /** Hazards and armed mines, for CPUs to steer around. */
+  /** Hazards, armed mines, the items trailing behind karts and Rattlesnakes on the road, for CPUs to steer around. */
   private updateObstacles(): void {
     this.obstacles.length = 0;
     this.hazards.obstacles(this.obstacles);
     for (const m of this.items.mines) this.obstacles.push({ x: m.x, z: m.z, r: 1.2, vx: 0, vz: 0 });
+    for (const k of this.karts) {
+      const t = trailPoint(k);
+      if (!t) continue;
+      // It goes where its kart goes: a CPU closing on it passes wide, as it would a banana.
+      const s = k.state;
+      this.obstacles.push({ x: t.x, z: t.z, r: TRAIL_RADIUS + 0.6, vx: Math.sin(s.heading) * s.speed + s.extX, vz: Math.cos(s.heading) * s.speed + s.extZ });
+    }
+    for (const r of this.items.rattles) this.obstacles.push({ x: r.x, z: r.z, r: 1, vx: Math.sin(r.heading) * RATTLE_SPEED, vz: Math.cos(r.heading) * RATTLE_SPEED });
+  }
+
+  /** What CPUs steer around this step (testing). */
+  get obstacleList(): readonly Obstacle[] {
+    return this.obstacles;
   }
 
   /**

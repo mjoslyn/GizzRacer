@@ -693,7 +693,7 @@ export class KartView {
     if (this.useAge < 0.6) {
       const t = this.useAge;
       const k = this.useKind;
-      if (k === 'keytarLaser' || k === 'riffMissile' || k === 'wooCannon') this.body.rotation.x += -Math.max(0, ring(t, 18, 7)) * 0.18;
+      if (k === 'keytarLaser' || k === 'riffMissile' || k === 'wooCannon' || k === 'rattle') this.body.rotation.x += -Math.max(0, ring(t, 18, 7)) * 0.18;
       else if (k === 'patchCable') this.body.rotation.x += Math.max(0, ring(t, 10, 5)) * 0.15;
       else if (k === 'microtonalMine') this.body.rotation.z += ring(t, 16, 7) * 0.08;
     }

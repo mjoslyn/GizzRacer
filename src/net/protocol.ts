@@ -71,6 +71,8 @@ export interface Snap {
   box: number[];
   mines: number[][];
   mis: number[][];
+  /** Rattlesnakes: [id, x, y, z, heading, bounces]. Absent from an older room. */
+  rat?: number[][];
   waves: number[][];
   /** Band item bursts: [kind index, x, y, z, heading, age, life, len, from kart or -1, to kart or -1]. */
   fx: number[][];
@@ -89,6 +91,8 @@ export interface Effect {
   f?: number;
   x?: number;
   z?: number;
+  /** Ran into someone's trailing item (`by`), rather than being hit by it. */
+  r?: 1;
 }
 
 export interface RoomState {
@@ -112,7 +116,8 @@ export type ClientMsg =
   | { t: 'lobby' }
   | { t: 'pause'; paused: boolean }
   | { t: 'kart'; s: number[] }
-  | { t: 'item' }
+  /** `b`: throw it backward (the Rattlesnake). */
+  | { t: 'item'; b?: boolean }
   /** Out of the race (back to the lobby early): a CPU takes my kart. */
   | { t: 'quit' }
   | { t: 'ping'; at: number; rtt: number };

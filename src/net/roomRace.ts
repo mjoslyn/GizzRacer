@@ -1,6 +1,6 @@
 import { CPU_SKILL, CpuDriver } from '../ai/cpuDriver';
 import { Race, type RaceKart } from '../core/race';
-import { BASS_SLOW, CABLE_TIME, CANNON_TIME, DRIP_BOOST, DRUM_TIME, FLUTE_WOBBLE, FUZZ_BOOST, HARMONICA_WOBBLE, ITEM_KINDS, LASER_SPIN, MINE_WOBBLE, MISSILE_SPIN, SURGE_SPIN, WAVE_SPIN, tempoSlowFor, type ItemKind } from '../items/items';
+import { BASS_SLOW, CABLE_TIME, CANNON_TIME, DRIP_BOOST, DRUM_TIME, FLUTE_WOBBLE, FUZZ_BOOST, HARMONICA_WOBBLE, ITEM_KINDS, LASER_SPIN, MINE_WOBBLE, MISSILE_SPIN, RATTLE_SPIN, SURGE_SPIN, TRAIL_RAM_SPIN, WAVE_SPIN, tempoSlowFor, type ItemKind } from '../items/items';
 import { RACERS } from '../physics/racers';
 import { TRACK_LIST } from '../tracks/index';
 import { Track } from '../tracks/track';
@@ -14,6 +14,7 @@ export const FINISH_GRACE = 30;
 const HIT_EFFECTS: Partial<Record<ItemKind, Omit<Effect, 'by'>>> = {
   feedbackWave: { k: 'spin', t: WAVE_SPIN },
   riffMissile: { k: 'spin', t: MISSILE_SPIN },
+  rattle: { k: 'spin', t: RATTLE_SPIN },
   microtonalMine: { k: 'wobble', t: MINE_WOBBLE },
   fluteFlurry: { k: 'wobble', t: FLUTE_WOBBLE },
   keytarLaser: { k: 'spin', t: LASER_SPIN },
@@ -59,9 +60,12 @@ export class RoomRace {
     k.feed(packed);
   }
 
-  useItem(playerId: string): void {
+  /** `back`: throw it backward (the Rattlesnake). */
+  useItem(playerId: string, back = false): void {
     const k = this.players.get(playerId);
-    if (k) k.pendingUse = true;
+    if (!k) return;
+    k.pendingUse = true;
+    k.pendingBack = back;
   }
 
   /** A player left: a CPU takes their kart from where it was. */
@@ -103,7 +107,9 @@ export class RoomRace {
       if (e.type !== 'hit') continue;
       const f = e.from ? karts.indexOf(e.from as RaceKart) : -1;
       const from = f >= 0 ? { f } : {};
-      if (e.by in HIT_EFFECTS) add(k, { ...HIT_EFFECTS[e.by as ItemKind]!, by: e.by, ...from, ...(e.push ? { x: e.push[0], z: e.push[1] } : {}) });
+      // Ran into someone's trailing item: a spin, whatever the item does when it's used.
+      if (e.rammed) add(k, { k: 'spin', t: TRAIL_RAM_SPIN, by: e.by, ...from, r: 1 });
+      else if (e.by in HIT_EFFECTS) add(k, { ...HIT_EFFECTS[e.by as ItemKind]!, by: e.by, ...from, ...(e.push ? { x: e.push[0], z: e.push[1] } : {}) });
       if (e.by === 'tempoShift') add(k, { k: 'slow', t: tempoSlowFor(k.position, karts.length), by: e.by, ...from });
     }
     if (this.firstFinish === null && this.race.results.length) this.firstFinish = this.race.time;
@@ -124,6 +130,7 @@ export class RoomRace {
       box: items.boxes.map((b) => r2(b.respawn)),
       mines: items.mines.map((m) => [r2(m.x), r2(m.y), r2(m.z)]),
       mis: items.missiles.map((m) => [r2(m.x), r2(m.y), r2(m.z), r2(m.heading)]),
+      rat: items.rattles.map((r) => [r.id, r2(r.x), r2(r.y), r2(r.z), r2(r.heading), r.bounces]),
       waves: items.waves.map((w) => [r2(w.x), r2(w.y), r2(w.z), r2(w.age)]),
       fx: items.bursts.map((b) => [ITEM_KINDS.indexOf(b.kind), r2(b.x), r2(b.y), r2(b.z), r2(b.heading), r2(b.age), r2(b.life), r2(b.len), index(b.from), index(b.to)]),
       sg: items.surge ? [r2(items.surge.x), r2(items.surge.y), r2(items.surge.z), r2(items.surge.heading), index(items.surge.target)] : null,

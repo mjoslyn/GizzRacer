@@ -8,9 +8,9 @@ import { padControlLines, type PadFamily } from '../core/gamepad';
 export const ITEM_HINTS: Record<ItemKind, string> = {
   fuzzPedal: 'a quick boost',
   drippingTap: 'one long boost, only for the back of the field',
-  microtonalMine: 'drop it behind you; whoever hits it steers out of tune. Hold it to block a hit from behind',
+  microtonalMine: 'drop it behind you; whoever hits it steers out of tune. Hold it to block a hit from behind, and whoever runs into it spins out',
   feedbackWave: 'a blast all round you that spins out anyone close',
-  riffMissile: 'chases the kart one place ahead and spins it out. Hold it to block a hit from behind',
+  riffMissile: 'chases the kart one place ahead and spins it out. Hold it to block a hit from behind, and whoever runs into it spins out',
   tempoShift: 'slows every other kart, the leader longest',
   wooCannon: 'fly down the road to catch the pack, knocking aside anyone in the way',
   fluteFlurry: "Stu's: a spray of notes ahead that sends their steering out of tune",
@@ -20,6 +20,7 @@ export const ITEM_HINTS: Record<ItemKind, string> = {
   harmonicaWail: "Amby's: shoves the karts in front aside, with a little boost for you",
   keytarLaser: "Cookie's: a beam straight ahead that spins out the first kart in it",
   gizzardWave: 'rolls down the road to the leader. Leading? Hop as it reaches you to ride over it',
+  rattle: 'throw it ahead (brake or look back to throw it behind): it skitters straight down the road off the walls and spins out the first kart it meets. Hold it to block a hit from behind',
 };
 
 /** How the player is playing: keys, touch, or a controller (named as its family names its buttons). */

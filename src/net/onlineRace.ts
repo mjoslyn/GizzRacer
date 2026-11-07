@@ -1,6 +1,6 @@
 import type { Race, RaceKart } from '../core/race';
-import { ITEM_KINDS, type ItemBox, type ItemKind } from '../items/items';
-import { slowDown, spinOut, wobble } from '../physics/kart';
+import { ITEM_KINDS, type ItemBox, type ItemKind, type Rattle } from '../items/items';
+import { createKartState, slowDown, spinOut, wobble } from '../physics/kart';
 import type { Effect, Snap } from './protocol';
 import { lerpPacked, packKart } from './wire';
 
@@ -103,6 +103,14 @@ export class OnlineRace {
     for (const [x, y, z] of snap.mines) items.mines.push({ x, y, z, owner, arm: 0 });
     items.missiles.length = 0;
     for (const [x, y, z, heading] of snap.mis) items.missiles.push({ x, y, z, heading, s: 0, owner, target: null, homing: true, life: 1 });
+    // Rattlesnakes keep their objects from one snapshot to the next (by id), so the view sees one rattle bounce along rather than a new one each time.
+    const was = new Map(items.rattles.map((r) => [r.id, r]));
+    items.rattles.length = 0;
+    for (const [id, x, y, z, heading, bounces] of snap.rat ?? []) {
+      const r: Rattle = was.get(id) ?? { id, x, y, z, heading, owner, age: 0, bounces, body: createKartState(x, z, heading) };
+      Object.assign(r, { x, y, z, heading, bounces });
+      items.rattles.push(r);
+    }
     items.waves.length = 0;
     for (const [x, y, z, age] of snap.waves) items.waves.push({ x, y, z, age });
     const karts = this.race.karts;

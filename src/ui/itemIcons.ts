@@ -373,6 +373,47 @@ function draw(kind: ItemKind): string {
       outline(3);
       break;
     }
+    case 'rattle': {
+      // Rattlesnake: a rattle on the end of a banded tail, shaking (lime buzz lines either side).
+      g.rotate(-Math.PI / 4);
+      g.lineWidth = 4;
+      g.strokeStyle = '#b4ff3a';
+      for (const side of [-1, 1]) {
+        for (const r of [30, 38]) {
+          g.beginPath();
+          g.arc(4, 0, r, side < 0 ? Math.PI * 0.78 : -Math.PI * 0.22, side < 0 ? Math.PI * 1.22 : Math.PI * 0.22);
+          g.stroke();
+        }
+      }
+      // The tail it grows from, banded brown and cream.
+      g.beginPath();
+      g.moveTo(-44, -7);
+      g.quadraticCurveTo(-34, -12, -24, -9);
+      g.lineTo(-24, 9);
+      g.quadraticCurveTo(-34, 12, -44, 7);
+      g.closePath();
+      g.fillStyle = grad(g, '#c89050', '#6a3a18');
+      g.fill();
+      outline(3);
+      // Segments, biggest at the tail end, each a rounded lobe overlapping the next.
+      const lobes = [13, 12, 11, 10, 8.5, 7];
+      let x = -20;
+      lobes.forEach((r, i) => {
+        g.beginPath();
+        g.ellipse(x, 0, r * 0.62, r, 0, 0, Math.PI * 2);
+        g.fillStyle = grad(g, i % 2 ? '#fff0c8' : '#f0d898', i % 2 ? '#b88a4a' : '#a07030');
+        g.fill();
+        outline(3);
+        g.beginPath();
+        g.moveTo(x - r * 0.2, -r * 0.7);
+        g.lineTo(x - r * 0.2, r * 0.7);
+        g.lineWidth = 1.5;
+        g.strokeStyle = 'rgba(80, 40, 10, 0.6)';
+        g.stroke();
+        x += r * 0.95;
+      });
+      break;
+    }
   }
   return c.toDataURL();
 }
