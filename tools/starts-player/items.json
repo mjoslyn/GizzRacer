@@ -8,7 +8,7 @@
   "venue": "Variety Playhouse",
   "id": "kglw2017-09-27.mysteryjack",
   "file": "02 Some Context.mp3",
-  "start": 0,
+  "start": 3,
   "end": 26.5,
   "seconds": 32,
   "clip": "clips/sg00.mp3",
@@ -65,7 +65,7 @@
   "venue": "Thebarton Theatre",
   "id": "kglw2019-07-12",
   "file": "02. Planet B.mp3",
-  "start": 0,
+  "start": 9.4,
   "seconds": 257,
   "clip": "clips/sr00.mp3",
   "clipStart": 0
@@ -137,7 +137,7 @@
   "venue": "Enmore Theatre, Sydney, NSW, Australia",
   "id": "kglw2025-12-04.SBD",
   "file": "King Gizzard & The Lizard Wizard - Live in Sydney '25 - 13 I'm In Your Mind (Live In Sydney '25).mp3",
-  "start": 0,
+  "start": 25.5,
   "seconds": 225,
   "clip": "clips/sm00.mp3",
   "clipStart": 0
@@ -321,7 +321,7 @@
   "venue": "Field of Vision at Meadow Creek",
   "id": "kglw2025-08-16.SBD.wav",
   "file": "King Gizzard & The Lizard Wizard - Live at Field of Vision '25 - 36 Welcome to an Altered Future (Live at Field of Vision '25).mp3",
-  "start": 0,
+  "start": 2.5,
   "seconds": 51,
   "clip": "clips/sh00.mp3",
   "clipStart": 0

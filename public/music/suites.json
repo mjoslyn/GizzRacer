@@ -6,7 +6,7 @@
    "date": "2025-12-04",
    "venue": "Enmore Theatre, Sydney, NSW, Australia",
    "seconds": 225,
-   "start": 0,
+   "start": 25.5,
    "end": null
   },
   "I'm Not in Your Mind": {
@@ -138,7 +138,7 @@
    "date": "2017-09-27",
    "venue": "Variety Playhouse",
    "seconds": 32,
-   "start": 0,
+   "start": 3,
    "end": 26.5
   },
   "The Reticent Raconteur": {
@@ -176,7 +176,7 @@
    "date": "2025-08-16",
    "venue": "Field of Vision at Meadow Creek",
    "seconds": 51,
-   "start": 0,
+   "start": 2.5,
    "end": null
   },
   "Digital Black": {
@@ -252,7 +252,7 @@
    "date": "2019-07-12",
    "venue": "Thebarton Theatre",
    "seconds": 257,
-   "start": 0
+   "start": 9.4
   },
   "Mars for the Rich": {
    "id": "kglw2019-07-12",
