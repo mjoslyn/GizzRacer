@@ -420,124 +420,210 @@ export class OvertureSim implements CardSim {
   }
 }
 
-// ---- The Reticent Raconteur: echo the ostinato ----
+// ---- The Reticent Raconteur: the hiding place in the quagmire ----
 
-/** Seconds of tellings in Skill Games. */
-export const ECHO_TIME = 36;
-/** The longest the ostinato grows. */
-export const ECHO_MAX = 9;
-/** Seconds to start echoing before the telling is lost. */
-export const ECHO_WAIT = 4;
-/** Seconds the verdict shows. */
-export const ECHO_JUDGE = 1.2;
+/** Seconds of the battle in Skill Games. */
+export const HIDE_TIME = 34;
+/** Where you hide, across the quagmire (0..1). */
+export const HIDE_X = 0.5;
+/** Seconds a sweep's warning shows at its edge before it comes on. */
+export const HIDE_WARN = 1.5;
+/** Seconds up in the open to fill your lungs from empty. */
+export const HIDE_FILL = 1.5;
+/** Seconds you're stuck up, gasping, when your air runs out under the mud. */
+export const HIDE_GASP = 1;
+/** A beam's edges are forgiving: it sees you only this far (seconds) inside its pass. */
+export const HIDE_EDGE = 0.08;
+/** Seconds before a flare of the battle its ring starts closing. */
+export const HIDE_LOOK = 1.6;
 
-export interface EchoGame {
-  bpm: number;
-  /** The whole ostinato, as eighths from its first note; telling r plays the first `first + r` of it (ECHO_MAX at most). */
-  steps: number[];
-  /** Each note's pitch, steps up a minor scale. */
-  pitches: number[];
-  first: number;
-  /** How far a tap may land from its note, seconds (timed from your first tap). */
-  tolerance: number;
-  /** Share of the tellings played to echo. */
+/** A beam sweeping across the quagmire: lightning from the lord, or the Balrog's fire. */
+export interface HideBeam {
+  /** When its leading edge reaches you, and seconds it takes to pass over. */
+  at: number;
+  dur: number;
+  /** The side it comes from: -1 the left, 1 the right. */
+  from: -1 | 1;
+  kind: 'light' | 'fire';
+  /** Widths of the quagmire a second. */
+  speed: number;
+}
+
+/** A flare of the battle to glimpse: up out of the mud (and not gasping) within `w` seconds of `at`. */
+export interface HideFlare {
+  at: number;
+  w: number;
+  kind: 'light' | 'fire';
+}
+
+export interface HideGame {
+  beams: HideBeam[];
+  flares: HideFlare[];
+  /** Seconds of air under the mud, from full. */
+  air: number;
+  /** Times you can be seen: this many and you're found. */
+  lives: number;
+  /** Share of the flares to glimpse. */
   share: number;
   length: number;
 }
 
-export function makeEcho(seed: number, level: number, length = ECHO_TIME): EchoGame {
+/** Where a beam's leading edge is at `t` (0..1 across; off the stage outside that). */
+export function beamLead(b: HideBeam, t: number): number {
+  return HIDE_X - b.from * (t - b.at) * b.speed;
+}
+
+/** When a beam's leading edge comes onto the stage. */
+export function beamEnters(b: HideBeam): number {
+  return b.at - HIDE_X / b.speed;
+}
+
+/**
+ * The battle, as it reaches the hiding place: beams sweep the quagmire one
+ * at a time, then two and three close together as the song goes on, quicker
+ * and wider; between them the battle flares, to be glimpsed. Every run under
+ * the mud a beam asks for fits in your air with some to spare, with time
+ * after it to fill your lungs again.
+ */
+export function makeHide(seed: number, level: number, length = HIDE_TIME): HideGame {
   const rand = seededRandom(seed);
-  const first = lv([3, 3, 4], level);
-  const steps = [0];
-  while (steps.length < ECHO_MAX) steps.push(steps[steps.length - 1] + (rand() < 0.5 ? 2 : rand() < 0.6 ? 1 : 3));
-  const pitches = steps.map((_, i) => (i === 0 ? 0 : Math.floor(rand() * 5)));
-  return { bpm: lv([92, 100, 108], level), steps, pitches, first, tolerance: lv([0.18, 0.15, 0.12], level), share: lv([0.5, 0.6, 0.7], level), length };
+  const air = lv([5, 4.5, 4], level);
+  const quick = lv([0.9, 1, 1.1], level);
+  const beams: HideBeam[] = [];
+  const flares: HideFlare[] = [];
+  /** Seconds a careful player ducks before a beam, and stays down after it. */
+  const lead = 0.25;
+  const lag = 0.2;
+  const kind = (): 'light' | 'fire' => (rand() < 0.5 ? 'light' : 'fire');
+  // The first comes on after its warning has had time to be seen.
+  let t = 4.6;
+  for (;;) {
+    const p = clamp(t / length, 0, 1);
+    const speed = (0.34 + 0.22 * p) * quick;
+    const count = rand() < 0.25 + 0.5 * p ? (p > 0.4 && rand() < 0.45 ? 3 : 2) : 1;
+    const cluster: HideBeam[] = [];
+    const inGaps: HideFlare[] = [];
+    let at = t;
+    let under = 0;
+    let longest = 0;
+    for (let i = 0; i < count; i++) {
+      const dur = (0.7 + rand() * 0.5) * (1 + 0.3 * p);
+      cluster.push({ at, dur, from: rand() < 0.5 ? -1 : 1, kind: kind(), speed });
+      under += dur;
+      if (i === count - 1) break;
+      // Room between two to come up (and maybe glimpse the battle), or so tight you stay down.
+      const open = rand() < 0.65;
+      const gap = open ? 1 + rand() * 0.4 - 0.25 * p : 0.25 + rand() * 0.15;
+      if (open) {
+        longest = Math.max(longest, under + lead + lag);
+        under = 0;
+        if (rand() < 0.75) inGaps.push({ at: at + dur + gap / 2, w: gap / 2, kind: kind() });
+      } else under += gap;
+      at += dur + gap;
+    }
+    longest = Math.max(longest, under + lead + lag);
+    // Too long under for your air: just the first beam.
+    if (longest > air * 0.8) {
+      cluster.length = 1;
+      inGaps.length = 0;
+      longest = cluster[0].dur + lead + lag;
+    }
+    const last = cluster[cluster.length - 1];
+    const end = last.at + last.dur;
+    if (end > length - 1.5) break;
+    beams.push(...cluster);
+    flares.push(...inGaps);
+    // The open marsh after: time to fill your lungs, and often a flare to see.
+    const rest = Math.max((HIDE_FILL * longest) / air + 0.8, ((3 - 1.4 * p) / quick) * (0.8 + rand() * 0.5));
+    if (rand() < 0.8) {
+      const fat = end + lag + 0.3 + rand() * Math.max(0, rest - lag - lead - 0.6);
+      const w = (0.85 - 0.3 * p) / quick;
+      if (fat + w < length - 0.3) flares.push({ at: fat, w, kind: kind() });
+    }
+    t = end + rest;
+  }
+  flares.sort((a, b) => a.at - b.at);
+  return { beams, flares, air, lives: lv([4, 3, 3], level), share: lv([0.6, 0.7, 0.75], level), length };
 }
 
-/** The notes' times in telling `r`, seconds from the first. */
-export function echoOffsets(g: EchoGame, r: number): number[] {
-  return g.steps.slice(0, Math.min(ECHO_MAX, g.first + r)).map((s) => (s * 30) / g.bpm);
-}
-
-/** Whether taps (seconds, any start) echo the offsets: as many, each in time with the first. */
-export function echoJudge(offsets: readonly number[], taps: readonly number[], tolerance: number): boolean {
-  return taps.length === offsets.length && taps.every((t, i) => Math.abs(t - taps[0] - offsets[i]) <= tolerance);
-}
-
-export class EchoSim implements CardSim {
+export class HideSim implements CardSim {
   result: CardOutcome | null = null;
   sounds: CardSound[] = [];
   t = 0;
-  round = 0;
-  phase: 'listen' | 'echo' | 'judge' = 'listen';
-  clock = -0.6;
-  /** Notes the teller has played this telling. */
-  played = 0;
-  /** Your taps this telling, by its clock. */
-  taps: number[] = [];
-  right = 0;
-  readonly marks: boolean[] = [];
+  /** Down is held. */
+  holding = false;
+  /** Under the mud now. */
+  under = false;
+  /** Air left, 0..1. */
+  air = 1;
+  /** Seconds left gasping (stuck up). */
+  gasp = 0;
+  /** Times a beam has caught you. */
+  seen = 0;
+  glimpsed = 0;
+  /** Each flare glimpsed, and each beam that saw you. */
+  readonly got: boolean[];
+  readonly caught: boolean[];
+  private warned = 0;
 
-  constructor(readonly game: EchoGame) {}
-
-  get offsets(): number[] {
-    return echoOffsets(this.game, this.round);
+  constructor(readonly game: HideGame) {
+    this.got = game.flares.map(() => false);
+    this.caught = game.beams.map(() => false);
   }
 
-  private get eighth(): number {
-    return 30 / this.game.bpm;
+  /** Flares over and done with (glimpsed or gone). */
+  get past(): number {
+    return this.game.flares.filter((f, i) => this.got[i] || this.t > f.at + f.w).length;
   }
 
   update(dt: number): void {
     if (this.result) return;
+    const g = this.game;
     this.t += dt;
-    if (this.t >= this.game.length) return this.end();
-    this.clock += dt;
-    const o = this.offsets;
-    if (this.phase === 'listen') {
-      while (this.played < o.length && this.clock >= o[this.played]) {
-        this.sounds.push({ s: 'teller', n: this.game.pitches[this.played] });
-        this.played++;
-      }
-      if (this.clock >= o[o.length - 1] + this.eighth * 3) {
-        this.phase = 'echo';
-        this.clock = 0;
-        this.taps = [];
-        this.sounds.push({ s: 'turn' });
-      }
-    } else if (this.phase === 'echo') {
-      const late = this.taps.length ? this.clock - this.taps[0] > o[o.length - 1] + 0.8 : this.clock > ECHO_WAIT;
-      if (late) this.judge();
-    } else if (this.clock >= ECHO_JUDGE) {
-      this.round++;
-      this.phase = 'listen';
-      this.clock = -0.4;
-      this.played = 0;
-      this.taps = [];
+    const t = this.t;
+    this.gasp = Math.max(0, this.gasp - dt);
+    const down = this.holding && this.gasp <= 0;
+    if (down !== this.under) {
+      this.under = down;
+      this.sounds.push({ s: down ? 'down' : 'up' });
     }
-  }
-
-  tap(): void {
-    if (this.phase !== 'echo' || this.result) return;
-    this.sounds.push({ s: 'tap', n: this.game.pitches[this.taps.length] ?? 0 });
-    this.taps.push(this.clock);
-    if (this.taps.length >= this.offsets.length) this.judge();
-  }
-
-  private judge(): void {
-    const ok = echoJudge(this.offsets, this.taps, this.game.tolerance);
-    this.marks.push(ok);
-    if (ok) this.right++;
-    this.sounds.push({ s: ok ? 'good' : 'bad' });
-    this.phase = 'judge';
-    this.clock = 0;
-  }
-
-  /** The song's over: judged on the tellings echoed. */
-  private end(): void {
-    const n = this.marks.length;
-    const passed = sharePasses(this.right, n, this.game.share);
-    this.result = { passed, note: passed ? `The story told back, ${this.right} of ${n} in time` : `The secret slipped: ${this.right} of ${n} in time (needed ${Math.max(1, Math.ceil(n * this.game.share - 1e-9))})` };
+    if (this.under) {
+      this.air -= dt / g.air;
+      if (this.air <= 0) {
+        this.air = 0;
+        this.under = false;
+        this.gasp = HIDE_GASP;
+        this.sounds.push({ s: 'gasp' });
+      }
+    } else this.air = Math.min(1, this.air + dt / HIDE_FILL);
+    while (this.warned < g.beams.length && t >= beamEnters(g.beams[this.warned]) - HIDE_WARN) this.sounds.push({ s: 'warn', n: g.beams[this.warned++].from });
+    if (!this.under)
+      g.beams.forEach((b, i) => {
+        if (this.caught[i] || t <= b.at + HIDE_EDGE || t >= b.at + b.dur - HIDE_EDGE) return;
+        this.caught[i] = true;
+        this.seen++;
+        this.sounds.push({ s: 'seen', n: this.seen });
+      });
+    if (this.seen >= g.lives) {
+      this.result = { passed: false, note: `Seen from the quagmire ${this.seen} times, and found` };
+      return;
+    }
+    // Gasping, eyes full of mud, you see nothing of the battle.
+    if (!this.under && this.gasp <= 0)
+      g.flares.forEach((f, i) => {
+        if (this.got[i] || Math.abs(t - f.at) > f.w) return;
+        this.got[i] = true;
+        this.glimpsed++;
+        this.sounds.push({ s: 'glimpse', n: this.glimpsed });
+      });
+    if (t >= g.length) {
+      const n = g.flares.length;
+      const passed = sharePasses(this.glimpsed, n, g.share);
+      this.result = {
+        passed,
+        note: passed ? `You saw it all from your hiding place: ${this.glimpsed} of ${n} glimpsed` : `${this.glimpsed} of ${n} glimpsed (needed ${Math.max(1, Math.ceil(n * g.share - 1e-9))})`,
+      };
+    }
   }
 }
 
@@ -969,6 +1055,6 @@ export function cardGameSeconds(kind: string, level: number, length?: number): n
     case 'acrid':
       return makeEmbers(1, level, length).end;
     default:
-      return length ?? { newworld: SHADOW_TIME, lifedeath: MIRROR_TIME, raconteur: ECHO_TIME, floatingfire: FIRE_TIME, future: SAT_TIME, munt: MUNT_TIME }[kind] ?? 30;
+      return length ?? { newworld: SHADOW_TIME, lifedeath: MIRROR_TIME, raconteur: HIDE_TIME, floatingfire: FIRE_TIME, future: SAT_TIME, munt: MUNT_TIME }[kind] ?? 30;
   }
 }

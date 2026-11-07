@@ -47,8 +47,11 @@ export interface KartModel {
   shadow: [number, number];
   /** Rotors that spin flat about their y axis, fast even at rest. */
   rotors?: THREE.Object3D[];
-  /** Flyers and hovercraft: no wheels touch the road, the body bobs, and the pads under it pulse. */
-  hover?: { bob: number; pads: THREE.Object3D[] };
+  /**
+   * Flyers and hovercraft: no wheels touch the road, the body bobs, and the pads under it pulse.
+   * `beat`: a bird holding itself up, the body rising on each downstroke of its `flappers` instead.
+   */
+  hover?: { bob: number; pads: THREE.Object3D[]; beat?: boolean };
   /** The driver's head: leans into turns and looks where it's steering. Built unrotated. */
   head?: THREE.Object3D;
   /** Tread textures that roll with the wheels; v runs along the tread, `perMeter` repeats per meter. */
@@ -3037,8 +3040,8 @@ function mindVoice(r: RacerDef): KartModel {
 
 // ---- The People-Vulture: Nonagon Infinity's boss ---------------------------------
 // "People-vultures waiting by my stage": a great black vulture with a man's
-// bald, frowning head on its long bare neck, a white ruff, wings spread and
-// beating, its talons hooked over the front of the stage monitor it rides.
+// bald, frowning head on its long bare neck and a white ruff, flying low over
+// the road with no kart under it, wings spread and beating, talons hanging.
 
 function peopleVulture(r: RacerDef): KartModel {
   const body = new THREE.Group();
@@ -3048,62 +3051,47 @@ function peopleVulture(r: RacerDef): KartModel {
   const skin = matte(0xe0a088, { shininess: 20 });
   const flush = matte(r.accent);
   const talon = matte(0xc8b880);
-  const cab = matte(0x1a1a1e);
-  const metal = chrome();
 
-  // The monitor: a black wedge on road-case wheels, its grille to the front, steel corners.
-  const wedge = new THREE.Shape();
-  wedge.moveTo(-1.15, 0);
-  wedge.lineTo(1.15, 0);
-  wedge.lineTo(1.15, 0.45);
-  wedge.lineTo(-0.6, 0.8);
-  wedge.lineTo(-1.15, 0.8);
-  wedge.closePath();
-  const wedgeGeo = new THREE.ExtrudeGeometry(wedge, { depth: 1.5, bevelEnabled: false }).translate(0, 0, -0.75).rotateY(-Math.PI / 2);
-  put(body, wedgeGeo, cab, [0, 0.32, 0]);
-  const grille = matte(0xffffff, { map: tex('grille', grilleTexture) });
-  // The sloped face: speaker grille, two cones behind it.
-  const slope = Math.atan2(0.35, 1.75);
-  const onSlope = (z: number) => 0.32 + 0.45 + ((1.15 - z) / 1.75) * 0.35 + 0.012;
-  put(body, new THREE.PlaneGeometry(1.36, 1.74), grille, [0, onSlope(0.28), 0.28], [-Math.PI / 2 + slope, 0, 0]);
-  for (const z of [0.7, 0.0]) put(body, ring(0.24, 0.035), metal, [0, onSlope(z), z], [-Math.PI / 2 + slope, 0, 0]);
-  for (const x of [-0.76, 0.76]) for (const z of [1.15, -1.15]) put(body, box(0.08, 0.12, 0.08), metal, [x, 0.36, z]);
-
-  // The bird, perched hunched on the monitor's back.
+  // It flies: the bird rides low over the road, its talons hanging clear of it.
   const bird = new THREE.Group();
-  bird.position.set(0, 1.25, -0.45);
+  bird.position.set(0, 1.4, -0.1);
   body.add(bird);
-  put(bird, ball(0.55, 20, 14), feather, [0, 0.25, 0], [0.35, 0, 0], [1.0, 1.1, 1.35]);
+  // The body, level in flight and long, tipped a little nose-up.
+  put(bird, ball(0.55, 20, 14), feather, [0, 0.12, 0], [0.12, 0, 0], [1.0, 0.95, 1.45]);
   // Rows of feather points down the back and flanks.
   for (let k = 0; k < 14; k++) {
     const side = k % 2 ? 1 : -1;
     const row = Math.floor(k / 2);
-    put(bird, cone(0.12, 0.42, 6), k % 3 ? feather : tip, [side * (0.32 + (row % 2) * 0.1), 0.1 + row * 0.05, -0.2 - row * 0.08], [-1.9, 0, side * 0.3]);
+    put(bird, cone(0.12, 0.42, 6), k % 3 ? feather : tip, [side * (0.32 + (row % 2) * 0.1), 0.18 - row * 0.03, -0.1 - row * 0.1], [-1.75, 0, side * 0.3]);
   }
-  // The tail: a fan of long feathers down behind.
-  for (let k = -3; k <= 3; k++) put(bird, box(0.14, 0.04, 0.8), k % 2 ? tip : feather, [k * 0.08, -0.25, -0.8], [0.5, k * 0.16, 0]);
+  // The tail: a fan of long feathers spread out flat behind.
+  for (let k = -3; k <= 3; k++) put(bird, box(0.14, 0.04, 0.85), k % 2 ? tip : feather, [k * 0.09, 0.0, -0.95], [0.12, k * 0.17, 0]);
   // The ruff: a fluffy white collar where the bare neck comes out.
   for (let k = 0; k < 12; k++) {
     const a = (k / 12) * Math.PI * 2;
-    put(bird, ball(0.14, 10, 8), ruff, [Math.cos(a) * 0.28, 0.72 + Math.sin(a * 2) * 0.03, 0.32 + Math.sin(a) * 0.2]);
+    put(bird, ball(0.14, 10, 8), ruff, [Math.cos(a) * 0.28, 0.5 + Math.sin(a) * 0.12, 0.5 + Math.sin(a * 2) * 0.03]);
   }
-  // The legs: bare and scaled, talons hooked over the monitor's front edge.
+  // The legs: bare and scaled, hanging down and trailing back in flight, the talons open and hooked.
   for (const side of [-1, 1]) {
-    const hip: [number, number, number] = [side * 0.3, -0.15, 0.25];
-    const ankle: [number, number, number] = [side * 0.42, -0.4, 0.95];
-    rod(bird, hip, ankle, 0.07, feather, 0.05);
+    const hip: [number, number, number] = [side * 0.28, -0.3, 0.0];
+    const ankle: [number, number, number] = [side * 0.36, -0.78, -0.38];
+    rod(bird, hip, ankle, 0.075, feather, 0.05);
     for (let t = -1; t <= 1; t++) {
-      const toe: [number, number, number] = [ankle[0] + t * 0.1, ankle[1] - 0.12, ankle[2] + 0.18];
+      const toe: [number, number, number] = [ankle[0] + t * 0.1, ankle[1] - 0.16, ankle[2] + 0.14];
       rod(bird, ankle, toe, 0.03, talon);
-      put(bird, cone(0.025, 0.12, 5), tip, [toe[0], toe[1] - 0.04, toe[2] + 0.02], [2.6, 0, 0]);
+      put(bird, cone(0.025, 0.12, 5), tip, [toe[0], toe[1] - 0.03, toe[2] + 0.04], [2.3, 0, 0]);
     }
+    // The hind talon, hooked back.
+    const back: [number, number, number] = [ankle[0], ankle[1] - 0.12, ankle[2] - 0.14];
+    rod(bird, ankle, back, 0.028, talon);
+    put(bird, cone(0.022, 0.1, 5), tip, [back[0], back[1] - 0.03, back[2] - 0.03], [-2.3, 0, 0]);
   }
 
   // The wings: spread wide and beating, a fan of long dark primaries at each tip.
   const flappers: THREE.Object3D[] = [];
   for (const side of [-1, 1]) {
     const wing = new THREE.Group();
-    wing.position.set(side * 0.4, 0.45, 0.05);
+    wing.position.set(side * 0.4, 0.3, 0.1);
     wing.userData.side = side;
     put(wing, ball(0.3, 12, 8), feather, [side * 0.45, 0.05, -0.05], [0, 0, side * 0.2], [1.8, 0.35, 1.0]);
     put(wing, ball(0.28, 12, 8), feather, [side * 0.9, 0.12, -0.15], [0, 0, side * 0.1], [1.6, 0.3, 1.0]);
@@ -3117,14 +3105,14 @@ function peopleVulture(r: RacerDef): KartModel {
     flappers.push(wing);
   }
 
-  // The neck: long, bare and wrinkled, craning forward.
-  const neckPts: [number, number, number][] = [[0, 0.7, 0.3], [0, 1.0, 0.45], [0, 1.18, 0.7]];
+  // The neck: long, bare and wrinkled, craning up and forward, the head held high enough to show over the back.
+  const neckPts: [number, number, number][] = [[0, 0.45, 0.45], [0, 0.78, 0.62], [0, 1.0, 0.85]];
   tube(bird, neckPts, 0.1, skin);
-  for (let k = 0; k < 4; k++) put(bird, ring(0.1, 0.012), flush, [0, 0.8 + k * 0.1, 0.36 + k * 0.08], [Math.PI / 2 - 0.6, 0, 0]);
+  for (let k = 0; k < 4; k++) put(bird, ring(0.1, 0.012), flush, [0, 0.58 + k * 0.1, 0.52 + k * 0.08], [Math.PI / 2 - 0.6, 0, 0]);
 
   // The head: a man's, bald and wrinkled, heavy-browed and frowning, a great hooked nose for a beak.
   const head = new THREE.Group();
-  head.position.set(0, 2.5, 0.38);
+  head.position.set(0, 2.52, 0.88);
   head.scale.setScalar(1.25);
   put(head, ball(0.24, 20, 16), skin, [0, 0.05, 0], [0, 0, 0], [0.92, 1.05, 1.0]);
   for (let k = 0; k < 3; k++) put(head, ring(0.12, 0.008, Math.PI * 0.8), flush, [0, 0.2 + k * 0.03, 0.17 - k * 0.02], [0.3, 0, Math.PI * 0.6]);
@@ -3137,21 +3125,23 @@ function peopleVulture(r: RacerDef): KartModel {
   // A thin downturned mouth and a jowly chin.
   put(head, ring(0.06, 0.012, Math.PI), matte(0x5a1a1a), [0, -0.1, 0.21], [0, 0, 0]);
   put(head, ball(0.1, 10, 8), skin, [0, -0.15, 0.13], [0, 0, 0], [1.2, 0.6, 0.8]);
-  // A wisp of grey hair either side.
+  // A wisp of grey hair either side, and a bald crown that shows from behind: wrinkles round the back of the skull.
   for (const side of [-1, 1]) put(head, ball(0.05, 8, 6), ruff, [side * 0.2, 0.14, -0.06], [0, 0, 0], [0.6, 1.2, 1]);
+  for (let k = 0; k < 2; k++) put(head, ring(0.14 - k * 0.03, 0.008, Math.PI * 0.7), flush, [0, 0.02 + k * 0.06, -0.19], [0, Math.PI, Math.PI * 0.65]);
   body.add(head);
 
   return {
     body,
-    wheels: [-1, 1].flatMap((side) => [
-      { x: side * 0.88, z: 0.85, radius: 0.32, width: 0.22, front: true },
-      { x: side * 0.88, z: -0.85, radius: 0.32, width: 0.22, front: false },
-    ]),
-    exhausts: [new THREE.Vector3(-0.45, 0.6, -1.25), new THREE.Vector3(0.45, 0.6, -1.25)],
-    rearTrack: 0.88,
-    rearZ: -0.85,
+    wheels: [],
+    // Boost fire out under the tail.
+    exhausts: [new THREE.Vector3(-0.2, 1.4, -1.35), new THREE.Vector3(0.2, 1.4, -1.35)],
+    rearTrack: 0.6,
+    rearZ: -0.8,
     spinners: [],
-    shadow: [3.6, 3.2],
+    // The spread wings' shadow on the road under it.
+    shadow: [4.4, 2.6],
+    // No pads: it holds itself up, the body rising on each downstroke.
+    hover: { bob: 0.1, pads: [], beat: true },
     head,
     flappers,
   };

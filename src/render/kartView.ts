@@ -139,7 +139,7 @@ export class KartView {
   private readonly wheels: { mesh: THREE.Object3D; radius: number }[] = [];
   private readonly spinners: THREE.Object3D[];
   private readonly rotors: THREE.Object3D[];
-  private readonly hover: { bob: number; pads: THREE.Object3D[] } | null;
+  private readonly hover: { bob: number; pads: THREE.Object3D[]; beat?: boolean } | null;
   private readonly head: THREE.Object3D | null;
   private readonly treads: { map: THREE.Texture; perMeter: number }[];
   private readonly flappers: THREE.Object3D[];
@@ -425,7 +425,9 @@ export class KartView {
     }
     // Flyers float over rough ground; they bank harder instead.
     const rumble = !this.hover && s.surface === 'offroad' && s.grounded && Math.abs(s.speed) > 2 ? Math.sin(time * 55) * 0.03 : 0;
-    const bob = this.hover ? Math.sin(time * 3.1 + this.phase) * this.hover.bob : 0;
+    // Wings beat lazily at rest and hard under boost; a bird that holds itself up rises on each downstroke.
+    const beat = Math.sin(time * (s.boostTime > 0 ? 22 : 7 + speedRatio * 6) + this.phase);
+    const bob = !this.hover ? 0 : this.hover.beat ? -beat * this.hover.bob : Math.sin(time * 3.1 + this.phase) * this.hover.bob;
     this.body.position.set(0, this.bounce * 0.08 + rumble + bob, 0);
     this.body.rotation.set(this.pitch, 0, this.roll * (this.hover ? 1.8 : 1));
     this.animateDrift(s, frameDt, time);
@@ -444,8 +446,6 @@ export class KartView {
       const pulse = 1 + Math.sin(time * 9 + this.phase) * 0.12 + speedRatio * 0.25;
       for (const p of this.hover.pads) p.scale.setScalar(pulse);
     }
-    // Wings beat lazily at rest and hard under boost.
-    const beat = Math.sin(time * (s.boostTime > 0 ? 22 : 7 + speedRatio * 6) + this.phase);
     for (const f of this.flappers) f.rotation.z = (f.userData.side as number) * (0.12 + beat * 0.3);
     if (this.legs.length) this.animateRun(s, frameDt);
     if (this.segments.length) this.animateSlither(s, frameDt, time);
