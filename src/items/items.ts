@@ -135,7 +135,8 @@ const BOX_RADIUS = 1.4;
 /** The least gap (m) between the boxes of a row: a row of 8 on a narrow road keeps as many as fit at this spacing. */
 const BOX_GAP = 2;
 const MINE_RADIUS = 1.2;
-const MINE_ARM = 0.4;
+/** Seconds a dropped banana takes to arm. */
+export const MINE_ARM = 0.4;
 const MAX_MINES = 12;
 const MISSILE_SPEED = 55;
 const MISSILE_LIFE = 7;
@@ -241,7 +242,7 @@ export type ItemEvent =
   /** Drove through an item box, full slot or not. */
   | { type: 'box'; kart: ItemHolder; double: boolean; x: number; y: number; z: number }
   /** `from` is whoever fired the item; absent for hazards. `push` is a shove (m/s, world) that came with it. */
-  | { type: 'hit'; kart: ItemHolder; by: ItemKind | HazardKind; from?: ItemHolder; push?: [number, number] }
+  | { type: 'hit'; kart: ItemHolder; by: ItemKind | HazardKind; from?: ItemHolder; push?: [number, number]; robbed?: ItemKind }
   /** A held item took the hit instead. */
   | { type: 'block'; kart: ItemHolder; by: ItemKind; from?: ItemHolder }
   /** Rode over a Nonagon Infinity. */

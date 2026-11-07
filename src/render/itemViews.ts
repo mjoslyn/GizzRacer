@@ -20,7 +20,11 @@ import { alphaParts, poseAlphas } from './rapidAlphaDecay';
 import { poseSweeper, sweeperParts } from './allIsKnown';
 import { poseShark, sharkParts } from './muddyWater';
 import { dozeParts, poseDoze } from './theWheel';
-import { BOX_RESPAWN, SHIELD_ITEMS, WAVE_RANGE, type ItemHolder, type ItemSystem } from '../items/items';
+import { BOX_RESPAWN, ITEM_KINDS, MINE_ARM as MINE_ARM_TIME, SHIELD_ITEMS, WAVE_RANGE, type Burst, type ItemEvent, type ItemHolder, type ItemSystem, type Mine, type Missile, type Surge, type Wave } from '../items/items';
+import { FxSystem } from './fx/fxSystem';
+import { TILE } from './fx/particles';
+import { armBlink, tossArc } from './fx/envelopes';
+import { ITEM_COLOR, bananaPop, bananaSplat, boxBreak, dustRing, embers, flash, fusionBlast, laserHit, shieldBreak, shockRing, smoke, sparks, surgeBreak, surgeFade, waspFizzle, waspStrike } from './fx/effects';
 import type { KartState } from '../physics/kart';
 import type { HazardSystem } from '../items/hazards';
 import { KIT_HAZARD_VIEWS } from '../kits/views';
@@ -33,7 +37,6 @@ const MISSILE_POOL = 8;
 const WAVE_POOL = 4;
 const SNAKE_SEGMENTS = 9;
 const KART_POOL = 12;
-const NOTE_POOL = 32;
 const NOTES_PER_FLURRY = 10;
 const FX_POOL = 4;
 /** Seconds a broken item box takes to burst and vanish. */
@@ -52,7 +55,33 @@ export interface ItemKartView {
   holder: ItemHolder;
 }
 
-/** Item boxes, mines, missiles and wave rings, mirrored from an ItemSystem each frame. */
+/** Seconds a dropped banana takes to arc from the kart to the road. */
+const TOSS = 0.32;
+/** How long the Big Fig Wasp spends getting clear of the kart before it reads as flying. */
+const WASP_LAUNCH = 0.15;
+
+/** What the view keeps on an item between frames: when it appeared, where from, and how it was moving. */
+interface ItemLife {
+  born: number;
+  x: number;
+  y: number;
+  z: number;
+  heading: number;
+  roll: number;
+  trail: number;
+}
+
+/** Whether `list` holds `o` (a dozen at most: no Set to build each frame). */
+function holds<T>(list: readonly T[], o: T): boolean {
+  for (let i = 0; i < list.length; i++) if (list[i] === o) return true;
+  return false;
+}
+
+/**
+ * Item boxes, bananas, wasps, wave rings and the band's items, mirrored from
+ * an ItemSystem each frame, with what they throw about as they're fired,
+ * fly, land and go off drawn through the pooled particles (fx/fxSystem.ts).
+ */
 export class ItemsView {
   readonly group = new THREE.Group();
   private readonly boxes: THREE.Mesh[] = [];
@@ -64,16 +93,31 @@ export class ItemsView {
   private readonly heldPicks: THREE.Group[] = [];
   /** Road Train: a ring of drumheads round the kart. */
   private readonly auras: THREE.Mesh[] = [];
-  private readonly notes: THREE.Sprite[] = [];
   private readonly drops: THREE.Mesh[] = [];
   private readonly cables: THREE.Line[] = [];
   private readonly wails: THREE.Mesh[] = [];
   private readonly beams: THREE.Group[] = [];
   private readonly surge: THREE.Group;
-  /** Shards of glass flying off a broken box. */
-  private readonly shards: THREE.Sprite[] = [];
+  private readonly fx: FxSystem;
+  /** The particles are this view's own (drawn in its flipped group), not the race's shared ones. */
+  private readonly ownFx: boolean;
+  /** Each item's life as this view has seen it, by the item. */
+  private readonly lives = new Map<object, ItemLife>();
+  private readonly seenMines: Mine[] = [];
+  private readonly seenMissiles: Missile[] = [];
+  private readonly seenWaves: Wave[] = [];
+  private readonly seenBursts: Burst[] = [];
+  private seenSurge: Surge | null = null;
+  private readonly surgeAt = { x: 0, y: 0, z: 0 };
+  private readonly boxWait: Float32Array;
+  private last = -1;
+  private dt = 0;
 
-  constructor(private readonly items: ItemSystem) {
+  constructor(private readonly items: ItemSystem, fx?: FxSystem) {
+    this.ownFx = !fx;
+    this.fx = fx ?? new FxSystem();
+    if (this.ownFx) this.group.add(this.fx.group);
+    this.boxWait = new Float32Array(items.boxes.length);
     const boxGeo = new THREE.BoxGeometry(1.5, 1.5, 1.5);
     const boxMat = new THREE.MeshPhongMaterial({ map: itemBoxTexture(), shininess: 90, specular: 0xffffff, emissive: 0x402050, transparent: true, opacity: 0.92 });
     // A double box glows gold and holds a second box inside it.
@@ -92,12 +136,6 @@ export class ItemsView {
     }
 
     const glow = glowTexture();
-    for (let i = 0; i < 16; i++) {
-      const sh = sprite(glow, 0xfff0ff, 0.5);
-      sh.visible = false;
-      this.shards.push(sh);
-      this.group.add(sh);
-    }
     // Microtonal Banana: a ripe banana dropped on the road, glowing faintly.
     const bananaCurve = new THREE.QuadraticBezierCurve3(new THREE.Vector3(-0.75, 0.25, 0), new THREE.Vector3(0, -0.45, 0), new THREE.Vector3(0.75, 0.25, 0));
     const bananaGeo = new THREE.TubeGeometry(bananaCurve, 16, 0.24, 10, false);
@@ -145,6 +183,9 @@ export class ItemsView {
     const eyeGeo = new THREE.SphereGeometry(0.09, 8, 6);
     const stingGeo = new THREE.ConeGeometry(0.07, 0.4, 8);
     stingGeo.rotateX(-Math.PI / 2);
+    // The saw-blade mandibles: a toothed ring that spins in front of the head.
+    const sawGeo = new THREE.RingGeometry(0.1, 0.22, 10, 1);
+    const sawMat = new THREE.MeshBasicMaterial({ color: 0xd0d8e0, side: THREE.DoubleSide });
     for (let i = 0; i < MISSILE_POOL; i++) {
       const g = new THREE.Group();
       const wings = [1, -1].map((side) => {
@@ -170,7 +211,10 @@ export class ItemsView {
       });
       const sting = new THREE.Mesh(stingGeo, stripeMat);
       sting.position.z = -1.05;
-      g.add(...wings, abdomen, ...stripes, head, ...eyes, sting, sprite(glow, 0xffb040, 2.4));
+      const saw = new THREE.Mesh(sawGeo, sawMat);
+      saw.position.set(0, -0.08, 0.6);
+      // children: 0, 1 wings; 2 abdomen; 3..5 stripes; 6 head; 7, 8 eyes; 9 sting; 10 glow; 11 saw.
+      g.add(...wings, abdomen, ...stripes, head, ...eyes, sting, sprite(glow, 0xffb040, 2.4), saw);
       g.visible = false;
       this.missiles.push(g);
       this.group.add(g);
@@ -193,6 +237,9 @@ export class ItemsView {
       this.heldMines.push(mine);
       const pickHeld = this.missiles[0].clone();
       pickHeld.scale.setScalar(0.6);
+      // Its own glow: a wasp in flight turns its red as it homes.
+      const pickGlow = pickHeld.children[10] as THREE.Sprite;
+      pickGlow.material = pickGlow.material.clone();
       pickHeld.visible = false;
       this.heldPicks.push(pickHeld);
       this.group.add(mine, pickHeld);
@@ -203,14 +250,6 @@ export class ItemsView {
       this.group.add(aura);
     }
 
-    const note = noteTexture();
-    for (let i = 0; i < NOTE_POOL; i++) {
-      const n = new THREE.Sprite(new THREE.SpriteMaterial({ map: note, color: 0xb0ffe8, transparent: true, depthWrite: false }));
-      n.scale.setScalar(0.9);
-      n.visible = false;
-      this.notes.push(n);
-      this.group.add(n);
-    }
     for (let i = 0; i < FX_POOL; i++) {
       const drop = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0x9a40ff, transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending }));
       drop.visible = false;
@@ -254,11 +293,55 @@ export class ItemsView {
     this.group.add(this.surge);
   }
 
-  update(elapsed: number, karts: readonly ItemKartView[] = []): void {
-    let shard = 0;
+  /** `events` are the item events since the last frame (a held item breaking as it takes a hit). */
+  update(elapsed: number, karts: readonly ItemKartView[] = [], events: readonly ItemEvent[] = []): void {
+    this.dt = this.last < 0 ? 0 : Math.max(0, Math.min(0.1, elapsed - this.last));
+    this.last = elapsed;
+    if (this.ownFx) this.fx.begin(this.dt);
+    // The items' world is flipped in mirror mode by this group; the shared particles aren't in it.
+    else this.fx.flip(this.group.scale.x < 0);
+    this.updateBoxes(elapsed);
+    this.updateHeld(elapsed, karts);
+    this.updateBursts(elapsed, karts);
+    this.updateMines(elapsed, karts);
+    this.updateMissiles(elapsed, karts);
+    this.updateWaves(elapsed);
+    this.updateSurge(elapsed, karts);
+    for (const e of events) {
+      if (e.type !== 'block') continue;
+      const s = this.stateOf(e.kart, karts);
+      const fx_ = Math.sin(s.heading);
+      const fz = Math.cos(s.heading);
+      shieldBreak(this.fx, s.x - fx_ * 2.3, s.y + 0.8, s.z - fz * 2.3, s.groundY, e.by === 'riffMissile');
+    }
+    if (this.ownFx) this.fx.end();
+    else this.fx.flip(false);
+  }
+
+  private stateOf(h: ItemHolder, karts: readonly ItemKartView[]): KartState {
+    for (const k of karts) if (k.holder === h) return k.state;
+    return h.state;
+  }
+
+  /** An item's life, begun now if it's new. */
+  private life(o: object, x: number, y: number, z: number, heading: number, elapsed: number): ItemLife {
+    let l = this.lives.get(o);
+    if (!l) {
+      l = { born: elapsed, x, y, z, heading, roll: 0, trail: 0 };
+      this.lives.set(o, l);
+    }
+    return l;
+  }
+
+  /** Boxes bob and turn; one driven through bursts into prism glass, and fades back in with a twinkle. */
+  private updateBoxes(elapsed: number): void {
+    const fx = this.fx;
     this.items.boxes.forEach((b, i) => {
       const m = this.boxes[i];
-      // Just broken: it swells and spins away in a spray of glass. Then it pops back in over the last half second of the respawn.
+      if (b.respawn > this.boxWait[i] + 0.01) boxBreak(fx, b.x, b.y, b.z, b.double);
+      if (b.respawn === 0 && this.boxWait[i] > 0) embers(fx, TILE.star, b.x, b.y, b.z, 3, b.double ? 0xffe080 : 0xff9af8, 0xffffff, 0.6, 0.35, 0.5);
+      this.boxWait[i] = b.respawn;
+      // Just broken: it swells and spins away. Then it pops back in over the last half second of the respawn.
       const broken = BOX_RESPAWN - b.respawn;
       const popping = b.respawn > 0 && broken < BOX_POP;
       const scale = popping ? 1 + (broken / BOX_POP) * 0.9 : b.respawn === 0 ? 1 : Math.max(0, 1 - b.respawn / 0.5);
@@ -266,52 +349,18 @@ export class ItemsView {
       m.scale.setScalar(scale * (b.double ? 1.2 : 1));
       m.position.y = b.y + Math.sin(elapsed * 2.4 + i) * 0.18;
       m.rotation.set(0.5, elapsed * (popping ? 14 : 1.6) + i, 0.3);
-      if (b.respawn > 0 && broken < 0.5) {
-        const u = broken / 0.5;
-        for (let k = 0; k < 4 && shard < this.shards.length; k++, shard++) {
-          const sh = this.shards[shard];
-          const a = i * 1.7 + k * (Math.PI / 2);
-          sh.visible = true;
-          sh.position.set(b.x + Math.cos(a) * u * 3, b.y + u * 2 - u * u * 3, b.z + Math.sin(a) * u * 3);
-          sh.material.opacity = 1 - u;
-          sh.material.color.setHex(b.double ? 0xffe080 : 0xfff0ff);
-        }
+      // Its shadow on the road, and a slow shimmer of light round a gold one.
+      if (m.visible) fx.alpha.spawn(TILE.shadow).at(b.x, b.y - 1.05, b.z).life(0).size(1.9 * scale).color(0, 0, 0.35).flat();
+      if (b.double && b.respawn === 0) {
+        const a = elapsed * 2 + i;
+        fx.add.spawn(TILE.star).at(b.x + Math.cos(a) * 1.3, m.position.y + Math.sin(a * 1.7) * 0.4, b.z + Math.sin(a) * 1.3).life(0).size(0.35).color(0xffe080, 0xffe080, 0.8).spin(a);
       }
-    });
-    for (; shard < this.shards.length; shard++) this.shards[shard].visible = false;
-    this.updateHeld(elapsed, karts);
-    this.updateBursts(elapsed, karts);
-    this.mines.forEach((g, i) => {
-      const m = this.items.mines[i];
-      g.visible = !!m;
-      if (!m) return;
-      g.position.set(m.x, m.y + 0.7 + Math.sin(elapsed * 5 + i) * 0.1, m.z);
-      g.rotation.y = elapsed * 2.5;
-    });
-    this.missiles.forEach((g, i) => {
-      const m = this.items.missiles[i];
-      g.visible = !!m;
-      if (!m) return;
-      g.position.set(m.x, m.y, m.z);
-      g.rotation.set(0, m.heading, 0);
-      // Wings buzzing.
-      const flap = Math.sin(elapsed * 60) * 0.5;
-      g.children[0].rotation.z = flap;
-      g.children[1].rotation.z = -flap;
-    });
-    this.waves.forEach((r, i) => {
-      const w = this.items.waves[i];
-      r.visible = !!w;
-      if (!w) return;
-      const t = w.age / 0.8;
-      r.position.set(w.x, w.y + 0.5, w.z);
-      r.scale.setScalar(1 + (WAVE_RANGE - 1) * Math.min(1, t * 1.6));
-      (r.material as THREE.MeshBasicMaterial).opacity = 1 - t;
     });
   }
 
-  /** Shields trailing behind, and the Road Train's ring. */
+  /** Shields trailing behind on a swing, the Road Train's ring beating, and a glint of what each kart holds. */
   private updateHeld(elapsed: number, karts: readonly ItemKartView[]): void {
+    const fx = this.fx;
     for (let i = 0; i < KART_POOL; i++) {
       const k = karts[i];
       const held = k && k.holder.rolling === 0 ? k.holder.item : null;
@@ -324,63 +373,141 @@ export class ItemsView {
       aura.visible = !!k && k.state.ramTime > 0;
       if (!k) continue;
       const s = k.state;
-      const fx = Math.sin(s.heading);
+      const fx_ = Math.sin(s.heading);
       const fz = Math.cos(s.heading);
+      const rx = fz;
+      const rz = -fx_;
       const bob = Math.sin(elapsed * 6 + i) * 0.12;
-      if (shield) {
-        const g = shield === 'microtonalMine' ? mine : pick;
-        g.position.set(s.x - fx * 2.3, s.y + 0.7 + bob, s.z - fz * 2.3);
-        g.rotation.set(0, s.heading + (shield === 'microtonalMine' ? elapsed * 2.5 : 0), 0);
+      if (shield === 'microtonalMine') {
+        // On a tether: it swings behind like a pendulum, lags in the turns and wavers a quarter tone.
+        const swing = Math.sin(elapsed * 3.1 + i) * 0.35 - s.steer * 0.5;
+        mine.position.set(s.x - fx_ * 2.3 + rx * swing, s.y + 0.7 + bob, s.z - fz * 2.3 + rz * swing);
+        mine.rotation.set(0, s.heading + elapsed * 2.5, Math.sin(elapsed * 7 + i) * 0.12);
+        const glow = mine.children[1] as THREE.Sprite;
+        glow.scale.setScalar(2.2 * (1 + 0.15 * Math.sin(elapsed * 4 + i)));
+        fx.alpha.spawn(TILE.shadow).at(mine.position.x, s.groundY + 0.05, mine.position.z).life(0).size(0.9).color(0, 0, 0.4).flat();
+      } else if (shield === 'riffMissile') {
+        // Hovering at your back, darting a little side to side, wings a blur.
+        const dart = Math.sin(elapsed * 2.3 + i * 2) * 0.3 + Math.sin(elapsed * 11 + i) * 0.05;
+        pick.position.set(s.x - fx_ * 2.3 + rx * dart, s.y + 0.9 + bob * 0.6, s.z - fz * 2.3 + rz * dart);
+        pick.rotation.set(Math.sin(elapsed * 5 + i) * 0.08, s.heading, -dart * 0.4);
+        const flap = Math.sin(elapsed * 60 + i) * 0.5;
+        pick.children[0].rotation.z = flap;
+        pick.children[1].rotation.z = -flap;
+        pick.children[11].rotation.z = elapsed * 30;
+        fx.alpha.spawn(TILE.shadow).at(pick.position.x, s.groundY + 0.05, pick.position.z).life(0).size(0.8).color(0, 0, 0.35).flat();
+      } else if (held) {
+        // Anything else in hand: a mote of its colour circling the kart, slow and low.
+        const a = elapsed * 2.2 + i * 1.3;
+        fx.add.spawn(TILE.glow).at(s.x + Math.cos(a) * 1.3, s.y + 1.4 + Math.sin(elapsed * 3 + i) * 0.15, s.z + Math.sin(a) * 1.3).life(0).size(0.5).color(ITEM_COLOR[held], ITEM_COLOR[held], 0.75);
+      } else if (k.holder.item && k.holder.rolling > 0) {
+        // The roulette: the mote flickers through the colours.
+        const kinds = ITEM_KINDS;
+        const c = ITEM_COLOR[kinds[Math.floor(elapsed * 14 + i) % kinds.length]];
+        fx.add.spawn(TILE.glow).at(s.x, s.y + 2.1, s.z).life(0).size(0.7).color(c, c, 0.8);
       }
-      if (aura.visible) {
-        aura.position.set(s.x, s.y + 0.6, s.z);
-        aura.scale.setScalar(1 + Math.sin(elapsed * 30) * 0.08);
-        (aura.material as THREE.MeshBasicMaterial).opacity = Math.min(1, s.ramTime) * (0.6 + 0.4 * Math.abs(Math.sin(elapsed * 15)));
-      }
+      if (aura.visible) this.drumRoll(aura, s, elapsed, i);
+    }
+  }
+
+  /** The Road Train: the drumheads beat in a roll, the road shakes up dust at the front, rimshots spark. */
+  private drumRoll(aura: THREE.Mesh, s: KartState, elapsed: number, i: number): void {
+    const fx = this.fx;
+    const beat = (elapsed * 8 + i * 0.37) % 1;
+    const hit = (1 - beat) ** 3;
+    aura.position.set(s.x, s.y + 0.6, s.z);
+    aura.scale.setScalar(1 + hit * 0.16);
+    (aura.material as THREE.MeshBasicMaterial).opacity = Math.min(1, s.ramTime) * (0.55 + 0.45 * hit);
+    const fx_ = Math.sin(s.heading);
+    const fz = Math.cos(s.heading);
+    if (s.grounded && Math.random() < this.dt * 22 * fx.scale) {
+      const side = Math.random() < 0.5 ? -1 : 1;
+      fx.alpha.spawn(TILE.puff).at(s.x + fx_ * 1.6 + fz * side * 1.2, s.groundY + 0.3, s.z + fz * 1.6 - fx_ * side * 1.2).vel(fz * side * 3 + fx_ * s.speed * 0.4, 1, -fx_ * side * 3 + fz * s.speed * 0.4).life(0.6).size(0.9, 1.4).color(0xd8b890, 0xd8b890, 0.5).physics(0, 2).spin(Math.random() * 6).fade(0.04, 0.2);
+    }
+    if (beat < this.dt * 8) {
+      const a = Math.random() * Math.PI * 2;
+      fx.add.spawn(TILE.flare).at(s.x + Math.cos(a) * 1.9, s.y + 0.6, s.z + Math.sin(a) * 1.9).life(0.12).size(0.9, 0.5).color(0xfff0c0, 0xffb040).spin(a);
     }
   }
 
   /** The band's items going off, and the Nonagon Infinity. */
   private updateBursts(elapsed: number, karts: readonly ItemKartView[]): void {
-    const at = (h: ItemHolder | null) => (h ? karts.find((k) => k.holder === h)?.state ?? h.state : null);
-    let note = 0;
+    const fx = this.fx;
+    const at = (h: ItemHolder | null) => (h ? this.stateOf(h, karts) : null);
     let drop = 0;
     let cable = 0;
     let wail = 0;
     let beam = 0;
+    // The ones that have just gone: a cable snapping back.
+    for (const b of this.seenBursts) {
+      if (holds(this.items.bursts, b)) continue;
+      this.lives.delete(b);
+      const to = at(b.to);
+      if (b.kind === 'patchCable' && to) sparks(fx, to.x, to.y + 1, to.z, 8, 0xe0e8ff, 5, to.groundY);
+    }
+    this.seenBursts.length = 0;
     for (const b of this.items.bursts) {
+      this.seenBursts.push(b);
+      const fresh = !this.lives.has(b);
+      this.life(b, b.x, b.y, b.z, b.heading, elapsed);
       const u = Math.min(1, b.age / b.life);
       const from = at(b.from);
       const ox = from?.x ?? b.x;
       const oy = from?.y ?? b.y;
       const oz = from?.z ?? b.z;
+      const ground = from?.groundY ?? b.y;
+      const fx_ = Math.sin(b.heading);
+      const fz = Math.cos(b.heading);
       switch (b.kind) {
-        case 'fluteFlurry':
-          // Notes fan out ahead along the cone.
-          for (let k = 0; k < NOTES_PER_FLURRY && note < NOTE_POOL; k++, note++) {
-            const n = this.notes[note];
-            const a = b.heading + (k / (NOTES_PER_FLURRY - 1) - 0.5) * 0.9;
+        case 'fluteFlurry': {
+          // A breath into the flute, then the notes skirl out along the cone on wavering paths, each with a glint behind it.
+          if (fresh) smoke(fx, b.x + fx_ * 1.5, b.y + 1.2, b.z + fz * 1.5, 3, 0xc8fff0, 0.8, 0.5, 0.8, 0.5, 0.4);
+          for (let k = 0; k < NOTES_PER_FLURRY; k++) {
+            const a = b.heading + (k / (NOTES_PER_FLURRY - 1) - 0.5) * 0.9 + Math.sin(elapsed * 9 + k * 1.7) * 0.06;
             const d = b.len * Math.min(1, u * 1.2 + (k % 3) * 0.05);
-            n.visible = true;
-            n.position.set(b.x + Math.sin(a) * d, b.y + 1.2 + Math.sin(elapsed * 12 + k) * 0.4, b.z + Math.cos(a) * d);
-            n.material.opacity = 1 - u;
+            const x = b.x + Math.sin(a) * d;
+            const y = b.y + 1.2 + Math.sin(elapsed * 12 + k) * 0.4;
+            const z = b.z + Math.cos(a) * d;
+            const c = k % 3 === 0 ? 0xffd0f8 : 0xb0ffe8;
+            fx.add.spawn(TILE.note).at(x, y, z).life(0).size(0.95 + (k % 2) * 0.25).color(c, c, 1 - u).spin(Math.sin(elapsed * 6 + k) * 0.4);
+            if (Math.random() < this.dt * 14 * fx.scale) fx.add.spawn(TILE.star).at(x, y, z).vel(0, 0.6, 0).life(0.35).size(0.3, -0.6).color(0xffffff, c).spin(Math.random() * 6, 6);
           }
           break;
+        }
         case 'bassDrop': {
           const r = this.drops[drop++];
           if (!r) break;
           r.visible = true;
           r.position.set(ox, oy + 0.4, oz);
-          r.scale.setScalar(1 + b.len * 0.6 * u);
+          const reach = 1 + b.len * 0.6 * u;
+          r.scale.setScalar(reach);
           (r.material as THREE.MeshBasicMaterial).opacity = 0.9 * (1 - u);
+          if (fresh) {
+            // The drop: the ground thumps, dust jumps off it all round, and the shockwaves follow the first ring out.
+            flash(fx, ox, oy + 0.6, oz, 4, 0x9a40ff, 0.25);
+            dustRing(fx, ox, ground, oz, 14, 0xb8a0d0, 9, 1.3);
+            shockRing(fx, ox, ground, oz, 14, 0xc080ff, 0.6, 0.1);
+            shockRing(fx, ox, ground, oz, 24, 0x9a40ff, 0.85, 0.05);
+          }
+          // Purple light kicked up off the ground where the ring passes.
+          if (u < 0.7 && Math.random() < this.dt * 50 * fx.scale) {
+            const a = Math.random() * Math.PI * 2;
+            fx.add.spawn(TILE.glow).at(ox + Math.cos(a) * reach, ground + 0.2, oz + Math.sin(a) * reach).vel(0, 3 + Math.random() * 3, 0).life(0.5).size(0.5, -0.6).color(0xe0b0ff, 0x6020c0).physics(4, 1);
+          }
           break;
         }
         case 'patchCable': {
           const line = this.cables[cable++];
           const to = at(b.to);
+          if (fresh) flash(fx, ox, oy + 1, oz, 2.4, 0xe0e8ff, 0.2);
           if (!line || !to) break;
           line.visible = true;
-          // A cable sagging between the two karts, pulled taut as it ends.
+          if (fresh) {
+            // It latches on: a spark of silver at the hook.
+            flash(fx, to.x, to.y + 1, to.z, 3, 0xc0d0ff, 0.25);
+            sparks(fx, to.x, to.y + 1, to.z, 12, 0xe0e8ff, 6, to.groundY);
+          }
+          // A cable sagging between the two karts, pulled taut as it ends, with beads of light running up it.
           const pos = line.geometry.attributes.position as THREE.BufferAttribute;
           const sag = 1.5 * (1 - u);
           for (let k = 0; k < pos.count; k++) {
@@ -388,6 +515,11 @@ export class ItemsView {
             pos.setXYZ(k, ox + (to.x - ox) * t, oy + 1 + (to.y - oy) * t - Math.sin(t * Math.PI) * sag, oz + (to.z - oz) * t);
           }
           pos.needsUpdate = true;
+          for (let k = 0; k < 3; k++) {
+            const t = (elapsed * 1.6 + k / 3) % 1;
+            fx.add.spawn(TILE.glow).at(ox + (to.x - ox) * t, oy + 1 + (to.y - oy) * t - Math.sin(t * Math.PI) * sag, oz + (to.z - oz) * t).life(0).size(0.7).color(0xffffff, 0xffffff, 0.9);
+          }
+          fx.add.spawn(TILE.flare).at(to.x, to.y + 1, to.z).life(0).size(1.4 + Math.sin(elapsed * 30) * 0.3).color(0xc0d0ff, 0xc0d0ff, 0.8).spin(elapsed * 4);
           break;
         }
         case 'harmonicaWail': {
@@ -399,6 +531,16 @@ export class ItemsView {
           const reach = b.len * Math.min(1, u * 2);
           c.scale.set(reach * 0.7, 2, reach);
           (c.material as THREE.MeshBasicMaterial).opacity = 0.35 * (1 - u);
+          if (fresh) flash(fx, ox + fx_ * 1.4, oy + 1, oz + fz * 1.4, 2.4, 0x80c0ff, 0.2);
+          // Wavefronts of the wail rolling out along the cone, three at a time.
+          for (let w = 0; w < 3; w++) {
+            const d = reach * ((u * 2.5 + w / 3) % 1);
+            if (d < 1.5) continue;
+            for (let k = 0; k < 7; k++) {
+              const a = b.heading + (k / 6 - 0.5) * 1.2;
+              fx.add.spawn(TILE.glow).at(ox + Math.sin(a) * d, oy + 1 + Math.sin(k + elapsed * 20) * 0.15, oz + Math.cos(a) * d).life(0).size(0.55).color(0xc0e0ff, 0xc0e0ff, 0.8 * (1 - u) * (1 - d / Math.max(1, b.len)));
+            }
+          }
           break;
         }
         case 'keytarLaser': {
@@ -407,52 +549,227 @@ export class ItemsView {
           g.visible = true;
           g.position.set(b.x, b.y + 1, b.z);
           g.rotation.set(0, b.heading, 0);
-          for (const c of g.children.slice(0, 2)) c.scale.z = b.len;
+          // The beam crackles: its width flickers, fierce at first.
+          const flicker = 1 + Math.sin(elapsed * 90) * 0.25 * (1 - u) + (Math.random() - 0.5) * 0.2;
+          g.children[0].scale.set(flicker, flicker, b.len);
+          g.children[1].scale.set(3 * flicker, 3 * flicker, b.len);
           g.children[2].position.set(0, 0, b.len);
           g.children.forEach((c) => (((c as THREE.Mesh).material as THREE.MeshBasicMaterial).opacity = (c === g.children[1] ? 0.5 : 1) * (1 - u)));
+          if (fresh) {
+            flash(fx, b.x + fx_ * 1.2, b.y + 1, b.z + fz * 1.2, 2.6, 0xff60e0, 0.2);
+            laserHit(fx, b.x + fx_ * b.len, b.y + 1, b.z + fz * b.len, ground);
+          }
+          // Motes of light shaken off along it.
+          if (Math.random() < this.dt * 40 * fx.scale) {
+            const t = Math.random() * b.len;
+            fx.add.spawn(TILE.glow).at(b.x + fx_ * t, b.y + 1, b.z + fz * t).vel((Math.random() - 0.5) * 2, 1 + Math.random() * 2, (Math.random() - 0.5) * 2).life(0.35).size(0.3, -0.6).color(0xffd0f8, 0xff2ad0);
+          }
           break;
         }
+        case 'drumRoll':
+          if (fresh) {
+            flash(fx, ox, oy + 0.8, oz, 3.5, 0xffb040, 0.2);
+            dustRing(fx, ox, ground, oz, 10, 0xd8b890, 6, 1.1);
+            shockRing(fx, ox, ground, oz, 4, 0xffb040, 0.35);
+          }
+          break;
       }
     }
-    for (; note < NOTE_POOL; note++) this.notes[note].visible = false;
     for (; drop < FX_POOL; drop++) this.drops[drop].visible = false;
     for (; cable < FX_POOL; cable++) this.cables[cable].visible = false;
     for (; wail < FX_POOL; wail++) this.wails[wail].visible = false;
     for (; beam < FX_POOL; beam++) this.beams[beam].visible = false;
+  }
 
+  /**
+   * Bananas: tossed out the back in an arc, a bump of dust where they land;
+   * a blinking warning ring while they arm; then they bob and turn, waver
+   * in quarter tones and send out a faint ripple now and then. Squashed,
+   * they splat; pushed off the end of the road's dozen, a pop.
+   */
+  private updateMines(elapsed: number, karts: readonly ItemKartView[]): void {
+    const fx = this.fx;
+    for (const m of this.seenMines) {
+      if (holds(this.items.mines, m)) continue;
+      this.lives.delete(m);
+      let hit = false;
+      for (const k of karts) if (Math.hypot(k.state.x - m.x, k.state.z - m.z) < 4) hit = true;
+      if (hit) bananaSplat(fx, m.x, m.y, m.z);
+      else bananaPop(fx, m.x, m.y, m.z);
+    }
+    this.seenMines.length = 0;
+    this.mines.forEach((g, i) => {
+      const m = this.items.mines[i];
+      g.visible = !!m;
+      if (!m) return;
+      this.seenMines.push(m);
+      const owner = m.owner.state;
+      const l = this.life(m, owner.x, owner.y + 1, owner.z, owner.heading, elapsed);
+      const age = elapsed - l.born;
+      const banana = g.children[0];
+      const glow = g.children[1] as THREE.Sprite;
+      if (age < TOSS) {
+        const [along, lift] = tossArc(age / TOSS, 1.6);
+        g.position.set(l.x + (m.x - l.x) * along, l.y + (m.y + 0.7 - l.y) * along + lift, l.z + (m.z - l.z) * along);
+        g.rotation.set(age * 14, l.heading + age * 9, 0);
+      } else {
+        if (age - this.dt < TOSS) {
+          dustRing(fx, m.x, m.y, m.z, 5, 0xd8c890, 2.5, 0.6);
+          embers(fx, TILE.note, m.x, m.y + 0.6, m.z, 2, 0xfff0a0, 0xffa020, 0.4, 0.4, 0.8);
+        }
+        g.position.set(m.x, m.y + 0.7 + Math.sin(elapsed * 5 + i) * 0.1, m.z);
+        g.rotation.set(0, elapsed * 2.5, 0);
+      }
+      // Wavering out of tune.
+      banana.rotation.z = Math.sin(elapsed * 7.3 + i) * 0.1;
+      glow.scale.setScalar(2.2 * (1 + 0.18 * Math.sin(elapsed * 4 + i)));
+      const height = Math.max(0, g.position.y - m.y - 0.7);
+      fx.alpha.spawn(TILE.shadow).at(g.position.x, m.y + 0.05, g.position.z).life(0).size(1.5 / (1 + height * 0.4)).color(0, 0, 0.45).flat();
+      if (m.arm > 0) {
+        if (armBlink(m.arm, MINE_ARM_TIME, elapsed)) fx.add.spawn(TILE.ring).at(m.x, m.y + 0.1, m.z).life(0).size(2.6).color(0xff5040, 0xff5040, 0.85).flat();
+      } else {
+        const ph = (elapsed * 0.7 + i * 0.29) % 1;
+        if (ph < 0.6) fx.add.spawn(TILE.ring).at(m.x, m.y + 0.08, m.z).life(0).size(1.6 + ph * 4).color(0xffe070, 0xffe070, 0.3 * (1 - ph / 0.6)).flat();
+      }
+    });
+  }
+
+  /**
+   * Big Fig Wasps: out of the kart with a flash and a puff; in flight a
+   * trail of sparks and smoke, the body banking into its turns and the saw
+   * spinning; homing in, the eyes go red and a reticle closes on the road
+   * under its mark. It strikes in sparks and cogs, or runs dry and sputters out.
+   */
+  private updateMissiles(elapsed: number, karts: readonly ItemKartView[]): void {
+    const fx = this.fx;
+    const dt = this.dt;
+    for (const m of this.seenMissiles) {
+      if (holds(this.items.missiles, m)) continue;
+      this.lives.delete(m);
+      if (m.life <= 0) waspFizzle(fx, m.x, m.y, m.z, m.y - 0.9);
+      else waspStrike(fx, m.x, m.y, m.z, m.y - 0.9);
+    }
+    this.seenMissiles.length = 0;
+    this.missiles.forEach((g, i) => {
+      const m = this.items.missiles[i];
+      g.visible = !!m;
+      if (!m) return;
+      this.seenMissiles.push(m);
+      const fresh = !this.lives.has(m);
+      const l = this.life(m, m.x, m.y, m.z, m.heading, elapsed);
+      const fx_ = Math.sin(m.heading);
+      const fz = Math.cos(m.heading);
+      if (fresh) {
+        flash(fx, m.x, m.y, m.z, 2.4, 0xffb040, 0.18);
+        smoke(fx, m.x - fx_, m.y, m.z - fz, 3, 0xd0c8c0, 0.8, 0.6, 1, 0.5, 0.5);
+      }
+      // Bank into the turn by how fast it's turning; nose down as it dives on its mark.
+      let turn = m.heading - l.heading;
+      turn = Math.atan2(Math.sin(turn), Math.cos(turn));
+      l.heading = m.heading;
+      const want = dt > 0 ? Math.max(-0.9, Math.min(0.9, (-turn / dt) * 0.25)) : l.roll;
+      l.roll += (want - l.roll) * Math.min(1, dt * 10);
+      const launch = Math.min(1, (elapsed - l.born) / WASP_LAUNCH);
+      g.position.set(m.x, m.y + Math.sin(elapsed * 9 + i) * 0.08, m.z);
+      g.rotation.set(m.homing ? 0.15 : 0, m.heading, l.roll);
+      g.scale.setScalar(0.6 + 0.4 * launch);
+      // Wings buzzing, the saw spinning.
+      const flap = Math.sin(elapsed * 60 + i) * 0.5;
+      g.children[0].rotation.z = flap;
+      g.children[1].rotation.z = -flap;
+      g.children[11].rotation.z = elapsed * 40;
+      const glow = g.children[10] as THREE.Sprite;
+      glow.material.color.setHex(m.homing ? 0xff3020 : 0xffb040);
+      glow.scale.setScalar(m.homing ? 2.4 + Math.sin(elapsed * 30) * 0.5 : 2.4);
+      // The trail: hot sparks off the sting, and puffs of smoke left hanging.
+      l.trail += dt * 40 * fx.scale;
+      const sx = m.x - fx_ * 1.1;
+      const sz = m.z - fz * 1.1;
+      while (l.trail >= 1) {
+        l.trail -= 1;
+        fx.add.spawn(TILE.glow).at(sx, m.y, sz).vel((Math.random() - 0.5) * 2, Math.random(), (Math.random() - 0.5) * 2).life(0.22).size(0.35, -0.7).color(0xfff0b0, 0xff6010);
+        if (Math.random() < 0.3) fx.alpha.spawn(TILE.puff).at(sx, m.y, sz).vel(0, 0.4, 0).life(0.6).size(0.35, 2).color(0xa8a098, 0xa8a098, 0.4).spin(Math.random() * 6, 1).fade(0.05, 0.2);
+      }
+      fx.alpha.spawn(TILE.shadow).at(m.x, m.y - 0.85, m.z).life(0).size(1.1).color(0, 0, 0.35).flat();
+      const t = m.homing && m.target ? this.stateOf(m.target, karts) : null;
+      if (t) {
+        // The reticle on the road under its mark, closing as it closes.
+        const d = Math.hypot(t.x - m.x, t.z - m.z);
+        const close = Math.min(1, d / 28);
+        fx.add.spawn(TILE.ring).at(t.x, t.groundY + 0.1, t.z).life(0).size(2.6 + close * 2.5).color(0xff3020, 0xff3020, 0.9).flat();
+        fx.add.spawn(TILE.flare).at(t.x, t.groundY + 0.12, t.z).life(0).size(2.2 + close * 2).color(0xff6040, 0xff6040, 0.7).spin(elapsed * 3).flat();
+      }
+    });
+  }
+
+  /** Nuclear Fusion: the ring, its blast, and electrons spun out round it. */
+  private updateWaves(elapsed: number): void {
+    const fx = this.fx;
+    for (const w of this.seenWaves) if (!holds(this.items.waves, w)) this.lives.delete(w);
+    this.seenWaves.length = 0;
+    this.waves.forEach((r, i) => {
+      const w = this.items.waves[i];
+      r.visible = !!w;
+      if (!w) return;
+      this.seenWaves.push(w);
+      if (!this.lives.has(w)) fusionBlast(fx, w.x, w.y, w.z, w.y, WAVE_RANGE);
+      this.life(w, w.x, w.y, w.z, 0, elapsed);
+      const t = w.age / 0.8;
+      const radius = 1 + (WAVE_RANGE - 1) * Math.min(1, t * 1.6);
+      r.position.set(w.x, w.y + 0.5, w.z);
+      r.scale.setScalar(radius);
+      // Soft: the blast's own shockwaves (fx/effects.ts fusionBlast) carry the edge.
+      (r.material as THREE.MeshBasicMaterial).opacity = 0.55 * (1 - t);
+      // Three electrons round the ring's edge, each on its own tilted orbit.
+      for (let k = 0; k < 3; k++) {
+        const a = elapsed * 9 + (k * Math.PI * 2) / 3;
+        const tilt = Math.sin(a + k) * 1.2;
+        fx.add.spawn(TILE.glow).at(w.x + Math.cos(a) * radius, w.y + 1 + tilt, w.z + Math.sin(a) * radius).life(0).size(0.9).color(0xe0fff4, 0xe0fff4, 1 - t);
+      }
+    });
+  }
+
+  /**
+   * The Nonagon Infinity rolling after the leader: green fire left burning
+   * behind it, a glow on the road under it, spinning faster and pulsing
+   * harder as it closes; it breaks on its mark, or rolls on under them.
+   */
+  private updateSurge(elapsed: number, karts: readonly ItemKartView[]): void {
+    const fx = this.fx;
     const w = this.items.surge;
+    const gone = this.seenSurge;
+    if (gone && gone !== w) {
+      const t = gone.target ? this.stateOf(gone.target, karts) : null;
+      const a = this.surgeAt;
+      if (t && t.spinTime > 0) surgeBreak(fx, t.x, t.y, t.z, t.groundY);
+      else surgeFade(fx, a.x, a.y, a.z, a.y);
+    }
+    this.seenSurge = w;
     this.surge.visible = !!w;
-    if (w) {
-      this.surge.position.set(w.x, w.y, w.z);
-      this.surge.rotation.y = w.heading;
-      this.surge.children[0].rotation.x = -elapsed * 8;
+    if (!w) return;
+    this.surgeAt.x = w.x;
+    this.surgeAt.y = w.y;
+    this.surgeAt.z = w.z;
+    const target = w.target;
+    const gap = target ? target.distance - w.d : 100;
+    const close = Math.max(0, Math.min(1, 1 - gap / 40));
+    this.surge.position.set(w.x, w.y, w.z);
+    this.surge.rotation.y = w.heading;
+    const ring = this.surge.children[0];
+    ring.rotation.x = -elapsed * (8 + close * 10);
+    const pulse = 1 + Math.sin(elapsed * (6 + close * 20)) * (0.05 + close * 0.12);
+    ring.scale.setScalar(pulse);
+    (this.surge.children[1] as THREE.Sprite).scale.setScalar(7 * pulse * (1 + close * 0.3));
+    fx.add.spawn(TILE.glow).at(w.x, w.y + 0.15, w.z).life(0).size(6 + close * 2).color(0x30ff90, 0x30ff90, 0.45 + close * 0.3).flat();
+    fx.add.spawn(TILE.nonagon).at(w.x, w.y + 0.12, w.z).life(0).size(5.5).color(0x80ffc0, 0x80ffc0, 0.4 + close * 0.4).spin(elapsed * 2).flat();
+    // Green fire left on the road behind it, guttering out.
+    if (Math.random() < this.dt * 45 * fx.scale) {
+      const side = (Math.random() - 0.5) * 3.6;
+      const fz = Math.cos(w.heading);
+      const fx_ = Math.sin(w.heading);
+      fx.add.spawn(TILE.glow).at(w.x + fz * side - fx_ * 1.5, w.y + 0.3, w.z - fx_ * side - fz * 1.5).vel(0, 1.5 + Math.random() * 2, 0).life(0.6).size(0.8, -0.7).color(0xc0ffd8, 0x108040).physics(-1, 1);
     }
   }
-}
-
-let noteCache: THREE.CanvasTexture | null = null;
-
-/** A pair of quavers, white on clear, for the Sleep Drifter. */
-function noteTexture(): THREE.CanvasTexture {
-  if (noteCache) return noteCache;
-  const c = document.createElement('canvas');
-  c.width = c.height = 64;
-  const g = c.getContext('2d')!;
-  g.fillStyle = '#fff';
-  g.strokeStyle = '#fff';
-  g.lineWidth = 5;
-  for (const x of [16, 44]) {
-    g.beginPath();
-    g.ellipse(x, 48, 9, 7, -0.4, 0, Math.PI * 2);
-    g.fill();
-    g.beginPath();
-    g.moveTo(x + 7, 46);
-    g.lineTo(x + 7, 12);
-    g.stroke();
-  }
-  g.fillRect(21, 9, 32, 7);
-  noteCache = new THREE.CanvasTexture(c);
-  return noteCache;
 }
 
 /** Snakes, dust devils, tumbleweeds and boulders, posed from a HazardSystem each frame. */

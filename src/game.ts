@@ -43,11 +43,13 @@ import { FIELD_SIZE, RACERS, pickRivals, type RacerDef } from './physics/racers'
 import { ALPHA_STATIC, DOZE_SLEEP, PILL_SWIM, SWEEP_DIGITISE, type HazardKind } from './items/hazards';
 import { KIT_HAZARDS } from './kits/index';
 import type { ScreenEffect } from './kits/kit';
-import { ITEMS, type ItemHolder, type ItemKind } from './items/items';
+import { ITEMS, type ItemEvent, type ItemHolder, type ItemKind } from './items/items';
 import { ChaseCamera, DEFAULT_PLACEMENT, type CameraPlacement } from './render/chaseCamera';
 import { HazardsView, ItemsView } from './render/itemViews';
+import { FxSystem } from './render/fx/fxSystem';
+import { nudgeFor, thudLevel } from './render/fx/envelopes';
 import { KartView, setDustColor } from './render/kartView';
-import { DETAIL_SPEC, setGraphicsDetail } from './render/detail';
+import { DETAIL_SPEC, graphicsDetail, setGraphicsDetail } from './render/detail';
 import { PostFx } from './render/postfx';
 import { DynamicResolution, RESOLUTION_SCALES } from './render/resolution';
 import { RacerGallery } from './render/gallery';
@@ -295,6 +297,10 @@ let race: Race;
 let player: RaceKart | null = null;
 let views: KartView[] = [];
 let itemsView: ItemsView | null = null;
+/** The race's particles (render/fx): every kart's and item's, two draw calls in all. Rebuilt when the detail level changes. */
+let effects: FxSystem | null = null;
+/** Item events since the last frame was drawn, for the views to react to (a held item breaking). */
+const frameItemEvents: ItemEvent[] = [];
 let hazardsView: HazardsView | null = null;
 let raceSeed = 1;
 /** Draws the player's rivals; a new one each time the picker starts something, so a restart keeps the field. */
@@ -1054,15 +1060,28 @@ function startRace(withPlayer: boolean, keepSong = false, seamless = false): voi
   // Attract mode skips the countdown.
   if (!withPlayer) race.time = 0;
   for (const v of [itemsView, hazardsView]) if (v) dispose(v.group);
-  itemsView = new ItemsView(race.items);
+  if (!effects || effects.detail !== graphicsDetail()) {
+    if (effects) {
+      scene.remove(effects.group);
+      effects.dispose();
+    }
+    effects = new FxSystem();
+    scene.add(effects.group);
+  }
+  effects.clear();
+  frameItemEvents.length = 0;
+  itemsView = new ItemsView(race.items, effects);
   hazardsView = new HazardsView(race.hazards);
   scene.add(itemsView.group, hazardsView.group);
   for (const v of views) scene.remove(v.root, v.fx);
+  // The race's karts draw their sparks and smoke into the shared particles; a kart shown anywhere else keeps its own.
+  KartView.effects = effects;
   views = race.karts.map((k) => {
     const v = new KartView(k.racer);
     scene.add(v.root, v.fx);
     return v;
   });
+  KartView.effects = null;
   snapshots.clear();
   chase.snap();
   for (const seat of seats) seat.chase.snap();
@@ -1121,7 +1140,9 @@ function setupGhost(trial: boolean): void {
 /** A see-through kart replaying `run`, optionally tinted so two ghosts can be told apart. */
 function addGhost(run: GhostRun, label: string, tint?: number): void {
   const id = run.racerId;
+  KartView.effects = effects;
   const view = new KartView(RACERS.find((r) => r.id === id) ?? choice.racer);
+  KartView.effects = null;
   const tintColor = tint === undefined ? null : new THREE.Color(tint);
   view.root.traverse((o) => {
     if (!(o instanceof THREE.Mesh)) return;
@@ -1402,14 +1423,27 @@ function step(dt: number): void {
   const inputs = race.karts.map((k) => seatOf(k)?.last);
   const events = race.step(dt, inputs);
   if (deadstick && player) deadstickStep(dt, events[race.karts.indexOf(player)]);
+  // The karts are drawn flipped in mirror mode: a bump's direction is flipped to match.
+  const flipX = mirrored() ? -1 : 1;
   events.forEach((ev, i) => {
     if (ev.landed > 3) views[i].impact(ev.landed);
     if (ev.wallHit > 0.2) views[i].collide(ev.wallHit);
     const k = race.karts[i];
-    if (k.bump > 3) views[i].collide(Math.min(1.5, k.bump / 8), k.bumpX, k.bumpZ);
+    if (k.bump > 3) views[i].collide(Math.min(1.5, k.bump / 8), k.bumpX * flipX, k.bumpZ);
     // Back from a fall: through the Nonagon gate.
     if (k.respawned) views[i].restore(k.state);
   });
+  // What hit whom and who used what, for the karts' reactions and the items' bursts.
+  for (const e of race.events) {
+    const i = race.karts.indexOf(e.kart as RaceKart);
+    const v = views[i];
+    if (!v) continue;
+    if (e.type === 'hit') {
+      v.struck(e.by);
+      if (e.robbed !== undefined) v.robbed(e.robbed);
+    } else if (e.type === 'use') v.used(e.item);
+    if (e.type === 'block' && frameItemEvents.length < 64) frameItemEvents.push(e);
+  }
   // A new track mid-step: this step's events were the old race's.
   if (mode === 'race' && choice.mode === 'infinite' && !online && tourStep()) return;
   if (!player) {
@@ -1498,8 +1532,14 @@ function seatStep(seat: Seat, ev: StepEvents, dt: number): void {
     st?.add('slipstream');
   }
   checkShortcut(seat);
-  if (p.bump > 3) sfx.bump(Math.min(1, p.bump / 10));
+  if (p.bump > 3) {
+    sfx.bump(0.25 + 0.75 * thudLevel(p.bump));
+    // Knocked: the camera's nudged the way the kart was shoved, a touch of shake on top.
+    c.nudge(-p.bumpX * (mirrored() ? -1 : 1), -p.bumpZ, nudgeFor(p.bump));
+    c.bump(Math.min(0.5, p.bump / 20));
+  }
   if (ev.wallHit > 0.3) c.bump(ev.wallHit);
+  if (ev.landed > 6) c.bump(Math.min(0.45, ev.landed * 0.035));
   if (p.respawned) c.snap();
   playerSounds(seat, ev);
   if (race.time >= 0 && race.time - dt < 0 && p.launch) {
@@ -1568,6 +1608,8 @@ function seatStep(seat: Seat, ev: StepEvents, dt: number): void {
       buzz(seat, 160);
       if (e.by !== 'tempoShift' && e.by !== 'bassDrop') c.bump(0.5);
       if (e.by === 'bassDrop') c.bump(1.2);
+      // Spun out: the view lurches over and rights itself.
+      if (p.state.spinTime > 0) c.tilt(Math.random() < 0.5 ? -0.07 : 0.07);
       if (item && e.from) seatCallout(seat, { from: who(e.from, seat), to: 'you', by: item, kind: 'took' });
     } else if (e.from === p && item) {
       // Area items hit a crowd: one line each, but only one flash and sound.
@@ -2829,6 +2871,7 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
   hazardsView!.group.scale.x = m;
   const drawn = flip ? snaps.map((sn, i) => mirrorState(sn, (mirrorSnaps[i] ??= createKartState()))) : snaps;
   const s = drawn[race.karts.indexOf(f)];
+  effects?.begin(dt);
   for (const g of ghosts) {
     ghostPose(g.run, Math.max(0, race.time - (1 - alpha) * PHYSICS_DT), g.state);
     g.view.update(g.state, 30, dt, elapsed);
@@ -2859,7 +2902,9 @@ const loop = new FixedLoop(step, (alpha, frameDt) => {
   const skyLaps = race.laps >= INFINITE_LAPS ? SKY_LAPS : race.laps;
   const skyTurn = race.laps >= INFINITE_LAPS ? (f.distance / (L * skyLaps)) % 1 : clamp(f.distance / (L * race.laps), 0, 1);
   trackView!.update(elapsed, camWorld, theme.skyCycle ? Math.PI * 2 * skyTurn : 0, f.state);
-  itemsView!.update(elapsed, race.karts.map((k, i) => ({ state: snaps[i], holder: k })));
+  itemsView!.update(elapsed, race.karts.map((k, i) => ({ state: snaps[i], holder: k })), frameItemEvents);
+  frameItemEvents.length = 0;
+  effects?.end(camera);
   hazardsView!.update(elapsed);
   sunAnchor.position.copy(camera.position).addScaledVector(SUN_DIR, 1400);
   // The shadow camera follows the kart on screen.
@@ -3520,6 +3565,10 @@ Object.assign(window, {
       return { camY: camera.position.y, water: fx.water, dives: trackView?.dives.length ?? 0 };
     },
     /** The kart views (testing animations). */
+    /** The race's particles (testing: how many are live, and what). */
+    get effects() {
+      return effects;
+    },
     get views() {
       return views;
     },
